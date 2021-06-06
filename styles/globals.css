@@ -21,6 +21,10 @@ a {
   --bg-main: rgb(61, 69, 85);
   --bg-ligth: rgb(83, 83, 104);
   --bg-dark: rgb(45, 52, 66);
+  --bg-trans: rgba(45, 52, 66, 0.568);
+  
+
+  --danger:rgb(224, 101, 101);
 
   --text-main: #fff;
   --text-light: rgb(194, 76, 76);

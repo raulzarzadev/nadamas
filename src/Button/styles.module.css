@@ -31,16 +31,16 @@
   padding: 16px;
 }
 
-.button[my='1'] {
+.button[my='sm'] {
   margin: 8px auto;
 }
-.button[my='2'] {
+.button[my='md'] {
   margin: 16px auto;
 }
-.button[mx='1'] {
+.button[mx='sm'] {
   margin: auto 8px;
 }
-.button[mx='2'] {
+.button[mx='md'] {
   margin: auto 16px;
 }
 .button[m='none'] {
