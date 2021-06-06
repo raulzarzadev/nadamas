@@ -106,21 +106,19 @@ export default function NewAthlete() {
               onChange={handleChange}
               name="emerTitle"
               value={form?.emerTitle}
-              type="tel"
               label="Titulo"
             />
             <Text
               onChange={handleChange}
               name="emerName"
               value={form?.emerName}
-              type="tel"
               label="Nombre"
             />
             <Text
+              type="tel"
               onChange={handleChange}
               name="emerMobile"
               value={form?.emerMobile}
-              label="email"
               label="Numero"
             />
           </div>
