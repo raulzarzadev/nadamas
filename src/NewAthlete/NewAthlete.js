@@ -76,7 +76,7 @@ export default function NewAthlete() {
         </div>
         <div className={s.form_box}>
           <h3>Horario</h3>
-          <Schedule schedule={form?.schedule} onChange={handleChangeSchedule} />
+          <Schedule form={form} onChange={handleChangeSchedule} />
           <Button type="submit">Guardar</Button>
         </div>
         <div className={s.form_box}>
@@ -130,20 +130,48 @@ export default function NewAthlete() {
     </div>
   )
 }
-const Schedule = ({ schedule = [], onChange }) => {
-  const week = [{ day: 'Lunes', value: '17:00' }]
-  console.log('schedule', schedule)
-  const onChangeSchedule = (day) => {
-    day
+const Schedule = ({ form, onChange }) => {
+  const base = [
+    {
+      day: 'Lunes',
+      time: null
+    },
+    {
+      day: 'Martes',
+      time: null
+    },
+    {
+      day: 'Miercoles',
+      time: null
+    },
+    {
+      day: 'Jueves',
+      time: null
+    },
+    {
+      day: 'Viernes',
+      time: null
+    }
+  ]
+  const [schedule, setSchedule] = useState(base)
+
+  const onChangeSchedule = (e, day) => {
+    const time = e.target.value
+    setSchedule([...schedule, { day, time }])
+    onChange({ ...form, schedule })
   }
+
+  console.log('schedule', schedule)
+  console.log('form', form)
+
   return (
     <div className={s.schedule}>
-      {week.map(({ day, value }) => (
+      {base.map(({ day, time }) => (
         <div>
           <h4>{day}</h4>
           <Text
-            onChange={() => onChangeSchedule(day)}
-            value={value}
+            onChange={(e) => onChangeSchedule(e, day)}
+            value={time}
             type="time"
           />
         </div>

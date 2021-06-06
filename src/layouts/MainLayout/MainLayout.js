@@ -1,4 +1,5 @@
 import Button from '@/src/Button'
+import { BackIcon } from '@/src/utils/Icons'
 import { useRouter } from 'next/router'
 import s from './styles.module.css'
 
@@ -23,7 +24,9 @@ const Footer = ({ user }) => {
   return (
     <div className={s.footer}>
       <div>
-        <Button onClick={handleBack}>{`<`}</Button>
+        <Button onClick={handleBack}>
+          <BackIcon />
+        </Button>
       </div>
       {user && <div>{user.name}</div>}
     </div>

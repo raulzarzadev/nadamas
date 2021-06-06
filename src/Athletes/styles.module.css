@@ -1,3 +1,20 @@
-
-
-
+.athlete {
+  background-color: var(--bg-dark);
+  padding: 8px;
+  border-radius: 8px;
+  margin: 8px;
+}
+.athlete_row {
+  display: flex;
+  align-items: center;
+  font-size: 2rem;
+}
+.athlete_action {
+  background-color: var(--bg-dark);
+  padding: 3px;
+  border-radius: 8px;
+  margin: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
