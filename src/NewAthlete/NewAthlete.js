@@ -4,7 +4,8 @@ import Text from '../InputFields/Text'
 import s from './styles.module.css'
 import { getAthlete, updateAtlete } from '@/firebase/client'
 import { useRouter } from 'next/router'
-import { formatInputDate } from '../utils/Dates'
+import { format, formatInputDate } from '../utils/Dates'
+import { TrashBinIcon } from '../utils/Icons'
 export default function NewAthlete() {
   const router = useRouter()
   useEffect(() => {
@@ -13,21 +14,18 @@ export default function NewAthlete() {
     }
   }, [])
   const [form, setForm] = useState({
-    birth: new Date()
+    birth: new Date(),
+    schedule: []
   })
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const handleChangeSchedule = (e) => {
-    console.log('e', e)
-  }
-
+  console.log('form', form)
   const handleSubmit = async () => {
     const res = await updateAtlete(form)
     console.log('res', res)
   }
-  console.log('form', form)
 
   return (
     <div className={s.newathlete}>
@@ -76,8 +74,10 @@ export default function NewAthlete() {
         </div>
         <div className={s.form_box}>
           <h3>Horario</h3>
-          <Schedule form={form} onChange={handleChangeSchedule} />
-          <Button type="submit">Guardar</Button>
+          <Schedule form={form} setForm={setForm} />
+          <Button type="submit" my="md">
+            Guardar
+          </Button>
         </div>
         <div className={s.form_box}>
           <h3>Contacto</h3>
@@ -128,7 +128,7 @@ export default function NewAthlete() {
     </div>
   )
 }
-const Schedule = ({ form, onChange }) => {
+const Schedule = ({ form, setForm }) => {
   const base = [
     {
       day: 'Lunes',
@@ -151,29 +151,97 @@ const Schedule = ({ form, onChange }) => {
       time: null
     }
   ]
-  const [schedule, setSchedule] = useState(base)
 
-  const onChangeSchedule = (e, day) => {
-    const time = e.target.value
-    setSchedule([...schedule, { day, time }])
-    onChange({ ...form, schedule })
+  const [schedule, setSchedule] = useState([])
+
+  const handleChangeSchedule = (evt) => {
+    const { value, name } = evt.target
+    const newSchedule = schedule.map((time) => {
+      if (time.day === name) return { day: name, time: value }
+      return time
+    })
+
+    setForm({ ...form, schedule: newSchedule })
+  }
+  const setTimeToNull = (nameDay) => {
+    const newSchedule = schedule.map((day) => {
+      if (day.day === nameDay) return { day: nameDay, time: null }
+      return day
+    })
+    setForm({ ...form, schedule: newSchedule })
   }
 
-  console.log('schedule', schedule)
-  console.log('form', form)
+  useEffect(() => {
+    setSchedule(form.schedule || base)
+    console.log('form', form)
+  }, [form.schedule])
+
+  const formatHoursTime = (time) => {
+    if (time) {
+      return `${time}:00`
+    } else {
+      return `--:--`
+    }
+  }
 
   return (
-    <div className={s.schedule}>
-      {base.map(({ day, time }) => (
-        <div>
-          <h4>{day}</h4>
-          <Text
-            onChange={(e) => onChangeSchedule(e, day)}
-            value={time}
-            type="time"
-          />
-        </div>
+    <>
+      <div className={s.schedule}>
+        {form.schedule.map(({ day, time }) => (
+          <div>
+            <div className={s.day_title}>
+              <h4>{day}</h4>
+              <Button onClick={() => setTimeToNull(day)}>
+                <TrashBinIcon size="1rem" />
+              </Button>
+            </div>
+            <HoursInput
+              name={day}
+              value={time}
+              onChange={handleChangeSchedule}
+            />
+            {/*   <input
+              style={{ background: '#000', color: '#fff' }}
+              value={formatHoursTime(time)}
+              type="text"
+              step="1"
+              min="1"
+              max="24"
+              name={day}
+              onChange={handleChangeSchedule}
+            /> */}
+
+            {/*  <Text
+              step="3600"
+              onChange={handleChangeSchedule}
+              name={day}
+              value={time}
+              type="time"
+            /> */}
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+const HoursInput = ({ name, value, onChange }) => {
+  const availableHours = []
+  for (let i = 6; i < 23; i++) {
+    availableHours.push({
+      value: i,
+      label: `${i <= 9 ? `0${i}:00` : `${i}:00`}`
+    })
+  }
+
+  return (
+    <select name={name} value={value || null} onChange={onChange}>
+      <option value={null}>--:--</option>
+      {availableHours.map((hour) => (
+        <option key={hour.value} value={hour.value}>
+          {hour.label}
+        </option>
       ))}
-    </div>
+    </select>
   )
 }

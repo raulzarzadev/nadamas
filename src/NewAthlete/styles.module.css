@@ -15,7 +15,12 @@
   justify-content: space-evenly;
   flex-wrap: wrap;
 }
-
+.day_title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 16px;
+}
 @media (min-width: 600px) {
   .inputs > * {
     width: 50%;
