@@ -7,7 +7,6 @@ import {
 } from './firebase-helpers'
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 
-console.log('firebaseConfig', JSON.parse(firebaseConfig))
 
 if (!firebase?.apps?.length) {
   firebase.initializeApp(JSON.parse(firebaseConfig))
