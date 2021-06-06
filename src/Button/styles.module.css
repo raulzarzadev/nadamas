@@ -1,0 +1,108 @@
+.button {
+  /* Setting to 0 */
+  border: none;
+  background: none;
+  color: inherit;
+  /* New styles */
+  cursor: pointer;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.226);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  padding: 8px;
+}
+
+/* 
+   - - - - -  - - - - - - - - - - - - -  SIZING 
+*/
+.button[fullwidth] {
+  width: 100%;
+}
+
+.button[p='sm'] {
+  padding: 4px;
+}
+.button[p='md'] {
+  padding: 8px;
+}
+.button[p='lg'] {
+  padding: 16px;
+}
+
+.button[my='1'] {
+  margin: 8px auto;
+}
+.button[my='2'] {
+  margin: 16px auto;
+}
+.button[mx='1'] {
+  margin: auto 8px;
+}
+.button[mx='2'] {
+  margin: auto 16px;
+}
+.button[m='none'] {
+  margin: 0;
+}
+
+/* 
+   - - - - -  - - - - - - - - - - - - -  SEUDO CLASSES
+*/
+.button:hover {
+  box-shadow: none;
+}
+.button:active {
+  box-shadow: inset 0px 0px 4px rgba(0, 0, 0, 0.712);
+}
+.button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+/* 
+   - - - - -  - - - - - - - - - - - - -  COLLORS FILLED 
+*/
+.button[primary] {
+  background: var(--primary);
+}
+.button[secondary] {
+  background: var(--secondary);
+}
+.button[danger] {
+  background-color: var(--danger);
+}
+
+.button[outlined] {
+  border: 1px solid;
+}
+
+/* 
+   - - - - -  - - - - - - - - - - - - -  ICON 
+*/
+.button[icon] {
+  width: auto;
+  border-radius: 50%;
+}
+/* 
+   - - - - -  - - - - - - - - - - - - -  LINK 
+*/
+.button[link] {
+  padding: none;
+  box-shadow: none;
+}
+.button[link]:hover {
+  padding: none;
+  font-weight: 600;
+}
+
+/* 
+   - - - - -  - - - - - - - - - - - - -  UNDERLINE 
+*/
+
+.selected {
+  border-top: 1px solid transparent;
+}
+.button[underline] > .selected {
+  border-top: 1px solid white;
+}
