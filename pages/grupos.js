@@ -1,4 +1,4 @@
-import Groups from '@/src/Groups'
+import Groups from '@/src/ViewGroups'
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
 import MainLayout from '@/src/layouts/MainLayout'
 

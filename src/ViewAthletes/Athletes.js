@@ -36,7 +36,7 @@ export default function Athletes() {
                 </Button>
               </div>
               <div className={s.athlete_action}>
-                <Button icon nextLink href={`https://wa.me/521${mobile}`}>
+                <Button  icon nextLink href={`https://wa.me/521${mobile}`}>
                   <ContactIcon />
                 </Button>
               </div>

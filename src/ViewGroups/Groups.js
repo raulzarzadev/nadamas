@@ -8,7 +8,7 @@ import {
 } from '../utils/Icons'
 import { useEffect, useState } from 'react'
 import { getAthletes } from '@/firebase/client'
-import { getDay, addDays, subDays } from 'date-fns'
+import { addDays, subDays } from 'date-fns'
 import { format } from '../utils/Dates'
 import Button from '../Button'
 import EmergencyCallModal from '../Modals/EmergencyCallModal'
@@ -25,9 +25,15 @@ export default function Groups() {
 
   */
   const filterAthltesBy = (dayOfweek, hour) => {
-    return athletes.filter(({ schedule }) =>
-      schedule.find(({ day, time }) => day === dayOfweek && time === hour)
-    )
+    console.log('dayOfweek', dayOfweek)
+
+    return athletes.filter(({ schedule, name }) => {
+      console.log('schedule', name, schedule)
+
+      return schedule?.find(
+        ({ day, time }) => day === dayOfweek && time === hour
+      )
+    })
   }
 
   const [day, setDay] = useState(new Date())
@@ -42,7 +48,7 @@ export default function Groups() {
   const secondSchedule = filterAthltesBy(day.getDay(), '18')
   const thirthSchedule = filterAthltesBy(day.getDay(), '19')
 
-  console.log('firstSchedule', firstSchedule)
+  console.log('day Selected', day.getDay())
 
   return (
     <div className={s.groups}>
@@ -51,6 +57,7 @@ export default function Groups() {
         <h3>{format(day, 'EEEE dd MMM')}</h3>
         <ForwardIcon onClick={handleAddDay} />
       </div>
+      
       <h3>{`17:00 hrs`}</h3>
       {firstSchedule.map((athlete) => (
         <AthleteRow key={athlete.id} athlete={athlete} />
@@ -70,7 +77,6 @@ export default function Groups() {
 const AthleteRow = ({ athlete }) => {
   const { emerTitle, emerName, emerMobile, name, lastName, id, mobile } =
     athlete
-
   const [openEmergencyModal, setOpenEmergencyModal] = useState(false)
   const handleOpenEmergencyCall = () => {
     setOpenEmergencyModal(!openEmergencyModal)
@@ -87,7 +93,12 @@ const AthleteRow = ({ athlete }) => {
           </Button>
         </div>
         <div className={s.athlete_action}>
-          <Button icon nextLink href={`https://wa.me/521${mobile}`}>
+          <Button
+            disabled={!!mobile}
+            icon
+            nextLink
+            href={`https://wa.me/521${mobile}`}
+          >
             <ContactIcon />
           </Button>
         </div>

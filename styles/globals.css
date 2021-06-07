@@ -6,6 +6,7 @@ body {
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
   background-color: black;
   font-size: 1rem;
+  color:#fff
 }
 
 a {
@@ -23,6 +24,8 @@ a {
   --bg-dark: rgb(45, 52, 66);
   --bg-trans: rgba(45, 52, 66, 0.568);
 
+  --primary:rgb(56, 147, 189);
+  --secondary:rgb(87, 66, 126);
   --danger: rgb(224, 101, 101);
 
   --text-main: #fff;

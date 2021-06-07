@@ -1,4 +1,4 @@
-import Athletes from '@/src/Athletes'
+import Athletes from '@/src/ViewAthletes'
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
 import MainLayout from '@/src/layouts/MainLayout'
 

@@ -1,0 +1,8 @@
+.viewhome {
+  border: 1px solid #000;
+}
+.buttons_box {
+  display: flex;
+  width: 100%;
+  justify-content: space-evenly;
+}

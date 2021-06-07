@@ -41,6 +41,7 @@ export default function Button({
 
   return (
     <WrapperButton
+      className={s.button}
       disabled={disabled}
       fullwidth={fullwidth && 'true'}
       icon={icon ? 'true' : undefined}
@@ -51,7 +52,6 @@ export default function Button({
       success={success && 'true'}
       secondary={secondary && 'true'}
       link={link && 'true'}
-      className={s.button}
       {...rest}
     >
       {children}

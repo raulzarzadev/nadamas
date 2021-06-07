@@ -1,7 +1,7 @@
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
 import MainLayout from '@/src/layouts/MainLayout'
-import NewAthlete from '@/src/NewAthlete'
+import FormAthlete from '@/src/FormAthlete'
 
 export default function grupos() {
-  return <PrivateRoute Component={NewAthlete} Layout={MainLayout} />
+  return <PrivateRoute Component={FormAthlete} Layout={MainLayout} />
 }

@@ -27,6 +27,14 @@ const scheduleBase = [
   {
     day: 4,
     time: null
+  },
+  {
+    day: 5,
+    time: null
+  },
+  {
+    day: 6,
+    time: null
   }
 ]
 
@@ -102,7 +110,7 @@ export default function NewAthlete() {
         </div>
         <div className={s.form_box}>
           <h3>Horario</h3>
-          <Schedule form={form} setForm={setForm} />
+          <Schedule hideWeekend form={form} setForm={setForm} />
           <Button type="submit" my="md">
             Guardar
           </Button>
@@ -156,7 +164,7 @@ export default function NewAthlete() {
     </div>
   )
 }
-const Schedule = ({ form, setForm }) => {
+const Schedule = ({ form, setForm, hideWeekend }) => {
   const [schedule, setSchedule] = useState([])
 
   const handleChangeSchedule = (evt) => {
@@ -181,19 +189,15 @@ const Schedule = ({ form, setForm }) => {
     }
   }, [form.schedule])
 
-  console.log('schedule', schedule)
+  const listDays = hideWeekend
+    ? schedule.filter(({ day }) => day !== 0 && day !== 6)
+    : schedule
 
   return (
     <>
       <div className={s.schedule}>
-        {schedule?.map(({ day, time }) => (
+        {listDays?.map(({ day, time }) => (
           <div className={s.schedule_day}>
-            <div className={s.day_title}>
-              <h4>{dayLabels[day]}</h4>
-              <Button  icon onClick={() => setTimeToNull(day)}>
-                <TrashBinIcon size="1rem" />
-              </Button>
-            </div>
             <HoursInput
               name={day}
               value={time}
@@ -215,18 +219,26 @@ const HoursInput = ({ name, value, onChange }) => {
     })
   }
   return (
-    <select
-      className={s.select_schedule}
-      name={name}
-      value={value || null}
-      onChange={onChange}
-    >
-      <option value={null}>--:--</option>
-      {availableHours.map((hour) => (
-        <option key={hour.value} value={hour.value}>
-          {hour.label}
-        </option>
-      ))}
-    </select>
+    <>
+      <div className={s.day_title}>
+        <h4>{dayLabels[name]}</h4>
+        <Button icon onClick={() => setTimeToNull(day)}>
+          <TrashBinIcon size="1rem" />
+        </Button>
+      </div>
+      <select
+        className={s.select_schedule}
+        name={name}
+        value={value || null}
+        onChange={onChange}
+      >
+        <option value={null}>--:--</option>
+        {availableHours.map((hour) => (
+          <option key={hour.value} value={hour.value}>
+            {hour.label}
+          </option>
+        ))}
+      </select>
+    </>
   )
 }
