@@ -4,8 +4,32 @@ import Text from '../InputFields/Text'
 import s from './styles.module.css'
 import { getAthlete, updateAtlete } from '@/firebase/client'
 import { useRouter } from 'next/router'
-import { format, formatInputDate } from '../utils/Dates'
+import { dayLabels, format, formatInputDate } from '../utils/Dates'
 import { TrashBinIcon } from '../utils/Icons'
+
+const scheduleBase = [
+  {
+    day: 0,
+    time: null
+  },
+  {
+    day: 1,
+    time: null
+  },
+  {
+    day: 2,
+    time: null
+  },
+  {
+    day: 3,
+    time: null
+  },
+  {
+    day: 4,
+    time: null
+  }
+]
+
 export default function NewAthlete() {
   const router = useRouter()
   useEffect(() => {
@@ -15,17 +39,21 @@ export default function NewAthlete() {
   }, [])
   const [form, setForm] = useState({
     birth: new Date(),
-    schedule: []
+    schedule: scheduleBase
   })
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  console.log('form', form)
   const handleSubmit = async () => {
     const res = await updateAtlete(form)
+    if (res.type === 'ATHLETE_CREATED') {
+      router.push(`/atletas/${res.id}`)
+    }
     console.log('res', res)
   }
+
+  console.log('form', form)
 
   return (
     <div className={s.newathlete}>
@@ -129,38 +157,14 @@ export default function NewAthlete() {
   )
 }
 const Schedule = ({ form, setForm }) => {
-  const base = [
-    {
-      day: 'Lunes',
-      time: null
-    },
-    {
-      day: 'Martes',
-      time: null
-    },
-    {
-      day: 'Miercoles',
-      time: null
-    },
-    {
-      day: 'Jueves',
-      time: null
-    },
-    {
-      day: 'Viernes',
-      time: null
-    }
-  ]
-
   const [schedule, setSchedule] = useState([])
 
   const handleChangeSchedule = (evt) => {
     const { value, name } = evt.target
-    const newSchedule = schedule.map((time) => {
-      if (time.day === name) return { day: name, time: value }
-      return time
+    const newSchedule = schedule.map(({ day, time }) => {
+      if (day == name) return { day: parseInt(name), time: value }
+      return { time, day }
     })
-
     setForm({ ...form, schedule: newSchedule })
   }
   const setTimeToNull = (nameDay) => {
@@ -172,26 +176,21 @@ const Schedule = ({ form, setForm }) => {
   }
 
   useEffect(() => {
-    setSchedule(form.schedule || base)
-    console.log('form', form)
+    if (form.schedule) {
+      setSchedule(form.schedule)
+    }
   }, [form.schedule])
 
-  const formatHoursTime = (time) => {
-    if (time) {
-      return `${time}:00`
-    } else {
-      return `--:--`
-    }
-  }
+  console.log('schedule', schedule)
 
   return (
     <>
       <div className={s.schedule}>
-        {form.schedule.map(({ day, time }) => (
-          <div>
+        {schedule?.map(({ day, time }) => (
+          <div className={s.schedule_day}>
             <div className={s.day_title}>
-              <h4>{day}</h4>
-              <Button onClick={() => setTimeToNull(day)}>
+              <h4>{dayLabels[day]}</h4>
+              <Button  icon onClick={() => setTimeToNull(day)}>
                 <TrashBinIcon size="1rem" />
               </Button>
             </div>
@@ -200,24 +199,6 @@ const Schedule = ({ form, setForm }) => {
               value={time}
               onChange={handleChangeSchedule}
             />
-            {/*   <input
-              style={{ background: '#000', color: '#fff' }}
-              value={formatHoursTime(time)}
-              type="text"
-              step="1"
-              min="1"
-              max="24"
-              name={day}
-              onChange={handleChangeSchedule}
-            /> */}
-
-            {/*  <Text
-              step="3600"
-              onChange={handleChangeSchedule}
-              name={day}
-              value={time}
-              type="time"
-            /> */}
           </div>
         ))}
       </div>
@@ -233,9 +214,13 @@ const HoursInput = ({ name, value, onChange }) => {
       label: `${i <= 9 ? `0${i}:00` : `${i}:00`}`
     })
   }
-
   return (
-    <select name={name} value={value || null} onChange={onChange}>
+    <select
+      className={s.select_schedule}
+      name={name}
+      value={value || null}
+      onChange={onChange}
+    >
       <option value={null}>--:--</option>
       {availableHours.map((hour) => (
         <option key={hour.value} value={hour.value}>

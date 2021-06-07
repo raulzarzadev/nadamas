@@ -6,6 +6,7 @@ import { RiHeartPulseLine } from 'react-icons/ri'
 import { RiTimeFill } from 'react-icons/ri'
 import { RiWhatsappFill } from 'react-icons/ri'
 import { RiArrowLeftSLine } from 'react-icons/ri'
+import { RiArrowRightSLine } from 'react-icons/ri'
 import { RiCloseFill } from 'react-icons/ri'
 import { RiCustomerService2Fill } from 'react-icons/ri'
 import { RiDeleteBin6Fill } from 'react-icons/ri'
@@ -19,6 +20,9 @@ export const ScheduleIcon = (props) => <RiTimeFill size={size} {...props} />
 export const ContactIcon = (props) => <RiWhatsappFill size={size} {...props} />
 
 export const BackIcon = (props) => <RiArrowLeftSLine size={size} {...props} />
+export const ForwardIcon = (props) => (
+  <RiArrowRightSLine size={size} {...props} />
+)
 export const CloseIcon = (props) => <RiCloseFill size={size} {...props} />
 export const CallIcon = (props) => (
   <RiCustomerService2Fill size={size} {...props} />

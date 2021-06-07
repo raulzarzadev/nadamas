@@ -1,5 +1,37 @@
-
-.groups{
-    border: 1px solid #000;
+.groups {
+  width: 100%;
+  max-width: 500px;
 }
 
+.week_nav {
+  display: flex;
+  align-items: center;
+}
+
+.athlete {
+  background-color: var(--bg-dark);
+  padding: 4px 8px;
+  border-radius: 8px;
+  margin: 4px;
+  width: 100%;
+}
+.athlete_row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.5rem;
+}
+.athlete_actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+.athlete_action {
+  background-color: var(--bg-dark);
+  padding: 0 3px;
+  border-radius: 16px;
+  margin: 2px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

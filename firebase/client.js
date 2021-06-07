@@ -7,7 +7,6 @@ import {
 } from './firebase-helpers'
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 
-
 if (!firebase?.apps?.length) {
   firebase.initializeApp(JSON.parse(firebaseConfig))
 }
@@ -73,6 +72,7 @@ export const getAthlete = async (athleteId) => {
     .get()
     .then((doc) => normalizeDoc(doc))
 }
+
 export const getAthletes = async (userId) => {
   return await db
     .collection('athletes')
@@ -94,26 +94,17 @@ export const updateAtlete = async (athlete = {}) => {
   } else {
     return await _update_athlete(athlete)
   }
-  /*
-   if (!athleteExist) {
-    // if exist create it
-    return await _update_athlete(athlete)
-  } else {
-    // if dosent exist crete it
-    return await _create_athlete(athlete)
-  } */
 }
 
 const _update_athlete = async (athlete) => {
   const eventRef = db.collection('athletes').doc(athlete.id)
   const datesInFirebaseFormat = datesToFirebaseFromat(athlete)
-  console.log('eventRef', eventRef)
   try {
     await eventRef.update({
       ...athlete,
       ...datesInFirebaseFormat
     })
-    return { ok: true, type: 'athlete_UPDATED' }
+    return { ok: true, type: 'ATHLETE_UPDATED' }
   } catch (err) {
     return console.log(err)
   }
@@ -124,6 +115,9 @@ const _create_athlete = async (athlete) => {
     .add({
       ...athlete,
       ...datesToFirebaseFromat(athlete)
+    })
+    .then((res) => {
+      return { ok: true, type: 'ATHLETE_CREATED' }
     })
     .catch((err) => console.log('err', err))
 }

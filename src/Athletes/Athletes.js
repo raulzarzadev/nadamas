@@ -2,22 +2,15 @@ import { useEffect, useState } from 'react'
 import Button from '../Button'
 import s from './styles.module.css'
 import { getAthletes } from 'firebase/client'
-import { useRouter } from 'next/router'
-import { ContactIcon, EditIcon, EmergencyIcon, CallIcon } from '../utils/Icons'
-import Modal from '../Modal'
+import { ContactIcon, EditIcon, EmergencyIcon } from '../utils/Icons'
+import EmergencyCallModal from '../Modals/EmergencyCallModal'
 
 export default function Athletes() {
-  const router = useRouter()
   const [athletes, setAthletes] = useState([])
 
   useEffect(() => {
     getAthletes().then(setAthletes)
   }, [])
-
-  console.log('athletes', athletes)
-  const handleClickAthlete = (id) => {
-    router.push(`/atletas/${id}`)
-  }
 
   const [openEmergencyModal, setOpenEmergencyModal] = useState(false)
   const handleOpenEmergencyCall = () => {
@@ -35,7 +28,7 @@ export default function Athletes() {
           ({ id, name, lastName, mobile, emerTitle, emerName, emerMobile }) => (
             <div className={s.athlete_row}>
               <div className={s.athlete} key={id}>
-                {`${name} ${lastName[0]}.`}
+                {`${name} ${lastName ? `${lastName[0]}.` : ''}`}
               </div>
               <div className={s.athlete_action}>
                 <Button icon onClick={handleOpenEmergencyCall}>
@@ -62,26 +55,5 @@ export default function Athletes() {
         )}
       </div>
     </div>
-  )
-}
-
-const EmergencyCallModal = ({ contact, handleOpen, open }) => {
-  const { emerTitle, emerName, emerMobile, name } = contact
-  return (
-    <Modal handleOpen={handleOpen} open={open} title="Llamada de emergencia">
-      <div>
-        {`¿Segura quieres llamar a `}
-        <strong>{emerName}</strong>
-        {`, `}
-        <>{emerTitle}</>
-        {` de `}
-        <strong>{name}</strong>
-        {`? `}
-        <Button my="md" danger nextLink href={`tel:+52${emerMobile}`}>
-          <CallIcon />
-          {` Llamar`}
-        </Button>
-      </div>
-    </Modal>
   )
 }

@@ -2,8 +2,6 @@ import Button from '@/src/Button'
 import { useAuth } from '@/src/context/AuthContext'
 import MainLayout from '@/src/layouts/MainLayout'
 import Head from 'next/head'
-import { useEffect } from 'react'
-import styles from '../styles/Home.module.css'
 
 export default function Home() {
   const { googleLogin, user, signOut } = useAuth()
