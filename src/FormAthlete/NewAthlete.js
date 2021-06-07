@@ -6,6 +6,7 @@ import { getAthlete, updateAtlete } from '@/firebase/client'
 import { useRouter } from 'next/router'
 import { dayLabels, format, formatInputDate } from '../utils/Dates'
 import { TrashBinIcon } from '../utils/Icons'
+import Avatar from '../Avatar'
 
 const scheduleBase = [
   {
@@ -62,7 +63,9 @@ export default function NewAthlete() {
   }
 
   console.log('form', form)
-
+  const handleUploadAvatar = () => {
+    console.log('uplad')
+  }
   return (
     <div className={s.newathlete}>
       <form
@@ -72,7 +75,18 @@ export default function NewAthlete() {
         }}
       >
         <div className={s.form_box}>
-          <h3>Atleta</h3>
+          <div className={s.title}>
+            <h3>Atleta</h3>
+            <Avatar
+              upload
+              onClick={handleUploadAvatar}
+              href="/"
+            />
+          </div>
+          <label class="custom-file-upload">
+            <input type="file" style={{ display: 'none' }} />
+            Custom Upload
+          </label>
           <div className={s.inputs}>
             <Text
               value={form?.name}
