@@ -13,6 +13,10 @@ import { RiDeleteBin6Fill } from 'react-icons/ri'
 import { RiUpload2Fill } from 'react-icons/ri'
 import { RiSave2Fill } from 'react-icons/ri'
 import { RiUserAddFill } from 'react-icons/ri'
+import { RiUser3Fill } from 'react-icons/ri'
+import { RiGroupFill } from 'react-icons/ri'
+import { RiHome2Fill } from 'react-icons/ri'
+import { RiDoorOpenFill } from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -36,3 +40,7 @@ export const TrashBinIcon = (props) => (
 export const UpladIcon = (props) => <RiUpload2Fill size={size} {...props} />
 export const SaveIcon = (props) => <RiSave2Fill size={size} {...props} />
 export const AddPersonIcon = (props) => <RiUserAddFill size={size} {...props} />
+export const PersonIcon = (props) => <RiUser3Fill size={size} {...props} />
+export const GroupsIcon = (props) => <RiGroupFill size={size} {...props} />
+export const HomeIcon = (props) => <RiHome2Fill size={size} {...props} />
+export const SignInIcon = (props) => <RiDoorOpenFill size={size} {...props} />

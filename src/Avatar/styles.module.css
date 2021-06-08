@@ -1,7 +1,6 @@
 .avatar {
   border-radius: 50%;
-  width: 68px;
-  height: 68px;
+
   background-color: #404e5e;
   display: flex;
   justify-content: center;
@@ -22,15 +21,15 @@
 .avatar > div {
   border-radius: 50%;
 }
-.avatar[size='sm'] {
+.avatar[talla='sm'] {
   width: 39px;
   height: 39px;
 }
-.avatar[size='md'] {
+.avatar[talla='md'] {
   width: 68px;
   height: 68px;
 }
-.avatar[size='sm'] {
-  width: 74px;
-  height: 74px;
+.avatar[talla='lg'] {
+  width: 2rem;
+  height: 2rem;
 }
