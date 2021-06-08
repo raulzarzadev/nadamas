@@ -28,7 +28,7 @@ export default function Groups() {
   const filterAthltesBy = (dayOfweek, hour) => {
     console.log('dayOfweek', dayOfweek)
 
-    return athletes.filter(({ schedule, name }) => {
+    return athletes?.filter(({ schedule, name }) => {
       console.log('schedule', name, schedule)
 
       return schedule?.find(
@@ -54,24 +54,24 @@ export default function Groups() {
   return (
     <div className={s.groups}>
       <div className={s.week_nav}>
-        <Button p='sm' icon onClick={handleSubDay}>
+        <Button p="sm" icon onClick={handleSubDay}>
           <BackIcon size="3rem" />
         </Button>
         <h3>{format(day, 'EEEE dd MMM')}</h3>
-        <Button p='sm' icon onClick={handleAddDay}>
+        <Button p="sm" icon onClick={handleAddDay}>
           <ForwardIcon size="3rem" />
         </Button>
       </div>
       <h3>{`17:00 hrs`}</h3>
-      {firstSchedule.map((athlete) => (
+      {firstSchedule?.map((athlete) => (
         <AthleteRow key={athlete.id} athlete={athlete} />
       ))}
       <h3>{`18:00 hrs`}</h3>
-      {secondSchedule.map((athlete) => (
+      {secondSchedule?.map((athlete) => (
         <AthleteRow key={athlete.id} athlete={athlete} />
       ))}
       <h3>{`19:00 hrs`}</h3>
-      {thirthSchedule.map((athlete) => (
+      {thirthSchedule?.map((athlete) => (
         <AthleteRow key={athlete.id} athlete={athlete} />
       ))}
     </div>

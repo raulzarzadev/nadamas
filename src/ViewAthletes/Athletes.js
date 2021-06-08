@@ -23,7 +23,7 @@ export default function Athletes() {
         Nuevo
       </Button>
       <div>
-        {athletes.map((athlete) => (
+        {athletes?.map((athlete) => (
           <AthleteRow key={athlete.id} athlete={athlete} />
         ))}
       </div>

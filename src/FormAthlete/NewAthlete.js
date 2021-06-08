@@ -7,6 +7,7 @@ import { useRouter } from 'next/router'
 import { dayLabels, format, formatInputDate } from '../utils/Dates'
 import { TrashBinIcon, SaveIcon, AddPersonIcon } from '../utils/Icons'
 import Avatar from '../Avatar'
+import DeleteModal from '../Modals/DeleteModal'
 
 const scheduleBase = [
   {
@@ -41,11 +42,12 @@ const scheduleBase = [
 
 export default function NewAthlete() {
   const router = useRouter()
-  const [updatingAthlete, setUpdatingAthlete] = useState(false)
+  const [updatingAthlete, setUpdatingAthlete] = useState(null)
   useEffect(() => {
-    if (router.query.id) {
-      getAthlete(router.query.id).then((res) => {
-        setUpdatingAthlete(true)
+    const { id } = router?.query
+    if (id) {
+      getAthlete(id).then((res) => {
+        setUpdatingAthlete(id)
         setForm(res)
       })
     }
@@ -59,7 +61,7 @@ export default function NewAthlete() {
   }
 
   const handleSubmit = async () => {
-    const res = await updateAtlete(form)
+    const res = await updateAtlete({ ...form, active: true })
     if (res.type === 'ATHLETE_CREATED') {
       router.push(`/atletas/${res.id}`)
     }
@@ -69,6 +71,17 @@ export default function NewAthlete() {
   console.log('form', form)
   const handleUploadAvatar = () => {
     console.log('uplad')
+  }
+  const handleDelete = () => {
+    console.log('delete', updatingAthlete)
+    updateAtlete({ id: updatingAthlete, active: false })
+    setTimeout(() => {
+      router.back()
+    }, 400)
+  }
+  const [openDelete, setOpenDelete] = useState(false)
+  const handleOpenDelete = () => {
+    setOpenDelete(!openDelete)
   }
   return (
     <div className={s.newathlete}>
@@ -161,6 +174,15 @@ export default function NewAthlete() {
           </div>
         </div>
       </form>
+      <Button p="2" my="md" danger onClick={handleOpenDelete}>
+        Eliminar
+      </Button>
+      <DeleteModal
+        open={openDelete}
+        handleDelete={handleDelete}
+        name={form?.name}
+        handleOpen={handleOpenDelete}
+      />
     </div>
   )
 }

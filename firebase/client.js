@@ -77,6 +77,7 @@ export const getAthletes = async (userId) => {
   return await db
     .collection('athletes')
     //.where('userId', '==', userId)
+    .where('active', '==', true)
     .get()
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log(err))
