@@ -5,7 +5,7 @@ import s from './styles.module.css'
 import { getAthlete, updateAtlete } from '@/firebase/client'
 import { useRouter } from 'next/router'
 import { dayLabels, format, formatInputDate } from '../utils/Dates'
-import { TrashBinIcon } from '../utils/Icons'
+import { TrashBinIcon, SaveIcon, AddPersonIcon } from '../utils/Icons'
 import Avatar from '../Avatar'
 
 const scheduleBase = [
@@ -41,9 +41,13 @@ const scheduleBase = [
 
 export default function NewAthlete() {
   const router = useRouter()
+  const [updatingAthlete, setUpdatingAthlete] = useState(false)
   useEffect(() => {
     if (router.query.id) {
-      getAthlete(router.query.id).then(setForm)
+      getAthlete(router.query.id).then((res) => {
+        setUpdatingAthlete(true)
+        setForm(res)
+      })
     }
   }, [])
   const [form, setForm] = useState({
@@ -74,6 +78,11 @@ export default function NewAthlete() {
           handleSubmit()
         }}
       >
+        <div className={s.save_button}>
+          <Button p="lg" secondary icon type="submit">
+            {updatingAthlete ? <SaveIcon /> : <AddPersonIcon />}
+          </Button>
+        </div>
         <div className={s.form_box}>
           <div className={s.title}>
             <h3>Atleta</h3>
@@ -214,7 +223,7 @@ const HoursInput = ({ name, value, onChange }) => {
       <div className={s.day_title}>
         <div>{dayLabels[name]}</div>
         <div>
-          <Button icon onClick={() => setTimeToNull(day)}>
+          <Button danger icon onClick={() => setTimeToNull(day)}>
             <TrashBinIcon size="1rem" />
           </Button>
         </div>

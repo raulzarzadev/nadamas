@@ -11,6 +11,8 @@ import { RiCloseFill } from 'react-icons/ri'
 import { RiCustomerService2Fill } from 'react-icons/ri'
 import { RiDeleteBin6Fill } from 'react-icons/ri'
 import { RiUpload2Fill } from 'react-icons/ri'
+import { RiSave2Fill } from 'react-icons/ri'
+import { RiUserAddFill } from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -32,3 +34,5 @@ export const TrashBinIcon = (props) => (
   <RiDeleteBin6Fill size={size} {...props} />
 )
 export const UpladIcon = (props) => <RiUpload2Fill size={size} {...props} />
+export const SaveIcon = (props) => <RiSave2Fill size={size} {...props} />
+export const AddPersonIcon = (props) => <RiUserAddFill size={size} {...props} />
