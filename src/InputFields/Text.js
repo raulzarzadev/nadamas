@@ -13,11 +13,11 @@ export default function Text({
 }) {
   return (
     <span className={s.input_label}>
-      {label && `${label} :`}
+      {label && value && `${label} :`}
       <input
         type={type}
         className={s.text_input}
-        placeholder={placeholder}
+        placeholder={label}
         name={name}
         value={value}
         onChange={onChange}

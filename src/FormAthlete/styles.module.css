@@ -7,7 +7,7 @@
 }
 .inputs > * {
   width: 100%;
-  padding: 16px;
+  padding: 4px;
 }
 
 .schedule {
@@ -26,19 +26,28 @@
 .day_title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
   text-align: end;
 }
+.day_title div:first-child {
+  margin-right: 8px;
+}
 .day_title > * {
-  width: 50%;
+}
+.select {
+  display: flex;
+  justify-content: center;
 }
 .select_schedule {
   border: none;
-  background-color: transparent;
+  background-color: var(--bg-dark);
+  padding: 4px;
+  margin: 8px;
   color: #000;
   font-size: 1.2rem;
-  width: 100%;
+  width: 110px;
+  border-radius: 4px;
 }
 @media (min-width: 600px) {
   .inputs > * {

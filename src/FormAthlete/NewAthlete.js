@@ -77,41 +77,24 @@ export default function NewAthlete() {
         <div className={s.form_box}>
           <div className={s.title}>
             <h3>Atleta</h3>
-            <Avatar
-              upload
-              onClick={handleUploadAvatar}
-              href="/"
-            />
+            <Avatar upload onClick={handleUploadAvatar} href="/" />
           </div>
-          <label class="custom-file-upload">
-            <input type="file" style={{ display: 'none' }} />
-            Custom Upload
-          </label>
+
           <div className={s.inputs}>
             <Text
               value={form?.name}
               onChange={handleChange}
               name="name"
-              label="Nombre"
+              label="Nombre (s)"
             />
-            <Text
-              value={form?.secondName}
-              onChange={handleChange}
-              name="secondName"
-              label="S.Nombre"
-            />
+
             <Text
               value={form?.lastName}
               onChange={handleChange}
               name="lastName"
-              label="A.Paterno"
+              label={'Apelldio(s)'}
             />
-            <Text
-              value={form?.mothersLastName}
-              onChange={handleChange}
-              name="mothersLastName"
-              label="A.Materno"
-            />
+
             <Text
               value={formatInputDate(form?.birth)}
               onChange={handleChange}
@@ -120,14 +103,10 @@ export default function NewAthlete() {
               type="date"
             />
           </div>
-          <Button type="submit">Guardar</Button>
         </div>
         <div className={s.form_box}>
           <h3>Horario</h3>
           <Schedule hideWeekend form={form} setForm={setForm} />
-          <Button type="submit" my="md">
-            Guardar
-          </Button>
         </div>
         <div className={s.form_box}>
           <h3>Contacto</h3>
@@ -147,7 +126,6 @@ export default function NewAthlete() {
               label="Correo"
             />
           </div>
-          <Button type="submit">Guardar</Button>
         </div>
         <div className={s.form_box}>
           <h3>Emergencia</h3>
@@ -172,7 +150,6 @@ export default function NewAthlete() {
               label="Numero"
             />
           </div>
-          <Button type="submit">Guardar</Button>
         </div>
       </form>
     </div>
@@ -235,24 +212,28 @@ const HoursInput = ({ name, value, onChange }) => {
   return (
     <>
       <div className={s.day_title}>
-        <h4>{dayLabels[name]}</h4>
-        <Button icon onClick={() => setTimeToNull(day)}>
-          <TrashBinIcon size="1rem" />
-        </Button>
+        <div>{dayLabels[name]}</div>
+        <div>
+          <Button icon onClick={() => setTimeToNull(day)}>
+            <TrashBinIcon size="1rem" />
+          </Button>
+        </div>
       </div>
-      <select
-        className={s.select_schedule}
-        name={name}
-        value={value || null}
-        onChange={onChange}
-      >
-        <option value={null}>--:--</option>
-        {availableHours.map((hour) => (
-          <option key={hour.value} value={hour.value}>
-            {hour.label}
-          </option>
-        ))}
-      </select>
+      <div className={s.select}>
+        <select
+          className={s.select_schedule}
+          name={name}
+          value={value || null}
+          onChange={onChange}
+        >
+          <option value={null}>--:--</option>
+          {availableHours.map((hour) => (
+            <option key={hour.value} value={hour.value}>
+              {hour.label}
+            </option>
+          ))}
+        </select>
+      </div>
     </>
   )
 }
