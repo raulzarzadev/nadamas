@@ -12,6 +12,7 @@ import { addDays, subDays } from 'date-fns'
 import { format } from '../utils/Dates'
 import Button from '../Button'
 import EmergencyCallModal from '../Modals/EmergencyCallModal'
+import AthleteRow from '../AthleteRow'
 
 export default function Groups() {
   const [athletes, setAthletes] = useState([])
@@ -53,11 +54,14 @@ export default function Groups() {
   return (
     <div className={s.groups}>
       <div className={s.week_nav}>
-        <BackIcon onClick={handleSubDay} />
+        <Button p='sm' icon onClick={handleSubDay}>
+          <BackIcon size="3rem" />
+        </Button>
         <h3>{format(day, 'EEEE dd MMM')}</h3>
-        <ForwardIcon onClick={handleAddDay} />
+        <Button p='sm' icon onClick={handleAddDay}>
+          <ForwardIcon size="3rem" />
+        </Button>
       </div>
-      
       <h3>{`17:00 hrs`}</h3>
       {firstSchedule.map((athlete) => (
         <AthleteRow key={athlete.id} athlete={athlete} />
@@ -70,49 +74,6 @@ export default function Groups() {
       {thirthSchedule.map((athlete) => (
         <AthleteRow key={athlete.id} athlete={athlete} />
       ))}
-    </div>
-  )
-}
-
-const AthleteRow = ({ athlete }) => {
-  const { emerTitle, emerName, emerMobile, name, lastName, id, mobile } =
-    athlete
-  const [openEmergencyModal, setOpenEmergencyModal] = useState(false)
-  const handleOpenEmergencyCall = () => {
-    setOpenEmergencyModal(!openEmergencyModal)
-  }
-  return (
-    <div className={s.athlete_row}>
-      <div className={s.athlete} key={id}>
-        {`${name} ${lastName || ''}`}
-      </div>
-      <div className={s.athlete_actions}>
-        <div className={s.athlete_action}>
-          <Button icon onClick={handleOpenEmergencyCall}>
-            <EmergencyIcon style={{ color: 'red' }} />
-          </Button>
-        </div>
-        <div className={s.athlete_action}>
-          <Button
-            disabled={!!mobile}
-            icon
-            nextLink
-            href={`https://wa.me/521${mobile}`}
-          >
-            <ContactIcon />
-          </Button>
-        </div>
-        <div className={s.athlete_action}>
-          <Button icon nextLink href={`/atletas/${id}`}>
-            <EditIcon />
-          </Button>
-        </div>
-      </div>
-      <EmergencyCallModal
-        handleOpen={handleOpenEmergencyCall}
-        open={openEmergencyModal}
-        contact={{ emerTitle, emerName, emerMobile, name }}
-      />
     </div>
   )
 }

@@ -12,7 +12,7 @@ import { RiCustomerService2Fill } from 'react-icons/ri'
 import { RiDeleteBin6Fill } from 'react-icons/ri'
 import { RiUpload2Fill } from 'react-icons/ri'
 
-const size = '1.8rem'
+const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
 export const EmergencyIcon = (props) => (
   <RiHeartPulseLine size={size} {...props} />

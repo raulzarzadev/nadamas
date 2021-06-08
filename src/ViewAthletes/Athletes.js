@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import Button from '../Button'
 import s from './styles.module.css'
 import { getAthletes } from 'firebase/client'
-import { ContactIcon, EditIcon, EmergencyIcon } from '../utils/Icons'
-import EmergencyCallModal from '../Modals/EmergencyCallModal'
+import AthleteRow from '../AthleteRow'
 
 export default function Athletes() {
   const [athletes, setAthletes] = useState([])
@@ -24,35 +23,9 @@ export default function Athletes() {
         Nuevo
       </Button>
       <div>
-        {athletes.map(
-          ({ id, name, lastName, mobile, emerTitle, emerName, emerMobile }) => (
-            <div className={s.athlete_row}>
-              <div className={s.athlete} key={id}>
-                {`${name} ${lastName ? `${lastName[0]}.` : ''}`}
-              </div>
-              <div className={s.athlete_action}>
-                <Button icon onClick={handleOpenEmergencyCall}>
-                  <EmergencyIcon style={{ color: 'red' }} />
-                </Button>
-              </div>
-              <div className={s.athlete_action}>
-                <Button  icon nextLink href={`https://wa.me/521${mobile}`}>
-                  <ContactIcon />
-                </Button>
-              </div>
-              <div className={s.athlete_action}>
-                <Button icon nextLink href={`/atletas/${id}`}>
-                  <EditIcon />
-                </Button>
-              </div>
-              <EmergencyCallModal
-                handleOpen={handleOpenEmergencyCall}
-                open={openEmergencyModal}
-                contact={{ emerTitle, emerName, emerMobile, name }}
-              />
-            </div>
-          )
-        )}
+        {athletes.map((athlete) => (
+          <AthleteRow key={athlete.id} athlete={athlete} />
+        ))}
       </div>
     </div>
   )
