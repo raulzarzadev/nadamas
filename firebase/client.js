@@ -117,7 +117,7 @@ const _create_athlete = async (athlete) => {
       ...datesToFirebaseFromat(athlete)
     })
     .then((res) => {
-      return { ok: true, type: 'ATHLETE_CREATED' }
+      return { ok: true, type: 'ATHLETE_CREATED', id: res.id }
     })
     .catch((err) => console.log('err', err))
 }
