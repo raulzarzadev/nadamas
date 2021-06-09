@@ -5,7 +5,6 @@ export default function Home() {
     <>
       <Head>
         <title>nadmas</title>
-        <link rel="icon" href="/favicon.ico" />
       </Head>
       <ViewHome />
     </>

@@ -197,13 +197,13 @@ const Schedule = ({ form, setForm, hideWeekend }) => {
     })
     setForm({ ...form, schedule: newSchedule })
   }
-  const setTimeToNull = (nameDay) => {
+/*   const setTimeToNull = (nameDay) => {
     const newSchedule = schedule.map((day) => {
       if (day.day === nameDay) return { day: nameDay, time: null }
       return day
     })
     setForm({ ...form, schedule: newSchedule })
-  }
+  } */
 
   useEffect(() => {
     if (form.schedule) {

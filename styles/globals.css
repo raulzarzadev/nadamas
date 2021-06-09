@@ -27,6 +27,7 @@ a {
   --primary:rgb(56, 147, 189);
   --secondary:rgb(87, 66, 126);
   --danger: rgb(224, 101, 101);
+  --success: rgb(101, 224, 132);
 
   --text-main: #fff;
   --text-light: rgb(194, 76, 76);
