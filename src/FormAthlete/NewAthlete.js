@@ -10,6 +10,7 @@ import DeleteModal from '../Modals/DeleteModal'
 import Text from '../InputFields/Text'
 import Textarea from '../InputFields/Textarea'
 import { fromUnixTime } from 'date-fns'
+import { unfierebazeDate } from '@/firebase/firebase-helpers'
 
 const scheduleBase = [
   {
@@ -207,12 +208,14 @@ export default function NewAthlete() {
           </div>
           {form?.records?.map(({ date, test, time, place }) => (
             <div className={s.record_row}>
-              <div>{format(date, 'dd/MM/yy')}</div>
+              <div>{format(unfierebazeDate(date), 'dd/MM/yy')}</div>
               <div>{test}</div>
               <div>{time}</div>
               <div>{place}</div>
               <div>
-                <Button icon danger>Del</Button>
+                <Button icon danger>
+                  Del
+                </Button>
               </div>
             </div>
           ))}

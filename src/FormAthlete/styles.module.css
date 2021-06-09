@@ -54,7 +54,6 @@
   display: flex;
   gap: 8px;
   align-items: flex-end;
-  flex-wrap: wrap;
 }
 .record > * {
   width: 40%;
@@ -104,7 +103,8 @@
   .emergency > * {
     width: 30%;
   }
-  .record > * {
+  /* .record > * {
     width: 20%;
-  }
+    background-color: red;
+  } */
 }
