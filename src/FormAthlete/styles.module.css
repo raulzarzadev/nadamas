@@ -50,15 +50,7 @@
   justify-content: space-evenly;
   align-items: center;
 }
-.record {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
-.record > * {
-  width: 40%;
-  margin: 0 auto;
-}
+
 .record_row {
   display: flex;
   width: 100%;
@@ -92,6 +84,17 @@
   border-radius: 4px;
   -webkit-appearance: caret;
 }
+
+.record {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap:8px;
+  justify-content: space-around;
+}
+.record > * {
+  width: 40%;
+}
 @media (min-width: 600px) {
   .inputs > * {
     width: 50%;
@@ -103,8 +106,7 @@
   .emergency > * {
     width: 30%;
   }
-  /* .record > * {
-    width: 20%;
-    background-color: red;
-  } */
+  .record > * {
+  width: 20%;
+}
 }
