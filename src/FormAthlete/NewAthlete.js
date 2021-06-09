@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import Button from '../Button'
-import Text from '../InputFields/Text'
 import s from './styles.module.css'
 import { getAthlete, updateAtlete } from '@/firebase/client'
 import { useRouter } from 'next/router'
@@ -8,6 +7,9 @@ import { dayLabels, format, formatInputDate } from '../utils/Dates'
 import { TrashBinIcon, SaveIcon, AddPersonIcon } from '../utils/Icons'
 import Avatar from '../Avatar'
 import DeleteModal from '../Modals/DeleteModal'
+import Text from '../InputFields/Text'
+import Textarea from '../InputFields/Textarea'
+import { fromUnixTime } from 'date-fns'
 
 const scheduleBase = [
   {
@@ -54,7 +56,8 @@ export default function NewAthlete() {
   }, [])
   const [form, setForm] = useState({
     birth: new Date(),
-    schedule: scheduleBase
+    schedule: scheduleBase,
+    records: []
   })
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -83,6 +86,20 @@ export default function NewAthlete() {
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
+  const [record, setRecord] = useState({ place: 'CREA', date: new Date() })
+  const handleSetRecord = (e) => {
+    const { name, value } = e.target
+    setRecord({ ...record, [name]: value })
+  }
+
+  const handleAddRecord = () => {
+    if (Array.isArray(form.records)) {
+      setForm({ ...form, records: [...form?.records, record] })
+    } else {
+      setForm({ ...form, records: [record] })
+    }
+    setRecord({ date: new Date(), place: 'CREA' })
+  }
   return (
     <div className={s.newathlete}>
       <form
@@ -98,7 +115,7 @@ export default function NewAthlete() {
         </div>
         <div className={s.form_box}>
           <div className={s.title}>
-            <h3>Atleta</h3>
+            <h2>Atleta</h2>
             <Avatar upload onClick={handleUploadAvatar} href="/" />
           </div>
 
@@ -127,12 +144,16 @@ export default function NewAthlete() {
           </div>
         </div>
         <div className={s.form_box}>
-          <h3>Horario</h3>
+          <div className={s.title}>
+            <h2>Horario</h2>
+          </div>
           <Schedule hideWeekend form={form} setForm={setForm} />
         </div>
         <div className={s.form_box}>
-          <h3>Contacto</h3>
-          <div className={s.inputs}>
+          <div className={s.title}>
+            <h2>Contacto</h2>
+          </div>
+          <div className={`${s.inputs} ${s.contact}`}>
             <Text
               onChange={handleChange}
               value={form.mobile}
@@ -150,8 +171,83 @@ export default function NewAthlete() {
           </div>
         </div>
         <div className={s.form_box}>
-          <h3>Emergencia</h3>
-          <div className={s.inputs}>
+          <div className={s.title}>
+            <h2>Marcas </h2>{' '}
+          </div>
+          <div className={s.record}>
+            <Text
+              onChange={handleSetRecord}
+              name="date"
+              type="date"
+              value={formatInputDate(record?.date)}
+              label="Fecha"
+            />
+            <Text
+              onChange={handleSetRecord}
+              name="test"
+              value={record?.test}
+              label="Prueba"
+            />
+            <Text
+              onChange={handleSetRecord}
+              name="time"
+              type="number"
+              value={record?.time}
+              label="Tiempo"
+            />
+            <Text
+              onChange={handleSetRecord}
+              name="place"
+              value={record?.place}
+              label="Lugar"
+            />
+            <Button primary p="lg" onClick={handleAddRecord}>
+              +
+            </Button>
+          </div>
+          {form?.records?.map(({ date, test, time, place }) => (
+            <div className={s.record_row}>
+              <div>{format(date, 'dd/MM/yy')}</div>
+              <div>{test}</div>
+              <div>{time}</div>
+              <div>{place}</div>
+              <div>
+                <Button icon danger>Del</Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className={s.form_box}>
+          <div className={s.title}>
+            <h2>Información Medica</h2>
+          </div>
+          <div className={s.medic_info}>
+            <Text
+              onChange={handleChange}
+              name="vacines"
+              value={form?.vacines}
+              label="Vacunas"
+              placeholder="Vacunas (covid)"
+            />
+            <Textarea
+              onChange={handleChange}
+              label="Dolores"
+              value={form?.hurts}
+              name="hurts"
+            />
+            <Textarea
+              onChange={handleChange}
+              label="Condiciones"
+              value={form?.conditions}
+              name="conditions"
+            />
+          </div>
+        </div>
+        <div className={s.form_box}>
+          <div className={s.title}>
+            <h2>Emergencia</h2>
+          </div>
+          <div className={`${s.inputs} ${s.emergency}`}>
             <Text
               onChange={handleChange}
               name="emerTitle"
@@ -197,7 +293,7 @@ const Schedule = ({ form, setForm, hideWeekend }) => {
     })
     setForm({ ...form, schedule: newSchedule })
   }
-/*   const setTimeToNull = (nameDay) => {
+  /*   const setTimeToNull = (nameDay) => {
     const newSchedule = schedule.map((day) => {
       if (day.day === nameDay) return { day: nameDay, time: null }
       return day

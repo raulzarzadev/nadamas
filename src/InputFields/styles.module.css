@@ -7,6 +7,9 @@
   color: var(--black);
   width: 100%;
 }
+.text_area {
+  resize: none;
+}
 .select_input {
   padding: 8px;
   border: none;
@@ -15,7 +18,7 @@
   background-color: var(--bg-dark);
   color: var(--black);
   width: inherit;
-  -webkit-appearance:none;
+  -webkit-appearance: none;
 }
 
 .text_input::after {

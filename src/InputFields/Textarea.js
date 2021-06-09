@@ -1,6 +1,6 @@
 import s from './styles.module.css'
 
-export default function Text({
+export default function Textarea({
   label,
   name,
   placeholder,
@@ -14,17 +14,17 @@ export default function Text({
   return (
     <span className={s.input_label}>
       {label && value && `${label} :`}
-      <input
-        type={type}
-        className={s.text_input}
-        placeholder={placeholder || label}
+      <textarea
+      
+        className={`${s.text_input} ${s.text_area}`}
+        placeholder={label}
         name={name}
         value={value}
         onChange={onChange}
         {...rest}
       >
         {children}
-      </input>
+      </textarea>
       <em>{error}</em>
     </span>
   )

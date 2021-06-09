@@ -34,7 +34,6 @@ export default function ViewProfile() {
         onChangeSchedule={onChangeSchedule}
         hideWeekend={hideWeekend}
       />
-
       <div>
         {/*  estadisiticas de alumnos */}
         {/* Cuantos alumnos hay */}
@@ -49,21 +48,32 @@ const ScheduleSelect = ({ schedule, onChangeSchedule, hideWeekend }) => {
   for (let i = 5; i < 22; i++) {
     hours.push({ value: `${i}`, label: `${i < 10 ? `0${i}` : i}:00` })
   }
-  const [form, setForm] = useState([])
+  const [form, setForm] = useState({
+    day: new Date().getDay(),
+    times: [new Date().getHours()]
+  })
   useEffect(() => {}, [schedule])
 
   const onChange = (e) => {
+    const { name, value, checked } = e.target
+    if (name === 'day' && !form.times.includes(parseInt(value))) {
+      setForm({ ...form, day: value, times: [...form?.times, parseInt(value)] })
+    }
+    e.target.name
     console.log('e', e.target.value, e.target.name, e.target.checked)
   }
+  console.log('form', form)
 
   /* 
   {day:1,
   times:[17,18,19,]}
   */
 
+  const scheduleDisplay = form.times
+
   return (
     <div className={s.schedule}>
-      <select className={s.select} onChange={onChange} value={null}>
+      <select name="day" className={s.select} onChange={onChange} value={null}>
         <option value={null}>--:--</option>
         {hours.map(({ value, label }) => (
           <option key={value} value={value}>
