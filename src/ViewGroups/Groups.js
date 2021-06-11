@@ -7,7 +7,11 @@ import {
   ForwardIcon
 } from '../utils/Icons'
 import { useEffect, useState } from 'react'
-import { getAthletes } from '@/firebase/client'
+import {
+  getAthletes,
+  getAttendanceDate,
+  updateAttendanceList
+} from '@/firebase/client'
 import { addDays, subDays } from 'date-fns'
 import { format } from '../utils/Dates'
 import Button from '../Button'
@@ -26,11 +30,7 @@ export default function Groups() {
 
   */
   const filterAthltesBy = (dayOfweek, hour) => {
-    console.log('dayOfweek', dayOfweek)
-
     return athletes?.filter(({ schedule, name }) => {
-      console.log('schedule', name, schedule)
-
       return schedule?.find(
         ({ day, time }) => day === dayOfweek && time === hour
       )
@@ -49,7 +49,41 @@ export default function Groups() {
   const secondSchedule = filterAthltesBy(day.getDay(), '18')
   const thirthSchedule = filterAthltesBy(day.getDay(), '19')
 
-  console.log('day Selected', day.getDay())
+  const handleSetAttendance = (id, e) => {
+    const { checked } = e.target
+    if (checked) {
+      setAttendanceList({
+        date: day,
+        attendance: [...attendanceList?.attendance, id]
+      })
+    } else {
+      const removeAtt = attendanceList?.attendance.filter(
+        (athlete) => athlete !== id
+      )
+      setAttendanceList({
+        date: day,
+        attendance: removeAtt
+      })
+    }
+  }
+
+  const [attendanceList, setAttendanceList] = useState({
+    date: day,
+    attendance: []
+  })
+
+  useEffect(() => {
+    console.log('attendanceList', attendanceList)
+    updateAttendanceList(attendanceList).then((res) => console.log('res', res))
+  }, [attendanceList.attendance])
+
+  useEffect(() => {
+    getAttendanceDate(day).then((res) => {
+      res
+        ? setAttendanceList(res)
+        : setAttendanceList({ date: day, attendance: [] })
+    })
+  }, [day])
 
   return (
     <div className={s.groups}>
@@ -64,15 +98,28 @@ export default function Groups() {
       </div>
       <h3>{`17:00 hrs`}</h3>
       {firstSchedule?.map((athlete) => (
-        <AthleteRow key={athlete.id} athlete={athlete} />
+        <AthleteRow
+          key={athlete.id}
+          athlete={athlete}
+          handleSetAttendance={handleSetAttendance}
+          assist={attendanceList.attendance.includes(athlete.id)}
+        />
       ))}
       <h3>{`18:00 hrs`}</h3>
       {secondSchedule?.map((athlete) => (
-        <AthleteRow key={athlete.id} athlete={athlete} />
+        <AthleteRow
+          key={athlete.id}
+          athlete={athlete}
+          handleSetAttendance={handleSetAttendance}
+        />
       ))}
       <h3>{`19:00 hrs`}</h3>
       {thirthSchedule?.map((athlete) => (
-        <AthleteRow key={athlete.id} athlete={athlete} />
+        <AthleteRow
+          key={athlete.id}
+          athlete={athlete}
+          handleSetAttendance={handleSetAttendance}
+        />
       ))}
     </div>
   )

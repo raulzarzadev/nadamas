@@ -4,7 +4,7 @@ import EmergencyCallModal from '../Modals/EmergencyCallModal'
 import { ContactIcon, EditIcon, EmergencyIcon } from '../utils/Icons'
 import s from './styles.module.css'
 
-export default function AthleteRow({ athlete }) {
+export default function AthleteRow({ assist, athlete, handleSetAttendance = false }) {
   const { emerTitle, emerName, emerMobile, name, lastName, id, mobile } =
     athlete
   const [openEmergencyModal, setOpenEmergencyModal] = useState(false)
@@ -37,6 +37,16 @@ export default function AthleteRow({ athlete }) {
             <EditIcon />
           </Button>
         </div>
+        {!!handleSetAttendance && (
+          <div className={s.athlete_action}>
+            <input
+              name="attendance"
+              type="checkbox"
+              checked={assist}
+              onClick={(e) => handleSetAttendance(id, e)}
+            ></input>
+          </div>
+        )}
       </div>
       <EmergencyCallModal
         handleOpen={handleOpenEmergencyCall}
