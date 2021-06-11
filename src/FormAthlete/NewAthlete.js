@@ -173,7 +173,7 @@ export default function NewAthlete() {
         </div>
         <div className={s.form_box}>
           <div className={s.title}>
-            <h2>Marcas </h2>{' '}
+            <h2>Registros </h2>{' '}
           </div>
           <div className={s.record}>
             <Text
@@ -187,7 +187,7 @@ export default function NewAthlete() {
               onChange={handleSetRecord}
               name="test"
               value={record?.test}
-              label="Prueba"
+              label="Tipo"
             />
             <Text
               onChange={handleSetRecord}
@@ -333,7 +333,7 @@ const Schedule = ({ form, setForm, hideWeekend }) => {
 
 const HoursInput = ({ name, value, onChange }) => {
   const availableHours = []
-  for (let i = 6; i < 23; i++) {
+  for (let i = 17; i < 20; i++) {
     availableHours.push({
       value: i,
       label: `${i <= 9 ? `0${i}:00` : `${i}:00`}`
