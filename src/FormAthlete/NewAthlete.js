@@ -185,9 +185,15 @@ export default function NewAthlete() {
             />
             <Text
               onChange={handleSetRecord}
+              name="place"
+              value={record?.place}
+              label="Lugar"
+            />
+            <Text
+              onChange={handleSetRecord}
               name="test"
               value={record?.test}
-              label="Tipo"
+              label="Prueba"
             />
             <Text
               onChange={handleSetRecord}
@@ -195,12 +201,6 @@ export default function NewAthlete() {
               type="number"
               value={record?.time}
               label="Tiempo"
-            />
-            <Text
-              onChange={handleSetRecord}
-              name="place"
-              value={record?.place}
-              label="Lugar"
             />
             <Button primary p="lg" onClick={handleAddRecord}>
               +

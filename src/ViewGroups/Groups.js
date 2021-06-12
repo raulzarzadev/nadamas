@@ -51,32 +51,22 @@ export default function Groups() {
 
   const handleSetAttendance = (id, e) => {
     const { checked } = e.target
-    if (checked) {
-      setAttendanceList({
-        date: day,
-        attendance: [...attendanceList?.attendance, id]
-      })
-    } else {
-      const removeAtt = attendanceList?.attendance.filter(
-        (athlete) => athlete !== id
-      )
-      setAttendanceList({
-        date: day,
-        attendance: removeAtt
-      })
-    }
+    let attendance = checked
+      ? [...attendanceList?.attendance, id]
+      : attendanceList?.attendance.filter((athlete) => athlete !== id)
+    setAttendanceList({ date: new Date(day), attendance })
+    updateAttendanceList({ date: new Date(day), attendance })
   }
 
   const [attendanceList, setAttendanceList] = useState({
     date: day,
     attendance: []
   })
-
+  /* 
   useEffect(() => {
     console.log('attendanceList', attendanceList)
-    updateAttendanceList(attendanceList).then((res) => console.log('res', res))
-  }, [attendanceList.attendance])
-
+  }, [attendanceList?.attendance])
+ */
   useEffect(() => {
     getAttendanceDate(day).then((res) => {
       res
@@ -84,6 +74,8 @@ export default function Groups() {
         : setAttendanceList({ date: day, attendance: [] })
     })
   }, [day])
+
+  console.log('attendanceList', attendanceList)
 
   return (
     <div className={s.groups}>
