@@ -1,5 +1,7 @@
 import firebase from 'firebase'
-
+export const formatResponse = (ok, type, res) => {
+  return { type, ok, res }
+}
 export const normalizeDoc = (doc) => {
   const data = doc.data()
   if (!doc.exists) return {} // The document  not exist

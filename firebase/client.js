@@ -2,6 +2,7 @@ import { format } from '@/src/utils/Dates'
 import firebase from 'firebase'
 import {
   datesToFirebaseFromat,
+  formatResponse,
   mapUserFromFirebase,
   normalizeDoc,
   normalizeDocs
@@ -214,4 +215,45 @@ const _create_record = async (record) => {
       return { ok: true, type: 'RECORD_CREATED', res }
     })
     .catch((err) => console.log('err', err))
+}
+
+/* -------------------- */
+/* ------FILES------ */
+/* -------------------- */
+
+
+
+export const uploadFile = ({ type = 'file', athleteId, file }) => {
+  console.log('file', file)
+
+  const storageRef = firebase.storage().ref()
+  const task = storageRef.child(`${type}/${athleteId}`).put(file)
+  return task.on(
+    'state_changed',
+    function (snapshot) {
+      // Observe state change events such as progress, pause, and resume
+      // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+      var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+      console.log('Upload is ' + progress + '% done')
+      switch (snapshot.state) {
+        case firebase.storage.TaskState.PAUSED: // or 'paused'
+          console.log('Upload is paused')
+          break
+        case firebase.storage.TaskState.RUNNING: // or 'running'
+          console.log('Upload is running')
+          break
+      }
+    },
+    function (error) {
+      // Handle unsuccessful uploads
+    },
+    function () {
+      // Handle successful uploads on complete
+      // For instance, get the download URL: https://firebasestorage.googleapis.com/...
+      task.snapshot.ref.getDownloadURL().then(function (downloadURL) {
+        console.log('File available at', downloadURL)
+        _update_athlete({ id: athleteId, avatar: downloadURL })
+      })
+    }
+  )
 }

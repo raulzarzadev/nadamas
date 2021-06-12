@@ -3,8 +3,16 @@ import s from './styles.module.css'
 import Image from 'next/image'
 import { UpladIcon } from '../utils/Icons'
 import React from 'react'
+import { uploadFile } from '@/firebase/client'
 const Avatar = React.forwardRef(
-  ({ image, alt = '', upload, onClick, size = 'md' }, ref) => {
+  ({ image, athleteId, alt = '', upload, onClick, size = 'md' }, ref) => {
+    const handleChange = (e) => {
+      console.log(e.target.files[0])
+      const file = e.target.files[0]
+      if (file) {
+        uploadFile({ type: 'avatar', athleteId, file })
+      }
+    }
     return (
       <a ref={ref} className={s.avatar} onClick={onClick} talla={size}>
         {image ? (
@@ -22,7 +30,12 @@ const Avatar = React.forwardRef(
           <>
             <label className={s.upload}>
               <UpladIcon />
-              <input type="file" style={{ display: 'none' }}></input>
+              <input
+                name="avatar-image"
+                onChange={handleChange}
+                type="file"
+                style={{ display: 'none' }}
+              ></input>
             </label>
           </>
         )}

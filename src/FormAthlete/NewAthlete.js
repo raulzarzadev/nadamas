@@ -97,6 +97,7 @@ export default function NewAthlete() {
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
+
   const [record, setRecord] = useState({ place: 'CREA', date: new Date() })
   const [records, setRecords] = useState([])
   const handleSetRecord = (e) => {
@@ -118,7 +119,8 @@ export default function NewAthlete() {
       getRecords(form.id).then(setRecords)
     }
   }, [form.id])
-  console.log('records', records)
+  console.log('form', form)
+  
 
   return (
     <div className={s.newathlete}>
@@ -136,7 +138,13 @@ export default function NewAthlete() {
         <div className={s.form_box}>
           <div className={s.title}>
             <h2>Atleta</h2>
-            <Avatar upload onClick={handleUploadAvatar} href="/" />
+            <Avatar
+              upload
+              athleteId={form.id}
+              image={form?.avatar}
+              onClick={handleUploadAvatar}
+              href="/"
+            />
           </div>
 
           <div className={s.inputs}>
