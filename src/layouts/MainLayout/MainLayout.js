@@ -24,9 +24,8 @@ export default function MainLayout({ children, user }) {
 const Header = ({ user }) => {
   return (
     <div className={s.header}>
-      <div></div>
       <Link href="/perfil">
-        <Avatar size="sm" alt="z" />
+        <Avatar size="sm" alt="z" image='' />
       </Link>
     </div>
   )

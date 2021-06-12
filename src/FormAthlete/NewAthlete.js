@@ -77,7 +77,6 @@ export default function NewAthlete() {
     console.log('res', res)
   }
 
-  console.log('form', form)
   const handleUploadAvatar = () => {
     console.log('uplad')
   }
@@ -106,6 +105,7 @@ export default function NewAthlete() {
     }
     setRecord({ date: new Date(), place: 'CREA' })
   }
+
   const handleRemoveRecord = (record) => {
     const records = form.records.filter(
       ({ test, date }) => record.test !== test && date !== record.date
@@ -113,6 +113,7 @@ export default function NewAthlete() {
     setForm({ ...form, records })
     console.log('records', records)
   }
+
   return (
     <div className={s.newathlete}>
       <form
@@ -178,7 +179,10 @@ export default function NewAthlete() {
           </div>
         </Section>
         <Section title={'Registros'}>
-          <Records records={form?.records} />
+          <Records
+            records={form?.records}
+            handleRemoveRecord={handleRemoveRecord}
+          />
           <div className={s.record}>
             <Text
               onChange={handleSetRecord}
@@ -211,7 +215,6 @@ export default function NewAthlete() {
             </Button>
           </div>
         </Section>
-
         <Section title={'Información Médica'}>
           <div className={s.medic_info}>
             <Text
@@ -284,9 +287,9 @@ const Section = ({ title, children }) => {
     </section>
   )
 }
+
 const Schedule = ({ form, setForm, hideWeekend }) => {
   const [schedule, setSchedule] = useState([])
-
   const handleChangeSchedule = (evt) => {
     const { value, name } = evt.target
     const newSchedule = schedule.map(({ day, time }) => {
@@ -360,13 +363,15 @@ const HoursInput = ({ name, value, onChange }) => {
   )
 }
 
-const Records = ({ records = [] }) => {
+const Records = ({ records = [], handleRemoveRecord }) => {
+  console.log('records', records)
+  
   return (
     <>
       {records?.map(({ date, test, time, place }) => (
         <div className={s.record_row}>
           <div className={s.record_cell}>
-            {format(date?.toMillis(), 'dd/MMM/yy')}
+            {format(new Date(date.toString()), 'dd/MMM/yy')}
           </div>
           <div className={s.record_cell}>{test}</div>
           <div className={s.record_cell}>{time}</div>
