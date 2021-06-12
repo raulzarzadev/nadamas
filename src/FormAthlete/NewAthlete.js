@@ -4,13 +4,18 @@ import s from './styles.module.css'
 import { getAthlete, updateAtlete } from '@/firebase/client'
 import { useRouter } from 'next/router'
 import { dayLabels, format, formatInputDate } from '../utils/Dates'
-import { TrashBinIcon, SaveIcon, AddPersonIcon } from '../utils/Icons'
+import {
+  TrashBinIcon,
+  SaveIcon,
+  AddPersonIcon,
+  AddIcon,
+  ForwardIcon,
+  DownIcon
+} from '../utils/Icons'
 import Avatar from '../Avatar'
 import DeleteModal from '../Modals/DeleteModal'
 import Text from '../InputFields/Text'
 import Textarea from '../InputFields/Textarea'
-import { fromUnixTime } from 'date-fns'
-import { unfierebazeDate } from '@/firebase/firebase-helpers'
 
 const scheduleBase = [
   {
@@ -151,16 +156,10 @@ export default function NewAthlete() {
             />
           </div>
         </div>
-        <div className={s.form_box}>
-          <div className={s.title}>
-            <h2>Horario</h2>
-          </div>
+        <Section title={'Horario'}>
           <Schedule hideWeekend form={form} setForm={setForm} />
-        </div>
-        <div className={s.form_box}>
-          <div className={s.title}>
-            <h2>Contacto</h2>
-          </div>
+        </Section>
+        <Section title={'Contacto'}>
           <div className={`${s.inputs} ${s.contact}`}>
             <Text
               onChange={handleChange}
@@ -177,11 +176,9 @@ export default function NewAthlete() {
               label="Correo"
             />
           </div>
-        </div>
-        <div className={s.form_box}>
-          <div className={s.title}>
-            <h2>Registros </h2>{' '}
-          </div>
+        </Section>
+        <Section title={'Registros'}>
+          <Records records={form?.records} />
           <div className={s.record}>
             <Text
               onChange={handleSetRecord}
@@ -209,37 +206,13 @@ export default function NewAthlete() {
               value={record?.time}
               label="Tiempo"
             />
-            <Button primary p="lg" onClick={handleAddRecord}>
-              +
+            <Button primary p="sm" onClick={handleAddRecord}>
+              <AddIcon />
             </Button>
           </div>
-          {form?.records?.map(({ date, test, time, place }) => (
-            <div className={s.record_row}>
-              <div className={s.record_cell}>
-                {format(date?.toMillis(), 'dd/MMM/yy')}
-              </div>
-              <div className={s.record_cell}>{test}</div>
-              <div className={s.record_cell}>{time}</div>
-              <div className={s.record_cell}>{place}</div>
-              <div className={s.record_cell}>
-                <Button
-                  icon
-                  danger
-                  onClick={(e) => {
-                    e.preventDefault()
-                    handleRemoveRecord({ date, test })
-                  }}
-                >
-                  <TrashBinIcon size=".8rem" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className={s.form_box}>
-          <div className={s.title}>
-            <h2>Información Medica</h2>
-          </div>
+        </Section>
+
+        <Section title={'Información Médica'}>
           <div className={s.medic_info}>
             <Text
               onChange={handleChange}
@@ -261,11 +234,8 @@ export default function NewAthlete() {
               name="conditions"
             />
           </div>
-        </div>
-        <div className={s.form_box}>
-          <div className={s.title}>
-            <h2>Emergencia</h2>
-          </div>
+        </Section>
+        <Section title={'Emergencia'}>
           <div className={`${s.inputs} ${s.emergency}`}>
             <Text
               onChange={handleChange}
@@ -287,7 +257,7 @@ export default function NewAthlete() {
               label="Numero"
             />
           </div>
-        </div>
+        </Section>
       </form>
       <Button p="2" my="md" danger onClick={handleOpenDelete}>
         Eliminar
@@ -301,6 +271,19 @@ export default function NewAthlete() {
     </div>
   )
 }
+
+const Section = ({ title, children }) => {
+  const [show, setShow] = useState(false)
+  return (
+    <section className={s.form_box}>
+      <h3 className={s.title} onClick={() => setShow(!show)}>
+        {title}
+        {show ? <DownIcon /> : <ForwardIcon />}
+      </h3>
+      {show && children}
+    </section>
+  )
+}
 const Schedule = ({ form, setForm, hideWeekend }) => {
   const [schedule, setSchedule] = useState([])
 
@@ -312,13 +295,6 @@ const Schedule = ({ form, setForm, hideWeekend }) => {
     })
     setForm({ ...form, schedule: newSchedule })
   }
-  /*   const setTimeToNull = (nameDay) => {
-    const newSchedule = schedule.map((day) => {
-      if (day.day === nameDay) return { day: nameDay, time: null }
-      return day
-    })
-    setForm({ ...form, schedule: newSchedule })
-  } */
 
   useEffect(() => {
     if (form.schedule) {
@@ -380,6 +356,35 @@ const HoursInput = ({ name, value, onChange }) => {
           ))}
         </select>
       </div>
+    </>
+  )
+}
+
+const Records = ({ records = [] }) => {
+  return (
+    <>
+      {records?.map(({ date, test, time, place }) => (
+        <div className={s.record_row}>
+          <div className={s.record_cell}>
+            {format(date?.toMillis(), 'dd/MMM/yy')}
+          </div>
+          <div className={s.record_cell}>{test}</div>
+          <div className={s.record_cell}>{time}</div>
+          <div className={s.record_cell}>{place}</div>
+          <div className={s.record_cell}>
+            <Button
+              icon
+              danger
+              onClick={(e) => {
+                e.preventDefault()
+                handleRemoveRecord({ date, test })
+              }}
+            >
+              <TrashBinIcon size=".8rem" />
+            </Button>
+          </div>
+        </div>
+      ))}
     </>
   )
 }
