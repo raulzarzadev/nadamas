@@ -101,6 +101,13 @@ export default function NewAthlete() {
     }
     setRecord({ date: new Date(), place: 'CREA' })
   }
+  const handleRemoveRecord = (record) => {
+    const records = form.records.filter(
+      ({ test, date }) => record.test !== test && date !== record.date
+    )
+    setForm({ ...form, records })
+    console.log('records', records)
+  }
   return (
     <div className={s.newathlete}>
       <form
@@ -208,13 +215,22 @@ export default function NewAthlete() {
           </div>
           {form?.records?.map(({ date, test, time, place }) => (
             <div className={s.record_row}>
-              <div>{format(unfierebazeDate(date), 'dd/MM/yy')}</div>
-              <div>{test}</div>
-              <div>{time}</div>
-              <div>{place}</div>
-              <div>
-                <Button icon danger>
-                  Del
+              <div className={s.record_cell}>
+                {format(date?.toMillis(), 'dd/MMM/yy')}
+              </div>
+              <div className={s.record_cell}>{test}</div>
+              <div className={s.record_cell}>{time}</div>
+              <div className={s.record_cell}>{place}</div>
+              <div className={s.record_cell}>
+                <Button
+                  icon
+                  danger
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleRemoveRecord({ date, test })
+                  }}
+                >
+                  <TrashBinIcon size=".8rem" />
                 </Button>
               </div>
             </div>

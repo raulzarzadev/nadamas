@@ -11,10 +11,15 @@ export default function Athletes() {
     getAthletes().then(setAthletes)
   }, [])
 
+  athletes.sort((a, b) => {
+    if (a.name > b.name) return 1
+    if (a.name < b.name) return -1
+    return 0
+    console.log('a', a.name > b.name)
+  })
+
   const [openEmergencyModal, setOpenEmergencyModal] = useState(false)
-  const handleOpenEmergencyCall = () => {
-    setOpenEmergencyModal(!openEmergencyModal)
-  }
+
   return (
     <div className={s.athletes}>
       <h3>Todos los atletas</h3>

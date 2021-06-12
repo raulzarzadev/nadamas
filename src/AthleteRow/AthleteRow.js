@@ -17,6 +17,16 @@ export default function AthleteRow({ assist, athlete, handleSetAttendance = fals
         {`${name} ${lastName || ''}`}
       </div>
       <div className={s.athlete_actions}>
+          {!!handleSetAttendance && (
+            <div className={s.athlete_action}>
+              <input
+                name="attendance"
+                type="checkbox"
+                checked={assist}
+                onClick={(e) => handleSetAttendance(id, e)}
+              ></input>
+            </div>
+          )}
         <div className={s.athlete_action}>
           <Button icon onClick={handleOpenEmergencyCall}>
             <EmergencyIcon style={{ color: 'red' }} />
@@ -37,16 +47,6 @@ export default function AthleteRow({ assist, athlete, handleSetAttendance = fals
             <EditIcon />
           </Button>
         </div>
-        {!!handleSetAttendance && (
-          <div className={s.athlete_action}>
-            <input
-              name="attendance"
-              type="checkbox"
-              checked={assist}
-              onClick={(e) => handleSetAttendance(id, e)}
-            ></input>
-          </div>
-        )}
       </div>
       <EmergencyCallModal
         handleOpen={handleOpenEmergencyCall}

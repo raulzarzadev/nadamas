@@ -103,6 +103,7 @@ export default function Groups() {
           key={athlete.id}
           athlete={athlete}
           handleSetAttendance={handleSetAttendance}
+          assist={attendanceList.attendance.includes(athlete.id)}
         />
       ))}
       <h3>{`19:00 hrs`}</h3>
@@ -111,6 +112,7 @@ export default function Groups() {
           key={athlete.id}
           athlete={athlete}
           handleSetAttendance={handleSetAttendance}
+          assist={attendanceList.attendance.includes(athlete.id)}
         />
       ))}
     </div>

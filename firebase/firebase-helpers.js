@@ -3,6 +3,9 @@ import firebase from 'firebase'
 export const normalizeDoc = (doc) => {
   const data = doc.data()
 
+console.log('data', data)
+
+
   if (!doc.exists) return {} // The document  not exist
 
   const { updatedAt, registryDate, createdAt, date, birth } = data
