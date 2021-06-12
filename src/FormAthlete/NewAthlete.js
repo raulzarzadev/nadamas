@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import Button from '../Button'
 import s from './styles.module.css'
-import { getAthlete, updateAtlete } from '@/firebase/client'
+import {
+  getAthlete,
+  updateAtlete,
+  createRecord,
+  getRecords,
+  removeRecord
+} from '@/firebase/client'
 import { useRouter } from 'next/router'
 import { dayLabels, format, formatInputDate } from '../utils/Dates'
 import {
@@ -92,27 +98,27 @@ export default function NewAthlete() {
     setOpenDelete(!openDelete)
   }
   const [record, setRecord] = useState({ place: 'CREA', date: new Date() })
+  const [records, setRecords] = useState([])
   const handleSetRecord = (e) => {
     const { name, value } = e.target
     setRecord({ ...record, [name]: value })
   }
 
   const handleAddRecord = () => {
-    if (Array.isArray(form.records)) {
-      setForm({ ...form, records: [...form?.records, record] })
-    } else {
-      setForm({ ...form, records: [record] })
-    }
-    setRecord({ date: new Date(), place: 'CREA' })
+    createRecord({ athleteId: form.id, ...record })
+    getRecords(form.id).then(setRecords)
   }
 
-  const handleRemoveRecord = (record) => {
-    const records = form.records.filter(
-      ({ test, date }) => record.test !== test && date !== record.date
-    )
-    setForm({ ...form, records })
-    console.log('records', records)
+  const handleRemoveRecord = (recordId) => {
+    removeRecord(recordId)
+    getRecords(form.id).then(setRecords)
   }
+  useEffect(() => {
+    if (form.id) {
+      getRecords(form.id).then(setRecords)
+    }
+  }, [form.id])
+  console.log('records', records)
 
   return (
     <div className={s.newathlete}>
@@ -179,10 +185,7 @@ export default function NewAthlete() {
           </div>
         </Section>
         <Section title={'Registros'}>
-          <Records
-            records={form?.records}
-            handleRemoveRecord={handleRemoveRecord}
-          />
+          <Records records={records} handleRemoveRecord={handleRemoveRecord} />
           <div className={s.record}>
             <Text
               onChange={handleSetRecord}
@@ -210,7 +213,14 @@ export default function NewAthlete() {
               value={record?.time}
               label="Tiempo"
             />
-            <Button primary p="sm" onClick={handleAddRecord}>
+            <Button
+              primary
+              p="sm"
+              onClick={(e) => {
+                e.preventDefault()
+                handleAddRecord()
+              }}
+            >
               <AddIcon />
             </Button>
           </div>
@@ -365,14 +375,12 @@ const HoursInput = ({ name, value, onChange }) => {
 
 const Records = ({ records = [], handleRemoveRecord }) => {
   console.log('records', records)
-  
+
   return (
     <>
-      {records?.map(({ date, test, time, place }) => (
+      {records?.map(({ id, date, test, time, place }) => (
         <div className={s.record_row}>
-          <div className={s.record_cell}>
-            {format(new Date(date.toString()), 'dd/MMM/yy')}
-          </div>
+          <div className={s.record_cell}>{format(date, 'dd/MMM/yy')}</div>
           <div className={s.record_cell}>{test}</div>
           <div className={s.record_cell}>{time}</div>
           <div className={s.record_cell}>{place}</div>
@@ -382,7 +390,7 @@ const Records = ({ records = [], handleRemoveRecord }) => {
               danger
               onClick={(e) => {
                 e.preventDefault()
-                handleRemoveRecord({ date, test })
+                handleRemoveRecord(id)
               }}
             >
               <TrashBinIcon size=".8rem" />

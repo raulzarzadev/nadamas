@@ -182,3 +182,36 @@ const _update_attendanceList = async ({ ref, attendance }) => {
     .then((res) => console.log('res', res))
     .catch((err) => console.log('err', err))
 }
+
+/* -------------------- */
+/* ------RECORDS------ */
+/* -------------------- */
+
+export const getRecords = async (athleteId) => {
+  return await db
+    .collection('records')
+    .where('athleteId', '==', athleteId)
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log('err', err))
+}
+export const createRecord = async (record) => {
+  return await _create_record(record)
+}
+export const removeRecord = async (recordId) => {
+  return await _remove_record(recordId)
+}
+
+const _remove_record = async (recordId) => {
+  return await db.collection('records').doc(recordId).delete()
+}
+
+const _create_record = async (record) => {
+  return await db
+    .collection('records')
+    .add(record)
+    .then((res) => {
+      return { ok: true, type: 'RECORD_CREATED', res }
+    })
+    .catch((err) => console.log('err', err))
+}

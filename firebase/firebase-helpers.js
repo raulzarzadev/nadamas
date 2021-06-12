@@ -2,11 +2,8 @@ import firebase from 'firebase'
 
 export const normalizeDoc = (doc) => {
   const data = doc.data()
-
-console.log('data', data)
-
-
   if (!doc.exists) return {} // The document  not exist
+  const id = doc.id
 
   const { updatedAt, registryDate, createdAt, date, birth } = data
   const dates = unfierebazeDates({
@@ -17,7 +14,6 @@ console.log('data', data)
     date
   })
 
-  const id = doc.id
   return {
     id,
     ...data,
