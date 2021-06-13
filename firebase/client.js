@@ -248,7 +248,9 @@ export const uploadFile = ({ type = 'file', id, file }) => {
       // For instance, get the download URL: https://firebasestorage.googleapis.com/...
       task.snapshot.ref.getDownloadURL().then(function (downloadURL) {
         console.log('File available at', downloadURL)
-        _update_athlete({ id: athleteId, avatar: downloadURL })
+        if (type === 'avatar') {
+          _update_athlete({ id, avatar: downloadURL })
+        }
       })
     }
   )
