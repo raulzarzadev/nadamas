@@ -21,7 +21,7 @@ const Avatar = React.forwardRef(
             alt={alt.charAt(1).toUpperCase()}
             layout="fill"
             objectFit="cover"
-            style={{ borderRadius: '50%' }}
+            style={{ borderRadius: '50%', zIndex: 1 }}
           />
         ) : (
           <div>{alt.charAt(0).toUpperCase()}</div>
