@@ -7,7 +7,7 @@ export default function UploadFile({type, id }) {
     console.log(e.target.files[0])
     const file = e.target.files[0]
     if (file) {
-      uploadFile({ type: 'avatar', athleteId, file })
+      uploadFile({ type, id, file })
     }
   }
   return (

@@ -22,6 +22,7 @@ import Avatar from '../Avatar'
 import DeleteModal from '../Modals/DeleteModal'
 import Text from '../InputFields/Text'
 import Textarea from '../InputFields/Textarea'
+import UploadFile from '../UploadFile'
 
 const scheduleBase = [
   {
@@ -222,6 +223,7 @@ export default function NewAthlete() {
               value={record?.time}
               label="Tiempo"
             />
+
             <Button
               primary
               p="sm"
@@ -387,12 +389,15 @@ const Records = ({ records = [], handleRemoveRecord }) => {
 
   return (
     <>
-      {records?.map(({ id, date, test, time, place }) => (
+      {records?.map(({ id, date, test, time, place, image }) => (
         <div className={s.record_row}>
           <div className={s.record_cell}>{format(date, 'dd/MMM/yy')}</div>
           <div className={s.record_cell}>{test}</div>
           <div className={s.record_cell}>{time}</div>
           <div className={s.record_cell}>{place}</div>
+          <div className={s.record_cell}>
+            <Avatar type='record' upload image={image} id={id} size='sm'/>
+          </div>
           <div className={s.record_cell}>
             <Button
               icon

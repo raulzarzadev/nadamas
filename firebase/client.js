@@ -202,6 +202,14 @@ export const createRecord = async (record) => {
 export const removeRecord = async (recordId) => {
   return await _remove_record(recordId)
 }
+const _update_record = async (record) => {
+  return await db
+    .collection('records')
+    .doc(record.id)
+    .update(record)
+    .then((res) => formatResponse(true, 'RECORD_UPDATED', res))
+    .catch((err) => console.log('err', err))
+}
 
 const _remove_record = async (recordId) => {
   return await db.collection('records').doc(recordId).delete()
@@ -221,7 +229,8 @@ const _create_record = async (record) => {
 /* ------FILES------ */
 /* -------------------- */
 
-export const uploadFile = ({ type = 'file', id, file }) => {
+export const uploadFile = ({ type = undefined, id, file }) => {
+  if (type.undefined) return formatResponse(false, 'TYPE_UNDEFINED')
   const storageRef = firebase.storage().ref()
   const task = storageRef.child(`${type}/${id}`).put(file)
   return task.on(
@@ -242,6 +251,7 @@ export const uploadFile = ({ type = 'file', id, file }) => {
     },
     function (error) {
       // Handle unsuccessful uploads
+      console.log('error', error)
     },
     function () {
       // Handle successful uploads on complete
@@ -250,6 +260,9 @@ export const uploadFile = ({ type = 'file', id, file }) => {
         console.log('File available at', downloadURL)
         if (type === 'avatar') {
           _update_athlete({ id, avatar: downloadURL })
+        }
+        if (type === 'record') {
+          _update_record({ id, image: downloadURL })
         }
       })
     }

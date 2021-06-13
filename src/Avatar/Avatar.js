@@ -3,7 +3,19 @@ import Image from 'next/image'
 import React from 'react'
 import UploadFile from '../UploadFile'
 const Avatar = React.forwardRef(
-  ({ image, athleteId, alt = '', upload, onClick, size = 'md' }, ref) => {
+  (
+    {
+      image,
+      athleteId,
+      id,
+      alt = '',
+      upload,
+      onClick,
+      size = 'md',
+      type = 'avatar'
+    },
+    ref
+  ) => {
     return (
       <a ref={ref} className={s.avatar} onClick={onClick} talla={size}>
         {image ? (
@@ -17,7 +29,7 @@ const Avatar = React.forwardRef(
         ) : (
           <div>{alt.charAt(0).toUpperCase()}</div>
         )}
-        {upload && <UploadFile type="avatar" id={athleteId} />}
+        {upload && <UploadFile type={type} id={athleteId || id} />}
       </a>
     )
   }
