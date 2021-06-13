@@ -221,13 +221,9 @@ const _create_record = async (record) => {
 /* ------FILES------ */
 /* -------------------- */
 
-
-
-export const uploadFile = ({ type = 'file', athleteId, file }) => {
-  console.log('file', file)
-
+export const uploadFile = ({ type = 'file', id, file }) => {
   const storageRef = firebase.storage().ref()
-  const task = storageRef.child(`${type}/${athleteId}`).put(file)
+  const task = storageRef.child(`${type}/${id}`).put(file)
   return task.on(
     'state_changed',
     function (snapshot) {

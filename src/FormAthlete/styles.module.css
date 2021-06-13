@@ -50,6 +50,9 @@
   justify-content: center;
   align-items: center;
 }
+.avatar {
+  margin-left: 2rem;
+}
 
 .record_row {
   display: flex;

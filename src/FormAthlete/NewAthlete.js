@@ -120,7 +120,6 @@ export default function NewAthlete() {
     }
   }, [form.id])
   console.log('form', form)
-  
 
   return (
     <div className={s.newathlete}>
@@ -138,13 +137,15 @@ export default function NewAthlete() {
         <div className={s.form_box}>
           <div className={s.title}>
             <h2>Atleta</h2>
-            <Avatar
-              upload
-              athleteId={form.id}
-              image={form?.avatar}
-              onClick={handleUploadAvatar}
-              href="/"
-            />
+            <div className={s.avatar}>
+              <Avatar
+                upload
+                athleteId={form.id}
+                image={form?.avatar}
+                onClick={handleUploadAvatar}
+                href="/"
+              />
+            </div>
           </div>
 
           <div className={s.inputs}>
