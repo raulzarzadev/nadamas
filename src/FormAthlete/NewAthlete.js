@@ -392,12 +392,9 @@ const Records = ({ records = [], handleRemoveRecord }) => {
       {records?.map(({ id, date, test, time, place, image }) => (
         <div className={s.record_row}>
           <div className={s.record_cell}>{format(date, 'dd/MMM/yy')}</div>
-          <div className={s.record_cell}>{test}</div>
-          <div className={s.record_cell}>{time}</div>
-          <div className={s.record_cell}>{place}</div>
-          <div className={s.record_cell}>
-            <Avatar type='record' upload image={image} id={id} size='sm'/>
-          </div>
+          <div className={s.record_cell}>{test || '-'}</div>
+          <div className={s.record_cell}>{time || '-'}</div>
+          <div className={s.record_cell}>{place || '-'}</div>
           <div className={s.record_cell}>
             <Button
               icon
@@ -408,7 +405,10 @@ const Records = ({ records = [], handleRemoveRecord }) => {
               }}
             >
               <TrashBinIcon size=".8rem" />
-            </Button>
+            </Button>{' '}
+          </div>
+          <div className={s.record_cell}>
+            <Avatar type="record" upload image={image} id={id} size="sm" />
           </div>
         </div>
       ))}
