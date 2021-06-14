@@ -79,7 +79,7 @@ export const getAthlete = async (athleteId) => {
 export const getAthletes = async (userId) => {
   return await db
     .collection('athletes')
-    //.where('userId', '==', userId)
+    .where('userId', '==', userId)
     .where('active', '==', true)
     .get()
     .then(({ docs }) => normalizeDocs(docs))
@@ -88,15 +88,13 @@ export const getAthletes = async (userId) => {
 
 export const updateAtlete = async (athlete = {}) => {
   // Look for the athlete
-  const athleteExist = await (
-    await db.collection('athletes').doc(athlete?.id).get()
-  ).exists
-  console.log('athleteExist', athleteExist)
+  const athleteExist = (await db.collection('athletes').doc(athlete?.id).get())
+    .exists
   if (!athleteExist) {
     // if exist create it
     return await _create_athlete(athlete)
   } else {
-    return await _update_athlete(athlete)
+    return await _update_athlete({ ...athlete })
   }
 }
 

@@ -3,13 +3,14 @@ import Button from '../Button'
 import s from './styles.module.css'
 import { getAthletes } from 'firebase/client'
 import AthleteRow from '../AthleteRow'
+import { useAuth } from '../context/AuthContext'
 
 export default function Athletes() {
   const [athletes, setAthletes] = useState([])
-
+  const { user } = useAuth()
   useEffect(() => {
-    getAthletes().then(setAthletes)
-  }, [])
+    getAthletes(user?.id).then(setAthletes)
+  }, [user])
 
   athletes.sort((a, b) => {
     if (a.name > b.name) return 1

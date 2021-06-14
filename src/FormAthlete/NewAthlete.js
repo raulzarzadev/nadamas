@@ -23,6 +23,7 @@ import DeleteModal from '../Modals/DeleteModal'
 import Text from '../InputFields/Text'
 import Textarea from '../InputFields/Textarea'
 import UploadFile from '../UploadFile'
+import { useAuth } from '../context/AuthContext'
 
 const scheduleBase = [
   {
@@ -76,8 +77,10 @@ export default function NewAthlete() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
+  const { user } = useAuth()
+
   const handleSubmit = async () => {
-    const res = await updateAtlete({ ...form, active: true })
+    const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res.type === 'ATHLETE_CREATED') {
       router.push(`/atletas/${res.id}`)
     }

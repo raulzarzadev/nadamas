@@ -1,11 +1,5 @@
 import s from './styles.module.css'
-import {
-  BackIcon,
-  ContactIcon,
-  EditIcon,
-  EmergencyIcon,
-  ForwardIcon
-} from '../utils/Icons'
+import { BackIcon, ForwardIcon } from '../utils/Icons'
 import { useEffect, useState } from 'react'
 import {
   getAthletes,
@@ -15,14 +9,15 @@ import {
 import { addDays, subDays } from 'date-fns'
 import { format } from '../utils/Dates'
 import Button from '../Button'
-import EmergencyCallModal from '../Modals/EmergencyCallModal'
 import AthleteRow from '../AthleteRow'
+import { useAuth } from '../context/AuthContext'
 
 export default function Groups() {
   const [athletes, setAthletes] = useState([])
+  const { user } = useAuth()
   useEffect(() => {
-    getAthletes().then(setAthletes)
-  }, [])
+    getAthletes(user?.id).then(setAthletes)
+  }, [user])
 
   /* const firstHour = athletes.filter(({ schedule }) => {
     return schedule?.find(({ day, time }) => day === 1 && time !== null)
@@ -62,11 +57,7 @@ export default function Groups() {
     date: day,
     attendance: []
   })
-  /* 
-  useEffect(() => {
-    console.log('attendanceList', attendanceList)
-  }, [attendanceList?.attendance])
- */
+
   useEffect(() => {
     getAttendanceDate(day).then((res) => {
       res
@@ -74,8 +65,6 @@ export default function Groups() {
         : setAttendanceList({ date: day, attendance: [] })
     })
   }, [day])
-
-  console.log('attendanceList', attendanceList)
 
   return (
     <div className={s.groups}>
