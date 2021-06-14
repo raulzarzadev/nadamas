@@ -16,7 +16,7 @@ export default function Groups() {
   const [athletes, setAthletes] = useState([])
   const { user } = useAuth()
   useEffect(() => {
-    getAthletes(user?.id).then(setAthletes)
+    if (user) getAthletes(user?.id).then(setAthletes)
   }, [user])
 
   /* const firstHour = athletes.filter(({ schedule }) => {
