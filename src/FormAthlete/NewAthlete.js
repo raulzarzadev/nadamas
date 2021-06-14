@@ -87,7 +87,6 @@ export default function NewAthlete() {
     console.log('res', res)
   }
 
-
   const handleDelete = () => {
     console.log('delete', updatingAthlete)
     updateAtlete({ id: updatingAthlete, active: false })
@@ -140,12 +139,7 @@ export default function NewAthlete() {
           <div className={s.title}>
             <h2>Atleta</h2>
             <div className={s.avatar}>
-              <Avatar
-                upload
-                athleteId={form.id}
-                image={form?.avatar}
-                
-              />
+              <Avatar upload athleteId={form.id} image={form?.avatar} />
             </div>
           </div>
 
@@ -173,28 +167,7 @@ export default function NewAthlete() {
             />
           </div>
         </div>
-        <Section title={'Horario'}>
-          <Schedule hideWeekend form={form} setForm={setForm} />
-        </Section>
-        <Section title={'Contacto'}>
-          <div className={`${s.inputs} ${s.contact}`}>
-            <Text
-              onChange={handleChange}
-              value={form.mobile}
-              name="mobile"
-              type="tel"
-              label="Celular"
-            />
-            <Text
-              onChange={handleChange}
-              value={form.email}
-              name="email"
-              label="email"
-              label="Correo"
-            />
-          </div>
-        </Section>
-        <Section title={'Registros'}>
+        <Section title={'Marcas y Registros'}>
           <Records records={records} handleRemoveRecord={handleRemoveRecord} />
           <div className={s.record}>
             <Text
@@ -234,6 +207,28 @@ export default function NewAthlete() {
             >
               <AddIcon />
             </Button>
+          </div>
+        </Section>
+
+        <Section title={'Horario'}>
+          <Schedule hideWeekend form={form} setForm={setForm} />
+        </Section>
+        <Section title={'Contacto'}>
+          <div className={`${s.inputs} ${s.contact}`}>
+            <Text
+              onChange={handleChange}
+              value={form.mobile}
+              name="mobile"
+              type="tel"
+              label="Celular"
+            />
+            <Text
+              onChange={handleChange}
+              value={form.email}
+              name="email"
+              label="email"
+              label="Correo"
+            />
           </div>
         </Section>
         <Section title={'Información Médica'}>

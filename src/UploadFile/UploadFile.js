@@ -1,4 +1,5 @@
 import { updateAtlete, updateRecord, uploadFile } from '@/firebase/client'
+import router from 'next/router'
 import { UpladIcon } from '../utils/Icons'
 import s from './styles.module.css'
 
@@ -16,6 +17,9 @@ export default function UploadFile({ type, id }) {
         (err) => console.log('err', err),
         (succ) => {
           console.log('hanlde success')
+          setTimeout(() => {
+            router.reload()
+          }, 500)
         }
       )
     }
