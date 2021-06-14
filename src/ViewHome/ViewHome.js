@@ -14,7 +14,6 @@ export default function ViewHome() {
   }
   return (
     <MainLayout user={user}>
-      <div>{user && <Button onClick={handleSignOut}>Salir</Button>}</div>
       <h1>nada... y nadamas</h1>
       <div>{!user && <Button onClick={signInWithGoogle}>Ingresa</Button>}</div>
       {user && (

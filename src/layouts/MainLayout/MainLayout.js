@@ -6,7 +6,8 @@ import {
   GroupsIcon,
   PersonIcon,
   HomeIcon,
-  SignInIcon
+  SignInIcon,
+  SignOutIcon
 } from '@/src/utils/Icons'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -22,11 +23,28 @@ export default function MainLayout({ children, user }) {
   )
 }
 const Header = ({ user }) => {
+  const { signOut } = useAuth()
+
+  const handleSignOut = () => {
+    signOut()
+  }
+  console.log('user', user)
+
   return (
     <div className={s.header}>
-      <Link href="/perfil">
-        <Avatar size="sm" alt="z" image='' />
-      </Link>
+      <span className={s.avatar}>
+        <Link href="/perfil">
+          <Avatar size="sm" alt="z" image={user?.image} />
+        </Link>
+        {user?.name}
+      </span>
+      <div>
+        {user && (
+          <Button link onClick={handleSignOut}>
+            <SignOutIcon />
+          </Button>
+        )}
+      </div>
     </div>
   )
 }
@@ -39,9 +57,7 @@ const Footer = ({ user }) => {
   const signInWithGoogle = () => {
     googleLogin()
   }
-  const handleSignOut = () => {
-    signOut()
-  }
+
   const handleBack = () => {
     router.back()
   }

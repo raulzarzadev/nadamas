@@ -28,6 +28,12 @@
   color: var(--text-main);
   background-color: var(--bg-ligth);
   height: 10vh;
+  align-items: center;
+}
+.avatar {
+  display: flex;
+  align-items: center;
+  gap: 1rem
 }
 .footer {
   z-index: 1;
