@@ -200,6 +200,9 @@ export const createRecord = async (record) => {
 export const removeRecord = async (recordId) => {
   return await _remove_record(recordId)
 }
+export const updateRecord = async (record) => {
+  return await _update_record(record)
+}
 const _update_record = async (record) => {
   return await db
     .collection('records')
@@ -231,7 +234,8 @@ export const uploadFile = ({ type = undefined, id, file }) => {
   if (type.undefined) return formatResponse(false, 'TYPE_UNDEFINED')
   const storageRef = firebase.storage().ref()
   const task = storageRef.child(`${type}/${id}`).put(file)
-  return task.on(
+  return task
+  /* return task.on(
     'state_changed',
     function (snapshot) {
       // Observe state change events such as progress, pause, and resume
@@ -264,5 +268,5 @@ export const uploadFile = ({ type = undefined, id, file }) => {
         }
       })
     }
-  )
+  ) */
 }

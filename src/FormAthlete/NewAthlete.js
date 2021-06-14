@@ -87,9 +87,7 @@ export default function NewAthlete() {
     console.log('res', res)
   }
 
-  const handleUploadAvatar = () => {
-    console.log('uplad')
-  }
+
   const handleDelete = () => {
     console.log('delete', updatingAthlete)
     updateAtlete({ id: updatingAthlete, active: false })
@@ -146,8 +144,7 @@ export default function NewAthlete() {
                 upload
                 athleteId={form.id}
                 image={form?.avatar}
-                onClick={handleUploadAvatar}
-                href="/"
+                
               />
             </div>
           </div>
