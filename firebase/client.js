@@ -200,6 +200,7 @@ export const createRecord = async (record) => {
 export const removeRecord = async (recordId) => {
   return await _remove_record(recordId)
 }
+
 export const updateRecord = async (record) => {
   return await _update_record(record)
 }

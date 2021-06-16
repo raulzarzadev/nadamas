@@ -3,7 +3,7 @@ import router from 'next/router'
 import { UpladIcon } from '../utils/Icons'
 import s from './styles.module.css'
 
-export default function UploadFile({ type, id }) {
+export default function UploadFile({ type, id, icon }) {
   const handleChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -27,8 +27,10 @@ export default function UploadFile({ type, id }) {
   return (
     <>
       <label className={s.upload}>
-        <UpladIcon />
+        {icon ? icon : <UpladIcon />}
         <input
+          accept="image/*"
+          capture="camera"
           name="avatar-image"
           onChange={handleChange}
           type="file"

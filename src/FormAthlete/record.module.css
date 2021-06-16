@@ -1,0 +1,37 @@
+.record {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-around;
+}
+.record > * {
+  width: 40%;
+}
+.record_row {
+  display: flex;
+  width: 100%;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+.record_cell {
+  width: 20%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.7rem;
+  padding: 10px 0;
+}
+.record_cell {
+  width: 50%;
+}
+
+@media (min-width: 600px) {
+  .record > * {
+    width: 20%;
+  }
+  .record_row > * {
+    width: 15%;
+    margin: 0 auto;
+  }
+}

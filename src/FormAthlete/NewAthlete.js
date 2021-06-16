@@ -24,6 +24,8 @@ import Text from '../InputFields/Text'
 import Textarea from '../InputFields/Textarea'
 import UploadFile from '../UploadFile'
 import { useAuth } from '../context/AuthContext'
+import { Records } from './Records'
+import { Schedule } from './Schedule'
 
 const scheduleBase = [
   {
@@ -304,109 +306,4 @@ const Section = ({ title, children }) => {
   )
 }
 
-const Schedule = ({ form, setForm, hideWeekend }) => {
-  const [schedule, setSchedule] = useState([])
-  const handleChangeSchedule = (evt) => {
-    const { value, name } = evt.target
-    const newSchedule = schedule.map(({ day, time }) => {
-      if (day == name) return { day: parseInt(name), time: value }
-      return { time, day }
-    })
-    setForm({ ...form, schedule: newSchedule })
-  }
 
-  useEffect(() => {
-    if (form.schedule) {
-      setSchedule(form.schedule)
-    }
-  }, [form.schedule])
-
-  const listDays = hideWeekend
-    ? schedule.filter(({ day }) => day !== 0 && day !== 6)
-    : schedule
-
-  return (
-    <>
-      <div className={s.schedule}>
-        {listDays?.map(({ day, time }) => (
-          <div className={s.schedule_day}>
-            <HoursInput
-              name={day}
-              value={time}
-              onChange={handleChangeSchedule}
-            />
-          </div>
-        ))}
-      </div>
-    </>
-  )
-}
-
-const HoursInput = ({ name, value, onChange }) => {
-  const availableHours = []
-  for (let i = 17; i < 20; i++) {
-    availableHours.push({
-      value: i,
-      label: `${i <= 9 ? `0${i}:00` : `${i}:00`}`
-    })
-  }
-  return (
-    <>
-      <div className={s.day_title}>
-        <div>{dayLabels[name]}</div>
-        <div>
-          <Button danger icon onClick={() => setTimeToNull(day)}>
-            <TrashBinIcon size="1rem" />
-          </Button>
-        </div>
-      </div>
-      <div className={s.select}>
-        <select
-          className={s.select_schedule}
-          name={name}
-          value={value || null}
-          onChange={onChange}
-        >
-          <option value={null}>--:--</option>
-          {availableHours.map((hour) => (
-            <option key={hour.value} value={hour.value}>
-              {hour.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </>
-  )
-}
-
-const Records = ({ records = [], handleRemoveRecord }) => {
-  console.log('records', records)
-
-  return (
-    <>
-      {records?.map(({ id, date, test, time, place, image }) => (
-        <div className={s.record_row}>
-          <div className={s.record_cell}>{format(date, 'dd/MMM/yy')}</div>
-          <div className={s.record_cell}>{test || '-'}</div>
-          <div className={s.record_cell}>{time || '-'}</div>
-          <div className={s.record_cell}>{place || '-'}</div>
-          <div className={s.record_cell}>
-            <Button
-              icon
-              danger
-              onClick={(e) => {
-                e.preventDefault()
-                handleRemoveRecord(id)
-              }}
-            >
-              <TrashBinIcon size=".8rem" />
-            </Button>{' '}
-          </div>
-          <div className={s.record_cell}>
-            <Avatar type="record" upload image={image} id={id} size="sm" />
-          </div>
-        </div>
-      ))}
-    </>
-  )
-}

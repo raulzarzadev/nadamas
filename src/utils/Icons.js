@@ -20,6 +20,9 @@ import { RiDoorOpenFill } from 'react-icons/ri'
 import { RiDoorClosedFill } from 'react-icons/ri'
 import { RiAddFill } from 'react-icons/ri'
 import { RiArrowDownSLine } from 'react-icons/ri'
+import { RiGalleryFill } from 'react-icons/ri'
+import { RiImageAddFill } from 'react-icons/ri'
+import { RiImageEditFill } from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -50,3 +53,7 @@ export const SignInIcon = (props) => <RiDoorClosedFill size={size} {...props} />
 export const SignOutIcon = (props) => <RiDoorOpenFill size={size} {...props} />
 export const AddIcon = (props) => <RiAddFill size={size} {...props} />
 export const DownIcon = (props) => <RiArrowDownSLine size={size} {...props} />
+/* IMAGES */
+export const GaleryIcon = (props) => <RiGalleryFill size={size} {...props} />
+export const AddImageIcon = (props) => <RiImageAddFill size={size} {...props} />
+export const EditImageIcon = (props) => <RiImageEditFill size={size} {...props} />
