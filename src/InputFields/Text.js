@@ -19,7 +19,7 @@ export default function Text({
         className={s.text_input}
         placeholder={placeholder || label}
         name={name}
-        value={value}
+        value={value || ''}
         onChange={onChange}
         {...rest}
       >

@@ -122,7 +122,6 @@ export default function NewAthlete() {
       getRecords(form.id).then(setRecords)
     }
   }, [form.id])
-  console.log('form', form)
 
   return (
     <div className={s.newathlete}>

@@ -1,9 +1,9 @@
 import { updateAtlete, updateRecord, uploadFile } from '@/firebase/client'
 import router from 'next/router'
-import { UpladIcon } from '../utils/Icons'
+import { AddImageIcon, UpladIcon } from '../utils/Icons'
 import s from './styles.module.css'
 
-export default function UploadFile({ type, id, icon }) {
+export default function UploadRecordImage({ type, id }) {
   const handleChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -11,15 +11,11 @@ export default function UploadFile({ type, id, icon }) {
         'state_changed',
         async function (snapshot) {
           const url = await snapshot.ref.getDownloadURL()
-          type === 'avatar' && updateAtlete({ id, avatar: url })
-          type === 'record' && updateRecord({ id, image: url })
+          updateRecord({ id, image: url })
         },
         (err) => console.log('err', err),
         (succ) => {
           console.log('hanlde success')
-          setTimeout(() => {
-            router.reload()
-          }, 500)
         }
       )
     }
@@ -27,7 +23,7 @@ export default function UploadFile({ type, id, icon }) {
   return (
     <>
       <label className={s.upload}>
-        {icon ? icon : <UpladIcon />}
+        <AddImageIcon />
         <input
           accept="image/*"
           name="avatar-image"

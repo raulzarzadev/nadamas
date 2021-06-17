@@ -7,7 +7,6 @@ export default function PrivateRoute({ Component, Layout, ...res }) {
   const { user } = useAuth()
   const [userData, setUserData] = useState(undefined)
   const [loading, setLoading] = useState(true)
-  console.log(user)
   useEffect(() => {
     if (user) {
       setUserData(user)

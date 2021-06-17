@@ -2,8 +2,12 @@
   opacity: 0.2;
   cursor: pointer;
 }
- .upload:hover {
+.upload:hover {
   opacity: 0.6;
   display: block;
   z-index: 1;
+}
+.img {
+  width: 250px;
+  height: 250px;
 }

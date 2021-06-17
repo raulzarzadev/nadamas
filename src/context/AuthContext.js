@@ -12,7 +12,6 @@ export function AuthProvider({ children }) {
     if (!user) {
       onAuthStateChanged(setUser)
     }
-    console.log('f')
   }, [])
 
   const signOut = () => {

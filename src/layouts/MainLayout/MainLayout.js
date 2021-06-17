@@ -28,7 +28,6 @@ const Header = ({ user }) => {
   const handleSignOut = () => {
     signOut()
   }
-  console.log('user', user)
 
   return (
     <div className={s.header}>
