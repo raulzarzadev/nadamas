@@ -6,6 +6,8 @@
   border-radius: 8px;
   margin: 4px;
   width: 100%;
+  display: flex;
+  justify-content: space-between;
 }
 .athlete_row {
   display: flex;
