@@ -1,8 +1,9 @@
-import Button from "../Button"
-import { TrashBinIcon } from "../utils/Icons"
+import Button from '../Button'
+import { dayLabels } from '../utils/Dates'
+import { TrashBinIcon } from '../utils/Icons'
+import s from './styles.module.css'
 
-export 
-const HoursInput = ({ name, value, onChange }) => {
+export const HoursInput = ({ name, value, onChange }) => {
   const availableHours = []
   for (let i = 17; i < 20; i++) {
     availableHours.push({
@@ -28,8 +29,8 @@ const HoursInput = ({ name, value, onChange }) => {
           onChange={onChange}
         >
           <option value={null}>--:--</option>
-          {availableHours.map((hour) => (
-            <option key={hour.value} value={hour.value}>
+          {availableHours.map((hour, i) => (
+            <option key={i} value={hour.value}>
               {hour.label}
             </option>
           ))}
