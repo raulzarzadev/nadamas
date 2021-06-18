@@ -171,43 +171,53 @@ export default function NewAthlete() {
         <Section title={'Marcas y Registros'}>
           <Records records={records} handleRemoveRecord={handleRemoveRecord} />
           <div className={s.new_record}>
-            <Text
-              onChange={handleSetRecord}
-              name="date"
-              type="date"
-              value={formatInputDate(record?.date)}
-              label="Fecha"
-            />
-            <Text
-              onChange={handleSetRecord}
-              name="place"
-              value={record?.place}
-              label="Lugar"
-            />
-            <Text
-              onChange={handleSetRecord}
-              name="test"
-              value={record?.test}
-              label="Prueba"
-            />
-            <Text
-              onChange={handleSetRecord}
-              name="time"
-              type="number"
-              value={record?.time}
-              label="Tiempo"
-            />
-
-            <Button
-              primary
-              p="sm"
-              onClick={(e) => {
-                e.preventDefault()
-                handleAddRecord()
-              }}
-            >
-              <AddIcon />
-            </Button>
+            <div>
+              <Text
+                onChange={handleSetRecord}
+                name="date"
+                type="date"
+                value={formatInputDate(record?.date)}
+                label="Fecha"
+              />
+            </div>
+            <div>
+              <Text
+                onChange={handleSetRecord}
+                name="place"
+                value={record?.place}
+                label="Lugar"
+              />
+            </div>
+            <div>
+              <Text
+                onChange={handleSetRecord}
+                name="test"
+                value={record?.test}
+                label="Prueba"
+              />
+            </div>
+            <div>
+              <Text
+                onChange={handleSetRecord}
+                name="time"
+                type="number"
+                value={record?.time}
+                label="Tiempo"
+              />
+            </div>
+            <div style={{ width: '90%' }}>
+              <Button
+                fullwidth
+                primary
+                p="sm"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleAddRecord()
+                }}
+              >
+                <AddIcon />
+              </Button>
+            </div>
           </div>
         </Section>
 
@@ -304,5 +314,3 @@ const Section = ({ title, children }) => {
     </section>
   )
 }
-
-

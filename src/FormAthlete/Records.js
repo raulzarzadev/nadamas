@@ -82,6 +82,7 @@ const GaleryModal = ({ open, handleOpen, id, image }) => {
   return (
     <Modal title="Galeria" open={open} handleOpen={handleOpen}>
       <div className={s.galery}>
+        <UploadRecordImage type="record" id={id} setUrl={handleGetImageUrl} />
         {image && (
           <div style={{ position: 'relative', width: 300, height: 300 }}>
             <Image
@@ -94,7 +95,6 @@ const GaleryModal = ({ open, handleOpen, id, image }) => {
           </div>
         )}
       </div>
-      <UploadRecordImage type="record" id={id} setUrl={handleGetImageUrl} />
     </Modal>
   )
 }
