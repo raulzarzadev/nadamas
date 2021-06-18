@@ -27,36 +27,7 @@ import { useAuth } from '../context/AuthContext'
 import { Records } from './Records'
 import { Schedule } from './Schedule'
 
-const scheduleBase = [
-  {
-    day: 0,
-    time: null
-  },
-  {
-    day: 1,
-    time: null
-  },
-  {
-    day: 2,
-    time: null
-  },
-  {
-    day: 3,
-    time: null
-  },
-  {
-    day: 4,
-    time: null
-  },
-  {
-    day: 5,
-    time: null
-  },
-  {
-    day: 6,
-    time: null
-  }
-]
+
 
 export default function NewAthlete() {
   const router = useRouter()
@@ -72,7 +43,6 @@ export default function NewAthlete() {
   }, [])
   const [form, setForm] = useState({
     birth: new Date(),
-    schedule: scheduleBase,
     records: []
   })
   const handleChange = (e) => {
@@ -123,6 +93,9 @@ export default function NewAthlete() {
     }
   }, [form.id])
 
+  console.log('form', form)
+  
+
   return (
     <div className={s.newathlete}>
       <form
@@ -140,7 +113,7 @@ export default function NewAthlete() {
           <div className={s.title}>
             <h2>Atleta</h2>
             <div className={s.avatar}>
-              <Avatar upload athleteId={form.id} image={form?.avatar} />
+              <Avatar upload id={form.id} image={form?.avatar} />
             </div>
           </div>
 

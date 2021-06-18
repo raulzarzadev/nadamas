@@ -1,6 +1,37 @@
 import s from './styles.module.css'
-import { useEffect, useState } from "react"
-import { HoursInput } from "./HoursInput"
+import { useEffect, useState } from 'react'
+import { HoursInput } from './HoursInput'
+
+const scheduleBase = [
+  {
+    day: 0,
+    time: null
+  },
+  {
+    day: 1,
+    time: null
+  },
+  {
+    day: 2,
+    time: null
+  },
+  {
+    day: 3,
+    time: null
+  },
+  {
+    day: 4,
+    time: null
+  },
+  {
+    day: 5,
+    time: null
+  },
+  {
+    day: 6,
+    time: null
+  }
+]
 
 export const Schedule = ({ form, setForm, hideWeekend }) => {
   const [schedule, setSchedule] = useState([])

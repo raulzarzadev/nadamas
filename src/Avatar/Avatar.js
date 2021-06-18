@@ -1,12 +1,11 @@
 import s from './styles.module.css'
 import Image from 'next/image'
 import React from 'react'
-import UploadFile from '../UploadFile'
+import UploadAvatar from '../UploadFile/UpladeAvatar'
 const Avatar = React.forwardRef(
   (
     {
       image,
-      athleteId,
       id,
       alt = '',
       upload,
@@ -29,7 +28,7 @@ const Avatar = React.forwardRef(
         ) : (
           <div>{alt.charAt(0).toUpperCase()}</div>
         )}
-        {upload && <UploadFile type={type} id={athleteId || id} />}
+        {upload && <UploadAvatar type={type} id={id} />}
       </a>
     )
   }
