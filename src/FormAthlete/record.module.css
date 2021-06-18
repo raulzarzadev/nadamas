@@ -27,6 +27,8 @@
 .record_cell {
   width: 32%;
 }
+.galery {
+}
 
 @media (min-width: 600px) {
   .record > * {

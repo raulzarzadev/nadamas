@@ -84,7 +84,7 @@ const GaleryModal = ({ open, handleOpen, id, image }) => {
       <div className={s.galery}>
         <UploadRecordImage type="record" id={id} setUrl={handleGetImageUrl} />
         {image && (
-          <div style={{ position: 'relative', width: 300, height: 300 }}>
+          <div style={{ position: 'relative', width: 200, height: 200 }}>
             <Image
               src={image}
               alt={`galery`}
