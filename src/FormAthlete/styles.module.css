@@ -83,6 +83,17 @@
   -webkit-appearance: caret;
 }
 
+.new_record {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  align-items: flex-end;
+  gap:8px
+}
+.new_record > * {
+width: 45%;
+}
+
 
 @media (min-width: 600px) {
   .inputs > * {
@@ -102,4 +113,7 @@
     width: 15%;
     margin: 0 auto;
   }
+  .new_record > * {
+width: 120px;
+}
 }

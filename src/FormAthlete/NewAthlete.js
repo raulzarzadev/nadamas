@@ -170,7 +170,7 @@ export default function NewAthlete() {
         </div>
         <Section title={'Marcas y Registros'}>
           <Records records={records} handleRemoveRecord={handleRemoveRecord} />
-          <div className={s.record}>
+          <div className={s.new_record}>
             <Text
               onChange={handleSetRecord}
               name="date"

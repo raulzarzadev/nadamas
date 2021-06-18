@@ -9,7 +9,7 @@ import { GaleryIcon, TrashBinIcon } from '../utils/Icons'
 import s from './record.module.css'
 
 export const Records = ({ records = [], handleRemoveRecord }) => {
-  console.log('records', records)
+
   const [openGaleryModal, setOpenGaleryModal] = useState(false)
   const handleOpenGalery = (id) => {
     openGaleryModal === id ? setOpenGaleryModal(false) : setOpenGaleryModal(id)
