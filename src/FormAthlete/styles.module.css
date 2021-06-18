@@ -54,7 +54,6 @@
   margin-left: 2rem;
 }
 
-
 .day_title {
   display: flex;
   align-items: center;
@@ -88,12 +87,11 @@
   flex-wrap: wrap;
   justify-content: space-around;
   align-items: flex-end;
-  gap:8px
+  gap: 8px;
 }
 .new_record > * {
-width: 45%;
+  width: 45%;
 }
-
 
 @media (min-width: 600px) {
   .inputs > * {
@@ -114,6 +112,6 @@ width: 45%;
     margin: 0 auto;
   }
   .new_record > * {
-width: 120px;
-}
+    width: 120px;
+  }
 }

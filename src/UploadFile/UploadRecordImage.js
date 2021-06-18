@@ -17,14 +17,26 @@ export default function UploadRecordImage({ type, id, setUrl }) {
     }
   }
 
+  useEffect(() => {
+    const photo = document.querySelector('#photo')
+    const camera = document.querySelector('#camera')
+    camera.addEventListener('change', function (e) {
+      photo.src = URL.createObjectURL(e.target.files[0])
+    })
+    console.log('photo, camera', photo, camera)
+  })
+
   return (
     <>
       <label className={s.upload}>
         <AddImageIcon />
+        <img id="photo" style={{ width: 100, height: 100 }} />
         <input
+          id="camera"
           accept="image/*"
           name="avatar-image"
           onChange={handleChange}
+          capture="camera"
           type="file"
           style={{ display: 'none' }}
         ></input>
