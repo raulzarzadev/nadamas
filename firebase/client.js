@@ -231,43 +231,9 @@ const _create_record = async (record) => {
 /* ------FILES------ */
 /* -------------------- */
 
-export const uploadFile = ({ type = undefined, id, file }) => {
+export const uploadFile = async ({ type = undefined, id, file }) => {
   if (type.undefined) return formatResponse(false, 'TYPE_UNDEFINED')
-  const storageRef = firebase.storage().ref()
-  const task = storageRef.child(`${type}/${id}`).put(file)
-  return task
-  /* return task.on(
-    'state_changed',
-    function (snapshot) {
-      // Observe state change events such as progress, pause, and resume
-      // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
-      var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-      console.log('Upload is ' + progress + '% done')
-      switch (snapshot.state) {
-        case firebase.storage.TaskState.PAUSED: // or 'paused'
-          console.log('Upload is paused')
-          break
-        case firebase.storage.TaskState.RUNNING: // or 'running'
-          console.log('Upload is running')
-          break
-      }
-    },
-    function (error) {
-      // Handle unsuccessful uploads
-      console.log('error', error)
-    },
-    function () {
-      // Handle successful uploads on complete
-      // For instance, get the download URL: https://firebasestorage.googleapis.com/...
-      task.snapshot.ref.getDownloadURL().then(function (downloadURL) {
-        console.log('File available at', downloadURL)
-        if (type === 'avatar') {
-          _update_athlete({ id, avatar: downloadURL })
-        }
-        if (type === 'record') {
-          _update_record({ id, image: downloadURL })
-        }
-      })
-    }
-  ) */
+  const ref = firebase.storage().ref(`${type}/${id}`)
+ return ref.put(file)
+ 
 }
