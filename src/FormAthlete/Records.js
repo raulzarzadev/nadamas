@@ -3,12 +3,12 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import Button from '../Button'
 import Modal from '../Modals/Modal'
+import UploadImage from '../UploadImage'
 import { format } from '../utils/Dates'
 import { GaleryIcon, TrashBinIcon } from '../utils/Icons'
 import s from './record.module.css'
 
 export const Records = ({ records = [], handleRemoveRecord }) => {
-
   const [openGaleryModal, setOpenGaleryModal] = useState(false)
   const handleOpenGalery = (id) => {
     openGaleryModal === id ? setOpenGaleryModal(false) : setOpenGaleryModal(id)
@@ -65,27 +65,28 @@ const DeleteRecordModal = ({ handleOpen, open, id, handleRemoveRecord }) => {
     <Modal handleOpen={handleOpen} open={open} title="Eliminar Rgistro">
       <div>
         ¿Seguro que deseas eliminar este registro?
-        <Button danger onClick={() => handleRemoveRecord(id)}>Eliminar</Button>
+        <Button danger onClick={() => handleRemoveRecord(id)}>
+          Eliminar
+        </Button>
       </div>
     </Modal>
   )
 }
 const GaleryModal = ({ open, handleOpen, id, image }) => {
-  console.log('id', id)
-
-  const handleGetImageUrl = (url) => {
+  const [newImage, setNewImage] = useState(null)
+  const upladedImage = (url) => {
     updateRecord({ id, image: url })
-      .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err))
+    setNewImage(url)
   }
+
   return (
     <Modal title="Galeria" open={open} handleOpen={handleOpen}>
       <div className={s.galery}>
-{/*         <UploadRecordImage type="record" id={id} setUrl={handleGetImageUrl} />
- */}        {image && (
+        <UploadImage storeRef={`record/${id}`} upladedImage={upladedImage} />
+        {(newImage || image) && (
           <div style={{ position: 'relative', width: 200, height: 200 }}>
             <Image
-              src={image}
+              src={newImage || image}
               alt={`galery`}
               layout="fill"
               objectFit="cover"

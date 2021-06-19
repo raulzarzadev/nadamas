@@ -95,7 +95,6 @@ export default function NewAthlete() {
     updateAtlete({ ...form, avatar: url })
   }
 
-  console.log('form', form)
 
   return (
     <div className={s.newathlete}>
