@@ -44,7 +44,7 @@ export default function AthleteRow({
           </div>
         )}
         <div className={s.athlete_action}>
-          <Button icon onClick={handleOpenEmergencyCall}>
+          <Button disabled={!emerMobile} icon onClick={handleOpenEmergencyCall}>
             <EmergencyIcon style={{ color: 'red' }} />
           </Button>
         </div>

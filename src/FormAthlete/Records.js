@@ -51,6 +51,7 @@ export const Records = ({ records = [], handleRemoveRecord }) => {
               <GaleryIcon />
             </Button>
           </div>
+          
           <DeleteRecordModal
             handleOpen={handleOpenDelete}
             open={openDelete}
