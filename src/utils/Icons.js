@@ -23,6 +23,9 @@ import { RiArrowDownSLine } from 'react-icons/ri'
 import { RiGalleryFill } from 'react-icons/ri'
 import { RiImageAddFill } from 'react-icons/ri'
 import { RiImageEditFill } from 'react-icons/ri'
+import { RiLoader2Line } from 'react-icons/ri'
+import { RiCheckFill } from 'react-icons/ri'
+import { RiErrorWarningFill } from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -43,7 +46,7 @@ export const CallIcon = (props) => (
 export const TrashBinIcon = (props) => (
   <RiDeleteBin6Fill size={size} {...props} />
 )
-export const UpladIcon = (props) => <RiUpload2Fill size={size} {...props} />
+export const UploadIcon = (props) => <RiUpload2Fill size={size} {...props} />
 export const SaveIcon = (props) => <RiSave2Fill size={size} {...props} />
 export const AddPersonIcon = (props) => <RiUserAddFill size={size} {...props} />
 export const PersonIcon = (props) => <RiUser3Fill size={size} {...props} />
@@ -56,4 +59,13 @@ export const DownIcon = (props) => <RiArrowDownSLine size={size} {...props} />
 /* IMAGES */
 export const GaleryIcon = (props) => <RiGalleryFill size={size} {...props} />
 export const AddImageIcon = (props) => <RiImageAddFill size={size} {...props} />
-export const EditImageIcon = (props) => <RiImageEditFill size={size} {...props} />
+export const EditImageIcon = (props) => (
+  <RiImageEditFill size={size} {...props} />
+)
+
+/* UPLOADING */
+export const UploadingIcon = (props) => <RiLoader2Line size={size} {...props} />
+export const DoneIcon = (props) => <RiCheckFill size={size} {...props} />
+export const WarningIcon = (props) => (
+  <RiErrorWarningFill size={size} {...props} />
+)

@@ -3,7 +3,6 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import Button from '../Button'
 import Modal from '../Modals/Modal'
-import UploadRecordImage from '../UploadFile/UploadRecordImage'
 import { format } from '../utils/Dates'
 import { GaleryIcon, TrashBinIcon } from '../utils/Icons'
 import s from './record.module.css'
@@ -82,8 +81,8 @@ const GaleryModal = ({ open, handleOpen, id, image }) => {
   return (
     <Modal title="Galeria" open={open} handleOpen={handleOpen}>
       <div className={s.galery}>
-        <UploadRecordImage type="record" id={id} setUrl={handleGetImageUrl} />
-        {image && (
+{/*         <UploadRecordImage type="record" id={id} setUrl={handleGetImageUrl} />
+ */}        {image && (
           <div style={{ position: 'relative', width: 200, height: 200 }}>
             <Image
               src={image}

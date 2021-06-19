@@ -9,9 +9,8 @@ import {
   removeRecord
 } from '@/firebase/client'
 import { useRouter } from 'next/router'
-import { dayLabels, format, formatInputDate } from '../utils/Dates'
+import { formatInputDate } from '../utils/Dates'
 import {
-  TrashBinIcon,
   SaveIcon,
   AddPersonIcon,
   AddIcon,
@@ -22,12 +21,10 @@ import Avatar from '../Avatar'
 import DeleteModal from '../Modals/DeleteModal'
 import Text from '../InputFields/Text'
 import Textarea from '../InputFields/Textarea'
-import UploadFile from '../UploadFile'
 import { useAuth } from '../context/AuthContext'
 import { Records } from './Records'
 import { Schedule } from './Schedule'
-
-
+import UploadImage from '../UploadImage'
 
 export default function NewAthlete() {
   const router = useRouter()
@@ -93,8 +90,12 @@ export default function NewAthlete() {
     }
   }, [form.id])
 
+  const upladedImage = (url) => {
+    setForm({ ...form, avatar: url })
+    updateAtlete({ ...form, avatar: url })
+  }
+
   console.log('form', form)
-  
 
   return (
     <div className={s.newathlete}>
@@ -114,6 +115,12 @@ export default function NewAthlete() {
             <h2>Atleta</h2>
             <div className={s.avatar}>
               <Avatar upload id={form.id} image={form?.avatar} />
+              {form?.id && (
+                <UploadImage
+                  upladedImage={upladedImage}
+                  storeRef={`avatar/${form.id}`}
+                />
+              )}
             </div>
           </div>
 

@@ -234,6 +234,13 @@ const _create_record = async (record) => {
 export const uploadFile = async ({ type = undefined, id, file }) => {
   if (type.undefined) return formatResponse(false, 'TYPE_UNDEFINED')
   const ref = firebase.storage().ref(`${type}/${id}`)
- return ref.put(file)
- 
+  const task = ref.put(file)
+  return task
+}
+
+export const uploadImage = ({ storeRef = null, file }) => {
+  if (!storeRef) return { ok: false, type: 'REF_NOT_INCLUDED' }
+  const ref = firebase.storage().ref(storeRef)
+  const task = ref.put(file)
+  return task
 }
