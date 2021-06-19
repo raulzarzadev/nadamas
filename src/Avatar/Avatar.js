@@ -16,7 +16,6 @@ const Avatar = React.forwardRef(
         ) : (
           <div>{alt.charAt(0).toUpperCase()}</div>
         )}
-        {/* {upload && <UploadAvatar type={type} id={id} />} */}
       </a>
     )
   }

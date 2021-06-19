@@ -68,7 +68,12 @@ export default function NewAthlete() {
     setOpenDelete(!openDelete)
   }
 
-  const [record, setRecord] = useState({ place: 'CREA', date: new Date() })
+  const initalRecordState = {
+    place: 'CREA',
+    date: new Date()
+  }
+
+  const [record, setRecord] = useState(initalRecordState)
   const [records, setRecords] = useState([])
   const handleSetRecord = (e) => {
     const { name, value } = e.target
@@ -77,7 +82,10 @@ export default function NewAthlete() {
 
   const handleAddRecord = () => {
     createRecord({ athleteId: form.id, ...record })
-    getRecords(form.id).then(setRecords)
+    setRecord(initalRecordState)
+    getRecords(form.id)
+      .then(setRecords)
+      .catch((err) => console.log('err', err))
   }
 
   const handleRemoveRecord = (recordId) => {
@@ -94,7 +102,6 @@ export default function NewAthlete() {
     setForm({ ...form, avatar: url })
     updateAtlete({ ...form, avatar: url })
   }
-
 
   return (
     <div className={s.newathlete}>

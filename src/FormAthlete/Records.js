@@ -17,6 +17,8 @@ export const Records = ({ records = [], handleRemoveRecord }) => {
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
+  console.log('records', records)
+  
 
   return (
     <>
