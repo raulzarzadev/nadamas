@@ -2,6 +2,7 @@ import { formatDistanceToNowStrict } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useState } from 'react'
 import Button from '../Button'
+import { useAuth } from '../context/AuthContext'
 import EmergencyCallModal from '../Modals/EmergencyCallModal'
 import { ContactIcon, EditIcon, EmergencyIcon } from '../utils/Icons'
 import s from './styles.module.css'
@@ -17,6 +18,8 @@ export default function AthleteRow({
   const handleOpenEmergencyCall = () => {
     setOpenEmergencyModal(!openEmergencyModal)
   }
+  const { user } = useAuth()
+  const wstext = `Hola ${name}. Soy ${user.name}, tu maestro de natacón. `
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
@@ -50,7 +53,7 @@ export default function AthleteRow({
             disabled={!mobile}
             icon
             nextLink
-            href={`https://wa.me/521${mobile}`}
+            href={`https://wa.me/521${mobile}?tex=${wstext}`}
           >
             <ContactIcon />
           </Button>
