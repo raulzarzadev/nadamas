@@ -53,7 +53,7 @@ export default function AthleteRow({
             disabled={!mobile}
             icon
             nextLink
-            href={`https://wa.me/521${mobile}?tex=${wstext}`}
+            href={`https://wa.me/521${mobile}?text=${wstext}`}
           >
             <ContactIcon />
           </Button>
