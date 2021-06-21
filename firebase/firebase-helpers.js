@@ -3,8 +3,8 @@ export const formatResponse = (ok, type, res) => {
   return { type, ok, res }
 }
 export const normalizeDoc = (doc) => {
-  const data = doc.data()
   if (!doc.exists) return {} // The document  not exist
+  const data = doc.data()
   const id = doc.id
 
   const { updatedAt, registryDate, createdAt, date, birth } = data

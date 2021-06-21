@@ -135,7 +135,7 @@ export const getAttendanceDate = async (date) => {
     .where('date', '==', attendanceDate)
     .get()
     .then(({ docs }) => normalizeDoc(docs[0]))
-    .catch((err) => console.log('err', err))
+    .catch((err) => console.log('attendance_err', err))
 }
 export const updateAttendanceList = async ({
   date = new Date(),
