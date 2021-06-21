@@ -19,7 +19,7 @@ export default function AthleteRow({
     setOpenEmergencyModal(!openEmergencyModal)
   }
   const { user } = useAuth()
-  const wstext = `Hola ${name}. Soy ${user.name}, tu maestro de natacón. `
+  const wstext = `Hola ${name}. Soy ${user.name}, tu profe de natación. `
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
