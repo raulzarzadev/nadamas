@@ -15,13 +15,13 @@ export default function Athletes() {
     if (user) getAthletes(user?.id).then(setAthletes)
   }, [user])
 
-  const [sortBy, setSortBy] = useState('')
+  const [sortBy, setSortBy] = useState('name')
   const handleSortBy = (key) => {
     if (sortBy === key) return setSortBy(key + '_reverse')
     setSortBy(key)
   }
 
-  const [sortedAthletes, setSortedAthletes] = useState([])
+  const [sortedAthletes, setSortedAthletes] = useState()
 
   useEffect(() => {
     const sorted = sortArrayObjectsByField({
@@ -31,7 +31,7 @@ export default function Athletes() {
     })
     setSortedAthletes(sorted)
     console.log('sorted', sorted, sortBy)
-  }, [sortBy])
+  }, [sortBy, athletes])
 
   return (
     <div className={s.athletes}>

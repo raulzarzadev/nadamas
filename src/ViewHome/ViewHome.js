@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import Button from '../Button'
 import { useAuth } from '../context/AuthContext'
 import MainLayout from '../layouts/MainLayout'
@@ -13,9 +14,26 @@ export default function ViewHome() {
   const handleSignOut = () => {
     signOut()
   }
+  const frases = [
+    'Saca el máximo de tus atletas',
+    'Optimiza tus entrenos',
+    'Mide sus progresos',
+    'Registra sus marcas'
+  ]
+
+  const [frase, setFrase] = useState('')
+  useEffect(() => {
+    let interval = 0
+    setInterval(() => {
+      setFrase(frases[interval])
+      interval++
+      if (interval === frases.length) interval = 0
+    }, 3000)
+  }, [])
+
   return (
     <MainLayout user={user}>
-      <p>Saca el máximo potencial de tus atletas</p>
+      <div className={s.frases}>{frase}</div>
       <h1>NADAMAS</h1>
       <div>{!user && <Button onClick={signInWithGoogle}>Ingresa</Button>}</div>
       {user && (
