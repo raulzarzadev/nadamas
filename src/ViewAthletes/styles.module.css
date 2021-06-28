@@ -18,6 +18,12 @@
   justify-content: center;
   align-items: center;
 }
+.sort_title{
+  cursor: pointer;
+}
+.sort_title[select='true']{
+  font-weight: 700;
+}
 @media (max-width: 600px) {
   .athlete_row{
     font-size: 1rem;

@@ -1,7 +1,15 @@
 import FormAthlete from '@/src/FormAthlete'
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
 import MainLayout from '@/src/layouts/MainLayout'
+import Head from 'next/head'
 
 export default function grupos() {
-  return <PrivateRoute Component={FormAthlete} Layout={MainLayout} />
+  return (
+    <>
+      <Head>
+        <title>Atleta - detalles</title>
+      </Head>
+      <PrivateRoute Component={FormAthlete} Layout={MainLayout} />
+    </>
+  )
 }
