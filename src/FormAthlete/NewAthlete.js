@@ -38,10 +38,13 @@ export default function NewAthlete() {
       })
     }
   }, [])
+
   const [form, setForm] = useState({
     birth: new Date(),
     records: []
   })
+  
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
@@ -102,6 +105,13 @@ export default function NewAthlete() {
     setForm({ ...form, avatar: url })
     updateAtlete({ ...form, avatar: url })
   }
+
+  const hanldleSetSchedule=(schedule)=>{
+    setForm({...form, schedule})
+  }
+
+  console.log('form', form)
+  
 
   return (
     <div className={s.newathlete}>
@@ -208,7 +218,7 @@ export default function NewAthlete() {
         </Section>
 
         <Section title={'Horario'}>
-          <Schedule hideWeekend form={form} setForm={setForm} />
+          <Schedule hideWeekend schedule={form?.schedule} setSchedule={hanldleSetSchedule} />
         </Section>
         <Section title={'Contacto'}>
           <div className={`${s.inputs} ${s.contact}`}>

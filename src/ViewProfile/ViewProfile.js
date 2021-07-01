@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext'
 import FormUser from '../FormUser'
 import Text from '../InputFields/Text'
 import { dayLabels } from '../utils/Dates'
+import { AddIcon } from '../utils/Icons'
+import Button from '../Button'
 import s from './styles.module.css'
 
 export default function ViewProfile() {
@@ -19,6 +21,7 @@ export default function ViewProfile() {
   }
 
   const [hideWeekend, setHideWeekend] = useState(true)
+  const [schedules, setSchedules] = useState([])
 
   return (
     <div className={s.viewprofile}>
@@ -29,11 +32,11 @@ export default function ViewProfile() {
         <Text label="Correo" value={form.email} name="email" />
       </div>
       <h3>Horarios disponibles</h3>
-      <ScheduleSelect
-        schedule={user?.schedule}
-        onChangeSchedule={onChangeSchedule}
-        hideWeekend={hideWeekend}
-      />
+      {schedules.map((schedule) => (
+        <div>Schedule{console.log('schedule', schedule)
+        }</div>
+      ))}
+      <ScheduleSelect setSchedules={setSchedules} schedules={schedules} />
       <div>
         {/*  estadisiticas de alumnos */}
         {/* Cuantos alumnos hay */}
@@ -43,7 +46,8 @@ export default function ViewProfile() {
   )
 }
 
-const ScheduleSelect = ({ schedule, onChangeSchedule, hideWeekend }) => {
+const ScheduleSelect = ({ schedules, setSchedules }) => {
+
   const hours = []
   for (let i = 5; i < 22; i++) {
     hours.push({ value: `${i}`, label: `${i < 10 ? `0${i}` : i}:00` })
@@ -52,22 +56,26 @@ const ScheduleSelect = ({ schedule, onChangeSchedule, hideWeekend }) => {
     day: new Date().getDay(),
     times: [new Date().getHours()]
   })
-  useEffect(() => {}, [schedule])
 
   const onChange = (e) => {
     const { name, value, checked } = e.target
     if (name === 'day' && !form.times.includes(parseInt(value))) {
-      setForm({ ...form, day: value, times: [...form?.times, parseInt(value)] })
+      setNewSchedule({
+        ...form,
+        day: value,
+        times: [...form?.times, parseInt(value)]
+      })
     }
-    e.target.name
-    console.log('e', e.target.value, e.target.name, e.target.checked)
   }
-  console.log('form', form)
 
   /* 
   {day:1,
   times:[17,18,19,]}
   */
+  const [newSchedule, setNewSchedule] = useState({})
+  const handleAddSchedule = () => {
+    setSchedules([...schedules, newSchedule])
+  }
 
   const scheduleDisplay = form.times
 
@@ -94,6 +102,9 @@ const ScheduleSelect = ({ schedule, onChangeSchedule, hideWeekend }) => {
           </label>
         ))}
       </div>
+      <Button onClick={handleAddSchedule}>
+        <AddIcon />
+      </Button>
     </div>
   )
 }

@@ -1,16 +1,17 @@
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import Button from '../Button'
 import { dayLabels } from '../utils/Dates'
 import { TrashBinIcon } from '../utils/Icons'
 import s from './styles.module.css'
 
-export const HoursInput = ({ name, value, onChange }) => {
-  const availableHours = []
-  for (let i = 17; i < 20; i++) {
-    availableHours.push({
-      value: i,
-      label: `${i <= 9 ? `0${i}:00` : `${i}:00`}`
-    })
-  }
+export const HoursInput = ({ name, userSchedule, value=undefined, onChange }) => {
+  
+ useEffect(()=>{setSchedule(userSchedule)},[])
+
+  const [schedule, setSchedule]= useState([])
+
+  console.log(userSchedule);
   return (
     <>
       <div className={s.day_title}>
@@ -29,7 +30,7 @@ export const HoursInput = ({ name, value, onChange }) => {
           onChange={onChange}
         >
           <option value={null}>--:--</option>
-          {availableHours.map((hour, i) => (
+          {schedule?.map((hour, i) => (
             <option key={i} value={hour.value}>
               {hour.label}
             </option>

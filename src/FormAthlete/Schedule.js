@@ -1,69 +1,69 @@
 import s from './styles.module.css'
 import { useEffect, useState } from 'react'
 import { HoursInput } from './HoursInput'
+import { dayLabels } from '../utils/Dates'
 
-const scheduleBase = [
-  {
-    day: 0,
-    time: null
-  },
-  {
-    day: 1,
-    time: null
-  },
-  {
-    day: 2,
-    time: null
-  },
-  {
-    day: 3,
-    time: null
-  },
-  {
-    day: 4,
-    time: null
-  },
-  {
-    day: 5,
-    time: null
-  },
-  {
-    day: 6,
-    time: null
-  }
-]
+export const Schedule = ({ schedule, setSchedule, hideWeekend }) => {
+  const [athleteSchedule, setAthleteSchedule] = useState([])
+  const [userSchedule, setUserSchedule] = useState([])
 
-export const Schedule = ({ form, setForm, hideWeekend }) => {
-  const [schedule, setSchedule] = useState([])
-  const handleChangeSchedule = (evt) => {
-    const { value, name } = evt.target
-    const newSchedule = schedule.map(({ day, time }) => {
-      if (day == name) return { day: parseInt(name), time: value }
-      return { time, day }
-    })
-    setForm({ ...form, schedule: newSchedule })
+  const handleScheduleChange = ({ target }) => {
+    const { name, value } = target
+    athleteSchedule[name] = value
+    setAthleteSchedule([...athleteSchedule])
   }
 
   useEffect(() => {
-    if (form.schedule) {
-      setSchedule(form.schedule)
+    if (schedule) {
+      setAthleteSchedule(schedule)
     }
-  }, [form.schedule])
+  }, [])
 
-  const listDays = hideWeekend
-    ? schedule.filter(({ day }) => day !== 0 && day !== 6)
-    : schedule
+  useEffect(() => {
+    // Create a schedule fiiled with null items, and fill whit the time when the user select a new schedule
+    const fillScheduleArray = Array(7)
+      .fill(null)
+      .map((day, i) => (!day && athleteSchedule[i]) || null)
+    setSchedule([...fillScheduleArray])
+  }, [athleteSchedule])
+
+  useEffect(() => {
+    // get schedule
+    const availableHours = [
+      [],
+      ['17:00', '18:00', '19:00'],
+      ['17:00', '18:00', '19:00'],
+      ['17:00', '18:00', '19:00'],
+      ['17:00', '18:00', '19:00'],
+      ['17:00', '18:00', '19:00'],
+      []
+    ]
+    setUserSchedule(availableHours)
+  }, [])
+
+  
 
   return (
     <>
       <div className={s.schedule}>
-        {listDays?.map(({ day, time }) => (
-          <div className={s.schedule_day}>
-            <HoursInput
-              name={day}
-              value={time}
-              onChange={handleChangeSchedule}
-            />
+        {userSchedule?.map((scheduleDay, i) => (
+          <div key={i}>
+            {dayLabels[i]}
+            <div className={s.schedule_day}>
+              <select
+                className={s.select_schedule}
+                name={i}
+                defaultValue={athleteSchedule[i]}
+                onChange={handleScheduleChange}
+              >
+                <option value="">--:--</option>
+                {scheduleDay?.map((hour, i) => (
+                  <option key={i} value={hour}>
+                    {hour}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         ))}
       </div>

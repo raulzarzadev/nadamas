@@ -14,6 +14,10 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // confirm if user have isActive
+  
+
+
   const signOut = () => {
     firebaseLogout()
   }
