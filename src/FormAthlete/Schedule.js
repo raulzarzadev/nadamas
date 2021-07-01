@@ -1,5 +1,5 @@
 import s from './styles.module.css'
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { HoursInput } from './HoursInput'
 import { dayLabels } from '../utils/Dates'
 
@@ -41,30 +41,32 @@ export const Schedule = ({ schedule, setSchedule, hideWeekend }) => {
     setUserSchedule(availableHours)
   }, [])
 
-  
-
   return (
     <>
       <div className={s.schedule}>
         {userSchedule?.map((scheduleDay, i) => (
-          <div key={i}>
-            {dayLabels[i]}
-            <div className={s.schedule_day}>
-              <select
-                className={s.select_schedule}
-                name={i}
-                defaultValue={athleteSchedule[i]}
-                onChange={handleScheduleChange}
-              >
-                <option value="">--:--</option>
-                {scheduleDay?.map((hour, i) => (
-                  <option key={i} value={hour}>
-                    {hour}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <React.Fragment key={i}>
+            {hideWeekend && (i === 0 || i === 6) ? null : (
+              <div>
+                {dayLabels[i]}
+                <div className={s.schedule_day}>
+                  <select
+                    className={s.select_schedule}
+                    name={i}
+                    defaultValue={athleteSchedule[i]}
+                    onChange={handleScheduleChange}
+                  >
+                    <option value="">--:--</option>
+                    {scheduleDay?.map((hour, i) => (
+                      <option key={i} value={hour}>
+                        {hour}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+          </React.Fragment>
         ))}
       </div>
     </>
