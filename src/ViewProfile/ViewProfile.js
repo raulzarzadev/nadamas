@@ -1,14 +1,60 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-import FormUser from '../FormUser'
 import Text from '../InputFields/Text'
 import { dayLabels } from '../utils/Dates'
 import { AddIcon } from '../utils/Icons'
 import Button from '../Button'
+import PickerTime from '../PickerTime'
+import PickerDays from '../PickerDays'
 import s from './styles.module.css'
 
 export default function ViewProfile() {
   const { user } = useAuth()
+
+  // La info ser recibe asi
+  const userSchedule = [
+    [],
+    ['17:00', '18:00', '19:00'],
+    ['17:00', '18:00', '19:00'],
+    ['17:00'],
+    ['17:00', '18:00', '19:00'],
+    ['17:00', '18:00', '19:00'],
+    []
+  ]
+
+  // hay que transformarla en esto
+  /*   const scheduleDisplay = [
+    { hour: '17:00', days: [1, 2, 3, 4, 5] },
+    { hour: '18:00', days: [1, 2, 4, 5] },
+    { hour: '19:00', days: [1, 2, 4, 5] }
+  ] */
+
+  const [scheduleDisplay, setScheduleDisplay] = useState([])
+
+  useEffect(() => {
+    setScheduleDisplay(toScheduleDisplay(userSchedule))
+  }, [])
+
+  const toScheduleDisplay = (schedule = []) => {
+    /* 
+ scanea cada dia, 
+ busca si existe una propiedad hour con este valor, 
+ si existe toma el valor days de esa propiedad y le agrega el index, 
+ si no existe, la crea, y le agrega el index. 
+ */
+    let res = []
+    schedule.forEach((day, i) => {
+      day.forEach((hour, j) => {
+        const findTime = res.find((time) => time.hour === hour)
+        if (!findTime) {
+          res.push({ hour, days: [i] })
+        } else {
+          findTime.days = [...findTime.days, i]
+        }
+      })
+    })
+    return res
+  }
 
   const [form, setForm] = useState({})
 
@@ -16,25 +62,46 @@ export default function ViewProfile() {
     if (user) setForm(user)
   }, [user])
 
-  const onChangeSchedule = (e) => {
-    console.log('change schedule', e.target.value, e.target.checked)
+  const handleChange = ({ target }) => {
+    setForm({ ...form, [target.name]: target.value })
   }
 
-  const [hideWeekend, setHideWeekend] = useState(true)
   const [schedules, setSchedules] = useState([])
+  console.log('schedules', schedules)
 
   return (
     <div className={s.viewprofile}>
       <div>
-        <Text label="Nombre" value={form.name} name="name" />
+        <Text
+          label="Nombre"
+          value={form.name}
+          onChange={handleChange}
+          name="name"
+        />
       </div>
       <div>
-        <Text label="Correo" value={form.email} name="email" />
+        <Text
+          label="Correo"
+          value={form.email}
+          onChange={handleChange}
+          name="email"
+        />
       </div>
       <h3>Horarios disponibles</h3>
-      {schedules.map((schedule) => (
-        <div>Schedule{console.log('schedule', schedule)
-        }</div>
+      {scheduleDisplay.map(({ hour, days }, i) => (
+        <div
+          key={i}
+          style={{ display: 'flex', width: '100%', alignItems: 'center' }}
+        >
+          {hour}{' '}
+          <div style={{ display: 'flex', width: '80%' }}>
+            {days.map((day) => (
+              <div
+                style={{ margin: 4, padding: 4 }}
+              >{`${dayLabels[day][0]}${dayLabels[day][1]}`}</div>
+            ))}
+          </div>
+        </div>
       ))}
       <ScheduleSelect setSchedules={setSchedules} schedules={schedules} />
       <div>
@@ -47,61 +114,25 @@ export default function ViewProfile() {
 }
 
 const ScheduleSelect = ({ schedules, setSchedules }) => {
-
-  const hours = []
-  for (let i = 5; i < 22; i++) {
-    hours.push({ value: `${i}`, label: `${i < 10 ? `0${i}` : i}:00` })
-  }
-  const [form, setForm] = useState({
-    day: new Date().getDay(),
-    times: [new Date().getHours()]
-  })
-
-  const onChange = (e) => {
-    const { name, value, checked } = e.target
-    if (name === 'day' && !form.times.includes(parseInt(value))) {
-      setNewSchedule({
-        ...form,
-        day: value,
-        times: [...form?.times, parseInt(value)]
-      })
-    }
-  }
-
-  /* 
-  {day:1,
-  times:[17,18,19,]}
-  */
-  const [newSchedule, setNewSchedule] = useState({})
+  const [form, setForm] = useState({ hour: '', days: [] })
+  useEffect(() => {
+    if (schedules) setForm(schedules)
+  }, [schedules])
   const handleAddSchedule = () => {
-    setSchedules([...schedules, newSchedule])
+    setSchedules(form)
   }
 
-  const scheduleDisplay = form.times
+  const handleSetTime = (time) => {
+    setForm({ ...form, hour: time })
+  }
+  const handleSetDays = (days) => {
+    setForm({ ...form, days })
+  }
 
   return (
     <div className={s.schedule}>
-      <select name="day" className={s.select} onChange={onChange} value={null}>
-        <option value={null}>--:--</option>
-        {hours.map(({ value, label }) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
-        ))}
-      </select>
-      <div className={s.checkboxs}>
-        {dayLabels.map((day, i) => (
-          <label className={s.checkbox_day}>
-            <input
-              onChange={onChange}
-              className={s.check_input}
-              name={i}
-              type="checkbox"
-            />
-            <span className={s.check_label}>{day[0]}</span>
-          </label>
-        ))}
-      </div>
+      <PickerTime minutesStep="15" handleSetTime={handleSetTime} />
+      <PickerDays /* days={form?.days} */ handleSetDays={handleSetDays} />
       <Button onClick={handleAddSchedule}>
         <AddIcon />
       </Button>

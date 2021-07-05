@@ -41,9 +41,19 @@ export const Schedule = ({ schedule, setSchedule, hideWeekend }) => {
     setUserSchedule(availableHours)
   }, [])
 
+  const a = {'18':[1,2,3]}
+
+  for (const i in a) {
+    if (Object.hasOwnProperty.call(a, i)) {
+      const element = a[i];
+      
+    }
+  }
+
   return (
     <>
       <div className={s.schedule}>
+        {Object.keys(a).map()}
         {userSchedule?.map((scheduleDay, i) => (
           <React.Fragment key={i}>
             {hideWeekend && (i === 0 || i === 6) ? null : (

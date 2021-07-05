@@ -5,13 +5,19 @@ import { dayLabels } from '../utils/Dates'
 import { TrashBinIcon } from '../utils/Icons'
 import s from './styles.module.css'
 
-export const HoursInput = ({ name, userSchedule, value=undefined, onChange }) => {
-  
- useEffect(()=>{setSchedule(userSchedule)},[])
+export const HoursInput = ({
+  name,
+  userSchedule,
+  value = undefined,
+  onChange
+}) => {
+  useEffect(() => {
+    setSchedule(userSchedule)
+  }, [])
 
-  const [schedule, setSchedule]= useState([])
+  const [schedule, setSchedule] = useState([])
 
-  console.log(userSchedule);
+  console.log(userSchedule)
   return (
     <>
       <div className={s.day_title}>
