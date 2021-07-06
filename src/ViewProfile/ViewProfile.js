@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Text from '../InputFields/Text'
 import { dayLabels } from '../utils/Dates'
-import { AddIcon } from '../utils/Icons'
+import { AddIcon, TrashBinIcon } from '../utils/Icons'
 import Button from '../Button'
 import PickerTime from '../PickerTime'
 import PickerDays from '../PickerDays'
@@ -12,7 +12,7 @@ export default function ViewProfile() {
   const { user } = useAuth()
 
   // La info ser recibe asi
-  const userSchedule = [
+  const userSchedule_ex = [
     [],
     ['17:00', '18:00', '19:00'],
     ['17:00', '18:00', '19:00'],
@@ -21,6 +21,8 @@ export default function ViewProfile() {
     ['17:00', '18:00', '19:00'],
     []
   ]
+
+  const [userSchedule, setUserSchedule] = useState(userSchedule_ex || [])
 
   // hay que transformarla en esto
   /*   const scheduleDisplay = [
@@ -44,7 +46,7 @@ export default function ViewProfile() {
  */
     let res = []
     schedule.forEach((day, i) => {
-      day.forEach((hour, j) => {
+      day?.forEach((hour, j) => {
         const findTime = res.find((time) => time.hour === hour)
         if (!findTime) {
           res.push({ hour, days: [i] })
@@ -53,6 +55,18 @@ export default function ViewProfile() {
         }
       })
     })
+    return res
+  }
+  const toUserSchedule = (schedule) => {
+    let res = Array(7).fill([])
+    schedule.forEach(({ hour, days }) => {
+      days.forEach((day) => {
+        res[day] = [...res[day], hour]
+      })
+      console.log('days, hour', days, hour)
+    })
+    console.log('res', res)
+
     return res
   }
 
@@ -66,8 +80,36 @@ export default function ViewProfile() {
     setForm({ ...form, [target.name]: target.value })
   }
 
+  const [schedule, setSchedule] = useState({})
   const [schedules, setSchedules] = useState([])
-  console.log('schedules', schedules)
+  const handleChangeSchedule = (newSchedule) => {
+    const updateSchedule = schedules.filter(
+      ({ hour }) => hour !== newSchedule.hour
+    )
+    setSchedules([...updateSchedule, newSchedule])
+  }
+
+  useEffect(() => {
+    const sortSchedules = schedules.sort((a, b) => {
+      if (a.hour < b.hour) return -1
+      if (a.hour > b.hour) return 1
+      return 0
+    })
+    setScheduleDisplay(sortSchedules)
+    setUserSchedule(toUserSchedule(sortSchedules))
+  }, [schedules])
+
+  const handleDeleteHour = (hour) => {
+    const deleteShceduleHour = (hourToRemove) => {
+      const res = scheduleDisplay.filter(({ hour }) => hourToRemove !== hour)
+      
+      
+      return res
+    }
+    setSchedules(deleteShceduleHour(hour))
+  }
+
+  console.log('scheduleDisplay', scheduleDisplay)
 
   return (
     <div className={s.viewprofile}>
@@ -93,17 +135,21 @@ export default function ViewProfile() {
           key={i}
           style={{ display: 'flex', width: '100%', alignItems: 'center' }}
         >
+          <Button onClick={() => handleDeleteHour(hour)}>
+            <TrashBinIcon size={'.7rem'} />
+          </Button>{' '}
           {hour}{' '}
           <div style={{ display: 'flex', width: '80%' }}>
             {days.map((day) => (
               <div
+                key={day}
                 style={{ margin: 4, padding: 4 }}
               >{`${dayLabels[day][0]}${dayLabels[day][1]}`}</div>
             ))}
           </div>
         </div>
       ))}
-      <ScheduleSelect setSchedules={setSchedules} schedules={schedules} />
+      <ScheduleSelect setSchedules={handleChangeSchedule} schedule={schedule} />
       <div>
         {/*  estadisiticas de alumnos */}
         {/* Cuantos alumnos hay */}
@@ -113,13 +159,13 @@ export default function ViewProfile() {
   )
 }
 
-const ScheduleSelect = ({ schedules, setSchedules }) => {
-  const [form, setForm] = useState({ hour: '', days: [] })
-  useEffect(() => {
-    if (schedules) setForm(schedules)
-  }, [schedules])
+const ScheduleSelect = ({ schedule, setSchedules }) => {
+  const initalFormState = { hour: '00:00', days: [] }
+  const [form, setForm] = useState(initalFormState)
+
   const handleAddSchedule = () => {
     setSchedules(form)
+    //setForm({ ...form, hour: initalFormState.hour })
   }
 
   const handleSetTime = (time) => {
@@ -131,8 +177,12 @@ const ScheduleSelect = ({ schedules, setSchedules }) => {
 
   return (
     <div className={s.schedule}>
-      <PickerTime minutesStep="15" handleSetTime={handleSetTime} />
-      <PickerDays /* days={form?.days} */ handleSetDays={handleSetDays} />
+      <PickerTime
+        time={form?.hour}
+        minutesStep="15"
+        handleSetTime={handleSetTime}
+      />
+      <PickerDays days={form?.days} handleSetDays={handleSetDays} />
       <Button onClick={handleAddSchedule}>
         <AddIcon />
       </Button>

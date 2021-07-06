@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import s from './styles.module.css'
 
 export default function PickerTime({
-  name = 'picker-time',
+  time = '00:00',
   startsAt = 6,
   endsAt = 22,
   minutesStep = 15,
   handleSetTime = () => {}
 }) {
+
   useEffect(() => {
     const HOURS = () => {
       let res = []
@@ -37,13 +38,23 @@ export default function PickerTime({
     setMinutes(MINUTES())
   }, [])
 
-  const [time, setTime] = useState({ hours: '00', minutes: '00' })
+  const [_time, _setTime] = useState({ hours: '00', minutes: '00' })
   const handleChange = ({ target: { value, name } }) => {
-    setTime({ ...time, [name]: value })
+    _setTime({ ..._time, [name]: value })
   }
 
   useEffect(() => {
-    handleSetTime(`${time?.hours}:${time?.minutes}`)
+    handleSetTime(`${_time?.hours}:${_time?.minutes}`)
+  }, [_time])
+  
+  useEffect(() => {
+    if (time) {
+      const formatValue = () => {
+        const timeArray = time.split(':')
+        _setTime({ hours: timeArray[0], minutes: timeArray[1] })
+      }
+      _setTime(formatValue)
+    }
   }, [time])
 
   const [hours, setHours] = useState([])
@@ -51,7 +62,12 @@ export default function PickerTime({
 
   return (
     <div>
-      <select defaultValue="00" onChange={handleChange} name="hours">
+      <select
+        defaultValue="00"
+        value={_time?.hours}
+        onChange={handleChange}
+        name="hours"
+      >
         <option value="00">00</option>
         {hours?.map((hour, i) => (
           <option value={hour} key={i}>
@@ -59,7 +75,12 @@ export default function PickerTime({
           </option>
         ))}
       </select>
-      <select defaultValue="00" onChange={handleChange} name="minutes">
+      <select
+        defaultValue="00"
+        value={_time?.minutes}
+        onChange={handleChange}
+        name="minutes"
+      >
         <option value="00">00</option>
         {minutes?.map((hour, i) => (
           <option key={i} value={hour}>
