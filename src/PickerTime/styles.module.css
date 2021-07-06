@@ -2,4 +2,37 @@
 .pickertime{
     border: 1px solid #000;
 }
+.time {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 2px;
+}
+.time > label {
+    display: flex;
+    flex-direction: column;
+    font-size: small;
+    text-align: center;
+}
+.select{
+    padding: 4px;
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid;
+    font-size: large;
+    border-radius: 2px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
 
+.separator {
+    font-weight: 600;
+    margin-bottom: 7px;
+}
+.select::-ms-expand {
+    display: none;
+
+}
+.select option {
+    background-color: var(--primary);
+}

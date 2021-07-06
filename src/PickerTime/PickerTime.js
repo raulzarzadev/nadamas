@@ -8,7 +8,6 @@ export default function PickerTime({
   minutesStep = 15,
   handleSetTime = () => {}
 }) {
-
   useEffect(() => {
     const HOURS = () => {
       let res = []
@@ -46,7 +45,7 @@ export default function PickerTime({
   useEffect(() => {
     handleSetTime(`${_time?.hours}:${_time?.minutes}`)
   }, [_time])
-  
+
   useEffect(() => {
     if (time) {
       const formatValue = () => {
@@ -61,33 +60,42 @@ export default function PickerTime({
   const [minutes, setMinutes] = useState([])
 
   return (
-    <div>
-      <select
-        defaultValue="00"
-        value={_time?.hours}
-        onChange={handleChange}
-        name="hours"
-      >
-        <option value="00">00</option>
-        {hours?.map((hour, i) => (
-          <option value={hour} key={i}>
-            {hour}
-          </option>
-        ))}
-      </select>
-      <select
-        defaultValue="00"
-        value={_time?.minutes}
-        onChange={handleChange}
-        name="minutes"
-      >
-        <option value="00">00</option>
-        {minutes?.map((hour, i) => (
-          <option key={i} value={hour}>
-            {hour}
-          </option>
-        ))}
-      </select>
+    <div className={s.time}>
+      <label>
+        Hrs
+        <select
+          className={s.select}
+          defaultValue="00"
+          value={_time?.hours}
+          onChange={handleChange}
+          name="hours"
+        >
+          <option value="00">00</option>
+          {hours?.map((hour, i) => (
+            <option value={hour} key={i}>
+              {hour}
+            </option>
+          ))}
+        </select>
+      </label>
+      <span className={s.separator}>:</span>
+      <label>
+        Min
+        <select
+          className={s.select}
+          defaultValue="00"
+          value={_time?.minutes}
+          onChange={handleChange}
+          name="minutes"
+        >
+          <option value="00">00</option>
+          {minutes?.map((hour, i) => (
+            <option key={i} value={hour}>
+              {hour}
+            </option>
+          ))}
+        </select>
+      </label>
     </div>
   )
 }

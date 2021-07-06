@@ -63,9 +63,7 @@ export default function ViewProfile() {
       days.forEach((day) => {
         res[day] = [...res[day], hour]
       })
-      console.log('days, hour', days, hour)
     })
-    console.log('res', res)
 
     return res
   }
@@ -102,14 +100,12 @@ export default function ViewProfile() {
   const handleDeleteHour = (hour) => {
     const deleteShceduleHour = (hourToRemove) => {
       const res = scheduleDisplay.filter(({ hour }) => hourToRemove !== hour)
-      
-      
+
       return res
     }
     setSchedules(deleteShceduleHour(hour))
   }
 
-  console.log('scheduleDisplay', scheduleDisplay)
 
   return (
     <div className={s.viewprofile}>

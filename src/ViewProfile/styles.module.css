@@ -1,5 +1,4 @@
 .schedule {
-  display: flex;
   align-items: center;
 }
 
@@ -14,3 +13,5 @@
   width: inherit;
   -webkit-appearance: caret;
 }
+
+
