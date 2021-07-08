@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { dayLabels } from '../utils/Dates'
 import s from './styles.module.css'
 
-export default function PickerDays({days=[], handleSetDays}) {
+export default function PickerDays({ days = [], handleSetDays }) {
   const [form, setForm] = useState([])
-  
+
   const handleChange = ({ target: { name, checked } }) => {
     const day = parseInt(name)
     if (checked) {
@@ -14,16 +14,15 @@ export default function PickerDays({days=[], handleSetDays}) {
     }
   }
 
-
-
-  useEffect(()=>{
+  useEffect(() => {
     handleSetDays(form)
-  },[form]) 
-  
-   useEffect(() => {
-      setForm(days)
-  }, []) 
+  }, [form])
 
+  useEffect(() => {
+    if (days.length > 0) {
+      setForm(days)
+    }
+  }, [days])
 
   return (
     <div className={s.checkboxs}>

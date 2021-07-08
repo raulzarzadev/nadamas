@@ -17,7 +17,6 @@ export default function PickerTime({
 
         res.push(label)
       }
-      console.log('res', res)
       return res
     }
     setHours(HOURS())
@@ -31,7 +30,6 @@ export default function PickerTime({
         if (i < 10) label = `0${i}`
         res.push(label)
       }
-      console.log('res', res)
       return res
     }
     setMinutes(MINUTES())
@@ -65,7 +63,6 @@ export default function PickerTime({
         Hrs
         <select
           className={s.select}
-          defaultValue="00"
           value={_time?.hours}
           onChange={handleChange}
           name="hours"
@@ -83,7 +80,6 @@ export default function PickerTime({
         Min
         <select
           className={s.select}
-          defaultValue="00"
           value={_time?.minutes}
           onChange={handleChange}
           name="minutes"
