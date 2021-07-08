@@ -6,31 +6,25 @@ import { dayLabels } from '../utils/Dates'
 import { AddIcon, TrashBinIcon } from '../utils/Icons'
 import s from './styles.module.css'
 
-export default function ScheduleForm(
-  {
-    /*  schedule = [],
-  setSchedule = () => {} */
-  }
-) {
-  /*  useEffect(() => {
-    setSchedule(_schedule)
-  }, [_schedule])
-
+export default function ScheduleForm({
+  schedule = [],
+  setSchedule = () => {}
+}) {
   useEffect(() => {
-    if (schedule.length) {
-      _setSchedule(schedule)
-    }
-  }, [schedule]) */
+    _setSchedule(schedule)
+  }, [schedule])
 
-  const [_schedule, _setSchedule] = useState([])
-  console.log('_schedule', _schedule)
+  const [_schedule, _setSchedule] = useState(schedule || [])
 
   const handleChangeSchedule = (schedule) => {
     _setSchedule(schedule)
+    setSchedule(schedule)
   }
-  const handleAddSchedule = (newSchedule) => {
-    _setSchedule(newSchedule)
+  const handleAddSchedule = (schedule) => {
+    _setSchedule(schedule)
+    setSchedule(schedule)
   }
+
   return (
     <div>
       <ScheduleDisplay
@@ -43,6 +37,8 @@ export default function ScheduleForm(
 }
 
 const ScheduleDisplay = ({ schedule = [], setSchedule = () => {} }) => {
+  console.log('schedule', schedule)
+
   const handleDeleteHour = (hour) => {
     const deletedScheduleHour = (hourToRemove) => {
       const res = schedule.filter(({ hour }) => hourToRemove !== hour)
@@ -53,25 +49,31 @@ const ScheduleDisplay = ({ schedule = [], setSchedule = () => {} }) => {
 
   return (
     <div>
-      {schedule.map(({ hour, days }, i) => (
-        <div
-          key={i}
-          style={{ display: 'flex', width: '100%', alignItems: 'center' }}
-        >
-          <Button onClick={() => handleDeleteHour(hour)}>
-            <TrashBinIcon size={'.7rem'} />
-          </Button>
-          {hour}
-          <div style={{ display: 'flex', width: '80%' }}>
-            {days.map((day, i) => (
-              <div
-                key={i}
-                style={{ margin: 4, padding: 4 }}
-              >{`${dayLabels[day][0]}${dayLabels[day][1]}`}</div>
-            ))}
+      {schedule
+        .sort((a, b) => {
+          if (a.hour < b.hour) return -1
+          if (a.hour > b.hour) return 1
+          return 0
+        })
+        .map(({ hour, days }, i) => (
+          <div
+            key={i}
+            style={{ display: 'flex', width: '100%', alignItems: 'center' }}
+          >
+            <Button onClick={() => handleDeleteHour(hour)}>
+              <TrashBinIcon size={'.7rem'} />
+            </Button>
+            {hour}
+            <div style={{ display: 'flex', width: '80%' }}>
+              {days.sort().map((day, i) => (
+                <div
+                  key={i}
+                  style={{ margin: 4, padding: 4 }}
+                >{`${dayLabels[day][0]}${dayLabels[day][1]}`}</div>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
     </div>
   )
 }
@@ -88,8 +90,6 @@ const ScheduleSelect = ({ schedule = [], setNewSchedule = () => {} }) => {
   }
   const handleAddSchedule = () => {
     const removeRepitedHour = schedule.filter(({ hour }) => hour !== form.hour)
-    console.log('removeRepitedHour', removeRepitedHour)
-
     setNewSchedule([...removeRepitedHour, form])
   }
 
