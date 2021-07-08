@@ -15,12 +15,12 @@ export default function PickerDays({ days = [], handleSetDays }) {
   }
 
   useEffect(() => {
-    handleSetDays(form)
-  }, [form])
-
-  useEffect(() => {
     setForm(days)
   }, [days])
+
+  useEffect(() => {
+    handleSetDays(form)
+  }, [form])
 
   return (
     <div className={s.checkboxs}>

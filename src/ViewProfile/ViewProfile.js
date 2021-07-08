@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import Text from '../InputFields/Text'
-import { dayLabels } from '../utils/Dates'
-import { AddIcon, TrashBinIcon } from '../utils/Icons'
-import Button from '../Button'
-import PickerTime from '../PickerTime'
-import PickerDays from '../PickerDays'
 import s from './styles.module.css'
 import { updateUser } from '@/firebase/client'
 import ScheduleForm from '../ScheduleForm'
@@ -107,7 +102,6 @@ const toScheduleArray = (schedule = {}) => {
         ? (time.days = [...time.days, numDay])
         : res.push({ hour, days: [numDay] })
     })
-    
   }
   return res
 }

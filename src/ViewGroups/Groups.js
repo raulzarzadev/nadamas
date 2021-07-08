@@ -26,6 +26,7 @@ export default function Groups() {
   */
   const filterAthltesBy = (dayOfweek, hour) => {
     return athletes?.filter(({ schedule, name }) => {
+      console.log(schedule, name);
       return schedule?.find(
         ({ day, time }) => day === dayOfweek && time === hour
       )

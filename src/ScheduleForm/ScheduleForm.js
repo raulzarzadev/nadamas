@@ -99,10 +99,10 @@ const ScheduleSelect = ({ schedule = [], setNewSchedule = () => {} }) => {
     const alreadyExistSchedule = schedule.find(
       ({ hour }) => hour === form.hour
     )?.days
-    alreadyExistSchedule
-      ? setForm({ ...form, days: alreadyExistSchedule })
-      : setForm({ ...form, days: [] })
+   setDays(alreadyExistSchedule || [])
   }, [form.hour])
+
+
 
   return (
     <div className={s.schedule}>
@@ -111,7 +111,7 @@ const ScheduleSelect = ({ schedule = [], setNewSchedule = () => {} }) => {
         minutesStep="15"
         handleSetTime={handleSetTime}
       />
-      <PickerDays days={form?.days} handleSetDays={handleSetDays} />
+      <PickerDays days={days} handleSetDays={handleSetDays} />
       <Button onClick={handleAddSchedule}>
         <AddIcon />
       </Button>
