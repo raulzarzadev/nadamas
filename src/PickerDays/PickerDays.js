@@ -19,9 +19,7 @@ export default function PickerDays({ days = [], handleSetDays }) {
   }, [form])
 
   useEffect(() => {
-    if (days.length > 0) {
-      setForm(days)
-    }
+    setForm(days)
   }, [days])
 
   return (
