@@ -11,6 +11,7 @@ export const normalizeDoc = (doc) => {
   const dates = unfierebazeDates({
     updatedAt,
     registryDate,
+    joinedAt,
     createdAt,
     birth,
     date

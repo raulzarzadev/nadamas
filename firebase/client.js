@@ -64,6 +64,22 @@ const createNewUser = async (user) => {
   return user
 }
 
+export const updateUser = async (user) => {
+  console.log('user', user)
+  
+  const eventRef = db.collection('users').doc(user.id)
+  const datesInFirebaseFormat = datesToFirebaseFromat(user)
+  try {
+    await eventRef.update({
+      ...user,
+      ...datesInFirebaseFormat
+    })
+    return { ok: true, type: 'USER_UPDATED' }
+  } catch (err) {
+    return { ok: false, type: 'UPDATE_ERROR', err }
+  }
+}
+
 /* -------------------- */
 /* ------athleteS------ */
 /* -------------------- */
