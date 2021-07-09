@@ -32,24 +32,7 @@ export default function ViewProfile() {
     updateUser({ ...form, schedule: toScheduleObject(schedule) })
   }
 
-  /* const handleSetUserSchedule = (schedule) => {
-    const toScheduleUserFormat = (schedule = []) => {
-      let res = {}
-      schedule.forEach(({ day, hour }) => {
-        if (!res[day]) {
-          res[day] = [hour]
-        } else {
-          res[day].push(hour)
-        }
-      })
-
-      console.log('res', res)
-    }
-    toScheduleUserFormat(schedule)
-  }
-  //setForm({ ...form, schedule })
-  console.log('form', form) */
-
+ 
   return (
     <div className={s.viewprofile}>
       <div>

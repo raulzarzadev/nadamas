@@ -43,7 +43,6 @@ export default function NewAthlete() {
     birth: new Date(),
     records: []
   })
-  
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -106,12 +105,9 @@ export default function NewAthlete() {
     updateAtlete({ ...form, avatar: url })
   }
 
-  const hanldleSetSchedule=(schedule)=>{
-    setForm({...form, schedule})
+  const hanldleSetSchedule = (schedule) => {
+    setForm({ ...form, schedule })
   }
-
-  console.log('form', form)
-  
 
   return (
     <div className={s.newathlete}>
@@ -139,22 +135,19 @@ export default function NewAthlete() {
               )}
             </div>
           </div>
-
           <div className={s.inputs}>
             <Text
               value={form?.name}
               onChange={handleChange}
               name="name"
-              label="Nombre (s)"
+              label="Nombre(s)"
             />
-
             <Text
               value={form?.lastName}
               onChange={handleChange}
               name="lastName"
               label={'Apelldio(s)'}
             />
-
             <Text
               value={formatInputDate(form?.birth)}
               onChange={handleChange}
@@ -218,7 +211,12 @@ export default function NewAthlete() {
         </Section>
 
         <Section title={'Horario'}>
-          <Schedule hideWeekend schedule={form?.schedule} setSchedule={hanldleSetSchedule} />
+          <Schedule
+            hideWeekend
+            schedule={form?.schedule}
+            setSchedule={hanldleSetSchedule}
+            userSchedule={user?.schedule}
+          />
         </Section>
         <Section title={'Contacto'}>
           <div className={`${s.inputs} ${s.contact}`}>
