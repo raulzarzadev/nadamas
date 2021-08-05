@@ -2,50 +2,50 @@ import s from './styles.module.css'
 import React, { useEffect, useState } from 'react'
 import { HoursInput } from './HoursInput'
 import { dayLabels } from '../utils/Dates'
+import { getAthletesSchedule, updateAthleteSchedule } from '@/firebase/client'
 
-export const Schedule = ({
-  schedule,
-  setSchedule,
-  hideWeekend,
-  userSchedule
-}) => {
+export const Schedule = ({ coachSchedule, athleteId }) => {
   const [athleteSchedule, setAthleteSchedule] = useState([])
   //const [userSchedule, setUserSchedule] = useState([])
 
   const handleScheduleChange = ({ target }) => {
     const { name, value } = target
     athleteSchedule[name] = value
+
     setAthleteSchedule([...athleteSchedule])
+    const scheduleFilledWithValidFields = athleteSchedule.map((day) =>
+      day === undefined || day === '' ? null : day
+    )
+    updateAthleteSchedule({
+      athleteId,
+      schedule: scheduleFilledWithValidFields
+    }).then((res) => console.log('res', res))
   }
 
-  console.log('schedule', schedule)
-
   useEffect(() => {
-    if (schedule) {
-      setAthleteSchedule(schedule)
-    }
+    getAthletesSchedule(athleteId)
+      .then(({ schedule }) => {
+        setAthleteSchedule(schedule)
+      })
+      .catch((err) => console.log('err', err))
   }, [])
-
-/*   useEffect(() => {
-    // Create a schedule fiiled with null items, and fill whit the time when the user select a new schedule
-    const fillScheduleArray = setSchedule([...fillScheduleArray])
-  }, [athleteSchedule]) */
 
   return (
     <>
       <div className={s.schedule}>
-        {Object.keys(userSchedule)?.map((day, i) => (
+        {Object.keys(coachSchedule)?.map((day, i) => (
           <div key={day}>
             {dayLabels[day]}
+
             <div className={s.schedule_day}>
               <select
                 className={s.select_schedule}
                 name={day}
-                defaultValue={schedule[day]}
+                value={athleteSchedule[day]||''}
                 onChange={handleScheduleChange}
               >
                 <option value="">--:--</option>
-                {userSchedule[day]?.map((hour, i) => (
+                {coachSchedule[day]?.map((hour, i) => (
                   <option key={i} value={hour}>
                     {hour}
                   </option>

@@ -15,36 +15,41 @@ import { useAuth } from '../context/AuthContext'
 export default function Groups() {
   const [athletes, setAthletes] = useState([])
   const { user } = useAuth()
-  useEffect(() => {
-    if (user) getAthletes(user?.id).then(setAthletes)
-  }, [user])
-
+  
+  const getAthletesSuscribedForToday=(day)=>{
+    
+  }
+  
   /* const firstHour = athletes.filter(({ schedule }) => {
     return schedule?.find(({ day, time }) => day === 1 && time !== null)
   })
-
+  
   */
-  const filterAthltesBy = (dayOfweek, hour) => {
-    return athletes?.filter(({ schedule, name }) => {
-      console.log(schedule, name);
-      return schedule?.find(
-        ({ day, time }) => day === dayOfweek && time === hour
-      )
-    })
-  }
+ /*  const filterAthltesBy = (dayOfweek, hour) => {
+   return athletes?.filter(({ schedule, name }) => {
+     console.log(schedule, name)
+     return schedule?.find(
+       ({ day, time }) => day === dayOfweek && time === hour
+       )
+      })
+    }
+    */
+   const [day, setDay] = useState(new Date())
+   useEffect(() => {
+     if (user) getAthletes(user?.id).then(setAthletes)
+   }, [user])
 
-  const [day, setDay] = useState(new Date())
   const handleSubDay = () => {
     setDay(subDays(day, 1))
   }
   const handleAddDay = () => {
     setDay(addDays(day, 1))
   }
-
+/* 
   const firstSchedule = filterAthltesBy(day.getDay(), '17')
   const secondSchedule = filterAthltesBy(day.getDay(), '18')
   const thirthSchedule = filterAthltesBy(day.getDay(), '19')
-
+ */
   const handleSetAttendance = (id, e) => {
     const { checked } = e.target
     let attendance = checked
@@ -60,11 +65,9 @@ export default function Groups() {
   })
 
   useEffect(() => {
-    getAttendanceDate(day).then((res) => {
-      res
-        ? setAttendanceList(res)
-        : setAttendanceList({ date: day, attendance: [] })
-    })
+    getAttendanceDate(day)
+      .then((res) => console.log('res', res))
+      .catch((err) => console.log('err', err))
   }, [day])
 
   return (
@@ -79,7 +82,7 @@ export default function Groups() {
         </Button>
       </div>
       <h3>{`17:00 hrs`}</h3>
-      {firstSchedule?.map((athlete) => (
+      {/* {firstSchedule?.map((athlete) => (
         <AthleteRow
           key={athlete.id}
           athlete={athlete}
@@ -104,7 +107,7 @@ export default function Groups() {
           handleSetAttendance={handleSetAttendance}
           assist={attendanceList.attendance.includes(athlete.id)}
         />
-      ))}
+      ))} */}
     </div>
   )
 }

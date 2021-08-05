@@ -66,7 +66,7 @@ const createNewUser = async (user) => {
 
 export const updateUser = async (user) => {
   console.log('user', user)
-  
+
   const eventRef = db.collection('users').doc(user.id)
   const datesInFirebaseFormat = datesToFirebaseFromat(user)
   try {
@@ -112,6 +112,46 @@ export const updateAtlete = async (athlete = {}) => {
   } else {
     return await _update_athlete({ ...athlete })
   }
+}
+
+/* .-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*, */
+/*           ATHLETES SCHEDULE            */
+/* .-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'rz */
+
+export const getAthletesSchedule = async (athleteId) => {
+  return await db
+    .collection('schedules')
+    .doc(athleteId)
+    .get()
+    .then((res) => normalizeDoc(res))
+    .catch((err) => console.log(err))
+}
+export const updateAthleteSchedule = async ({ athleteId, schedule }) => {
+  const athlteSchedule = await db.collection('schedules').doc(athleteId).get()
+  if (!athlteSchedule.exists) {
+    // CREATE SCHEDULE
+    return await db
+      .collection('schedules')
+      .doc(athleteId)
+      .set({ schedule })
+      .then((res) => formatResponse(true, 'CREATE_SCHEDULE', res))
+      .catch((err) => formatResponse(false, 'ERROR_CREATING_SCHEDULE', err))
+  } else {
+    // UPDATE SCHEDULE
+    const eventRef = db.collection('schedules').doc(athleteId)
+    return await eventRef
+      .update({ schedule })
+      .then((res) => formatResponse(true, 'UPDATE_SCHEDULE', res))
+      .catch((err) => formatResponse(false, 'ERROR_UPDATING_SCHEDULE', res))
+  }
+}
+const getAthletesSuscribedInDate = async (date) => {
+  const dateInFirebaseFormat = format(date)
+  return await db.collection('athletes').where('schedule', 'in')
+  /* .where('suscriptionDate', '<=', dateInFirebaseFormat)
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log(err)) */
 }
 
 const _update_athlete = async (athlete) => {
