@@ -2,36 +2,30 @@ import s from './styles.module.css'
 import React, { useEffect, useState } from 'react'
 import { HoursInput } from './HoursInput'
 import { dayLabels } from '../utils/Dates'
-import { getAthletesSchedule, updateAthleteSchedule } from '@/firebase/client'
+import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
 
 export const Schedule = ({ coachSchedule, athleteId }) => {
-  const [athleteSchedule, setAthleteSchedule] = useState([])
+  const [athleteSchedule, setAthleteSchedule] = useState({})
   //const [userSchedule, setUserSchedule] = useState([])
 
   const handleScheduleChange = ({ target }) => {
     const { name, value } = target
-    athleteSchedule[name] = value
-
-    setAthleteSchedule([...athleteSchedule])
-    const scheduleFilledWithValidFields = athleteSchedule.map((day) =>
-      day === undefined || day === '' ? null : day
-    )
+    const newSchedule = { ...athleteSchedule, [`${name}`]: [value] }
+    setAthleteSchedule(newSchedule)
     updateAthleteSchedule({
       athleteId,
-      schedule: scheduleFilledWithValidFields
-    }).then((res) => console.log('res', res))
+      schedule: newSchedule
+    })
+      .then((res) => console.log('res', res))
+      .catch((err) => console.log('err', err))
   }
+  console.log('athleteSchedule', athleteSchedule)
 
   useEffect(() => {
-    getAthletesSchedule(athleteId)
-      .then(({ schedule }) => {
-        setAthleteSchedule(schedule)
-      })
+    getAthleteSchedule(athleteId)
+      .then(setAthleteSchedule)
       .catch((err) => console.log('err', err))
   }, [])
-
-  console.log('athleteSchedule', athleteSchedule)
-  
 
   return (
     <>
@@ -44,7 +38,7 @@ export const Schedule = ({ coachSchedule, athleteId }) => {
               <select
                 className={s.select_schedule}
                 name={day}
-                value={athleteSchedule && athleteSchedule[day] }
+                value={athleteSchedule[day]}
                 onChange={handleScheduleChange}
               >
                 <option value="">--:--</option>

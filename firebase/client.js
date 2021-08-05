@@ -118,7 +118,7 @@ export const updateAtlete = async (athlete = {}) => {
 /*           ATHLETES SCHEDULE            */
 /* .-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'rz */
 
-export const getAthletesSchedule = async (athleteId) => {
+export const getAthleteSchedule = async (athleteId) => {
   return await db
     .collection('schedules')
     .doc(athleteId)
@@ -133,24 +133,24 @@ export const updateAthleteSchedule = async ({ athleteId, schedule }) => {
     return await db
       .collection('schedules')
       .doc(athleteId)
-      .set({ schedule })
+      .set({ ...schedule })
       .then((res) => formatResponse(true, 'CREATE_SCHEDULE', res))
       .catch((err) => formatResponse(false, 'ERROR_CREATING_SCHEDULE', err))
   } else {
     // UPDATE SCHEDULE
     const eventRef = db.collection('schedules').doc(athleteId)
     return await eventRef
-      .update({ schedule })
+      .update({ ...schedule })
       .then((res) => formatResponse(true, 'UPDATE_SCHEDULE', res))
       .catch((err) => formatResponse(false, 'ERROR_UPDATING_SCHEDULE', res))
   }
 }
-export const getAthletesBySchedule = async ({ schedule }) => {
+export const getAthletesBySchedule = async ({ schedule, day }) => {
   return await db
     .collection('schedules')
-    .where('schedule', 'in', [schedule])
+    .where(`${day}`, 'array-contains', schedule)
     .get()
-    .then((res) => console.log('res', res))
+    .then(({ docs }) => docs.map((doc) => doc.id))
     .catch((err) => console.log('err', err))
 }
 

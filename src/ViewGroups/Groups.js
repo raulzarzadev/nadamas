@@ -2,6 +2,7 @@ import s from './styles.module.css'
 import { BackIcon, ForwardIcon } from '../utils/Icons'
 import { useEffect, useState } from 'react'
 import {
+  getAthlete,
   getAthletes,
   getAthletesBySchedule,
   getAttendanceDate,
@@ -10,32 +11,12 @@ import {
 import { addDays, subDays } from 'date-fns'
 import { dayLabels, format } from '../utils/Dates'
 import Button from '../Button'
-import AthleteRow from '../AthleteRow'
 import { useAuth } from '../context/AuthContext'
+import AthleteRow from '../AthleteRow'
 
 export default function Groups() {
   const [athletes, setAthletes] = useState([])
   const { user } = useAuth()
-
-  const getAthletesSuscribedForToday = (day) => {}
-
-  /* const firstHour = athletes.filter(({ schedule }) => {
-    return schedule?.find(({ day, time }) => day === 1 && time !== null)
-  })
-  
-  */
-  /*  const filterAthltesBy = (dayOfweek, hour) => {
-   return athletes?.filter(({ schedule, name }) => {
-     console.log(schedule, name)
-     return schedule?.find(
-       ({ day, time }) => day === dayOfweek && time === hour
-       )
-      })
-    }
-    */
-  /* useEffect(() => {
-     if (user) getAthletes(user?.id).then(setAthletes)
-    }, [user]) */
 
   const [day, setDay] = useState(new Date())
   const handleSubDay = () => {
@@ -62,17 +43,12 @@ export default function Groups() {
     date: day,
     attendance: []
   })
-/* 
+  /* 
   useEffect(() => {
     getAttendanceDate(day)
       .then((res) => console.log('res', res))
       .catch((err) => console.log('err', err))
   }, [day]) */
-
-  console.log('user', user)
-  const coachsDaySchedules = () => {
-    return user?.schedule[day?.getDay()]
-  }
 
   return (
     <div className={s.groups}>
@@ -86,73 +62,53 @@ export default function Groups() {
         </Button>
       </div>
 
-      <ScheduleDay coachSchedules={user?.schedule[day?.getDay()]} />
-
-      {/*
-      <h3>{`17:00 hrs`}</h3>
-       {firstSchedule?.map((athlete) => (
-        <AthleteRow
-          key={athlete.id}
-          athlete={athlete}
-          handleSetAttendance={handleSetAttendance}
-          assist={attendanceList.attendance.includes(athlete.id)}
-        />
-      ))}
-      <h3>{`18:00 hrs`}</h3>
-      {secondSchedule?.map((athlete) => (
-        <AthleteRow
-          key={athlete.id}
-          athlete={athlete}
-          handleSetAttendance={handleSetAttendance}
-          assist={attendanceList.attendance.includes(athlete.id)}
-        />
-      ))}
-      <h3>{`19:00 hrs`}</h3>
-      {thirthSchedule?.map((athlete) => (
-        <AthleteRow
-          key={athlete.id}
-          athlete={athlete}
-          handleSetAttendance={handleSetAttendance}
-          assist={attendanceList.attendance.includes(athlete.id)}
-        />
-      ))} */}
+      <ScheduleDay
+        coachSchedules={user?.schedule[day?.getDay()]}
+        day={day?.getDay()}
+      />
     </div>
   )
 }
 
-const ScheduleDay = ({ coachSchedules }) => {
-  console.log('schedules', coachSchedules)
-
+const ScheduleDay = ({ coachSchedules, day }) => {
   return (
     <div>
-      {coachSchedules.map((schedule) => (
-        <div>
+      {coachSchedules?.map((schedule, i) => (
+        <div key={i}>
           <h3>{schedule}</h3>
-          <AtleteScheduleTable schedule={schedule} />
+          <AtleteScheduleTable schedule={schedule} day={day} />
         </div>
       ))}
     </div>
   )
 }
 
-const AtleteScheduleTable = ({ schedule }) => {
+const AtleteScheduleTable = ({ schedule, day }) => {
   const [athletes, setAthletes] = useState([])
   useEffect(() => {
-    getAthletesBySchedule({schedule})
-      .then((res) => console.log('res', res))
+    getAthletesBySchedule({ schedule, day })
+      .then((res) => setAthletes(res))
       .catch((err) => console.log('err', err))
-  }, [schedule])
+  }, [schedule,day])
 
   return (
     <div>
-      {athletes.map((athlete,i) => (
-        <AthleteRow
-          key={i}
-          athlete={athlete}
-          handleSetAttendance={handleSetAttendance}
-          assist={attendanceList.attendance.includes(athlete.id)}
-        />
+      {athletes.map((athlete, i) => (
+        <Athlete key={i} athleteId={athlete} />
       ))}
     </div>
   )
+}
+
+const Athlete = ({ athleteId }) => {
+  const [athlete, setAthlete] = useState(undefined)
+  useEffect(() => {
+    getAthlete(athleteId)
+      .then(setAthlete)
+      .catch((err) => console.log('err', err))
+  }, [athleteId])
+
+  if (athlete === undefined) return 'Cargando ...'
+
+  return <AthleteRow athlete={athlete} />
 }
