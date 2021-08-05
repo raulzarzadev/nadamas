@@ -30,6 +30,9 @@ export const Schedule = ({ coachSchedule, athleteId }) => {
       .catch((err) => console.log('err', err))
   }, [])
 
+  console.log('athleteSchedule', athleteSchedule)
+  
+
   return (
     <>
       <div className={s.schedule}>
@@ -41,7 +44,7 @@ export const Schedule = ({ coachSchedule, athleteId }) => {
               <select
                 className={s.select_schedule}
                 name={day}
-                value={athleteSchedule[day]||''}
+                value={athleteSchedule && athleteSchedule[day] }
                 onChange={handleScheduleChange}
               >
                 <option value="">--:--</option>

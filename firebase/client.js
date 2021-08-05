@@ -145,13 +145,13 @@ export const updateAthleteSchedule = async ({ athleteId, schedule }) => {
       .catch((err) => formatResponse(false, 'ERROR_UPDATING_SCHEDULE', res))
   }
 }
-const getAthletesSuscribedInDate = async (date) => {
-  const dateInFirebaseFormat = format(date)
-  return await db.collection('athletes').where('schedule', 'in')
-  /* .where('suscriptionDate', '<=', dateInFirebaseFormat)
+export const getAthletesBySchedule = async ({ schedule }) => {
+  return await db
+    .collection('schedules')
+    .where('schedule', 'in', [schedule])
     .get()
-    .then(({ docs }) => normalizeDocs(docs))
-    .catch((err) => console.log(err)) */
+    .then((res) => console.log('res', res))
+    .catch((err) => console.log('err', err))
 }
 
 const _update_athlete = async (athlete) => {

@@ -3,11 +3,12 @@ import { BackIcon, ForwardIcon } from '../utils/Icons'
 import { useEffect, useState } from 'react'
 import {
   getAthletes,
+  getAthletesBySchedule,
   getAttendanceDate,
   updateAttendanceList
 } from '@/firebase/client'
 import { addDays, subDays } from 'date-fns'
-import { format } from '../utils/Dates'
+import { dayLabels, format } from '../utils/Dates'
 import Button from '../Button'
 import AthleteRow from '../AthleteRow'
 import { useAuth } from '../context/AuthContext'
@@ -15,17 +16,15 @@ import { useAuth } from '../context/AuthContext'
 export default function Groups() {
   const [athletes, setAthletes] = useState([])
   const { user } = useAuth()
-  
-  const getAthletesSuscribedForToday=(day)=>{
-    
-  }
-  
+
+  const getAthletesSuscribedForToday = (day) => {}
+
   /* const firstHour = athletes.filter(({ schedule }) => {
     return schedule?.find(({ day, time }) => day === 1 && time !== null)
   })
   
   */
- /*  const filterAthltesBy = (dayOfweek, hour) => {
+  /*  const filterAthltesBy = (dayOfweek, hour) => {
    return athletes?.filter(({ schedule, name }) => {
      console.log(schedule, name)
      return schedule?.find(
@@ -34,18 +33,18 @@ export default function Groups() {
       })
     }
     */
-   const [day, setDay] = useState(new Date())
-   useEffect(() => {
+  /* useEffect(() => {
      if (user) getAthletes(user?.id).then(setAthletes)
-   }, [user])
+    }, [user]) */
 
+  const [day, setDay] = useState(new Date())
   const handleSubDay = () => {
     setDay(subDays(day, 1))
   }
   const handleAddDay = () => {
     setDay(addDays(day, 1))
   }
-/* 
+  /* 
   const firstSchedule = filterAthltesBy(day.getDay(), '17')
   const secondSchedule = filterAthltesBy(day.getDay(), '18')
   const thirthSchedule = filterAthltesBy(day.getDay(), '19')
@@ -63,12 +62,17 @@ export default function Groups() {
     date: day,
     attendance: []
   })
-
+/* 
   useEffect(() => {
     getAttendanceDate(day)
       .then((res) => console.log('res', res))
       .catch((err) => console.log('err', err))
-  }, [day])
+  }, [day]) */
+
+  console.log('user', user)
+  const coachsDaySchedules = () => {
+    return user?.schedule[day?.getDay()]
+  }
 
   return (
     <div className={s.groups}>
@@ -81,8 +85,12 @@ export default function Groups() {
           <ForwardIcon size="3rem" />
         </Button>
       </div>
+
+      <ScheduleDay coachSchedules={user?.schedule[day?.getDay()]} />
+
+      {/*
       <h3>{`17:00 hrs`}</h3>
-      {/* {firstSchedule?.map((athlete) => (
+       {firstSchedule?.map((athlete) => (
         <AthleteRow
           key={athlete.id}
           athlete={athlete}
@@ -108,6 +116,43 @@ export default function Groups() {
           assist={attendanceList.attendance.includes(athlete.id)}
         />
       ))} */}
+    </div>
+  )
+}
+
+const ScheduleDay = ({ coachSchedules }) => {
+  console.log('schedules', coachSchedules)
+
+  return (
+    <div>
+      {coachSchedules.map((schedule) => (
+        <div>
+          <h3>{schedule}</h3>
+          <AtleteScheduleTable schedule={schedule} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const AtleteScheduleTable = ({ schedule }) => {
+  const [athletes, setAthletes] = useState([])
+  useEffect(() => {
+    getAthletesBySchedule({schedule})
+      .then((res) => console.log('res', res))
+      .catch((err) => console.log('err', err))
+  }, [schedule])
+
+  return (
+    <div>
+      {athletes.map((athlete,i) => (
+        <AthleteRow
+          key={i}
+          athlete={athlete}
+          handleSetAttendance={handleSetAttendance}
+          assist={attendanceList.attendance.includes(athlete.id)}
+        />
+      ))}
     </div>
   )
 }
