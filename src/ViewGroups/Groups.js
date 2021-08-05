@@ -89,7 +89,10 @@ const AtleteScheduleTable = ({ schedule, day }) => {
     getAthletesBySchedule({ schedule, day })
       .then((res) => setAthletes(res))
       .catch((err) => console.log('err', err))
-  }, [schedule,day])
+    return () => {
+      setAthletes([])
+    }
+  }, [schedule, day])
 
   return (
     <div>
