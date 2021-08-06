@@ -17,7 +17,7 @@ export default function MainLayout({ children, user }) {
   return (
     <div className={s.mainlayout}>
       <Header user={user} />
-      <main className='bg-blue-400'>{children}</main>
+      <main className='bg-blue-400 min-h-screen '>{children}</main>
       <Footer user={user} />
     </div>
   )
