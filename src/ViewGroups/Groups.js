@@ -84,7 +84,7 @@ const ScheduleDay = ({ coachSchedules, day }) => {
 }
 
 const AtleteScheduleTable = ({ schedule, day }) => {
-  const [athletes, setAthletes] = useState([])
+  const [athletes, setAthletes] = useState(undefined)
   useEffect(() => {
     getAthletesBySchedule({ schedule, day })
       .then((res) => setAthletes(res))
@@ -93,9 +93,11 @@ const AtleteScheduleTable = ({ schedule, day }) => {
       setAthletes([])
     }
   }, [schedule, day])
-
+  
+  if (athletes === undefined) return 'Cargando ...'
   return (
-    <div>
+    <div >
+      {athletes?.length===0 &&<span >Sin athletas</span>}
       {athletes.map((athlete, i) => (
         <Athlete key={i} athleteId={athlete} />
       ))}
@@ -110,6 +112,7 @@ const Athlete = ({ athleteId }) => {
       .then(setAthlete)
       .catch((err) => console.log('err', err))
   }, [athleteId])
+  
 
   if (athlete === undefined) return 'Cargando ...'
 
