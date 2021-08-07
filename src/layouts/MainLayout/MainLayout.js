@@ -11,17 +11,20 @@ import {
 } from '@/src/utils/Icons'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import Navbar from './Navbar'
 import s from './styles.module.css'
 
 export default function MainLayout({ children, user }) {
   return (
-    <div className={s.mainlayout}>
-      <Header user={user} />
+    <div>
+      <Navbar user={user} />
       <main className='bg-blue-400 min-h-screen '>{children}</main>
       <Footer user={user} />
     </div>
   )
 }
+
+/* 
 const Header = ({ user }) => {
   const { signOut } = useAuth()
 
@@ -46,7 +49,7 @@ const Header = ({ user }) => {
       </div>
     </div>
   )
-}
+} */
 
 const Footer = ({ user }) => {
   const router = useRouter()
