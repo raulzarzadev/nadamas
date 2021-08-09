@@ -31,50 +31,12 @@ export default function Navbar() {
     <div className="bg-blue-900 p-2 pb-0 flex justify-between">
       <div className="flex w-1/6 justify-center items-center">Logo</div>
       <div className="hidden md:flex w-full  justify-start items-end  px-1 ">
-        <ul className="flex">
-          <NavbarSubMenu
-            listComponent={
-              <li className="flex items-center pb-3">Entrenamientos</li>
-            }
-            listItems={[
-              {
-                href: '/',
-                label: 'Iniciar entreno'
-              },
-              {
-                href: '/',
-                label: 'Crear entreno'
-              },
-              {
-                href: '/',
-                label: 'Recomendar entreno'
-              }
-            ]}
-          />
-          <NavbarSubMenu
-            listComponent={
-              <li className="flex items-center pb-3">Comunidad</li>
-            }
-            listItems={[
-              {
-                href: '/',
-                label: 'Buscar amigos'
-              },
-              {
-                href: '/',
-                label: 'Buscar equipos'
-              },
-              {
-                href: '/',
-                label: 'Seguir entrenador'
-              }
-            ]}
-          />
-        </ul>
+        <ul className="flex"></ul>
       </div>
       <ul className=" flex justify-end items-center cursor-pointer">
         {user && (
           <NavbarSubMenu
+            listItems={avatarLinks}
             listComponent={
               <li className="relative bg-white w-12 h-12 rounded-full">
                 <Link href="/profile">
@@ -87,7 +49,7 @@ export default function Navbar() {
                 </Link>
               </li>
             }
-            listItems={avatarLinks}
+            topMenu={<TodgleProfile />}
           />
         )}
         {!user && (
@@ -97,23 +59,20 @@ export default function Navbar() {
             </Link>
           </li>
         )}
-        <NavbarSubMenu
-          listComponent={
-            <li className=" flex py-2">
-              <button className="text-xl px-2 font-extrabold border-white group-hover:border-black border rounded-full flex justify-center ">
-                +
-              </button>
-            </li>
-          }
-          listItems={addIconLinks}
-          downIcon={false}
-        />
       </ul>
     </div>
   )
 }
+const TodgleProfile = () => {
+  return <div className="text-black text-center">Entrenador</div>
+}
 
-const NavbarSubMenu = ({ listComponent, downIcon = true, listItems = [] }) => {
+const NavbarSubMenu = ({
+  listComponent,
+  downIcon = true,
+  listItems = [],
+  topMenu
+}) => {
   return (
     <li className=" group  flex items-end hover:bg-white  px-1 ">
       <ul className="group-hover:text-black ">{listComponent}</ul>
@@ -124,8 +83,10 @@ const NavbarSubMenu = ({ listComponent, downIcon = true, listItems = [] }) => {
             <DownIcon />
           </button>
         )}
+
         {/*  <!-- Dropdown menu --> */}
         <ul className="absolute hidden group-hover:block -right-1 z-20 w-48 py-2 mt-0 bg-white rounded-sm rounded-t-none shadow-xl dark:bg-gray-800">
+          <li>{topMenu}</li>
           {listItems.map(({ href, label }) => (
             <Link href={href} key={label}>
               <li className="block px-4 py-2 text-sm text-gray-700 capitalize transition-colors duration-200 transform dark:text-gray-300 hover:bg-blue-500 hover:text-white dark:hover:text-white cursor-pointer">
