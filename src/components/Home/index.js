@@ -57,6 +57,7 @@ export default function Home() {
       href: '/peapole'
     }
   ]
+
   const wordsList = [
     'Instructor',
     'Nadador',
@@ -64,6 +65,7 @@ export default function Home() {
     'Entrenador',
     'Administrador de GYM'
   ]
+
   const { text } = useWriteText({ wordsList, unwriteFast: true, step: 300 })
 
   return (

@@ -1,2 +1,2 @@
-export { default } from './NewAthlete.js'
+export { default } from './FormAthlete.js'
 

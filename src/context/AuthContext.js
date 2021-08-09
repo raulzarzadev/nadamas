@@ -15,8 +15,6 @@ export function AuthProvider({ children }) {
   }, [])
 
   // confirm if user have isActive
-  
-
 
   const signOut = () => {
     firebaseLogout()
@@ -26,7 +24,7 @@ export function AuthProvider({ children }) {
     loginWithGoogle()
       .then(({ user }) => {
         console.log('user', user)
-        
+
         setUser(user)
       })
       .catch((err) => {

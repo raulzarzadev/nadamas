@@ -6,9 +6,9 @@ import Head from 'next/head'
 export default function grupos() {
   return (
     <>
-    <Head>
-      <title>Nuevo Atleta</title>
-    </Head>
+      <Head>
+        <title>Nuevo Atleta</title>
+      </Head>
       <PrivateRoute Component={FormAthlete} Layout={MainLayout} />
     </>
   )

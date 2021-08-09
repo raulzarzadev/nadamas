@@ -105,12 +105,8 @@ export default function NewAthlete() {
     updateAtlete({ ...form, avatar: url })
   }
 
-  const hanldleSetSchedule = (schedule) => {
-    setForm({ ...form, schedule })
-  }
-
   return (
-    <div className={s.newathlete}>
+    <div className="pt-4 pb-8">
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -123,10 +119,10 @@ export default function NewAthlete() {
           </Button>
         </div>
         <div className={s.form_box}>
-          <div className={s.title}>
-            <h2>Atleta</h2>
+          <div>
+            <h2 className="py-4 text-2xl text-center">Atleta</h2>
             <div className={s.avatar}>
-              <Avatar upload id={form.id} image={form?.avatar} />
+              {form?.id && <Avatar upload id={form.id} image={form?.avatar} />}
               {form?.id && (
                 <UploadImage
                   upladedImage={upladedImage}
@@ -210,10 +206,10 @@ export default function NewAthlete() {
           </div>
         </Section>
 
-        <Section title={'Horario'}>
+        <Section title={'Horario'} open>
           <Schedule athleteId={form.id} coachSchedule={user?.schedule} />
         </Section>
-        <Section title={'Contacto'}>
+        <Section title={'Contacto'} open>
           <div className={`${s.inputs} ${s.contact}`}>
             <Text
               onChange={handleChange}
@@ -231,18 +227,17 @@ export default function NewAthlete() {
             />
           </div>
         </Section>
-        <Section title={'Información Médica'}>
+        <Section title={'Información Médica'} open>
           <div className={s.medic_info}>
             <Text
               onChange={handleChange}
-              name="vacines"
-              value={form?.vacines}
-              label="Vacunas"
-              placeholder="Vacunas (covid)"
+              name="medicine"
+              value={form?.medicine}
+              label="Medicamentos o vacunas"
             />
             <Textarea
               onChange={handleChange}
-              label="Dolores"
+              label="Lesiones"
               value={form?.hurts}
               name="hurts"
             />
@@ -254,33 +249,35 @@ export default function NewAthlete() {
             />
           </div>
         </Section>
-        <Section title={'Emergencia'}>
+        <Section title={'Contacto de Emergencia'} open>
           <div className={`${s.inputs} ${s.emergency}`}>
-            <Text
-              onChange={handleChange}
-              name="emerTitle"
-              value={form?.emerTitle}
-              label="Titulo"
-            />
             <Text
               onChange={handleChange}
               name="emerName"
               value={form?.emerName}
-              label="Nombre"
+              label="Nombre de pila"
             />
             <Text
               type="tel"
               onChange={handleChange}
               name="emerMobile"
               value={form?.emerMobile}
-              label="Numero"
+              label="Teléfono"
+            />
+            <Text
+              onChange={handleChange}
+              name="emerTitle"
+              value={form?.emerTitle}
+              label="Perentesco"
             />
           </div>
         </Section>
       </form>
-      <Button p="2" my="md" danger onClick={handleOpenDelete}>
-        Eliminar
-      </Button>
+      {form?.id && (
+        <Button p="2" my="md" danger onClick={handleOpenDelete}>
+          Eliminar
+        </Button>
+      )}
       <DeleteModal
         open={openDelete}
         handleDelete={handleDelete}
@@ -291,11 +288,14 @@ export default function NewAthlete() {
   )
 }
 
-const Section = ({ title, children }) => {
-  const [show, setShow] = useState(false)
+const Section = ({ title, children, open }) => {
+  const [show, setShow] = useState(open || false)
+  useState(() => {
+    setShow(open)
+  }, [open])
   return (
-    <section className={s.form_box}>
-      <h3 className={s.title} onClick={() => setShow(!show)}>
+    <section className="my-2 ">
+      <h3 className="text-left flex ml-4 mb-4" onClick={() => setShow(!show)}>
         {title}
         {show ? <DownIcon /> : <ForwardIcon />}
       </h3>

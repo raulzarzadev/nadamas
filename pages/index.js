@@ -1,4 +1,5 @@
 import Home from '@/src/components/Home'
+import { useAuth } from '@/src/context/AuthContext'
 import MainLayout from '@/src/layouts/MainLayout'
 import Head from 'next/head'
 export default function HomePage() {

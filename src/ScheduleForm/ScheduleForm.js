@@ -11,14 +11,39 @@ export default function ScheduleForm({
   setSchedule = () => {}
 }) {
   useEffect(() => {
-    _setSchedule(schedule)
+    _setSchedule(toScheduleArray(schedule))
   }, [schedule])
 
   const [_schedule, _setSchedule] = useState(schedule || [])
 
+  const toScheduleObject = (schedule = []) => {
+    let res = {}
+    schedule.forEach(({ days, hour }) => {
+      days.forEach((day) => {
+        res[day] ? res[day].push(hour) : (res[day] = [hour])
+      })
+    })
+    return res
+  }
+
+  const toScheduleArray = (schedule = {}) => {
+    let res = []
+
+    for (let day in schedule) {
+      const numDay = parseInt(day)
+      schedule[numDay].forEach((hour) => {
+        const time = res.find((r) => r.hour === hour)
+        time
+          ? (time.days = [...time.days, numDay])
+          : res.push({ hour, days: [numDay] })
+      })
+    }
+    return res
+  }
+
   const handleChangeSchedule = (schedule) => {
     _setSchedule(schedule)
-    setSchedule(schedule)
+    setSchedule(toScheduleObject(schedule))
   }
   const handleAddSchedule = (schedule) => {
     _setSchedule(schedule)
@@ -94,15 +119,22 @@ const ScheduleSelect = ({ schedule = [], setNewSchedule = () => {} }) => {
   }
 
   const [days, setDays] = useState([])
+  const [isValid, setIsValid] = useState(false)
 
   useEffect(() => {
     const alreadyExistSchedule = schedule.find(
       ({ hour }) => hour === form.hour
     )?.days
-   setDays(alreadyExistSchedule || [])
+    setDays(alreadyExistSchedule || [])
   }, [form.hour])
 
+  useEffect(() => {
+    const hourOk = form?.hour?.length > 0
+    const daysOk = form?.days?.length > 0
+    setIsValid(hourOk && daysOk)
+  }, [form])
 
+  console.log('form', form, isValid)
 
   return (
     <div className={s.schedule}>
@@ -112,7 +144,7 @@ const ScheduleSelect = ({ schedule = [], setNewSchedule = () => {} }) => {
         handleSetTime={handleSetTime}
       />
       <PickerDays days={days} handleSetDays={handleSetDays} />
-      <Button onClick={handleAddSchedule}>
+      <Button disabled={!isValid} onClick={handleAddSchedule}>
         <AddIcon />
       </Button>
     </div>

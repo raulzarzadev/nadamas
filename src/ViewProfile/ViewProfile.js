@@ -22,20 +22,15 @@ export default function ViewProfile() {
   }, [user])
   /* De esto */
 
-  const schedulUserFormat = [{ days: [1, 2], hour: '18:00' }]
-  /* a esto */
-  const scheduleDisplayFormat = { 1: ['18:00'] }
-
+ 
   const handleSetUserSchedule = (schedule = []) => {
-    /* Pasar de chedule array a schedule object para guardarlo*/
-
-    updateUser({ ...form, schedule: toScheduleObject(schedule) })
+    updateUser({ ...form, schedule})
   }
 
  
   return (
-    <div className={s.viewprofile}>
-      <div>
+    <div className='px-2 pt-6'>
+      <div className='mb-4'> 
         <Text
           label="Nombre"
           value={form.name}
@@ -44,7 +39,7 @@ export default function ViewProfile() {
         />
       </div>
 
-      <div>
+      <div className='mb-4' >
         <Text
           label="Correo"
           value={form.email}
@@ -54,7 +49,7 @@ export default function ViewProfile() {
       </div>
       <h3>Horarios disponibles</h3>
       <ScheduleForm
-        schedule={toScheduleArray(form.schedule)}
+        schedule={form.schedule}
         setSchedule={handleSetUserSchedule}
       />
       <div>
@@ -65,26 +60,4 @@ export default function ViewProfile() {
     </div>
   )
 }
-const toScheduleObject = (schedule = []) => {
-  let res = {}
-  schedule.forEach(({ days, hour }) => {
-    days.forEach((day) => {
-      res[day] ? res[day].push(hour) : (res[day] = [hour])
-    })
-  })
-  return res
-}
-const toScheduleArray = (schedule = {}) => {
-  let res = []
 
-  for (let day in schedule) {
-    const numDay = parseInt(day)
-    schedule[numDay].forEach((hour) => {
-      const time = res.find((r) => r.hour === hour)
-      time
-        ? (time.days = [...time.days, numDay])
-        : res.push({ hour, days: [numDay] })
-    })
-  }
-  return res
-}

@@ -1,15 +1,24 @@
+import { useAuth } from '@/src/context/AuthContext'
 import { DownIcon } from '@/src/utils/Icons'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect } from 'react'
 export default function Navbar() {
+  const { user } = useAuth()
+  useEffect(() => {}, [user])
+
   const avatarLinks = [
     {
       href: '/profile',
       label: 'Mi perfil'
     },
     {
-      href: '/profile',
-      label: 'Cambiar perfil'
+      href: '/groups',
+      label: 'Mis grupos'
+    },
+    {
+      href: '/signout',
+      label: 'Salir'
     }
   ]
   const addIconLinks = [
@@ -19,7 +28,7 @@ export default function Navbar() {
     }
   ]
   return (
-    <div className="bg-blue-500 p-2 pb-0 flex justify-between">
+    <div className="bg-blue-900 p-2 pb-0 flex justify-between">
       <div className="flex w-1/6 justify-center items-center">Logo</div>
       <div className="hidden md:flex w-full  justify-start items-end  px-1 ">
         <ul className="flex">
@@ -64,19 +73,30 @@ export default function Navbar() {
         </ul>
       </div>
       <ul className=" flex justify-end items-center cursor-pointer">
-        <NavbarSubMenu
-          listComponent={
-            <li className="relative bg-white w-12 h-12 rounded-full">
-              <Image
-                layout="fill"
-                objectFit="cover"
-                className="rounded-full"
-                src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8cGVyc29uYXxlbnwwfHwwfHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
-              />
-            </li>
-          }
-          listItems={avatarLinks}
-        />
+        {user && (
+          <NavbarSubMenu
+            listComponent={
+              <li className="relative bg-white w-12 h-12 rounded-full">
+                <Link href="/profile">
+                  <Image
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-full"
+                    src={user?.image}
+                  />
+                </Link>
+              </li>
+            }
+            listItems={avatarLinks}
+          />
+        )}
+        {!user && (
+          <li>
+            <Link href="/signin">
+              <div className="mx-2 ">Ingresar</div>
+            </Link>
+          </li>
+        )}
         <NavbarSubMenu
           listComponent={
             <li className=" flex py-2">

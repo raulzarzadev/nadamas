@@ -14,12 +14,15 @@ import { useRouter } from 'next/router'
 import Navbar from './Navbar'
 import s from './styles.module.css'
 
-export default function MainLayout({ children, user }) {
+export default function MainLayout({ children }) {
+  const { user } = useAuth()
   return (
     <div>
-      <Navbar user={user} />
-      <main className='bg-blue-400 min-h-screen '>{children}</main>
-      <Footer user={user} />
+      <Navbar />
+      <main className="bg-gray-700 min-h-screen ">{children}</main>
+      <div className="sm:hidden sticky bottom-0">
+        <Footer user={user} />
+      </div>
     </div>
   )
 }
@@ -70,10 +73,10 @@ const Footer = ({ user }) => {
           <Button onClick={handleBack}>
             <BackIcon />
           </Button>
-          <Button href="/grupos" nextLink>
+          <Button href="/groups" nextLink>
             <GroupsIcon />
           </Button>
-          <Button href="/atletas" nextLink>
+          <Button href="/athletes" nextLink>
             <PersonIcon />
           </Button>
         </>

@@ -37,7 +37,7 @@ export default function Athletes() {
     <div className={s.athletes}>
       <h3>Todos los atletas</h3>
       {/* LISTA DE ATLETAS */}
-      <Button primary nextLink href="/nuevo">
+      <Button primary nextLink href="/athletes/new">
         <div
           style={{
             display: 'flex',
