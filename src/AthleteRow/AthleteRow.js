@@ -59,7 +59,7 @@ export default function AthleteRow({
           </Button>
         </div>
         <div className={s.athlete_action}>
-          <Button icon nextLink href={`/atletas/${id}`}>
+          <Button icon nextLink href={`/athletes/${id}`}>
             <EditIcon />
           </Button>
         </div>

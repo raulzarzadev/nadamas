@@ -48,7 +48,7 @@ export default function ScheduleForm({
   const handleAddSchedule = (schedule) => {
     _setSchedule(schedule)
     setSchedule(schedule)
-  }
+  } 
 
   return (
     <div>

@@ -1,8 +1,8 @@
+import { dayLabels } from '@/src/utils/Dates'
 import { useEffect, useState } from 'react'
-import { dayLabels } from '../utils/Dates'
 import s from './styles.module.css'
 
-export default function PickerDays({ days = [], handleSetDays }) {
+export default function PickerDays({ days = [], handleSetDays, disabled=false }) {
   const [form, setForm] = useState([])
 
   const handleChange = ({ target: { name, checked } }) => {
@@ -27,6 +27,7 @@ export default function PickerDays({ days = [], handleSetDays }) {
       {dayLabels.map((day, i) => (
         <label key={i} className={s.checkbox_day}>
           <input
+            disabled={disabled}
             onChange={handleChange}
             className={s.check_input}
             name={i}

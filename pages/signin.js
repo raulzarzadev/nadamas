@@ -1,4 +1,5 @@
 import AuthCard from '@/src/components/AuthCard'
+import { Head } from '@/src/components/Head'
 import { useAuth } from '@/src/context/AuthContext'
 import MainLayout from '@/src/layouts/MainLayout'
 import router from 'next/router'
@@ -11,6 +12,7 @@ export default function Singin() {
   }, [user])
   return (
     <>
+      <Head title="Ingresar" />
       <MainLayout>
         <div className="min-h-screen -mt-24 flex items-center justify-center">
           <AuthCard />

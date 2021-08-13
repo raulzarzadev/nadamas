@@ -5,9 +5,10 @@ import { dayLabels } from '../utils/Dates'
 import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
 
 export const Schedule = ({ coachSchedule, athleteId }) => {
+  
   const [athleteSchedule, setAthleteSchedule] = useState({})
   //const [userSchedule, setUserSchedule] = useState([])
-
+  
   const handleScheduleChange = ({ target }) => {
     const { name, value } = target
     const newSchedule = { ...athleteSchedule, [`${name}`]: [value] }
@@ -16,16 +17,17 @@ export const Schedule = ({ coachSchedule, athleteId }) => {
       athleteId,
       schedule: newSchedule
     })
-      .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err))
+    .then((res) => console.log('res', res))
+    .catch((err) => console.log('err', err))
   }
   console.log('athleteSchedule', athleteSchedule)
-
+  
   useEffect(() => {
     getAthleteSchedule(athleteId)
-      .then(setAthleteSchedule)
-      .catch((err) => console.log('err', err))
+    .then(setAthleteSchedule)
+    .catch((err) => console.log('err', err))
   }, [])
+  console.log('coachSc', coachSchedule)
 
   return (
     <>
@@ -42,11 +44,11 @@ export const Schedule = ({ coachSchedule, athleteId }) => {
                 onChange={handleScheduleChange}
               >
                 <option value="">--:--</option>
-                {coachSchedule[day]?.map((hour, i) => (
+                {/* {coachSchedule.days[day]?.map((hour, i) => (
                   <option key={i} value={hour}>
                     {hour}
                   </option>
-                ))}
+                ))} */}
               </select>
             </div>
           </div>

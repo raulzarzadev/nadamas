@@ -1,3 +1,4 @@
+import { Head } from '@/src/components/Head'
 import { useAuth } from '@/src/context/AuthContext'
 import MainLayout from '@/src/layouts/MainLayout'
 import router from 'next/router'
@@ -12,10 +13,11 @@ export default function Signout() {
     }, 500)
   }, [])
   return (
-    <MainLayout>
+    <>
+      <Head title="Salir" />
       <div className="h-screen -mt-16 flex justify-center items-center">
         <h3 className="text-3xl">Adiós</h3>
       </div>
-    </MainLayout>
+    </>
   )
 }

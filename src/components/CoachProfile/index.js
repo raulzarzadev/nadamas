@@ -1,10 +1,13 @@
-import { updateUser } from '@/firebase/client'
 import { useEffect, useState } from 'react'
-import Section from '../components/Section'
-import Text from '../InputFields/Text'
-import ScheduleForm from '../ScheduleForm'
+import { useAuth } from '../../context/AuthContext'
+import Text from '../../InputFields/Text'
+import { updateUser } from '@/firebase/client'
+import CoachSchedule from './CoachSchedule'
 
-export default function FormUser({ user }) {
+export default function CoachProfile() {
+  const { user } = useAuth()
+  if (!user) return 'Cargando ...'
+
   const [form, setForm] = useState({})
 
   const handleChange = ({ target: { value, name } }) => {
@@ -21,9 +24,9 @@ export default function FormUser({ user }) {
   const handleSetUserSchedule = (schedule = []) => {
     updateUser({ ...form, schedule })
   }
+
   return (
-    <>
-      <h2 className="text-2xl text-center">Información personal </h2>
+    <div className="px-2 pt-6">
       <div className="mb-4">
         <Text
           label="Nombre"
@@ -41,18 +44,13 @@ export default function FormUser({ user }) {
           name="email"
         />
       </div>
+      <h3>Horarios disponibles</h3>
+      <CoachSchedule />
       <div>
-        <h2 className="text-2xl text-center">Entrenador </h2>
-        <Section title="Horarios disponibles" >
-          <h3 className="text-1xl">Horarios disponibles</h3>
-          <div className="">
-            <ScheduleForm
-              schedule={form?.schedule}
-              setSchedule={handleSetUserSchedule}
-            />
-          </div>
-        </Section>
+        {/*  estadisiticas de alumnos */}
+        {/* Cuantos alumnos hay */}
+        {/* Cuantos por clase */}
       </div>
-    </>
+    </div>
   )
 }

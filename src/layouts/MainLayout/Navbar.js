@@ -17,6 +17,10 @@ export default function Navbar() {
       label: 'Mis grupos'
     },
     {
+      href:'/athletes',
+      label:'Atletas'
+    },
+    {
       href: '/signout',
       label: 'Salir'
     }

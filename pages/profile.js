@@ -1,15 +1,13 @@
+import CoachProfile from '@/src/components/CoachProfile'
+import { Head } from '@/src/components/Head'
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
-import MainLayout from '@/src/layouts/MainLayout'
-import ViewProfile from '@/src/ViewProfile'
-import Head from 'next/head'
-
 export default function grupos() {
   return (
     <>
-      <Head>
-        <title>Perfil</title>
-      </Head>
-      <PrivateRoute Component={ViewProfile} Layout={MainLayout} />
+     <Head title='Perfil '/>
+      <PrivateRoute>
+        <CoachProfile />
+      </PrivateRoute>
     </>
   )
 }

@@ -2,7 +2,7 @@ import { useAuth } from '@/src/context/AuthContext'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-export default function PrivateRoute({ Component, Layout, ...res }) {
+export default function PrivateRoute({ Component, children, ...res }) {
   const router = useRouter()
   const { user } = useAuth()
   const [userData, setUserData] = useState(undefined)
@@ -18,9 +18,5 @@ export default function PrivateRoute({ Component, Layout, ...res }) {
 
   if (loading) return 'Cargando ...'
 
-  return (
-    <Layout user={user}>
-      <Component {...res} user={userData} />
-    </Layout>
-  )
+  return <>{children}</>
 }
