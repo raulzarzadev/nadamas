@@ -5,6 +5,7 @@ import {
   getAthlete,
   getAthletes,
   getAthletesBySchedule,
+  getAthleteSchedule,
   getAttendanceDate,
   updateAttendanceList
 } from '@/firebase/client'
@@ -15,16 +16,20 @@ import { useAuth } from '../context/AuthContext'
 import AthleteRow from '../AthleteRow'
 
 export default function Groups() {
-  const [athletes, setAthletes] = useState([])
-  const { user } = useAuth()
+  const { user, userSchedule } = useAuth()
 
-  const [day, setDay] = useState(new Date())
+  const [date, setDate] = useState(new Date())
   const handleSubDay = () => {
-    setDay(subDays(day, 1))
+    setDate(subDays(date, 1))
   }
   const handleAddDay = () => {
-    setDay(addDays(day, 1))
+    setDate(addDays(date, 1))
   }
+
+  const [coachSchedule, setCoachSchedule] = useState({})
+  useEffect(() => {
+    if (userSchedule.schedule) setCoachSchedule(userSchedule.schedule)
+  }, [userSchedule])
   /* 
   const firstSchedule = filterAthltesBy(day.getDay(), '17')
   const secondSchedule = filterAthltesBy(day.getDay(), '18')
@@ -40,7 +45,7 @@ export default function Groups() {
   }
 
   const [attendanceList, setAttendanceList] = useState({
-    date: day,
+    date: date,
     attendance: []
   })
   /* 
@@ -56,15 +61,15 @@ export default function Groups() {
         <Button p="sm" icon onClick={handleSubDay}>
           <BackIcon size="3rem" />
         </Button>
-        <h3>{format(day, 'EEEE dd MMM')}</h3>
+        <h3>{format(date, 'EEEE dd MMM')}</h3>
         <Button p="sm" icon onClick={handleAddDay}>
           <ForwardIcon size="3rem" />
         </Button>
       </div>
 
       <ScheduleDay
-        coachSchedules={user?.schedule[day?.getDay()]}
-        day={day?.getDay()}
+        coachSchedules={coachSchedule[date?.getDay()]}
+        day={date?.getDay()}
       />
     </div>
   )
@@ -85,6 +90,7 @@ const ScheduleDay = ({ coachSchedules, day }) => {
 
 const AtleteScheduleTable = ({ schedule, day }) => {
   const [athletes, setAthletes] = useState(undefined)
+  console.log('athletes', athletes)
   useEffect(() => {
     getAthletesBySchedule({ schedule, day })
       .then((res) => setAthletes(res))
@@ -93,11 +99,12 @@ const AtleteScheduleTable = ({ schedule, day }) => {
       setAthletes([])
     }
   }, [schedule, day])
-  
+
   if (athletes === undefined) return 'Cargando ...'
+
   return (
-    <div >
-      {athletes?.length===0 &&<span >Sin athletas</span>}
+    <div>
+      {athletes?.length === 0 && <span>Sin athletas</span>}
       {athletes.map((athlete, i) => (
         <Athlete key={i} athleteId={athlete} />
       ))}
@@ -109,12 +116,15 @@ const Athlete = ({ athleteId }) => {
   const [athlete, setAthlete] = useState(undefined)
   useEffect(() => {
     getAthlete(athleteId)
-      .then(setAthlete)
+      .then((res) => {
+        console.log('res', res)
+
+        setAthlete(res)
+      })
       .catch((err) => console.log('err', err))
   }, [athleteId])
-  
 
-  if (athlete === undefined) return 'Cargando ...'
-
+  if (athlete === undefined) return 'Cargando ... x'
+  if (athlete === null) return <></>
   return <AthleteRow athlete={athlete} />
 }

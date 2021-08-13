@@ -27,6 +27,7 @@ import { Schedule } from './Schedule'
 import UploadImage from '../UploadImage'
 
 export default function NewAthlete() {
+  const { user } = useAuth()
   const router = useRouter()
   const [updatingAthlete, setUpdatingAthlete] = useState(null)
   useEffect(() => {
@@ -48,7 +49,6 @@ export default function NewAthlete() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const { user } = useAuth()
 
   const handleSubmit = async () => {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
@@ -207,7 +207,7 @@ export default function NewAthlete() {
         </Section>
 
         <Section title={'Horario'} open>
-          <Schedule athleteId={form.id} coachSchedule={user?.schedule} />
+          <Schedule athleteId={form.id}  />
         </Section>
         <Section title={'Contacto'} open>
           <div className={`${s.inputs} ${s.contact}`}>

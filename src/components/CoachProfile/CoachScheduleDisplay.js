@@ -13,13 +13,13 @@ export default function CoachScheduleDisplay({
   return (
     <div>
       {Object.keys(schedule).map((day) => (
-        <>
+        <div key={day}>
           {dayLabels[day] && !!schedule[day].length && (
-            <div key={day} className="flex w-full ">
+            <div className="flex w-full ">
               <div className="w-2/6 text-right p-1 pr-2">{dayLabels[day]}</div>
               <div className="w-3/6 flex items-center ">
-                {schedule[day].sort()?.map((hour) => (
-                  <div key={hour} className="relative mx-2">
+                {schedule[day].sort()?.map((hour, i) => (
+                  <div key={i} className="relative mx-2">
                     {hour}
                     <span className="absolute -top-2 -right-2">
                       <button
@@ -36,7 +36,7 @@ export default function CoachScheduleDisplay({
               </div>
             </div>
           )}
-        </>
+        </div>
       ))}
     </div>
   )

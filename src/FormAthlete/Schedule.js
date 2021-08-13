@@ -3,12 +3,19 @@ import React, { useEffect, useState } from 'react'
 import { HoursInput } from './HoursInput'
 import { dayLabels } from '../utils/Dates'
 import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
+import { useAuth } from '../context/AuthContext'
 
-export const Schedule = ({ coachSchedule, athleteId }) => {
-  
+export const Schedule = ({ athleteId }) => {
+  const { userSchedule } = useAuth()
+
   const [athleteSchedule, setAthleteSchedule] = useState({})
+  const [coachSchedule, setCoachSchedule] = useState({})
+
+  useEffect(() => {
+    if (userSchedule.schedule) setCoachSchedule(userSchedule.schedule)
+  }, [userSchedule])
   //const [userSchedule, setUserSchedule] = useState([])
-  
+
   const handleScheduleChange = ({ target }) => {
     const { name, value } = target
     const newSchedule = { ...athleteSchedule, [`${name}`]: [value] }
@@ -17,22 +24,24 @@ export const Schedule = ({ coachSchedule, athleteId }) => {
       athleteId,
       schedule: newSchedule
     })
-    .then((res) => console.log('res', res))
-    .catch((err) => console.log('err', err))
+      .then((res) => console.log('res', res))
+      .catch((err) => console.log('err', err))
   }
-  console.log('athleteSchedule', athleteSchedule)
-  
+
   useEffect(() => {
     getAthleteSchedule(athleteId)
-    .then(setAthleteSchedule)
-    .catch((err) => console.log('err', err))
-  }, [])
+      .then((res) => {
+        setAthleteSchedule(res.schedule)
+      })
+      .catch((err) => console.log('err', err))
+  }, [athleteId])
+  console.log('athleteSchedule', athleteSchedule)
   console.log('coachSc', coachSchedule)
 
   return (
     <>
       <div className={s.schedule}>
-        {Object.keys(coachSchedule)?.map((day, i) => (
+        {Object?.keys(coachSchedule)?.map((day, i) => (
           <div key={day}>
             {dayLabels[day]}
 
@@ -40,15 +49,15 @@ export const Schedule = ({ coachSchedule, athleteId }) => {
               <select
                 className={s.select_schedule}
                 name={day}
-                value={athleteSchedule[day]}
+                value={athleteSchedule ? athleteSchedule[day] : ''}
                 onChange={handleScheduleChange}
               >
                 <option value="">--:--</option>
-                {/* {coachSchedule.days[day]?.map((hour, i) => (
+                {coachSchedule[day]?.map((hour, i) => (
                   <option key={i} value={hour}>
                     {hour}
                   </option>
-                ))} */}
+                ))}
               </select>
             </div>
           </div>

@@ -9,11 +9,11 @@ import PickerTime from '../PickerTime'
 import CoachScheduleDisplay from './CoachScheduleDisplay'
 
 export default function CoachSchedule() {
-  const { user } = useAuth()
+  const { user, userSchedule } = useAuth()
   useEffect(() => {
     if (user) {
       getAthleteSchedule(user.id)
-        .then(setSchedule)
+        .then(res => setSchedule(res.schedule))
         .catch((err) => console.log(err))
     }
   }, [user])

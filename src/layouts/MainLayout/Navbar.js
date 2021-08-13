@@ -17,8 +17,8 @@ export default function Navbar() {
       label: 'Mis grupos'
     },
     {
-      href:'/athletes',
-      label:'Atletas'
+      href: '/athletes',
+      label: 'Atletas'
     },
     {
       href: '/signout',
@@ -44,12 +44,14 @@ export default function Navbar() {
             listComponent={
               <li className="relative bg-white w-12 h-12 rounded-full">
                 <Link href="/profile">
-                  <Image
-                    layout="fill"
-                    objectFit="cover"
-                    className="rounded-full"
-                    src={user?.image}
-                  />
+                  <>
+                    <Image
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-full"
+                      src={user?.image}
+                    />
+                  </>
                 </Link>
               </li>
             }

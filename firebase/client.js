@@ -90,6 +90,8 @@ export const getAthlete = async (athleteId) => {
     .doc(athleteId)
     .get()
     .then((doc) => normalizeDoc(doc))
+    .catch(err=> null
+    )
 }
 
 export const getAthletes = async (userId) => {
@@ -126,21 +128,25 @@ export const getAthleteSchedule = async (athleteId) => {
     .then((res) => normalizeDoc(res))
     .catch((err) => console.log(err))
 }
-export const updateAthleteSchedule = async ({ athleteId, schedule }) => {
+export const updateAthleteSchedule = async ({
+  athleteId,
+  schedule,
+  isCoach = false
+}) => {
   const athlteSchedule = await db.collection('schedules').doc(athleteId).get()
   if (!athlteSchedule.exists) {
     // CREATE SCHEDULE
     return await db
       .collection('schedules')
       .doc(athleteId)
-      .set({ ...schedule })
+      .set({ schedule, isCoach })
       .then((res) => formatResponse(true, 'CREATE_SCHEDULE', res))
       .catch((err) => formatResponse(false, 'ERROR_CREATING_SCHEDULE', err))
   } else {
     // UPDATE SCHEDULE
     const eventRef = db.collection('schedules').doc(athleteId)
     return await eventRef
-      .update({ ...schedule })
+      .update({ schedule, isCoach })
       .then((res) => formatResponse(true, 'UPDATE_SCHEDULE', res))
       .catch((err) => formatResponse(false, 'ERROR_UPDATING_SCHEDULE', res))
   }
@@ -148,7 +154,8 @@ export const updateAthleteSchedule = async ({ athleteId, schedule }) => {
 export const getAthletesBySchedule = async ({ schedule, day }) => {
   return await db
     .collection('schedules')
-    .where(`${day}`, 'array-contains', schedule)
+    //.where(`${day}`, 'array-contains', schedule)
+    //.where('isCoach', '==', false)
     .get()
     .then(({ docs }) => docs.map((doc) => doc.id))
     .catch((err) => console.log('err', err))

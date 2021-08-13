@@ -12,8 +12,9 @@ export default function AthleteRow({
   athlete,
   handleSetAttendance = false
 }) {
-  const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth } =
-    athlete
+   const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth } =
+    athlete 
+  
   const [openEmergencyModal, setOpenEmergencyModal] = useState(false)
   const handleOpenEmergencyCall = () => {
     setOpenEmergencyModal(!openEmergencyModal)
