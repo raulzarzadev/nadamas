@@ -1,6 +1,6 @@
 import Groups from '@/src/ViewGroups'
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
-import Head from '@comps/components/Head'
+import { Head } from '@/src/components/Head'
 export default function grupos() {
   return (
     <>

@@ -1,7 +1,5 @@
 import { Head } from '@/src/components/Head'
 import Home from '@/src/components/Home'
-import { useAuth } from '@/src/context/AuthContext'
-import MainLayout from '@/src/layouts/MainLayout'
 export default function HomePage() {
   return (
     <>
