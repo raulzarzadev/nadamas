@@ -67,30 +67,32 @@ const Footer = ({ user }) => {
     router.back()
   }
   return (
-    <div className={s.footer}>
-      {user ? (
-        <>
-          <Button onClick={handleBack}>
-            <BackIcon />
+    <div className="bg-blue-400">
+      <div className={s.footer}>
+        {user ? (
+          <>
+            <Button onClick={handleBack}>
+              <BackIcon />
+            </Button>
+            <Button href="/groups" nextLink>
+              <GroupsIcon />
+            </Button>
+            <Button href="/athletes" nextLink>
+              <PersonIcon />
+            </Button>
+          </>
+        ) : (
+          <Button href="/signin" nextLink>
+            <SignInIcon />
           </Button>
-          <Button href="/groups" nextLink>
-            <GroupsIcon />
+        )}
+        {!home && (
+          <Button href="/" nextLink>
+            <HomeIcon />
           </Button>
-          <Button href="/athletes" nextLink>
-            <PersonIcon />
-          </Button>
-        </>
-      ) : (
-        <Button href="/signin" nextLink>
-          <SignInIcon />
-        </Button>
-      )}
-      {!home && (
-        <Button href="/" nextLink>
-          <HomeIcon />
-        </Button>
-      )}
-      {/*   {user && <div>{user.name}</div>} */}
+        )}
+        {/*   {user && <div>{user.name}</div>} */}
+      </div>
     </div>
   )
 }
