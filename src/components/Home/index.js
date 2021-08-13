@@ -55,7 +55,7 @@ export default function Home() {
               objectFit="cover"
             />
           </div>
-          <p className="w-2/3">Crea grupos por horario y revisa asistencia</p>
+          <p className="w-2/3 text-right">Crea grupos por horario y revisa asistencia</p>
         </div>
         <div className="flex items-center justify-center p-2 gap-2">
           <p className="w-2/3">Registra cuotas y programa dias de pago</p>
@@ -75,7 +75,7 @@ export default function Home() {
               objectFit="cover"
             />
           </div>
-          <p className="w-2/3">
+          <p className="w-2/3 text-right">
             Crea entrenamientos, evalua progresos grupales o individuales{' '}
           </p>
         </div>

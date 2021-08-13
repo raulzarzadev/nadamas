@@ -81,7 +81,7 @@ const Footer = ({ user }) => {
           </Button>
         </>
       ) : (
-        <Button onClick={signInWithGoogle}>
+        <Button href="/signin" nextLink>
           <SignInIcon />
         </Button>
       )}
