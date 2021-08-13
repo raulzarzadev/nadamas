@@ -6,11 +6,11 @@ import { useEffect, useState } from 'react'
 export default function Home() {
   const RELEVANT_CARDS = [
     {
-      title: 'Eventos',
+      title: 'Entrenadores',
       image:
         'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/events'
-    },
+      href: '/coaches'
+    } /* ,
     {
       title: 'Noticias',
       image:
@@ -22,7 +22,7 @@ export default function Home() {
       image:
         'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
       href: '/peapole'
-    }
+    } */
   ]
 
   const SECTIONS_CARDS = [
@@ -31,8 +31,8 @@ export default function Home() {
       image:
         'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
       href: '/peapole'
-    },
-    {
+    }
+    /*  {
       title: 'Los Mejores atletas',
       image:
         'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
@@ -55,7 +55,7 @@ export default function Home() {
       image:
         'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
       href: '/peapole'
-    }
+    } */
   ]
 
   const wordsList = [
@@ -71,7 +71,9 @@ export default function Home() {
   return (
     <div>
       <div>
-        <h3 className="px-2 text-2xl">La natación en México</h3>
+        <div>
+          <h3 className="px-2 ">Mejorando la natación en Mexico</h3>
+        </div>
         <div className="flex overflow-auto">
           {RELEVANT_CARDS.map((card, i) => (
             <div className="m-2" key={i}>
@@ -85,7 +87,7 @@ export default function Home() {
         <div className="">
           <p className="my-2 flex flex-col">
             <span>Todo acerca de natación para ser un mejor</span>
-            <strong className="text-lg text-center h-8 font-bold text-blue-900  ">
+            <strong className="text-lg text-center h-8 font-bold text-white  ">
               {text}
             </strong>
           </p>

@@ -53,7 +53,7 @@ export default function NewAthlete() {
   const handleSubmit = async () => {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res.type === 'ATHLETE_CREATED') {
-      router.push(`/atletas/${res.id}`)
+      router.push(`/athletes/${res.id}`)
     }
     console.log('res', res)
   }
