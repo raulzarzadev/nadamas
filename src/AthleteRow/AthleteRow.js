@@ -24,7 +24,7 @@ export default function AthleteRow({
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
-        <span>
+        <span className='text-sm sm:flex items-center hidden '>
           {formatDistanceToNowStrict(birth, {
             unit: 'year',
             addSuffix: false,

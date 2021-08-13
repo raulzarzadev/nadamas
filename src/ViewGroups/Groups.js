@@ -56,8 +56,8 @@ export default function Groups() {
   }, [day]) */
 
   return (
-    <div className={s.groups}>
-      <div className={s.week_nav}>
+    <div className="">
+      <div className="flex sticky py-2">
         <Button p="sm" icon onClick={handleSubDay}>
           <BackIcon size="3rem" />
         </Button>
@@ -66,11 +66,12 @@ export default function Groups() {
           <ForwardIcon size="3rem" />
         </Button>
       </div>
-
-      <ScheduleDay
-        coachSchedules={coachSchedule[date?.getDay()]}
-        day={date?.getDay()}
-      />
+      <div className='px-4 md:max-w-md mx-auto'>
+        <ScheduleDay
+          coachSchedules={coachSchedule[date?.getDay()]}
+          day={date?.getDay()}
+        />
+      </div>
     </div>
   )
 }
@@ -80,7 +81,7 @@ const ScheduleDay = ({ coachSchedules, day }) => {
     <div>
       {coachSchedules?.map((schedule, i) => (
         <div key={i}>
-          <h3>{schedule}</h3>
+          <h3 className='text-2xl font-bold'>{schedule}</h3>
           <AtleteScheduleTable schedule={schedule} day={day} />
         </div>
       ))}
@@ -90,7 +91,6 @@ const ScheduleDay = ({ coachSchedules, day }) => {
 
 const AtleteScheduleTable = ({ schedule, day }) => {
   const [athletes, setAthletes] = useState(undefined)
-  console.log('athletes', athletes)
   useEffect(() => {
     getAthletesBySchedule({ schedule, day })
       .then((res) => setAthletes(res))
@@ -117,8 +117,6 @@ const Athlete = ({ athleteId }) => {
   useEffect(() => {
     getAthlete(athleteId)
       .then((res) => {
-        console.log('res', res)
-
         setAthlete(res)
       })
       .catch((err) => console.log('err', err))

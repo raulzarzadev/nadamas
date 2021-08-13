@@ -13,7 +13,7 @@ export default function CoachSchedule() {
   useEffect(() => {
     if (user) {
       getAthleteSchedule(user.id)
-        .then(res => setSchedule(res.schedule))
+        .then((res) => setSchedule(res.schedule))
         .catch((err) => console.log(err))
     }
   }, [user])
@@ -25,7 +25,12 @@ export default function CoachSchedule() {
   }
 
   useEffect(() => {
-    updateAthleteSchedule({ athleteId: user.id, schedule })
+    updateAthleteSchedule({
+      isCoach: true,
+      athleteId: user.id,
+      schedule,
+      owner: user.name
+    })
   }, [schedule])
 
   return (
