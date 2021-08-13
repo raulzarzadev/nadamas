@@ -37,7 +37,9 @@ export default function Navbar() {
   ]
   return (
     <div className="bg-blue-900 p-2 pb-0 flex justify-between">
-      <div className="flex w-1/6 justify-center items-center">Logo</div>
+      <div className="flex w-1/6 justify-center items-center">
+        <Link href='/'>Logo</Link>
+      </div>
       <div className="hidden md:flex w-full  justify-start items-end  px-1 ">
         <ul className="flex"></ul>
       </div>

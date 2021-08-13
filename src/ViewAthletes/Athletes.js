@@ -30,7 +30,6 @@ export default function Athletes() {
       reverseWord: '_reverse'
     })
     setSortedAthletes(sorted)
-    console.log('sorted', sorted, sortBy)
   }, [sortBy, athletes])
 
   return (

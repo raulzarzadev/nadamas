@@ -5,7 +5,7 @@ import { dayLabels } from '../utils/Dates'
 import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
 import { useAuth } from '../context/AuthContext'
 
-export const Schedule = ({ athleteId }) => {
+export const Schedule = ({ athleteId, athlete }) => {
   const { userSchedule } = useAuth()
 
   const [athleteSchedule, setAthleteSchedule] = useState({})
@@ -22,21 +22,22 @@ export const Schedule = ({ athleteId }) => {
     setAthleteSchedule(newSchedule)
     updateAthleteSchedule({
       athleteId,
-      schedule: newSchedule
+      schedule: newSchedule,
+      owner: athlete.name
     })
       .then((res) => console.log('res', res))
       .catch((err) => console.log('err', err))
   }
 
   useEffect(() => {
-    getAthleteSchedule(athleteId)
-      .then((res) => {
-        setAthleteSchedule(res.schedule)
-      })
-      .catch((err) => console.log('err', err))
+    if (athleteId) {
+      getAthleteSchedule(athleteId)
+        .then((res) => {
+          setAthleteSchedule(res.schedule)
+        })
+        .catch((err) => console.log('err', err))
+    }
   }, [athleteId])
-  console.log('athleteSchedule', athleteSchedule)
-  console.log('coachSc', coachSchedule)
 
   return (
     <>

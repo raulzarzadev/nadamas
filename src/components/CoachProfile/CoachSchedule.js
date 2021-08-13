@@ -35,7 +35,6 @@ export default function CoachSchedule() {
 
   return (
     <div>
-      Schedule
       <div>
         <CoachScheduleDisplay schedule={schedule} setSchedule={setSchedule} />
         <ScheduleSelect
@@ -73,14 +72,17 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
   }, [form.hour])
 
   return (
-    <div>
-      <PickerTime
-        time={form?.hour}
-        minutesStep="15"
-        handleSetTime={_handleSetTime}
-      />
-      <PickerDays days={days} handleSetDays={_handleSetDays} />
-    </div>
+    <>
+      <h5 className='text-center mt-4 font-bold'>Crear / editar nuevo horario</h5>
+      <div className="flex items-center px-2 justify-center">
+        <PickerTime
+          time={form?.hour}
+          minutesStep="15"
+          handleSetTime={_handleSetTime}
+        />
+        <PickerDays days={days} handleSetDays={_handleSetDays} />
+      </div>
+    </>
   )
 }
 

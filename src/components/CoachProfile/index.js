@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import Text from '../../InputFields/Text'
 import { updateUser } from '@/firebase/client'
 import CoachSchedule from './CoachSchedule'
+import Section from '../Section'
 
 export default function CoachProfile() {
   const { user } = useAuth()
@@ -20,10 +21,6 @@ export default function CoachProfile() {
     }
   }, [user])
   /* De esto */
-
-  const handleSetUserSchedule = (schedule = []) => {
-    updateUser({ ...form, schedule })
-  }
 
   return (
     <div className="px-2 pt-6">
@@ -44,8 +41,10 @@ export default function CoachProfile() {
           name="email"
         />
       </div>
-      <h3>Horarios disponibles</h3>
-      <CoachSchedule />
+      <Section title="Horarios" open>
+        <h5 className="text-center font-bold">Disponibilidad</h5>
+        <CoachSchedule />
+      </Section>
       <div>
         {/*  estadisiticas de alumnos */}
         {/* Cuantos alumnos hay */}

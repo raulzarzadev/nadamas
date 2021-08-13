@@ -207,7 +207,7 @@ export default function NewAthlete() {
         </Section>
 
         <Section title={'Horario'} open>
-          <Schedule athleteId={form.id}  />
+          <Schedule athleteId={form.id} athlete={form} />
         </Section>
         <Section title={'Contacto'} open>
           <div className={`${s.inputs} ${s.contact}`}>

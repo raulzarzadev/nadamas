@@ -1,154 +1,96 @@
+import { useAuth } from '@/src/context/AuthContext'
 import useWriteText from '@/src/hooks/useWriteText'
 import Image from 'next/image'
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
+import Button from '../Button'
+import Cards from './Cards'
 
 export default function Home() {
-  const RELEVANT_CARDS = [
-    {
-      title: 'Entrenadores',
-      image:
-        'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/coaches'
-    } /* ,
-    {
-      title: 'Noticias',
-      image:
-        'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/news'
-    },
-    {
-      title: 'Personas',
-      image:
-        'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/peapole'
-    } */
-  ]
-
-  const SECTIONS_CARDS = [
-    {
-      title: 'Metodologias',
-      image:
-        'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/peapole'
-    }
-    /*  {
-      title: 'Los Mejores atletas',
-      image:
-        'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/peapole'
-    },
-    {
-      title: 'Triatlon y Aguas abiertas',
-      image:
-        'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/peapole'
-    },
-    {
-      title: 'Entrenamientos y asesorias',
-      image:
-        'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/peapole'
-    },
-    {
-      title: 'Eventos ',
-      image:
-        'https://images.unsplash.com/photo-1529619768328-e37af76c6fe5?ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8bmV3fGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
-      href: '/peapole'
-    } */
-  ]
-
-  const wordsList = [
-    'Instructor',
-    'Nadador',
-    'Maestro',
-    'Entrenador',
-    'Administrador de GYM'
-  ]
-
-  const { text } = useWriteText({ wordsList, unwriteFast: true, step: 300 })
-
+  const wordsList = ['natación', 'futbol', 'balete']
+  const { text } = useWriteText({ step: 200, unwriteFast: true, wordsList })
+  const router = useRouter()
+  const handleToSignup = () => {
+    router.push('/signin')
+  }
+  const {user}=useAuth()
+  
   return (
-    <div>
-      <div>
-        <div>
-          <h3 className="px-2 ">Mejorando la natación en Mexico</h3>
+    <div className="py-6">
+      <h1 className="text-center font-extrabold text-4xl">nadamas</h1>
+      {!user && (
+        <div className="flex justify-end p-2">
+          <div className="w-40">
+            <Button variant="social" onClick={handleToSignup}>
+              Registrate gratis
+            </Button>
+          </div>
         </div>
-        <div className="flex overflow-auto">
-          {RELEVANT_CARDS.map((card, i) => (
-            <div className="m-2" key={i}>
-              <RelevantCard card={card} key={i} />
-            </div>
-          ))}
+      )}
+      <p className="text-center">
+        {' '}
+        una aplicacón web para administrar sus equipos deportivos{' '}
+      </p>
+      <p className="text-center h-4">
+        <strong className="font-bold ">{text}</strong>
+      </p>
+      <div className="flex flex-col justify-center md:max-w-screen-md mx-auto">
+        <div className="flex items-center justify-center p-2 gap-2 ">
+          <p className="w-2/3">
+            Centraliza la información de tus atletas, marcas, lesiones y usuala
+            para gestionar eventos
+          </p>
+          <div className="relative h-40 w-40 shadow-lg">
+            <Image
+              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80"
+              layout="fill"
+              objectFit="cover"
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-center p-2 gap-2">
+          <div className="relative h-40 w-40 shadow-lg">
+            <Image
+              src="https://images.unsplash.com/photo-1509062522246-3755977927d7?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8Y2xhc3Nyb29tfGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+              layout="fill"
+              objectFit="cover"
+            />
+          </div>
+          <p className="w-2/3">Crea grupos por horario y revisa asistencia</p>
+        </div>
+        <div className="flex items-center justify-center p-2 gap-2">
+          <p className="w-2/3">Registra cuotas y programa dias de pago</p>
+          <div className="relative h-40 w-40 shadow-lg">
+            <Image
+              src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1172&q=80"
+              layout="fill"
+              objectFit="cover"
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-center p-2 gap-2">
+          <div className="relative h-40 w-40 shadow-lg">
+            <Image
+              src="https://images.unsplash.com/photo-1600965962361-9035dbfd1c50?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80"
+              layout="fill"
+              objectFit="cover"
+            />
+          </div>
+          <p className="w-2/3">
+            Crea entrenamientos, evalua progresos grupales o individuales{' '}
+          </p>
         </div>
       </div>
-      <div className="px-2">
-        <h3 className=" text-2xl">nadamas</h3>
+      {!user && (
         <div className="">
-          <p className="my-2 flex flex-col">
-            <span>Todo acerca de natación para ser un mejor</span>
-            <strong className="text-lg text-center h-8 font-bold text-white  ">
-              {text}
-            </strong>
-          </p>
-          <p className="my-2">
-            Teoria y cienca del deporte, metodologias, los entrenamientos mas
-            populares, los entrenadores con mejores resulatados, los atletas mas
-            prometedores, eventos, marcas y mucho mas
-          </p>
+          <div className="m-2 my-6">
+            <Button variant="social" onClick={handleToSignup}>
+              Registrate gratis
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div>
-        <h3 className="px-2 text-2xl">La natación en México</h3>
-        <div className="flex flex-wrap">
-          {SECTIONS_CARDS.map((card, i) => (
-            <div className="p-2 w-full sm:w-1/2 md:w-1/3" key={i}>
-              <SectionCard card={card} />
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* <Cards/> */}
     </div>
-  )
-}
-
-const RelevantCard = ({ card: { title, image, href } }) => {
-  return (
-    <Link href={href}>
-      <div className="relative w-36 h-24 bg-red-300 rounded-lg shadow-lg hover:shadow-sm cursor-pointer">
-        <Image
-          src={image}
-          layout="fill"
-          objectFit="cover"
-          className="rounded-b-lg"
-        />
-        <div className="absolute bottom-0 left-0 right-0 ">
-          <h4 className="font-bold bg-blue-200 p-1 rounded-b-lg text-sm text-black">
-            {title}
-          </h4>
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-const SectionCard = ({ card: { title, image, href } }) => {
-  return (
-    <Link href={href}>
-      <div className="relative w-full h-44 bg-red-300 rounded-lg shadow-lg hover:shadow-sm cursor-pointer">
-        <Image
-          src={image}
-          layout="fill"
-          objectFit="cover"
-          className="rounded-b-lg"
-        />
-        <div className="absolute bottom-0 left-0 right-0 ">
-          <h4 className="font-bold bg-blue-200 p-1 rounded-b-lg text-sm text-black">
-            {title}
-          </h4>
-        </div>
-      </div>
-    </Link>
   )
 }

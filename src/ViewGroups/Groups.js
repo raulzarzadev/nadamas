@@ -101,6 +101,8 @@ const AtleteScheduleTable = ({ schedule, day }) => {
   }, [schedule, day])
 
   if (athletes === undefined) return 'Cargando ...'
+  console.log('athletes', athletes)
+  
 
   return (
     <div>

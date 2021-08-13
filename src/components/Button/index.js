@@ -2,14 +2,14 @@ export default function Button({
   label = 'label',
   children,
   variant = 'primary',
-  disabled,
+  disabled=false,
   ...rest
 }) {
   const style = {
     social: 'bg-blue-500  hover:bg-blue-400 focus:bg-blue-400',
     primary:
       'bg-gray-700 hover:bg-gray-600 focus:outline-none focus:bg-gray-600',
-    disabled: 'opacity-50 transition-none transform-none'
+    disabled: 'opacity-50 '
   }
   return (
     <button
