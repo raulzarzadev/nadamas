@@ -14,7 +14,7 @@ export default function Singin() {
     <>
       <Head title="Ingresar" />
     
-      <div className="min-h-screen -mt-24 flex items-center justify-center">
+      <div className='pt-4 md:pt-16'>
         <AuthCard />
       </div>
     </>
