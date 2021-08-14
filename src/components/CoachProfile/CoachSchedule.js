@@ -51,13 +51,14 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
   const [form, setForm] = useState(initalFormState)
 
   const _handleSetTime = (time) => {
+    console.log('form', form)
+
     setForm({ ...form, hour: time })
   }
   const _handleSetDays = (days) => {
     setForm({ ...form, days })
     handleAddSchedule({ ...form, days })
   }
-  
 
   const [days, setDays] = useState([])
 
@@ -74,7 +75,9 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
 
   return (
     <>
-      <h5 className='text-center mt-4 font-bold'>Crear / editar nuevo horario</h5>
+      <h5 className="text-center mt-4 font-bold">
+        Crear / editar nuevo horario
+      </h5>
       <div className="flex flex-col items-center px-2 justify-center">
         <PickerTime
           time={form?.hour}
@@ -92,15 +95,19 @@ const formatNewSchedule = (
   oldSchedule = { day: [''] }
 ) => {
   // newshedule = {days:[], hour:""}
-  // oldschedule = {1:[""],2:[""]}
+  // oldschedule = {1:["17:00","16:00"],2:[]}
   let res = { ...oldSchedule }
   newSchedule.days.forEach((day) => {
     if (!res[day]) {
       res[day] = [newSchedule.hour]
     } else if (!res[day].includes(newSchedule.hour)) {
       res[day].push(newSchedule.hour)
+    } else {
+      res[day].splice(res[day].indexOf(newSchedule.hour), 1)
     }
   })
+  console.log('res', res)
+  
   //res : {day:[]}
   return res
 }
