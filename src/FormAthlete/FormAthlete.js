@@ -188,7 +188,7 @@ export default function NewAthlete() {
                 label="Tiempo"
               />
             </div>
-            <div style={{ width: '90%' }}>
+            <div>
               <Button
                 fullwidth
                 primary
@@ -208,21 +208,25 @@ export default function NewAthlete() {
           <Schedule athleteId={form.id} athlete={form} />
         </Section>
         <Section title={'Contacto'} open>
-          <div className={`flex flex-col gap-2 p-1`}>
-            <Text
-              onChange={handleChange}
-              value={form.mobile}
-              name="mobile"
-              type="tel"
-              label="Celular"
-            />
-            <Text
-              onChange={handleChange}
-              value={form.email}
-              name="email"
-              label="email"
-              label="Correo"
-            />
+          <div className={`flex flex-col p-1`}>
+            <div className="my-1">
+              <Text
+                onChange={handleChange}
+                value={form.mobile}
+                name="mobile"
+                type="tel"
+                label="Celular"
+              />
+            </div>
+            <div className="my-1">
+              <Text
+                onChange={handleChange}
+                value={form.email}
+                name="email"
+                label="email"
+                label="Correo"
+              />
+            </div>
           </div>
         </Section>
         <Section title={'Información médica'} open>
@@ -248,26 +252,32 @@ export default function NewAthlete() {
           </div>
         </Section>
         <Section title={'Contacto de emergencia'} open>
-          <div className={`flex flex-col gap-2 p-1`}>
-            <Text
-              onChange={handleChange}
-              name="emerName"
-              value={form?.emerName}
-              label="Nombre"
-            />
-            <Text
-              type="tel"
-              onChange={handleChange}
-              name="emerMobile"
-              value={form?.emerMobile}
-              label="Teléfono"
-            />
-            <Text
-              onChange={handleChange}
-              name="emerTitle"
-              value={form?.emerTitle}
-              label="Perentesco"
-            />
+          <div className={`flex flex-col  p-1`}>
+            <div className='my-1'>
+              <Text
+                onChange={handleChange}
+                name="emerName"
+                value={form?.emerName}
+                label="Nombre"
+              />
+            </div>
+            <div className='my-1'>
+              <Text
+                type="tel"
+                onChange={handleChange}
+                name="emerMobile"
+                value={form?.emerMobile}
+                label="Teléfono"
+              />
+            </div>
+            <div className='my-1'>
+              <Text
+                onChange={handleChange}
+                name="emerTitle"
+                value={form?.emerTitle}
+                label="Perentesco"
+              />
+            </div>
           </div>
         </Section>
       </form>
