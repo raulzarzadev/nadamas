@@ -28,7 +28,7 @@ export default function Home() {
       )}
       <p className="text-center">
         {' '}
-        una aplicacón web para administrar sus equipos deportivos{' '}
+        una aplicación web para administrar sus equipos deportivos{' '}
       </p>
       <p className="text-center h-4">
         <strong className="font-bold ">{text}</strong>
@@ -36,7 +36,7 @@ export default function Home() {
       <div className="flex flex-col justify-center md:max-w-screen-md mx-auto">
         <div className="flex items-center justify-center p-2 gap-2 ">
           <p className="w-2/3">
-            Centraliza la información de tus atletas, marcas, lesiones y usuala
+            Centraliza la información de tus atletas, marcas, lesiones y úsuala
             para gestionar eventos
           </p>
           <div className="relative h-40 w-40 shadow-lg">
@@ -58,7 +58,7 @@ export default function Home() {
           <p className="w-2/3 text-right">Crea grupos por horario y revisa asistencia</p>
         </div>
         <div className="flex items-center justify-center p-2 gap-2">
-          <p className="w-2/3">Registra cuotas y programa dias de pago</p>
+          <p className="w-2/3">Registra cuotas y programa días de pago</p>
           <div className="relative h-40 w-40 shadow-lg">
             <Image
               src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1172&q=80"
@@ -76,7 +76,7 @@ export default function Home() {
             />
           </div>
           <p className="w-2/3 text-right">
-            Crea entrenamientos, evalua progresos grupales o individuales{' '}
+            Crea entrenamientos, evalúa progresos grupales o individuales
           </p>
         </div>
       </div>

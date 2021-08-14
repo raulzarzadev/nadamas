@@ -1,18 +1,7 @@
-import Avatar from '@/src/Avatar'
-import Button from '@/src/Button'
 import { useAuth } from '@/src/context/AuthContext'
-import {
-  BackIcon,
-  GroupsIcon,
-  PersonIcon,
-  HomeIcon,
-  SignInIcon,
-  SignOutIcon
-} from '@/src/utils/Icons'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
+import BottomNav from './BottomNav'
+import Footer from './Footer'
 import Navbar from './Navbar'
-import s from './styles.module.css'
 
 export default function MainLayout({ children }) {
   const { user } = useAuth()
@@ -21,7 +10,10 @@ export default function MainLayout({ children }) {
       <Navbar />
       <main className="bg-gray-700 min-h-screen ">{children}</main>
       <div className="sm:hidden sticky bottom-0">
-        <Footer user={user} />
+        <BottomNav user={user} />
+      </div>
+      <div className="hidden sm:block bottom-0">
+        <Footer />
       </div>
     </div>
   )
@@ -54,45 +46,3 @@ const Header = ({ user }) => {
   )
 } */
 
-const Footer = ({ user }) => {
-  const router = useRouter()
-  const home = router.pathname === '/'
-  const { googleLogin, signOut } = useAuth()
-
-  const signInWithGoogle = () => {
-    googleLogin()
-  }
-
-  const handleBack = () => {
-    router.back()
-  }
-  return (
-    <div className="bg-blue-400">
-      <div className={s.footer}>
-        {user ? (
-          <>
-            <Button onClick={handleBack}>
-              <BackIcon />
-            </Button>
-            <Button href="/groups" nextLink>
-              <GroupsIcon />
-            </Button>
-            <Button href="/athletes" nextLink>
-              <PersonIcon />
-            </Button>
-          </>
-        ) : (
-          <Button href="/signin" nextLink>
-            <SignInIcon />
-          </Button>
-        )}
-        {!home && (
-          <Button href="/" nextLink>
-            <HomeIcon />
-          </Button>
-        )}
-        {/*   {user && <div>{user.name}</div>} */}
-      </div>
-    </div>
-  )
-}

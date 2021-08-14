@@ -33,7 +33,7 @@ export default function Navbar() {
     {
       href: '/add-activity',
       label: 'Agregar actividad'
-    } 
+    }
   ]
   return (
     <div className="bg-blue-400  pb-0 flex justify-between">
@@ -57,8 +57,12 @@ export default function Navbar() {
           </>
         </Link>
       </div>
-      <div className="hidden md:flex w-full  justify-start items-end  px-1 ">
-        <ul className="flex"></ul>
+      <div className="hidden sm:flex w-full  justify-start items-center  px-1 ">
+        <ul className="flex items-center">
+          <li >
+            <Link href='/'>saber más</Link>
+          </li>
+        </ul>
       </div>
       <ul className=" flex justify-end items-center cursor-pointer">
         {user && (
@@ -82,11 +86,13 @@ export default function Navbar() {
           />
         )}
         {!user && (
-          <li>
-            <Link href="/signin">
-              <div className="mx-2 ">Ingresar</div>
-            </Link>
-          </li>
+          <>
+            <li>
+              <Link href="/signin">
+                <div className="mx-2 ">Ingresar</div>
+              </Link>
+            </li>
+          </>
         )}
       </ul>
     </div>

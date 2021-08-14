@@ -4,15 +4,14 @@ import SocialMediaLogin from './SocialMediaLogin'
 import Link from '../Link'
 import { useState } from 'react'
 export default function AuthCard() {
-  const [form, setForm] = useState()
+  const [form, setForm] = useState({ emailing: true })
 
   const handleChange = ({ target }) => {
     setForm({ ...form, [target.name]: target.checked })
   }
 
-  const isValid = !!form?.privacity && !!form?.emailing
+  const isValid = !!form?.privacity
 
-  console.log(form)
   return (
     <div className="w-full max-w-sm p-6 m-auto bg-white rounded-md shadow-md dark:bg-gray-800">
       <h1 className="text-3xl font-semibold text-center text-gray-700 dark:text-white">
@@ -48,15 +47,15 @@ export default function AuthCard() {
           </div>
           <div className="text-black text-sm ">
             <p className="m-2">
-              Marca esta casilla si estas de acuerdo con el manejo de tu
+              Marca esta casilla si estás de acuerdo con el manejo de tu
               información
             </p>
             <p className="m-2">
               Tus datos personales y los de tus atletas son y siempre seran
-              completamente privados.{' '}
+              completamente privados.
             </p>
             <p className="m-2">
-              Por tratarse de una version beta es probable que futuras
+              Por tratarse de una versión beta es probable que futuras
               actualizaciones invaliden algunos de estos datos
             </p>
             <p className="m-2">
@@ -67,12 +66,13 @@ export default function AuthCard() {
         </div>
         <div className="flex items-center my-4 bg-gray-100 rounded-lg shadow-lg">
           <div className="w-20">
-            <input type="checkbox" onChange={handleChange} name="emailing" />
+            <input  defaultChecked={form?.emailing} type="checkbox" onChange={handleChange} name="emailing" />
           </div>
           <div className="text-black text-sm ">
             <p>
-              Marca esta casilla para recibir informacón sobre el estado actual
-              de la applicacion y actualizaciones sobre su futuro
+              Marca esta casilla para recibir información sobre el estado actual
+              de la applicación, nuevas actualizaciones y saber sobre el futuro
+              de nadamas
             </p>
           </div>
         </div>
