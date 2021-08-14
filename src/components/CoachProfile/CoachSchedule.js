@@ -47,7 +47,7 @@ export default function CoachSchedule() {
 }
 
 const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
-  const initalFormState = { hour: '00:00', days: [] }
+  const initalFormState = { hour: '--:--', days: [] }
   const [form, setForm] = useState(initalFormState)
 
   const _handleSetTime = (time) => {
@@ -57,6 +57,8 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
     setForm({ ...form, days })
     handleAddSchedule({ ...form, days })
   }
+  console.log('form', form)
+  
 
   const [days, setDays] = useState([])
 
@@ -74,7 +76,7 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
   return (
     <>
       <h5 className='text-center mt-4 font-bold'>Crear / editar nuevo horario</h5>
-      <div className="flex items-center px-2 justify-center">
+      <div className="flex flex-col items-center px-2 justify-center">
         <PickerTime
           time={form?.hour}
           minutesStep="15"

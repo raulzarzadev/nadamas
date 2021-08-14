@@ -67,7 +67,7 @@ export default function PickerTime({
           onChange={handleChange}
           name="hours"
         >
-          <option value="00">00</option>
+          <option value="--">--</option>
           {hours?.map((hour, i) => (
             <option value={hour} key={i}>
               {hour}

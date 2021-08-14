@@ -1,8 +1,6 @@
-
-
-.checkboxs{
-    display: flex;
-    flex-wrap: wrap;
+.checkboxs {
+  display: flex;
+  flex-wrap: wrap;
 }
 .checkbox_day {
   display: flex;
@@ -13,6 +11,9 @@
   align-items: center;
   margin: 8px;
   cursor: pointer;
+  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+
   /* 
   flex-direction: column;
   justify-content: center;
@@ -22,6 +23,9 @@
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none; */
+}
+.checkbox_day:hover {
+  box-shadow: none;
 }
 .check_input {
   position: absolute;
@@ -45,4 +49,3 @@
 .check_input:checked ~ .check_label {
   background-color: var(--success);
 }
-
