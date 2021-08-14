@@ -33,11 +33,11 @@ export default function Navbar() {
     {
       href: '/add-activity',
       label: 'Agregar actividad'
-    }
+    } 
   ]
   return (
-    <div className="bg-blue-400 p-2 pb-0 flex justify-between">
-      <div className="flex w-1/6 p-1 justify-center items-center">
+    <div className="bg-blue-400  pb-0 flex justify-between">
+      <div className="flex w-1/6 justify-center items-center p-1">
         <Link href="/">
           <>
             <div className="relative w-72 h-8 hidden md:block">
@@ -47,7 +47,7 @@ export default function Navbar() {
                 objectFit="contain"
               />
             </div>
-            <div className="relative w-72 h-16  md:hidden">
+            <div className="relative w-72 h-8  md:hidden ">
               <Image
                 src="/nadamas/logo-3.png"
                 layout="fill"
