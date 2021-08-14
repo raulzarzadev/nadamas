@@ -1,9 +1,9 @@
 import s from './styles.module.css'
 import React, { useEffect, useState } from 'react'
 import { HoursInput } from './HoursInput'
-import { dayLabels } from '../utils/Dates'
+import { dayLabels } from '../../utils/Dates'
 import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../../context/AuthContext'
 
 export const Schedule = ({ athleteId, athlete }) => {
   const { userSchedule } = useAuth()

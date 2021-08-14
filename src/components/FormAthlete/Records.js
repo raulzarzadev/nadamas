@@ -1,11 +1,11 @@
 import { updateRecord } from '@/firebase/client'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import Button from '../Button'
-import Modal from '../Modals/Modal'
-import UploadImage from '../UploadImage'
-import { format } from '../utils/Dates'
-import { GaleryIcon, TrashBinIcon } from '../utils/Icons'
+import Button from '../../Button'
+import Modal from '../../Modals/Modal'
+import UploadImage from '../../UploadImage'
+import { format } from '../../utils/Dates'
+import { GaleryIcon, TrashBinIcon } from '../../utils/Icons'
 import s from './record.module.css'
 
 export const Records = ({ records = [], handleRemoveRecord }) => {

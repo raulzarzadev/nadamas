@@ -1,4 +1,4 @@
-import FormAthlete from '@/src/FormAthlete'
+import FormAthlete from '@comps/FormAthlete'
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
 import Head from 'next/head'
 

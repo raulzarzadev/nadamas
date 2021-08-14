@@ -1,8 +1,8 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import Button from '../Button'
-import { dayLabels } from '../utils/Dates'
-import { TrashBinIcon } from '../utils/Icons'
+import Button from '../../Button'
+import { dayLabels } from '../../utils/Dates'
+import { TrashBinIcon } from '../../utils/Icons'
 import s from './styles.module.css'
 
 export const HoursInput = ({

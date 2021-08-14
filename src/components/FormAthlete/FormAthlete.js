@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import Button from '../Button'
+import Button from '../../Button'
 import s from './styles.module.css'
 import {
   getAthlete,
@@ -9,22 +9,22 @@ import {
   removeRecord
 } from '@/firebase/client'
 import { useRouter } from 'next/router'
-import { formatInputDate } from '../utils/Dates'
+import { formatInputDate } from '../../utils/Dates'
 import {
   SaveIcon,
   AddPersonIcon,
   AddIcon,
   ForwardIcon,
   DownIcon
-} from '../utils/Icons'
-import Avatar from '../Avatar'
-import DeleteModal from '../Modals/DeleteModal'
-import Text from '../InputFields/Text'
-import Textarea from '../InputFields/Textarea'
-import { useAuth } from '../context/AuthContext'
+} from '../../utils/Icons'
+import Avatar from '../../Avatar'
+import DeleteModal from '../../Modals/DeleteModal'
+import Text from '../../InputFields/Text'
+import Textarea from '../../InputFields/Textarea'
+import { useAuth } from '../../context/AuthContext'
 import { Records } from './Records'
 import { Schedule } from './Schedule'
-import UploadImage from '../UploadImage'
+import UploadImage from '../../UploadImage'
 
 export default function NewAthlete() {
   const { user } = useAuth()
@@ -253,7 +253,7 @@ export default function NewAthlete() {
         </Section>
         <Section title={'Contacto de emergencia'} open>
           <div className={`flex flex-col  p-1`}>
-            <div className='my-1'>
+            <div className="my-1">
               <Text
                 onChange={handleChange}
                 name="emerName"
@@ -261,7 +261,7 @@ export default function NewAthlete() {
                 label="Nombre"
               />
             </div>
-            <div className='my-1'>
+            <div className="my-1">
               <Text
                 type="tel"
                 onChange={handleChange}
@@ -270,7 +270,7 @@ export default function NewAthlete() {
                 label="Teléfono"
               />
             </div>
-            <div className='my-1'>
+            <div className="my-1">
               <Text
                 onChange={handleChange}
                 name="emerTitle"
