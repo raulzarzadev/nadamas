@@ -17,7 +17,6 @@ export default function CoachScheduleDisplay({
     setModalDeleteOpen(!modalDeleteOpen)
   }
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false)
-  console.log('deleteDisplay', deleteDisplay)
 
   return (
     <div>

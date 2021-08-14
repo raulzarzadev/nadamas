@@ -57,7 +57,6 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
     setForm({ ...form, days })
     handleAddSchedule({ ...form, days })
   }
-  console.log('form', form)
   
 
   const [days, setDays] = useState([])

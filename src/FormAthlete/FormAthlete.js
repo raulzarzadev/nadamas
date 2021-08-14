@@ -146,12 +146,12 @@ export default function NewAthlete() {
               value={formatInputDate(form?.birth)}
               onChange={handleChange}
               name="birth"
-              label="Fecha De Nacimiento"
+              label="Fecha de nacimiento"
               type="date"
             />
           </div>
         </div>
-        <Section title={'Marcas y Registros'}>
+        <Section title={'Marcas y registros'}>
           <Records records={records} handleRemoveRecord={handleRemoveRecord} />
           <div className={s.new_record}>
             <div>
@@ -225,7 +225,7 @@ export default function NewAthlete() {
             />
           </div>
         </Section>
-        <Section title={'Información Médica'} open>
+        <Section title={'Información médica'} open>
           <div className={s.medic_info}>
             <Text
               onChange={handleChange}
@@ -247,7 +247,7 @@ export default function NewAthlete() {
             />
           </div>
         </Section>
-        <Section title={'Contacto de Emergencia'} open>
+        <Section title={'Contacto de emergencia'} open>
           <div className={`flex flex-col gap-2 p-1`}>
             <Text
               onChange={handleChange}
