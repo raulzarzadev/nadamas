@@ -49,13 +49,11 @@ export default function NewAthlete() {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-
   const handleSubmit = async () => {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res.type === 'ATHLETE_CREATED') {
       router.push(`/athletes/${res.id}`)
     }
-    console.log('res', res)
   }
 
   const handleDelete = () => {
@@ -106,7 +104,7 @@ export default function NewAthlete() {
   }
 
   return (
-    <div className="pt-4 pb-8">
+    <div className="pt-4 pb-8 max-w-lg mx-auto">
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -210,7 +208,7 @@ export default function NewAthlete() {
           <Schedule athleteId={form.id} athlete={form} />
         </Section>
         <Section title={'Contacto'} open>
-          <div className={`${s.inputs} ${s.contact}`}>
+          <div className={`flex flex-col gap-2 p-1`}>
             <Text
               onChange={handleChange}
               value={form.mobile}
@@ -250,12 +248,12 @@ export default function NewAthlete() {
           </div>
         </Section>
         <Section title={'Contacto de Emergencia'} open>
-          <div className={`${s.inputs} ${s.emergency}`}>
+          <div className={`flex flex-col gap-2 p-1`}>
             <Text
               onChange={handleChange}
               name="emerName"
               value={form?.emerName}
-              label="Nombre de pila"
+              label="Nombre"
             />
             <Text
               type="tel"
