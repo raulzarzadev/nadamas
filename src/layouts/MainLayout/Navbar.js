@@ -37,8 +37,25 @@ export default function Navbar() {
   ]
   return (
     <div className="bg-blue-400 p-2 pb-0 flex justify-between">
-      <div className="flex w-1/6 justify-center items-center">
-        <Link href='/'>Logo</Link>
+      <div className="flex w-1/6 p-1 justify-center items-center">
+        <Link href="/">
+          <>
+            <div className="relative w-72 h-8 hidden md:block">
+              <Image
+                src="/nadamas/logo-2.png"
+                layout="fill"
+                objectFit="contain"
+              />
+            </div>
+            <div className="relative w-72 h-16  md:hidden">
+              <Image
+                src="/nadamas/logo-3.png"
+                layout="fill"
+                objectFit="contain"
+              />
+            </div>
+          </>
+        </Link>
       </div>
       <div className="hidden md:flex w-full  justify-start items-end  px-1 ">
         <ul className="flex"></ul>
