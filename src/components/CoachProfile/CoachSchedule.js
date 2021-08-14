@@ -36,11 +36,11 @@ export default function CoachSchedule() {
   return (
     <div>
       <div>
-        <CoachScheduleDisplay schedule={schedule} setSchedule={setSchedule} />
         <ScheduleSelect
           schedule={schedule}
           handleAddSchedule={handleAddSchedule}
         />
+        <CoachScheduleDisplay schedule={schedule} setSchedule={setSchedule} />
       </div>
     </div>
   )

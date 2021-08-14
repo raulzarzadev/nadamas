@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import s from './styles.module.css'
 
 export default function PickerTime({
-  time = '00:00',
+  time = '--:--',
   startsAt = 6,
   endsAt = 22,
   minutesStep = 15,
@@ -84,7 +84,7 @@ export default function PickerTime({
           onChange={handleChange}
           name="minutes"
         >
-          <option value="00">00</option>
+          <option value="--">--</option>
           {minutes?.map((hour, i) => (
             <option key={i} value={hour}>
               {hour}
