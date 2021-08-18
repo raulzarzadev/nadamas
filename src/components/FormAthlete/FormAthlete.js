@@ -25,6 +25,7 @@ import { Schedule } from './Schedule'
 import UploadImage from '../inputs/UploadImage'
 import Text from '@comps/inputs/Text'
 import Textarea from '@comps/inputs/Textarea'
+import Image from 'next/image'
 
 export default function NewAthlete() {
   const { user } = useAuth()
@@ -112,18 +113,39 @@ export default function NewAthlete() {
         }}
         className="relative"
       >
-        <div className={s.form_box}>
-          <div>
-            <h2 className="py-4 text-2xl text-center">Atleta</h2>
-            <div className={s.avatar}>
-              {form?.id && <Avatar upload id={form.id} image={form?.avatar} />}
-              {form?.id && (
+        <div className="  ">
+          <h2 className="text-sm text-right font-bold">Atleta</h2>
+          <div className="flex justify-center">
+            {form?.avatar && (
+              <div className=" hidden sm:block relative">
+                <Avatar upload id={form.id} image={form?.avatar} />
+                <div className="absolute bottom-0 right-0">
+                  <UploadImage
+                    upladedImage={upladedImage}
+                    storeRef={`avatar/${form.id}`}
+                  />
+                </div>
+              </div>
+            )}
+            {form?.avatar && (
+              <div className="w-full h-28 relative sm:hidden">
+                <Image src={form?.avatar} layout="fill" objectFit="cover" />
+                <div className="absolute bottom-2 right-2">
+                  <UploadImage
+                    upladedImage={upladedImage}
+                    storeRef={`avatar/${form.id}`}
+                  />
+                </div>
+              </div>
+            )}
+            {/*             {form?.id && (
+              <div className="absolute bottom-0 left- ">
                 <UploadImage
                   upladedImage={upladedImage}
                   storeRef={`avatar/${form.id}`}
                 />
-              )}
-            </div>
+              </div>
+            )} */}
           </div>
           <div className={s.inputs}>
             <Text
