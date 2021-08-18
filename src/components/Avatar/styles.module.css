@@ -1,0 +1,27 @@
+.avatar {
+  border-radius: 50%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 600;
+  background-color: beige;
+}
+
+
+.avatar > div {
+  border-radius: 50%;
+}
+.avatar[talla='sm'] {
+  width: 39px;
+  height: 39px;
+}
+.avatar[talla='md'] {
+  width: 68px;
+  height: 68px;
+}
+.avatar[talla='lg'] {
+  width: 2rem;
+  height: 2rem;
+}

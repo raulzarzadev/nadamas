@@ -1,4 +1,4 @@
-import Text from '@/src/InputFields/Text'
+import Text from '@comps/inputs/Text'
 import { useEffect, useState } from 'react'
 import Section from '../Section'
 import CoachSchedule from './CoachSchedule'

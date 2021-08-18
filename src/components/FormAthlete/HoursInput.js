@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import Button from '../../Button'
+import Button from '@comps/inputs/Button'
 import { dayLabels } from '../../utils/Dates'
 import { TrashBinIcon } from '../../utils/Icons'
 import s from './styles.module.css'
@@ -23,7 +23,7 @@ export const HoursInput = ({
       <div className={s.day_title}>
         <div>{dayLabels[name]}</div>
         <div>
-          <Button danger icon onClick={() => setTimeToNull(day)}>
+          <Button icon onClick={() => setTimeToNull(day)}>
             <TrashBinIcon size="1rem" />
           </Button>
         </div>

@@ -1,7 +1,4 @@
-import Button from '../Button'
-import InputText from '../InputText'
 import SocialMediaLogin from './SocialMediaLogin'
-import Link from '../Link'
 import { useState } from 'react'
 export default function AuthCard() {
   const [form, setForm] = useState({ emailing: true })
@@ -17,22 +14,6 @@ export default function AuthCard() {
       <h1 className="text-3xl font-semibold text-center text-gray-700 dark:text-white">
         Ingresa
       </h1>
-      {/* <form className="mt-6">
-        <div>
-          <InputText disabled={true} label="Usuario" name="username" />
-        </div>
-
-        <div className="mt-4">
-          <InputText disabled={true} label="Contraseña" name="password" />
-        </div>
-        <div className="mt-4 text-right ">
-          <Link>Recuperar contraseña</Link>
-        </div>
-
-        <div className="mt-6 w-full flex">
-          <Button label="Ingresar" disabled={true} />
-        </div>
-      </form> */}
 
       <div className="flex items-center flex-col justify-between mt-4">
         <span className="w-1/5 border-b dark:border-gray-600 lg:w-1/5"></span>

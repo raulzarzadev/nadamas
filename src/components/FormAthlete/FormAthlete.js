@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import Button from '../../Button'
+import Button from '@comps/inputs/Button'
 import s from './styles.module.css'
 import {
   getAthlete,
@@ -17,14 +17,14 @@ import {
   ForwardIcon,
   DownIcon
 } from '../../utils/Icons'
-import Avatar from '../../Avatar'
-import DeleteModal from '../../Modals/DeleteModal'
-import Text from '../../InputFields/Text'
-import Textarea from '../../InputFields/Textarea'
+import Avatar from '../Avatar'
+import DeleteModal from '../Modals/DeleteModal'
 import { useAuth } from '../../context/AuthContext'
 import { Records } from './Records'
 import { Schedule } from './Schedule'
-import UploadImage from '../../UploadImage'
+import UploadImage from '../inputs/UploadImage'
+import Text from '@comps/inputs/Text'
+import Textarea from '@comps/inputs/Textarea'
 
 export default function NewAthlete() {
   const { user } = useAuth()
@@ -110,12 +110,8 @@ export default function NewAthlete() {
           e.preventDefault()
           handleSubmit()
         }}
+        className="relative"
       >
-        <div className={s.save_button}>
-          <Button p="lg" secondary icon type="submit">
-            {updatingAthlete ? <SaveIcon /> : <AddPersonIcon />}
-          </Button>
-        </div>
         <div className={s.form_box}>
           <div>
             <h2 className="py-4 text-2xl text-center">Atleta</h2>
@@ -280,11 +276,19 @@ export default function NewAthlete() {
             </div>
           </div>
         </Section>
+        <div className=" w-40 mx-auto my-8">
+          <Button variant="social">
+            Guardar
+            <SaveIcon />
+          </Button>
+        </div>
       </form>
       {form?.id && (
-        <Button p="2" my="md" danger onClick={handleOpenDelete}>
-          Eliminar
-        </Button>
+        <div className="p-4 w-40 mx-auto mt-20 ">
+          <Button variant="danger" onClick={handleOpenDelete}>
+            Eliminar
+          </Button>
+        </div>
       )}
       <DeleteModal
         open={openDelete}

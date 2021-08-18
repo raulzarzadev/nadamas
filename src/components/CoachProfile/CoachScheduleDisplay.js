@@ -1,7 +1,7 @@
-import Modal from '@/src/Modals/Modal'
+import Modal from '@comps/Modals/Modal'
 import { dayLabels } from '@/src/utils/Dates'
 import { useState } from 'react'
-import Button from '@comps/Button'
+import Button from '@comps/inputs/Button'
 
 export default function CoachScheduleDisplay({
   schedule = undefined,

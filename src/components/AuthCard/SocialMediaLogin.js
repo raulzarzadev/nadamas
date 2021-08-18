@@ -1,5 +1,5 @@
 import { useAuth } from '@/src/context/AuthContext'
-import Button from '../Button'
+import Button from '@comps/inputs/Button'
 
 export default function SocialMediaLogin({disabled}) {
   const { googleLogin } = useAuth()

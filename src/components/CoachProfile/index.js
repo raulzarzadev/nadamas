@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import Text from '../../InputFields/Text'
 import { updateUser } from '@/firebase/client'
 import CoachSchedule from './CoachSchedule'
 import Section from '../Section'
+import Text from '@comps/inputs/Text'
 
 export default function CoachProfile() {
   const { user } = useAuth()

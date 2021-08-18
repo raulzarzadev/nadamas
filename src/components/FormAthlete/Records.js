@@ -1,9 +1,9 @@
 import { updateRecord } from '@/firebase/client'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import Button from '../../Button'
-import Modal from '../../Modals/Modal'
-import UploadImage from '../../UploadImage'
+import Button from '@comps/inputs/Button'
+import Modal from '../Modals/Modal'
+import UploadImage from '../inputs/UploadImage'
 import { format } from '../../utils/Dates'
 import { GaleryIcon, TrashBinIcon } from '../../utils/Icons'
 import s from './record.module.css'
@@ -68,7 +68,7 @@ const DeleteRecordModal = ({ handleOpen, open, id, handleRemoveRecord }) => {
     <Modal handleOpen={handleOpen} open={open} title="Eliminar Rgistro">
       <div>
         ¿Seguro que deseas eliminar este registro?
-        <Button danger onClick={() => handleRemoveRecord(id)}>
+        <Button onClick={() => handleRemoveRecord(id)}>
           Eliminar
         </Button>
       </div>

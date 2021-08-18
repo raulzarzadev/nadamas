@@ -2,7 +2,7 @@ import { useAuth } from '@/src/context/AuthContext'
 import useWriteText from '@/src/hooks/useWriteText'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import Button from '../Button'
+import Button from '@comps/inputs/Button'
 import Cards from './Cards'
 
 export default function Home() {

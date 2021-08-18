@@ -1,7 +1,7 @@
 import AuthCard from '@/src/components/AuthCard'
 import { Head } from '@/src/components/Head'
 import { useAuth } from '@/src/context/AuthContext'
-import MainLayout from '@/src/layouts/MainLayout'
+import MainLayout from '@comps/MainLayout'
 import router from 'next/router'
 import { useEffect } from 'react'
 

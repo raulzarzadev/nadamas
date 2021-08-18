@@ -1,4 +1,4 @@
-import Athletes from '@/src/ViewAthletes'
+import Athletes from '@comps/ViewAthletes'
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
 import Head from 'next/head'
 
