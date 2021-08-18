@@ -1,7 +1,7 @@
 import { useAuth } from '@/src/context/AuthContext'
 import { DownIcon } from '@/src/utils/Icons'
+import Link from '@comps/inputs/Link'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useEffect } from 'react'
 export default function Navbar() {
   const { user } = useAuth()
