@@ -104,6 +104,8 @@ export default function NewAthlete() {
     updateAtlete({ ...form, avatar: url })
   }
 
+  console.log('form', !!form?.avatar)
+
   return (
     <div className="pt-4 pb-8 max-w-lg mx-auto">
       <form
@@ -116,6 +118,15 @@ export default function NewAthlete() {
         <div className="  ">
           <h2 className="text-sm text-right font-bold">Atleta</h2>
           <div className="flex justify-center">
+            {!form?.avatar && (
+              <div className=" bottom-0 right-0 flex">
+                <div className="mx-2">Sube una foto</div>
+                <UploadImage
+                  upladedImage={upladedImage}
+                  storeRef={`avatar/${form.id}`}
+                />
+              </div>
+            )}
             {form?.avatar && (
               <div className=" hidden sm:block relative">
                 <Avatar upload id={form.id} image={form?.avatar} />

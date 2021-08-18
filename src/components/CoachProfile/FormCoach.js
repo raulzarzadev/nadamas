@@ -17,7 +17,6 @@ export default function FormUser({ user }) {
   }, [user])
   /* De esto */
 
-  
   return (
     <>
       <h2 className="text-2xl text-center">Información personal </h2>
@@ -43,7 +42,7 @@ export default function FormUser({ user }) {
         <Section title="Horarios disponibles">
           <h3 className="text-1xl">Horarios disponibles</h3>
           <div className="">
-            <CoachSchedule  />
+            <CoachSchedule />
           </div>
         </Section>
       </div>

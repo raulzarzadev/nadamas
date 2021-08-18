@@ -5,6 +5,7 @@ import { dayLabels } from '../../utils/Dates'
 import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
 import { useAuth } from '../../context/AuthContext'
 import SCHEDULE_BASE from '@/src/utils/SCHEDULE_BASE'
+import Select from '@comps/inputs/Select'
 
 export const Schedule = ({ athleteId, athlete }) => {
   const { userSchedule, user } = useAuth()
@@ -15,6 +16,8 @@ export const Schedule = ({ athleteId, athlete }) => {
   useEffect(() => {
     if (userSchedule.schedule) setCoachSchedule(userSchedule.schedule)
   }, [userSchedule])
+
+  console.log(athleteSchedule)
 
   //const [userSchedule, setUserSchedule] = useState([])
 
@@ -58,12 +61,11 @@ export const Schedule = ({ athleteId, athlete }) => {
   return (
     <>
       <div>
-        Seleccionar entrenador
-        <div>
-          <select onChange={handleChangeCoach}>
+        <div className="mx-1">
+          <Select label=" Horario de entrenador" onChange={handleChangeCoach}>
             <option value="">Sin entrenador</option>
             <option value={user.id}>{user.name}</option>
-          </select>
+          </Select>
         </div>
       </div>
       <div className={s.schedule}>
