@@ -23,14 +23,22 @@ export default function PickerDays({
     handleSetDays(res)
   }
 
+
+
   return (
-    <div className={s.checkboxs}>
+    <div className="flex flex-wrap">
       {dayLabels.map((day, i) => (
-        <label key={i} className={s.checkbox_day}>
+        <label
+          key={i}
+          className={`group flex relative h-9 w-9 justify-center items-center m-2 cursor-pointer shadow-lg hover:shadow-sm ${
+            disabled && `opacity-40 shadow-none cursor- cursor-not-allowed`
+          }`}
+        >
           <input
             disabled={disabled}
             onChange={handleChange}
-            className={s.check_input}
+            className="absolute opacity-0  h-0 w-0 checked:border-green-400"
+            // className={`${s.check_input} ${disabled && style[disabled]}`}
             name={i}
             type="checkbox"
           />
