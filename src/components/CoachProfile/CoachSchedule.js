@@ -1,10 +1,7 @@
 import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatObjectTimeToString } from '@/src/utils/Hours'
-import { AddIcon } from '@/src/utils/Icons'
-import { set } from 'date-fns'
 import { useEffect, useState } from 'react'
-import Button from '@comps/inputs/Button'
 import PickerDays from '../inputs/PickerDays'
 import PickerTime from '../inputs/PickerTime'
 import CoachScheduleDisplay from './CoachScheduleDisplay'
@@ -20,19 +17,15 @@ export default function CoachSchedule() {
   }, [user])
 
   const [schedule, setSchedule] = useState({})
-
   const handleAddSchedule = (newSchedule) => {
     setSchedule(formatNewSchedule(newSchedule, schedule))
   }
-
-  console.log('schedule', schedule)
 
   return (
     <div>
       <div>
         <ScheduleSelect
-          /* schedule={schedule}
-           */
+          schedule={schedule}
           handleAddSchedule={handleAddSchedule}
         />
         <CoachScheduleDisplay schedule={schedule} setSchedule={setSchedule} />
@@ -47,11 +40,12 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
 
   const handleSetDays = (days) => {
     setDays(days)
-    handleAddSchedule({ hour: formatObjectTimeToString({ time }), days })
+    handleAddSchedule({ hour: time, days })
   }
 
   const handleSetTime = (time) => {
     setTime(time)
+    setDays(getDaysWithSchedule(time, schedule))
   }
 
   return (
@@ -60,7 +54,11 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
         Crear / editar nuevo horario
       </h5>
       <div className="flex flex-col items-center px-2 justify-center">
-        <PickerTime handleSetTime={handleSetTime} />
+        <PickerTime
+          handleSetTime={(time) =>
+            handleSetTime(formatObjectTimeToString({ time }))
+          }
+        />
         <PickerDays
           disabled={time === '--:--'}
           days={days}
@@ -77,8 +75,7 @@ const formatNewSchedule = (
 ) => {
   let res = { ...oldSchedule }
   let { hour, days } = newSchedule
-  //console.log('hour, days, res', hour, days, res)
-
+  // console.log('hour, days, res', hour, days, res)
   for (const day in res) {
     if (Object.hasOwnProperty.call(res, day)) {
       if (res[day].includes(hour) && !days.includes(parseInt(day))) {
@@ -89,5 +86,15 @@ const formatNewSchedule = (
     }
   }
 
+  return res
+}
+
+const getDaysWithSchedule = (time, schedule) => {
+  let res = []
+  for (const day in schedule) {
+    if (Object.hasOwnProperty.call(schedule, day)) {
+      if (schedule[day].includes(time)) res.push(parseInt(day))
+    }
+  }
   return res
 }

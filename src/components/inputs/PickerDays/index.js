@@ -23,26 +23,31 @@ export default function PickerDays({
     handleSetDays(res)
   }
 
-
+  useEffect(() => {
+    setForm(days)
+  }, [days])
 
   return (
     <div className="flex flex-wrap">
       {dayLabels.map((day, i) => (
         <label
           key={i}
-          className={`group flex relative h-9 w-9 justify-center items-center m-2 cursor-pointer shadow-lg hover:shadow-sm ${
+          className={` group flex relative h-9 w-9 justify-center items-center m-2 cursor-pointer shadow-lg hover:shadow-sm ${
             disabled && `opacity-40 shadow-none cursor- cursor-not-allowed`
           }`}
         >
           <input
+            checked={form.includes(i)}
             disabled={disabled}
             onChange={handleChange}
-            className="absolute opacity-0  h-0 w-0 checked:border-green-400"
+            className="absolute opacity-0 h-0 w-0 "
             // className={`${s.check_input} ${disabled && style[disabled]}`}
             name={i}
             type="checkbox"
           />
-          <span className={s.check_label}>{day[0]}</span>
+          <span className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full h">
+            {day[0]}
+          </span>
         </label>
       ))}
     </div>
