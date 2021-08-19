@@ -6,18 +6,22 @@ import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
 import { useAuth } from '../../context/AuthContext'
 import SCHEDULE_BASE from '@/src/utils/SCHEDULE_BASE'
 import Select from '@comps/inputs/Select'
+import Info from '@comps/Alerts/Info'
+;('@comps/Alerts/Info')
 
 export const Schedule = ({ athleteId, athlete }) => {
-  const { userSchedule, user } = useAuth()
+  const { user } = useAuth()
 
   const [athleteSchedule, setAthleteSchedule] = useState({})
   const [coachSchedule, setCoachSchedule] = useState({})
 
   useEffect(() => {
-    if (userSchedule.schedule) setCoachSchedule(userSchedule.schedule)
-  }, [userSchedule])
-
-  console.log(athleteSchedule)
+    if (user) {
+      getAthleteSchedule(user.id)
+        .then((res) => setCoachSchedule(res?.schedule))
+        .catch((err) => console.log('err', err))
+    }
+  }, [user])
 
   //const [userSchedule, setUserSchedule] = useState([])
 
@@ -58,10 +62,26 @@ export const Schedule = ({ athleteId, athlete }) => {
     if (coachSelect === user.id) return setScheduleSlected(coachSchedule)
   }, [coachSelect])
 
+  const areDaysEmpty = () => {
+    let res = Object.keys(scheduleSelected).map((d) => {
+      return scheduleSelected[d].length === 0 ? true : false
+    })
+
+    return !res.includes(false)
+  }
+
+  const emptySchedule =
+    Object.keys(scheduleSelected).length === 0 || areDaysEmpty()
+  console.log('emtySchedule', emptySchedule)
+
   return (
     <>
       <div>
-        <div className="mx-1">
+        <div className="mx-1 ">
+          <Info
+            fullWidth
+            text="Seleccionar un entrenador le ayudara a definir sus horarios"
+          />
           <Select label=" Horario de entrenador" onChange={handleChangeCoach}>
             <option value="">Sin entrenador</option>
             <option value={user.id}>{user.name}</option>
@@ -69,27 +89,39 @@ export const Schedule = ({ athleteId, athlete }) => {
         </div>
       </div>
       <div className={s.schedule}>
-        {Object?.keys(scheduleSelected)?.map((day, i) => (
-          <div key={day}>
-            {dayLabels[day]}
-
-            <div className={s.schedule_day}>
-              <select
-                className={s.select_schedule}
-                name={day}
-                value={athleteSchedule ? athleteSchedule[day] : ''}
-                onChange={handleScheduleChange}
-              >
-                <option value="">--:--</option>
-                {scheduleSelected[day]?.map((hour, i) => (
-                  <option key={i} value={hour}>
-                    {hour}
-                  </option>
-                ))}
-              </select>
+        {emptySchedule && (
+          <Info text="Este entrenador no tiene horarios disponibles" />
+        )}
+        {!emptySchedule && (
+          <div className="flex flex-col">
+            <Info
+              fullWidth
+              text="Selecciona un horario independiente a un entrenador "
+            />
+            <div className='flex flex-wrap justify-center'>
+              {Object?.keys(scheduleSelected)?.map((day, i) => (
+                <label key={day} className='w-1/2 flex flex-col items-center sm:w-1/4 '>
+                  {dayLabels[day]}
+                  <div className='flex justify-center'>
+                    <select
+                      className={s.select_schedule}
+                      name={day}
+                      value={athleteSchedule ? athleteSchedule[day] : ''}
+                      onChange={handleScheduleChange}
+                    >
+                      <option value="">--:--</option>
+                      {scheduleSelected[day]?.map((hour, i) => (
+                        <option key={i} value={hour}>
+                          {hour}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </label>
+              ))}
             </div>
           </div>
-        ))}
+        )}
       </div>
     </>
   )

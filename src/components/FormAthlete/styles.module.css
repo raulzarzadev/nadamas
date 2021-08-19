@@ -81,6 +81,7 @@
   width: 110px;
   border-radius: 4px;
   -webkit-appearance: caret;
+  margin-top: 0;
 }
 
 .new_record {

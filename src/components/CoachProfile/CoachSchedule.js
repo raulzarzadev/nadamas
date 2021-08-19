@@ -19,7 +19,6 @@ export default function CoachSchedule() {
 
   const [schedule, setSchedule] = useState({})
   const handleAddSchedule = (newSchedule) => {
-    console.log('newSchedule', newSchedule)
     
     const updatedSchedule = formatNewSchedule(newSchedule, schedule)
     
@@ -104,7 +103,7 @@ const formatNewSchedule = (
     ...oldSchedule
   }
   let { hour, days } = newSchedule
-   console.log('hour, days, res', hour, days, res)
+   // console.log('hour, days, res', hour, days, res)
   for (const day in res) {
     if (Object.hasOwnProperty.call(res, day)) {
       if (res[day].includes(hour) && !days.includes(parseInt(day))) {
@@ -115,7 +114,7 @@ const formatNewSchedule = (
     } else {
     }
   }
-  console.log('res', res)
+  //console.log('res', res)
   
   return res
 

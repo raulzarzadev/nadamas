@@ -17,7 +17,6 @@ export const HoursInput = ({
 
   const [schedule, setSchedule] = useState([])
 
-  console.log(userSchedule)
   return (
     <>
       <div className={s.day_title}>

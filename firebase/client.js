@@ -31,7 +31,6 @@ export const loginWithGoogle = async () => {
     .then(async ({ credential: { accessToken }, user }) => {
       // check if user exist in db
       const userAlreadyExist = await getUser(user?.uid)
-      console.log('userA', userAlreadyExist)
       if (userAlreadyExist) return userAlreadyExist
       return createNewUser(mapUserFromFirebase(user))
     })
@@ -50,8 +49,18 @@ const db = firebase.firestore()
 /* -------------------- */
 
 const getUser = async (userId) => {
-  const res = await db.collection('users').doc(userId).get()
-  console.log('USER_FINDED')
+  const res = await db
+    .collection('users')
+    .doc(userId)
+    .get()
+    .then((res) => {
+      console.log('USER_FINDED', res)
+      return res
+    })
+    .catch((err) => {
+      console.log('err', err)
+      return err
+    })
   return res.data()
 }
 
@@ -60,7 +69,8 @@ const createNewUser = async (user) => {
     .collection('users')
     .doc(user.id)
     .set({ ...user })
-  console.log('USER_CREATED', user)
+    .then((res) => console.log('USER_CREATED', user))
+    .catch((err) => console.log('err', err))
   return user
 }
 
@@ -210,7 +220,8 @@ export const updateAttendanceList = async ({
     .collection('attendance')
     .where('date', '==', attendanceDate)
     .get()
-  console.log('attendanceListDayExist', attendanceListDayExist)
+    .then((res) => formatResponse(true, 'ATTENDANCE_LIST_ALREADY_EXIST', res))
+    .catch((err) => formatResponse(false, 'ATTENDANCE_LIST_ERROR', err))
   const attendanceRef = attendanceListDayExist?.docs[0]?.id
   if (attendanceListDayExist.empty) {
     // if exist create it
@@ -235,8 +246,6 @@ const _create_attendanceList = async (attendanceList) => {
 }
 
 const _update_attendanceList = async ({ ref, attendance }) => {
-  console.log('attendance', ref, attendance)
-
   return await db
     .collection('attendance')
     .doc(ref)

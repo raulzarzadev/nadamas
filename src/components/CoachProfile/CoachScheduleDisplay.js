@@ -7,7 +7,6 @@ export default function CoachScheduleDisplay({
   schedule = undefined,
   setSchedule = () => {}
 }) {
-  console.log(schedule)
 
   const handleRemoveHour = () => {
     const { day, hour } = deleteDisplay

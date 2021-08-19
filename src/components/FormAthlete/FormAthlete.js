@@ -58,7 +58,6 @@ export default function NewAthlete() {
   }
 
   const handleDelete = () => {
-    console.log('delete', updatingAthlete)
     updateAtlete({ id: updatingAthlete, active: false })
     setTimeout(() => {
       router.back()
@@ -103,8 +102,6 @@ export default function NewAthlete() {
     setForm({ ...form, avatar: url })
     updateAtlete({ ...form, avatar: url })
   }
-
-  console.log('form', !!form?.avatar)
 
   return (
     <div className="pt-4 pb-8 max-w-lg mx-auto">
