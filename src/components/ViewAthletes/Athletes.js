@@ -41,8 +41,19 @@ export default function Athletes() {
   }
 
   useEffect(() => {
+    function eliminarDiacriticosEs(texto) {
+      return texto
+        .normalize('NFD')
+        .replace(
+          /([^n\u0300-\u036f]|n(?!\u0303(?![\u0300-\u036f])))[\u0300-\u036f]+/gi,
+          '$1'
+        )
+        .normalize()
+        .toLowerCase()
+    }
     const searchAthletes = athletes?.filter(({ name }) => {
-      return name.toLowerCase().includes(search)
+      return eliminarDiacriticosEs(name)
+        .includes(eliminarDiacriticosEs(search))
     })
     console.log('searchAthletes', searchAthletes)
 
