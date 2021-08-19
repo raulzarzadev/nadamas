@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext'
 import { AddPersonIcon } from '../../utils/Icons'
 import { sortArrayObjectsByField } from '../../utils/Sorts'
 import router from 'next/router'
+import Text from '@comps/inputs/Text'
 
 export default function Athletes() {
   const [athletes, setAthletes] = useState([])
@@ -33,12 +34,30 @@ export default function Athletes() {
     setSortedAthletes(sorted)
   }, [sortBy, athletes])
 
+  const [search, setSearch] = useState('')
+
+  const handleSearch = ({ target: { value } }) => {
+    setSearch(value)
+  }
+
+  useEffect(() => {
+    const searchAthletes = athletes?.filter(({ name }) => {
+      return name.toLowerCase().includes(search)
+    })
+    console.log('searchAthletes', searchAthletes)
+
+    setSortedAthletes(searchAthletes)
+  }, [search])
+
+  console.log(search)
+
   return (
     <div className={s.athletes}>
-      <h3>Todos los atletas</h3>
+      <h3 className="text-center font-bold text-lg">Todos los atletas</h3>
       {/* LISTA DE ATLETAS */}
-      <div className='flex w-40 mx-auto'>
+      <div className="flex w-32 mx-auto">
         <Button
+          size="xs"
           variant="secondary"
           onClick={() => router.push('/athletes/new')}
         >
@@ -47,6 +66,14 @@ export default function Athletes() {
             Nuevo Atleta
           </div>
         </Button>
+      </div>
+      <div className="w-1/2 mx-auto my-4">
+        <Text
+          name="search"
+          value={search}
+          label="Buscar"
+          onChange={handleSearch}
+        />
       </div>
       <div>
         <div
