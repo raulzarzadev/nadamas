@@ -73,7 +73,16 @@ const formatNewSchedule = (
   newSchedule = { days: [], hour: '' },
   oldSchedule = { day: [''] }
 ) => {
-  let res = { ...oldSchedule }
+  let res = {
+    0: [],
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    5: [],
+    6: [],
+    ...oldSchedule
+  }
   let { hour, days } = newSchedule
   // console.log('hour, days, res', hour, days, res)
   for (const day in res) {
@@ -83,9 +92,9 @@ const formatNewSchedule = (
       } else if (days.includes(parseInt(day)) && !res[day].includes(hour)) {
         res[day].push(hour)
       }
+    } else {
     }
   }
-
   return res
 }
 
