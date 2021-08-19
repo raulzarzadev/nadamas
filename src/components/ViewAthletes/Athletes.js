@@ -55,12 +55,9 @@ export default function Athletes() {
       return eliminarDiacriticosEs(name)
         .includes(eliminarDiacriticosEs(search))
     })
-    console.log('searchAthletes', searchAthletes)
 
     setSortedAthletes(searchAthletes)
   }, [search])
-
-  console.log(search)
 
   return (
     <div className={s.athletes}>
