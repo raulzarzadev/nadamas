@@ -28,7 +28,7 @@ export default function PickerDays({
   }, [days])
 
   return (
-    <div className="flex flex-wrap">
+    <div className="flex flex-wrap justify-center">
       {dayLabels.map((day, i) => (
         <label
           key={i}

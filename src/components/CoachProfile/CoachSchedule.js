@@ -19,9 +19,8 @@ export default function CoachSchedule() {
 
   const [schedule, setSchedule] = useState({})
   const handleAddSchedule = (newSchedule) => {
-    
     const updatedSchedule = formatNewSchedule(newSchedule, schedule)
-    
+
     setSchedule(updatedSchedule)
     updateAthleteSchedule({
       athleteId: user?.id,
@@ -29,7 +28,9 @@ export default function CoachSchedule() {
       owner: user?.name,
       schedule: updatedSchedule
     })
-      .then((res) => console.log('res', res))
+      .then((res) => {
+        // console.log('res', res)
+      })
       .catch((err) => console.log('err', err))
   }
 
@@ -103,7 +104,7 @@ const formatNewSchedule = (
     ...oldSchedule
   }
   let { hour, days } = newSchedule
-   // console.log('hour, days, res', hour, days, res)
+  // console.log('hour, days, res', hour, days, res)
   for (const day in res) {
     if (Object.hasOwnProperty.call(res, day)) {
       if (res[day].includes(hour) && !days.includes(parseInt(day))) {
@@ -115,9 +116,8 @@ const formatNewSchedule = (
     }
   }
   //console.log('res', res)
-  
-  return res
 
+  return res
 }
 
 const getDaysWithSchedule = (time, schedule) => {

@@ -34,13 +34,13 @@ export default function CoachScheduleDisplay({
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false)
 
   return (
-    <div>
+    <div className=''>
       {Object.keys(schedule).map((day) => (
-        <div key={day}>
+        <div key={day} className=''>
           {dayLabels[day] && !!schedule[day].length && (
             <div className="flex w-full ">
               <div className="w-2/6 text-right p-1 pr-2">{dayLabels[day]}</div>
-              <div className="w-3/6 flex items-center overflow-auto  ">
+              <div className="w-4/6 flex items-center overflow-auto  ">
                 {schedule[day].sort()?.map((hour, i) => (
                   <button
                     key={i}

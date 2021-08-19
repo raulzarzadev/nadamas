@@ -24,10 +24,10 @@ export default function UploadImage({
       const onProgress = (snapshot) => {
         setUpladStatus('RUNNING')
         let progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100
-        console.log('Upload is ' + progress + '% done')
+        // console.log('Upload is ' + progress + '% done')
       }
       const onError = (err) => {
-        console.log('erro', err)
+        // console.log('erro', err)
       }
       const onComplete = () => {
         task.snapshot.ref.getDownloadURL().then(function (downloadURL) {

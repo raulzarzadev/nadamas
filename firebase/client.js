@@ -49,19 +49,16 @@ const db = firebase.firestore()
 /* -------------------- */
 
 const getUser = async (userId) => {
-  const res = await db
+  return await db
     .collection('users')
     .doc(userId)
     .get()
-    .then((res) => {
-      console.log('USER_FINDED', res)
-      return res
-    })
+    .then(normalizeDoc)
     .catch((err) => {
-      console.log('err', err)
-      return err
+      formatResponse(false, 'ERROR_USER', err)
     })
-  return res.data()
+
+  // return res.data()
 }
 
 const createNewUser = async (user) => {

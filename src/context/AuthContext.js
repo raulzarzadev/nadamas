@@ -10,13 +10,13 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
   const [user, setUser] = useState()
   const [userSchedule, setUserSchedule] = useState({})
-  
+
   useEffect(() => {
     if (!user) {
       onAuthStateChanged(setUser)
     }
   }, [])
- 
+
   useEffect(() => {
     if (user) {
       getAthleteSchedule(user.id)
@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
   const googleLogin = async () => {
     loginWithGoogle()
       .then(({ user }) => {
-        console.log('user', user)
+        // console.log('user', user)
 
         setUser(user)
       })

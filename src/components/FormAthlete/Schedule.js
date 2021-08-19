@@ -42,13 +42,21 @@ export const Schedule = ({ athleteId, athlete }) => {
     if (athleteId) {
       getAthleteSchedule(athleteId)
         .then((res) => {
-          setAthleteSchedule(res.schedule)
+          setAthleteSchedule(res?.schedule)
         })
         .catch((err) => console.log('err', err))
     }
   }, [athleteId])
 
   const [coachSelect, setCoachSelect] = useState('')
+
+
+  useEffect(() => {
+    // This effect select a user schedule as first option
+    if (user) {
+      setCoachSelect(user.id)
+    }
+  }, [user])
 
   const handleChangeCoach = ({ target: { name, value } }) => {
     setCoachSelect(value)
@@ -57,7 +65,7 @@ export const Schedule = ({ athleteId, athlete }) => {
   const [scheduleSelected, setScheduleSlected] = useState(scheduleBase)
 
   useEffect(() => {
-    console.log('coachSelect', coachSelect)
+    // console.log('coachSelect', coachSelect)
     if (coachSelect === '') return setScheduleSlected(scheduleBase)
     if (coachSelect === user.id) return setScheduleSlected(coachSchedule)
   }, [coachSelect])
@@ -72,7 +80,6 @@ export const Schedule = ({ athleteId, athlete }) => {
 
   const emptySchedule =
     Object.keys(scheduleSelected).length === 0 || areDaysEmpty()
-  console.log('emtySchedule', emptySchedule)
 
   return (
     <>
@@ -82,7 +89,11 @@ export const Schedule = ({ athleteId, athlete }) => {
             fullWidth
             text="Seleccionar un entrenador le ayudara a definir sus horarios"
           />
-          <Select label=" Horario de entrenador" onChange={handleChangeCoach}>
+          <Select
+            value={coachSelect}
+            label=" Horario de entrenador"
+            onChange={handleChangeCoach}
+          >
             <option value="">Sin entrenador</option>
             <option value={user.id}>{user.name}</option>
           </Select>
@@ -98,11 +109,14 @@ export const Schedule = ({ athleteId, athlete }) => {
               fullWidth
               text="Selecciona un horario independiente a un entrenador "
             />
-            <div className='flex flex-wrap justify-center'>
+            <div className="flex flex-wrap justify-center">
               {Object?.keys(scheduleSelected)?.map((day, i) => (
-                <label key={day} className='w-1/2 flex flex-col items-center sm:w-1/4 '>
+                <label
+                  key={day}
+                  className="w-1/2 flex flex-col items-center sm:w-1/4 "
+                >
                   {dayLabels[day]}
-                  <div className='flex justify-center'>
+                  <div className="flex justify-center">
                     <select
                       className={s.select_schedule}
                       name={day}
