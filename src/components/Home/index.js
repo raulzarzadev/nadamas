@@ -12,8 +12,8 @@ export default function Home() {
   const handleToSignup = () => {
     router.push('/signin')
   }
-  const {user}=useAuth()
-  
+  const { user } = useAuth()
+
   return (
     <div className="py-6">
       <h1 className="text-center font-extrabold text-4xl">nadamas</h1>
@@ -55,7 +55,9 @@ export default function Home() {
               objectFit="cover"
             />
           </div>
-          <p className="w-2/3 text-right">Crea grupos por horario y revisa asistencia</p>
+          <p className="w-2/3 text-right">
+            Crea grupos por horario y revisa asistencia
+          </p>
         </div>
         <div className="flex items-center justify-center p-2 gap-2">
           <p className="w-2/3">Registra cuotas y programa días de pago</p>

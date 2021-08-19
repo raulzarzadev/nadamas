@@ -7,10 +7,26 @@ export default function CoachScheduleDisplay({
   schedule = undefined,
   setSchedule = () => {}
 }) {
+  console.log(schedule)
+
   const handleRemoveHour = () => {
     const { day, hour } = deleteDisplay
-    const res = schedule[day]?.filter((time) => time !== hour)
-    setSchedule({ ...schedule, [day]: res })
+    // console.log({hour, days:[day]});
+    // const res = schedule[day]?.filter((time) => time !== hour)
+    const getDaysWithSchedule = (time, schedule) => {
+      let res = []
+      for (const day in schedule) {
+        if (Object.hasOwnProperty.call(schedule, day)) {
+          if (schedule[day].includes(time)) res.push(parseInt(day))
+        }
+      }
+      return res
+    }
+    const newDaysList = getDaysWithSchedule(hour, schedule).filter(
+      (d) => d !== parseInt(day)
+    )
+
+     setSchedule({ hour, days: newDaysList })
   }
   const [deleteDisplay, setDeleteDisplay] = useState(null)
   const handeleOpenDeleteModal = () => {

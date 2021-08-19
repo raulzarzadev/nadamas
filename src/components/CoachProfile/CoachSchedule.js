@@ -1,13 +1,14 @@
 import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatObjectTimeToString } from '@/src/utils/Hours'
+import { WarningIcon } from '@/src/utils/Icons'
 import { useEffect, useState } from 'react'
 import PickerDays from '../inputs/PickerDays'
 import PickerTime from '../inputs/PickerTime'
 import CoachScheduleDisplay from './CoachScheduleDisplay'
 
 export default function CoachSchedule() {
-  const { user, userSchedule } = useAuth()
+  const { user } = useAuth()
   useEffect(() => {
     if (user) {
       getAthleteSchedule(user.id)
@@ -18,17 +19,39 @@ export default function CoachSchedule() {
 
   const [schedule, setSchedule] = useState({})
   const handleAddSchedule = (newSchedule) => {
-    setSchedule(formatNewSchedule(newSchedule, schedule))
+    console.log('newSchedule', newSchedule)
+    
+    const updatedSchedule = formatNewSchedule(newSchedule, schedule)
+    
+    setSchedule(updatedSchedule)
+    updateAthleteSchedule({
+      athleteId: user?.id,
+      isCoach: true,
+      owner: user?.name,
+      schedule: updatedSchedule
+    })
+      .then((res) => console.log('res', res))
+      .catch((err) => console.log('err', err))
   }
 
   return (
     <div>
       <div>
+        <span className="bg-gray-100 bg-opacity-10 flex text-sm font-light items-center">
+          <div className="mx-1">
+            <WarningIcon />
+          </div>
+          Actualiza los dias y horas en que tus alumnos podran encontrarte
+        </span>
+
         <ScheduleSelect
           schedule={schedule}
           handleAddSchedule={handleAddSchedule}
         />
-        <CoachScheduleDisplay schedule={schedule} setSchedule={setSchedule} />
+        <CoachScheduleDisplay
+          schedule={schedule}
+          setSchedule={handleAddSchedule}
+        />
       </div>
     </div>
   )
@@ -50,9 +73,6 @@ const ScheduleSelect = ({ schedule = {}, handleAddSchedule = () => {} }) => {
 
   return (
     <>
-      <h5 className="text-center mt-4 font-bold">
-        Crear / editar nuevo horario
-      </h5>
       <div className="flex flex-col items-center px-2 justify-center">
         <PickerTime
           handleSetTime={(time) =>
@@ -84,7 +104,7 @@ const formatNewSchedule = (
     ...oldSchedule
   }
   let { hour, days } = newSchedule
-  // console.log('hour, days, res', hour, days, res)
+   console.log('hour, days, res', hour, days, res)
   for (const day in res) {
     if (Object.hasOwnProperty.call(res, day)) {
       if (res[day].includes(hour) && !days.includes(parseInt(day))) {
@@ -95,7 +115,10 @@ const formatNewSchedule = (
     } else {
     }
   }
+  console.log('res', res)
+  
   return res
+
 }
 
 const getDaysWithSchedule = (time, schedule) => {
