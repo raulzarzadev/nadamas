@@ -6,12 +6,15 @@ import EmergencyCallModal from '../Modals/EmergencyCallModal'
 import { ContactIcon, EditIcon, EmergencyIcon } from '../../utils/Icons'
 import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
+import { updateAttendanceList } from '@/firebase/client'
 
 export default function AthleteRow({
   assist,
   athlete,
-  handleSetAttendance = false
+  displaySetAttendance = false,
+  date
 }) {
+  const { user } = useAuth()
   const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth } =
     athlete
 
@@ -19,7 +22,20 @@ export default function AthleteRow({
   const handleOpenEmergencyCall = () => {
     setOpenEmergencyModal(!openEmergencyModal)
   }
-  const { user } = useAuth()
+
+  const handleSetAttendance = (id) => {
+    console.log(id, date)
+  }
+  /*
+  {
+    id:athleteId,
+    attendance:[
+      'date()',
+      'date2(),
+    ]
+  } 
+  
+  */
   const wstext = `Hola ${name}. Soy ${user.name}, tu profe de natación. `
   return (
     <div className={s.athlete_row}>
@@ -34,7 +50,7 @@ export default function AthleteRow({
         {`${name} ${lastName || ''} `}
       </div>
       <div className={s.athlete_actions}>
-        {!!handleSetAttendance && (
+        {!!displaySetAttendance && (
           <div /* className={s.athlete_action} */>
             <input
               name="attendance"
@@ -44,12 +60,12 @@ export default function AthleteRow({
             ></input>
           </div>
         )}
-        <div  className='m-1'/* className={s.athlete_action} */>
+        <div className="m-1" /* className={s.athlete_action} */>
           <Button disabled={!emerMobile} icon onClick={handleOpenEmergencyCall}>
-            <EmergencyIcon className='text-red-500'/>
+            <EmergencyIcon className="text-red-500" />
           </Button>
         </div>
-        <div className='m-1' /* className={s.athlete_action} */>
+        <div className="m-1" /* className={s.athlete_action} */>
           <Button
             disabled={!mobile}
             icon
@@ -58,7 +74,7 @@ export default function AthleteRow({
             <ContactIcon />
           </Button>
         </div>
-        <div className='m-1' /* className={s.athlete_action} */>
+        <div className="m-1" /* className={s.athlete_action} */>
           <Button icon href={`/athletes/${id}`}>
             <EditIcon />
           </Button>

@@ -33,14 +33,6 @@ export default function Groups() {
       .catch((err) => console.log('err', err))
   }, [])
 
-  const handleSetAttendance = (id, e) => {
-    const { checked } = e.target
-    let attendance = checked
-      ? [...attendanceList?.attendance, id]
-      : attendanceList?.attendance.filter((athlete) => athlete !== id)
-    setAttendanceList({ date: new Date(day), attendance })
-    updateAttendanceList({ date: new Date(day), attendance })
-  }
 
   const [attendanceList, setAttendanceList] = useState({
     date: date,
@@ -66,26 +58,27 @@ export default function Groups() {
         <ScheduleDay
           coachSchedules={coachSchedule[date?.getDay()]}
           day={date?.getDay()}
+          date={date}
         />
       </div>
     </div>
   )
 }
 
-const ScheduleDay = ({ coachSchedules, day }) => {
+const ScheduleDay = ({ coachSchedules, day, date }) => {
   return (
     <div>
       {coachSchedules?.map((schedule, i) => (
         <div key={i}>
           <h3 className="text-2xl font-bold">{schedule}</h3>
-          <AtleteScheduleTable schedule={schedule} day={day} />
+          <AtleteScheduleTable schedule={schedule} day={day} date={date}/>
         </div>
       ))}
     </div>
   )
 }
 
-const AtleteScheduleTable = ({ schedule, day }) => {
+const AtleteScheduleTable = ({ schedule, day, date={date} }) => {
   const [athletes, setAthletes] = useState(undefined)
   useEffect(() => {
     if (schedule) {
@@ -105,13 +98,13 @@ const AtleteScheduleTable = ({ schedule, day }) => {
     <div>
       {athletes?.length === 0 && <span>Sin athletas</span>}
       {athletes.map((athlete, i) => (
-        <Athlete key={i} athleteId={athlete} />
+        <Athlete key={i} athleteId={athlete} date={date} />
       ))}
     </div>
   )
 }
 
-const Athlete = ({ athleteId }) => {
+const Athlete = ({ athleteId, date }) => {
   const [athlete, setAthlete] = useState(undefined)
   useEffect(() => {
     getAthlete(athleteId)
@@ -123,5 +116,5 @@ const Athlete = ({ athleteId }) => {
 
   if (athlete === undefined) return 'Cargando ... x'
   if (athlete === null) return <></>
-  return <AthleteRow athlete={athlete} />
+  return <AthleteRow athlete={athlete}  date={date}/>
 }
