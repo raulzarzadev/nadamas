@@ -68,7 +68,7 @@ export const Schedule = ({ athleteId, athlete }) => {
     // console.log('coachSelect', coachSelect)
     if (coachSelect === '') return setScheduleSlected(scheduleBase)
     if (coachSelect === user.id) return setScheduleSlected(coachSchedule)
-  }, [coachSelect])
+  }, [coachSelect, coachSchedule])
 
   const areDaysEmpty = () => {
     let res = Object.keys(scheduleSelected).map((d) => {
@@ -85,14 +85,15 @@ export const Schedule = ({ athleteId, athlete }) => {
     <>
       <div>
         <div className="mx-1 ">
-          <Info
+         {/*  <Info
             fullWidth
             text="Seleccionar un entrenador le ayudara a definir sus horarios"
-          />
+          /> */}
           <Select
             value={coachSelect}
             label=" Horario de entrenador"
             onChange={handleChangeCoach}
+            helperText='Seleccionar un entrenador te permitira saber sus horarios'
           >
             <option value="">Sin entrenador</option>
             <option value={user.id}>{user.name}</option>
@@ -105,10 +106,10 @@ export const Schedule = ({ athleteId, athlete }) => {
         )}
         {!emptySchedule && (
           <div className="flex flex-col">
-            <Info
+           {/*  <Info
               fullWidth
               text="Selecciona un horario independiente a un entrenador "
-            />
+            /> */}
             <div className="flex flex-wrap justify-center">
               {Object?.keys(scheduleSelected)?.map((day, i) => (
                 <label
