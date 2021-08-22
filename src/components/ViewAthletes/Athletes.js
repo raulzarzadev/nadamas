@@ -60,7 +60,7 @@ export default function Athletes() {
   }, [search])
 
   return (
-    <div className={s.athletes}>
+    <div className='max-w-xl mx-auto'>
       <h3 className="text-center font-bold text-lg">Todos los atletas</h3>
       {/* LISTA DE ATLETAS */}
       <div className="flex w-32 mx-auto">
