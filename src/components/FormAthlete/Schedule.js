@@ -7,7 +7,6 @@ import { useAuth } from '../../context/AuthContext'
 import SCHEDULE_BASE from '@/src/utils/SCHEDULE_BASE'
 import Select from '@comps/inputs/Select'
 import Info from '@comps/Alerts/Info'
-;('@comps/Alerts/Info')
 
 export const Schedule = ({ athleteId, athlete }) => {
   const { user } = useAuth()
@@ -29,14 +28,17 @@ export const Schedule = ({ athleteId, athlete }) => {
     const { name, value } = target
     const newSchedule = { ...athleteSchedule, [`${name}`]: [value] }
     setAthleteSchedule(newSchedule)
-    updateAthleteSchedule({
-      athleteId,
-      schedule: newSchedule,
-      owner: athlete.name
-    })
-      .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err))
+    if (athleteId) {
+      updateAthleteSchedule({
+        athleteId,
+        schedule: newSchedule,
+        owner: athlete.name
+      })
+        .then((res) => console.log('res', res))
+        .catch((err) => console.log('err', err))
+    }
   }
+
 
   useEffect(() => {
     if (athleteId) {
@@ -49,7 +51,6 @@ export const Schedule = ({ athleteId, athlete }) => {
   }, [athleteId])
 
   const [coachSelect, setCoachSelect] = useState('')
-
 
   useEffect(() => {
     // This effect select a user schedule as first option
@@ -85,7 +86,7 @@ export const Schedule = ({ athleteId, athlete }) => {
     <>
       <div>
         <div className="mx-1 ">
-         {/*  <Info
+          {/*  <Info
             fullWidth
             text="Seleccionar un entrenador le ayudara a definir sus horarios"
           /> */}
@@ -93,7 +94,7 @@ export const Schedule = ({ athleteId, athlete }) => {
             value={coachSelect}
             label=" Horario de entrenador"
             onChange={handleChangeCoach}
-            helperText='Seleccionar un entrenador te permitira saber sus horarios'
+            helperText="Seleccionar un entrenador te permitira saber sus horarios"
           >
             <option value="">Sin entrenador</option>
             <option value={user.id}>{user.name}</option>
@@ -106,7 +107,7 @@ export const Schedule = ({ athleteId, athlete }) => {
         )}
         {!emptySchedule && (
           <div className="flex flex-col">
-           {/*  <Info
+            {/*  <Info
               fullWidth
               text="Selecciona un horario independiente a un entrenador "
             /> */}

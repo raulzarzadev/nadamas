@@ -11,7 +11,7 @@
   justify-content: center;
   background-color: var(--bg-trans);
   cursor: default;
-  z-index: 1;
+  z-index: 999;
 }
 .modal_dialog {
   background-color: var(--bg-main);

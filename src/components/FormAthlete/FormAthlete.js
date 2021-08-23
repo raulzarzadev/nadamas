@@ -20,12 +20,13 @@ import {
 import Avatar from '../Avatar'
 import DeleteModal from '../Modals/DeleteModal'
 import { useAuth } from '../../context/AuthContext'
-import { Records } from './Records'
 import { Schedule } from './Schedule'
 import UploadImage from '../inputs/UploadImage'
 import Text from '@comps/inputs/Text'
 import Textarea from '@comps/inputs/Textarea'
 import Image from 'next/image'
+import Records from './Records'
+import Info from '@comps/Alerts/Info'
 
 export default function NewAthlete() {
   const { user } = useAuth()
@@ -67,36 +68,6 @@ export default function NewAthlete() {
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
-
-  const initalRecordState = {
-    place: 'CREA',
-    date: new Date()
-  }
-
-  const [record, setRecord] = useState(initalRecordState)
-  const [records, setRecords] = useState([])
-  const handleSetRecord = (e) => {
-    const { name, value } = e.target
-    setRecord({ ...record, [name]: value })
-  }
-
-  const handleAddRecord = () => {
-    createRecord({ athleteId: form.id, ...record })
-    setRecord(initalRecordState)
-    getRecords(form.id)
-      .then(setRecords)
-      .catch((err) => console.log('err', err))
-  }
-
-  const handleRemoveRecord = (recordId) => {
-    removeRecord(recordId)
-    getRecords(form.id).then(setRecords)
-  }
-  useEffect(() => {
-    if (form.id) {
-      getRecords(form.id).then(setRecords)
-    }
-  }, [form.id])
 
   const upladedImage = (url) => {
     setForm({ ...form, avatar: url })
@@ -178,60 +149,25 @@ export default function NewAthlete() {
           </div>
         </div>
         <Section title={'Marcas y registros'}>
-          <Records records={records} handleRemoveRecord={handleRemoveRecord} />
-          <div className={s.new_record}>
-            <div>
-              <Text
-                onChange={handleSetRecord}
-                name="date"
-                type="date"
-                value={formatInputDate(record?.date)}
-                label="Fecha"
-              />
-            </div>
-            <div>
-              <Text
-                onChange={handleSetRecord}
-                name="place"
-                value={record?.place}
-                label="Lugar"
-              />
-            </div>
-            <div>
-              <Text
-                onChange={handleSetRecord}
-                name="test"
-                value={record?.test}
-                label="Prueba"
-              />
-            </div>
-            <div>
-              <Text
-                onChange={handleSetRecord}
-                name="time"
-                type="number"
-                value={record?.time}
-                label="Tiempo"
-              />
-            </div>
-            <div>
-              <Button
-                fullwidth
-                primary
-                p="sm"
-                onClick={(e) => {
-                  e.preventDefault()
-                  handleAddRecord()
-                }}
-              >
-                <AddIcon />
-              </Button>
-            </div>
-          </div>
+          {form.id ? (
+            <Records athlete={form} />
+          ) : (
+            <Info
+              fullWidth
+              text="Debes guardar primero a este atleta antes de guardar registros"
+            />
+          )}
         </Section>
 
         <Section title={'Horario'} open>
-          <Schedule athleteId={form.id} athlete={form} />
+          {form.id ? (
+            <Schedule athleteId={form.id} athlete={form} />
+          ) : (
+            <Info
+              fullWidth
+              text="Debes guardar primero a este atleta antes de asignarle un horario"
+            />
+          )}
         </Section>
         <Section title={'Contacto'} open>
           <div className={`flex flex-col p-1`}>
