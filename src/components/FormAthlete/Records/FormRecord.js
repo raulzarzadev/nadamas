@@ -38,7 +38,7 @@ export default function FormRecord({ handleAddRecord }) {
             onChange={handleChange}
             name="place"
             value={form?.place}
-            label="Lugar"
+            label="Instalaciones"
           />
         </div>
         <div className="my-2 w-1/2 p-2">
@@ -63,7 +63,7 @@ export default function FormRecord({ handleAddRecord }) {
               setFrom(initialState)
             }}
           >
-           Guardar registro <AddIcon />
+            Guardar registro <AddIcon />
           </Button>
         </div>
       </div>

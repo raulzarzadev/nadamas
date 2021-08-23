@@ -29,6 +29,7 @@ export default function Records({ athlete: { id } }) {
     removeRecord(recordId)
     getRecords(form.id).then(setRecords)
   } */
+  
   return (
     <div className="">
       <div>

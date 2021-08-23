@@ -33,7 +33,6 @@ export default function Groups() {
       .catch((err) => console.log('err', err))
   }, [])
 
-
   const [attendanceList, setAttendanceList] = useState({
     date: date,
     attendance: []
@@ -71,14 +70,14 @@ const ScheduleDay = ({ coachSchedules, day, date }) => {
       {coachSchedules?.map((schedule, i) => (
         <div key={i}>
           <h3 className="text-2xl font-bold">{schedule}</h3>
-          <AtleteScheduleTable schedule={schedule} day={day} date={date}/>
+          <AtleteScheduleTable schedule={schedule} day={day} date={date} />
         </div>
       ))}
     </div>
   )
 }
 
-const AtleteScheduleTable = ({ schedule, day, date={date} }) => {
+const AtleteScheduleTable = ({ schedule, day, date = { date } }) => {
   const [athletes, setAthletes] = useState(undefined)
   useEffect(() => {
     if (schedule) {
@@ -90,7 +89,6 @@ const AtleteScheduleTable = ({ schedule, day, date={date} }) => {
       }
     }
   }, [schedule, day])
-
 
   if (athletes === undefined) return 'Cargando ...'
 
@@ -116,5 +114,5 @@ const Athlete = ({ athleteId, date }) => {
 
   if (athlete === undefined) return 'Cargando ... x'
   if (athlete === null) return <></>
-  return <AthleteRow athlete={athlete}  date={date}/>
+  return <AthleteRow athlete={athlete} date={date} displaySetAttendance/>
 }
