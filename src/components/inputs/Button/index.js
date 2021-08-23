@@ -30,7 +30,7 @@ export default function Button({
   return (
     <button
       onClick={(e) => {
-        href ? router.push(href) : onClick ? onClick(): type
+        href ? router.push(href) : onClick ? onClick(e): type
       }}
       {...rest}
       disabled={disabled}
