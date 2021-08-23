@@ -18,7 +18,8 @@ module.exports = {
       display: ['group-hover'],
       opacity: ['disabled'],
       backgroundColor: ['checked', 'checked-sibiling'],
-      borderColor: ['checked']
+      borderColor: ['checked'],
+      translate: ['active', 'checked-sibiling']
     }
   },
   plugins: [checkedSiblingPlugin]

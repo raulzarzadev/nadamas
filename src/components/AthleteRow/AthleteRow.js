@@ -6,13 +6,13 @@ import EmergencyCallModal from '../Modals/EmergencyCallModal'
 import { ContactIcon, EditIcon, EmergencyIcon } from '../../utils/Icons'
 import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
-import {  updateAttendanceList } from '@/firebase/attendance'
+import { updateAttendanceList } from '@/firebase/attendance'
 
 export default function AthleteRow({
   athlete,
   displaySetAttendance = false,
   date,
-  assist=false,
+  assist = false
 }) {
   const { user } = useAuth()
   const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth } =
@@ -29,9 +29,6 @@ export default function AthleteRow({
       .then((res) => console.log(res))
       .catch((err) => console.log('err', err))
   }
-
-  
-
 
   /*
   {
@@ -53,26 +50,40 @@ export default function AthleteRow({
             locale: es
           }).replace(/años/, '')}
         </span>
-        {`${name} ${lastName || ''} `}
+        <span>{`${name.split(' ')[0]} ${lastName.split(' ')[0] || ''} `}</span>
       </div>
       <div className={s.athlete_actions}>
         {!!displaySetAttendance && (
-          <div /* className={s.athlete_action} */>
-            <input
-              name="attendance"
-              type="checkbox"
-              defaultChecked={assist}
-              onClick={(e) => handleSetAttendance(id, e)}
-            ></input>
+          <div className="m-1">
+            <label
+              className={` group flex relative w-4 justify-center items-center m-2 cursor-pointer shadow-lg hover:shadow-sm `}
+            >
+              <input
+                defaultChecked={assist}
+                onClick={(e) => handleSetAttendance(id, e)}
+                className="absolute opacity-0 h-0 w-0 "
+                name="attendance"
+                type="checkbox"
+              />
+              <span className="text-sm h-8 font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full ">
+                A
+              </span>
+            </label>
           </div>
         )}
         <div className="m-1" /* className={s.athlete_action} */>
-          <Button disabled={!emerMobile} icon onClick={handleOpenEmergencyCall}>
+          <Button
+            size="sm"
+            disabled={!emerMobile}
+            icon
+            onClick={handleOpenEmergencyCall}
+          >
             <EmergencyIcon className="text-red-500" />
           </Button>
         </div>
         <div className="m-1" /* className={s.athlete_action} */>
           <Button
+            size="sm"
             disabled={!mobile}
             icon
             href={`https://wa.me/521${mobile}?text=${wstext}`}
@@ -81,7 +92,7 @@ export default function AthleteRow({
           </Button>
         </div>
         <div className="m-1" /* className={s.athlete_action} */>
-          <Button icon href={`/athletes/${id}`}>
+          <Button size="sm" icon href={`/athletes/${id}`}>
             <EditIcon />
           </Button>
         </div>
