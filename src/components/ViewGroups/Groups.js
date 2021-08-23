@@ -64,7 +64,7 @@ const ScheduleDay = ({ coachSchedules, day, date }) => {
   const [showAttendance, setShowAttendance] = useState(false)
   return (
     <div>
-      <div className='py-2'>
+      <div className="py-2">
         <Toggle
           label="Mostrar lista de asistencia"
           onChange={({ target }) => setShowAttendance(target.checked)}
@@ -119,9 +119,11 @@ const AtleteScheduleTable = ({
 
   return (
     <div>
-      <div className="flex justify-end pr-24 text-sm font-light">
-        Asistencia
-      </div>
+      {showAttendance && (
+        <div className="flex justify-end pr-24 text-sm font-light">
+          Asistencia
+        </div>
+      )}
       {athletes?.length === 0 && <span>Sin athletas</span>}
       {athletes.map((athlete, i) => (
         <Athlete

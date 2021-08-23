@@ -48,7 +48,6 @@ export const updateAttendanceList = async ({
 
     if (attendanceListIncludesThisAthlete) {
       // borrar si lo incluye
-      console.log('borrar')
       return await attendanceList
         .update({
           attendance: firebase.firestore.FieldValue.arrayRemove(athleteId)
@@ -56,7 +55,6 @@ export const updateAttendanceList = async ({
         .then((res) => formatResponse(true, 'ATTENDANCE_LIST_UPDATED', res))
         .catch((err) => console.log(err))
     } else {
-      console.log('agregar')
       return await attendanceList
         .update({
           attendance: firebase.firestore.FieldValue.arrayUnion(athleteId)
@@ -66,7 +64,6 @@ export const updateAttendanceList = async ({
       //  escribir si no
     }
   } else {
-    console.log('not exist')
     return await db
       .collection('attendance')
       .add({

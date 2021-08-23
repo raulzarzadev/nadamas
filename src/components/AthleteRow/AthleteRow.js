@@ -50,7 +50,7 @@ export default function AthleteRow({
             locale: es
           }).replace(/años/, '')}
         </span>
-        <span>{`${name.split(' ')[0]} ${lastName.split(' ')[0] || ''} `}</span>
+        <span>{`${name?.split(' ')[0]} ${lastName?.split(' ')[0] || ''} `}</span>
       </div>
       <div className={s.athlete_actions}>
         {!!displaySetAttendance && (
