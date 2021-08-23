@@ -5,15 +5,14 @@ import {
   getAthlete,
   getAthletes,
   getAthletesBySchedule,
-  getAthleteSchedule,
-  getAttendanceDate,
-  updateAttendanceList
+  getAthleteSchedule
 } from '@/firebase/client'
 import { addDays, subDays } from 'date-fns'
 import { dayLabels, format } from '../../utils/Dates'
 import { useAuth } from '../../context/AuthContext'
 import AthleteRow from '../AthleteRow'
 import Button from '@comps/inputs/Button'
+import { getAttendanceDate } from '@/firebase/attendance'
 
 export default function Groups() {
   const { user } = useAuth()
@@ -90,19 +89,36 @@ const AtleteScheduleTable = ({ schedule, day, date = { date } }) => {
     }
   }, [schedule, day])
 
+  useEffect(() => {
+    getAttendanceDate(date)
+      .then((res) => {
+        res?.attendance ? setAttendance(res.attendance) : setAttendance([])
+      })
+      .catch((err) => console.log('err', err))
+  }, [date, athletes])
+
+  const [attendance, setAttendance] = useState([])
+
   if (athletes === undefined) return 'Cargando ...'
 
   return (
     <div>
       {athletes?.length === 0 && <span>Sin athletas</span>}
       {athletes.map((athlete, i) => (
-        <Athlete key={i} athleteId={athlete} date={date} />
+        <>
+          <Athlete
+            key={i}
+            athleteId={athlete}
+            date={date}
+            assist={attendance.includes(athlete)}
+          />
+        </>
       ))}
     </div>
   )
 }
 
-const Athlete = ({ athleteId, date }) => {
+const Athlete = ({ athleteId, date, assist }) => {
   const [athlete, setAthlete] = useState(undefined)
   useEffect(() => {
     getAthlete(athleteId)
@@ -114,5 +130,12 @@ const Athlete = ({ athleteId, date }) => {
 
   if (athlete === undefined) return 'Cargando ... x'
   if (athlete === null) return <></>
-  return <AthleteRow athlete={athlete} date={date} displaySetAttendance/>
+  return (
+    <AthleteRow
+      athlete={athlete}
+      date={date}
+      displaySetAttendance
+      assist={assist}
+    />
+  )
 }

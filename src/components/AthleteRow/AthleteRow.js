@@ -6,11 +6,13 @@ import EmergencyCallModal from '../Modals/EmergencyCallModal'
 import { ContactIcon, EditIcon, EmergencyIcon } from '../../utils/Icons'
 import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
+import {  updateAttendanceList } from '@/firebase/attendance'
 
 export default function AthleteRow({
   athlete,
   displaySetAttendance = false,
-  date
+  date,
+  assist=false,
 }) {
   const { user } = useAuth()
   const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth } =
@@ -23,10 +25,13 @@ export default function AthleteRow({
   }
 
   const handleSetAttendance = (id) => {
-    console.log(id, date)
+    updateAttendanceList({ date, athleteId: id })
+      .then((res) => console.log(res))
+      .catch((err) => console.log('err', err))
   }
 
-  const [assist, setAssist] = useState(false)
+  
+
 
   /*
   {

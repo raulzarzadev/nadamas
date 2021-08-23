@@ -4,7 +4,7 @@ export const formatResponse = (ok, type, res) => {
   return { type, ok, res }
 }
 export const normalizeDoc = (doc) => {
-  if (!doc.exists) return null // The document  not exist
+  if (!doc?.exists) return null // The document  not exist
   const data = doc.data()
   const id = doc.id
 
@@ -39,7 +39,7 @@ export const unfierebazeDates = (dates = {}) => {
   return aux
 }
 
-export const normalizeDocs = (docs = []) => docs.map((doc) => normalizeDoc(doc))
+export const normalizeDocs = (docs = []) => docs?.map((doc) => normalizeDoc(doc))
 
 export const datesToFirebaseFromat = ({
   birth,
