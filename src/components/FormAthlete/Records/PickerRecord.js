@@ -25,13 +25,13 @@ export default function PickerRecord({ handleChange = () => {}, value = {} }) {
   }, [form])
 
   return (
-    <div className=" p-2 flex justify-center">
+    <div className="  flex justify-center">
       <label className="flex flex-col w-14 items-center">
         Min
         <input
           min={0}
           max={100}
-          className="w-full p-2 bg-transparent text-center text-3xl"
+          className="w-full p-2 bg-transparent text-center text-2xl"
           value={value?.minutes}
           onChange={_handleChange}
           name="minutes"
@@ -45,7 +45,7 @@ export default function PickerRecord({ handleChange = () => {}, value = {} }) {
         <input
           min={0}
           max={60}
-          className="w-full p-2 bg-transparent text-center text-3xl"
+          className="w-full p-2 bg-transparent text-center text-2xl"
           value={value?.seconds}
           onChange={_handleChange}
           name="seconds"
@@ -58,7 +58,7 @@ export default function PickerRecord({ handleChange = () => {}, value = {} }) {
         <input
           min={0}
           max={100}
-          className="w-full p-2 bg-transparent text-center text-3xl max-w-xs min-w-min"
+          className="w-full p-2 bg-transparent text-center text-2xl max-w-xs min-w-min"
           value={value?.ms}
           onChange={_handleChange}
           name="ms"

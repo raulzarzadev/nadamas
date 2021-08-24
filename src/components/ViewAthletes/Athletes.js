@@ -10,6 +10,7 @@ import router from 'next/router'
 import Text from '@comps/inputs/Text'
 
 export default function Athletes() {
+  const { query } = router
   const [athletes, setAthletes] = useState([])
   const { user } = useAuth()
 
@@ -34,12 +35,12 @@ export default function Athletes() {
     setSortedAthletes(sorted)
   }, [sortBy, athletes])
 
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(query.search || '')
 
   const handleSearch = ({ target: { value } }) => {
     setSearch(value)
   }
-
+ 
   useEffect(() => {
     function eliminarDiacriticosEs(texto) {
       return texto
@@ -52,15 +53,19 @@ export default function Athletes() {
         .toLowerCase()
     }
     const searchAthletes = athletes?.filter(({ name }) => {
-      return eliminarDiacriticosEs(name)
-        .includes(eliminarDiacriticosEs(search))
+      return eliminarDiacriticosEs(name).includes(eliminarDiacriticosEs(search))
     })
 
     setSortedAthletes(searchAthletes)
-  }, [search])
+    
+    search == ''
+      ? router.push('/athletes')
+      : router.push(`/athletes?search=${search}`)
 
+  }, [search, athletes])
+  
   return (
-    <div className='max-w-xl mx-auto'>
+    <div className="max-w-xl mx-auto">
       <h3 className="text-center font-bold text-lg">Todos los atletas</h3>
       {/* LISTA DE ATLETAS */}
       <div className="flex w-32 mx-auto">

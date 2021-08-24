@@ -9,7 +9,7 @@ import PickerRecord from './PickerRecord'
 export default function FormRecord({ handleAddRecord }) {
   const initialState = {
     date: new Date(),
-    place: '',
+    place: 'CREA',
     test: '',
     time: '00:00.000'
   }
@@ -22,10 +22,8 @@ export default function FormRecord({ handleAddRecord }) {
   }
 
   return (
-    <div className="">
-      
-      <div className=" block items-end sm:flex sm:flex-wrap">
-        <div className="p-1 mt-2 w-full sm:w-1/2  ">
+      <div className=" block items-end sm:flex sm:flex-wrap text-sm">
+        <div className="p-1  w-full sm:w-1/2  ">
           <Text
             onChange={handleChange}
             name="date"
@@ -34,7 +32,7 @@ export default function FormRecord({ handleAddRecord }) {
             label="Fecha"
           />
         </div>
-        <div className="p-1 mt-2 w-full sm:w-1/2 ">
+        <div className="p-1  w-full sm:w-1/2 ">
           <Text
             onChange={handleChange}
             name="place"
@@ -42,7 +40,7 @@ export default function FormRecord({ handleAddRecord }) {
             label="Instalaciones"
           />
         </div>
-        <div className="p-1 mt-2 w-full sm:w-1/2 ">
+        <div className="p-1  w-full sm:w-1/2 ">
           <Text
             onChange={handleChange}
             name="test"
@@ -50,10 +48,10 @@ export default function FormRecord({ handleAddRecord }) {
             label="Prueba"
           />
         </div>
-        <div className="p-1 mt-2 w-full sm:w-1/2 ">
+        <div className="p-1  w-full sm:w-1/2 ">
           <PickerRecord handleChange={handleChangeRecord} />
         </div>
-        <div className="p-1 mt-2 w-full sm:w-1/2  mx-auto">
+        <div className="p-1  w-full sm:w-1/2  mx-auto">
           <Button
             fullWidth
             variant="secondary"
@@ -68,6 +66,5 @@ export default function FormRecord({ handleAddRecord }) {
           </Button>
         </div>
       </div>
-    </div>
   )
 }
