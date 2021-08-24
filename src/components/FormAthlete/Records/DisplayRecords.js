@@ -6,7 +6,7 @@ import UploadImage from '@comps/inputs/UploadImage'
 import Modal from '@comps/Modals/Modal'
 import { useState } from 'react'
 
-export default function DisplayRecords({ records = [] }) {
+export default function DisplayRecords({ records = [] , updateRecords=()=>{} }) {
   const [openGaleryModal, setOpenGaleryModal] = useState(false)
   const handleOpenGalery = (id) => {
     openGaleryModal === id ? setOpenGaleryModal(false) : setOpenGaleryModal(id)
@@ -18,16 +18,7 @@ export default function DisplayRecords({ records = [] }) {
         <div key={id} className="flex justify-between my-2">
           <div className=" hidden w-1/6 p-1">{format(date, 'dd/MMM/yy')}</div>
           <div className="hidden w-1/6  p-1">{place || '-'}</div>
-          <div className="hidden p-1 ">
-            <Button
-              iconOnly
-              onClick={(e) => {
-                e.preventDefault()
-              }}
-            >
-              <TrashBinIcon size=".8rem" />
-            </Button>{' '}
-          </div>
+
           <div className="w-1/3 p-1 flex items-center justify-center ">
             {test || '-'}
           </div>
@@ -35,22 +26,31 @@ export default function DisplayRecords({ records = [] }) {
             {time || '-'}
           </div>
           <div className="w-1/3 p-1 flex items-center justify-center">
-            <Button onClick={() => handleOpenGalery(id)}>Ver</Button>
-            <DetailsModal
-              id={id}
-              open={openGaleryModal === id}
-              handleOpen={handleOpenGalery}
-              record={{ id, date, test, time, place }}
-            />
+            <Button
+              variant=""
+              iconOnly
+              size="xs"
+              onClick={() => handleOpenGalery(id)}
+            >
+              Ver
+            </Button>
           </div>
+          <DetailsModal
+            id={id}
+            open={openGaleryModal === id}
+            handleOpen={handleOpenGalery}
+            record={{ id, date, test, time, place }}
+            updateRecords={updateRecords}
+          />
         </div>
       ))}
     </>
   )
 }
-const DeleteRecordModal = ({ handleOpen, open, id }) => {
+const DeleteRecordModal = ({ handleOpen, open, id, updateRecords }) => {
   const handleRemoveRecord = (id) => {
     removeRecord(id)
+    updateRecords()
     handleOpen()
   }
   return (
@@ -70,7 +70,7 @@ const DeleteRecordModal = ({ handleOpen, open, id }) => {
     </Modal>
   )
 }
-const DetailsModal = ({ handleOpen, open, record }) => {
+const DetailsModal = ({ handleOpen, open, record, updateRecords }) => {
   const { id, date, test, time, place } = record
   const [openDelete, setOpenDelete] = useState(false)
   const handleOpenDelete = () => {
@@ -101,6 +101,7 @@ const DetailsModal = ({ handleOpen, open, record }) => {
         </div>
       </div>
       <DeleteRecordModal
+        updateRecords={updateRecords}
         handleOpen={() => {
           handleOpenDelete()
           handleOpen()

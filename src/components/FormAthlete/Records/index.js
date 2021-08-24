@@ -52,7 +52,12 @@ export default function Records({ athlete: { id } }) {
             <Info text="Aun no hay registros" fullWidth />
           </div>
         ) : (
-          <DisplayRecords records={records} />
+          <DisplayRecords
+            records={records}
+            updateRecords={() => {
+              getAndSetRecords()
+            }}
+          />
         )}
       </div>
       <Modal
