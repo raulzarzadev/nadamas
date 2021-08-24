@@ -148,7 +148,7 @@ export default function NewAthlete() {
             />
           </div>
         </div>
-        <Section title={'Marcas y registros'}>
+        <Section title={'Pruebas'}>
           {form.id ? (
             <Records athlete={form} />
           ) : (
@@ -157,6 +157,9 @@ export default function NewAthlete() {
               text="Debes guardar primero a este atleta antes de guardar registros"
             />
           )}
+        </Section>
+        <Section title="Cuotas">
+          <Info fullWidth text="Aun no puedes registrar pagos " />
         </Section>
 
         <Section title={'Horario'} open>

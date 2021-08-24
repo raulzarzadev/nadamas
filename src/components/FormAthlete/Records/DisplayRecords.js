@@ -1,12 +1,15 @@
 import { removeRecord } from '@/firebase/records'
 import { format } from '@/src/utils/Dates'
-import { GaleryIcon, TrashBinIcon } from '@/src/utils/Icons'
+import { AddIcon, GaleryIcon, TrashBinIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import UploadImage from '@comps/inputs/UploadImage'
 import Modal from '@comps/Modals/Modal'
 import { useState } from 'react'
 
-export default function DisplayRecords({ records = [] , updateRecords=()=>{} }) {
+export default function DisplayRecords({
+  records = [],
+  updateRecords = () => {}
+}) {
   const [openGaleryModal, setOpenGaleryModal] = useState(false)
   const handleOpenGalery = (id) => {
     openGaleryModal === id ? setOpenGaleryModal(false) : setOpenGaleryModal(id)
@@ -78,13 +81,22 @@ const DetailsModal = ({ handleOpen, open, record, updateRecords }) => {
     // handleOpen()
   }
   return (
-    <Modal handleOpen={handleOpen} open={open} title="Detalles">
-      <div>
-        <div className="text-sm">{format(date, 'dd/MMM/yy')}</div>
-        <div>{test}</div>
-        <div>{time}</div>
-        <div className="text-sm"> {place}</div>
-        <div className="my-2">
+    <Modal handleOpen={handleOpen} open={open} title="Detalles de la prueba">
+      <div className="">
+        <h4 className="text-sm">Imagenes</h4>
+        <div className="w-full">
+          <div className="h-16 w-16  border border-dashed m-1 rounded-lg flex justify-center items-center shadow-lg hover:border-transparent  ">
+            <AddIcon size="3rem" className="" />
+          </div>
+        </div>
+        <h4 className="text-sm">Información</h4>
+        <div className="flex flex-wrap">
+          <div className="w-1/2">{test}</div>
+          <div className="w-1/2 text-sm">{format(date, 'dd/MMM/yy')}</div>
+          <div className="w-1/2">{time}</div>
+          <div className="w-1/2 text-sm"> {place}</div>
+        </div>
+        <div className="mt-8 w-52 mx-auto">
           <Button
             size="xs"
             variant="danger"

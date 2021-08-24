@@ -1,4 +1,5 @@
 import { createRecord, getRecords } from '@/firebase/records'
+import { AddIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import Modal from '@comps/Modals/Modal'
@@ -44,7 +45,7 @@ export default function Records({ athlete: { id } }) {
         {/* <FormRecord handleAddRecord={handleAddRecord} /> */}
         <div className="w-12 mx-auto">
           <Button onClick={handleOpenNewRecord} variant="secondary" size="sm">
-            Nuevo
+            Nuevo <AddIcon/>
           </Button>
         </div>
         {records?.length === 0 ? (

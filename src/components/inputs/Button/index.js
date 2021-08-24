@@ -16,7 +16,7 @@ export default function Button({
 }) {
   const style = {
     social: 'bg-blue-500 ',
-    primary: 'bg-gray-800',
+    primary: 'bg-blue-500',
     secondary: 'bg-green-500',
     disabled: 'opacity-50 shadow-none',
     danger: `bg-red-600 `

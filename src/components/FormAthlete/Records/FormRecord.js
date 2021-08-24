@@ -1,6 +1,6 @@
 import SWIMMING_TEST from '@/src/constants/SWIMMING_TEST'
 import { formatInputDate } from '@/src/utils/Dates'
-import { AddIcon } from '@/src/utils/Icons'
+import { AddIcon, SaveIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import PickerTime from '@comps/inputs/PickerTime'
 import Text from '@comps/inputs/Text'
@@ -71,7 +71,7 @@ export default function FormRecord({ handleAddRecord }) {
       <div className="p-1  w-full sm:w-1/2  mx-auto ">
         <Button
           fullWidth
-          variant="secondary"
+          variant="primary"
           p="sm"
           onClick={(e) => {
             e.preventDefault()
@@ -79,7 +79,7 @@ export default function FormRecord({ handleAddRecord }) {
             setFrom(initialState)
           }}
         >
-          Guardar <AddIcon />
+          Guardar <SaveIcon />
         </Button>
       </div>
     </div>
