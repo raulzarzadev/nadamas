@@ -159,7 +159,7 @@ export default function NewAthlete() {
           )}
         </Section>
         <Section title="Cuotas">
-          <Info fullWidth text="Aun no puedes registrar pagos " />
+          <Info fullWidth text="Pronto podras registrar pagos y cuotas aqui" />
         </Section>
 
         <Section title={'Horario'} open>
