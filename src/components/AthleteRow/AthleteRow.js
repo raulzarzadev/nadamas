@@ -1,6 +1,6 @@
 import { formatDistanceToNowStrict } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import EmergencyCallModal from '../Modals/EmergencyCallModal'
 import { ContactIcon, EditIcon, EmergencyIcon } from '../../utils/Icons'
@@ -30,15 +30,6 @@ export default function AthleteRow({
       .catch((err) => console.log('err', err))
   }
 
-  /*
-  {
-    id:athleteId,
-    attendance:[
-      'date()',
-      'date2(),
-    ]
-  } 
-  */
 
   return (
     <div className={s.athlete_row}>
@@ -50,7 +41,9 @@ export default function AthleteRow({
             locale: es
           }).replace(/años/, '')}
         </span>
-        <span>{`${name?.split(' ')[0]} ${lastName?.split(' ')[0] || ''} `}</span>
+        <span>{`${name?.split(' ')[0]} ${
+          lastName?.split(' ')[0] || ''
+        } `}</span>
       </div>
       <div className={s.athlete_actions}>
         {!!displaySetAttendance && (
@@ -59,7 +52,7 @@ export default function AthleteRow({
               className={` group flex relative w-4 justify-center items-center m-2 cursor-pointer shadow-lg hover:shadow-sm `}
             >
               <input
-                defaultChecked={assist}
+                checked={assist}
                 onClick={(e) => handleSetAttendance(id, e)}
                 className="absolute opacity-0 h-0 w-0 "
                 name="attendance"
