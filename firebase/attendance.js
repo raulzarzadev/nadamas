@@ -11,15 +11,26 @@ import {
   normalizeDocs
 } from './firebase-helpers'
 
-export const getAttendanceDate = async (date) => {
+export const getAttendanceDate = async (date, dispatch) => {
   const attendanceDate = new Date(format(date, 'MM-dd-yy'))
-  return await db
+  return db
     .collection('attendance')
     .where('date', '==', attendanceDate)
-    .get()
+    .onSnapshot(
+      (querySnapshot) => {
+        querySnapshot.docChanges().forEach((change) => {
+          dispatch(normalizeDoc(change.doc))
+        })
+      },
+      (err) => {
+        console.log(`Encountered error: ${err}`)
+      }
+    )
+  /*. get()
     .then(({ docs }) => normalizeDoc(docs[0]))
-    .catch((err) => console.log('attendance_err', err))
+    .catch((err) => console.log('attendance_err', err))  */
 }
+
 export const updateAttendanceList = async ({
   date = new Date(),
   attendance = [],
@@ -74,8 +85,6 @@ export const updateAttendanceList = async ({
       .catch((err) => console.log('err', err))
   }
 }
-
-
 
 const _create_attendanceList = async (attendanceList) => {
   return await db

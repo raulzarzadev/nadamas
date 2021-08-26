@@ -105,9 +105,13 @@ const AtleteScheduleTable = ({
 
   useEffect(() => {
     if (showAttendance) {
-      getAttendanceDate(date)
+      getAttendanceDate(date, ({ attendance }) =>
+        attendance ? setAttendance(attendance) : setAttendance([])
+      )
         .then((res) => {
-          res?.attendance ? setAttendance(res.attendance) : setAttendance([])
+          console.log('res', res)
+
+          // res?.attendance ? setAttendance(res.attendance) : setAttendance([])
         })
         .catch((err) => console.log('err', err))
     }

@@ -30,6 +30,7 @@ export default function AthleteRow({
       .catch((err) => console.log('err', err))
   }
 
+console.log('assist', assist)
 
   return (
     <div className={s.athlete_row}>
@@ -53,6 +54,7 @@ export default function AthleteRow({
             >
               <input
                 checked={assist}
+                value={assist}
                 onClick={(e) => handleSetAttendance(id, e)}
                 className="absolute opacity-0 h-0 w-0 "
                 name="attendance"
