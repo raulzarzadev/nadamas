@@ -109,8 +109,6 @@ const AtleteScheduleTable = ({
         attendance ? setAttendance(attendance) : setAttendance([])
       )
         .then((res) => {
-          console.log('res', res)
-
           // res?.attendance ? setAttendance(res.attendance) : setAttendance([])
         })
         .catch((err) => console.log('err', err))

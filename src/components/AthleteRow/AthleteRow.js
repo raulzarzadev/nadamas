@@ -26,7 +26,7 @@ export default function AthleteRow({
 
   const handleSetAttendance = (id) => {
     updateAttendanceList({ date, athleteId: id })
-      .then((res) => console.log(res))
+      .then((res) => console.log('res',res))
       .catch((err) => console.log('err', err))
   }
 
@@ -55,7 +55,8 @@ console.log('assist', assist)
               <input
                 checked={assist}
                 value={assist}
-                onClick={(e) => handleSetAttendance(id, e)}
+                onChange={(e)=>handleSetAttendance(id,)}
+                // onClick={(e) => handleSetAttendance(id, e)}
                 className="absolute opacity-0 h-0 w-0 "
                 name="attendance"
                 type="checkbox"

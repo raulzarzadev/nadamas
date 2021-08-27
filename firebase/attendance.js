@@ -2,7 +2,7 @@ import firebase from 'firebase/app'
 import 'firebase/firestore'
 
 import { db } from './client'
-import { format } from '@/src/utils/Dates'
+import { format, simpleDate } from '@/src/utils/Dates'
 import {
   datesToFirebaseFromat,
   dateToFirebaseFormat,
@@ -12,7 +12,7 @@ import {
 } from './firebase-helpers'
 
 export const getAttendanceDate = async (date, dispatch) => {
-  const attendanceDate = new Date(format(date, 'MM-dd-yy'))
+  const attendanceDate = simpleDate(date)
   return db
     .collection('attendance')
     .where('date', '==', attendanceDate)
@@ -36,7 +36,10 @@ export const updateAttendanceList = async ({
   attendance = [],
   athleteId = ''
 }) => {
-  const attendanceDate = new Date(format(date, 'MM-dd-yy'))
+ 
+  const attendanceDate = simpleDate(date)
+
+console.log('attendanceDate', attendanceDate)
 
   const attendanceRef = await db
     .collection('attendance')
