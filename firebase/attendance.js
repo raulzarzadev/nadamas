@@ -39,7 +39,6 @@ export const updateAttendanceList = async ({
  
   const attendanceDate = simpleDate(date)
 
-console.log('attendanceDate', attendanceDate)
 
   const attendanceRef = await db
     .collection('attendance')
