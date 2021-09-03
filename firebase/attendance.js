@@ -11,11 +11,12 @@ import {
   normalizeDocs
 } from './firebase-helpers'
 
-export const getAttendanceDate = async (date, dispatch) => {
+export const getAttendanceDate = async (date, schedule, dispatch) => {
   const attendanceDate = simpleDate(date)
   return db
     .collection('attendance')
     .where('date', '==', attendanceDate)
+    .where('schedule', '==', schedule)
     .onSnapshot(
       (querySnapshot) => {
         querySnapshot.docChanges().forEach((change) => {
@@ -34,15 +35,18 @@ export const getAttendanceDate = async (date, dispatch) => {
 export const updateAttendanceList = async ({
   date = new Date(),
   attendance = [],
+  schedule,
+  notes,
   athleteId = ''
 }) => {
- 
-  const attendanceDate = simpleDate(date)
+  console.log('notes', notes)
 
+  const attendanceDate = simpleDate(date)
 
   const attendanceRef = await db
     .collection('attendance')
     .where('date', '==', attendanceDate)
+    .where('schedule', '==', schedule)
     .limit(1)
     .get()
     .then(({ docs }) => {
@@ -50,6 +54,7 @@ export const updateAttendanceList = async ({
     })
 
   if (attendanceRef) {
+    // attendance schedule and date exist
     const attendanceList = db.collection('attendance').doc(attendanceRef)
     const attendanceListIncludesThisAthlete = await attendanceList
       .get()
@@ -59,6 +64,10 @@ export const updateAttendanceList = async ({
       })
       .catch((err) => console.log('err', err))
 
+    attendanceList
+      .update({ notes })
+      .then((res) => console.log('res', res))
+      .catch((err) => console.log('err', err))
     if (attendanceListIncludesThisAthlete) {
       // borrar si lo incluye
       return await attendanceList
@@ -81,6 +90,7 @@ export const updateAttendanceList = async ({
       .collection('attendance')
       .add({
         attendance: [athleteId],
+        schedule,
         date: dateToFirebaseFormat(attendanceDate)
       })
       .then((res) => formatResponse(true, 'ATTENDANCE_LIST_CREATED', res))

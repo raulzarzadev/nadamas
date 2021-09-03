@@ -12,7 +12,8 @@ export default function AthleteRow({
   athlete,
   displaySetAttendance = false,
   date,
-  assist = false
+  assist = false,
+  schedule
 }) {
   const { user } = useAuth()
   const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth } =
@@ -23,14 +24,14 @@ export default function AthleteRow({
   const handleOpenEmergencyCall = () => {
     setOpenEmergencyModal(!openEmergencyModal)
   }
+  
 
   const handleSetAttendance = (id) => {
-    updateAttendanceList({ date, athleteId: id })
-      .then((res) => console.log('res',res))
+    updateAttendanceList({ date, schedule, athleteId: id })
+      .then((res) => console.log('res', res))
       .catch((err) => console.log('err', err))
   }
 
-console.log('assist', assist)
 
   return (
     <div className={s.athlete_row}>

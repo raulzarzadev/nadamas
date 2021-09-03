@@ -1,5 +1,5 @@
 import s from './styles.module.css'
-import { BackIcon, ForwardIcon } from '../../utils/Icons'
+import { BackIcon, ClipboardIcon, ForwardIcon } from '../../utils/Icons'
 import { useEffect, useState } from 'react'
 import {
   getAthlete,
@@ -14,6 +14,7 @@ import AthleteRow from '../AthleteRow'
 import Button from '@comps/inputs/Button'
 import { getAttendanceDate } from '@/firebase/attendance'
 import Toggle from '@comps/inputs/Toggle'
+import DayNotesModal from '@comps/Modals/DayNotesModal'
 
 export default function Groups() {
   const { user } = useAuth()
@@ -62,6 +63,7 @@ export default function Groups() {
 
 const ScheduleDay = ({ coachSchedules, day, date }) => {
   const [showAttendance, setShowAttendance] = useState(false)
+
   return (
     <div>
       <div className="py-2">
@@ -72,7 +74,6 @@ const ScheduleDay = ({ coachSchedules, day, date }) => {
       </div>
       {coachSchedules?.map((schedule, i) => (
         <div key={i}>
-          <h3 className="text-2xl font-bold">{schedule}</h3>
           <AtleteScheduleTable
             schedule={schedule}
             day={day}
@@ -105,22 +106,28 @@ const AtleteScheduleTable = ({
 
   useEffect(() => {
     if (showAttendance) {
-      getAttendanceDate(date, ({ attendance }) =>
+      getAttendanceDate(date, schedule, ({ attendance, notes }) => {
         attendance ? setAttendance(attendance) : setAttendance([])
-      )
+        notes ? setNotes(notes) : setNotes('')
+      })
         .then((res) => {
           // res?.attendance ? setAttendance(res.attendance) : setAttendance([])
         })
         .catch((err) => console.log('err', err))
     }
-  }, [date, athletes, showAttendance])
+  }, [date, athletes, showAttendance, schedule])
 
   const [attendance, setAttendance] = useState([])
+  const [notes, setNotes] = useState('')
 
   if (athletes === undefined) return 'Cargando ...'
 
   return (
     <div>
+      <div className="flex">
+        <DayNotesModal schedule={schedule} date={date} notes={notes}/>
+        <h3 className="text-2xl font-bold ml-2">{schedule}</h3>
+      </div>
       {showAttendance && (
         <div className="flex justify-end pr-24 text-sm font-light">
           Asistencia
@@ -129,6 +136,7 @@ const AtleteScheduleTable = ({
       {athletes?.length === 0 && <span>Sin athletas</span>}
       {athletes.map((athlete, i) => (
         <Athlete
+          schedule={schedule}
           key={i}
           athleteId={athlete}
           date={date}
@@ -140,7 +148,7 @@ const AtleteScheduleTable = ({
   )
 }
 
-const Athlete = ({ athleteId, date, assist, showAttendance }) => {
+const Athlete = ({ athleteId, date, assist, showAttendance, schedule }) => {
   const [athlete, setAthlete] = useState(undefined)
   useEffect(() => {
     getAthlete(athleteId)
@@ -154,6 +162,7 @@ const Athlete = ({ athleteId, date, assist, showAttendance }) => {
   if (athlete === null) return <></>
   return (
     <AthleteRow
+      schedule={schedule}
       athlete={athlete}
       date={date}
       displaySetAttendance={showAttendance}

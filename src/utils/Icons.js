@@ -26,6 +26,7 @@ import { RiImageEditFill } from 'react-icons/ri'
 import { RiLoader2Line } from 'react-icons/ri'
 import { RiCheckFill } from 'react-icons/ri'
 import { RiErrorWarningFill } from 'react-icons/ri'
+import {RiClipboardLine} from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -69,3 +70,5 @@ export const DoneIcon = (props) => <RiCheckFill size={size} {...props} />
 export const WarningIcon = (props) => (
   <RiErrorWarningFill size={size} {...props} />
 )
+
+export const ClipboardIcon = (props) => <RiClipboardLine size={size} {...props} />

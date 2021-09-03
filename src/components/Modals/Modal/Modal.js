@@ -9,16 +9,16 @@ export default function Modal({
   children
 }) {
   useEffect(() => {
-    const a = document.getElementById('modal-1')
+    const a = document.getElementById(`modal-${title}`)
     a.addEventListener('click', (e) => {
       const { id } = e.target
-      if (id === 'modal-1') handleOpen()
+      if (id === `modal-${title}`) handleOpen()
     })
   }, [open])
   return (
     <div
       className={styles.modal}
-      id="modal-1"
+      id={`modal-${title}`}
       style={{ display: !open && 'none' }}
     >
       <div id="modal" className={styles.modal_dialog}>
