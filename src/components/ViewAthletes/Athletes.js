@@ -4,7 +4,7 @@ import s from './styles.module.css'
 import { getAthletes } from 'firebase/client'
 import AthleteRow from '../AthleteRow'
 import { useAuth } from '../../context/AuthContext'
-import { AddPersonIcon } from '../../utils/Icons'
+import { AddIcon, AddPersonIcon } from '../../utils/Icons'
 import { sortArrayObjectsByField } from '../../utils/Sorts'
 import router from 'next/router'
 import Text from '@comps/inputs/Text'
@@ -40,7 +40,7 @@ export default function Athletes() {
   const handleSearch = ({ target: { value } }) => {
     setSearch(value)
   }
- 
+
   useEffect(() => {
     function eliminarDiacriticosEs(texto) {
       return texto
@@ -57,13 +57,12 @@ export default function Athletes() {
     })
 
     setSortedAthletes(searchAthletes)
-    
+
     search == ''
       ? router.push('/athletes')
       : router.push(`/athletes?search=${search}`)
-
   }, [search, athletes])
-  
+
   return (
     <div className="max-w-xl mx-auto">
       <h3 className="text-center font-bold text-lg">Todos los atletas</h3>
@@ -80,6 +79,7 @@ export default function Athletes() {
           </div>
         </Button>
       </div>
+      
       <div className="w-1/2 mx-auto my-4">
         <Text
           name="search"

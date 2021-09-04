@@ -36,7 +36,7 @@ export const updateAttendanceList = async ({
   date = new Date(),
   attendance = [],
   schedule,
-  notes,
+  notes='',
   athleteId = ''
 }) => {
   console.log('notes', notes)

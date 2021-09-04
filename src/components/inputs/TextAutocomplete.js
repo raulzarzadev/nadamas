@@ -33,7 +33,7 @@ export default function Autocomplete({
           position: 'fixed',
           overflow: 'auto',
           maxHeight: '50%',
-          zIndex: 1
+          zIndex: 1,
         }}
         shouldItemRender={(item, val) => val === value}
         renderItem={(item, isHighlighted) => (

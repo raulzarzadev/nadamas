@@ -24,6 +24,11 @@ export default function Navbar() {
       href: '/athletes/new',
       label: 'Nuevo atleta'
     },
+    ,
+    {
+      href: '/records',
+      label: 'Registros'
+    },
     {
       href: '/signout',
       label: 'Salir'

@@ -7,7 +7,8 @@ import Text from '@comps/inputs/Text'
 import Autocomplete from '@comps/inputs/TextAutocomplete'
 import { useState } from 'react'
 import PickerRecord from './PickerRecord'
-export default function FormRecord({ handleAddRecord }) {
+
+export default function FormRecord({ handleAddRecord, selectAthlete }) {
   const initialState = {
     date: new Date(),
     place: 'CREA',
@@ -23,12 +24,19 @@ export default function FormRecord({ handleAddRecord }) {
     setFrom({ ...form, time })
   }
 
-  const handleSetTest=(test)=>{
-    setFrom({...form, test})
+  const handleSetTest = (test) => {
+    setFrom({ ...form, test })
   }
 
   return (
     <div className=" block items-end sm:flex sm:flex-wrap text-sm">
+      <div className="w-full flex justify-center">
+        <Autocomplete
+          label="Buscar athleta"
+          placeholder="Buscar athleta"
+          items={[]}
+        />
+      </div>
       <div className="p-1  w-full sm:w-1/2  ">
         <Text
           onChange={handleChange}
