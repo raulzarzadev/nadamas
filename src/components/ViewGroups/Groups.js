@@ -68,7 +68,7 @@ const ScheduleDay = ({ coachSchedules, day, date }) => {
     <div>
       <div className="py-2">
         <Toggle
-          label="Mostrar lista de asistencia"
+          label="Mostrar notas y asistencia "
           onChange={({ target }) => setShowAttendance(target.checked)}
         />
       </div>
@@ -125,7 +125,9 @@ const AtleteScheduleTable = ({
   return (
     <div>
       <div className="flex">
-        <DayNotesModal schedule={schedule} date={date} notes={notes}/>
+        {showAttendance && (
+          <DayNotesModal schedule={schedule} date={date} notes={notes} />
+        )}
         <h3 className="text-2xl font-bold ml-2">{schedule}</h3>
       </div>
       {showAttendance && (
