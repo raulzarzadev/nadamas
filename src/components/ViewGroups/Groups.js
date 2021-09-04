@@ -2,8 +2,6 @@ import s from './styles.module.css'
 import { BackIcon, ClipboardIcon, ForwardIcon } from '../../utils/Icons'
 import { useEffect, useState } from 'react'
 import {
-  getAthlete,
-  getAthletes,
   getAthletesBySchedule,
   getAthleteSchedule
 } from '@/firebase/client'
@@ -15,6 +13,7 @@ import Button from '@comps/inputs/Button'
 import { getAttendanceDate } from '@/firebase/attendance'
 import Toggle from '@comps/inputs/Toggle'
 import DayNotesModal from '@comps/Modals/DayNotesModal'
+import { getAthlete } from '@/firebase/athletes'
 
 export default function Groups() {
   const { user } = useAuth()

@@ -12,7 +12,7 @@ export default function ViewRecords() {
     setOpenNewRecord(!openNewRecord)
   }
   return (
-    <div className="">
+    <div className=" p-4">
       <div>
         {/* <FormRecord handleAddRecord={handleAddRecord} /> */}
         <div className="w-12 mx-auto">

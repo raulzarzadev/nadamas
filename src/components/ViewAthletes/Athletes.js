@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import Button from '@comps/inputs/Button'
 import s from './styles.module.css'
-import { getAthletes } from 'firebase/client'
 import AthleteRow from '../AthleteRow'
 import { useAuth } from '../../context/AuthContext'
 import { AddIcon, AddPersonIcon } from '../../utils/Icons'
 import { sortArrayObjectsByField } from '../../utils/Sorts'
 import router from 'next/router'
 import Text from '@comps/inputs/Text'
+import { getAthletes } from '@/firebase/athletes'
 
 export default function Athletes() {
   const { query } = router

@@ -1,22 +1,9 @@
 import { useEffect, useState } from 'react'
 import Button from '@comps/inputs/Button'
-import s from './styles.module.css'
-import {
-  getAthlete,
-  updateAtlete,
-  createRecord,
-  getRecords,
-  removeRecord
-} from '@/firebase/client'
+
 import { useRouter } from 'next/router'
 import { formatInputDate } from '../../utils/Dates'
-import {
-  SaveIcon,
-  AddPersonIcon,
-  AddIcon,
-  ForwardIcon,
-  DownIcon
-} from '../../utils/Icons'
+import { SaveIcon, ForwardIcon, DownIcon } from '../../utils/Icons'
 import Avatar from '../Avatar'
 import DeleteModal from '../Modals/DeleteModal'
 import { useAuth } from '../../context/AuthContext'
@@ -27,6 +14,8 @@ import Textarea from '@comps/inputs/Textarea'
 import Image from 'next/image'
 import Records from './Records'
 import Info from '@comps/Alerts/Info'
+import { getAthlete, updateAtlete } from '@/firebase/athletes'
+import s from './styles.module.css'
 
 export default function NewAthlete() {
   const { user } = useAuth()
