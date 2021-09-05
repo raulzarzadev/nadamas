@@ -10,7 +10,7 @@ import Autocomplete from '@comps/inputs/TextAutocomplete'
 import { useEffect, useState } from 'react'
 import PickerRecord from './PickerRecord'
 
-export default function FormRecord({ handleAddRecord, selectAthlete }) {
+export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
   const initialState = {
     athlete: '',
     date: new Date(),
@@ -43,24 +43,29 @@ export default function FormRecord({ handleAddRecord, selectAthlete }) {
   useEffect(() => {
     if (user && selectAthlete) {
       getAthletes(user.id)
-        .then((res) => console.log('res', res))
+        .then((res) => {
+          const formatAutocompleteAthlete = res.map((athlete) => {
+            const label = `${athlete?.name} ${athlete?.lastName}`
+            return { athlete, label }
+          })
+          setAthletes(formatAutocompleteAthlete)
+        })
         .catch((err) => console.log('err', err))
     }
-    console.log('athletes', form)
-  }, [form.athlete])
+  }, [user, form.athlete])
+
 
   return (
     <div className=" block items-end sm:flex sm:flex-wrap text-sm">
       <div className="w-full flex justify-center">
-        <input
+        <Autocomplete
           value={form.athlete}
           name="athlete"
           label="Buscar athleta"
           placeholder="Buscar athleta"
-           onChange={handleChange}
-          
-          // items={[{ id: '1', label: 'atleta 1' }]}
-          // onSelect={(value) => handleSetAthlete(value)}
+          items={athletes}
+          onSelect={(value) => handleSetAthlete(value)}
+          onChange={({ target: { value } }) => handleSetAthlete(value)}
         />
       </div>
       <div className="p-1  w-full sm:w-1/2  ">
@@ -82,14 +87,14 @@ export default function FormRecord({ handleAddRecord, selectAthlete }) {
       </div>
 
       <div className="p-1  w-full sm:w-1/2  ">
-       {/*  <input
+        <Autocomplete
           label="Prueba"
           placeholder="Prueba"
           items={SWIMMING_TESTS}
           value={form?.test}
           onSelect={(value) => handleSetTest(value)}
           onChange={({ target: { value } }) => handleSetTest(value)}
-        /> */}
+        />
       </div>
       <div className="p-1  w-full sm:w-1/2 ">
         <PickerRecord handleChange={handleChangeRecord} />
