@@ -1,4 +1,6 @@
+import { getAthletes } from '@/firebase/athletes'
 import SWIMMING_TESTS from '@/src/constants/SWIMMING_TESTS'
+import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
 import { AddIcon, SaveIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
@@ -10,6 +12,7 @@ import PickerRecord from './PickerRecord'
 
 export default function FormRecord({ handleAddRecord, selectAthlete }) {
   const initialState = {
+    athlete: '',
     date: new Date(),
     place: 'CREA',
     test: '',
@@ -25,27 +28,39 @@ export default function FormRecord({ handleAddRecord, selectAthlete }) {
 
   const handleSetTest = (test) => {
     setFrom({ ...form, test })
+    console.log('test', test)
   }
   const handleSetAthlete = (athlete) => {
-    setFrom({...form, athlete})
+    setFrom({ ...form, athlete })
   }
 
- useEffect(()=>{
-   console.log('searchaby', form.athlete)
-   
- },[form.athlete])
+  useEffect(() => {
+    console.log()
+  }, [form.athlete])
+
+  const { user } = useAuth()
+  const [athletes, setAthletes] = useState([])
+  useEffect(() => {
+    if (user && selectAthlete) {
+      getAthletes(user.id)
+        .then((res) => console.log('res', res))
+        .catch((err) => console.log('err', err))
+    }
+    console.log('athletes', form)
+  }, [form.athlete])
 
   return (
     <div className=" block items-end sm:flex sm:flex-wrap text-sm">
       <div className="w-full flex justify-center">
-        <Autocomplete
+        <input
           value={form.athlete}
           name="athlete"
           label="Buscar athleta"
           placeholder="Buscar athleta"
-          items={[{ id: '1', label: 'atleta 1' }]}
-          onSelect={(value) => handleSetAthlete(value)}
-          onChange={({ target: { value } }) => handleSetAthlete(value)}
+           onChange={handleChange}
+          
+          // items={[{ id: '1', label: 'atleta 1' }]}
+          // onSelect={(value) => handleSetAthlete(value)}
         />
       </div>
       <div className="p-1  w-full sm:w-1/2  ">
@@ -67,14 +82,14 @@ export default function FormRecord({ handleAddRecord, selectAthlete }) {
       </div>
 
       <div className="p-1  w-full sm:w-1/2  ">
-        <Autocomplete
+       {/*  <input
           label="Prueba"
           placeholder="Prueba"
           items={SWIMMING_TESTS}
           value={form?.test}
           onSelect={(value) => handleSetTest(value)}
           onChange={({ target: { value } }) => handleSetTest(value)}
-        />
+        /> */}
       </div>
       <div className="p-1  w-full sm:w-1/2 ">
         <PickerRecord handleChange={handleChangeRecord} />

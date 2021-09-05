@@ -4,6 +4,8 @@ import 'firebase/firestore'
 import { db } from './client'
 import { normalizeDoc, normalizeDocs } from './firebase-helpers'
 
+
+
 export const getAthlete = async (athleteId) => {
   return db
     .collection('athletes')
@@ -12,6 +14,7 @@ export const getAthlete = async (athleteId) => {
     .then((doc) => normalizeDoc(doc))
     .catch((err) => null)
 }
+
 
 export const getAthletes = async (userId) => {
   return await db
