@@ -11,6 +11,9 @@ export default function ViewRecords() {
   const handleOpenNewRecord = () => {
     setOpenNewRecord(!openNewRecord)
   }
+  const handleAddRecord = (record) => {
+    console.log(record)
+  }
   return (
     <div className=" p-4">
       <div>
@@ -39,7 +42,7 @@ export default function ViewRecords() {
         title="Nuevo Registro"
       >
         <FormRecord
-        selectAthlete
+          selectAthlete
           handleAddRecord={(record) => {
             handleAddRecord(record)
             handleOpenNewRecord()

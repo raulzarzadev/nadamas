@@ -33,6 +33,9 @@
   align-items: flex-start;
   width: 100%;
 }
+.input_label * {
+  width: 100%;
+}
 .input_label > em {
   width: 100%;
   text-align: center;

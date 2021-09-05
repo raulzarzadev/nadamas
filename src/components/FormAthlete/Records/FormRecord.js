@@ -31,12 +31,11 @@ export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
     console.log('test', test)
   }
   const handleSetAthlete = (athlete) => {
-    setFrom({ ...form, athlete })
-  }
+    const athleteId = athletes.find(({ label }) => label === athlete)?.id
+    console.log('athlete', athleteId)
 
-  useEffect(() => {
-    console.log()
-  }, [form.athlete])
+    setFrom({ ...form, athlete, athleteId })
+  }
 
   const { user } = useAuth()
   const [athletes, setAthletes] = useState([])
@@ -46,7 +45,7 @@ export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
         .then((res) => {
           const formatAutocompleteAthlete = res.map((athlete) => {
             const label = `${athlete?.name} ${athlete?.lastName}`
-            return { athlete, label }
+            return { ...athlete, label }
           })
           setAthletes(formatAutocompleteAthlete)
         })
@@ -54,10 +53,37 @@ export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
     }
   }, [user, form.athlete])
 
-
   return (
-    <div className=" block items-end sm:flex sm:flex-wrap text-sm">
-      <div className="w-full flex justify-center">
+    <div className="flex flex-wrap">
+      <div className="p-1 w-full sm:w-1/2  ">
+        <Text
+          onChange={handleChange}
+          name="date"
+          type="date"
+          value={formatInputDate(form.date)}
+          label="Fecha"
+        />
+      </div>
+      <div className="p-1 w-full sm:w-1/2 ">
+        <Text
+          onChange={handleChange}
+          name="place"
+          value={form?.place}
+          label="Instalaciones"
+        />
+      </div>
+
+      <div className="p-1  w-full   ">
+        <Autocomplete
+          label="Prueba"
+          placeholder="Prueba"
+          items={SWIMMING_TESTS}
+          value={form?.test}
+          onSelect={(value) => handleSetTest(value)}
+          onChange={({ target: { value } }) => handleSetTest(value)}
+        />
+      </div>
+      <div className="p-1  w-full ">
         <Autocomplete
           value={form.athlete}
           name="athlete"
@@ -68,35 +94,7 @@ export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
           onChange={({ target: { value } }) => handleSetAthlete(value)}
         />
       </div>
-      <div className="p-1  w-full sm:w-1/2  ">
-        <Text
-          onChange={handleChange}
-          name="date"
-          type="date"
-          value={formatInputDate(form.date)}
-          label="Fecha"
-        />
-      </div>
-      <div className="p-1  w-full sm:w-1/2 ">
-        <Text
-          onChange={handleChange}
-          name="place"
-          value={form?.place}
-          label="Instalaciones"
-        />
-      </div>
-
-      <div className="p-1  w-full sm:w-1/2  ">
-        <Autocomplete
-          label="Prueba"
-          placeholder="Prueba"
-          items={SWIMMING_TESTS}
-          value={form?.test}
-          onSelect={(value) => handleSetTest(value)}
-          onChange={({ target: { value } }) => handleSetTest(value)}
-        />
-      </div>
-      <div className="p-1  w-full sm:w-1/2 ">
+      <div className="p-1  w-full  ">
         <PickerRecord handleChange={handleChangeRecord} />
       </div>
       <div className="p-1  w-full sm:w-1/2  mx-auto ">

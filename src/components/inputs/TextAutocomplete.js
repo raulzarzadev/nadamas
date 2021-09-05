@@ -15,6 +15,7 @@ export default function Autocomplete({
     setRenderItems(items.filter(({ label }) => label.includes(value)))
   }, [value])
   return (
+    
     <span className={s.input_label}>
       {label && value && `${label} :`}
       <ReactAutocomplete
