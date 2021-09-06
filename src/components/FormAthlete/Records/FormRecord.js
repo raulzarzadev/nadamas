@@ -4,12 +4,12 @@ import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
 import { AddIcon, SaveIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
-import PickerTime from '@comps/inputs/PickerTime'
 import Text from '@comps/inputs/Text'
 import Autocomplete from '@comps/inputs/TextAutocomplete'
 import { useEffect, useState } from 'react'
 import PickerRecord from './PickerRecord'
-
+import Image from 'next/image'
+import Modal from '@comps/Modals/Modal'
 export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
   const initialState = {
     athlete: '',
@@ -33,7 +33,6 @@ export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
   const handleSetAthlete = (athlete) => {
     const athleteId = athletes.find(({ label }) => label === athlete)?.id
     console.log('athlete', athleteId)
-
     setFrom({ ...form, athlete, athleteId })
   }
 
@@ -97,6 +96,21 @@ export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
       <div className="p-1  w-full  ">
         <PickerRecord handleChange={handleChangeRecord} />
       </div>
+      <div className="my-4">
+        <Images
+          images={[
+            {
+              src: 'https://images.unsplash.com/photo-1530138948699-6a75eebc9d9b?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1049&q=80'
+            },
+            {
+              src: 'https://images.unsplash.com/photo-1530138948699-6a75eebc9d9b?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1049&q=80'
+            },
+            {
+              src: 'https://images.unsplash.com/photo-1530138948699-6a75eebc9d9b?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1049&q=80'
+            }
+          ]}
+        />
+      </div>
       <div className="p-1  w-full sm:w-1/2  mx-auto ">
         <Button
           fullWidth
@@ -111,6 +125,51 @@ export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
           Guardar <SaveIcon />
         </Button>
       </div>
+    </div>
+  )
+}
+
+const Images = ({ images }) => {
+  return (
+    <div className="w-full max-h-full flex overflow-auto  ">
+      <label className="border-4 rounded-lg border-dashed h-20 w-20 m-1 flex justify-center items-center">
+        <input type="file" className="hidden" />
+        <AddIcon size="4rem" />
+      </label>
+      <div className="flex">
+        {images?.map((image, i) => (
+          <ImageDisplay key={i} image={image} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const ImageDisplay = ({ image: { src } }) => {
+  const [openImage, setOpenImage] = useState(false)
+  const handleOpen = () => {
+    setOpenImage(!openImage)
+  }
+  return (
+    <div>
+      <div className="relative  h-20 w-20 m-1 rounded-lg " onClick={handleOpen}>
+        <Image
+          src={src}
+          className="rounded-lg"
+          layout="fill"
+          objectFit="cover"
+        />
+      </div>
+      <Modal handleOpen={handleOpen} open={openImage} title="Imagen">
+        <div
+          className="relative 
+          w-[90%]
+          h-72
+         bg-gray-400"
+        >
+          <Image src={src} objectFit="cover" layout="fill" />
+        </div>
+      </Modal>
     </div>
   )
 }

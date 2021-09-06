@@ -1,8 +1,18 @@
-import { db } from "./client"
-import { datesToFirebaseFromat, formatResponse, normalizeDocs } from "./firebase-helpers"
+import { db } from './client'
+import {
+  datesToFirebaseFromat,
+  formatResponse,
+  normalizeDocs
+} from './firebase-helpers'
 
-
-export const getRecords = async (athleteId) => {
+export const getRecords = async () => {
+  return await db
+    .collection('records')
+    .get()
+    .then((res) => console.log('res', res))
+    .catch((err) => console.log('err', err))
+}
+export const getAthleteRecords = async (athleteId) => {
   return await db
     .collection('records')
     .where('athleteId', '==', athleteId)

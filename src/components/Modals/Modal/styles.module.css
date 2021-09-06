@@ -21,7 +21,6 @@
   border-radius: 8px;
   display: grid;
   grid-template-rows: 35px auto 20px;
-  max-height: 80vh;
   width: 95%;
   border: 1px solid;
   font-size: 1.5rem;

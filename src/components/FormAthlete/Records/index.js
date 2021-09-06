@@ -1,4 +1,4 @@
-import { createRecord, getRecords } from '@/firebase/records'
+import { createRecord, getAthleteRecords } from '@/firebase/records'
 import { AddIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
@@ -15,7 +15,7 @@ export default function Records({ athlete: { id } }) {
   }, [id])
 
   function getAndSetRecords() {
-    getRecords(id)
+    getAthleteRecords(id)
       .then(setRecords)
       .catch((err) => console.log('err', err))
   }
@@ -31,7 +31,7 @@ export default function Records({ athlete: { id } }) {
 
   /*   const handleRemoveRecord = (recordId) => {
     removeRecord(recordId)
-    getRecords(form.id).then(setRecords)
+    getAthleteRecords(form.id).then(setRecords)
   } */
 
   const [openNewRecord, setOpenNewRecord] = useState(false)
@@ -45,7 +45,7 @@ export default function Records({ athlete: { id } }) {
         {/* <FormRecord handleAddRecord={handleAddRecord} /> */}
         <div className="w-12 mx-auto">
           <Button onClick={handleOpenNewRecord} variant="secondary" size="sm">
-            Nuevo <AddIcon/>
+            Nuevo <AddIcon />
           </Button>
         </div>
         {records?.length === 0 ? (

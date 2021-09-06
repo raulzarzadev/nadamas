@@ -3,7 +3,7 @@ import DisplayRecords from '@comps/FormAthlete/Records/DisplayRecords'
 import FormRecord from '@comps/FormAthlete/Records/FormRecord'
 import Button from '@comps/inputs/Button'
 import Modal from '@comps/Modals/Modal'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function ViewRecords() {
   const [records, setRecords] = useState()
@@ -14,6 +14,11 @@ export default function ViewRecords() {
   const handleAddRecord = (record) => {
     console.log(record)
   }
+
+  useEffect(() => {
+    setRecords([{ id: '1', record: '' }])
+  }, [])
+
   return (
     <div className=" p-4">
       <div>
