@@ -8,8 +8,10 @@ import {
 export const getRecords = async () => {
   return await db
     .collection('records')
+    .orderBy('date')
+    .limit(20)
     .get()
-    .then((res) => console.log('res', res))
+    .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log('err', err))
 }
 export const getAthleteRecords = async (athleteId) => {

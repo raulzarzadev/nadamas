@@ -1,6 +1,4 @@
-import { getAthletes } from '@/firebase/athletes'
 import SWIMMING_TESTS from '@/src/constants/SWIMMING_TESTS'
-import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
 import { AddIcon, SaveIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
@@ -10,7 +8,7 @@ import { useEffect, useState } from 'react'
 import PickerRecord from './PickerRecord'
 import Image from 'next/image'
 import Modal from '@comps/Modals/Modal'
-export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
+export default function FormRecord({ handleAddRecord, athletes = [] }) {
   const initialState = {
     athlete: '',
     date: new Date(),
@@ -32,25 +30,8 @@ export default function FormRecord({ handleAddRecord, selectAthlete = false }) {
   }
   const handleSetAthlete = (athlete) => {
     const athleteId = athletes.find(({ label }) => label === athlete)?.id
-    console.log('athlete', athleteId)
     setFrom({ ...form, athlete, athleteId })
   }
-
-  const { user } = useAuth()
-  const [athletes, setAthletes] = useState([])
-  useEffect(() => {
-    if (user && selectAthlete) {
-      getAthletes(user.id)
-        .then((res) => {
-          const formatAutocompleteAthlete = res.map((athlete) => {
-            const label = `${athlete?.name} ${athlete?.lastName}`
-            return { ...athlete, label }
-          })
-          setAthletes(formatAutocompleteAthlete)
-        })
-        .catch((err) => console.log('err', err))
-    }
-  }, [user, form.athlete])
 
   return (
     <div className="flex flex-wrap">

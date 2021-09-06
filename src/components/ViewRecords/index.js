@@ -1,3 +1,6 @@
+import { getAthletes } from '@/firebase/athletes'
+import { getRecords } from '@/firebase/records'
+import { useAuth } from '@/src/context/AuthContext'
 import { AddIcon } from '@/src/utils/Icons'
 import DisplayRecords from '@comps/FormAthlete/Records/DisplayRecords'
 import FormRecord from '@comps/FormAthlete/Records/FormRecord'
@@ -7,6 +10,9 @@ import { useEffect, useState } from 'react'
 
 export default function ViewRecords() {
   const [records, setRecords] = useState()
+  const { user } = useAuth()
+  const [athletes, setAthletes] = useState([])
+
   const [openNewRecord, setOpenNewRecord] = useState(false)
   const handleOpenNewRecord = () => {
     setOpenNewRecord(!openNewRecord)
@@ -16,9 +22,30 @@ export default function ViewRecords() {
   }
 
   useEffect(() => {
-    setRecords([{ id: '1', record: '' }])
-  }, [])
+    getRecords()
+      .then((res) => {
+        const formatRecordsWithAthletes = res.map((record) => {
+          const athlete = athletes.find(({ id }) => record.athleteId === id)
+          return { ...record, athlete }
+        })
+        setRecords(formatRecordsWithAthletes)
+      })
+      .catch((err) => console.log('err', err))
+  }, [athletes])
 
+  useEffect(() => {
+    if (user) {
+      getAthletes(user.id)
+        .then((res) => {
+          const formatAutocompleteAthlete = res.map((athlete) => {
+            const label = `${athlete?.name} ${athlete?.lastName}`
+            return { ...athlete, label }
+          })
+          setAthletes(formatAutocompleteAthlete)
+        })
+        .catch((err) => console.log('err', err))
+    }
+  }, [user])
   return (
     <div className=" p-4">
       <div>
@@ -34,6 +61,7 @@ export default function ViewRecords() {
           </div>
         ) : (
           <DisplayRecords
+            showAthlete
             records={records}
             updateRecords={() => {
               getAndSetRecords()
@@ -47,7 +75,7 @@ export default function ViewRecords() {
         title="Nuevo Registro"
       >
         <FormRecord
-          selectAthlete
+          athletes={athletes}
           handleAddRecord={(record) => {
             handleAddRecord(record)
             handleOpenNewRecord()

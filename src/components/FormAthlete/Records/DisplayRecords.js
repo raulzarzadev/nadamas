@@ -8,7 +8,8 @@ import { useState } from 'react'
 
 export default function DisplayRecords({
   records = [],
-  updateRecords = () => {}
+  updateRecords = () => {},
+  showAthlete = false
 }) {
   const [openGaleryModal, setOpenGaleryModal] = useState(false)
   const handleOpenGalery = (id) => {
@@ -17,11 +18,15 @@ export default function DisplayRecords({
 
   return (
     <>
-      {records?.map(({ id, date, test, time, place, image }) => (
+      {records?.map(({ id, date, test, time, place, image, athlete }) => (
         <div key={id} className="flex justify-between my-2">
           <div className=" hidden w-1/6 p-1">{format(date, 'dd/MMM/yy')}</div>
           <div className="hidden w-1/6  p-1">{place || '-'}</div>
-
+          {showAthlete && (
+            <div className="w-1/3 p-1 flex items-center justify-center ">
+              {athlete?.name}
+            </div>
+          )}
           <div className="w-1/3 p-1 flex items-center justify-center ">
             {test || '-'}
           </div>
