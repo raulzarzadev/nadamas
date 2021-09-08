@@ -85,11 +85,8 @@ export const Schedule = ({ athleteId, athlete }) => {
   return (
     <>
       <div>
-        <div className="mx-1 ">
-          {/*  <Info
-            fullWidth
-            text="Seleccionar un entrenador le ayudara a definir sus horarios"
-          /> */}
+        <div className="mx-1 mb-4 ">
+       
           <Select
             value={coachSelect}
             label=" Horario de entrenador"
@@ -107,10 +104,7 @@ export const Schedule = ({ athleteId, athlete }) => {
         )}
         {!emptySchedule && (
           <div className="flex flex-col">
-            {/*  <Info
-              fullWidth
-              text="Selecciona un horario independiente a un entrenador "
-            /> */}
+           
             <div className="flex flex-wrap justify-center">
               {Object?.keys(scheduleSelected)?.map((day, i) => (
                 <label

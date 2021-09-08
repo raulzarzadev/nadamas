@@ -33,7 +33,7 @@
   align-items: flex-start;
   width: 100%;
 }
-.input_label * {
+.input_label > * {
   width: 100%;
 }
 .input_label > em {

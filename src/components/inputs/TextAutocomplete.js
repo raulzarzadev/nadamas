@@ -8,6 +8,7 @@ export default function Autocomplete({
   items = [{ label: '', id: '' }],
   placeholder,
   onSelect,
+  name,
   ...props
 }) {
   const [renderItems, setRenderItems] = useState([])
@@ -19,7 +20,7 @@ export default function Autocomplete({
     <span className={s.input_label}>
       {label && value && `${label} :`}
       <ReactAutocomplete
-        inputProps={{ className: s.text_input, placeholder }}
+        inputProps={{ className: s.text_input, placeholder, name }}
         getItemValue={(item) => item.label}
         onChange={onChange}
         value={value}

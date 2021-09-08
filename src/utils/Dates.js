@@ -1,4 +1,4 @@
-import { format as fnsFormat, utcToZonedTime } from 'date-fns-tz'
+import { format as fnsFormat, zonedTimeToUtc } from 'date-fns-tz'
 import { es } from 'date-fns/locale'
 
 export const dayLabels = [
@@ -11,7 +11,9 @@ export const dayLabels = [
   'Sabado'
 ]
 export const format = (date = new Date(), formatStr = 'PP') => {
-  const newDate = utcToZonedTime(date, 'America/Los_Angeles')
+  console.log(date)
+  const newDate = zonedTimeToUtc(date, 'America/Los_Angeles')
+  console.log(newDate)
   return fnsFormat(newDate, formatStr, {
     locale: es // or global.__localeId__
   })

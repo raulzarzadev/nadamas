@@ -16,6 +16,8 @@ import Records from './Records'
 import Info from '@comps/Alerts/Info'
 import { getAthlete, updateAtlete } from '@/firebase/athletes'
 import s from './styles.module.css'
+import Autocomplete from '@comps/inputs/TextAutocomplete'
+import BLOD_TYPES from '@/src/constants/BLOD_TYPES'
 
 export default function NewAthlete() {
   const { user } = useAuth()
@@ -39,7 +41,6 @@ export default function NewAthlete() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
-
   const handleSubmit = async () => {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res.type === 'ATHLETE_CREATED') {
@@ -128,6 +129,13 @@ export default function NewAthlete() {
               name="lastName"
               label={'Apelldio(s)'}
             />
+              <Textarea
+                value={form.goals}
+                onChange={handleChange}
+                name="goals"
+                rows={2}
+                label="¿Proposito o espectativa? (Opcional)"
+              />
             <Text
               value={formatInputDate(form?.birth)}
               onChange={handleChange}
@@ -185,6 +193,14 @@ export default function NewAthlete() {
         </Section>
         <Section title={'Información médica'} open>
           <div className={s.medic_info}>
+            <Autocomplete
+              value={form.blodType}
+              placeholder={'Tipo de Sangre'}
+              items={BLOD_TYPES}
+              onChange={handleChange}
+              name="blodType"
+              onSelect={(e) => setForm({ ...form, blodType: e })}
+            />
             <Text
               onChange={handleChange}
               name="medicine"
