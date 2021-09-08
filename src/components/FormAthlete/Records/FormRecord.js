@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import PickerRecord from './PickerRecord'
 import Image from 'next/image'
 import Modal from '@comps/Modals/Modal'
+import { useRouter } from 'next/router'
 export default function FormRecord({
   handleAddRecord,
   athletes = [],
@@ -21,22 +22,36 @@ export default function FormRecord({
     test: '',
     time: '00:00.000'
   }
-  const [form, setFrom] = useState(record || initialState)
+  const {
+    query: { id: athleteId }
+  } = useRouter()
+
+  useEffect(() => {
+    if (athleteId) {
+      setForm({ ...form, athleteId })
+    }
+  }, [athleteId])
+  
+
+  const [form, setForm] = useState(record || initialState)
   const handleChange = ({ target: { value, name } }) => {
-    setFrom({ ...form, [name]: value })
+    setForm({ ...form, [name]: value })
   }
   const handleChangeRecord = (time) => {
-    setFrom({ ...form, time })
+    setForm({ ...form, time })
   }
 
   const handleSetTest = (test) => {
-    setFrom({ ...form, test })
+    setForm({ ...form, test })
     console.log('test', test)
   }
   const handleSetAthlete = (athlete) => {
     const athleteId = athletes.find(({ label }) => label === athlete)?.id
-    setFrom({ ...form, athlete, athleteId })
+    setForm({ ...form, athlete, athleteId })
   }
+
+  console.log('form', form)
+  
 
   return (
     <div className="flex flex-wrap">
@@ -69,7 +84,7 @@ export default function FormRecord({
         />
       </div>
       <div className="p-1  w-full ">
-        {!details && (
+        {!details  && (
           <Autocomplete
             value={form.athlete}
             name="athlete"
@@ -107,7 +122,7 @@ export default function FormRecord({
           onClick={(e) => {
             e.preventDefault()
             handleAddRecord(form)
-            setFrom(initialState)
+            setForm(initialState)
           }}
         >
           Guardar <SaveIcon />
@@ -122,7 +137,7 @@ export default function FormRecord({
             onClick={(e) => {
               e.preventDefault()
               handleAddRecord(form)
-              setFrom(initialState)
+              setForm(initialState)
             }}
           >
             Eliminar <TrashBinIcon />

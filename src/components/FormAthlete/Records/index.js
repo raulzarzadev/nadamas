@@ -67,6 +67,7 @@ export default function Records({ athlete: { id } }) {
         title="Nuevo Registro"
       >
         <FormRecord
+        details
           handleAddRecord={(record) => {
             handleAddRecord(record)
             handleOpenNewRecord()
