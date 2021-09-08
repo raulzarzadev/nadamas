@@ -85,7 +85,7 @@ export default function FormRecord({
         <PickerRecord handleChange={handleChangeRecord} />
       </div>
       <div className="my-4">
-        <Images
+        {/* <Images
           images={[
             {
               src: 'https://images.unsplash.com/photo-1530138948699-6a75eebc9d9b?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1049&q=80'
@@ -97,7 +97,7 @@ export default function FormRecord({
               src: 'https://images.unsplash.com/photo-1530138948699-6a75eebc9d9b?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1049&q=80'
             }
           ]}
-        />
+        /> */}
       </div>
       <div className="p-1  w-full sm:w-1/2  mx-auto ">
         <Button
