@@ -2,7 +2,7 @@ import firebase from 'firebase/app'
 import 'firebase/firestore'
 
 import { db } from './client'
-import { normalizeDoc, normalizeDocs } from './firebase-helpers'
+import { datesToFirebaseFromat, normalizeDoc, normalizeDocs } from './firebase-helpers'
 
 
 

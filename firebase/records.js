@@ -22,8 +22,26 @@ export const getAthleteRecords = async (athleteId) => {
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log('get_records_err', err))
 }
-export const createRecord = async (record) => {
-  return await _create_record(record)
+export const createOrUpdateRecord = async (record) => {
+  // search
+  const { id } = record
+  console.log('id', id)
+  
+  if (id) {
+    //update
+    _update_record(record)
+  } else {
+    //create
+    _create_record(record)
+  }
+  console.log('record', record)
+
+  //const recordRef =  db.collection('records').doc(record?.id).id
+  //console.log('recordRef', recordRef)
+
+  // if exist id update
+  // else create
+  // return await _create_record(record)
 }
 export const removeRecord = async (recordId) => {
   return await _remove_record(recordId)

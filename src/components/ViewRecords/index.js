@@ -1,5 +1,5 @@
 import { getAthletes } from '@/firebase/athletes'
-import { getRecords } from '@/firebase/records'
+import { createOrUpdateRecord, getRecords } from '@/firebase/records'
 import { useAuth } from '@/src/context/AuthContext'
 import { AddIcon } from '@/src/utils/Icons'
 import DisplayRecords from '@comps/FormAthlete/Records/DisplayRecords'
@@ -18,7 +18,7 @@ export default function ViewRecords() {
     setOpenNewRecord(!openNewRecord)
   }
   const handleAddRecord = (record) => {
-    console.log(record)
+    createOrUpdateRecord(record)
   }
 
   useEffect(() => {
@@ -49,7 +49,6 @@ export default function ViewRecords() {
   return (
     <div className=" p-4">
       <div>
-        {/* <FormRecord handleAddRecord={handleAddRecord} /> */}
         <div className="w-12 mx-auto">
           <Button onClick={handleOpenNewRecord} variant="secondary" size="sm">
             Nuevo <AddIcon />

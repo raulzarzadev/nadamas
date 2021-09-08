@@ -1,4 +1,4 @@
-import { createRecord, getAthleteRecords } from '@/firebase/records'
+import { createOrUpdateRecord, getAthleteRecords } from '@/firebase/records'
 import { AddIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
@@ -23,7 +23,7 @@ export default function Records({ athlete: { id } }) {
   const [records, setRecords] = useState([])
 
   const handleAddRecord = async (newRecord) => {
-    await createRecord({ athleteId: id, ...newRecord })
+    await createOrUpdateRecord({ athleteId: id, ...newRecord })
       .then((res) => console.log('res', res))
       .catch((err) => console.log('err', err))
     getAndSetRecords()

@@ -5,6 +5,7 @@ import Button from '@comps/inputs/Button'
 import UploadImage from '@comps/inputs/UploadImage'
 import Modal from '@comps/Modals/Modal'
 import { useState } from 'react'
+import FormRecord from './FormRecord'
 
 export default function DisplayRecords({
   records = [],
@@ -55,29 +56,7 @@ export default function DisplayRecords({
     </>
   )
 }
-const DeleteRecordModal = ({ handleOpen, open, id, updateRecords }) => {
-  const handleRemoveRecord = (id) => {
-    removeRecord(id)
-    updateRecords()
-    handleOpen()
-  }
-  return (
-    <Modal handleOpen={handleOpen} open={open} title="Eliminar Rgistro">
-      <div>
-        ¿Seguro que deseas eliminar este registro?
-        <Button
-          variant="danger"
-          onClick={() => {
-            handleRemoveRecord(id)
-            handleOpen()
-          }}
-        >
-          Eliminar
-        </Button>
-      </div>
-    </Modal>
-  )
-}
+
 const DetailsModal = ({ handleOpen, open, record, updateRecords }) => {
   const { id, date, test, time, place } = record
   const [openDelete, setOpenDelete] = useState(false)
@@ -87,45 +66,7 @@ const DetailsModal = ({ handleOpen, open, record, updateRecords }) => {
   }
   return (
     <Modal handleOpen={handleOpen} open={open} title="Detalles de la prueba">
-      <div className="">
-        <h4 className="text-sm">Imagenes</h4>
-        <div className="w-full">
-          <div className="h-16 w-16  border border-dashed m-1 rounded-lg flex justify-center items-center shadow-lg hover:border-transparent  ">
-            <AddIcon size="3rem" className="" />
-          </div>
-        </div>
-        <h4 className="text-sm">Información</h4>
-        <div className="flex flex-wrap">
-          <div className="w-1/2">{test}</div>
-          <div className="w-1/2 text-sm">{format(date, 'dd/MMM/yy')}</div>
-          <div className="w-1/2">{time}</div>
-          <div className="w-1/2 text-sm"> {place}</div>
-        </div>
-        <div className="mt-8 w-52 mx-auto">
-          <Button
-            size="xs"
-            variant="danger"
-            onClick={(e) => {
-              e.preventDefault()
-              handleOpenDelete()
-            }}
-          >
-            Eliminar
-            <div className="ml-2">
-              <TrashBinIcon />
-            </div>
-          </Button>
-        </div>
-      </div>
-      <DeleteRecordModal
-        updateRecords={updateRecords}
-        handleOpen={() => {
-          handleOpenDelete()
-          handleOpen()
-        }}
-        open={openDelete}
-        id={id}
-      />
+      <FormRecord record={record} details handleAddRecord={updateRecords} />
     </Modal>
   )
 }

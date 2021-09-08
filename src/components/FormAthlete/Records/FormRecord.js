@@ -1,6 +1,6 @@
 import SWIMMING_TESTS from '@/src/constants/SWIMMING_TESTS'
 import { formatInputDate } from '@/src/utils/Dates'
-import { AddIcon, SaveIcon } from '@/src/utils/Icons'
+import { AddIcon, SaveIcon, TrashBinIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import Text from '@comps/inputs/Text'
 import Autocomplete from '@comps/inputs/TextAutocomplete'
@@ -8,7 +8,12 @@ import { useEffect, useState } from 'react'
 import PickerRecord from './PickerRecord'
 import Image from 'next/image'
 import Modal from '@comps/Modals/Modal'
-export default function FormRecord({ handleAddRecord, athletes = [] }) {
+export default function FormRecord({
+  handleAddRecord,
+  athletes = [],
+  details,
+  record
+}) {
   const initialState = {
     athlete: '',
     date: new Date(),
@@ -16,7 +21,7 @@ export default function FormRecord({ handleAddRecord, athletes = [] }) {
     test: '',
     time: '00:00.000'
   }
-  const [form, setFrom] = useState(initialState)
+  const [form, setFrom] = useState(record || initialState)
   const handleChange = ({ target: { value, name } }) => {
     setFrom({ ...form, [name]: value })
   }
@@ -64,15 +69,17 @@ export default function FormRecord({ handleAddRecord, athletes = [] }) {
         />
       </div>
       <div className="p-1  w-full ">
-        <Autocomplete
-          value={form.athlete}
-          name="athlete"
-          label="Buscar athleta"
-          placeholder="Buscar athleta"
-          items={athletes}
-          onSelect={(value) => handleSetAthlete(value)}
-          onChange={({ target: { value } }) => handleSetAthlete(value)}
-        />
+        {!details && (
+          <Autocomplete
+            value={form.athlete}
+            name="athlete"
+            label="Buscar athleta"
+            placeholder="Buscar athleta"
+            items={athletes}
+            onSelect={(value) => handleSetAthlete(value)}
+            onChange={({ target: { value } }) => handleSetAthlete(value)}
+          />
+        )}
       </div>
       <div className="p-1  w-full  ">
         <PickerRecord handleChange={handleChangeRecord} />
@@ -106,6 +113,22 @@ export default function FormRecord({ handleAddRecord, athletes = [] }) {
           Guardar <SaveIcon />
         </Button>
       </div>
+      {details && (
+        <div className="p-1 mt-8  w-1/2  mx-auto ">
+          <Button
+            fullWidth
+            variant="danger"
+            size="xs"
+            onClick={(e) => {
+              e.preventDefault()
+              handleAddRecord(form)
+              setFrom(initialState)
+            }}
+          >
+            Eliminar <TrashBinIcon />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -152,5 +175,29 @@ const ImageDisplay = ({ image: { src } }) => {
         </div>
       </Modal>
     </div>
+  )
+}
+
+const DeleteRecordModal = ({ handleOpen, open, id, updateRecords }) => {
+  const handleRemoveRecord = (id) => {
+    removeRecord(id)
+    updateRecords()
+    handleOpen()
+  }
+  return (
+    <Modal handleOpen={handleOpen} open={open} title="Eliminar Rgistro">
+      <div>
+        ¿Seguro que deseas eliminar este registro?
+        <Button
+          variant="danger"
+          onClick={() => {
+            handleRemoveRecord(id)
+            handleOpen()
+          }}
+        >
+          Eliminar
+        </Button>
+      </div>
+    </Modal>
   )
 }
