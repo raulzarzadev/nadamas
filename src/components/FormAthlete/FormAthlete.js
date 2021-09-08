@@ -63,7 +63,6 @@ export default function NewAthlete() {
     setForm({ ...form, avatar: url })
     updateAtlete({ ...form, avatar: url })
   }
-
   return (
     <div className="pt-4 pb-8 max-w-lg mx-auto">
       <form
@@ -129,13 +128,13 @@ export default function NewAthlete() {
               name="lastName"
               label={'Apelldio(s)'}
             />
-              <Textarea
-                value={form.goals}
-                onChange={handleChange}
-                name="goals"
-                rows={2}
-                label="¿Proposito o espectativa? (Opcional)"
-              />
+            <Textarea
+              value={form.goals}
+              onChange={handleChange}
+              name="goals"
+              rows={2}
+              label="¿Proposito o espectativa? (Opcional)"
+            />
             <Text
               value={formatInputDate(form?.birth)}
               onChange={handleChange}
@@ -151,7 +150,7 @@ export default function NewAthlete() {
           ) : (
             <Info
               fullWidth
-              text="Debes guardar primero a este atleta antes de guardar registros"
+              text="Primero guarda. Debes guardar antes de crear registros"
             />
           )}
         </Section>
@@ -165,7 +164,7 @@ export default function NewAthlete() {
           ) : (
             <Info
               fullWidth
-              text="Debes guardar primero a este atleta antes de asignarle un horario"
+              text="Primero guarda. Debes guardar antes de asignar un horario"
             />
           )}
         </Section>

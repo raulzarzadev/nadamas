@@ -4,7 +4,7 @@ export default [
     id: 'O-'
   },
   {
-    label: 'O -',
+    label: 'O +',
     id: 'O+'
   },
 
