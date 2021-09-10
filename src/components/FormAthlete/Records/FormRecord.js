@@ -50,9 +50,6 @@ export default function FormRecord({
     setForm({ ...form, athlete, athleteId })
   }
 
-  console.log('form', form)
-  
-
   return (
     <div className="flex flex-wrap">
       <div className="p-1 w-full sm:w-1/2  ">

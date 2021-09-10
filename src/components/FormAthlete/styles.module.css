@@ -98,7 +98,7 @@
 @media (min-width: 600px) {
   .inputs > * {
     width: 50%;
-    padding: 16px;
+    padding: 8px;
   }
   .schedule_day {
     width: 20%;

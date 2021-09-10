@@ -26,7 +26,9 @@ import { RiImageEditFill } from 'react-icons/ri'
 import { RiLoader2Line } from 'react-icons/ri'
 import { RiCheckFill } from 'react-icons/ri'
 import { RiErrorWarningFill } from 'react-icons/ri'
-import {RiClipboardLine} from 'react-icons/ri'
+import { RiClipboardLine } from 'react-icons/ri'
+import { RiFacebookCircleFill } from 'react-icons/ri'
+import { RiMailAddLine } from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -47,6 +49,8 @@ export const CallIcon = (props) => (
 export const TrashBinIcon = (props) => (
   <RiDeleteBin6Fill size={size} {...props} />
 )
+
+
 export const UploadIcon = (props) => <RiUpload2Fill size={size} {...props} />
 export const SaveIcon = (props) => <RiSave2Fill size={size} {...props} />
 export const AddPersonIcon = (props) => <RiUserAddFill size={size} {...props} />
@@ -71,4 +75,15 @@ export const WarningIcon = (props) => (
   <RiErrorWarningFill size={size} {...props} />
 )
 
-export const ClipboardIcon = (props) => <RiClipboardLine size={size} {...props} />
+export const ClipboardIcon = (props) => (
+  <RiClipboardLine size={size} {...props} />
+)
+
+
+/* SOCIAL MEDIA  */
+
+export const FacebookIcon = (props) => (
+  <RiFacebookCircleFill size={size} {...props} />
+)
+export const EmailIcon = (props) => <RiMailAddLine size={size} {...props} />
+/* RiMailAddLine */

@@ -3,7 +3,13 @@ import Button from '@comps/inputs/Button'
 
 import { useRouter } from 'next/router'
 import { formatInputDate } from '../../utils/Dates'
-import { SaveIcon, ForwardIcon, DownIcon } from '../../utils/Icons'
+import {
+  SaveIcon,
+  ForwardIcon,
+  DownIcon,
+  ContactIcon,
+  EmailIcon
+} from '../../utils/Icons'
 import Avatar from '../Avatar'
 import DeleteModal from '../Modals/DeleteModal'
 import { useAuth } from '../../context/AuthContext'
@@ -63,50 +69,44 @@ export default function NewAthlete() {
     setForm({ ...form, avatar: url })
     updateAtlete({ ...form, avatar: url })
   }
+  const wstext = ''
+  console.log('form', form)
+
   return (
-    <div className="pt-4 pb-8 max-w-lg mx-auto">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          handleSubmit()
-        }}
-        className="relative"
-      >
-        <div className="  ">
-          <h2 className="text-sm text-right font-bold">Atleta</h2>
-          <div className="flex justify-center">
-            {!form?.avatar && (
-              <div className=" bottom-0 right-0 flex">
-                <div className="mx-2">Sube una foto</div>
-                <UploadImage
-                  upladedImage={upladedImage}
-                  storeRef={`avatar/${form.id}`}
-                />
-              </div>
-            )}
-            {form?.avatar && (
-              <div className=" hidden sm:block relative">
-                <Avatar upload id={form.id} image={form?.avatar} />
-                <div className="absolute bottom-0 right-0">
-                  <UploadImage
-                    upladedImage={upladedImage}
-                    storeRef={`avatar/${form.id}`}
-                  />
-                </div>
-              </div>
-            )}
-            {form?.avatar && (
-              <div className="w-full h-28 relative sm:hidden">
-                <Image src={form?.avatar} layout="fill" objectFit="cover" />
-                <div className="absolute bottom-2 right-2">
-                  <UploadImage
-                    upladedImage={upladedImage}
-                    storeRef={`avatar/${form.id}`}
-                  />
-                </div>
-              </div>
-            )}
-            {/*             {form?.id && (
+    <div className="pt-0 pb-8 max-w-lg mx-auto">
+      <div className="flex justify-center">
+        {!form?.avatar && (
+          <div className=" bottom-0 right-0 flex">
+            <div className="mx-2">Sube una foto</div>
+            <UploadImage
+              upladedImage={upladedImage}
+              storeRef={`avatar/${form.id}`}
+            />
+          </div>
+        )}
+        {form?.avatar && (
+          <div className=" hidden sm:block relative">
+            <Avatar upload id={form.id} image={form?.avatar} />
+            <div className="absolute bottom-0 right-0">
+              <UploadImage
+                upladedImage={upladedImage}
+                storeRef={`avatar/${form.id}`}
+              />
+            </div>
+          </div>
+        )}
+        {form?.avatar && (
+          <div className="w-full h-28 relative sm:hidden">
+            <Image src={form?.avatar} layout="fill" objectFit="cover" />
+            <div className="absolute bottom-2 right-2">
+              <UploadImage
+                upladedImage={upladedImage}
+                storeRef={`avatar/${form.id}`}
+              />
+            </div>
+          </div>
+        )}
+        {/*             {form?.id && (
               <div className="absolute bottom-0 left- ">
                 <UploadImage
                   upladedImage={upladedImage}
@@ -114,7 +114,39 @@ export default function NewAthlete() {
                 />
               </div>
             )} */}
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          handleSubmit()
+        }}
+        className="relative"
+      >
+        {/* ----------------------------------------------Actions  */}
+        <div className="flex w-full justify-evenly ">
+          <div className="m-2">
+            <Button
+              size="sm"
+              disabled={!form.mobile}
+              icon
+              href={`https://wa.me/521${form.mobile}?text=${wstext}`}
+            >
+              <ContactIcon />
+            </Button>
           </div>
+          <div className="m-2">
+            <Button
+              size="sm"
+              disabled={!form.email}
+              icon
+              href={`mailto:${form.email}?subject=Natación`}
+            >
+              <EmailIcon />
+            </Button>
+          </div>
+        </div>
+        {/* ----------------------------------------------Personal information */}
+        <div className="  ">
           <div className={s.inputs}>
             <Text
               value={form?.name}
@@ -144,6 +176,9 @@ export default function NewAthlete() {
             />
           </div>
         </div>
+
+        {/* ----------------------------------------------Tests */}
+
         <Section title={'Pruebas'}>
           {form.id ? (
             <Records athlete={form} />
@@ -154,9 +189,14 @@ export default function NewAthlete() {
             />
           )}
         </Section>
+
+        {/* ----------------------------------------------Pyments */}
+
         <Section title="Cuotas">
           <Info fullWidth text="Pronto podras registrar pagos y cuotas aqui" />
         </Section>
+
+        {/* ----------------------------------------------Schedule */}
 
         <Section title={'Horario'} open>
           {form.id ? (
@@ -168,6 +208,9 @@ export default function NewAthlete() {
             />
           )}
         </Section>
+
+        {/* ----------------------------------------------Contact */}
+
         <Section title={'Contacto'} open>
           <div className={`flex flex-col p-1`}>
             <div className="my-1">
@@ -190,6 +233,9 @@ export default function NewAthlete() {
             </div>
           </div>
         </Section>
+
+        {/* ----------------------------------------------Medic information */}
+
         <Section title={'Información médica'} open>
           <div className={s.medic_info}>
             <Autocomplete
@@ -220,6 +266,9 @@ export default function NewAthlete() {
             />
           </div>
         </Section>
+
+        {/* ----------------------------------------------Emergency contact */}
+
         <Section title={'Contacto de emergencia'} open>
           <div className={`flex flex-col  p-1`}>
             <div className="my-1">
