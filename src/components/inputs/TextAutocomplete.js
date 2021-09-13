@@ -16,7 +16,6 @@ export default function Autocomplete({
     setRenderItems(items.filter(({ label }) => label.includes(value)))
   }, [value])
   return (
-    
     <span className={s.input_label}>
       {label && value && `${label} :`}
       <ReactAutocomplete
@@ -39,7 +38,10 @@ export default function Autocomplete({
         }}
         shouldItemRender={(item, val) => val === value}
         renderItem={(item, isHighlighted) => (
-          <div className={` ${isHighlighted ? 'bg-gray-300' : 'bg-gray-500'}`}>
+          <div
+            key={item.label}
+            className={` ${isHighlighted ? 'bg-gray-300' : 'bg-gray-500'}`}
+          >
             {item.label}
           </div>
         )}

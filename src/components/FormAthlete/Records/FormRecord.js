@@ -25,6 +25,7 @@ export default function FormRecord({
   const {
     query: { id: athleteId }
   } = useRouter()
+  
 
   useEffect(() => {
     if (athleteId) {
@@ -35,6 +36,7 @@ export default function FormRecord({
 
   const [form, setForm] = useState(record || initialState)
   const handleChange = ({ target: { value, name } }) => {
+    
     setForm({ ...form, [name]: value })
   }
   const handleChangeRecord = (time) => {
@@ -49,6 +51,8 @@ export default function FormRecord({
     const athleteId = athletes.find(({ label }) => label === athlete)?.id
     setForm({ ...form, athlete, athleteId })
   }
+
+ 
 
   return (
     <div className="flex flex-wrap">

@@ -6,9 +6,11 @@ import DisplayRecords from '@comps/FormAthlete/Records/DisplayRecords'
 import FormRecord from '@comps/FormAthlete/Records/FormRecord'
 import Button from '@comps/inputs/Button'
 import Modal from '@comps/Modals/Modal'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function ViewRecords() {
+  const router = useRouter()
   const [records, setRecords] = useState()
   const { user } = useAuth()
   const [athletes, setAthletes] = useState([])
@@ -50,7 +52,11 @@ export default function ViewRecords() {
     <div className=" p-4">
       <div>
         <div className="w-12 mx-auto">
-          <Button onClick={handleOpenNewRecord} variant="secondary" size="sm">
+          <Button
+            onClick={() => router.push('/records/new')}
+            variant="secondary"
+            size="sm"
+          >
             Nuevo <AddIcon />
           </Button>
         </div>
