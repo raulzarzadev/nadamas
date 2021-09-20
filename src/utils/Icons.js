@@ -29,6 +29,7 @@ import { RiErrorWarningFill } from 'react-icons/ri'
 import { RiClipboardLine } from 'react-icons/ri'
 import { RiFacebookCircleFill } from 'react-icons/ri'
 import { RiMailAddLine } from 'react-icons/ri'
+import { RiDeleteBack2Line } from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -86,4 +87,5 @@ export const FacebookIcon = (props) => (
   <RiFacebookCircleFill size={size} {...props} />
 )
 export const EmailIcon = (props) => <RiMailAddLine size={size} {...props} />
-/* RiMailAddLine */
+export const CloseBackIcon = (props) => <RiDeleteBack2Line size={size} {...props} />
+/* RiMailAddLine */RiDeleteBack2Line

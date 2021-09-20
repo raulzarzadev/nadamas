@@ -12,8 +12,8 @@ import { getAthletes } from '@/firebase/athletes'
 export default function Athletes() {
   const { query } = router
   const [athletes, setAthletes] = useState([])
-  const { user } = useAuth()
 
+  const { user } = useAuth()
   useEffect(() => {
     if (user) getAthletes(user?.id).then(setAthletes)
   }, [user])
@@ -79,7 +79,7 @@ export default function Athletes() {
           </div>
         </Button>
       </div>
-      
+
       <div className="w-1/2 mx-auto my-4">
         <Text
           name="search"

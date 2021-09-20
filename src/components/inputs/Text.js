@@ -25,7 +25,7 @@ export default function Text({
       >
         {children}
       </input>
-      <em>{error}</em>
+      <em className={s.input_error}>{error}</em>
     </span>
   )
 }

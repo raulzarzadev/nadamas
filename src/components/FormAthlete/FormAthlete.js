@@ -70,7 +70,6 @@ export default function NewAthlete() {
     updateAtlete({ ...form, avatar: url })
   }
   const wstext = ''
-  console.log('form', form)
 
   return (
     <div className="pt-0 pb-8 max-w-lg mx-auto">

@@ -36,10 +36,12 @@
 .input_label > * {
   width: 100%;
 }
-.input_label > em {
+
+.input_error{
   width: 100%;
-  text-align: center;
+  text-align: left;
   font-size: 0.9rem;
+  color:var(--danger);
 }
 
 .helperText{

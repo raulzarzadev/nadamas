@@ -25,16 +25,15 @@ export const getAthleteRecords = async (athleteId) => {
 export const createOrUpdateRecord = async (record) => {
   // search
   const { id } = record
-  console.log('id', id)
-  
+
   if (id) {
     //update
-    _update_record(record)
+    return _update_record(record)
   } else {
     //create
-    _create_record(record)
+    return _create_record(record)
   }
-  console.log('record', record)
+  // console.log('record', record)
 
   //const recordRef =  db.collection('records').doc(record?.id).id
   //console.log('recordRef', recordRef)
