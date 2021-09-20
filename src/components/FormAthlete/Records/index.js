@@ -3,6 +3,7 @@ import { AddIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import Modal from '@comps/Modals/Modal'
+import router from 'next/router'
 import { useEffect, useState } from 'react'
 import DisplayRecords from './DisplayRecords'
 import FormRecord from './FormRecord'
@@ -36,7 +37,7 @@ export default function Records({ athlete: { id } }) {
 
   const [openNewRecord, setOpenNewRecord] = useState(false)
   const handleOpenNewRecord = () => {
-    setOpenNewRecord(!openNewRecord)
+    router.push(`/records/new?search=${id}`)
   }
 
   return (
@@ -48,7 +49,7 @@ export default function Records({ athlete: { id } }) {
             Nuevo <AddIcon />
           </Button>
         </div>
-        {records?.length === 0 ? (
+        {/*   {records?.length === 0 ? (
           <div>
             <Info text="Aun no hay registros" fullWidth />
           </div>
@@ -59,9 +60,9 @@ export default function Records({ athlete: { id } }) {
               getAndSetRecords()
             }}
           />
-        )}
+        )} */}
       </div>
-      <Modal
+      {/* <Modal
         open={openNewRecord}
         handleOpen={handleOpenNewRecord}
         title="Nuevo Registro"
@@ -73,7 +74,7 @@ export default function Records({ athlete: { id } }) {
             handleOpenNewRecord()
           }}
         />
-      </Modal>
+      </Modal> */}
     </div>
   )
 }

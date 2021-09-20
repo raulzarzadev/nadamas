@@ -53,10 +53,11 @@ export default function SearchAthletes({
         .normalize()
         .toLowerCase()
     }
-    const searchAthletes = athletes?.filter(({ name, lastName }) => {
+    const searchAthletes = athletes?.filter(({ name, lastName, id }) => {
       return (
         eliminarDiacriticosEs(name).includes(eliminarDiacriticosEs(search)) ||
-        eliminarDiacriticosEs(lastName).includes(eliminarDiacriticosEs(search))
+        eliminarDiacriticosEs(lastName).includes(eliminarDiacriticosEs(search))||
+        eliminarDiacriticosEs(id).includes(eliminarDiacriticosEs(search))
       )
     })
 
