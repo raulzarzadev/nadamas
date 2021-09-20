@@ -8,6 +8,7 @@ import { sortArrayObjectsByField } from '../../utils/Sorts'
 import router from 'next/router'
 import Text from '@comps/inputs/Text'
 import { getAthletes } from '@/firebase/athletes'
+import SearchAthletes from '@comps/inputs/SearchAthletes'
 
 export default function Athletes() {
   const { query } = router
@@ -80,15 +81,11 @@ export default function Athletes() {
         </Button>
       </div>
 
-      <div className="w-1/2 mx-auto my-4">
-        <Text
-          name="search"
-          value={search}
-          label="Buscar"
-          onChange={handleSearch}
-        />
+      <div className="px-1 mx-auto my-4">
+        <SearchAthletes AthleteRowResponse={AthleteRow} />
       </div>
       <div>
+        {/*  
         <div
           style={{
             display: 'flex',
@@ -117,9 +114,9 @@ export default function Athletes() {
 
           <div>Acciones</div>
         </div>
-        {sortedAthletes?.map((athlete) => (
+       {sortedAthletes?.map((athlete) => (
           <AthleteRow key={athlete.id} athlete={athlete} />
-        ))}
+        ))} */}
       </div>
     </div>
   )

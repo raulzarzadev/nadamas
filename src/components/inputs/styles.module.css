@@ -37,19 +37,26 @@
   width: 100%;
 }
 
-.input_error{
+.input_error {
   width: 100%;
   text-align: left;
   font-size: 0.9rem;
-  color:var(--danger);
+  color: var(--danger);
 }
 
-.helperText{
+.helperText {
   font-size: 0.8rem;
   font-weight: 300;
   display: flex;
   align-items: center;
 }
-.helperText div{
-  margin: 0 4px ;
+.helperText div {
+  margin: 0 4px;
+}
+.icon_container {
+  display: flex;
+}
+.icon_container > .icon {
+  margin: 4px;
+  padding: 8px;
 }

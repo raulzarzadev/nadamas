@@ -107,7 +107,6 @@ export default function FormRecord({ searchAthlete }) {
           type="date"
           value={formatInputDate(form.date)}
           label="Fecha"
-          
         />
       </div>
       Estilo
@@ -180,7 +179,12 @@ export default function FormRecord({ searchAthlete }) {
           </label>
         ))}
       </div>
-      {searchAthlete && <SearchAthletes setAthlete={handleChangeAthlete} />}
+      {searchAthlete && (
+        <SearchAthletes
+          setAthlete={handleChangeAthlete}
+          AthleteRowResponse={AthleteRow}
+        />
+      )}
       <div className="sm:flex text-center w-full justify-evenly py-2 px-1 items-center">
         {form?.athlete && (
           <div className="">
@@ -192,7 +196,7 @@ export default function FormRecord({ searchAthlete }) {
           Tiempo
           <PickerRecord handleChange={handleSetRecord} />
         </div>
-       {console.log(form)}
+        {console.log(form)}
         <Button
           disabled={!isValid}
           variant="primary"
@@ -209,5 +213,15 @@ export default function FormRecord({ searchAthlete }) {
         <Autocomplete items={athletes} />
       </div> */}
     </div>
+  )
+}
+
+const AthleteRow = ({ athlete , ...rest}) => {
+  return (
+    <div
+      key={athlete.id}
+      className="m-2 shadow-md hover:shadow-none "
+      {...rest}
+    >{`${athlete.name} ${athlete.lastName} `}</div>
   )
 }

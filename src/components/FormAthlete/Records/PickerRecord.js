@@ -39,7 +39,7 @@ export default function PickerRecord({ handleChange = () => {}, value = {} }) {
           placeholder="00"
           type="number"
           pattern="[0-9]*"
-          inputmode="numeric"
+          inputMode="numeric"
         />
       </label>
 
@@ -55,7 +55,7 @@ export default function PickerRecord({ handleChange = () => {}, value = {} }) {
           placeholder="00"
           type="number"
           pattern="[0-9]*"
-          inputmode="numeric"
+          inputMode="numeric"
         />
       </label>
       <label className="flex flex-col w-16 items-center">
@@ -70,7 +70,7 @@ export default function PickerRecord({ handleChange = () => {}, value = {} }) {
           placeholder="000"
           type="number"
           pattern="[0-9]*"
-          inputmode="numeric"
+          inputMode="numeric"
         />
       </label>
     </div>

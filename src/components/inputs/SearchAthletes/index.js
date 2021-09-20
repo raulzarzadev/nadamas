@@ -2,12 +2,14 @@ import { getAthletes } from '@/firebase/athletes'
 import { useAuth } from '@/src/context/AuthContext'
 import { CloseBackIcon, CloseIcon } from '@/src/utils/Icons'
 import { sortArrayObjectsByField } from '@/src/utils/Sorts'
-import AthleteRow from '@comps/AthleteRow'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Text from '../Text'
 
-export default function SearchAthletes({ setAthlete = () => {} }) {
+export default function SearchAthletes({
+  setAthlete = () => {},
+  AthleteRowResponse
+}) {
   const router = useRouter()
   const { query } = router
   const [athletes, setAthletes] = useState([])
@@ -41,7 +43,7 @@ export default function SearchAthletes({ setAthlete = () => {} }) {
   }
 
   useEffect(() => {
-    function eliminarDiacriticosEs(texto) {
+    function eliminarDiacriticosEs(texto = '') {
       return texto
         .normalize('NFD')
         .replace(
@@ -51,17 +53,19 @@ export default function SearchAthletes({ setAthlete = () => {} }) {
         .normalize()
         .toLowerCase()
     }
-    const searchAthletes = athletes?.filter(({ name }) => {
-      return eliminarDiacriticosEs(name).includes(eliminarDiacriticosEs(search))
+    const searchAthletes = athletes?.filter(({ name, lastName }) => {
+      return (
+        eliminarDiacriticosEs(name).includes(eliminarDiacriticosEs(search)) ||
+        eliminarDiacriticosEs(lastName).includes(eliminarDiacriticosEs(search))
+      )
     })
 
     setSortedAthletes(searchAthletes)
-
     if (search === '') {
-      router.push(`/records/new`)
+      router.push(`${router.pathname}`)
       setSortedAthletes([])
     } else {
-      router.push(`/records/new?search=${search}`)
+      router.push(`${router.pathname}?search=${search}`)
     }
   }, [search, athletes])
 
@@ -74,34 +78,32 @@ export default function SearchAthletes({ setAthlete = () => {} }) {
   return (
     <div className="max-w-xl mx-auto">
       <div className="w-full mx-auto my-4">
-        <div className="flex items-end">
+        <div className="flex items-baseline">
           <Text
             name="search"
             value={search}
             label="Buscar Atleta"
             onChange={handleSearch}
-            error={!!!search && 'Selecciona un atleta'}
-          />
-          <button
-            className="m-1 p-1 ml-2"
-            onClick={() => {
-              setAthlete(null)
-              setSearch('')
+            error={!!!search && 'Busca por nombre o apellido'}
+            Icon={CloseBackIcon}
+            onClickIcon={()=>{
+               setAthlete(null)
+               setSearch('')
             }}
-          >
-            <CloseBackIcon />
-          </button>
+          />
+          
         </div>
         <div>
           {sortedAthletes?.map((athlete) => (
-            <div
+            <AthleteRowResponse
               key={athlete.id}
-              className="m-2 shadow-md hover:shadow-none "
+              athlete={athlete}
               onClick={() => handleSelectAthlete(athlete)}
-            >{`${athlete.name} ${athlete.lastName} `}</div>
+            />
           ))}
         </div>
       </div>
     </div>
   )
 }
+/**/
