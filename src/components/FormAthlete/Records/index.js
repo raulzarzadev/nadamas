@@ -22,6 +22,8 @@ export default function Records({ athlete: { id } }) {
   }
 
   const [records, setRecords] = useState([])
+  console.log('records', records)
+  
 
   const handleAddRecord = async (newRecord) => {
     await createOrUpdateRecord({ athleteId: id, ...newRecord })
@@ -36,7 +38,7 @@ export default function Records({ athlete: { id } }) {
   } */
 
   const [openNewRecord, setOpenNewRecord] = useState(false)
-  const handleOpenNewRecord = () => {
+  const handleNewRecord = () => {
     router.push(`/records/new?search=${id}`)
   }
 
@@ -45,11 +47,11 @@ export default function Records({ athlete: { id } }) {
       <div>
         {/* <FormRecord handleAddRecord={handleAddRecord} /> */}
         <div className="w-12 mx-auto">
-          <Button onClick={handleOpenNewRecord} variant="secondary" size="sm">
+          <Button onClick={handleNewRecord} variant="secondary" size="sm">
             Nuevo <AddIcon />
           </Button>
         </div>
-        {/*   {records?.length === 0 ? (
+        {records?.length === 0 ? (
           <div>
             <Info text="Aun no hay registros" fullWidth />
           </div>
@@ -60,7 +62,7 @@ export default function Records({ athlete: { id } }) {
               getAndSetRecords()
             }}
           />
-        )} */}
+        )} 
       </div>
       {/* <Modal
         open={openNewRecord}

@@ -1,4 +1,26 @@
 export default [
+  //----------------------- labels
+  {
+    id: 'back',
+    label: 'Dorso'
+  },
+  {
+    id: 'crawl',
+    label: 'Libre'
+  },
+  {
+    id: 'breast',
+    label: 'Pecho'
+  },
+  {
+    id: 'butterfly',
+    label: 'Maripa'
+  },
+  {
+    id: 'combi',
+    label: 'Combi'
+  },
+
   //----------------------- libre o crawl
   {
     label: '50m libre',
