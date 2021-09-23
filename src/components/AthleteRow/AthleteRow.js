@@ -4,7 +4,8 @@ import {
   fromUnixTime,
   getDate,
   getMonth,
-  getWeek
+  getWeek,
+  getYear
 } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useEffect, useState } from 'react'
@@ -44,7 +45,7 @@ export default function AthleteRow({
   }
 
   const [weekBirthday, setWeekBirthday] = useState(false)
-  
+
   useEffect(() => {
     setWeekBirthday(getWeek(date) === getWeek(birth))
   }, [date])
@@ -60,8 +61,11 @@ export default function AthleteRow({
           }).replace(/años/, '')}
         </span> */}
         {weekBirthday && (
-          <span>
+          <span className='relative group flex items-center'>
             <BirthCakeIcon />
+            <span className='text-xs absolute w-20 hidden group-hover:block bg-gray-400 -top-3 rounded-md text-center pt-0.5'>
+              {`${getDate(birth)}-${getMonth(birth)}-${getYear(birth)}`}
+            </span>
           </span>
         )}
         <span>{`${name?.split(' ')[0]} ${
