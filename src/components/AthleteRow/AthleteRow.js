@@ -1,9 +1,21 @@
-import { formatDistanceToNowStrict } from 'date-fns'
+import {
+  formatDistanceToNow,
+  formatDistanceToNowStrict,
+  fromUnixTime,
+  getDate,
+  getMonth,
+  getWeek
+} from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import EmergencyCallModal from '../Modals/EmergencyCallModal'
-import { ContactIcon, EditIcon, EmergencyIcon } from '../../utils/Icons'
+import {
+  BirthCakeIcon,
+  ContactIcon,
+  EditIcon,
+  EmergencyIcon
+} from '../../utils/Icons'
 import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
 import { updateAttendanceList } from '@/firebase/attendance'
@@ -24,7 +36,6 @@ export default function AthleteRow({
   const handleOpenEmergencyCall = () => {
     setOpenEmergencyModal(!openEmergencyModal)
   }
-  
 
   const handleSetAttendance = (id) => {
     updateAttendanceList({ date, schedule, athleteId: id })
@@ -32,17 +43,27 @@ export default function AthleteRow({
       .catch((err) => console.log('err', err))
   }
 
+  const [weekBirthday, setWeekBirthday] = useState(false)
+  
+  useEffect(() => {
+    setWeekBirthday(getWeek(date) === getWeek(birth))
+  }, [date])
 
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
-        <span className="text-sm sm:flex items-center hidden ">
+        {/*  <span className="text-sm sm:flex items-center hidden ">
           {formatDistanceToNowStrict(birth, {
             unit: 'year',
             addSuffix: false,
             locale: es
           }).replace(/años/, '')}
-        </span>
+        </span> */}
+        {weekBirthday && (
+          <span>
+            <BirthCakeIcon />
+          </span>
+        )}
         <span>{`${name?.split(' ')[0]} ${
           lastName?.split(' ')[0] || ''
         } `}</span>
@@ -56,7 +77,7 @@ export default function AthleteRow({
               <input
                 checked={assist}
                 value={assist}
-                onChange={(e)=>handleSetAttendance(id,)}
+                onChange={(e) => handleSetAttendance(id)}
                 // onClick={(e) => handleSetAttendance(id, e)}
                 className="absolute opacity-0 h-0 w-0 "
                 name="attendance"

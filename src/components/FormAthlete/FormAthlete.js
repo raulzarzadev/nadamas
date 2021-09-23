@@ -24,6 +24,7 @@ import { getAthlete, updateAtlete } from '@/firebase/athletes'
 import s from './styles.module.css'
 import Autocomplete from '@comps/inputs/TextAutocomplete'
 import BLOD_TYPES from '@/src/constants/BLOD_TYPES'
+import Toggle from '@comps/inputs/Toggle'
 
 export default function NewAthlete() {
   const { user } = useAuth()
@@ -47,6 +48,11 @@ export default function NewAthlete() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
+
+  const handleChangeTaggle = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.checked })
+  }
+
   const handleSubmit = async () => {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res.type === 'ATHLETE_CREATED') {
@@ -166,6 +172,8 @@ export default function NewAthlete() {
               rows={2}
               label="¿Proposito o espectativa? (Opcional)"
             />
+          </div>
+          <div className="flex items-center p-1 sm:p-2">
             <Text
               value={formatInputDate(form?.birth)}
               onChange={handleChange}
@@ -173,6 +181,15 @@ export default function NewAthlete() {
               label="Fecha de nacimiento"
               type="date"
             />
+            <div className="mx-2">
+              <Toggle
+                label="Compartir"
+                name="showBirthday"
+                labelPosition="top"
+                checked={form.showBirthday || false}
+                onChange={handleChangeTaggle}
+              />{' '}
+            </div>
           </div>
         </div>
 

@@ -1,10 +1,7 @@
 import s from './styles.module.css'
 import { BackIcon, ClipboardIcon, ForwardIcon } from '../../utils/Icons'
 import { useEffect, useState } from 'react'
-import {
-  getAthletesBySchedule,
-  getAthleteSchedule
-} from '@/firebase/client'
+import { getAthletesBySchedule, getAthleteSchedule } from '@/firebase/client'
 import { addDays, subDays } from 'date-fns'
 import { dayLabels, format } from '../../utils/Dates'
 import { useAuth } from '../../context/AuthContext'
@@ -135,7 +132,7 @@ const AtleteScheduleTable = ({
         </div>
       )}
       {athletes?.length === 0 && <span>Sin athletas</span>}
-      {athletes.map((athlete, i) => (
+      {athletes?.map((athlete, i) => (
         <Athlete
           schedule={schedule}
           key={i}
