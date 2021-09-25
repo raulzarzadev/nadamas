@@ -8,7 +8,7 @@ import Text from '../Text'
 
 export default function SearchAthletes({
   setAthlete = () => {},
-  AthleteRowResponse
+  AthleteRowResponse,
 }) {
   const router = useRouter()
   const { query } = router

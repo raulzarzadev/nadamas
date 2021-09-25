@@ -44,8 +44,11 @@ export default function CoachProfile() {
         </div>
       </div>
       <div className="max-w-md mx-auto">
-        <Section title="Horarios disponibles" open >
+        <Section title="Horario">
           <CoachSchedule />
+        </Section>
+        <Section title="Grupos">
+         
         </Section>
         <div>
           {/*  estadisiticas de alumnos */}

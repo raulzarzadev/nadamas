@@ -1,18 +1,21 @@
-import { DownIcon, ForwardIcon } from "@/src/utils/Icons"
-import { useState } from "react"
+import { DownIcon, ForwardIcon } from '@/src/utils/Icons'
+import { useState } from 'react'
 
-export default function Section({ title, children, open }) {
+export default function Section({ title, children, open, indent = true }) {
   const [show, setShow] = useState(open || false)
   useState(() => {
     setShow(open)
   }, [open])
   return (
     <section className="my-2 ">
-      <h3 className="text-left flex ml-4 mb-4" onClick={() => setShow(!show)}>
+      <h3
+        className="text-left flex ml-2 mb-4 font-bold"
+        onClick={() => setShow(!show)}
+      >
         {title}
         {show ? <DownIcon /> : <ForwardIcon />}
       </h3>
-      {show && children}
+      <div className={`${indent && 'pl-6'}`}>{show && children}</div>
     </section>
   )
 }

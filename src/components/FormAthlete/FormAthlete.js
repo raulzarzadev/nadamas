@@ -25,6 +25,8 @@ import s from './styles.module.css'
 import Autocomplete from '@comps/inputs/TextAutocomplete'
 import BLOD_TYPES from '@/src/constants/BLOD_TYPES'
 import Toggle from '@comps/inputs/Toggle'
+import Section from '@comps/Section'
+import Payments from './Payments'
 
 export default function NewAthlete() {
   const { user } = useAuth()
@@ -152,7 +154,7 @@ export default function NewAthlete() {
         </div>
         {/* ----------------------------------------------Personal information */}
         <div className="  ">
-          <div className={s.inputs}>
+          <div className='p-2 sm:p-6'>
             <Text
               value={form?.name}
               onChange={handleChange}
@@ -172,8 +174,7 @@ export default function NewAthlete() {
               rows={2}
               label="¿Proposito o espectativa? (Opcional)"
             />
-          </div>
-          <div className="flex items-center p-1 sm:p-2">
+          <div className="flex items-center w-full">
             <Text
               value={formatInputDate(form?.birth)}
               onChange={handleChange}
@@ -190,6 +191,7 @@ export default function NewAthlete() {
                 onChange={handleChangeTaggle}
               />{' '}
             </div>
+          </div>
           </div>
         </div>
 
@@ -209,7 +211,7 @@ export default function NewAthlete() {
         {/* ----------------------------------------------Pyments */}
 
         <Section title="Cuotas">
-          <Info fullWidth text="Pronto podras registrar pagos y cuotas aqui" />
+         <Payments/>
         </Section>
 
         {/* ----------------------------------------------Schedule */}
@@ -335,21 +337,5 @@ export default function NewAthlete() {
         handleOpen={handleOpenDelete}
       />
     </div>
-  )
-}
-
-const Section = ({ title, children, open }) => {
-  const [show, setShow] = useState(open || false)
-  useState(() => {
-    setShow(open)
-  }, [open])
-  return (
-    <section className="my-2 ">
-      <h3 className="text-left flex ml-4 mb-4" onClick={() => setShow(!show)}>
-        {title}
-        {show ? <DownIcon /> : <ForwardIcon />}
-      </h3>
-      {show && children}
-    </section>
   )
 }

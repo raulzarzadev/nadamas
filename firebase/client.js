@@ -129,7 +129,7 @@ export const updateAthleteSchedule = async ({
       .catch((err) => formatResponse(false, 'ERROR_UPDATING_SCHEDULE', res))
   }
 }
-export const getAthletesBySchedule = async ({ schedule, day }) => {
+export const getAthletesBySchedule = async ({ schedule, day, userId }) => {
   return await db
     .collection('schedules')
     .where(`schedule.${day}`, 'array-contains', schedule)

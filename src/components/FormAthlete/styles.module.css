@@ -1,11 +1,3 @@
-.inputs {
-  display: flex;
-  flex-wrap: wrap;
-}
-.inputs > * {
-  width: 100%;
-  padding: 4px;
-}
 
 .contact {
   display: flex;
@@ -96,10 +88,7 @@
 }
 
 @media (min-width: 600px) {
-  .inputs > * {
-    width: 50%;
-    padding: 8px;
-  }
+  
   .schedule_day {
     width: 20%;
   }

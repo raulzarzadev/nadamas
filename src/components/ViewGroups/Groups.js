@@ -89,9 +89,10 @@ const AtleteScheduleTable = ({
   showAttendance
 }) => {
   const [athletes, setAthletes] = useState(undefined)
+  const { user } = useAuth()
   useEffect(() => {
     if (schedule) {
-      getAthletesBySchedule({ schedule, day })
+      getAthletesBySchedule({ schedule, day, userId: user.id })
         .then((res) => setAthletes(res))
         .catch((err) => console.log('err', err))
       return () => {
@@ -99,6 +100,8 @@ const AtleteScheduleTable = ({
       }
     }
   }, [schedule, day])
+
+  
 
   useEffect(() => {
     if (showAttendance) {
@@ -116,7 +119,7 @@ const AtleteScheduleTable = ({
   const [attendance, setAttendance] = useState([])
   const [notes, setNotes] = useState('')
 
-  if (athletes === undefined) return 'Cargando ...'
+  if (athletes === undefined) return 'Cargando ....'
 
   return (
     <div>
