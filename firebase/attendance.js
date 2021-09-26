@@ -34,13 +34,10 @@ export const getAttendanceDate = async (date, schedule, dispatch) => {
 
 export const updateAttendanceList = async ({
   date = new Date(),
-  attendance = [],
   schedule,
-  notes='',
-  athleteId = ''
+  notes=null,
+  athleteId=null
 }) => {
-  console.log('notes', notes)
-
   const attendanceDate = simpleDate(date)
 
   const attendanceRef = await db
@@ -56,34 +53,39 @@ export const updateAttendanceList = async ({
   if (attendanceRef) {
     // attendance schedule and date exist
     const attendanceList = db.collection('attendance').doc(attendanceRef)
-    const attendanceListIncludesThisAthlete = await attendanceList
-      .get()
-      .then((res) => {
-        const doc = res.data()
-        return doc.attendance.includes(athleteId)
-      })
-      .catch((err) => console.log('err', err))
-
-    attendanceList
-      .update({ notes })
-      .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err))
-    if (attendanceListIncludesThisAthlete) {
-      // borrar si lo incluye
-      return await attendanceList
-        .update({
-          attendance: firebase.firestore.FieldValue.arrayRemove(athleteId)
+    if (athleteId) {
+      // if athlte id is passed, update the list
+      const attendanceListIncludesThisAthlete = await attendanceList
+        .get()
+        .then((res) => {
+          const doc = res.data()
+          return doc.attendance.includes(athleteId)
         })
-        .then((res) => formatResponse(true, 'ATTENDANCE_LIST_UPDATED', res))
-        .catch((err) => console.log(err))
-    } else {
-      return await attendanceList
-        .update({
-          attendance: firebase.firestore.FieldValue.arrayUnion(athleteId)
-        })
-        .then((res) => formatResponse(true, 'ATTENDANCE_LIST_UPDATED', res))
         .catch((err) => console.log('err', err))
-      //  escribir si no
+      if (attendanceListIncludesThisAthlete) {
+        // borrar si lo incluye
+        return await attendanceList
+          .update({
+            attendance: firebase.firestore.FieldValue.arrayRemove(athleteId)
+          })
+          .then((res) => formatResponse(true, 'ATTENDANCE_LIST_UPDATED', res))
+          .catch((err) => console.log(err))
+      } else {
+        return await attendanceList
+          .update({
+            attendance: firebase.firestore.FieldValue.arrayUnion(athleteId)
+          })
+          .then((res) => formatResponse(true, 'ATTENDANCE_LIST_UPDATED', res))
+          .catch((err) => console.log('err', err))
+        //  escribir si no
+      }
+    }
+    // how ever if notes is pased update notes
+    if (notes) {
+      attendanceList
+        .update({ notes})
+        .then((res) => console.log('res', res))
+        .catch((err) => console.log('err', err))
     }
   } else {
     return await db

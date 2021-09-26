@@ -89,16 +89,18 @@ const AtleteScheduleTable = ({
   showAttendance
 }) => {
   const [athletes, setAthletes] = useState(undefined)
-  useEffect(() => {
-    if (schedule) {
-      getAthletesBySchedule({ schedule, day })
-        .then((res) => setAthletes(res))
-        .catch((err) => console.log('err', err))
-      return () => {
-        setAthletes([])
-      }
+   useEffect(() => {
+    const getScheduleAthletes = ({ date = new Date(), schedule = '00:00' }) => {
+      const day = getDay(date)
+      return athletesWithSchedule?.filter(
+        (athlete) =>
+          !!athlete.schedule[day] && athlete.schedule?.[day]?.[0] === schedule
+      )
     }
-  }, [schedule, day])
+
+    setAthltes(getScheduleAthletes({ date, schedule }))
+  }, [date, schedule, athletesWithSchedule])
+
 
   useEffect(() => {
     if (showAttendance) {
@@ -134,9 +136,9 @@ const AtleteScheduleTable = ({
       {athletes?.length === 0 && <span>Sin athletas</span>}
       {athletes?.map((athlete, i) => (
         <Athlete
+        key={i} 
+        athleteId={athlete}
           schedule={schedule}
-          key={i}
-          athleteId={athlete}
           date={date}
           assist={attendance.includes(athlete)}
           showAttendance={showAttendance}

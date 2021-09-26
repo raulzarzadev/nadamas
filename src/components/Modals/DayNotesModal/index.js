@@ -13,7 +13,7 @@ export default function DayNotesModal({ schedule, date, notes }) {
   }
   const handleSubmit = (form) => {
     updateAttendanceList(form)
-      .then((res) => console.log(res))
+      .then((res) => console.log('RES', res))
       .catch((err) => console.log('err', err))
     setOpenNotes(false)
   }
@@ -36,7 +36,7 @@ export default function DayNotesModal({ schedule, date, notes }) {
       >
         <div>
           {format(date, 'EEEE dd MMM')}
-          <pan className="mx-3">{schedule}</pan>
+          <span className="mx-3">{schedule}</span>
           <form
             onSubmit={(e) => {
               e.preventDefault()
