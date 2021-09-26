@@ -40,7 +40,6 @@ export default function AthleteRow({
   }
 
   const handleSetAttendance = (id) => {
-    const getDayDate = format(date, 'dd')
     updateAttendanceList({ date, schedule, athleteId: id })
       .then((res) => console.log('res', res))
       .catch((err) => console.log('err', err))

@@ -111,7 +111,7 @@ const AthleteList = ({ schedule, date, showAttendance }) => {
           schedule={schedule}
           date={date}
           displaySetAttendance={showAttendance}
-          assist={attendance.includes(athlete)}
+          assist={attendance.includes(athlete.id)}
         />
       ))}
     </div>
