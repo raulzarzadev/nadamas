@@ -82,6 +82,7 @@ export default function SearchAthletes({
   }, [athletes])
 
   const handleSelectAthlete = (athlete) => {
+    console.log(athlete)
     setAthlete(athlete)
     setSearch(`${athlete?.name} ${athlete?.lastName}`)
     setSortedAthletes([])

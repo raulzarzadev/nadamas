@@ -10,7 +10,7 @@ import Image from 'next/image'
 import Button from '@comps/inputs/Button'
 import { createOrUpdatePayment } from '@/firebase/payments'
 export default function FormPayment({ payment }) {
-  const [form, setForm] = useState({})
+  const [form, setForm] = useState({ date: new Date() })
   const {
     query: { id }
   } = useRouter()
@@ -25,13 +25,15 @@ export default function FormPayment({ payment }) {
   }, [payment])
 
   const handleSetAthlete = (athlete) => {
+    console.log('athlete', athlete)
+    
     setForm({
       ...form,
       athleteId: athlete?.id,
       athlete: {
         id: athlete?.id,
         name: `${athlete?.name} ${athlete?.lastName}`,
-        email: athlete?.email
+        email: athlete?.email || null
       }
     })
   }
@@ -48,6 +50,7 @@ export default function FormPayment({ payment }) {
       .then((res) => console.log(res))
       .catch((err) => console.log('err', err))
   }
+console.log('form', form)
 
   return (
     <div className="">
@@ -79,7 +82,7 @@ export default function FormPayment({ payment }) {
         </div>
       </div>
 
-      {form?.image && (
+      {!!form?.image && (
         <div className="relative p-4">
           <div className="relative w-full  h-52 border">
             <Image

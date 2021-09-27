@@ -59,11 +59,13 @@ const Payment = ({ payment }) => {
     <div>
       <div onClick={handleOpen} className="shadow-md">
         <div className="relative w-20 h-12 flex items-end justify-center rounded-md">
-          <Image
-            layout="fill"
-            src={payment?.image}
-            className="opacity-50 rounded-md"
-          />
+          {payment?.image && (
+            <Image
+              layout="fill"
+              src={payment?.image}
+              className="opacity-50 rounded-md"
+            />
+          )}
           <span className="text-sm font-bold z-10">
             {format(payment?.date, 'dd/MM/yy')}
           </span>
