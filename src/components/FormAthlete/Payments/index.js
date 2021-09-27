@@ -1,51 +1,20 @@
 import Button from '@comps/inputs/Button'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import FormPayment from '@comps/FormPayment'
 import Modal from '@comps/Modals/Modal'
-
-const testImage =
-  'https://images.unsplash.com/photo-1527656855834-0235e41779fd?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=774&q=80'
+import { getAthletePayments } from '@/firebase/payments'
+import { format } from '@/src/utils/Dates'
 
 export default function Payments({ athleteId }) {
-  const [payments, setPayments] = useState([
-    {
-      id: '1',
-      athleteId: '123',
-      quantity: '200',
-      image: testImage,
-      date: '12/23/03'
-    },
-
-    {
-      id: '12',
-      athleteId: '123',
-      quantity: '200',
-      image: testImage,
-      date: '12/12/23'
-    },
-    {
-      id: '124',
-      athleteId: '123',
-      quantity: '200',
-      image: testImage,
-      date: '12/12/23'
-    },
-    {
-      id: '123',
-      athleteId: '123',
-      quantity: '200',
-      image: testImage,
-      date: '12/12/23'
-    },
-    {
-      id: '123',
-      athleteId: '123',
-      quantity: '200',
-      image: testImage,
-      date: '12/12/23'
+  const [payments, setPayments] = useState([])
+  useEffect(() => {
+    if (athleteId) {
+      getAthletePayments(athleteId)
+        .then(setPayments)
+        .catch((err) => console.log('err', err))
     }
-  ])
+  },[athleteId])
 
   const [openNewPayment, setOpenNewPayment] = useState(false)
   return (
@@ -72,13 +41,41 @@ export default function Payments({ athleteId }) {
   )
 }
 
-const Payment = ({ payment: { date, image } }) => (
-  <div className=" relative w-20 h-12 flex items-end justify-center rounded-md ">
-    <Image layout="fill" src={image} className="opacity-50 rounded-md" />
-    <span className="text-sm font-bold z-10">{date}</span>
-  </div>
-)
+const Payment = ({ payment }) => {
+  const [open, setOpen] = useState(false)
+  const handleOpen = () => {
+    setOpen(!open)
+  }
+  return (
+    <div>
+      <div onClick={handleOpen} className="shadow-md">
+        <div className="relative w-20 h-12 flex items-end justify-center rounded-md">
+          <Image
+            layout="fill"
+            src={payment?.image}
+            className="opacity-50 rounded-md"
+          />
+          <span className="text-sm font-bold z-10">
+            {format(payment?.date, 'dd/MM/yy')}
+          </span>
+        </div>
+      </div>
+      <DetailsPaymentModal
+        payment={payment}
+        handleOpen={handleOpen}
+        open={open}
+      />
+    </div>
+  )
+}
 
+const DetailsPaymentModal = ({ handleOpen, open, payment }) => {
+  return (
+    <Modal handleOpen={handleOpen} open={open} title={'Detalles de pago'}>
+      <FormPayment  payment={payment} />
+    </Modal>
+  )
+}
 const NewPaymentModal = ({ athleteId, handleOpen, open }) => {
   return (
     <Modal handleOpen={handleOpen} open={open} title={'Nuevo Pago'}>

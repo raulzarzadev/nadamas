@@ -5,10 +5,11 @@ import SearchAthletes from '@comps/inputs/SearchAthletes'
 import Text from '@comps/inputs/Text'
 import UploadImage from '@comps/inputs/UploadImage'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Button from '@comps/inputs/Button'
-export default function FormPayment() {
+import { createOrUpdatePayment } from '@/firebase/payments'
+export default function FormPayment({ payment }) {
   const [form, setForm] = useState({})
   const {
     query: { id }
@@ -16,6 +17,12 @@ export default function FormPayment() {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
+
+  useEffect(() => {
+    if (payment) {
+      setForm(payment)
+    }
+  }, [payment])
 
   const handleSetAthlete = (athlete) => {
     setForm({
@@ -37,7 +44,9 @@ export default function FormPayment() {
   }
 
   const handleSavePayment = () => {
-    console.log(form)
+    createOrUpdatePayment(form)
+      .then((res) => console.log(res))
+      .catch((err) => console.log('err', err))
   }
 
   return (
@@ -65,7 +74,7 @@ export default function FormPayment() {
         <div className=" m-4">
           <UploadImage
             upladedImage={upladedImage}
-            storeRef={`payments/${form?.athleteId}`}
+            storeRef={`payments/${form?.athleteId}-${form?.id || ''}`}
           />
         </div>
       </div>
