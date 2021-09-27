@@ -8,12 +8,14 @@ import Text from '../Text'
 
 export default function SearchAthletes({
   setAthlete = () => {},
-  AthleteRowResponse,
+  AthleteRowResponse = <div>Row</div>,
+  athleteSelected = null
 }) {
   const router = useRouter()
   const { query } = router
   const [athletes, setAthletes] = useState([])
 
+  console.log('select', athleteSelected)
   const { user } = useAuth()
   useEffect(() => {
     if (user) getAthletes(user?.id).then(setAthletes)
@@ -25,7 +27,7 @@ export default function SearchAthletes({
     setSortBy(key)
   }
 
-  const [sortedAthletes, setSortedAthletes] = useState()
+  const [sortedAthletes, setSortedAthletes] = useState([])
 
   useEffect(() => {
     const sorted = sortArrayObjectsByField({
@@ -36,7 +38,7 @@ export default function SearchAthletes({
     setSortedAthletes(sorted)
   }, [sortBy, athletes])
 
-  const [search, setSearch] = useState(query.search || '')
+  const [search, setSearch] = useState('')
 
   const handleSearch = ({ target: { value } }) => {
     setSearch(value)
@@ -56,19 +58,30 @@ export default function SearchAthletes({
     const searchAthletes = athletes?.filter(({ name, lastName, id }) => {
       return (
         eliminarDiacriticosEs(name).includes(eliminarDiacriticosEs(search)) ||
-        eliminarDiacriticosEs(lastName).includes(eliminarDiacriticosEs(search))||
+        eliminarDiacriticosEs(lastName).includes(
+          eliminarDiacriticosEs(search)
+        ) ||
         eliminarDiacriticosEs(id).includes(eliminarDiacriticosEs(search))
       )
     })
 
     setSortedAthletes(searchAthletes)
     if (search === '') {
-      router.push(`${router.pathname}`)
+      // router?.push(`${router?.pathname}`)
       setSortedAthletes([])
     } else {
-      router.push(`${router.pathname}?search=${search}`)
+      // router?.push(`${router?.pathname}${search && `?search=${search}`}`)
     }
   }, [search, athletes])
+
+  useEffect(() => {
+    if (athleteSelected) {
+      const athlete = athletes.find(({ id }) => id === athleteSelected)
+      console.log('athlete', athlete)
+      handleSelectAthlete(athlete)
+      // setSearch(athlete)
+    }
+  },[])
 
   const handleSelectAthlete = (athlete) => {
     setAthlete(athlete)
@@ -87,12 +100,11 @@ export default function SearchAthletes({
             onChange={handleSearch}
             error={!!!search && 'Busca por nombre o apellido'}
             Icon={CloseBackIcon}
-            onClickIcon={()=>{
-               setAthlete(null)
-               setSearch('')
+            onClickIcon={() => {
+              setAthlete(null)
+              setSearch('')
             }}
           />
-          
         </div>
         <div>
           {sortedAthletes?.map((athlete) => (
@@ -107,4 +119,3 @@ export default function SearchAthletes({
     </div>
   )
 }
-/**/

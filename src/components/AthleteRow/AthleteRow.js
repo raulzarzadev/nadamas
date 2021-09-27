@@ -21,6 +21,7 @@ import {
 import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
 import { updateAttendanceList } from '@/firebase/attendance'
+import { useRouter } from 'next/router'
 
 export default function AthleteRow({
   athlete,
@@ -29,6 +30,7 @@ export default function AthleteRow({
   assist = false,
   schedule
 }) {
+  const router = useRouter()
   const { user } = useAuth()
   const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth } =
     athlete
@@ -62,9 +64,9 @@ export default function AthleteRow({
           }).replace(/años/, '')}
         </span> */}
         {weekBirthday && (
-          <span className='relative group flex items-center'>
+          <span className="relative group flex items-center">
             <BirthCakeIcon />
-            <span className='text-xs absolute w-20 hidden group-hover:block bg-gray-400 -top-3 rounded-md text-center pt-0.5'>
+            <span className="text-xs absolute w-20 hidden group-hover:block bg-gray-400 -top-3 rounded-md text-center pt-0.5">
               {`${getDate(birth)}-${getMonth(birth)}-${getYear(birth)}`}
             </span>
           </span>
@@ -115,7 +117,7 @@ export default function AthleteRow({
           </Button>
         </div>
         <div className="m-1" /* className={s.athlete_action} */>
-          <Button size="sm" icon href={`/athletes/${id}`}>
+          <Button size="sm" icon onClick={() => router.push(`/athletes/${id}`)}>
             <EditIcon />
           </Button>
         </div>

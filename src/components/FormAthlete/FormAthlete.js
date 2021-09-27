@@ -57,8 +57,8 @@ export default function NewAthlete() {
 
   const handleSubmit = async () => {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
-    if (res.type === 'ATHLETE_CREATED') {
-      router.push(`/athletes/${res.id}`)
+    if (res?.type === 'ATHLETE_CREATED') {
+      router.push(`/athletes/${res?.id}`)
     }
   }
 
@@ -211,7 +211,7 @@ export default function NewAthlete() {
         {/* ----------------------------------------------Pyments */}
 
         <Section title="Cuotas">
-         <Payments/>
+         <Payments athleteId={form.id}/>
         </Section>
 
         {/* ----------------------------------------------Schedule */}

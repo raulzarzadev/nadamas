@@ -3,6 +3,7 @@ import { createOrUpdateRecord } from '@/firebase/records'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
 import { SaveIcon } from '@/src/utils/Icons'
+import AthleteSimpleRow from '@comps/AthleteRow/AthleteSimpleRow'
 import PickerRecord from '@comps/FormAthlete/Records/PickerRecord'
 import Button from '@comps/inputs/Button'
 import PickerTime from '@comps/inputs/PickerTime'
@@ -182,7 +183,7 @@ export default function FormRecord({ searchAthlete }) {
       {searchAthlete && (
         <SearchAthletes
           setAthlete={handleChangeAthlete}
-          AthleteRowResponse={AthleteRow}
+          AthleteRowResponse={AthleteSimpleRow}
         />
       )}
       <div className="sm:flex text-center w-full justify-evenly py-2 px-1 items-center">
@@ -216,12 +217,3 @@ export default function FormRecord({ searchAthlete }) {
   )
 }
 
-const AthleteRow = ({ athlete , ...rest}) => {
-  return (
-    <div
-      key={athlete.id}
-      className="m-2 shadow-md hover:shadow-none "
-      {...rest}
-    >{`${athlete.name} ${athlete.lastName} `}</div>
-  )
-}
