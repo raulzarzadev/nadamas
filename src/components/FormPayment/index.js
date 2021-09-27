@@ -25,8 +25,6 @@ export default function FormPayment({ payment }) {
   }, [payment])
 
   const handleSetAthlete = (athlete) => {
-    console.log('athlete', athlete)
-    
     setForm({
       ...form,
       athleteId: athlete?.id,
@@ -50,8 +48,6 @@ export default function FormPayment({ payment }) {
       .then((res) => console.log(res))
       .catch((err) => console.log('err', err))
   }
-console.log('form', form)
-
   return (
     <div className="">
       <SearchAthletes

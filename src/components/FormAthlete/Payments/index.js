@@ -20,8 +20,6 @@ export default function Payments({ athleteId }) {
 
   const [openNewPayment, setOpenNewPayment] = useState(false)
   const paymentDateSort = (a, b) => {
-    console.log('a,b', a, b)
-
     if (a.date > b.date) return -1
     if (a.date < b.date) return 1
     return 0
