@@ -11,12 +11,21 @@ export default function Payments({ athleteId }) {
   useEffect(() => {
     if (athleteId) {
       getAthletePayments(athleteId)
-        .then(setPayments)
+        .then((res) => {
+          setPayments(res?.sort(paymentDateSort))
+        })
         .catch((err) => console.log('err', err))
     }
-  },[athleteId])
+  }, [athleteId])
 
   const [openNewPayment, setOpenNewPayment] = useState(false)
+  const paymentDateSort = (a, b) => {
+    console.log('a,b', a, b)
+
+    if (a.date > b.date) return -1
+    if (a.date < b.date) return 1
+    return 0
+  }
   return (
     <div className="p-2 flex max-w-full overflow-auto">
       <div className="m-2">
@@ -72,7 +81,7 @@ const Payment = ({ payment }) => {
 const DetailsPaymentModal = ({ handleOpen, open, payment }) => {
   return (
     <Modal handleOpen={handleOpen} open={open} title={'Detalles de pago'}>
-      <FormPayment  payment={payment} />
+      <FormPayment payment={payment} />
     </Modal>
   )
 }

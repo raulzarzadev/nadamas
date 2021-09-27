@@ -76,7 +76,6 @@ export default function SearchAthletes({
   useEffect(() => {
     if (athleteSelected) {
       const athlete = athletes.find(({ id }) => id === athleteSelected)
-      console.log('athlete', athlete)
       handleSelectAthlete(athlete)
       // setSearch(athlete)
     }

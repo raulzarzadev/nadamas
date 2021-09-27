@@ -4,9 +4,9 @@ export const sortArrayObjectsByField = ({
   reverseWord = '_reverse'
 }) => {
 
-  const key = field.replace(reverseWord,'')
+  const key = field?.replace(reverseWord,'')
   
-  if (field.includes(reverseWord)) {
+  if (field?.includes(reverseWord)) {
     return array.sort((a, b) => {
       if (a[key] > b[key]) return 1
       if (a[key] < b[key]) return -1
