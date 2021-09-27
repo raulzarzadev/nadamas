@@ -7,7 +7,7 @@ import Modal from '@comps/Modals/Modal'
 const testImage =
   'https://images.unsplash.com/photo-1527656855834-0235e41779fd?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=774&q=80'
 
-export default function Payments({athleteId}) {
+export default function Payments({ athleteId }) {
   const [payments, setPayments] = useState([
     {
       id: '1',
@@ -63,8 +63,8 @@ export default function Payments({athleteId}) {
           open={openNewPayment}
         />
       </div>
-      {payments.map((payment) => (
-        <div className="m-2">
+      {payments.map((payment, i) => (
+        <div key={i} className="m-2">
           <Payment key={payment.id} payment={payment} />
         </div>
       ))}
@@ -79,7 +79,7 @@ const Payment = ({ payment: { date, image } }) => (
   </div>
 )
 
-const NewPaymentModal = ({ athleteId, handleOpen, open,  }) => {
+const NewPaymentModal = ({ athleteId, handleOpen, open }) => {
   return (
     <Modal handleOpen={handleOpen} open={open} title={'Nuevo Pago'}>
       <FormPayment athleteId={athleteId} />

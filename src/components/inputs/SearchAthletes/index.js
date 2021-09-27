@@ -15,7 +15,6 @@ export default function SearchAthletes({
   const { query } = router
   const [athletes, setAthletes] = useState([])
 
-  console.log('select', athleteSelected)
   const { user } = useAuth()
   useEffect(() => {
     if (user) getAthletes(user?.id).then(setAthletes)
@@ -81,7 +80,7 @@ export default function SearchAthletes({
       handleSelectAthlete(athlete)
       // setSearch(athlete)
     }
-  },[])
+  }, [athletes])
 
   const handleSelectAthlete = (athlete) => {
     setAthlete(athlete)
