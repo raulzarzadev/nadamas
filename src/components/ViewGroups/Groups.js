@@ -89,24 +89,13 @@ const AtleteScheduleTable = ({
   showAttendance
 }) => {
   const [athletes, setAthletes] = useState(undefined)
-  const { user } = useAuth()
-  useEffect(() => {
-    if (schedule) {
-      getAthletesBySchedule({ schedule, day, userId: user.id })
-        .then((res) => setAthletes(res))
-        .catch((err) => console.log('err', err))
-      return () => {
-        setAthletes([])
-      }
-    }
-  }, [schedule, day])
+
 
   
 
   useEffect(() => {
     if (showAttendance) {
       getAttendanceDate(date, schedule, ({ attendance, notes }) => {
-        attendance ? setAttendance(attendance) : setAttendance([])
         notes ? setNotes(notes) : setNotes('')
       })
         .then((res) => {
@@ -137,9 +126,9 @@ const AtleteScheduleTable = ({
       {athletes?.length === 0 && <span>Sin athletas</span>}
       {athletes?.map((athlete, i) => (
         <Athlete
+        key={i} 
+        athleteId={athlete}
           schedule={schedule}
-          key={i}
-          athleteId={athlete}
           date={date}
           assist={attendance.includes(athlete)}
           showAttendance={showAttendance}
