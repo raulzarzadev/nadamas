@@ -32,8 +32,8 @@ export default function Grups() {
   const [showAttendance, setShowAttendance] = useState(false)
 
   return (
-    <div className="">
-      <div className="flex sticky py-2 justify-center items-center">
+    <div className="relative">
+      <div className="flex sticky py-2 justify-center items-center top-0 z-10 bg-gray-700 shadow-sm">
         <div className="w-1/4 flex justify-center">
           <Button iconOnly size="xs" variant="secondary" onClick={handleSubDay}>
             <BackIcon size="2rem" />
@@ -52,14 +52,16 @@ export default function Grups() {
           onChange={({ target }) => setShowAttendance(target.checked)}
         />
       </div>
-      {coachSchedule?.[getDay(date)]?.map((schedule) => (
-        <AthleteList
-          key={schedule}
-          schedule={schedule}
-          date={date}
-          showAttendance={showAttendance}
-        />
-      ))}
+      <div className="max-w-lg mx-auto">
+        {coachSchedule?.[getDay(date)]?.map((schedule) => (
+          <AthleteList
+            key={schedule}
+            schedule={schedule}
+            date={date}
+            showAttendance={showAttendance}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -98,12 +100,19 @@ const AthleteList = ({ schedule, date, showAttendance }) => {
 
   return (
     <div>
-      {showAttendance && (
-        <DayNotesModal schedule={schedule} date={date} notes={notes} />
-      )}
-      {`${schedule} ${athltes?.length ? athltes.length : ''}`}
-      {athltes === undefined && 'Cargado...'}
-      {athltes?.length === 0 && 'Sin alumnos'}
+      <div className="flex">
+        <div className="mr-2">
+          {showAttendance && (
+            <DayNotesModal schedule={schedule} date={date} notes={notes} />
+          )}
+        </div>
+        <span className="text-2xl font-bold">
+          {`${schedule}`}
+          <span className='text-base font-thin'>{` (${athltes?.length ? athltes.length : ''})`}</span>
+        </span>
+        {athltes === undefined && 'Cargado...'}
+        {athltes?.length === 0 && 'Sin alumnos'}
+      </div>
       {athltes?.map((athlete) => (
         <AthleteRow
           athlete={athlete}
