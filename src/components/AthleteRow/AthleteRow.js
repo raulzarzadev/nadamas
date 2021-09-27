@@ -22,6 +22,7 @@ import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
 import { updateAttendanceList } from '@/firebase/attendance'
 import { useRouter } from 'next/router'
+import { getLastAthletePayment } from '@/firebase/payments'
 
 export default function AthleteRow({
   athlete,
@@ -53,6 +54,12 @@ export default function AthleteRow({
     setWeekBirthday(getWeek(date) === getWeek(birth))
   }, [date])
 
+  const [lastPay, setLastPay] = useState(null)
+  useEffect(() => {
+    getLastAthletePayment(id)
+      .then((res) => console.log('res', res))
+      .catch((err) => console.log('err', err))
+  }, [])
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
@@ -74,6 +81,7 @@ export default function AthleteRow({
         <span>{`${name?.split(' ')[0]} ${
           lastName?.split(' ')[0] || ''
         } `}</span>
+        <span className="text-xs">last pay {lastPay}</span>
       </div>
       <div className={s.athlete_actions}>
         {!!displaySetAttendance && (

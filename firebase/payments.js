@@ -22,6 +22,17 @@ export const getAthletePayments = async (athleteId) => {
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log('get_payments_err', err))
 }
+
+export const getLastAthletePayment = async (athleteId) => {
+  return await db
+    .collection('payments')
+    .where('athleteId', '==', athleteId)
+    .orderBy('date')
+    .limit(1)
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log('get_payments_err', err))
+}
 export const createOrUpdatePayment = async (payment) => {
   // search
   const { id } = payment
