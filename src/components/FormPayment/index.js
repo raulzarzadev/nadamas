@@ -8,8 +8,8 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Button from '@comps/inputs/Button'
-import { createOrUpdatePayment } from '@/firebase/payments'
-export default function FormPayment({ payment }) {
+import { createOrUpdatePayment, removePayment } from '@/firebase/payments'
+export default function FormPayment({ payment, closeModal = () => {} }) {
   const [form, setForm] = useState({ date: new Date() })
   const {
     query: { id }
@@ -43,10 +43,18 @@ export default function FormPayment({ payment }) {
     setForm({ ...form, image: url })
   }
 
-  const handleSavePayment = () => {
-    createOrUpdatePayment(form)
+  const handleSavePayment = async () => {
+    await createOrUpdatePayment(form)
       .then((res) => console.log(res))
       .catch((err) => console.log('err', err))
+    closeModal()
+  }
+  const handleDeletePayment = async (id) => {
+    console.log('id', id)
+    await removePayment(id)
+      .then((res) => console.log('res', res))
+      .catch((err) => console.log('err', err))
+    closeModal()
   }
   return (
     <div className="">
@@ -92,6 +100,13 @@ export default function FormPayment({ payment }) {
       )}
 
       <Button label="Guardar" onClick={handleSavePayment} />
+      <div className="mt-4">
+        <Button
+          label="Eliminar"
+          variant="danger"
+          onClick={() => handleDeletePayment(form?.id)}
+        />
+      </div>
     </div>
   )
 }

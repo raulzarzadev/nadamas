@@ -70,7 +70,12 @@ const _update_payment = async (payment) => {
 }
 
 const _remove_payment = async (paymentId) => {
-  return await db.collection('payments').doc(paymentId).delete()
+  return await db
+    .collection('payments')
+    .doc(paymentId)
+    .delete()
+    .then((res) => formatResponse(true, 'PAYMENT_DELETED', res))
+    .catch((err) => formatResponse(false, 'DELETE_ERROR', err))
 }
 
 const _create_payment = async (payment) => {
