@@ -64,8 +64,8 @@ export default function Navbar() {
       </div>
       <div className="hidden sm:flex w-full  justify-start items-center  px-1 ">
         <ul className="flex items-center">
-          <li >
-            <Link href='/'>saber más</Link>
+          <li>
+            <Link href="/">saber más</Link>
           </li>
         </ul>
       </div>
@@ -77,12 +77,14 @@ export default function Navbar() {
               <li className="relative bg-white w-12 h-12 rounded-full">
                 <Link href="/profile">
                   <>
-                    <Image
-                      layout="fill"
-                      objectFit="cover"
-                      className="rounded-full"
-                      src={user?.image}
-                    />
+                    {!!user?.image && (
+                      <Image
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-full"
+                        src={user?.image}
+                      />
+                    )}
                   </>
                 </Link>
               </li>

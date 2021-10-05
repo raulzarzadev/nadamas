@@ -11,8 +11,20 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState()
   const [userSchedule, setUserSchedule] = useState({})
 
+  const ENVIROMENT = process.env.NEXT_PUBLIC_ENVIROMENT
+  console.log('ENVIROMENT', ENVIROMENT)
+
   useEffect(() => {
-    if (!user) {
+    if (ENVIROMENT === 'DEV') {
+      setUser({
+        email: 'raul3arza@gmail.com',
+        id: 'osdRhDFpycZCa2e6o7QdEsDRbzw2',
+        image:
+          '',
+        joinedAt: 324234,
+        name: 'Zarza Dev'
+      })
+    } else if (!user) {
       onAuthStateChanged(setUser)
     }
   }, [])
