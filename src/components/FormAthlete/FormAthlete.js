@@ -118,7 +118,7 @@ export default function NewAthlete() {
             <div className="mx-2">Sube una foto</div>
             <UploadImage
               upladedImage={upladedImage}
-              storeRef={`avatar/${form.id}`}
+              storeRef={`avatar/${form?.id}`}
             />
           </div>
         )}
@@ -128,7 +128,7 @@ export default function NewAthlete() {
             <div className="absolute bottom-0 right-0">
               <UploadImage
                 upladedImage={upladedImage}
-                storeRef={`avatar/${form.id}`}
+                storeRef={`avatar/${form?.id}`}
               />
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function NewAthlete() {
             <div className="absolute bottom-2 right-2">
               <UploadImage
                 upladedImage={upladedImage}
-                storeRef={`avatar/${form.id}`}
+                storeRef={`avatar/${form?.id}`}
               />
             </div>
           </div>
@@ -165,9 +165,9 @@ export default function NewAthlete() {
           <div className="m-2">
             <Button
               size="sm"
-              disabled={!form.mobile}
+              disabled={!form?.mobile}
               icon
-              href={`https://wa.me/521${form.mobile}?text=${wstext}`}
+              href={`https://wa.me/521${form?.mobile}?text=${wstext}`}
             >
               <ContactIcon />
             </Button>
@@ -175,9 +175,9 @@ export default function NewAthlete() {
           <div className="m-2">
             <Button
               size="sm"
-              disabled={!form.email}
+              disabled={!form?.email}
               icon
-              href={`mailto:${form.email}?subject=Natación`}
+              href={`mailto:${form?.email}?subject=Natación`}
             >
               <EmailIcon />
             </Button>
@@ -199,7 +199,7 @@ export default function NewAthlete() {
               label={'Apelldio(s)'}
             />
             <Textarea
-              value={form.goals}
+              value={form?.goals}
               onChange={handleChange}
               name="goals"
               rows={2}
@@ -218,7 +218,7 @@ export default function NewAthlete() {
                   label="Compartir"
                   name="showBirthday"
                   labelPosition="top"
-                  checked={form.showBirthday || false}
+                  checked={form?.showBirthday || false}
                   onChange={handleChangeTaggle}
                 />{' '}
               </div>
@@ -229,7 +229,7 @@ export default function NewAthlete() {
         {/* ----------------------------------------------Tests */}
 
         <Section title={'Pruebas'}>
-          {form.id ? (
+          {form?.id ? (
             <Records athlete={form} />
           ) : (
             <Info
@@ -242,14 +242,14 @@ export default function NewAthlete() {
         {/* ----------------------------------------------Pyments */}
 
         <Section title="Cuotas">
-          <Payments athleteId={form.id} />
+          <Payments athleteId={form?.id} />
         </Section>
 
         {/* ----------------------------------------------Schedule */}
 
         <Section title={'Horario'} open>
-          {form.id ? (
-            <Schedule athleteId={form.id} athlete={form} />
+          {form?.id ? (
+            <Schedule athleteId={form?.id} athlete={form} />
           ) : (
             <Info
               fullWidth
@@ -265,7 +265,7 @@ export default function NewAthlete() {
             <div className="my-1">
               <Text
                 onChange={handleChange}
-                value={form.mobile}
+                value={form?.mobile}
                 name="mobile"
                 type="tel"
                 label="Celular"
@@ -274,7 +274,7 @@ export default function NewAthlete() {
             <div className="my-1">
               <Text
                 onChange={handleChange}
-                value={form.email}
+                value={form?.email}
                 name="email"
                 label="email"
                 label="Correo"
@@ -288,7 +288,7 @@ export default function NewAthlete() {
         <Section title={'Información médica'} open>
           <div className={s.medic_info}>
             <Autocomplete
-              value={form.blodType}
+              value={form?.blodType}
               placeholder={'Tipo de Sangre'}
               items={BLOD_TYPES}
               onChange={handleChange}
