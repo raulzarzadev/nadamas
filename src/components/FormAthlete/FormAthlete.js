@@ -28,8 +28,14 @@ import Toggle from '@comps/inputs/Toggle'
 import Section from '@comps/Section'
 import Payments from './Payments'
 
+const SAVE_BUTTON_LABEL = {
+  NEW: 'Guardar',
+  EXIST: 'Guardado',
+  DIRTY: 'Guardar'
+}
 export default function NewAthlete() {
   const { user } = useAuth()
+  const id = router?.query?.id
   const router = useRouter()
   const [updatingAthlete, setUpdatingAthlete] = useState(null)
   useEffect(() => {
@@ -41,6 +47,19 @@ export default function NewAthlete() {
       })
     }
   }, [])
+  const [formStatus, setFormStatus] = useState(null)
+  const [dirtyForm, setDirtyForm] = useState(false)
+
+  useEffect(() => {
+    if (id) {
+      setFormStatus('EXIST')
+    } else if (!id) {
+      setFormStatus('NEW')
+    }
+    if (dirtyForm) {
+      setFormStatus('DIRTY')
+    }
+  }, [id, dirtyForm])
 
   const [form, setForm] = useState({
     birth: new Date(),
@@ -48,16 +67,19 @@ export default function NewAthlete() {
   })
 
   const handleChange = (e) => {
+    setDirtyForm(true)
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
   const handleChangeTaggle = (e) => {
+    setDirtyForm(true)
     setForm({ ...form, [e.target.name]: e.target.checked })
   }
 
   const handleSubmit = async () => {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res?.type === 'ATHLETE_CREATED') {
+      setDirtyForm(flase)
       router.push(`/athletes/${res?.id}`)
     }
   }
@@ -74,13 +96,22 @@ export default function NewAthlete() {
   }
 
   const upladedImage = (url) => {
+    setDirtyForm(true)
     setForm({ ...form, avatar: url })
     updateAtlete({ ...form, avatar: url })
   }
   const wstext = ''
 
   return (
-    <div className="pt-0 pb-8 max-w-lg mx-auto">
+    <div className="relative pt-0 pb-8 max-w-lg mx-auto">
+      <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-end  ">
+        <div className=" w-40  ">
+          <Button disabled={formStatus === 'NEW'} variant="social">
+            {SAVE_BUTTON_LABEL[formStatus]}
+            <SaveIcon />
+          </Button>
+        </div>
+      </div>
       <div className="flex justify-center">
         {!form?.avatar && (
           <div className=" bottom-0 right-0 flex">
@@ -127,7 +158,7 @@ export default function NewAthlete() {
           e.preventDefault()
           handleSubmit()
         }}
-        className="relative"
+        className=""
       >
         {/* ----------------------------------------------Actions  */}
         <div className="flex w-full justify-evenly ">
@@ -154,7 +185,7 @@ export default function NewAthlete() {
         </div>
         {/* ----------------------------------------------Personal information */}
         <div className="  ">
-          <div className='p-2 sm:p-6 grid gap-2'>
+          <div className="p-2 sm:p-6 grid gap-2">
             <Text
               value={form?.name}
               onChange={handleChange}
@@ -174,24 +205,24 @@ export default function NewAthlete() {
               rows={2}
               label="¿Proposito o espectativa? (Opcional)"
             />
-          <div className="flex items-center w-full">
-            <Text
-              value={formatInputDate(form?.birth)}
-              onChange={handleChange}
-              name="birth"
-              label="Fecha de nacimiento"
-              type="date"
-            />
-            <div className="mx-2">
-              <Toggle
-                label="Compartir"
-                name="showBirthday"
-                labelPosition="top"
-                checked={form.showBirthday || false}
-                onChange={handleChangeTaggle}
-              />{' '}
+            <div className="flex items-center w-full">
+              <Text
+                value={formatInputDate(form?.birth)}
+                onChange={handleChange}
+                name="birth"
+                label="Fecha de nacimiento"
+                type="date"
+              />
+              <div className="mx-2">
+                <Toggle
+                  label="Compartir"
+                  name="showBirthday"
+                  labelPosition="top"
+                  checked={form.showBirthday || false}
+                  onChange={handleChangeTaggle}
+                />{' '}
+              </div>
             </div>
-          </div>
           </div>
         </div>
 
@@ -211,7 +242,7 @@ export default function NewAthlete() {
         {/* ----------------------------------------------Pyments */}
 
         <Section title="Cuotas">
-         <Payments athleteId={form.id}/>
+          <Payments athleteId={form.id} />
         </Section>
 
         {/* ----------------------------------------------Schedule */}
@@ -316,12 +347,6 @@ export default function NewAthlete() {
             </div>
           </div>
         </Section>
-        <div className=" w-40 mx-auto my-8">
-          <Button variant="social">
-            Guardar
-            <SaveIcon />
-          </Button>
-        </div>
       </form>
       {form?.id && (
         <div className="p-4 w-40 mx-auto mt-20 ">
