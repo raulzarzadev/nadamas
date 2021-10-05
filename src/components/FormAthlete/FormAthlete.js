@@ -154,7 +154,7 @@ export default function NewAthlete() {
         </div>
         {/* ----------------------------------------------Personal information */}
         <div className="  ">
-          <div className='p-2 sm:p-6'>
+          <div className='p-2 sm:p-6 grid gap-2'>
             <Text
               value={form?.name}
               onChange={handleChange}

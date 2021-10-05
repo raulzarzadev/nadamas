@@ -32,7 +32,7 @@ export default function SearchAthletes({
     const sorted = sortArrayObjectsByField({
       array: athletes,
       field: sortBy,
-      reverseWord: '_reverse'
+      reverseWord: '_reverse'     
     })
     setSortedAthletes(sorted)
   }, [sortBy, athletes])
