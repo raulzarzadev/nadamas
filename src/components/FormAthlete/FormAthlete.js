@@ -113,7 +113,7 @@ export default function NewAthlete() {
       >
         <div className="flex justify-center">
           {!form?.avatar && (
-            <div className=" bottom-0 right-0 flex">
+            <div className=" bottom-0 right-0 flex pt-4" >
               <div className="mx-2">Sube una foto</div>
               <UploadImage
                 upladedImage={upladedImage}
@@ -348,9 +348,9 @@ export default function NewAthlete() {
         </Section>
       </form>
       {form?.id && (
-        <div className="p-4 w-40 mx-auto mt-20 ">
+        <div className="p-4  mx-auto mt-10 ">
           <Button variant="danger" onClick={handleOpenDelete}>
-            Eliminar
+            Eliminar Atleta
           </Button>
         </div>
       )}

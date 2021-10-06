@@ -23,14 +23,11 @@ export default function AuthCard() {
         </div>
 
         <div className="flex items-center my-4 bg-gray-100 rounded-lg shadow-lg">
-          <div className="w-20">
-            <input type="checkbox" onChange={handleChange} name="privacity" />
-          </div>
           <div className="text-black text-sm ">
-            <p className="m-2">
-              Marca esta casilla si estás de acuerdo con el manejo de tu
+          {/*   <p className="m-2">
+              Marca la casilla si estás de acuerdo con el manejo de tu
               información
-            </p>
+            </p> */}
             <p className="m-2">
               Tus datos personales y los de tus atletas son y siempre seran
               completamente privados.
@@ -45,7 +42,7 @@ export default function AuthCard() {
             </p>
           </div>
         </div>
-        <div className="flex items-center my-4 bg-gray-100 rounded-lg shadow-lg">
+        {/* <div className="flex items-center my-4 bg-gray-100 rounded-lg shadow-lg">
           <div className="w-20">
             <input  defaultChecked={form?.emailing} type="checkbox" onChange={handleChange} name="emailing" />
           </div>
@@ -56,6 +53,12 @@ export default function AuthCard() {
               de nadamas
             </p>
           </div>
+        </div> */}
+        <div className="">
+          <label className="text-black">
+            <input className='mr-2' type="checkbox" onChange={handleChange} name="privacity" />
+            Acepar y continar
+          </label>
         </div>
         <span className="w-1/5 border-b dark:border-gray-400 lg:w-1/5"></span>
       </div>

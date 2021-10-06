@@ -2,7 +2,7 @@ import router from 'next/router'
 
 export default function Button({
   label = 'label',
-  type='submit',
+  type = 'submit',
   children,
   variant = 'primary',
   disabled = false,
@@ -18,7 +18,7 @@ export default function Button({
     social: 'bg-blue-500 ',
     primary: 'bg-blue-500',
     secondary: 'bg-green-500',
-    disabled: 'opacity-50 shadow-none',
+    disabled: 'opacity-50 shadow-none ',
     danger: `bg-red-600 `
   }
   const sizing = {
@@ -30,7 +30,7 @@ export default function Button({
   return (
     <button
       onClick={(e) => {
-        href ? router.push(href) : onClick ? onClick(e): type
+        href ? router.push(href) : onClick ? onClick(e) : type
       }}
       {...rest}
       disabled={disabled}

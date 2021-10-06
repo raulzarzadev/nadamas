@@ -13,6 +13,7 @@ module.exports = {
   theme: {
     extend: {}
   },
+  mode:'jit',
   variants: {
     extend: {
       display: ['group-hover'],
