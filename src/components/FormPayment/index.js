@@ -9,7 +9,12 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Button from '@comps/inputs/Button'
 import { createOrUpdatePayment, removePayment } from '@/firebase/payments'
-export default function FormPayment({ payment, closeModal = () => {} }) {
+export default function FormPayment({
+  payment,
+  paymentUpdated = () => {},
+  handleClose
+}) {
+  const defaultValue = { date: new Date() }
   const [form, setForm] = useState({ date: new Date() })
   const {
     query: { id }
@@ -45,16 +50,25 @@ export default function FormPayment({ payment, closeModal = () => {} }) {
 
   const handleSavePayment = async () => {
     await createOrUpdatePayment(form)
-      .then((res) => console.log(res))
+      .then((res) => {
+        paymentUpdated()
+        setTimeout(() => {
+          handleClose()
+        }, 300)
+        console.log(res)
+      })
       .catch((err) => console.log('err', err))
-    closeModal()
   }
   const handleDeletePayment = async (id) => {
-    console.log('id', id)
     await removePayment(id)
-      .then((res) => console.log('res', res))
+      .then((res) => {
+        console.log('res', res)
+        paymentUpdated()
+        setTimeout(() => {
+          handleClose()
+        }, 300)
+      })
       .catch((err) => console.log('err', err))
-    closeModal()
   }
   return (
     <div className="">

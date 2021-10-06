@@ -15,10 +15,8 @@ export default function Payments({ athleteId }) {
   }, [athleteId])
 
   const [openNewPayment, setOpenNewPayment] = useState(false)
-  
+
   const updatePayments = () => {
-    console.log('updating')
-    
     const paymentDateSort = (a, b) => {
       if (a.date > b.date) return -1
       if (a.date < b.date) return 1
@@ -30,9 +28,6 @@ export default function Payments({ athleteId }) {
       })
       .catch((err) => console.log('err', err))
   }
-  console.log('payments', payments)
-  
-
   return (
     <div className="p-2 flex max-w-full overflow-auto">
       <div className="m-2">
@@ -45,7 +40,7 @@ export default function Payments({ athleteId }) {
         <NewPaymentModal
           handleOpen={() => setOpenNewPayment(!openNewPayment)}
           open={openNewPayment}
-          updatePayments={updatePayments}
+          paymentUpdated={updatePayments}
         />
       </div>
       {payments?.map((payment, i) => (
@@ -65,7 +60,6 @@ const Payment = ({ payment, updatePayments = () => {} }) => {
   const [open, setOpen] = useState(false)
   const handleOpen = () => {
     setOpen(!open)
-    updatePayments()
   }
   return (
     <div>
@@ -87,22 +81,27 @@ const Payment = ({ payment, updatePayments = () => {} }) => {
         payment={payment}
         handleOpen={handleOpen}
         open={open}
+        paymentUpdated={updatePayments}
       />
     </div>
   )
 }
 
-const DetailsPaymentModal = ({ handleOpen, open, payment }) => {
+const DetailsPaymentModal = ({ handleOpen, open, payment, paymentUpdated }) => {
   return (
     <Modal handleOpen={handleOpen} open={open} title={'Detalles de pago'}>
-      <FormPayment payment={payment} closeModal={handleOpen} />
+      <FormPayment
+        handleClose={handleOpen}
+        payment={payment}
+        paymentUpdated={paymentUpdated}
+      />
     </Modal>
   )
 }
-const NewPaymentModal = ({ handleOpen, open }) => {
+const NewPaymentModal = ({ handleOpen, open, paymentUpdated }) => {
   return (
     <Modal handleOpen={handleOpen} open={open} title={'Nuevo Pago'}>
-      <FormPayment closeModal={handleOpen} />
+      <FormPayment handleClose={handleOpen} paymentUpdated={paymentUpdated} />
     </Modal>
   )
 }
