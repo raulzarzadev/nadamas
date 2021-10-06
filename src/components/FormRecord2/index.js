@@ -10,6 +10,7 @@ import PickerTime from '@comps/inputs/PickerTime'
 import SearchAthletes from '@comps/inputs/SearchAthletes'
 import Text from '@comps/inputs/Text'
 import Autocomplete from '@comps/inputs/TextAutocomplete'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 const swimmingStyles = [
@@ -59,6 +60,9 @@ const distances = [
 ]
 export default function FormRecord({ searchAthlete }) {
   const [form, setForm] = useState({ date: new Date() })
+  const router = useRouter()
+  const athleteId = router?.query?.search
+
   const handleChangeDistance = ({ target }) => {
     setForm({ ...form, distance: target.name })
   }
@@ -69,6 +73,7 @@ export default function FormRecord({ searchAthlete }) {
     if (athlete) {
       setForm({
         ...form,
+        athleteId,
         athlete: {
           id: athlete.id,
           name: `${athlete?.name} ${athlete?.lastName}`
@@ -82,12 +87,14 @@ export default function FormRecord({ searchAthlete }) {
     setForm({ ...form, date: target.value })
   }
   const handleAddRecord = async (newRecord) => {
-    await createOrUpdateRecord({
+    console.log('newRecord', newRecord)
+
+    /* await createOrUpdateRecord({
       ...newRecord,
       athleteId: newRecord.athlete.id
     })
       .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err))
+      .catch((err) => console.log('err', err)) */
   }
   const handleSetRecord = (record) => {
     setForm({ ...form, record })
@@ -97,10 +104,16 @@ export default function FormRecord({ searchAthlete }) {
     !!form.athlete &&
     !!form.distance &&
     form.record != '00:00.000'
-  console.log('isValid', isValid)
 
   return (
     <div className="max-w-sm mx-auto pt-10 p-1">
+      {searchAthlete && (
+        <SearchAthletes
+          athleteSelected={athleteId}
+          setAthlete={handleChangeAthlete}
+          AthleteRowResponse={AthleteSimpleRow}
+        />
+      )}
       <div>
         <Text
           onChange={handleChangeDate}
@@ -180,19 +193,7 @@ export default function FormRecord({ searchAthlete }) {
           </label>
         ))}
       </div>
-      {searchAthlete && (
-        <SearchAthletes
-          setAthlete={handleChangeAthlete}
-          AthleteRowResponse={AthleteSimpleRow}
-        />
-      )}
       <div className="sm:flex text-center w-full justify-evenly py-2 px-1 items-center">
-        {form?.athlete && (
-          <div className="">
-            Atleta
-            <div className="text-2xl border p-1">{form.athlete.name}</div>
-          </div>
-        )}
         <div className="my-2">
           Tiempo
           <PickerRecord handleChange={handleSetRecord} />
@@ -216,4 +217,3 @@ export default function FormRecord({ searchAthlete }) {
     </div>
   )
 }
-
