@@ -79,7 +79,7 @@ export default function NewAthlete() {
   const handleSubmit = async () => {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res?.type === 'ATHLETE_CREATED') {
-      setDirtyForm(flase)
+      setDirtyForm(false)
       router.push(`/athletes/${res?.id}`)
     }
   }
@@ -104,55 +104,6 @@ export default function NewAthlete() {
 
   return (
     <div className="relative pt-0 pb-8 max-w-lg mx-auto">
-      <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-end  ">
-        <div className=" w-40  ">
-          <Button disabled={formStatus === 'NEW'} variant="social">
-            {SAVE_BUTTON_LABEL[formStatus]}
-            <SaveIcon />
-          </Button>
-        </div>
-      </div>
-      <div className="flex justify-center">
-        {!form?.avatar && (
-          <div className=" bottom-0 right-0 flex">
-            <div className="mx-2">Sube una foto</div>
-            <UploadImage
-              upladedImage={upladedImage}
-              storeRef={`avatar/${form?.id}`}
-            />
-          </div>
-        )}
-        {form?.avatar && (
-          <div className=" hidden sm:block relative">
-            <Avatar upload id={form.id} image={form?.avatar} />
-            <div className="absolute bottom-0 right-0">
-              <UploadImage
-                upladedImage={upladedImage}
-                storeRef={`avatar/${form?.id}`}
-              />
-            </div>
-          </div>
-        )}
-        {form?.avatar && (
-          <div className="w-full h-28 relative sm:hidden">
-            <Image src={form?.avatar} layout="fill" objectFit="cover" />
-            <div className="absolute bottom-2 right-2">
-              <UploadImage
-                upladedImage={upladedImage}
-                storeRef={`avatar/${form?.id}`}
-              />
-            </div>
-          </div>
-        )}
-        {/*             {form?.id && (
-              <div className="absolute bottom-0 left- ">
-                <UploadImage
-                  upladedImage={upladedImage}
-                  storeRef={`avatar/${form.id}`}
-                />
-              </div>
-            )} */}
-      </div>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -160,6 +111,55 @@ export default function NewAthlete() {
         }}
         className=""
       >
+        <div className="flex justify-center">
+          {!form?.avatar && (
+            <div className=" bottom-0 right-0 flex">
+              <div className="mx-2">Sube una foto</div>
+              <UploadImage
+                upladedImage={upladedImage}
+                storeRef={`avatar/${form?.id}`}
+              />
+            </div>
+          )}
+          {form?.avatar && (
+            <div className=" hidden sm:block relative">
+              <Avatar upload id={form.id} image={form?.avatar} />
+              <div className="absolute bottom-0 right-0">
+                <UploadImage
+                  upladedImage={upladedImage}
+                  storeRef={`avatar/${form?.id}`}
+                />
+              </div>
+            </div>
+          )}
+          {form?.avatar && (
+            <div className="w-full h-28 relative sm:hidden">
+              <Image src={form?.avatar} layout="fill" objectFit="cover" />
+              <div className="absolute bottom-2 right-2">
+                <UploadImage
+                  upladedImage={upladedImage}
+                  storeRef={`avatar/${form?.id}`}
+                />
+              </div>
+            </div>
+          )}
+          {/*             {form?.id && (
+              <div className="absolute bottom-0 left- ">
+                <UploadImage
+                  upladedImage={upladedImage}
+                  storeRef={`avatar/${form.id}`}
+                />
+              </div>
+            )} */}
+        </div>
+        <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-end  ">
+          <div className=" w-40  ">
+            <Button disabled={formStatus === 'NEW'} variant="social">
+              {SAVE_BUTTON_LABEL[formStatus]}
+              <SaveIcon />
+            </Button>
+          </div>
+        </div>
         {/* ----------------------------------------------Actions  */}
         <div className="flex w-full justify-evenly ">
           <div className="m-2">
