@@ -100,24 +100,4 @@ export const updateAttendanceList = async ({
   }
 }
 
-const _create_attendanceList = async (attendanceList) => {
-  return await db
-    .collection('attendance')
-    .add({
-      ...attendanceList,
-      ...datesToFirebaseFromat(attendanceList)
-    })
-    .then((res) => {
-      return { ok: true, type: 'ATTENDANCE_LIST_CREATED', res }
-    })
-    .catch((err) => console.log('err', err))
-}
 
-const _update_attendanceList = async ({ ref, attendance }) => {
-  return await db
-    .collection('attendance')
-    .doc(ref)
-    .update({ attendance })
-    .then((res) => console.log('res', res))
-    .catch((err) => console.log('err', err))
-}

@@ -4,6 +4,7 @@ import { updateUser } from '@/firebase/client'
 import CoachSchedule from './CoachSchedule'
 import Section from '../Section'
 import Text from '@comps/inputs/Text'
+import AttendanceMonthList from '@comps/AttendanceMonthList'
 
 export default function CoachProfile() {
   const { user } = useAuth()
@@ -47,8 +48,8 @@ export default function CoachProfile() {
         <Section title="Horario">
           <CoachSchedule />
         </Section>
-        <Section title="Grupos">
-         
+        <Section title="Grupos">Lista de asistencia
+        <AttendanceMonthList />
         </Section>
         <div>
           {/*  estadisiticas de alumnos */}
