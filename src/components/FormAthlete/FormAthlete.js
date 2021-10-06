@@ -152,16 +152,7 @@ export default function NewAthlete() {
               </div>
             )} */}
         </div>
-        <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-end  ">
-          <div className=" w-40  ">
-            <Button disabled={formStatus === 'NEW'} variant="social">
-              {SAVE_BUTTON_LABEL[formStatus]}
-              <SaveIcon />
-            </Button>
-          </div>
-        </div>
-        {/* ----------------------------------------------Actions  */}
-        <div className="flex w-full justify-evenly ">
+        <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-between  ">
           <div className="m-2">
             <Button
               size="sm"
@@ -182,7 +173,15 @@ export default function NewAthlete() {
               <EmailIcon />
             </Button>
           </div>
+          <div className=" w-40  ">
+            <Button disabled={formStatus === 'NEW'} variant="social">
+              {SAVE_BUTTON_LABEL[formStatus]}
+              <SaveIcon />
+            </Button>
+          </div>
         </div>
+        {/* ----------------------------------------------Actions  */}
+        <div className="flex w-full justify-evenly "></div>
         {/* ----------------------------------------------Personal information */}
         <div className="  ">
           <div className="p-2 sm:p-6 grid gap-2">
