@@ -10,6 +10,7 @@ import {
   normalizeDoc,
   normalizeDocs
 } from './firebase-helpers'
+import { lastDayOfMonth, startOfMonth } from 'date-fns'
 
 export const getAttendanceDate = async (date, schedule, dispatch) => {
   const attendanceDate = simpleDate(date)
@@ -32,11 +33,22 @@ export const getAttendanceDate = async (date, schedule, dispatch) => {
     .catch((err) => console.log('attendance_err', err))  */
 }
 
+export const getMonthAttendance = (date = new Date(), dispatch) => {
+  return db
+    .collection('attendance')
+    .orderBy('date')
+    .startAfter(startOfMonth(date))
+    .endAt(lastDayOfMonth(date))
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log('err', err))
+}
+
 export const updateAttendanceList = async ({
   date = new Date(),
   schedule,
-  notes=null,
-  athleteId=null
+  notes = null,
+  athleteId = null
 }) => {
   const attendanceDate = simpleDate(date)
 
@@ -83,7 +95,7 @@ export const updateAttendanceList = async ({
     // how ever if notes is pased update notes
     if (notes) {
       attendanceList
-        .update({ notes})
+        .update({ notes })
         .then((res) => console.log('res', res))
         .catch((err) => console.log('err', err))
     }
@@ -99,5 +111,3 @@ export const updateAttendanceList = async ({
       .catch((err) => console.log('err', err))
   }
 }
-
-

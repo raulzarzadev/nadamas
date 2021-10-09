@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { updateUser } from '@/firebase/client'
 import CoachSchedule from './CoachSchedule'
 import Section from '../Section'
 import Text from '@comps/inputs/Text'
@@ -48,7 +47,7 @@ export default function CoachProfile() {
         <Section title="Horario">
           <CoachSchedule />
         </Section>
-        <Section title="Grupos">Lista de asistencia
+        <Section title="Grupos">
         <AttendanceMonthList />
         </Section>
         <div>

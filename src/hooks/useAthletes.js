@@ -40,10 +40,5 @@ export default function useAthletes() {
         !!athlete.schedule[day] && athlete.schedule?.[day]?.[0] === schedule
     )
   }
-
-  
-
-  // console.log('wq', getAthletesBySchedule({day:1, schedule:'19:00'}))
-
   return { athletes, athletesWithSchedule }
 }
