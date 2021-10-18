@@ -87,14 +87,12 @@ export default function FormRecord({ searchAthlete }) {
     setForm({ ...form, date: target.value })
   }
   const handleAddRecord = async (newRecord) => {
-    console.log('newRecord', newRecord)
-
-    /* await createOrUpdateRecord({
+    await createOrUpdateRecord({
       ...newRecord,
       athleteId: newRecord.athlete.id
     })
       .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err)) */
+      .catch((err) => console.log('err', err))
   }
   const handleSetRecord = (record) => {
     setForm({ ...form, record })
@@ -198,7 +196,6 @@ export default function FormRecord({ searchAthlete }) {
           Tiempo
           <PickerRecord handleChange={handleSetRecord} />
         </div>
-        {console.log(form)}
         <Button
           disabled={!isValid}
           variant="primary"

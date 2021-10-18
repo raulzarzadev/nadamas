@@ -2,7 +2,6 @@ import { getAthletes } from '@/firebase/athletes'
 import { useAuth } from '@/src/context/AuthContext'
 import { CloseBackIcon, CloseIcon } from '@/src/utils/Icons'
 import { sortArrayObjectsByField } from '@/src/utils/Sorts'
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Text from '../Text'
 
@@ -12,8 +11,7 @@ export default function SearchAthletes({
   athleteSelected = null,
   label = 'Buscar Atleta'
 }) {
-  const router = useRouter()
-  const { query } = router
+ 
   const [athletes, setAthletes] = useState([])
 
   const { user } = useAuth()
@@ -76,7 +74,7 @@ export default function SearchAthletes({
 
   useEffect(() => {
     if (athleteSelected) {
-      const athlete = athletes.find(({ id }) => id === athleteSelected)
+      const athlete = athletes?.find(({ id }) => id === athleteSelected)
       handleSelectAthlete(athlete)
       // setSearch(athlete)
     }

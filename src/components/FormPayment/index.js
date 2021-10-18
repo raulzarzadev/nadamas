@@ -14,8 +14,8 @@ export default function FormPayment({
   paymentUpdated = () => {},
   handleClose
 }) {
-  const defaultValue = { date: new Date() }
-  const [form, setForm] = useState({ date: new Date() })
+  const defaultFormValue = { date: new Date() }
+  const [form, setForm] = useState(defaultFormValue)
   const {
     query: { id }
   } = useRouter()
@@ -52,17 +52,16 @@ export default function FormPayment({
     await createOrUpdatePayment(form)
       .then((res) => {
         paymentUpdated()
+        setForm(defaultFormValue)
         setTimeout(() => {
           handleClose()
         }, 300)
-        console.log(res)
       })
       .catch((err) => console.log('err', err))
   }
   const handleDeletePayment = async (id) => {
     await removePayment(id)
       .then((res) => {
-        console.log('res', res)
         paymentUpdated()
         setTimeout(() => {
           handleClose()
