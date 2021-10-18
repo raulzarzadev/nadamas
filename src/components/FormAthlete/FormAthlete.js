@@ -113,7 +113,7 @@ export default function NewAthlete() {
       >
         <div className="flex justify-center">
           {!form?.avatar && (
-            <div className=" bottom-0 right-0 flex pt-4" >
+            <div className=" bottom-0 right-0 flex pt-4">
               <div className="mx-2">Sube una foto</div>
               <UploadImage
                 upladedImage={upladedImage}
@@ -152,8 +152,14 @@ export default function NewAthlete() {
               </div>
             )} */}
         </div>
+
         <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-between  ">
-          <div className="m-2">
+          {
+            /* .-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*, */
+            //   STICKY BAR
+            /* .-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'rz */
+          }
+          <div className="m-2 flex items-center">
             <Button
               size="sm"
               disabled={!form?.mobile}
@@ -163,7 +169,7 @@ export default function NewAthlete() {
               <ContactIcon />
             </Button>
           </div>
-          <div className="m-2">
+          <div className="m-2 flex items-center">
             <Button
               size="sm"
               disabled={!form?.email}
@@ -173,8 +179,12 @@ export default function NewAthlete() {
               <EmailIcon />
             </Button>
           </div>
-          <div className=" w-40  ">
-            <Button disabled={formStatus === 'NEW'} variant="social">
+          <div className="m-2 flex items-center ">
+            <Button
+              disabled={formStatus === 'NEW'}
+              size="sm"
+              variant="secondary"
+            >
               {SAVE_BUTTON_LABEL[formStatus]}
               <SaveIcon />
             </Button>

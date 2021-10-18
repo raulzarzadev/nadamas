@@ -15,7 +15,7 @@ export default function AttendanceMonthList() {
   const [schedules, setSchedules] = useState([])
 
   const { user } = useAuth()
-  useEffect(() => {
+  /* useEffect(() => {
     if (user) {
       getAthleteSchedule(user.id)
         .then((res) => {
@@ -32,19 +32,19 @@ export default function AttendanceMonthList() {
     }
 
     // setSchedules()
-  }, [user])
+  }, [user]) */
 
   const [monthAttendance, setMonthAtthendace] = useState([])
   const [attendanceDate, setAttendanceDate] = useState(new Date())
 
-  useEffect(() => {
+  /* useEffect(() => {
     if (!!schedules.length) {
       getMonthAttendance(attendanceDate).then(setMonthAtthendace)
     }
-  }, [])
+  }, []) */
   // schedules, attendanceDate
   const { athletesWithSchedule } = useAthletes()
-
+/* 
   useEffect(() => {
     let auxArr = []
     monthAttendance.forEach(({ attendance, schedule, date }) => {
@@ -75,18 +75,18 @@ export default function AttendanceMonthList() {
       })
       setMonthAttendanceList(formatedAttendanceList)
     }
-  }, [monthAttendance, athletesWithSchedule])
+  }, [monthAttendance, athletesWithSchedule]) */
 
   const [monthAttendanceList, setMonthAttendanceList] = useState([])
 
   const [monthDays, setMonthDays] = useState([])
-  useState(() => {
+/*   useState(() => {
     let auxArr = []
     for (let i = 0; i < getDaysInMonth(attendanceDate); i++) {
       auxArr.push(i + 1)
     }
     setMonthDays(auxArr)
-  }, [attendanceDate])
+  }, [attendanceDate]) */
 
   const handleAddMonth = () => {
     setAttendanceDate(addMonths(attendanceDate, 1))

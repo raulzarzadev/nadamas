@@ -4,7 +4,7 @@ export default function Button({
   label = 'label',
   type = 'submit',
   children,
-  variant = 'primary',
+  variant = 'primary', //| 'social' | 'secondary' | 'disabled' | 'danger'
   disabled = false,
   iconOnly = false,
   icon = false,

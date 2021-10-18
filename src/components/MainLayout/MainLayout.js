@@ -1,11 +1,23 @@
 import { useAuth } from '@/src/context/AuthContext'
 import { Head } from '@comps/Head'
+import { useEffect, useState } from 'react'
 import BottomNav from './BottomNav'
 import Footer from './Footer'
+import LINKS_ATHLETE from './LINKS_ATHLETE'
+import LINKS_COACH from './LINKS_COACH'
 import Navbar from './Navbar'
 
 export default function MainLayout({ children }) {
   const { user } = useAuth()
+  const [links, setLinks] = useState(undefined)
+  useEffect(() => {
+    if (user?.coach) {
+      setLinks(LINKS_COACH)
+    } else {
+      setLinks(LINKS_ATHLETE)
+    }
+  }, [user])
+  console.log(links);
   return (
     <>
       <Head>
@@ -16,10 +28,10 @@ export default function MainLayout({ children }) {
         ></meta>
       </Head>
       <div>
-        <Navbar />
+        <Navbar links={links?.nav} />
         <main className="bg-gray-700 min-h-screen ">{children}</main>
         <div className="sm:hidden sticky bottom-0">
-          <BottomNav user={user} />
+          <BottomNav user={user} links={links?.bottom} />
         </div>
         <div className="hidden sm:block bottom-0">
           <Footer />

@@ -10,7 +10,7 @@ import Button from '@comps/inputs/Button'
 import Link from '@comps/inputs/Link'
 import { useRouter } from 'next/router'
 
-export default function BottomNav() {
+export default function BottomNav({ links = [] }) {
   const router = useRouter()
   const { user } = useAuth()
   const home = router.pathname === '/'
@@ -28,16 +28,19 @@ export default function BottomNav() {
                 <BackIcon />
               </div>
             </button>
-            <Link href="/groups">
-              <div className="p-3 rounded-lg mx-2 shadow-lg hover:shadow-inner">
-                <GroupsIcon />
-              </div>
-            </Link>
+            {links?.map(({ href, icon, label }) => (
+              <Link key={label} href={href}>
+                <div className="p-3 rounded-lg mx-2 shadow-lg hover:shadow-inner">
+                  {icon}
+                </div>
+              </Link>
+            ))}
+            {/*
             <Link href="/athletes">
               <div className="p-3 rounded-lg mx-2  shadow-lg hover:shadow-inner">
                 <PersonIcon />
               </div>
-            </Link>
+            </Link> */}
           </>
         ) : (
           <Link href="/signin">

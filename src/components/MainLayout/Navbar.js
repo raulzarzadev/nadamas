@@ -3,43 +3,9 @@ import { DownIcon } from '@/src/utils/Icons'
 import Link from '@comps/inputs/Link'
 import Image from 'next/image'
 import { useEffect } from 'react'
-export default function Navbar() {
+export default function Navbar({ links = [] }) {
   const { user } = useAuth()
-  useEffect(() => {}, [user])
 
-  const avatarLinks = [
-    {
-      href: '/profile',
-      label: 'Mi perfil'
-    },
-    {
-      href: '/groups',
-      label: 'Mis grupos'
-    },
-    {
-      href: '/athletes',
-      label: 'Atletas'
-    },
-    {
-      href: '/athletes/new',
-      label: 'Nuevo atleta'
-    },
-    ,
-    {
-      href: '/records',
-      label: 'Registros'
-    },
-    {
-      href: '/signout',
-      label: 'Salir'
-    }
-  ]
-  const addIconLinks = [
-    {
-      href: '/add-activity',
-      label: 'Agregar actividad'
-    }
-  ]
   return (
     <div className="bg-blue-400  pb-0 flex justify-between">
       <div className="flex w-1/6 justify-center items-center p-1">
@@ -72,7 +38,7 @@ export default function Navbar() {
       <ul className=" flex justify-end items-center cursor-pointer">
         {user && (
           <NavbarSubMenu
-            listItems={avatarLinks}
+            listItems={links}
             listComponent={
               <li className="relative bg-white w-12 h-12 rounded-full">
                 <Link href="/profile">
@@ -106,7 +72,14 @@ export default function Navbar() {
   )
 }
 const TodgleProfile = () => {
-  return <div className="text-black text-center">Entrenador</div>
+  const {
+    user: { coach }
+  } = useAuth()
+  return (
+    <div className="text-black text-center">
+      {coach ? 'Entrenador' : 'Nadador'}
+    </div>
+  )
 }
 
 const NavbarSubMenu = ({

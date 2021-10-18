@@ -4,8 +4,9 @@ import CoachSchedule from './CoachSchedule'
 import Section from '../Section'
 import Text from '@comps/inputs/Text'
 import AttendanceMonthList from '@comps/AttendanceMonthList'
+import AthleteSchedule from './AthleteSchedule'
 
-export default function CoachProfile() {
+export default function UserProfile() {
   const { user } = useAuth()
   if (!user) return 'Cargando ...'
 
@@ -15,12 +16,18 @@ export default function CoachProfile() {
     setForm({ ...form, [name]: value })
   }
 
+  const [isCoach, setIsCoach] = useState(false)
+
   useEffect(() => {
     if (user) {
       setForm(user)
+      if (user.coach) {
+        setIsCoach(true)
+      } else {
+        setIsCoach(false)
+      }
     }
   }, [user])
-  /* De esto */
 
   return (
     <div>
@@ -44,12 +51,8 @@ export default function CoachProfile() {
         </div>
       </div>
       <div className="max-w-md mx-auto">
-        <Section title="Horario">
-          <CoachSchedule />
-        </Section>
-        <Section title="Grupos">
-        <AttendanceMonthList />
-        </Section>
+        {isCoach ? <CoachSecctions /> : <AthleteSecctions />}
+
         <div>
           {/*  estadisiticas de alumnos */}
           {/* Cuantos alumnos hay */}
@@ -59,3 +62,22 @@ export default function CoachProfile() {
     </div>
   )
 }
+
+const CoachSecctions = () => (
+  <div>
+    <Section title="Horario">
+      <CoachSchedule />
+    </Section>
+    <Section title="Grupos">
+      <AttendanceMonthList />
+    </Section>
+  </div>
+)
+
+const AthleteSecctions = () => (
+  <div>
+    <Section title="Horario" open>
+      <AthleteSchedule />
+    </Section>
+  </div>
+)

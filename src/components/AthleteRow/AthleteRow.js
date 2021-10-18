@@ -55,11 +55,11 @@ export default function AthleteRow({
   }, [date])
 
   const [lastPay, setLastPay] = useState(null)
-  useEffect(() => {
+  /* useEffect(() => {
     getLastAthletePayment(id)
       .then((res) => console.log('res', res))
       .catch((err) => console.log('err', err))
-  }, [])
+  }, []) */
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
