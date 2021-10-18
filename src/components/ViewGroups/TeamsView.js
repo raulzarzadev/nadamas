@@ -15,9 +15,9 @@ export default function TeamsView() {
     setTeams([
       {
         id: '1',
+        coach: `${user?.name}`,
         userId: user?.id,
         title: 'Trilocos BCS',
-        coach: `${user?.name}`,
         athletes: [
           {
             active: true,

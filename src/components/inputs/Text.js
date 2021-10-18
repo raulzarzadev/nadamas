@@ -1,41 +1,58 @@
 import { CloseBackIcon } from '@/src/utils/Icons'
+import React from 'react'
 import s from './styles.module.css'
 
-export default function Text({
-  label,
-  name,
-  placeholder,
-  value,
-  onChange,
-  error,
-  type = 'text',
-  children,
-  Icon,
-  onClickIcon,
-  ...rest
-}) {
-  return (
-    <span className={s.input_label}>
-      {label && value && `${label} :`}
-      <div className={s.icon_container}>
-        <input
-          type={type}
-          className={s.text_input}
-          placeholder={placeholder || label}
-          name={name}
-          value={value || ''}
-          onChange={onChange}
-          {...rest}
-        >
-          {children}
-        </input>
-        {Icon && (
-          <button className={s.icon} onClick={onClickIcon}>
-            <Icon />
-          </button>
-        )}
-      </div>
-      <em className={s.input_error}>{error}</em>
-    </span>
-  )
-}
+const Text = React.forwardRef(
+  (
+    {
+      label,
+      name,
+      placeholder,
+      value,
+      onChange,
+      error,
+      type = 'text',
+      children,
+      Icon,
+      autoComplete,
+      onClickIcon,
+      ...rest
+    },
+    ref
+  ) => {
+    return (
+      <span className={s.input_label}>
+        {label && value && `${label} :`}
+        <div className={s.icon_container}>
+          <input
+            autoComplete={autoComplete}
+            ref={ref}
+            type={type}
+            className={s.text_input}
+            placeholder={placeholder || label}
+            name={name}
+            value={value || ''}
+            onChange={onChange}
+            {...rest}
+          >
+            {children}
+          </input>
+          {Icon && (
+            <button
+              className={s.icon}
+              onClick={(e) => {
+                e.preventDefault()
+                onClickIcon()
+              }}
+            >
+              <Icon />
+            </button>
+          )}
+        </div>
+        <em className={s.input_error}>{error}</em>
+      </span>
+    )
+  }
+)
+
+export default Text

@@ -7,6 +7,9 @@ export const ROUTES = {
     index: '/teams',
     new: function () {
       return `${this.index}/new`
+    },
+    details: function(id){
+      return`${this.index}/${id}`
     }
   }
 }

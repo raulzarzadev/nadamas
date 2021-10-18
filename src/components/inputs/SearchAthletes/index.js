@@ -9,7 +9,8 @@ import Text from '../Text'
 export default function SearchAthletes({
   setAthlete = () => {},
   AthleteRowResponse = <div>Row</div>,
-  athleteSelected = null
+  athleteSelected = null,
+  label = 'Buscar Atleta'
 }) {
   const router = useRouter()
   const { query } = router
@@ -32,7 +33,7 @@ export default function SearchAthletes({
     const sorted = sortArrayObjectsByField({
       array: athletes,
       field: sortBy,
-      reverseWord: '_reverse'     
+      reverseWord: '_reverse'
     })
     setSortedAthletes(sorted)
   }, [sortBy, athletes])
@@ -92,14 +93,15 @@ export default function SearchAthletes({
       <div className="w-full mx-auto my-4">
         <div className="flex items-baseline">
           <Text
+            autoComplete='off'
             name="search"
             value={search}
-            label="Buscar Atleta"
+            label={label}
             onChange={handleSearch}
             error={!!!search && 'Busca por nombre o apellido'}
             Icon={CloseBackIcon}
             onClickIcon={() => {
-              setAthlete(null)
+              // setAthlete(null)
               setSearch('')
             }}
           />

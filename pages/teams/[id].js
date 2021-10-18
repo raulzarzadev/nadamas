@@ -1,7 +1,9 @@
-export default function TeamDetails() {
+import TeamDetails from '@comps/Teams/TeamDetails'
+
+export default function Details() {
   return (
-    <div className=''>
-      Detalles del equipo
+    <div className="">
+      <TeamDetails />
     </div>
   )
 }
