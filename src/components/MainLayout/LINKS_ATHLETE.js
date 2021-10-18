@@ -8,11 +8,6 @@ export default {
       icon: ''
     },
     {
-      href: '/records',
-      label: 'Registros',
-      icon: ''
-    },
-    {
       href: '/signout',
       label: 'Salir',
       icon: ''

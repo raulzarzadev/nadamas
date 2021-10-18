@@ -23,7 +23,6 @@ export default function PickerRecord({ handleChange = () => {}, value = {} }) {
     const ms = form.ms < 1 ? '000' : form.ms < 9 ? `0${form.ms}` : form.ms
     handleChange(`${mins}:${secs}.${ms}`)
   }, [form])
-  console.log(form)
 
   return (
     <div className="  flex justify-center">

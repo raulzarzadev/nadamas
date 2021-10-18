@@ -17,7 +17,6 @@ export default function MainLayout({ children }) {
       setLinks(LINKS_ATHLETE)
     }
   }, [user])
-  console.log(links);
   return (
     <>
       <Head>
