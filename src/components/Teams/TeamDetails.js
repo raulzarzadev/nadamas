@@ -1,19 +1,26 @@
 import { getTeam } from '@/firebase/teams'
+import { ROUTES } from '@/pages/ROUTES'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import FormTeam from './FormTeam'
 
 export default function TeamDetails() {
-  const [team, setTeam] = useState({})
+  const [team, setTeam] = useState(null)
   const {
-    query: { id: teamId }
+    query: { id: teamId },
+    replace
   } = useRouter()
-  console.log(teamId)
   useEffect(() => {
     if (teamId) {
-      getTeam(teamId).then(setTeam)
+      getTeam(teamId)
+        .then((res) => {
+          if (res === null) replace(ROUTES.teams.index)
+          setTeam(res)
+        })
+        .catch((err) => console.log('err', err))
     }
   }, [teamId])
+
   return (
     <div className="">
       <FormTeam team={team} />

@@ -29,7 +29,8 @@ export default function AthleteRow({
   displaySetAttendance = false,
   date,
   assist = false,
-  schedule
+  schedule,
+  showLastPay
 }) {
   const router = useRouter()
   const { user } = useAuth()
@@ -81,7 +82,7 @@ export default function AthleteRow({
         <span>{`${name?.split(' ')[0]} ${
           lastName?.split(' ')[0] || ''
         } `}</span>
-        <span className="text-xs">last pay {lastPay}</span>
+        {showLastPay && <span className="text-xs">last pay {lastPay}</span>}
       </div>
       <div className={s.athlete_actions}>
         {!!displaySetAttendance && (
@@ -108,25 +109,29 @@ export default function AthleteRow({
           <Button
             size="sm"
             disabled={!emerMobile}
-            icon
             onClick={handleOpenEmergencyCall}
+            iconOnly
           >
-            <EmergencyIcon className="text-red-500" />
+            <EmergencyIcon size="1rem" className="text-red-500" />
           </Button>
         </div>
         <div className="m-1" /* className={s.athlete_action} */>
           <Button
             size="sm"
             disabled={!mobile}
-            icon
             href={`https://wa.me/521${mobile}?text=${wstext}`}
+            iconOnly
           >
-            <ContactIcon />
+            <ContactIcon size="1rem" />
           </Button>
         </div>
         <div className="m-1" /* className={s.athlete_action} */>
-          <Button size="sm" icon onClick={() => router.push(`/athletes/${id}`)}>
-            <EditIcon />
+          <Button
+            size="sm"
+            iconOnly
+            onClick={() => router.push(`/athletes/${id}`)}
+          >
+            <EditIcon size="1rem" />
           </Button>
         </div>
       </div>

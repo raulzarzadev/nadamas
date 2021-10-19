@@ -3,13 +3,25 @@ export default function Routes() {
 }
 
 export const ROUTES = {
+  groups: {
+    index: '/groups'
+  },
+  athletes: {
+    index: '/athletes',
+    new: function () {
+      return `${this.index}/new`
+    },
+    details: function (id) {
+      return `${this.index}/${id}`
+    }
+  },
   teams: {
     index: '/teams',
     new: function () {
       return `${this.index}/new`
     },
-    details: function(id){
-      return`${this.index}/${id}`
+    details: function (id) {
+      return `${this.index}/${id}`
     }
   }
 }

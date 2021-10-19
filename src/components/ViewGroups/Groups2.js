@@ -8,6 +8,7 @@ import AthleteRow from '@comps/AthleteRow'
 import Button from '@comps/inputs/Button'
 import Toggle from '@comps/inputs/Toggle'
 import DayNotesModal from '@comps/Modals/DayNotesModal'
+import SelectGroupsView from '@comps/SelectGroupsView'
 import { addDays, format, getDay, subDays } from 'date-fns'
 import { useEffect, useState } from 'react'
 import TeamsView from './TeamsView'
@@ -38,75 +39,48 @@ export default function Grups() {
   return (
     <div className="relative">
       <div className=" sticky  top-0 z-10 bg-gray-700 shadow-sm">
-        <div className="py-2 flex justify-evenly">
-          <div className=" w-1/2 text-center px-2">
-            <button
-              className={`${
-                groupsView === 'schedule' && 'bg-green-600'
-              } w-full `}
-              onClick={() => handleSetView('schedule')}
+        <SelectGroupsView />
+
+        <div className="flex py-2 justify-center items-center">
+          <div className="w-1/4 flex justify-center">
+            <Button
+              iconOnly
+              size="xs"
+              variant="secondary"
+              onClick={handleSubDay}
             >
-              Horarios
-            </button>
+              <BackIcon size="2rem" />
+            </Button>
           </div>
-          <div className=" w-1/2 text-center px-2">
-            <button
-              className={`${groupsView === 'teams' && 'bg-green-600'} w-full `}
-              onClick={() => handleSetView('teams')}
+          <h3>{format(date, 'EEEE dd MMM')}</h3>
+          <div className="w-1/4 flex justify-center">
+            <Button
+              iconOnly
+              size="xs"
+              variant="secondary"
+              onClick={handleAddDay}
             >
-              Equipos
-            </button>
+              <ForwardIcon size="2rem" />
+            </Button>
           </div>
         </div>
-        {groupsView === 'schedule' && (
-          <>
-            <div className="flex py-2 justify-center items-center">
-              <div className="w-1/4 flex justify-center">
-                <Button
-                  iconOnly
-                  size="xs"
-                  variant="secondary"
-                  onClick={handleSubDay}
-                >
-                  <BackIcon size="2rem" />
-                </Button>
-              </div>
-              <h3>{format(date, 'EEEE dd MMM')}</h3>
-              <div className="w-1/4 flex justify-center">
-                <Button
-                  iconOnly
-                  size="xs"
-                  variant="secondary"
-                  onClick={handleAddDay}
-                >
-                  <ForwardIcon size="2rem" />
-                </Button>
-              </div>
-            </div>
-            <div className="py-2">
-              <Toggle
-                label="Mostrar notas y asistencia "
-                onChange={({ target }) => setShowAttendance(target.checked)}
-              />
-            </div>
-          </>
-        )}
+        <div className="py-2">
+          <Toggle
+            label="Mostrar notas y asistencia "
+            onChange={({ target }) => setShowAttendance(target.checked)}
+          />
+        </div>
       </div>
-      {groupsView === 'teams' && (
-        <TeamsView date={date} showAttendance={showAttendance} />
-      )}
-      {groupsView === 'schedule' && (
-        <div className="max-w-lg mx-auto">
-          {coachSchedule?.[getDay(date)]?.map((schedule) => (
-            <AthleteList
-              key={schedule}
-              schedule={schedule}
-              date={date}
-              showAttendance={showAttendance}
-            />
-          ))}
-        </div>
-      )}
+      <div className="max-w-lg mx-auto">
+        {coachSchedule?.[getDay(date)]?.map((schedule) => (
+          <AthleteList
+            key={schedule}
+            schedule={schedule}
+            date={date}
+            showAttendance={showAttendance}
+          />
+        ))}
+      </div>
     </div>
   )
 }

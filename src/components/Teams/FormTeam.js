@@ -9,10 +9,20 @@ import { useForm } from 'react-hook-form'
 import { getAthlete } from '@/firebase/athletes'
 import { ROUTES } from '@/pages/ROUTES'
 import { useRouter } from 'next/router'
+import { AddIcon, EditIcon, TrashBinIcon } from '@/src/utils/Icons'
+import Modal from '@comps/Modals/Modal'
+import AthleteRow from '@comps/AthleteRow'
 
-export default function FormTeam({ team = undefined }) {
+export default function FormTeam({ team = null }) {
   const { user } = useAuth()
   const router = useRouter()
+
+  const [form, setForm] = useState({
+    athletes: []
+  })
+
+  const teamAlreadyExist = !!form?.id
+
   useEffect(() => {
     if (team) {
       setForm(team)
@@ -27,11 +37,8 @@ export default function FormTeam({ team = undefined }) {
       })
     }
   }, [user, team])
-  const [form, setForm] = useState({
-    athletes: []
-  })
 
-  const handleClickAthlete = (athlete) => {
+  const handleAddAthlete = (athlete) => {
     setForm({ ...form, athletes: [...form?.athletes, athlete.id] })
   }
   const handleChange = ({ target }) => {
@@ -42,7 +49,6 @@ export default function FormTeam({ team = undefined }) {
     updateTeam({ ...form }).then(({ id }) => {
       router.push(ROUTES.teams.details(id))
     })
-    //
   }
 
   const [openDelete, setOpenDelete] = useState(false)
@@ -52,7 +58,7 @@ export default function FormTeam({ team = undefined }) {
   const handleDelete = (athleteId) => {
     const newAthleteList = form.athletes.filter((id) => id !== athleteId)
     setForm({ ...form, athletes: newAthleteList })
-    updateTeam({ ...form, athletes: newAthleteList })
+    // updateTeam({ ...form, athletes: newAthleteList })
   }
 
   const [athleteList, setAthleteList] = useState([])
@@ -66,10 +72,13 @@ export default function FormTeam({ team = undefined }) {
     })
   }, [form.athletes])
 
-  
+  const [openSearchModal, setOpenSearchModal] = useState(false)
+  const handleOpenSearch = () => {
+    setOpenSearchModal(!openSearchModal)
+  }
 
   return (
-    <div className="relative">
+    <div className="relative max-w-lg mx-auto">
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -78,10 +87,15 @@ export default function FormTeam({ team = undefined }) {
       >
         <div className="sticky top-0 flex p-2 justify-end bg-gray-700">
           <div className="w-1/2">
-            <Button>Guardar</Button>
+            <Button size="sm ">
+              {' '}
+              {teamAlreadyExist ? 'Guardar cambios' : 'Guardar'}
+            </Button>
           </div>
         </div>
-        <h3 className="text-center p-2 text-xl">Nuevo equipo</h3>
+        <h3 className="text-center p-2 text-xl">
+          {teamAlreadyExist ? 'Equipo' : 'Nuevo equipo'}
+        </h3>
         <div className="p-2">
           <Text
             value={form?.title}
@@ -90,27 +104,51 @@ export default function FormTeam({ team = undefined }) {
             label="Nombre del equipo"
           />
         </div>
-        <div className="p-2">
-          <SearchAthletes
-            AthleteRowResponse={AthleteResponse}
-            setAthlete={handleClickAthlete}
-            label="Agregar atleta"
-          />
-        </div>
       </form>
-      <div className="p-2">
-        {athleteList?.map(({ id, name, lastName }, i) => (
-          <div key={i} className="px-2 flex">
-            <div className="mx-2" onClick={handleOpenDelete}>
-              x
-            </div>
-            <div className="mx-2">{name}</div>
+      <div className="flex justify-center items-center">
+        <h4 className="p-2 text-center font-bold">Integrantes </h4>
+        <Button iconOnly size="xs" onClick={handleOpenSearch}>
+          <AddIcon />
+        </Button>
+      </div>
+
+      <Modal
+        open={openSearchModal}
+        handleOpen={handleOpenSearch}
+        title="Nuevo integrante"
+      >
+        <SearchAthletes
+          AthleteRowResponse={AthleteResponse}
+          setAthlete={(athlete) => {
+            handleAddAthlete(athlete)
+            setTimeout(() => {
+              handleOpenSearch()
+            }, 400)
+          }}
+          label="Agregar atleta"
+        />
+      </Modal>
+      <div className="p-2 max-w-md mx-auto">
+        {athleteList?.map((athlete, i) => (
+          <div key={athlete.id} className="flex items-center w-full">
+            <Button
+              variant="danger"
+              className="ml-2 py-1"
+              onClick={handleOpenDelete}
+              iconOnly
+              size="xs"
+            >
+              <TrashBinIcon size="1rem" />
+            </Button>
+            <AthleteRow athlete={athlete} />
             <DeleteModal
+              text="Descartar atleta del equipo."
+              title="Descartar atleta"
               open={openDelete}
               handleOpen={handleOpenDelete}
-              name={`${name} ${lastName}`}
+              name={`${athlete?.name} ${athlete?.lastName}`}
               handleDelete={() => {
-                handleDelete(id)
+                handleDelete(athlete.id)
                 handleOpenDelete()
               }}
             />
@@ -129,3 +167,19 @@ const AthleteResponse = ({ athlete, onClick }) => {
     >{`${athlete.name} ${athlete.lastName}`}</div>
   )
 }
+/* 
+<div key={i} className="px-2 flex items-center my-3">
+            <div className="grid grid-flow-col gap-4">
+              <Button
+                className="ml-2 py-1"
+                onClick={() => handleRedirectAthlete(id)}
+                iconOnly
+                size="xs"
+              >
+                <EditIcon size="1rem" />
+              </Button>
+             
+            </div>
+            <div className="mx-2">{name}</div>
+            
+          </div> */

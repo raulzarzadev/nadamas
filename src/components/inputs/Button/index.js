@@ -7,7 +7,6 @@ export default function Button({
   variant = 'primary', //| 'social' | 'secondary' | 'disabled' | 'danger'
   disabled = false,
   iconOnly = false,
-  icon = false,
   href,
   onClick,
   size = 'md',

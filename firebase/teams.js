@@ -20,7 +20,7 @@ export const getTeams = async (userId, coachId) => {
   return await db
     .collection('teams')
     .where('userId', '==', userId)
-    .where('coach', '==', coachId)
+    .where('coach.id', '==', coachId)
     .get()
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log(err))
