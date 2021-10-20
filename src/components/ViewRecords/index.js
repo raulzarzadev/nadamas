@@ -1,9 +1,9 @@
 import { getAthletes } from '@/firebase/athletes'
-import { createOrUpdateRecord, getRecords } from '@/firebase/records'
+import { createOrUpdateRecord, getUserRecords } from '@/firebase/records'
 import { useAuth } from '@/src/context/AuthContext'
 import { AddIcon } from '@/src/utils/Icons'
 import DisplayRecords from '@comps/FormAthlete/Records/DisplayRecords'
-import FormRecord from '@comps/FormAthlete/Records/FormRecord'
+import FormRecord from '@comps/FormRecord2'
 import Button from '@comps/inputs/Button'
 import Modal from '@comps/Modals/Modal'
 import { useRouter } from 'next/router'
@@ -24,16 +24,18 @@ export default function ViewRecords() {
   }
 
   useEffect(() => {
-    getRecords()
-      .then((res) => {
-        const formatRecordsWithAthletes = res.map((record) => {
-          const athlete = athletes.find(({ id }) => record.athleteId === id)
-          return { ...record, athlete }
+    if (user) {
+      getUserRecords(user?.id)
+        .then((res) => {
+          const formatRecordsWithAthletes = res.map((record) => {
+            const athlete = athletes.find(({ id }) => record.athleteId === id)
+            return { ...record, athlete }
+          })
+          setRecords(formatRecordsWithAthletes)
         })
-        setRecords(formatRecordsWithAthletes)
-      })
-      .catch((err) => console.log('err', err))
-  }, [athletes])
+        .catch((err) => console.log('err', err))
+    }
+  }, [athletes, user])
 
   useEffect(() => {
     if (user) {
@@ -48,6 +50,9 @@ export default function ViewRecords() {
         .catch((err) => console.log('err', err))
     }
   }, [user])
+
+  console.log('records', records)
+
   return (
     <div className=" p-4">
       <div>

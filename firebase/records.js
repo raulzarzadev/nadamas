@@ -14,6 +14,17 @@ export const getRecords = async () => {
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log('err', err))
 }
+
+export const getUserRecords = async (userId) => {
+  return await db
+    .collection('records')
+    .where('userId', '==', userId)
+    .orderBy('date')
+    .limit(20)
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log('err', err))
+}
 export const getAthleteRecords = async (athleteId) => {
   return await db
     .collection('records')

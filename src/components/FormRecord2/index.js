@@ -2,7 +2,7 @@ import { getAthletes } from '@/firebase/athletes'
 import { createOrUpdateRecord } from '@/firebase/records'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
-import { SaveIcon } from '@/src/utils/Icons'
+import { SaveIcon, TrashBinIcon } from '@/src/utils/Icons'
 import AthleteSimpleRow from '@comps/AthleteRow/AthleteSimpleRow'
 import PickerRecord from '@comps/FormAthlete/Records/PickerRecord'
 import Button from '@comps/inputs/Button'
@@ -58,7 +58,13 @@ const distances = [
     id: '800'
   }
 ]
-export default function FormRecord({ searchAthlete }) {
+export default function FormRecord({ searchAthlete, record }) {
+  useEffect(() => {
+    if (record) {
+      setForm(record)
+    }
+  }, [record])
+
   const [form, setForm] = useState({ date: new Date() })
   const router = useRouter()
   const athleteId = router?.query?.search
@@ -194,18 +200,32 @@ export default function FormRecord({ searchAthlete }) {
       <div className="sm:flex text-center w-full justify-evenly py-2 px-1 items-center">
         <div className="my-2">
           Tiempo
-          <PickerRecord handleChange={handleSetRecord} />
+          {console.log('form.record', form)}
+          <PickerRecord handleChange={handleSetRecord} value={form?.record} />
         </div>
-        <Button
-          disabled={!isValid}
-          variant="primary"
-          onClick={(e) => {
-            e.preventDefault()
-            handleAddRecord(form)
-          }}
-        >
-          Guardar <SaveIcon />
-        </Button>
+        <div className="grid gap-2">
+          <Button
+            disabled={!isValid}
+            variant="primary"
+            onClick={(e) => {
+              e.preventDefault()
+              handleAddRecord(form)
+            }}
+          >
+            Guardar <SaveIcon />
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            fullWidth={false}
+            onClick={(e) => {
+              e.preventDefault()
+              handleAddRecord(form)
+            }}
+          >
+            Eliminar <TrashBinIcon />
+          </Button>
+        </div>
       </div>
       {/*  <PickerRecord /> */}
       {/*  <div>

@@ -6,7 +6,6 @@ import Modal from '@comps/Modals/Modal'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 import DisplayRecords from './DisplayRecords'
-import FormRecord from './FormRecord'
 
 export default function Records({ athlete: { id } }) {
   useEffect(() => {

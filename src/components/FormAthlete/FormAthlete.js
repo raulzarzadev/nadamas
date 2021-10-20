@@ -5,8 +5,6 @@ import { useRouter } from 'next/router'
 import { formatInputDate } from '../../utils/Dates'
 import {
   SaveIcon,
-  ForwardIcon,
-  DownIcon,
   ContactIcon,
   EmailIcon
 } from '../../utils/Icons'
