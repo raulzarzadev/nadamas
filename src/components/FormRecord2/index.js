@@ -10,6 +10,7 @@ import PickerTime from '@comps/inputs/PickerTime'
 import SearchAthletes from '@comps/inputs/SearchAthletes'
 import Text from '@comps/inputs/Text'
 import Autocomplete from '@comps/inputs/TextAutocomplete'
+import DeleteModal from '@comps/Modals/DeleteModal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
@@ -100,11 +101,14 @@ export default function FormRecord({
   const handleChangeDate = ({ target }) => {
     setForm({ ...form, date: target.value })
   }
+  console.log(`form`, form)
   const [saving, setSaving] = useState(false)
+
   const handleRemoveRecord = (id) => {
     removeRecord(id)
       .then((res) => {
-        callback()
+        console.log(`res`, res)
+        router.back()
       })
       .catch((err) => console.log(`err`, err))
   }
@@ -126,6 +130,11 @@ export default function FormRecord({
     !!form?.athlete &&
     !!form?.distance &&
     form?.record != '00:00.00'
+
+  const [openDelete, setOpenDelete] = useState(false)
+  const handleOpenDelete = () => {
+    setOpenDelete(!openDelete)
+  }
 
   // console.log(`form`, form)
 
@@ -158,7 +167,7 @@ export default function FormRecord({
               <SelectBox
                 label={label}
                 name={id}
-                onChange={handleChangeDistance}
+                onChange={handleChangeStyle}
                 checked={form?.style === id}
               />
             </div>
@@ -203,12 +212,19 @@ export default function FormRecord({
             fullWidth={false}
             onClick={(e) => {
               e.preventDefault()
-              handleRemoveRecord(form?.id)
+              handleOpenDelete()
             }}
           >
             Eliminar <TrashBinIcon />
           </Button>
         </div>
+        <DeleteModal
+          title="Eliminar"
+          text="¿Eliminar esta marca?"
+          open={openDelete}
+          handleOpen={handleOpenDelete}
+          handleDelete={() => handleRemoveRecord(form?.id)}
+        />
       </div>
     </div>
   )
@@ -239,7 +255,7 @@ const SelectBox = ({ label, name, onChange, checked }) => (
       onChange={onChange}
       className="absolute opacity-0 h-0 w-0 "
       // className={`${s.check_input} ${disabled && style[disabled]}`}
-      name={label}
+      name={name}
       type="checkbox"
     />
     <div className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full ">
