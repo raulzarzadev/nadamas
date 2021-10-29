@@ -9,13 +9,15 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Button from '@comps/inputs/Button'
 import { createOrUpdatePayment, removePayment } from '@/firebase/payments'
+import { getAthlete } from '@/firebase/athletes'
 export default function FormPayment({
   payment,
   paymentUpdated = () => {},
-  handleClose
+  handleClose,
+  showSearchAthlete = false
 }) {
   const defaultFormValue = { date: new Date() }
-  const [form, setForm] = useState(defaultFormValue)
+  const [form, setForm] = useState(payment)
   const {
     query: { id }
   } = useRouter()
@@ -28,6 +30,22 @@ export default function FormPayment({
       setForm(payment)
     }
   }, [payment])
+
+  useEffect(() => {
+    if (id) {
+      getAthlete(id).then((athlete) => {
+        setForm({
+          ...form,
+          athleteId: athlete?.id,
+          athlete: {
+            id: athlete?.id,
+            name: `${athlete?.name} ${athlete?.lastName}`,
+            email: athlete?.email || null
+          }
+        })
+      })
+    }
+  }, [id])
 
   const handleSetAthlete = (athlete) => {
     setForm({
@@ -62,6 +80,7 @@ export default function FormPayment({
   const handleDeletePayment = async (id) => {
     await removePayment(id)
       .then((res) => {
+        console.log(`res`, res)
         paymentUpdated()
         setTimeout(() => {
           handleClose()
@@ -71,16 +90,18 @@ export default function FormPayment({
   }
   return (
     <div className="">
-      <SearchAthletes
-        athleteSelected={id}
-        AthleteRowResponse={AthleteSimpleRow}
-        setAthlete={handleSetAthlete}
-      />
+      {showSearchAthlete && (
+        <SearchAthletes
+          athleteSelected={id}
+          AthleteRowResponse={AthleteSimpleRow}
+          setAthlete={handleSetAthlete}
+        />
+      )}
       <Text
         onChange={handleChange}
         name="date"
         type="date"
-        value={formatInputDate(form.date)}
+        value={formatInputDate(form?.date)}
         label="Fecha"
       />
       <CurrencyInput

@@ -88,6 +88,7 @@ const Payment = ({ payment, updatePayments = () => {} }) => {
 }
 
 const DetailsPaymentModal = ({ handleOpen, open, payment, paymentUpdated }) => {
+  console.log(`payment`, payment)
   return (
     <Modal handleOpen={handleOpen} open={open} title={'Detalles de pago'}>
       <FormPayment

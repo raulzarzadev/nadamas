@@ -39,7 +39,7 @@ export default function PickerRecord({
     const secs = formatNumberInput(seconds)
     const mins = formatNumberInput(minutes)
     const mili = formatNumberInput(ms)
-    const res = `${mins}:${secs}:${mili}`
+    const res = `${mins}:${secs}.${mili}`
     return res
   }
 

@@ -7,6 +7,7 @@ import { BackIcon, ForwardIcon } from '@/src/utils/Icons'
 import AthleteRow from '@comps/AthleteRow'
 import Button from '@comps/inputs/Button'
 import Toggle from '@comps/inputs/Toggle'
+import Loading from '@comps/Loading'
 import DayNotesModal from '@comps/Modals/DayNotesModal'
 import SelectGroupsView from '@comps/SelectGroupsView'
 import { addDays, format, getDay, subDays } from 'date-fns'
@@ -131,7 +132,7 @@ const AthleteList = ({ schedule, date, showAttendance }) => {
             athltes?.length ? athltes.length : ''
           })`}</span>
         </span>
-        {athltes === undefined && 'Cargado...'}
+        {athltes === undefined && <Loading />}
         {athltes?.length === 0 && 'Sin alumnos'}
       </div>
       {athltes?.map((athlete) => (
