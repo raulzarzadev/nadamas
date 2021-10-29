@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 
+const formatNumberInput = (value) => {
+  const num = parseInt(value)
+  if (!num) return '00'
+  return value < 1 ? '00' : value < 10 ? `0${value}` : `${value}`
+}
+
 export default function PickerRecord({
-  handleChange = () => {},
-  value = null
+  value = null,
+  setValue = (fieldName = '', value) => {},
+  name = 'record'
 }) {
   const formatValue = (value) => {
     if (typeof value === 'string') {
@@ -11,89 +18,83 @@ export default function PickerRecord({
       const seconds = auxArr[1]
       const ms = auxArr[2]
 
-      return { minutes, seconds, ms }
+      return {
+        minutes: parseInt(minutes),
+        seconds: parseInt(seconds),
+        ms: parseInt(ms)
+      }
     } else {
-      return { minutes: '00', seconds: '00', ms: '000' }
+      return { minutes: '00', seconds: '00', ms: '00' }
     }
   }
-  const [form, setForm] = useState({ minutes: '00', seconds: '00', ms: '000' })
+
+  const [form, setForm] = useState({ minutes: null, seconds: null, ms: null })
 
   const _handleChange = ({ target: { name, value } }) => {
+    console.log(`form[name]`, form[name])
     setForm({ ...form, [name]: value })
   }
 
+  const transformRecord = ({ minutes = 0, seconds = 0, ms = 0 }) => {
+    const secs = formatNumberInput(seconds)
+    const mins = formatNumberInput(minutes)
+    const mili = formatNumberInput(ms)
+    const res = `${mins}:${secs}:${mili}`
+    return res
+  }
+
   useEffect(() => {
-    const secs = !!form.seconds
-      ? '00'
-      : form.seconds < 9
-      ? `0${form.seconds}`
-      : form.seconds
-
-    const mins = !!form.minutes
-      ? '00'
-      : form.minutes < 9
-      ? `0${form.minutes}`
-      : form.minutes
-
-    const ms = form.ms < 1 ? '000' : form.ms < 9 ? `0${form.ms}` : form.ms
-   
-    // handleChange(`${mins}:${secs}.${ms}`)
+    transformRecord({ ...form })
+    setValue(name, transformRecord({ ...form }))
   }, [form])
 
   useEffect(() => {
     if (value) {
       setForm(formatValue(value))
     }
-  }, [])
+  }, [value])
+
+  //console.log(`form`, form)
 
   return (
     <div className="  flex justify-center">
-      <label className="flex flex-col w-14 items-center">
-        Min
-        <input
-          min={0}
-          max={100}
-          className="w-full p-2 bg-transparent text-center text-2xl"
-          value={form?.minutes}
-          onChange={_handleChange}
-          name="minutes"
-          placeholder="00"
-          type="number"
-          pattern="[0-9]*"
-          inputMode="numeric"
-        />
-      </label>
-
-      <label className="flex flex-col w-14 items-center">
-        Seg
-        <input
-          min={0}
-          max={60}
-          className="w-full p-2 bg-transparent text-center text-2xl"
-          value={form?.seconds}
-          onChange={_handleChange}
-          name="seconds"
-          placeholder="00"
-          type="number"
-          pattern="[0-9]*"
-          inputMode="numeric"
-        />
-      </label>
-      <label className="flex flex-col w-16 items-center">
-        Ms
-        <input
-          min={0}
-          max={100}
-          className="w-full p-2 bg-transparent text-center text-2xl max-w-xs min-w-min"
-          value={form?.ms}
-          onChange={_handleChange}
-          name="ms"
-          placeholder="000"
-          type="number"
-          pattern="[0-9]*"
-          inputMode="numeric"
-        />
-      </label>
+      <InputNumber
+        name="minutes"
+        label="Mins"
+        onChange={_handleChange}
+        value={form.minutes}
+      />
+      <InputNumber
+        name="seconds"
+        label="Segs"
+        onChange={_handleChange}
+        value={form.seconds}
+      />
+      <InputNumber
+        name="ms"
+        label="Ms"
+        onChange={_handleChange}
+        value={form.ms}
+      />
     </div>
   )
 }
+
+const InputNumber = ({ label, onChange, value, name }) => (
+  <label className="flex flex-col w-16 items-center justify-center text-center m-1 ">
+    {label}
+    <input
+      min={0}
+      max={60}
+      className="w-full bg-transparent text-center text-xl  "
+      // value={formatNumberInput(value)}
+      onChange={onChange}
+      name={name}
+      // defaultValue={formatNumberInput(value)}
+      placeholder={formatNumberInput(value)}
+      type="number"
+      pattern="[0-9]*"
+      inputMode="numeric"
+    />
+  </label>
+)

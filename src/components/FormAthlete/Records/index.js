@@ -14,9 +14,11 @@ import DisplayRecords from './DisplayRecords'
 
 export default function Records({ athlete: { id } }) {
   useEffect(() => {
-    getAthleteRecords(id)
-      .then(setRecords)
-      .catch((err) => console.log('err', err))
+    if (id) {
+      getAthleteRecords(id)
+        .then(setRecords)
+        .catch((err) => console.log('err', err))
+    }
   }, [id])
 
   const [records, setRecords] = useState([])
@@ -40,8 +42,8 @@ export default function Records({ athlete: { id } }) {
           </Button>
         </div>
 
-        {!!records.length && <Info fullWidth text="Aun no hay pruebas" />}
-        {records.sort(sortByDate).map((record) => (
+        {!records.length && <Info fullWidth text="Aun no hay pruebas" />}
+        {records?.sort(sortByDate)?.map((record) => (
           <RecordRow key={record.id} record={record} />
         ))}
       </div>

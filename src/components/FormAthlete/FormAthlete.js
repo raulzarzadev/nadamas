@@ -3,11 +3,7 @@ import Button from '@comps/inputs/Button'
 
 import { useRouter } from 'next/router'
 import { formatInputDate } from '../../utils/Dates'
-import {
-  SaveIcon,
-  ContactIcon,
-  EmailIcon
-} from '../../utils/Icons'
+import { SaveIcon, ContactIcon, EmailIcon } from '../../utils/Icons'
 import Avatar from '../Avatar'
 import DeleteModal from '../Modals/DeleteModal'
 import { useAuth } from '../../context/AuthContext'
@@ -33,9 +29,14 @@ const SAVE_BUTTON_LABEL = {
 }
 export default function NewAthlete() {
   const { user } = useAuth()
-  const id = router?.query?.id
   const router = useRouter()
   const [updatingAthlete, setUpdatingAthlete] = useState(null)
+
+  const [alreadyExist, setAlreadyExist] = useState(false)
+  const { id } = router?.query
+  useEffect(() => {
+    if (id) setAlreadyExist(true)
+  }, [id])
   useEffect(() => {
     const { id } = router?.query
     if (id) {
@@ -49,15 +50,15 @@ export default function NewAthlete() {
   const [dirtyForm, setDirtyForm] = useState(false)
 
   useEffect(() => {
-    if (id) {
+    if (alreadyExist) {
       setFormStatus('EXIST')
-    } else if (!id) {
+    } else if (!alreadyExist) {
       setFormStatus('NEW')
     }
     if (dirtyForm) {
       setFormStatus('DIRTY')
     }
-  }, [id, dirtyForm])
+  }, [alreadyExist, dirtyForm])
 
   const [form, setForm] = useState({
     birth: new Date(),
@@ -99,6 +100,8 @@ export default function NewAthlete() {
     updateAtlete({ ...form, avatar: url })
   }
   const wstext = ''
+
+  console.log(`alreadyExist`, alreadyExist)
 
   return (
     <div className="relative pt-0 pb-8 max-w-lg mx-auto">
@@ -234,40 +237,29 @@ export default function NewAthlete() {
         </div>
 
         {/* ----------------------------------------------Tests */}
-
-        <Section title={'Pruebas'} indent={false}>
-          {form?.id ? (
+        {alreadyExist && (
+          <Section title={'Pruebas'} indent={false}>
             <Records athlete={form} />
-          ) : (
-            <Info
-              fullWidth
-              text="Primero guarda. Debes guardar antes de crear registros"
-            />
-          )}
-        </Section>
+          </Section>
+        )}
 
         {/* ----------------------------------------------Pyments */}
-
-        <Section title="Cuotas">
-          <Payments athleteId={form?.id} />
-        </Section>
+        {alreadyExist && (
+          <Section title="Cuotas" indent={false}>
+            <Payments athleteId={form?.id} />
+          </Section>
+        )}
 
         {/* ----------------------------------------------Schedule */}
-
-        <Section title={'Horario'} open>
-          {form?.id ? (
+        {alreadyExist && (
+          <Section title={'Horario'} open indent={false}>
             <Schedule athleteId={form?.id} athlete={form} />
-          ) : (
-            <Info
-              fullWidth
-              text="Primero guarda. Debes guardar antes de asignar un horario"
-            />
-          )}
-        </Section>
+          </Section>
+        )}
 
         {/* ----------------------------------------------Contact */}
 
-        <Section title={'Contacto'} open>
+        <Section title={'Contacto'} open indent={false}>
           <div className={`flex flex-col p-1`}>
             <div className="my-1">
               <Text
@@ -292,7 +284,7 @@ export default function NewAthlete() {
 
         {/* ----------------------------------------------Medic information */}
 
-        <Section title={'Información médica'} open>
+        <Section title={'Información médica'} open indent={false}>
           <div className={s.medic_info}>
             <Autocomplete
               value={form?.blodType}
@@ -325,7 +317,7 @@ export default function NewAthlete() {
 
         {/* ----------------------------------------------Emergency contact */}
 
-        <Section title={'Contacto de emergencia'} open>
+        <Section title={'Contacto de emergencia'} open indent={false}>
           <div className={`flex flex-col  p-1`}>
             <div className="my-1">
               <Text

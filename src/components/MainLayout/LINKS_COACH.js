@@ -17,17 +17,17 @@ export default {
       label: 'Atletas',
       icon: ''
     },
-    {
+    /* {
       href: '/athletes/new',
       label: 'Nuevo atleta',
       icon: ''
-    },
+    }, */
     ,
-    {
+   /*  {
       href: '/records',
       label: 'Registros',
       icon: ''
-    },
+    }, */
     {
       href: '/signout',
       label: 'Salir',

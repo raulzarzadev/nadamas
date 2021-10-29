@@ -73,8 +73,6 @@ export default function FormRecord({
     }
   }, [record])
 
-  console.log(`form record`, record)
-
   const [form, setForm] = useState({ date: new Date() })
   const router = useRouter()
   const athleteId = router?.query?.search
@@ -104,7 +102,6 @@ export default function FormRecord({
   }
   const [saving, setSaving] = useState(false)
   const handleRemoveRecord = (id) => {
-    console.log(`id`, id)
     removeRecord(id)
       .then((res) => {
         callback()
@@ -121,17 +118,22 @@ export default function FormRecord({
       .catch((err) => console.log('err', err))
     setSaving(false)
   }
-  const handleSetRecord = (record) => {
-    setForm({ ...form, record })
+  const handleSetRecord = (field, value) => {
+    setForm({ ...form, [field]: value })
   }
   const isValid =
-    !!form.style &&
-    !!form.athlete &&
-    !!form.distance &&
-    form.record != '00:00.000'
+    !!form?.style &&
+    !!form?.athlete &&
+    !!form?.distance &&
+    form?.record != '00:00.00'
+
+  // console.log(`form`, form)
 
   return (
-    <div className="max-w-sm mx-auto pt-10 p-1">
+    <div className="max-w-sm mx-auto pt-3 p-1">
+      <h3 className="font-bold text-2xl text-center my-3">
+        Detalles de prueba
+      </h3>
       {searchAthlete && (
         <SearchAthletes
           athleteSelected={athleteId}
@@ -139,7 +141,7 @@ export default function FormRecord({
           AthleteRowResponse={AthleteSimpleRow}
         />
       )}
-      <div>
+      <div className="my-6">
         <Text
           onChange={handleChangeDate}
           name="date"
@@ -148,80 +150,40 @@ export default function FormRecord({
           label="Fecha"
         />
       </div>
-      Estilo
-      <div className="flex w-full justify-evenly py-2 px-1">
-        {swimmingStyles.map((style) => (
-          <label
-            key={style.id}
-            className={` 
-            group
-            flex
-            relative
-            h-9
-            w-10
-            justify-center
-            items-center
-            m-2
-            cursor-pointer
-            shadow-lg 
-            hover:shadow-sm
-            ${false && `opacity-40 shadow-none cursor- cursor-not-allowed`}
-            `}
-          >
-            <input
-              checked={form.style === style.id}
-              //disabled={disabled}
-              onChange={handleChangeStyle}
-              className="absolute opacity-0 h-0 w-0 "
-              // className={`${s.check_input} ${disabled && style[disabled]}`}
-              name={style.id}
-              type="checkbox"
-            />
-            <span className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full h">
-              {style.label}
-            </span>
-          </label>
-        ))}
+      <div>
+        <h5 className="font-bold">Estilo</h5>
+        <div className="flex w-full justify-evenly flex-wrap">
+          {swimmingStyles.map(({ label, id }) => (
+            <div className="w-1/5 p-2">
+              <SelectBox
+                label={label}
+                name={id}
+                onChange={handleChangeDistance}
+                checked={form?.style === id}
+              />
+            </div>
+          ))}
+        </div>
       </div>
-      Distacia
-      <div className="flex w-full justify-evenly py-2 px-1">
-        {distances.map((distance) => (
-          <label
-            key={distance.id}
-            className={` 
-            group
-            flex
-            relative
-            h-9
-            w-14
-            justify-center
-            items-center
-            m-2
-            cursor-pointer
-            shadow-lg 
-            hover:shadow-sm
-            ${false && `opacity-40 shadow-none cursor- cursor-not-allowed`}
-            `}
-          >
-            <input
-              checked={form.distance === distance.label}
-              //disabled={disabled}
-              onChange={handleChangeDistance}
-              className="absolute opacity-0 h-0 w-0 "
-              // className={`${s.check_input} ${disabled && style[disabled]}`}
-              name={distance.label}
-              type="checkbox"
-            />
-            <span className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full h">
-              {distance.label}
-            </span>
-          </label>
-        ))}
+      <div>
+        <h5 className="font-bold">Distancia</h5>
+        <div className="flex w-full flex-wrap ">
+          {distances.map(({ label, id }) => (
+            <div className="w-1/5 p-2">
+              <SelectBox
+                label={label}
+                name={id}
+                onChange={handleChangeDistance}
+                checked={form?.distance === id}
+              />
+            </div>
+          ))}
+        </div>
       </div>
       <div className="sm:flex text-center w-full justify-evenly py-2 px-1 items-center">
         <div className="my-2">
           Tiempo
-          <PickerRecord handleChange={handleSetRecord} value={form?.record} />
+          <PickerRecord setValue={handleSetRecord} value={form?.record} />
         </div>
         <div className="grid gap-2">
           <Button
@@ -248,10 +210,40 @@ export default function FormRecord({
           </Button>
         </div>
       </div>
-      {/*  <PickerRecord /> */}
-      {/*  <div>
-        <Autocomplete items={athletes} />
-      </div> */}
     </div>
   )
 }
+
+const SelectBox = ({ label, name, onChange, checked }) => (
+  <label
+    key={name}
+    className={` 
+            group
+            flex
+            relative
+            h-full
+            w-full
+            justify-center
+            items-center
+            cursor-pointer
+            shadow-lg 
+            hover:shadow-sm
+            bg-gray-600
+            rounded-lg
+            ${false && `opacity-40 shadow-none cursor- cursor-not-allowed`}
+            `}
+  >
+    <input
+      checked={checked}
+      //disabled={disabled}
+      onChange={onChange}
+      className="absolute opacity-0 h-0 w-0 "
+      // className={`${s.check_input} ${disabled && style[disabled]}`}
+      name={label}
+      type="checkbox"
+    />
+    <div className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full ">
+      {label}
+    </div>
+  </label>
+)

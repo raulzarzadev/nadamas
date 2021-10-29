@@ -14,7 +14,6 @@ export default function ViewRecord() {
         .catch((err) => console.log(`err`, err))
     }
   }, [id])
-  console.log(`record`, id)
   return (
     <div className="">
       <FormRecord record={record} />

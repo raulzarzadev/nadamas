@@ -1,9 +1,5 @@
-import ViewRecords from '@comps/ViewRecords'
+// import ViewRecords from '@comps/ViewRecords'
 
 export default function Records() {
-  return (
-    <div className="">
-      <ViewRecords />
-    </div>
-  )
+  return <div className="">{/*  <ViewRecords /> */}</div>
 }
