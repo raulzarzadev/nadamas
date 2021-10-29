@@ -63,29 +63,41 @@ export default function PickerRecord({
         label="Mins"
         onChange={_handleChange}
         value={form.minutes}
+        max={99}
       />
       <InputNumber
         name="seconds"
         label="Segs"
         onChange={_handleChange}
         value={form.seconds}
+        max={60}
       />
       <InputNumber
         name="ms"
         label="Ms"
         onChange={_handleChange}
         value={form.ms}
+        max={99}
       />
     </div>
   )
 }
 
-const InputNumber = ({ label, onChange, value, name }) => (
+const InputNumber = ({
+  label,
+  onChange,
+  value,
+  name,
+  max,
+  min = 0,
+  step = 1
+}) => (
   <label className="flex flex-col w-16 items-center justify-center text-center m-1 ">
     {label}
     <input
-      min={0}
-      max={60}
+      min={min}
+      max={max}
+      step={step}
       className="w-full bg-transparent text-center text-xl  "
       // value={formatNumberInput(value)}
       onChange={onChange}
