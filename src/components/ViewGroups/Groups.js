@@ -11,6 +11,7 @@ import { getAttendanceDate } from '@/firebase/attendance'
 import Toggle from '@comps/inputs/Toggle'
 import DayNotesModal from '@comps/Modals/DayNotesModal'
 import { getAthlete } from '@/firebase/athletes'
+import Loading from '@comps/Loading'
 
 export default function Groups() {
   const { user } = useAuth()
@@ -90,9 +91,6 @@ const AtleteScheduleTable = ({
 }) => {
   const [athletes, setAthletes] = useState(undefined)
 
-
-  
-
   useEffect(() => {
     if (showAttendance) {
       getAttendanceDate(date, schedule, ({ attendance, notes }) => {
@@ -108,7 +106,7 @@ const AtleteScheduleTable = ({
   const [attendance, setAttendance] = useState([])
   const [notes, setNotes] = useState('')
 
-  if (athletes === undefined) return 'Cargando ....'
+  if (athletes === undefined) return <Loading />
 
   return (
     <div>
@@ -126,8 +124,8 @@ const AtleteScheduleTable = ({
       {athletes?.length === 0 && <span>Sin athletas</span>}
       {athletes?.map((athlete, i) => (
         <Athlete
-        key={i} 
-        athleteId={athlete}
+          key={i}
+          athleteId={athlete}
           schedule={schedule}
           date={date}
           assist={attendance.includes(athlete)}
@@ -148,7 +146,7 @@ const Athlete = ({ athleteId, date, assist, showAttendance, schedule }) => {
       .catch((err) => console.log('err', err))
   }, [athleteId])
 
-  if (athlete === undefined) return 'Cargando ... x'
+  if (athlete === undefined) return <Loading />
   if (athlete === null) return <></>
   return (
     <AthleteRow

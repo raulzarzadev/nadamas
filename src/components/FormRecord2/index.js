@@ -154,7 +154,7 @@ export default function FormRecord({
         <h5 className="font-bold">Estilo</h5>
         <div className="flex w-full justify-evenly flex-wrap">
           {swimmingStyles.map(({ label, id }) => (
-            <div className="w-1/5 p-2">
+            <div className="w-1/5 p-2" key={id}>
               <SelectBox
                 label={label}
                 name={id}
@@ -169,7 +169,7 @@ export default function FormRecord({
         <h5 className="font-bold">Distancia</h5>
         <div className="flex w-full flex-wrap ">
           {distances.map(({ label, id }) => (
-            <div className="w-1/5 p-2">
+            <div className="w-1/5 p-2" key={id}>
               <SelectBox
                 label={label}
                 name={id}

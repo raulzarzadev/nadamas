@@ -1,4 +1,5 @@
 import { useAuth } from '@/src/context/AuthContext'
+import Loading from '@comps/Loading'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
@@ -16,7 +17,7 @@ export default function PrivateRoute({ Component, children, ...res }) {
     }
   }, [user])
 
-  if (loading) return 'Cargando ...'
+  if (loading) return <Loading />
 
   return <>{children}</>
 }

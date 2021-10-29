@@ -5,10 +5,11 @@ import Section from '../Section'
 import Text from '@comps/inputs/Text'
 import AttendanceMonthList from '@comps/AttendanceMonthList'
 import AthleteSchedule from './AthleteSchedule'
+import Loading from '@comps/Loading'
 
 export default function UserProfile() {
   const { user } = useAuth()
-  if (!user) return 'Cargando ...'
+  if (!user) return <Loading />
 
   const [form, setForm] = useState({})
 
