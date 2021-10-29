@@ -21,6 +21,8 @@ import BLOD_TYPES from '@/src/constants/BLOD_TYPES'
 import Toggle from '@comps/inputs/Toggle'
 import Section from '@comps/Section'
 import Payments from './Payments'
+import AthleteStatistics from './AthleteStatistics'
+import Loading from '@comps/Loading'
 
 const SAVE_BUTTON_LABEL = {
   NEW: 'Guardar',
@@ -29,19 +31,17 @@ const SAVE_BUTTON_LABEL = {
 }
 export default function NewAthlete() {
   const { user } = useAuth()
+  if (!user) return <Loading />
   const router = useRouter()
-  const [updatingAthlete, setUpdatingAthlete] = useState(null)
 
   const [alreadyExist, setAlreadyExist] = useState(false)
-  const { id } = router?.query
+  const { id: athleteId } = router?.query
   useEffect(() => {
-    if (id) setAlreadyExist(true)
-  }, [id])
+    if (athleteId) setAlreadyExist(true)
+  }, [athleteId])
   useEffect(() => {
-    const { id } = router?.query
-    if (id) {
-      getAthlete(id).then((res) => {
-        setUpdatingAthlete(id)
+    if (athleteId) {
+      getAthlete(athleteId).then((res) => {
         setForm(res)
       })
     }
@@ -84,7 +84,7 @@ export default function NewAthlete() {
   }
 
   const handleDelete = () => {
-    updateAtlete({ id: updatingAthlete, active: false })
+    updateAtlete({ id: athleteId, active: false })
     setTimeout(() => {
       router.back()
     }, 400)
@@ -235,6 +235,11 @@ export default function NewAthlete() {
             </div>
           </div>
         </div>
+        {alreadyExist && (
+          <Section title={'Estadisticas'} open indent={false}>
+            <AthleteStatistics athleteId={athleteId} />
+          </Section>
+        )}
 
         {/* ----------------------------------------------Tests */}
         {alreadyExist && (
@@ -246,16 +251,17 @@ export default function NewAthlete() {
         {/* ----------------------------------------------Pyments */}
         {alreadyExist && (
           <Section title="Cuotas" indent={false}>
-            <Payments athleteId={form?.id} />
+            <Payments athleteId={athleteId} />
           </Section>
         )}
 
         {/* ----------------------------------------------Schedule */}
         {alreadyExist && (
           <Section title={'Horario'} open indent={false}>
-            <Schedule athleteId={form?.id} athlete={form} />
+            <Schedule athleteId={athleteId} athlete={form} />
           </Section>
         )}
+        {/* ----------------------------------------------ESTADISITCAS */}
 
         {/* ----------------------------------------------Contact */}
 
@@ -347,7 +353,7 @@ export default function NewAthlete() {
           </div>
         </Section>
       </form>
-      {form?.id && (
+      {alreadyExist && (
         <div className="p-4  mx-auto mt-10 ">
           <Button variant="danger" onClick={handleOpenDelete}>
             Eliminar Atleta
