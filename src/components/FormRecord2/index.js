@@ -1,5 +1,5 @@
 import { getAthletes } from '@/firebase/athletes'
-import { createOrUpdateRecord } from '@/firebase/records'
+import { createOrUpdateRecord, removeRecord } from '@/firebase/records'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
 import { SaveIcon, TrashBinIcon } from '@/src/utils/Icons'
@@ -38,6 +38,10 @@ const swimmingStyles = [
 
 const distances = [
   {
+    label: '25',
+    id: '25'
+  },
+  {
     label: '50',
     id: '50'
   },
@@ -58,12 +62,18 @@ const distances = [
     id: '800'
   }
 ]
-export default function FormRecord({ searchAthlete, record }) {
+export default function FormRecord({
+  searchAthlete,
+  record,
+  callback = () => {}
+}) {
   useEffect(() => {
     if (record) {
       setForm(record)
     }
   }, [record])
+
+  console.log(`form record`, record)
 
   const [form, setForm] = useState({ date: new Date() })
   const router = useRouter()
@@ -92,13 +102,24 @@ export default function FormRecord({ searchAthlete, record }) {
   const handleChangeDate = ({ target }) => {
     setForm({ ...form, date: target.value })
   }
+  const [saving, setSaving] = useState(false)
+  const handleRemoveRecord = (id) => {
+    console.log(`id`, id)
+    removeRecord(id)
+      .then((res) => {
+        callback()
+      })
+      .catch((err) => console.log(`err`, err))
+  }
   const handleAddRecord = async (newRecord) => {
+    setSaving(true)
     await createOrUpdateRecord({
       ...newRecord,
       athleteId: newRecord.athlete.id
     })
       .then((res) => console.log('res', res))
       .catch((err) => console.log('err', err))
+    setSaving(false)
   }
   const handleSetRecord = (record) => {
     setForm({ ...form, record })
@@ -200,13 +221,13 @@ export default function FormRecord({ searchAthlete, record }) {
       <div className="sm:flex text-center w-full justify-evenly py-2 px-1 items-center">
         <div className="my-2">
           Tiempo
-          {console.log('form.record', form)}
           <PickerRecord handleChange={handleSetRecord} value={form?.record} />
         </div>
         <div className="grid gap-2">
           <Button
             disabled={!isValid}
             variant="primary"
+            loading={saving}
             onClick={(e) => {
               e.preventDefault()
               handleAddRecord(form)
@@ -220,7 +241,7 @@ export default function FormRecord({ searchAthlete, record }) {
             fullWidth={false}
             onClick={(e) => {
               e.preventDefault()
-              handleAddRecord(form)
+              handleRemoveRecord(form?.id)
             }}
           >
             Eliminar <TrashBinIcon />

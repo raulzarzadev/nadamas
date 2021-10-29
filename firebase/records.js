@@ -2,6 +2,7 @@ import { db } from './client'
 import {
   datesToFirebaseFromat,
   formatResponse,
+  normalizeDoc,
   normalizeDocs
 } from './firebase-helpers'
 
@@ -12,6 +13,15 @@ export const getRecords = async () => {
     .limit(20)
     .get()
     .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log('err', err))
+}
+
+export const getRecord = async (id) => {
+  return await db
+    .collection('records')
+    .doc(id)
+    .get()
+    .then(res=> normalizeDoc(res))
     .catch((err) => console.log('err', err))
 }
 
@@ -70,7 +80,12 @@ const _update_record = async (record) => {
 }
 
 const _remove_record = async (recordId) => {
-  return await db.collection('records').doc(recordId).delete()
+  return await db
+    .collection('records')
+    .doc(recordId)
+    .delete()
+    .then((res) => formatResponse(true, 'RECORD_DELETED', res))
+    .catch((err) => console.log('err', err))
 }
 
 const _create_record = async (record) => {

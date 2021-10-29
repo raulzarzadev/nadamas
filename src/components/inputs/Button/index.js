@@ -11,6 +11,7 @@ export default function Button({
   onClick,
   size = 'md',
   fullWidth = false,
+  loading,
   ...rest
 }) {
   const style = {
@@ -32,7 +33,7 @@ export default function Button({
         href ? router.push(href) : onClick ? onClick(e) : type
       }}
       {...rest}
-      disabled={disabled}
+      disabled={disabled || loading}
       className={`
       items-center
       shadow-lg 
@@ -46,6 +47,7 @@ export default function Button({
       transform 
       flex 
       justify-evenly
+      
       ${disabled ? style.disabled : ''}
       ${style[variant]}
       ${sizing[size]}
@@ -53,7 +55,13 @@ export default function Button({
       ${iconOnly && ` p-0  rounded-full w-min border`}
       `}
     >
-      {children || label}
+      {loading ? <Loading /> : children || label}
     </button>
   )
 }
+
+const Loading = () => (
+  <div className="flex justify-center items-center">
+    <div className="border-4 rounded-full w-7 h-7 border-t-transparent animate-spin"></div>
+  </div>
+)

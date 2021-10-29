@@ -4,7 +4,6 @@ export default function PickerRecord({
   handleChange = () => {},
   value = null
 }) {
-
   const formatValue = (value) => {
     if (typeof value === 'string') {
       const auxArr = value.split(/[:\.]/g)
@@ -23,22 +22,22 @@ export default function PickerRecord({
     setForm({ ...form, [name]: value })
   }
 
-  
   useEffect(() => {
-    const secs =
-    form.seconds == ''
-    ? '00'
-    : form.seconds < 9
-    ? `0${form.seconds}`
-    : form.seconds
-    const mins =
-    form.minutes == ''
-    ? '00'
-    : form.minutes < 9
-    ? `0${form.minutes}`
-    : form.minutes
+    const secs = !!form.seconds
+      ? '00'
+      : form.seconds < 9
+      ? `0${form.seconds}`
+      : form.seconds
+
+    const mins = !!form.minutes
+      ? '00'
+      : form.minutes < 9
+      ? `0${form.minutes}`
+      : form.minutes
+
     const ms = form.ms < 1 ? '000' : form.ms < 9 ? `0${form.ms}` : form.ms
-    handleChange(`${mins}:${secs}.${ms}`)
+   
+    // handleChange(`${mins}:${secs}.${ms}`)
   }, [form])
 
   useEffect(() => {
@@ -46,12 +45,6 @@ export default function PickerRecord({
       setForm(formatValue(value))
     }
   }, [])
-
-  console.log('value', value)
-  
-
-  console.log('form', form)
-  
 
   return (
     <div className="  flex justify-center">

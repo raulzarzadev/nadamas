@@ -51,8 +51,6 @@ export default function ViewRecords() {
     }
   }, [user])
 
-  console.log('records', records)
-
   return (
     <div className=" p-4">
       <div>
@@ -74,7 +72,7 @@ export default function ViewRecords() {
             showAthlete
             records={records}
             updateRecords={() => {
-              getAndSetRecords()
+              // getAndSetRecords()
             }}
           />
         )}
@@ -90,6 +88,7 @@ export default function ViewRecords() {
             handleAddRecord(record)
             handleOpenNewRecord()
           }}
+          callback={handleOpenNewRecord}
         />
       </Modal>
     </div>

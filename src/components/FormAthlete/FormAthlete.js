@@ -235,7 +235,7 @@ export default function NewAthlete() {
 
         {/* ----------------------------------------------Tests */}
 
-        <Section title={'Pruebas'}>
+        <Section title={'Pruebas'} indent={false}>
           {form?.id ? (
             <Records athlete={form} />
           ) : (
