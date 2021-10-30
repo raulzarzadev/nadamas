@@ -74,7 +74,6 @@ export const Schedule = ({ athleteId, athlete }) => {
     if (coachSelect === '') return setScheduleSlected(scheduleBase)
     if (coachSelect === user.id) return setScheduleSlected(coachSchedule)
   }, [coachSelect, coachSchedule])
-  console.log(`scheduleSelected`, scheduleSelected)
 
   const areDaysEmpty = () => {
     let res = Object.keys(scheduleSelected)?.map((d) => {

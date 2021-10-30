@@ -1,6 +1,5 @@
+import firebase from 'firebase/app'
 import 'firebase/firestore'
-import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
-
 import { db } from './client'
 import {
   datesToFirebaseFromat,
@@ -47,13 +46,24 @@ export const updateTeam = async (team = {}) => {
   }
 }
 
+export const acceptTeamRequest = async (teamId, requestId) => {
+  const teamRef = db.collection('teams').doc(teamId)
+  await teamRef.update({
+    joinRequests: firebase.firestore.FieldValue.arrayRemove(requestId)
+  })
+  await teamRef.update({
+    athletes: firebase.firestore.FieldValue.arrayUnion(requestId)
+  })
+  return { ok: true, type: 'REQUEST_ACCEPTED' }
+}
+
 const _update_team = async (team) => {
   const { joinRequests } = team
   const eventRef = db.collection('teams').doc(team.id)
   const datesInFirebaseFormat = datesToFirebaseFromat(team)
   try {
     await eventRef.update({
-      joinRequests: arrayUnion(joinRequests),
+      joinRequests: firebase.firestore.FieldValue.arrayUnion(joinRequests),
       ...team,
       ...datesInFirebaseFormat
     })

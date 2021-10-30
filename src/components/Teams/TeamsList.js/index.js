@@ -25,7 +25,11 @@ export default function TeamsList() {
     <div className="p-2">
       <SelectGroupsView />
       {teams.map((team) => (
-        <TeamCard onClick={()=>handleRedirect(team.id)} team={team}/>
+        <TeamCard
+          key={team.id}
+          onClick={() => handleRedirect(team.id)}
+          team={team}
+        />
       ))}
     </div>
   )

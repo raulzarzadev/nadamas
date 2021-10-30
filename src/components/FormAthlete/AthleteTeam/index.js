@@ -10,14 +10,16 @@ export default function AthleteTeam() {
       .then(setTeams)
       .catch((err) => console.log(`err`, err))
   }, [])
-  console.log(`athlete`, user)
-  console.log(`teams`, teams)
   const handleJoin = (id) => {
-    if (user.athleteId)
-      updateTeam({ id, joinRequests: user?.athleteId })
+    if (user.athleteId) {
+      setRequestSended([...requestsSended, user.athleteId])
+      updateTeam({ id, joinRequests: [user?.athleteId] })
         .then((res) => console.log(`res`, res))
         .catch((err) => console.log(`err`, err))
+    }
   }
+  const [requestsSended, setRequestSended] = useState([])
+  console.log(`teams`, teams)
   return (
     <div className="p-1">
       {teams.map((team) => (
@@ -25,9 +27,15 @@ export default function AthleteTeam() {
           key={team.id}
           className="bg-gray-600 p-2 rounded-lg shadow-lg w-full flex items-center justify-between"
         >
-          <button className="border p-1" onClick={() => handleJoin(team.id)}>
-            Solicitar unirse
-          </button>
+          {team?.joinRequests?.includes(user.athleteId) ||
+          requestsSended.includes(user.athleteId) ? (
+            <div className="border p-1 text-sm"> Esperando respuesta</div>
+          ) : (
+            <button className="border p-1" onClick={() => handleJoin(team.id)}>
+              Solicitar unirse
+            </button>
+          )}
+
           <div>
             <h4 className="text-right">
               {team.title}{' '}
