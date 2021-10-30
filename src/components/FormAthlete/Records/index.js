@@ -27,10 +27,33 @@ export default function Records({ athlete: { id } }) {
     router.push(`/records/new?search=${id}`)
   }
 
-  const sortByDate = (a, b) => {
-    if (a?.date > b?.date) return -1
-    if (a?.date < b?.date) return 1
-    return 0
+  const [sortBy, setSortBy] = useState('record')
+
+  useEffect(() => {
+    const sorted = records.sort((a, b) => {
+      if (sortBy.includes('_reverse')) {
+        const sort = sortBy.split('_')[0]
+        if (a[sort] > b[sort]) return -1
+        if (a[sort] < b[sort]) return 1
+        return 0
+      } else {
+        if (a[sortBy] < b[sortBy]) return -1
+        if (a[sortBy] > b[sortBy]) return 1
+        return 0
+      }
+    })
+
+    setRecordsSorted(sorted)
+  }, [sortBy, records])
+
+  const [RecordsSorted, setRecordsSorted] = useState([])
+
+  const handleSortBy = (field) => {
+    if (field === sortBy) {
+      setSortBy(`${sortBy}_reverse`)
+    } else {
+      setSortBy(field)
+    }
   }
 
   return (
@@ -42,8 +65,36 @@ export default function Records({ athlete: { id } }) {
           </Button>
         </div>
 
+        <div className="flex justify-evenly my-2 flex-wrap  children:m-1">
+          <h3>Order por:</h3>
+          <Button
+            label="Fecha"
+            size="xs"
+            iconOnly
+            onClick={() => handleSortBy('date')}
+          />
+          <Button
+            label="Estilo"
+            size="xs"
+            iconOnly
+            onClick={() => handleSortBy('style')}
+          />
+          <Button
+            label="Distancia"
+            size="xs"
+            iconOnly
+            onClick={() => handleSortBy('distance')}
+          />
+          <Button
+            label="Tiempo"
+            size="xs"
+            iconOnly
+            onClick={() => handleSortBy('record')}
+          />
+        </div>
+
         {!records.length && <Info fullWidth text="Aun no hay pruebas" />}
-        {records?.sort(sortByDate)?.map((record) => (
+        {RecordsSorted?.map((record) => (
           <RecordRow key={record.id} record={record} />
         ))}
       </div>
@@ -76,17 +127,13 @@ const RecordRow = ({ record: { id, date, record, style, distance } }) => {
   }
 
   return (
-    <div
-      key={id}
-      className="flex w-full justify-between my-2 py-1 hover:shadow-lg"
-    >
+    <div className="flex w-full justify-between my-2 py-1 hover:shadow-lg">
       <div className="w-1/4 text-center ">{format(date, 'ddMMMyy')}</div>
       <div className="w-1/4 text-center">
         {distance}
         {getLabelStyle(style)}
       </div>
       <div className="w-1/4 text-center">{record}</div>
-
       <div className="w-1/4 flex justify-center">
         <Button
           label="ver"

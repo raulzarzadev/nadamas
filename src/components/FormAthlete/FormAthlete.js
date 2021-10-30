@@ -233,8 +233,11 @@ export default function NewAthlete() {
             </div>
           </div>
         </div>
+
+        {/* ----------------------------------------------ESTADISITCAS */}
+
         {alreadyExist && (
-          <Section title={'Estadisticas'} open indent={false}>
+          <Section title={'Estadisticas'}  indent={false}>
             <AthleteStatistics athleteId={athleteId} />
           </Section>
         )}
@@ -259,7 +262,6 @@ export default function NewAthlete() {
             <Schedule athleteId={athleteId} athlete={form} />
           </Section>
         )}
-        {/* ----------------------------------------------ESTADISITCAS */}
 
         {/* ----------------------------------------------Contact */}
 

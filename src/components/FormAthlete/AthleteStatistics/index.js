@@ -14,7 +14,7 @@ export default function AthleteStatistics({ athleteId }) {
     }
   }, [athleteId])
 
-  const formatData = (data = {}, label = 'label') => {
+  const formatData = (data = {}) => {
     const formatRecordToNumber = (record = '') => {
       const arrTime = record.split(/[:\.]/)
       const minsToMs = parseInt(arrTime[0]) * 1000 * 60
@@ -130,10 +130,8 @@ export default function AthleteStatistics({ athleteId }) {
 
   return (
     <div className="">
-      <h3></h3>
-
       <LinealChartJs
-        title="Velocidad promedio - Crol"
+        title="Velocidad promedio por estilos"
         data={formatData(tests)}
       />
     </div>

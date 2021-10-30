@@ -16,12 +16,35 @@ module.exports = {
   },
   variants: {
     extend: {
-      display: ['group-hover'],
+      display: [
+        'group-hover',
+        'children',
+        'default',
+        'children-first',
+        'children-last',
+        'children-odd',
+        'children-even',
+        'children-not-first',
+        'children-not-last',
+        'children-hover',
+        'hover',
+        'children-focus',
+        'focus',
+        'children-focus-within',
+        'focus-within',
+        'children-active',
+        'active',
+        'children-visited',
+        'visited',
+        'children-disabled',
+        'disabled',
+        'responsive'
+      ],
       opacity: ['disabled'],
       backgroundColor: ['checked', 'checked-sibiling'],
       borderColor: ['checked'],
       translate: ['active', 'checked-sibiling']
     }
   },
-  plugins: [checkedSiblingPlugin]
+  plugins: [checkedSiblingPlugin, require('tailwindcss-children')]
 }
