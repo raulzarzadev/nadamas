@@ -23,19 +23,21 @@ import Section from '@comps/Section'
 import Payments from './Payments'
 import AthleteStatistics from './AthleteStatistics'
 import Loading from '@comps/Loading'
+import { updateUser } from '@/firebase/client'
+import AthleteTeam from './AthleteTeam'
 
 const SAVE_BUTTON_LABEL = {
   NEW: 'Guardar',
   EXIST: 'Guardado',
   DIRTY: 'Guardar'
 }
-export default function NewAthlete() {
+export default function FormAthlete({ athleteId = '' }) {
   const { user } = useAuth()
   if (!user) return <Loading />
   const router = useRouter()
+  const { configSwimmer } = router.query
 
   const [alreadyExist, setAlreadyExist] = useState(false)
-  const { id: athleteId } = router?.query
   useEffect(() => {
     if (athleteId) setAlreadyExist(true)
   }, [athleteId])
@@ -79,7 +81,16 @@ export default function NewAthlete() {
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res?.type === 'ATHLETE_CREATED') {
       setDirtyForm(false)
-      router.push(`/athletes/${res?.id}`)
+      if (configSwimmer) {
+        const updateSwimmer = await updateUser({
+          id: user.id,
+          athleteId: res?.id
+        })
+        console.log(`updateSwimmer`, updateSwimmer)
+        router.back()
+      } else {
+        router.push(`/athletes/${res?.id}`)
+      }
     }
   }
 
@@ -234,12 +245,18 @@ export default function NewAthlete() {
           </div>
         </div>
 
+        {/* ----------------------------------------------TEAMS AND GROUPS */}
+        {alreadyExist && (
+          <Section title={'Equipos'} indent={false}>
+            <AthleteTeam athleteId={athleteId} />
+          </Section>
+        )}
         {/* ----------------------------------------------ESTADISITCAS */}
-          {alreadyExist && (
-            <Section title={'Estadisticas'} indent={false}>
-              <AthleteStatistics athleteId={athleteId} />
-            </Section>
-          )}
+        {alreadyExist && (
+          <Section title={'Estadisticas'} indent={false}>
+            <AthleteStatistics athleteId={athleteId} />
+          </Section>
+        )}
 
         {/* ----------------------------------------------Tests */}
         {alreadyExist && (

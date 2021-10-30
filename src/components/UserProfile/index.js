@@ -6,6 +6,10 @@ import Text from '@comps/inputs/Text'
 import AttendanceMonthList from '@comps/AttendanceMonthList'
 import AthleteSchedule from './AthleteSchedule'
 import Loading from '@comps/Loading'
+import FormAthlete from '@comps/FormAthlete'
+import Button from '@comps/inputs/Button'
+import { useRouter } from 'next/router'
+import { ROUTES } from '@/pages/ROUTES'
 
 export default function UserProfile() {
   const { user } = useAuth()
@@ -30,35 +34,61 @@ export default function UserProfile() {
     }
   }, [user])
 
+  const athleteId = user.athleteId
+
+  console.log(`user`, user)
+
   return (
     <div>
-      <div className="flex flex-col items-center px-2 pt-6 ">
-        <div className="mb-4 md:w-1/2 p-2">
-          <Text
-            label="Nombre"
-            value={form.name}
-            onChange={handleChange}
-            name="name"
-          />
-        </div>
+      {!athleteId && <ConfigAthlete />}
 
-        <div className="mb-4 md:w-1/2 p-2">
-          <Text
-            label="Correo"
-            value={form.email}
-            onChange={handleChange}
-            name="email"
-          />
-        </div>
-      </div>
-      <div className="max-w-md mx-auto">
-        {isCoach ? <CoachSecctions /> : <AthleteSecctions />}
-
+      <div className="max-w-md mx-auto pb-6">
+        {isCoach && <CoachSecctions />}
+        {athleteId && <AthleteSecctions athleteId={athleteId} />}
+        {!athleteId && (
+          <Section title="Información de usuario" indent={false} open>
+            <div className="flex flex-col items-center px-2 pt-6">
+              <div className="mb-4 md:w-1/2 p-2">
+                <Text
+                  label="Nombre"
+                  value={form.name}
+                  onChange={handleChange}
+                  name="name"
+                />
+              </div>
+              <div className="mb-4 md:w-1/2 p-2">
+                <Text
+                  label="Correo"
+                  value={form.email}
+                  onChange={handleChange}
+                  name="email"
+                />
+              </div>
+            </div>
+          </Section>
+        )}
         <div>
           {/*  estadisiticas de alumnos */}
           {/* Cuantos alumnos hay */}
           {/* Cuantos por clase */}
         </div>
+      </div>
+    </div>
+  )
+}
+
+const ConfigAthlete = () => {
+  const router = useRouter()
+  const handleConfigAthlete = () => {
+    router.push(`${ROUTES.athletes.new()}?configSwimmer=true`)
+  }
+  return (
+    <div className="text-center">
+      <div className="w-3/4 mx-auto p-2">
+        <Button
+          label="Configurar nadador"
+          onClick={handleConfigAthlete}
+        ></Button>
       </div>
     </div>
   )
@@ -75,10 +105,8 @@ const CoachSecctions = () => (
   </div>
 )
 
-const AthleteSecctions = () => (
+const AthleteSecctions = ({ athleteId }) => (
   <div>
-    <Section title="Horario" open>
-      <AthleteSchedule />
-    </Section>
+    <FormAthlete athleteId={athleteId} />
   </div>
 )

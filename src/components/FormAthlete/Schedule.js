@@ -17,7 +17,11 @@ export const Schedule = ({ athleteId, athlete }) => {
   useEffect(() => {
     if (user) {
       getAthleteSchedule(user.id)
-        .then((res) => setCoachSchedule(res?.schedule))
+        .then((res) => {
+          if (res.schedule) {
+            setCoachSchedule(res?.schedule)
+          }
+        })
         .catch((err) => console.log('err', err))
     }
   }, [user])
@@ -38,7 +42,6 @@ export const Schedule = ({ athleteId, athlete }) => {
         .catch((err) => console.log('err', err))
     }
   }
-
 
   useEffect(() => {
     if (athleteId) {
@@ -67,12 +70,14 @@ export const Schedule = ({ athleteId, athlete }) => {
 
   useEffect(() => {
     // console.log('coachSelect', coachSelect)
+
     if (coachSelect === '') return setScheduleSlected(scheduleBase)
     if (coachSelect === user.id) return setScheduleSlected(coachSchedule)
   }, [coachSelect, coachSchedule])
+  console.log(`scheduleSelected`, scheduleSelected)
 
   const areDaysEmpty = () => {
-    let res = Object.keys(scheduleSelected).map((d) => {
+    let res = Object.keys(scheduleSelected)?.map((d) => {
       return scheduleSelected[d].length === 0 ? true : false
     })
 
@@ -80,13 +85,12 @@ export const Schedule = ({ athleteId, athlete }) => {
   }
 
   const emptySchedule =
-    Object.keys(scheduleSelected).length === 0 || areDaysEmpty()
+    Object.keys(scheduleSelected)?.length === 0 || areDaysEmpty()
 
   return (
     <>
       <div>
         <div className="mx-1 mb-4 ">
-       
           <Select
             value={coachSelect}
             label=" Horario de entrenador"
@@ -104,7 +108,6 @@ export const Schedule = ({ athleteId, athlete }) => {
         )}
         {!emptySchedule && (
           <div className="flex flex-col">
-           
             <div className="flex flex-wrap justify-center">
               {Object?.keys(scheduleSelected)?.map((day, i) => (
                 <label
