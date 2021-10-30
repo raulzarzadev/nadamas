@@ -1,5 +1,5 @@
 import { getAthleteRecords, getRecords } from '@/firebase/records'
-import SWIMMING_TESTS, { STYLES } from '@/src/constants/SWIMMING_TESTS.js'
+import { STYLES } from '@/src/constants/SWIMMING_TESTS.js'
 import { format } from '@/src/utils/Dates.js'
 import { useEffect, useState } from 'react'
 import LinealChartJs from './LinealChart.js'

@@ -9,7 +9,7 @@ export default function Section({ title, children, open, indent = true }) {
   return (
     <section className="my-2  ">
       <h3
-        className="text-left flex ml-2 mb-4 font-bold bg-gray-600 sticky top-20 "
+        className="text-left flex pl-2 mb-4 font-bold bg-gray-700 sticky top-16 left-0 right-0"
         onClick={() => setShow(!show)}
       >
         {title}
