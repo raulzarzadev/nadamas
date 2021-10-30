@@ -108,7 +108,7 @@ export default function NewAthlete() {
           e.preventDefault()
           handleSubmit()
         }}
-        className=""
+        className="relative"
       >
         <div className="flex justify-center">
           {!form?.avatar && (
@@ -235,12 +235,11 @@ export default function NewAthlete() {
         </div>
 
         {/* ----------------------------------------------ESTADISITCAS */}
-
-        {alreadyExist && (
-          <Section title={'Estadisticas'}  indent={false}>
-            <AthleteStatistics athleteId={athleteId} />
-          </Section>
-        )}
+          {alreadyExist && (
+            <Section title={'Estadisticas'} indent={false}>
+              <AthleteStatistics athleteId={athleteId} />
+            </Section>
+          )}
 
         {/* ----------------------------------------------Tests */}
         {alreadyExist && (

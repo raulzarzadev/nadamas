@@ -7,9 +7,9 @@ export default function Section({ title, children, open, indent = true }) {
     setShow(open)
   }, [open])
   return (
-    <section className="my-2 ">
+    <section className="my-2  ">
       <h3
-        className="text-left flex ml-2 mb-4 font-bold"
+        className="text-left flex ml-2 mb-4 font-bold bg-gray-600 sticky top-20 "
         onClick={() => setShow(!show)}
       >
         {title}
