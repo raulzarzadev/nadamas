@@ -101,8 +101,6 @@ export default function NewAthlete() {
   }
   const wstext = ''
 
-  console.log(`alreadyExist`, alreadyExist)
-
   return (
     <div className="relative pt-0 pb-8 max-w-lg mx-auto">
       <form

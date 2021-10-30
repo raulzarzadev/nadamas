@@ -114,3 +114,53 @@ export default [
   }
   //----------------------- relevos
 ]
+
+export const STYLES = [
+  {
+    label: 'C',
+    id: 'crawl'
+  },
+  {
+    label: 'D',
+    id: 'back'
+  },
+  {
+    label: 'P',
+    id: 'breast'
+  },
+  {
+    label: 'M',
+    id: 'butterfly'
+  },
+  {
+    label: 'CI',
+    id: 'combi'
+  }
+]
+
+export const DISTANCES = [
+  {
+    label: '25',
+    id: '25'
+  },
+  {
+    label: '50',
+    id: '50'
+  },
+  {
+    label: '100',
+    id: '100'
+  },
+  {
+    label: '200',
+    id: '200'
+  },
+  {
+    label: '400',
+    id: '400'
+  },
+  {
+    label: '800',
+    id: '800'
+  }
+]
