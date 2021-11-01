@@ -186,7 +186,6 @@ export default function FormAthlete({ athleteId = '' }) {
             <Button
               size="sm"
               disabled={!form?.mobile}
-              icon
               href={`https://wa.me/521${form?.mobile}?text=${wstext}`}
             >
               <ContactIcon />
@@ -196,7 +195,6 @@ export default function FormAthlete({ athleteId = '' }) {
             <Button
               size="sm"
               disabled={!form?.email}
-              icon
               href={`mailto:${form?.email}?subject=Natación`}
             >
               <EmailIcon />

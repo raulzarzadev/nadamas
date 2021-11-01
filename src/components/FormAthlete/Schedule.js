@@ -88,6 +88,7 @@ export const Schedule = ({ athleteId, athlete }) => {
 
   return (
     <>
+      {/* 
       <div>
         <div className="mx-1 mb-4 ">
           <Select
@@ -99,8 +100,9 @@ export const Schedule = ({ athleteId, athlete }) => {
             <option value="">Sin entrenador</option>
             <option value={user.id}>{user.name}</option>
           </Select>
-        </div>
+        </div> 
       </div>
+    */}
       <div className={s.schedule}>
         {emptySchedule && (
           <Info text="Este entrenador no tiene horarios disponibles" />
@@ -118,7 +120,7 @@ export const Schedule = ({ athleteId, athlete }) => {
                     <select
                       className={s.select_schedule}
                       name={day}
-                      value={athleteSchedule ? athleteSchedule[day] : ''}
+                      value={athleteSchedule ? athleteSchedule[day] : null}
                       onChange={handleScheduleChange}
                     >
                       <option value="">--:--</option>
