@@ -88,7 +88,6 @@ export default function FormAthlete({ athleteId = '' }) {
           id: user.id,
           athleteId: res?.id
         })
-        console.log(`updateSwimmer`, updateSwimmer)
         router.back()
       } else {
         router.push(`/athletes/${res?.id}`)
@@ -97,7 +96,6 @@ export default function FormAthlete({ athleteId = '' }) {
   }
 
   const [advert, setAdvert] = useState(null)
-  console.log(`advert`, advert)
   const handleDelete = () => {
     if (!availableToEdit) return setAdvert('No puedes editar este atleta')
     updateAtlete({ id: athleteId, active: false })
@@ -166,14 +164,7 @@ export default function FormAthlete({ athleteId = '' }) {
               </div>
             </div>
           )}
-          {/*             {form?.id && (
-              <div className="absolute bottom-0 left- ">
-                <UploadImage
-                  upladedImage={upladedImage}
-                  storeRef={`avatar/${form.id}`}
-                />
-              </div>
-            )} */}
+          
         </div>
 
         <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-evenly  ">
@@ -186,7 +177,6 @@ export default function FormAthlete({ athleteId = '' }) {
             <Button
               size="sm"
               disabled={!form?.mobile}
-              icon
               href={`https://wa.me/521${form?.mobile}?text=${wstext}`}
             >
               <ContactIcon />
@@ -196,7 +186,6 @@ export default function FormAthlete({ athleteId = '' }) {
             <Button
               size="sm"
               disabled={!form?.email}
-              icon
               href={`mailto:${form?.email}?subject=Natación`}
             >
               <EmailIcon />
@@ -267,41 +256,41 @@ export default function FormAthlete({ athleteId = '' }) {
 
         {/* ----------------------------------------------TEAMS AND GROUPS */}
         {alreadyExist && (
-          <Section title={'Equipos'} indent={false}>
+          <Section sticky={true} title={'Equipos'} indent={false}>
             <AthleteTeam athleteId={athleteId} />
           </Section>
         )}
         {/* ----------------------------------------------ESTADISITCAS */}
         {alreadyExist && (
-          <Section title={'Estadisticas'} indent={false}>
+          <Section sticky={true} title={'Estadisticas'} indent={false}>
             <AthleteStatistics athleteId={athleteId} />
           </Section>
         )}
 
         {/* ----------------------------------------------Tests */}
         {alreadyExist && (
-          <Section title={'Pruebas'} indent={false}>
+          <Section sticky={true} title={'Pruebas'} indent={false}>
             <Records athlete={form} />
           </Section>
         )}
 
         {/* ----------------------------------------------Pyments */}
         {alreadyExist && (
-          <Section title="Cuotas" indent={false}>
+          <Section sticky={true} title="Cuotas" indent={false}>
             <Payments athleteId={athleteId} />
           </Section>
         )}
 
         {/* ----------------------------------------------Schedule */}
         {alreadyExist && (
-          <Section title={'Horario'} indent={false}>
+          <Section sticky={true} title={'Horario'} indent={false}>
             <Schedule athleteId={athleteId} athlete={form} />
           </Section>
         )}
 
         {/* ----------------------------------------------Contact */}
 
-        <Section title={'Contacto'} indent={false}>
+        <Section sticky={true} title={'Contacto'} indent={false}>
           <div className={`flex flex-col p-1`}>
             <div className="my-1">
               <Text
@@ -326,7 +315,7 @@ export default function FormAthlete({ athleteId = '' }) {
 
         {/* ----------------------------------------------Medic information */}
 
-        <Section title={'Información médica'} indent={false}>
+        <Section sticky={true} title={'Información médica'} indent={false}>
           <div className={s.medic_info}>
             <Autocomplete
               value={form?.blodType}
@@ -359,7 +348,7 @@ export default function FormAthlete({ athleteId = '' }) {
 
         {/* ----------------------------------------------Emergency contact */}
 
-        <Section title={'Contacto de emergencia'} indent={false}>
+        <Section sticky={true} title={'Contacto de emergencia'} indent={false}>
           <div className={`flex flex-col  p-1`}>
             <div className="my-1">
               <Text

@@ -5,10 +5,11 @@ import { AddIcon } from '@/src/utils/Icons'
 import AthleteRow from '@comps/AthleteRow'
 import Button from '@comps/inputs/Button'
 import Section from '@comps/Section'
-import router from 'next/router'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function TeamsView() {
+  const router = useRouter()
   const { user } = useAuth()
   const [teams, setTeams] = useState([])
   useEffect(() => {

@@ -1,10 +1,10 @@
 import { CallIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
-import router from 'next/router'
+import { useRouter } from 'next/router'
 import Modal from '../Modal'
-import s from './styles.module.css'
 
 export default function EmergencyCallModal({ contact, handleOpen, open }) {
+  const router = useRouter()
   const { emerTitle, emerName, emerMobile = null, name } = contact
   return (
     <Modal handleOpen={handleOpen} open={open} title="Llamada de emergencia">

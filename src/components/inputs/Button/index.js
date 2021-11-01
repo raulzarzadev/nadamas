@@ -1,4 +1,4 @@
-import router from 'next/router'
+import { useRouter } from 'next/router'
 
 export default function Button({
   label = 'label',
@@ -14,6 +14,7 @@ export default function Button({
   loading,
   ...rest
 }) {
+  const router = useRouter()
   const style = {
     social: 'bg-blue-500 ',
     primary: 'bg-blue-500',

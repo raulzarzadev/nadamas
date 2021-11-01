@@ -40,20 +40,18 @@ export default function Navbar({ links = [] }) {
           <NavbarSubMenu
             listItems={links}
             listComponent={
-              <li className="relative bg-white w-12 h-12 rounded-full">
-                <Link href="/profile">
-                  <>
-                    {!!user?.image && (
-                      <Image
-                        layout="fill"
-                        objectFit="cover"
-                        className="rounded-full"
-                        src={user?.image}
-                      />
-                    )}
-                  </>
-                </Link>
-              </li>
+              <Link href="/profile">
+                {!!user?.image && (
+                  <li className="relative bg-white w-12 h-12 rounded-full">
+                    <Image
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-full"
+                      src={user?.image}
+                    />
+                  </li>
+                )}
+              </Link>
             }
             topMenu={<TodgleProfile />}
           />

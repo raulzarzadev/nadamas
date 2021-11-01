@@ -1,4 +1,3 @@
-import s from './styles.module.css'
 import Image from 'next/image'
 import React from 'react'
 const Avatar = React.forwardRef(

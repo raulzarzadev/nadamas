@@ -1,4 +1,3 @@
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Button from '@comps/inputs/Button'
 import { dayLabels } from '../../utils/Dates'

@@ -76,7 +76,10 @@ export default function FormRecord({
 
   const [form, setForm] = useState({ date: new Date() })
   const router = useRouter()
-  const athleteId = router?.query?.search
+  const [athleteId, setAthleteId] = useState('')
+  useEffect(() => {
+    setAthleteId(router?.query?.search)
+  }, [])
 
   const handleChangeDistance = ({ target }) => {
     setForm({ ...form, distance: target.name })

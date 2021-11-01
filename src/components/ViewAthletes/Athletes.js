@@ -1,10 +1,11 @@
 import Button from '@comps/inputs/Button'
 import AthleteRow from '../AthleteRow'
 import { AddPersonIcon } from '../../utils/Icons'
-import router from 'next/router'
+import { useRouter } from 'next/router'
 import SearchAthletes from '@comps/inputs/SearchAthletes'
 
 export default function Athletes() {
+  const router = useRouter()
   return (
     <div className="max-w-xl mx-auto">
       <h3 className="text-center font-bold text-lg">Todos los atletas</h3>

@@ -1,12 +1,9 @@
 import { useAuth } from '@/src/context/AuthContext'
 import {
   BackIcon,
-  GroupsIcon,
   HomeIcon,
-  PersonIcon,
   SignInIcon
 } from '@/src/utils/Icons'
-import Button from '@comps/inputs/Button'
 import Link from '@comps/inputs/Link'
 import { useRouter } from 'next/router'
 

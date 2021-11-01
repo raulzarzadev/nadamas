@@ -8,7 +8,7 @@ import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
 import { es } from 'date-fns/locale'
-import router from 'next/router'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import DisplayRecords from './DisplayRecords'
 
@@ -103,6 +103,7 @@ export default function Records({ athlete: { id } }) {
 }
 
 const RecordRow = ({ record: { id, date, record, style, distance } }) => {
+  const router = useRouter()
   const getLabelStyle = (style) => {
     return SWIMMING_TESTS.find(({ id }) => id === style)?.label
   }
