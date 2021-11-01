@@ -11,7 +11,8 @@ import {
 export const getAthlete = async (athleteId) => {
   return db
     .collection('athletes')
-    .doc(athleteId)
+    .where('id', '==', athleteId)
+    .where('active', '==', true)
     .get()
     .then((doc) => normalizeDoc(doc))
     .catch((err) => console.log(`err`, err))

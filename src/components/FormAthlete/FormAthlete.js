@@ -118,8 +118,8 @@ export default function FormAthlete({ athleteId = '' }) {
   }
   const [availableToEdit, setAvailableToEdit] = useState(true)
   useEffect(() => {
-    const isTheCoach = user.id === form.userId
-    const isOwner = user.athleteId === form.id
+    const isTheCoach = user?.id === form?.userId
+    const isOwner = user?.athleteId === form?.id
     setAvailableToEdit(isTheCoach || isOwner)
   }, [user, form])
 
