@@ -3,11 +3,14 @@ import {
   acceptTeamRequest,
   getTeam,
   rejectTeamRequest,
-  updateTeam
+  removeTeam
 } from '@/firebase/teams'
 import { ROUTES } from '@/pages/ROUTES'
+import { useAuth } from '@/src/context/AuthContext'
+import { TrashBinIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
+import DeleteModal from '@comps/Modals/DeleteModal'
 import Section from '@comps/Section'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -31,12 +34,28 @@ export default function TeamDetails() {
     }
   }, [teamId])
 
+  const [isOwner, setIsOwner] = useState(false)
+  const { user } = useAuth()
+  useEffect(() => {
+    setIsOwner(team?.userId === user?.id)
+  }, [user, team])
+
+  const handleDeleteTeam = () => {
+    removeTeam(team.id)
+      .then((res) => {
+        replace('/teams')
+      })
+      .catch((err) => console.log(`err`, err))
+  }
+
+  const [openDelete, setOpenDelete] = useState(false)
+  const handleOpenDelete = () => {
+    setOpenDelete(!openDelete)
+  }
+
   if (team === undefined) return <Loading />
-
-  console.log(`team`, team)
-
   return (
-    <div className="">
+    <div className="max-w-md mx-auto">
       <FormTeam team={team} />
       <Section title={`Miembros (${team?.athletes?.length || 0})`}>
         <TeamMembers teamId={team?.id} members={team?.athletes} />
@@ -47,6 +66,27 @@ export default function TeamDetails() {
           requests={team?.joinRequests}
           setRequests={(props) => console.log(`props`, props)}
         />
+      </Section>
+      <Section title="Opciones">
+        {isOwner && (
+          <div className="w-32 flex">
+            <Button
+              label="Eliminar"
+              variant="danger"
+              size="xs"
+              onClick={handleOpenDelete}
+            >
+              Borrar equipo
+              <TrashBinIcon />
+            </Button>
+            <DeleteModal
+              open={openDelete}
+              text="Elimar este equipo de forma permanente"
+              handleDelete={handleDeleteTeam}
+              handleOpen={handleOpenDelete}
+            ></DeleteModal>
+          </div>
+        )}
       </Section>
     </div>
   )

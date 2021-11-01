@@ -112,6 +112,14 @@ export const cancelRequest = async (teamId, athleteId) => {
   }
 }
 
+export const removeTeam = async (teamId) => {
+  const eventRef = db.collection('teams').doc(teamId)
+  return eventRef
+    .delete()
+    .then((res) => formatResponse(true, 'TEAM_DELETED', res))
+    .catch((err) => formatResponse(false, 'DELETE_ERROR', err))
+}
+
 export const unjoinTeam = async (teamId, athleteId) => {
   const teamRef = db.collection('teams').doc(teamId)
   try {

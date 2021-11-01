@@ -7,8 +7,7 @@ import { ROUTES } from '@/pages/ROUTES'
 import { useRouter } from 'next/router'
 import Toggle from '@comps/inputs/Toggle'
 import Info from '@comps/Alerts/Info'
-import { EditIcon } from '@/src/utils/Icons'
-import useSingleAndDoubleClick from '@/src/hooks/useSingleAndDoubleClick'
+
 import TextEditable from '@comps/inputs/TextEditable'
 
 export default function FormTeam({ team = null }) {
@@ -96,6 +95,7 @@ export default function FormTeam({ team = null }) {
             />
           )}
         </div>
+        
       </form>
     </div>
   )
