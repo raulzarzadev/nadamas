@@ -7,6 +7,10 @@
   color: var(--black);
   width: 100%;
 }
+.text_input_not_editable{
+  
+  background-color: var(--bg-main);
+}
 .text_area {
   resize: none;
 }

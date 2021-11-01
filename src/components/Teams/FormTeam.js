@@ -7,6 +7,9 @@ import { ROUTES } from '@/pages/ROUTES'
 import { useRouter } from 'next/router'
 import Toggle from '@comps/inputs/Toggle'
 import Info from '@comps/Alerts/Info'
+import { EditIcon } from '@/src/utils/Icons'
+import useSingleAndDoubleClick from '@/src/hooks/useSingleAndDoubleClick'
+import TextEditable from '@comps/inputs/TextEditable'
 
 export default function FormTeam({ team = null }) {
   const { user } = useAuth()
@@ -36,6 +39,8 @@ export default function FormTeam({ team = null }) {
     setForm({ ...form, [target.name]: target.value })
   }
 
+  const [editable, setEditable] = useState(null)
+
   const handleSubmit = () => {
     updateTeam({ ...form }).then(({ id }) => {
       router.push(ROUTES.teams.details(id))
@@ -45,7 +50,16 @@ export default function FormTeam({ team = null }) {
   const handleSetPublicTeam = ({ target }) => {
     setForm({ ...form, [target.name]: target.checked })
   }
+  const click = useSingleAndDoubleClick(
+    (one) => {
+      console.log(`one`, one)
+    },
+    (double) => console.log(`double`, double)
+  )
 
+  const handleEditTeamName = (fieldName) => {
+    click(fieldName)
+  }
   return (
     <div className="relative max-w-lg mx-auto">
       <form
@@ -54,34 +68,50 @@ export default function FormTeam({ team = null }) {
           handleSubmit()
         }}
       >
-        <div className="sticky top-0 flex p-2 justify-end bg-gray-700">
+        {/*         <div className="sticky top-0 flex p-2 justify-end bg-gray-700">
           <div className="w-1/2">
             <Button size="sm ">
               {' '}
               {teamAlreadyExist ? 'Guardar cambios' : 'Guardar'}
             </Button>
           </div>
-        </div>
-        <h3 className="text-center p-2 text-xl">
+        </div> */}
+        <h3 className="text-center pt-2">
           {teamAlreadyExist ? 'Equipo' : 'Nuevo equipo'}
         </h3>
-        <div className="p-2">
+        <div className="flex justify-center items-center">
+          <TextEditable
+            value={form?.title}
+            name="title"
+            onChange={handleChange}
+            // label="Nombre del equipo"
+          />
+        </div>
+        <div className="p-2 text-sm">
           <Toggle
-            label="Equipo público"
+            size="sm"
+            label={form.publicTeam ? 'Público' : 'Privado'}
             name="publicTeam"
             onChange={handleSetPublicTeam}
             checked={form?.publicTeam}
           />
-          <Info text="Si el quipo es publico cualquiera podra buscarlo y enviar solicitudes" />
+          {form.publicTeam && (
+            <Info
+              text={`Si es público, otras personas podrán verlo, sabrán 
+                      la cantidad de miembros y el nombre del entrenador.  
+                      También podrán solicitar unirse en cualquier momento
+                      `}
+            />
+          )}
         </div>
-        <div className="p-2">
+        {/*  <div className="p-2">
           <Text
             value={form?.title}
             name="title"
             onChange={handleChange}
             label="Nombre del equipo"
           />
-        </div>
+        </div> */}
       </form>
     </div>
   )

@@ -10,7 +10,7 @@ export default function Info({ text, fullWidth }) {
         <div className="mr-2">
           <WarningIcon />
         </div>
-        <span className=''>{text}</span>
+        <p className="">{text}</p>
       </div>
     </div>
   )

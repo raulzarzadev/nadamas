@@ -274,14 +274,14 @@ export default function FormAthlete({ athleteId = '' }) {
 
         {/* ----------------------------------------------Schedule */}
         {alreadyExist && (
-          <Section title={'Horario'} open indent={false}>
+          <Section title={'Horario'} indent={false}>
             <Schedule athleteId={athleteId} athlete={form} />
           </Section>
         )}
 
         {/* ----------------------------------------------Contact */}
 
-        <Section title={'Contacto'} open indent={false}>
+        <Section title={'Contacto'} indent={false}>
           <div className={`flex flex-col p-1`}>
             <div className="my-1">
               <Text
@@ -306,7 +306,7 @@ export default function FormAthlete({ athleteId = '' }) {
 
         {/* ----------------------------------------------Medic information */}
 
-        <Section title={'Información médica'} open indent={false}>
+        <Section title={'Información médica'}  indent={false}>
           <div className={s.medic_info}>
             <Autocomplete
               value={form?.blodType}
@@ -339,7 +339,7 @@ export default function FormAthlete({ athleteId = '' }) {
 
         {/* ----------------------------------------------Emergency contact */}
 
-        <Section title={'Contacto de emergencia'} open indent={false}>
+        <Section title={'Contacto de emergencia'}  indent={false}>
           <div className={`flex flex-col  p-1`}>
             <div className="my-1">
               <Text

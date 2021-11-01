@@ -82,7 +82,7 @@ function JoinRequests({ teamId, requests = [] }) {
       <Section title={`Solicitudes (${athletes?.length})`}>
         {athletes?.map((athlete) => (
           <div key={athlete?.id} className="flex justify-evenly">
-            {console.log(`athlete`, athlete)}
+            
             <div>{athlete?.name}</div>
             <div className="flex">
               <Button
