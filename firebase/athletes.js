@@ -2,9 +2,11 @@ import firebase from 'firebase/app'
 import 'firebase/firestore'
 
 import { db } from './client'
-import { datesToFirebaseFromat, normalizeDoc, normalizeDocs } from './firebase-helpers'
-
-
+import {
+  datesToFirebaseFromat,
+  normalizeDoc,
+  normalizeDocs
+} from './firebase-helpers'
 
 export const getAthlete = async (athleteId) => {
   return db
@@ -12,9 +14,8 @@ export const getAthlete = async (athleteId) => {
     .doc(athleteId)
     .get()
     .then((doc) => normalizeDoc(doc))
-    .catch((err) => null)
+    .catch((err) => console.log(`err`, err))
 }
-
 
 export const getAthletes = async (userId) => {
   return await db

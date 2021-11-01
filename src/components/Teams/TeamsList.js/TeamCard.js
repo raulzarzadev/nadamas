@@ -1,5 +1,4 @@
 export default function TeamCard({ onClick, team }) {
-  console.log(`team`, team)
   return (
     <button
       className="bg-gray-600 p-2 rounded-lg shadow-lg w-full"
@@ -15,7 +14,7 @@ export default function TeamCard({ onClick, team }) {
       <p className="font-extralight text-right">{team.coach.name}</p>
       <p className="font-extralight text-left">
         Solicitudes pendientes:{' '}
-        <span className="font-normal">{team?.joinRequests?.length}</span>
+        <span className="font-normal">{team?.joinRequests?.length || '0'}</span>
       </p>
     </button>
   )

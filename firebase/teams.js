@@ -3,27 +3,39 @@ import 'firebase/firestore'
 import { db } from './client'
 import {
   datesToFirebaseFromat,
+  formatResponse,
   normalizeDoc,
   normalizeDocs
 } from './firebase-helpers'
 
-export const getTeam = async (teamId) => {
+export const getTeam = async (teamId, dispatch) => {
   return db
     .collection('teams')
     .doc(teamId)
-    .get()
-    .then((doc) => normalizeDoc(doc))
-    .catch((err) => null)
+    .onSnapshot((snapshot) => {
+      dispatch(normalizeDoc(snapshot))
+    })
 }
 
-export const getTeams = async (userId, coachId) => {
-  return await db
+export const getTeams = async (userId, coachId, dispatch) => {
+  return db
     .collection('teams')
     .where('userId', '==', userId)
     .where('coach.id', '==', coachId)
-    .get()
+    .onSnapshot(
+      (querySnapshot) => {
+        const teams = querySnapshot
+          .docChanges()
+          .map((change) => normalizeDoc(change.doc))
+        dispatch(teams)
+      },
+      (err) => {
+        console.log(`Encountered error: ${err}`)
+      }
+    )
+  /* .get()
     .then(({ docs }) => normalizeDocs(docs))
-    .catch((err) => console.log(err))
+    .catch((err) => console.log(err)) */
 }
 
 export const getPublicTeams = async () => {
@@ -46,24 +58,77 @@ export const updateTeam = async (team = {}) => {
   }
 }
 
-export const acceptTeamRequest = async (teamId, requestId) => {
+export const acceptTeamRequest = async (
+  teamId,
+  athleteId,
+  addedByCoach = false
+) => {
   const teamRef = db.collection('teams').doc(teamId)
+  const teamData = (await teamRef.get()).data()
+  const athleteStillWating = teamData?.joinRequests?.includes(athleteId)
+  if (athleteStillWating || addedByCoach) {
+    await teamRef.update({
+      joinRequests: firebase.firestore.FieldValue.arrayRemove(athleteId)
+    })
+    await teamRef.update({
+      athletes: firebase.firestore.FieldValue.arrayUnion(athleteId)
+    })
+    return formatResponse(true, 'REQUEST_ACCEPTED', { athleteId })
+  } else {
+    return formatResponse(false, 'REQUEST_RETIRED', { athleteId })
+  }
+}
+
+export const rejectTeamRequest = async (teamId, athleteId) => {
+  const teamRef = db.collection('teams').doc(teamId)
+
   await teamRef.update({
-    joinRequests: firebase.firestore.FieldValue.arrayRemove(requestId)
+    joinRequests: firebase.firestore.FieldValue.arrayRemove(athleteId)
   })
-  await teamRef.update({
-    athletes: firebase.firestore.FieldValue.arrayUnion(requestId)
-  })
-  return { ok: true, type: 'REQUEST_ACCEPTED' }
+  return formatResponse(true, 'REQUEST_REJECTED', { athleteId })
+}
+
+export const addJoinRequests = async (teamId, athleteId) => {
+  const teamRef = db.collection('teams').doc(teamId)
+
+  try {
+    const res = await teamRef.update({
+      joinRequests: firebase.firestore.FieldValue.arrayUnion(athleteId)
+    })
+    return formatResponse(true, 'REQUEST_ADDED', res)
+  } catch (err) {
+    return formatResponse(false, 'ADD_REQUEST_FAIL', err)
+  }
+}
+export const cancelRequest = async (teamId, athleteId) => {
+  const teamRef = db.collection('teams').doc(teamId)
+  try {
+    const res = await teamRef.update({
+      joinRequests: firebase.firestore.FieldValue.arrayRemove(athleteId)
+    })
+    return formatResponse(true, 'REQUEST_CANCEL_SUCCESS', res)
+  } catch (err) {
+    return formatResponse(false, 'REQUEST_CANCEL_FAIL', err)
+  }
+}
+
+export const unjoinTeam = async (teamId, athleteId) => {
+  const teamRef = db.collection('teams').doc(teamId)
+  try {
+    const res = await teamRef.update({
+      athletes: firebase.firestore.FieldValue.arrayRemove(athleteId)
+    })
+    return formatResponse(true, 'SUCCESSFUL_UNJOIN', res)
+  } catch (err) {
+    return formatResponse(false, 'UNJOIN_FAIL', err)
+  }
 }
 
 const _update_team = async (team) => {
-  const { joinRequests } = team
   const eventRef = db.collection('teams').doc(team.id)
   const datesInFirebaseFormat = datesToFirebaseFromat(team)
   try {
     await eventRef.update({
-      joinRequests: firebase.firestore.FieldValue.arrayUnion(joinRequests),
       ...team,
       ...datesInFirebaseFormat
     })

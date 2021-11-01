@@ -1,4 +1,10 @@
-export default function Toggle({ label = 'Toggle me' , onChange , checked , name='toggle' , labelPosition='left'}) {
+export default function Toggle({
+  label = 'Toggle me',
+  onChange,
+  checked,
+  name = 'toggle',
+  labelPosition = 'left',
+}) {
   const labelPos = {
     left: 'mr-3',
     top: 'mr-0 flex-col'
@@ -9,11 +15,7 @@ export default function Toggle({ label = 'Toggle me' , onChange , checked , name
         htmlFor={`toogle-${name}`}
         className={`flex items-center cursor-pointer ${labelPos[labelPosition]}`}
       >
-        <div
-          className={`${labelPos[labelPosition]}`}
-        >
-          {label}
-        </div>
+        <div className={`${labelPos[labelPosition]}`}>{label}</div>
         <div className="relative">
           <input
             type="checkbox"

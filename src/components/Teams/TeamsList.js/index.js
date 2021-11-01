@@ -1,4 +1,3 @@
-import { getAthlete } from '@/firebase/athletes'
 import { getTeams } from '@/firebase/teams'
 import { ROUTES } from '@/pages/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
@@ -13,7 +12,15 @@ export default function TeamsList() {
   const router = useRouter()
   useEffect(() => {
     if (user) {
-      getTeams(user?.id, user?.id).then(setTeams)
+      let teamList = teams
+      getTeams(user?.id, user?.id, (teamsSnapshot) => {
+        // si no existe en teams agregalo, si existe modificalo}
+        teamsSnapshot.forEach((snap) => {
+          const cleaned = teamList.filter(({ id }) => snap.id !== id)
+          teamList = [...cleaned, snap]
+        })
+        setTeams(teamList)
+      })
     }
   }, [user])
 
@@ -23,13 +30,11 @@ export default function TeamsList() {
 
   return (
     <div className="p-2">
-      <SelectGroupsView />
-      {teams.map((team) => (
-        <TeamCard
-          key={team.id}
-          onClick={() => handleRedirect(team.id)}
-          team={team}
-        />
+      {/* <SelectGroupsView /> */}
+      {teams?.map((team) => (
+        <div className="my-2 " key={team.id}>
+          <TeamCard onClick={() => handleRedirect(team.id)} team={team} />
+        </div>
       ))}
     </div>
   )

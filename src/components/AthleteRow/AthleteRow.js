@@ -25,7 +25,7 @@ import { useRouter } from 'next/router'
 import { getLastAthletePayment } from '@/firebase/payments'
 
 export default function AthleteRow({
-  athlete,
+  athlete={},
   displaySetAttendance = false,
   date,
   assist = false,

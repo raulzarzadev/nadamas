@@ -13,17 +13,22 @@ export default {
       icon: ''
     },
     {
+      href: '/teams',
+      label: 'Mis equipos',
+      icon: ''
+    },
+    {
       href: '/athletes',
       label: 'Atletas',
       icon: ''
     },
+    ,
     /* {
       href: '/athletes/new',
       label: 'Nuevo atleta',
       icon: ''
     }, */
-    ,
-   /*  {
+    /*  {
       href: '/records',
       label: 'Registros',
       icon: ''

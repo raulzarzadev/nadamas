@@ -40,7 +40,7 @@ export default function Grups() {
   return (
     <div className="relative">
       <div className=" sticky  top-0 z-10 bg-gray-700 shadow-sm">
-        <SelectGroupsView />
+        {/*   <SelectGroupsView /> */}
 
         <div className="flex py-2 justify-center items-center">
           <div className="w-1/4 flex justify-center">

@@ -3,13 +3,12 @@ import { useAuth } from '../../context/AuthContext'
 import CoachSchedule from './CoachSchedule'
 import Section from '../Section'
 import Text from '@comps/inputs/Text'
-import AttendanceMonthList from '@comps/AttendanceMonthList'
-import AthleteSchedule from './AthleteSchedule'
 import Loading from '@comps/Loading'
 import FormAthlete from '@comps/FormAthlete'
 import Button from '@comps/inputs/Button'
 import { useRouter } from 'next/router'
 import { ROUTES } from '@/pages/ROUTES'
+import TeamsList from '@comps/Teams/TeamsList.js'
 
 export default function UserProfile() {
   const { user } = useAuth()
@@ -36,11 +35,9 @@ export default function UserProfile() {
 
   const athleteId = user.athleteId
 
-  console.log(`user`, user)
-
   return (
-    <div>
-      {!athleteId && <ConfigAthlete />}
+    <div className="pt-4">
+      {!athleteId && !isCoach && <ConfigAthlete />}
 
       <div className="max-w-md mx-auto pb-6">
         {isCoach && <CoachSecctions />}
@@ -96,12 +93,16 @@ const ConfigAthlete = () => {
 
 const CoachSecctions = () => (
   <div>
-    <Section title="Horario">
+    <Section title="Horario" indent={false}>
       <CoachSchedule />
     </Section>
-    <Section title="Grupos">
-      <AttendanceMonthList />
+    <Section title="Equipos" indent={false}>
+      <TeamsList />
     </Section>
+
+    {/* <Section title="Grupos">
+      <AttendanceMonthList />
+    </Section> */}
   </div>
 )
 
