@@ -23,7 +23,7 @@ export default function TeamDetails() {
   useEffect(() => {
     if (teamId) {
       getTeam(teamId, setTeam)
-        /* .then((res) => {
+      /* .then((res) => {
           if (res === null) replace(ROUTES.teams.index)
           setTeam(res)
         })
@@ -58,6 +58,9 @@ function JoinRequests({ teamId, requests = [] }) {
   useEffect(() => {
     const athletes = requests.map(async (req) => await getAthlete(req))
     Promise.all(athletes).then(setAthletes)
+    return () => {
+      setAthletes([])
+    }
   }, [requests])
   const handleAcceptRequest = (athleteId) => {
     acceptTeamRequest(teamId, athleteId)

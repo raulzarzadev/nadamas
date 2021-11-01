@@ -70,6 +70,7 @@ export default function FormTeam({ team = null }) {
             label="Equipo público"
             name="publicTeam"
             onChange={handleSetPublicTeam}
+            checked={form?.publicTeam}
           />
           <Info text="Si el quipo es publico cualquiera podra buscarlo y enviar solicitudes" />
         </div>

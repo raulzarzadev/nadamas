@@ -22,6 +22,9 @@ export default function TeamsList() {
         setTeams(teamList)
       })
     }
+    ()=>{
+      setTeams([])
+    }
   }, [user])
 
   const handleRedirect = (teamId) => {

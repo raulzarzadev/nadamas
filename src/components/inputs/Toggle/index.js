@@ -1,9 +1,9 @@
 export default function Toggle({
   label = 'Toggle me',
   onChange,
-  checked,
+  checked = false,
   name = 'toggle',
-  labelPosition = 'left',
+  labelPosition = 'left'
 }) {
   const labelPos = {
     left: 'mr-3',
