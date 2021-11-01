@@ -37,29 +37,22 @@ export default function FormTeam({ team = null }) {
   }, [user, team])
   const handleChange = ({ target }) => {
     setForm({ ...form, [target.name]: target.value })
+    setDirty(true)
   }
-
-  const [editable, setEditable] = useState(null)
 
   const handleSubmit = () => {
     updateTeam({ ...form }).then(({ id }) => {
       router.push(ROUTES.teams.details(id))
+      setDirty(false)
     })
   }
 
   const handleSetPublicTeam = ({ target }) => {
     setForm({ ...form, [target.name]: target.checked })
+    setDirty(true)
   }
-  const click = useSingleAndDoubleClick(
-    (one) => {
-      console.log(`one`, one)
-    },
-    (double) => console.log(`double`, double)
-  )
+  const [dirty, setDirty] = useState(false)
 
-  const handleEditTeamName = (fieldName) => {
-    click(fieldName)
-  }
   return (
     <div className="relative max-w-lg mx-auto">
       <form
@@ -68,14 +61,13 @@ export default function FormTeam({ team = null }) {
           handleSubmit()
         }}
       >
-        {/*         <div className="sticky top-0 flex p-2 justify-end bg-gray-700">
-          <div className="w-1/2">
-            <Button size="sm ">
-              {' '}
-              {teamAlreadyExist ? 'Guardar cambios' : 'Guardar'}
-            </Button>
+        {dirty && (
+          <div className="sticky top-0 flex p-2 justify-end bg-gray-700">
+            <div className="w-1/2">
+              <Button size="sm ">Guardar</Button>
+            </div>
           </div>
-        </div> */}
+        )}
         <h3 className="text-center pt-2">
           {teamAlreadyExist ? 'Equipo' : 'Nuevo equipo'}
         </h3>
@@ -104,14 +96,6 @@ export default function FormTeam({ team = null }) {
             />
           )}
         </div>
-        {/*  <div className="p-2">
-          <Text
-            value={form?.title}
-            name="title"
-            onChange={handleChange}
-            label="Nombre del equipo"
-          />
-        </div> */}
       </form>
     </div>
   )

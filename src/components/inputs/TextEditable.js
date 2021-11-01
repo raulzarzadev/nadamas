@@ -18,6 +18,7 @@ const TextEditable = React.forwardRef(
       Icon,
       autoComplete,
       onClickIcon,
+      permissionToEdit = true,
       ...rest
     },
     ref
@@ -25,11 +26,17 @@ const TextEditable = React.forwardRef(
     const [editable, setEditable] = useState(false)
     const click = useSingleAndDoubleClick(
       () => setEditable(false),
-      () => setEditable(true)
+      () => {
+        if (permissionToEdit) {
+          setEditable(true)
+        }
+      }
+
+      // solo si userId === athleta
     )
     return (
       <span className={s.input_label}>
-        {label && value && `${label} :`}
+        {label && `${label} :`}
         <div className={s.icon_container}>
           {editable ? (
             <input
@@ -56,8 +63,8 @@ const TextEditable = React.forwardRef(
               className={`${s.text_input} ${s.text_input_not_editable} flex justify-center items-center`}
             >
               {value}
-              <div className='ml-2'>
-                <EditIcon size='1rem' />
+              <div className="ml-2">
+                <EditIcon size="1rem" />
               </div>
             </button>
           )}

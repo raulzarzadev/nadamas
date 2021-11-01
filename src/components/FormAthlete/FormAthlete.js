@@ -25,6 +25,7 @@ import AthleteStatistics from './AthleteStatistics'
 import Loading from '@comps/Loading'
 import { updateUser } from '@/firebase/client'
 import AthleteTeam from './AthleteTeam'
+import TextEditable from '@comps/inputs/TextEditable'
 
 const SAVE_BUTTON_LABEL = {
   NEW: 'Guardar',
@@ -78,6 +79,7 @@ export default function FormAthlete({ athleteId = '' }) {
   }
 
   const handleSubmit = async () => {
+    if (!availableToEdit) return setAdvert('No puedes editar este atleta')
     const res = await updateAtlete({ ...form, active: true, userId: user.id })
     if (res?.type === 'ATHLETE_CREATED') {
       setDirtyForm(false)
@@ -94,7 +96,10 @@ export default function FormAthlete({ athleteId = '' }) {
     }
   }
 
+  const [advert, setAdvert] = useState(null)
+  console.log(`advert`, advert)
   const handleDelete = () => {
+    if (!availableToEdit) return setAdvert('No puedes editar este atleta')
     updateAtlete({ id: athleteId, active: false })
     setTimeout(() => {
       router.back()
@@ -106,10 +111,18 @@ export default function FormAthlete({ athleteId = '' }) {
   }
 
   const upladedImage = (url) => {
+    if (!availableToEdit) return setAdvert('No puedes editar este atleta')
     setDirtyForm(true)
     setForm({ ...form, avatar: url })
     updateAtlete({ ...form, avatar: url })
   }
+  const [availableToEdit, setAvailableToEdit] = useState(true)
+  useEffect(() => {
+    const isTheCoach = user.id === form.userId
+    const isOwner = user.athleteId === form.id
+    setAvailableToEdit(isTheCoach || isOwner)
+  }, [user, form])
+
   const wstext = ''
 
   return (
@@ -163,13 +176,13 @@ export default function FormAthlete({ athleteId = '' }) {
             )} */}
         </div>
 
-        <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-between  ">
+        <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-evenly  ">
           {
             /* .-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*, */
             //   STICKY BAR
             /* .-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'*,.-°'rz */
           }
-          <div className="m-2 flex items-center">
+          <div className="m-2 flex items-center relative">
             <Button
               size="sm"
               disabled={!form?.mobile}
@@ -189,35 +202,41 @@ export default function FormAthlete({ athleteId = '' }) {
               <EmailIcon />
             </Button>
           </div>
-          <div className="m-2 flex items-center ">
-            <Button
-              disabled={formStatus === 'NEW'}
-              size="sm"
-              variant="secondary"
-            >
-              {SAVE_BUTTON_LABEL[formStatus]}
-              <SaveIcon />
-            </Button>
-          </div>
+
+          {availableToEdit && (
+            <div className="m-2 flex items-center ">
+              <Button
+                disabled={formStatus === 'NEW'}
+                size="sm"
+                variant="secondary"
+              >
+                {SAVE_BUTTON_LABEL[formStatus]}
+                <SaveIcon />
+              </Button>
+            </div>
+          )}
         </div>
         {/* ----------------------------------------------Actions  */}
         <div className="flex w-full justify-evenly "></div>
         {/* ----------------------------------------------Personal information */}
         <div className="  ">
           <div className="p-2 sm:p-6 grid gap-2">
-            <Text
+            <TextEditable
+              permissionToEdit={availableToEdit}
               value={form?.name}
               onChange={handleChange}
               name="name"
               label="Nombre(s)"
             />
-            <Text
+            <TextEditable
+              permissionToEdit={availableToEdit}
               value={form?.lastName}
               onChange={handleChange}
               name="lastName"
               label={'Apelldio(s)'}
             />
-            <Textarea
+            <TextEditable
+              permissionToEdit={availableToEdit}
               value={form?.goals}
               onChange={handleChange}
               name="goals"
@@ -225,7 +244,8 @@ export default function FormAthlete({ athleteId = '' }) {
               label="¿Proposito o espectativa? (Opcional)"
             />
             <div className="flex items-center w-full">
-              <Text
+              <TextEditable
+                permissionToEdit={availableToEdit}
                 value={formatInputDate(form?.birth)}
                 onChange={handleChange}
                 name="birth"
@@ -306,7 +326,7 @@ export default function FormAthlete({ athleteId = '' }) {
 
         {/* ----------------------------------------------Medic information */}
 
-        <Section title={'Información médica'}  indent={false}>
+        <Section title={'Información médica'} indent={false}>
           <div className={s.medic_info}>
             <Autocomplete
               value={form?.blodType}
@@ -339,7 +359,7 @@ export default function FormAthlete({ athleteId = '' }) {
 
         {/* ----------------------------------------------Emergency contact */}
 
-        <Section title={'Contacto de emergencia'}  indent={false}>
+        <Section title={'Contacto de emergencia'} indent={false}>
           <div className={`flex flex-col  p-1`}>
             <div className="my-1">
               <Text

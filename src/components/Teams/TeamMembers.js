@@ -11,7 +11,6 @@ import { useEffect, useState } from 'react'
 
 export default function TeamMembers({
   members = [],
-  setMembers = (arr) => {},
   teamId
 }) {
   const [openSearchModal, setOpenSearchModal] = useState(false)
@@ -21,18 +20,16 @@ export default function TeamMembers({
 
   const handleAddMember = async (athleteId) => {
     await acceptTeamRequest(teamId, athleteId, true)
-    setMembers([...members, athleteId])
   }
   const handleRemoveMember = async (athleteId) => {
     await unjoinTeam(teamId, athleteId)
     const newList = members.filter((id) => id !== athleteId)
-    setMembers([...newList])
   }
 
   return (
     <>
       <div className="flex justify-center items-center">
-        <h4 className="p-2 text-center font-bold">Integrantes </h4>
+        <h4 className="mx-2 text-center font-bold">Agregar </h4>
         <Button iconOnly size="xs" onClick={handleOpenSearch}>
           <AddIcon />
         </Button>

@@ -33,21 +33,21 @@ export default function TeamDetails() {
 
   if (team === undefined) return <Loading />
 
+  console.log(`team`, team)
+
   return (
     <div className="">
       <FormTeam team={team} />
-      <TeamMembers
-        teamId={team?.id}
-        members={team?.athletes}
-        setMembers={(props) => console.log(`props`, props)}
-      />
-      {!!team?.joinRequests?.length && (
+      <Section title={`Miembros (${team?.athletes?.length || 0})`}>
+        <TeamMembers teamId={team?.id} members={team?.athletes} />
+      </Section>
+      <Section title={`Solicitudes (${team?.joinRequests?.length || 0})`}>
         <JoinRequests
           teamId={teamId}
           requests={team?.joinRequests}
           setRequests={(props) => console.log(`props`, props)}
         />
-      )}
+      </Section>
     </div>
   )
 }
@@ -79,26 +79,24 @@ function JoinRequests({ teamId, requests = [] }) {
 
   return (
     <div>
-      <Section title={`Solicitudes (${athletes?.length})`}>
-        {athletes?.map((athlete) => (
-          <div key={athlete?.id} className="flex justify-evenly">
-            
-            <div>{athlete?.name}</div>
-            <div className="flex">
-              <Button
-                size="xs"
-                variant=""
-                onClick={() => handleRejectRequest(athlete.id)}
-              >
-                Declinar
-              </Button>
-              <Button size="xs" onClick={() => handleAcceptRequest(athlete.id)}>
-                Aceptar
-              </Button>
-            </div>
+      {!athletes.length && 'No hay solicitudes'}
+      {athletes?.map((athlete) => (
+        <div key={athlete?.id} className="flex justify-evenly">
+          <div>{athlete?.name}</div>
+          <div className="flex">
+            <Button
+              size="xs"
+              variant=""
+              onClick={() => handleRejectRequest(athlete.id)}
+            >
+              Declinar
+            </Button>
+            <Button size="xs" onClick={() => handleAcceptRequest(athlete.id)}>
+              Aceptar
+            </Button>
           </div>
-        ))}
-      </Section>
+        </div>
+      ))}
     </div>
   )
 }
