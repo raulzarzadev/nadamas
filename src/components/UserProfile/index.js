@@ -1,18 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import CoachSchedule from './CoachSchedule'
 import Section from '../Section'
 import Text from '@comps/inputs/Text'
 import Loading from '@comps/Loading'
-import FormAthlete from '@comps/FormAthlete'
 import Button from '@comps/inputs/Button'
 import { useRouter } from 'next/router'
 import { ROUTES } from '@/pages/ROUTES'
 import TeamsList from '@comps/Teams/TeamsList.js'
+import FormAthlete from '@comps/Athlete/FormAthlete'
+import CoachSchedule from '@comps/Schedules/CoachSchedule'
 
 export default function UserProfile() {
   const { user } = useAuth()
-  if (!user) return <Loading />
 
   const [form, setForm] = useState({})
 
@@ -20,94 +19,77 @@ export default function UserProfile() {
     setForm({ ...form, [name]: value })
   }
 
-  const [isCoach, setIsCoach] = useState(false)
-
   useEffect(() => {
     if (user) {
       setForm(user)
-      if (user.coach) {
-        setIsCoach(true)
-      } else {
-        setIsCoach(false)
-      }
     }
   }, [user])
+  console.log(`user`, user)
 
-  const athleteId = user.athleteId
-
+  if (!user) return <Loading />
   return (
     <div className="pt-4">
-      {!athleteId && !isCoach && <ConfigAthlete />}
-
-      <div className="max-w-md mx-auto pb-6">
-        {isCoach && <CoachSecctions />}
-        {athleteId && <AthleteSecctions athleteId={athleteId} />}
-        {!athleteId && (
-          <Section title="Información de usuario" indent={false} open>
-            <div className="flex flex-col items-center px-2 pt-6">
-              <div className="mb-4 md:w-1/2 p-2">
-                <Text
-                  label="Nombre"
-                  value={form.name}
-                  onChange={handleChange}
-                  name="name"
-                />
-              </div>
-              <div className="mb-4 md:w-1/2 p-2">
-                <Text
-                  label="Correo"
-                  value={form.email}
-                  onChange={handleChange}
-                  name="email"
-                />
-              </div>
-            </div>
+      <div className="max-w-lg mx-auto pb-6">
+        {user?.coach && (
+          <Section title="Entrenador " indent={false}>
+            <CoachSection coachId={user.id} />
           </Section>
         )}
-        <div>
-          {/*  estadisiticas de alumnos */}
-          {/* Cuantos alumnos hay */}
-          {/* Cuantos por clase */}
-        </div>
+        {!user?.coach && <AthleteSection athleteId={user.athleteId} />}
+
+        <Section title="Información de usuario" indent={false}>
+          <div className="flex flex-col items-center px-2 pt-6">
+            <div className="mb-4 md:w-1/2 p-2">
+              <Text
+                label="Nombre"
+                value={form?.name}
+                onChange={handleChange}
+                name="name"
+              />
+            </div>
+            <div className="mb-4 md:w-1/2 p-2">
+              <Text
+                label="Correo"
+                value={form?.email}
+                onChange={handleChange}
+                name="email"
+              />
+            </div>
+          </div>
+        </Section>
       </div>
     </div>
   )
 }
 
-const ConfigAthlete = () => {
+const AthleteSection = ({ athleteId }) => {
   const router = useRouter()
   const handleConfigAthlete = () => {
     router.push(`${ROUTES.athletes.new()}?configSwimmer=true`)
   }
   return (
     <div className="text-center">
-      <div className="w-3/4 mx-auto p-2">
-        <Button
-          label="Configurar nadador"
-          onClick={handleConfigAthlete}
-        ></Button>
-      </div>
+      {athleteId ? (
+        <FormAthlete athleteId={athleteId} />
+      ) : (
+        <div className="w-3/4 mx-auto p-2">
+          <Button
+            label="Configurar nadador"
+            onClick={handleConfigAthlete}
+          ></Button>
+        </div>
+      )}
     </div>
   )
 }
 
-const CoachSecctions = () => (
+const CoachSection = ({ coachId }) => (
   <div>
     <Section title="Horario" indent={false}>
-      <CoachSchedule />
+      <CoachSchedule coachId={coachId} />
     </Section>
     <Section title="Equipos" indent={false}>
-      <TeamsList />
+      <TeamsList coachId={coachId} />
     </Section>
-
-    {/* <Section title="Grupos">
-      <AttendanceMonthList />
-    </Section> */}
-  </div>
-)
-
-const AthleteSecctions = ({ athleteId }) => (
-  <div>
-    <FormAthlete athleteId={athleteId} />
   </div>
 )

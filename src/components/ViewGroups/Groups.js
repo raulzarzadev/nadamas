@@ -1,7 +1,6 @@
 import s from './styles.module.css'
 import { BackIcon, ClipboardIcon, ForwardIcon } from '../../utils/Icons'
 import { useEffect, useState } from 'react'
-import { getAthletesBySchedule, getAthleteSchedule } from '@/firebase/client'
 import { addDays, subDays } from 'date-fns'
 import { dayLabels, format } from '../../utils/Dates'
 import { useAuth } from '../../context/AuthContext'
@@ -12,6 +11,7 @@ import Toggle from '@comps/inputs/Toggle'
 import DayNotesModal from '@comps/Modals/DayNotesModal'
 import { getAthlete } from '@/firebase/athletes'
 import Loading from '@comps/Loading'
+import { getSchedules } from '@/firebase/schedules'
 
 export default function Groups() {
   const { user } = useAuth()
@@ -26,7 +26,7 @@ export default function Groups() {
 
   const [coachSchedule, setCoachSchedule] = useState({})
   useEffect(() => {
-    getAthleteSchedule(user.id)
+    getSchedules(user.id)
       .then((res) => setCoachSchedule(res.schedule))
       .catch((err) => console.log('err', err))
   }, [])

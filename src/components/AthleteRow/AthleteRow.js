@@ -34,8 +34,9 @@ export default function AthleteRow({
 }) {
   const router = useRouter()
   const { user } = useAuth()
-  const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth } =
+  const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth , active } =
     athlete
+
   const wstext = `Hola ${name}. Soy ${user.name} `
 
   const [openEmergencyModal, setOpenEmergencyModal] = useState(false)

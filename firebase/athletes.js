@@ -1,20 +1,19 @@
-import firebase from 'firebase/app'
 import 'firebase/firestore'
 
 import { db } from './client'
 import {
   datesToFirebaseFromat,
-  normalizeDoc,
+  formatResponse,
   normalizeDocs
 } from './firebase-helpers'
 
 export const getAthlete = async (athleteId) => {
-  return db
+  return await db
     .collection('athletes')
     .where('id', '==', athleteId)
     .where('active', '==', true)
     .get()
-    .then((doc) => normalizeDoc(doc))
+    .then(({ docs }) => normalizeDocs(docs)?.[0])
     .catch((err) => console.log(`err`, err))
 }
 
@@ -40,18 +39,49 @@ export const updateAtlete = async (athlete = {}) => {
   }
 }
 
+export const removeAthlete = async (athleteId = '') => {
+  // Look for the athlete
+  console.log(`athleteId`, athleteId)
+  const athleteRef = db.collection('athletes').doc(athleteId)
+  try {
+    const updateAthlete = await athleteRef
+      .update({ active: false })
+      .catch((err) => console.log(`err`, err))
+
+    const updateUsers = await db
+      .collection('users')
+      .where('athleteId', '==', athleteId)
+      .get()
+      .then((res) => {
+        return res.docs.map(async (doc) => {
+          const userRef = db.collection('users').doc(doc.id)
+          console.log(`doc`, userRef)
+          try {
+            const res = await userRef.update({ athleteId: null })
+            return console.log(`res`, res)
+          } catch (err) {
+            return console.log(`err`, err)
+          }
+        })
+      })
+      .catch((err) => console.log(`err`, err))
+
+    console.log(`updateAthlete, updateUsers`, updateAthlete, updateUsers)
+  } catch (error) {
+    console.log(`error`, error)
+  }
+}
+
 const _update_athlete = async (athlete) => {
   const eventRef = db.collection('athletes').doc(athlete.id)
   const datesInFirebaseFormat = datesToFirebaseFromat(athlete)
-  try {
-    await eventRef.update({
+  return await eventRef
+    .update({
       ...athlete,
       ...datesInFirebaseFormat
     })
-    return { ok: true, type: 'ATHLETE_UPDATED' }
-  } catch (err) {
-    return console.log(err)
-  }
+    .then((res) => formatResponse(true, 'ATHLETE_UPDATED', res))
+    .catch((err) => formatResponse(false, 'ERROR_UPDATE_ATHLETE', err))
 }
 const _create_athlete = async (athlete) => {
   return await db
@@ -60,8 +90,6 @@ const _create_athlete = async (athlete) => {
       ...athlete,
       ...datesToFirebaseFromat(athlete)
     })
-    .then((res) => {
-      return { ok: true, type: 'ATHLETE_CREATED', id: res.id }
-    })
-    .catch((err) => console.log('err', err))
+    .then((res) => formatResponse(true, 'ATHLETE_CREATED', res))
+    .catch((err) => formatResponse(false, 'ERROR_CREATE_ATHLETE', err))
 }

@@ -1,5 +1,5 @@
 import { getAthletes } from '@/firebase/athletes'
-import { getAthleteSchedule } from '@/firebase/client'
+import { getSchedules } from '@/firebase/schedules'
 import { getDay } from 'date-fns'
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
@@ -19,7 +19,7 @@ export default function useAthletes() {
   useEffect(() => {
     function formatAthlte() {
       return athletes.map(async (athlete) => {
-        const schedule = await getAthleteSchedule(athlete.id).then(
+        const schedule = await getSchedules(athlete.id).then(
           (res) => res?.schedule
         )
         const newAthlte = schedule

@@ -1,53 +1,50 @@
-import { getAthleteSchedule, updateAthleteSchedule } from '@/firebase/client'
-import { useAuth } from '@/src/context/AuthContext'
+import { getSchedules, updateSchedule } from '@/firebase/schedules'
 import { formatObjectTimeToString } from '@/src/utils/Hours'
 import { WarningIcon } from '@/src/utils/Icons'
 import { useEffect, useState } from 'react'
-import PickerDays from '../inputs/PickerDays'
-import PickerTime from '../inputs/PickerTime'
+import PickerDays from '../../inputs/PickerDays'
+import PickerTime from '../../inputs/PickerTime'
 import CoachScheduleDisplay from './CoachScheduleDisplay'
 
-export default function CoachSchedule() {
-  const { user } = useAuth()
+export default function CoachSchedule({ coachId }) {
   useEffect(() => {
-    if (user) {
-      getAthleteSchedule(user.id)
-        .then((res) => setSchedule(res.schedule))
-        .catch((err) => console.log(err))
+    if (coachId) {
+      getSchedules(coachId)
+        .then((res) => setSchedule(res[0]?.schedule))
+        .catch((err) => console.log(`err`, err))
     }
-  }, [user])
+  }, [coachId])
 
   const [schedule, setSchedule] = useState({})
   const handleAddSchedule = (newSchedule) => {
     const updatedSchedule = formatNewSchedule(newSchedule, schedule)
 
     setSchedule(updatedSchedule)
-    updateAthleteSchedule({
-      athleteId: user?.id,
-      isCoach: true,
-      owner: user?.name,
+    updateSchedule({
+      owner: { id: coachId },
       schedule: updatedSchedule
     })
-      .then((res) => {
-        // console.log('res', res)
-      })
-      .catch((err) => console.log('err', err))
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
   }
 
   return (
     <div>
-      <div>
-        <span className="bg-gray-100 bg-opacity-10 flex text-sm font-light items-center">
-          <div className="mx-1">
-            <WarningIcon />
-          </div>
-          Actualiza los dias y horas en que tus alumnos podran encontrarte
-        </span>
-
+      {/* <span className="bg-gray-100 bg-opacity-10 flex text-sm font-light items-center">
+        <div className="mx-1">
+          <WarningIcon />
+        </div>
+        Actualiza los dias y horas en que tus alumnos podran encontrarte
+      </span> */}
+      <div className=" ">
+        <div className="text-center">Nuevo horario:</div>
         <ScheduleSelect
           schedule={schedule}
           handleAddSchedule={handleAddSchedule}
         />
+      </div>
+      <div className=" mt-2">
+        <div className="text-center">Horarios disponibles</div>
         <CoachScheduleDisplay
           schedule={schedule}
           setSchedule={handleAddSchedule}

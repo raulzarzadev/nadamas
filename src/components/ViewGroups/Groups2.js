@@ -1,6 +1,5 @@
-import { getAthletes } from '@/firebase/athletes'
 import { getAttendanceDate } from '@/firebase/attendance'
-import { getSchedule } from '@/firebase/schedules'
+import { getSchedule, getSchedules } from '@/firebase/schedules'
 import { useAuth } from '@/src/context/AuthContext'
 import useAthletes from '@/src/hooks/useAthletes'
 import { BackIcon, ForwardIcon } from '@/src/utils/Icons'
@@ -28,7 +27,7 @@ export default function Grups() {
   const [coachSchedule, setCoachSchedule] = useState({})
 
   useEffect(() => {
-    getSchedule(user.id)
+    getSchedules(user.id)
       .then((res) => setCoachSchedule(res.schedule))
       .catch((err) => console.log('err', err))
   }, [])

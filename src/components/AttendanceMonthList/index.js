@@ -8,7 +8,6 @@ import {
   subMonths
 } from 'date-fns'
 import { useAuth } from '@/src/context/AuthContext'
-import { getAthleteSchedule } from '@/firebase/client'
 import useAthletes from '@/src/hooks/useAthletes'
 import { dayLabels } from '@/src/utils/Dates'
 export default function AttendanceMonthList() {
