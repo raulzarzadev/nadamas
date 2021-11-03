@@ -42,7 +42,6 @@ export default function AthleteSchedule({ athleteId }) {
       })
       .catch((err) => console.log('err', err))
   }
-  console.log(`form`, form)
   return (
     <div>
       {isDirty && <Button onClick={handleSubmit}>Actualizar</Button>}
