@@ -3,33 +3,53 @@ import FormSchedule from './FormSchedule'
 import { getSchedules, updateSchedule } from '@/firebase/schedules'
 import Select from '@comps/inputs/Select'
 import { getPublicCoachSchedules } from '@/firebase/coaches'
+import Button from '@comps/inputs/Button'
 
 export default function AthleteSchedule({ athleteId }) {
-  const [athleteSchedule, setAthleteSchedule] = useState({})
   const handleScheduleChange = (newSchedule) => {
-    updateSchedule({
-      owner: { id: athleteId },
-      schedule: newSchedule
-    })
-      .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err))
+    setIsDirty(true)
+    setForm({ ...form, schedule: newSchedule })
   }
+  const [form, setForm] = useState({ owner: { id: athleteId } })
 
   useEffect(() => {
     if (athleteId) {
       getSchedules(athleteId)
-        .then(({ res }) => setAthleteSchedule(res[0]?.schedule))
+        .then(({ res }) => {
+          setForm({ ...res[0] })
+        })
         .catch((err) => console.log('err', err))
     }
   }, [athleteId])
 
-  const [coach, setCoach] = useState(null)
+  const [coach, setcoach] = useState(null)
+  const handleSetCoach = (coach) => {
+    setIsDirty(true)
+    setcoach(coach)
+    setForm({
+      ...form,
+      coach: { id: coach?.id || null, name: coach?.name || null }
+    })
+  }
+
+  const [isDirty, setIsDirty] = useState(false)
+  const handleSubmit = () => {
+    updateSchedule({
+      ...form
+    })
+      .then((res) => {
+        setIsDirty(false)
+      })
+      .catch((err) => console.log('err', err))
+  }
+  console.log(`form`, form)
   return (
     <div>
-      <SelectCoach coach={coach} setCoach={setCoach} />
+      {isDirty && <Button onClick={handleSubmit}>Actualizar</Button>}
+      <SelectCoach coach={form?.coach} setCoach={handleSetCoach} />
       <FormSchedule
         coach={coach}
-        schedule={athleteSchedule}
+        schedule={form?.schedule}
         setSchedule={handleScheduleChange}
       />
     </div>
