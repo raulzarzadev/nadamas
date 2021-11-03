@@ -9,28 +9,39 @@ import {
 } from './firebase-helpers'
 
 export const getSchedules = async (owner) => {
+  console.log(`owner`, owner)
   return await db
     .collection('schedules')
     .where('owner.id', '==', owner)
     .get()
-    .then(({ docs }) => normalizeDocs(docs))
-    .catch((err) => console.log(err))
+    .then(({ docs }) =>
+      formatResponse(true, 'GET_SCHEDDULES_SUCCESS', normalizeDocs(docs))
+    )
+    .catch((err) => formatResponse(true, 'GET_SCHEDDULES_FAIL', err))
 }
 
 export const updateSchedule = async ({ id, owner, schedule }) => {
-  const scheduleRef = db.collection('schedules').doc(id)
-  const scheduleExists = await scheduleRef.get().exists
-  if(scheduleExists){
-    return await scheduleRef
-      .update({ schedule })
-      .then((res) => formatResponse(true, 'UPDATE_SCHEDULE', res))
-      .catch((err) => formatResponse(false, 'ERROR_UPDATING_SCHEDULE', res))
-  }else {
-    return await db
-      .collection('schedules')
-      .add({ schedule, owner })
-      .then((res) => formatResponse(true, 'CREATE_SCHEDULE', res))
-      .catch((err) => formatResponse(false, 'ERROR_CREATING_SCHEDULE', err))
-  }
-  
+  return db
+    .collection('schedules')
+    .where('owner.id', '==', owner.id)
+    .get()
+    .then(({ docs }) => {
+      console.log(`docs`, docs)
+      const scheduleExists = !!docs[0]?.exists
+      if (scheduleExists) {
+        const scheduleRef = db.collection('schedules').doc(docs[0].id)
+        return scheduleRef
+          .update({ schedule })
+          .then((res) => formatResponse(true, 'SCHEDULE_UPDATED', res))
+          .catch((err) => formatResponse(false, 'ERROR_UPDATING_SCHEDULE', res))
+      } else {
+        return db
+          .collection('schedules')
+          .add({ schedule, owner })
+          .then((res) =>
+            formatResponse(true, 'SCHEDULE_CREATED', { id: res.id })
+          )
+          .catch((err) => formatResponse(false, 'ERROR_CREATING_SCHEDULE', err))
+      }
+    })
 }

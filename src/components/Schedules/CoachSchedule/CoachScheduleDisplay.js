@@ -7,6 +7,7 @@ export default function CoachScheduleDisplay({
   schedule = undefined,
   setSchedule = () => {}
 }) {
+  console.log(`schedule`, schedule)
 
   const handleRemoveHour = () => {
     const { day, hour } = deleteDisplay
@@ -25,7 +26,7 @@ export default function CoachScheduleDisplay({
       (d) => d !== parseInt(day)
     )
 
-     setSchedule({ hour, days: newDaysList })
+    setSchedule({ hour, days: newDaysList })
   }
   const [deleteDisplay, setDeleteDisplay] = useState(null)
   const handeleOpenDeleteModal = () => {
@@ -34,30 +35,33 @@ export default function CoachScheduleDisplay({
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false)
 
   return (
-    <div className=''>
-      {Object.keys(schedule).map((day) => (
-        <div key={day} className=''>
-          {dayLabels[day] && !!schedule[day].length && (
-            <div className="flex w-full ">
-              <div className="w-2/6 text-right p-1 pr-2">{dayLabels[day]}</div>
-              <div className="w-4/6 flex items-center overflow-auto  ">
-                {schedule[day].sort()?.map((hour, i) => (
-                  <button
-                    key={i}
-                    className="relative m-1 bg-gray-600 p-1 rounded-md shadow-md hover:shadow-none "
-                    onClick={() => {
-                      handeleOpenDeleteModal()
-                      setDeleteDisplay({ day, hour })
-                    }}
-                  >
-                    {hour}
-                  </button>
-                ))}
+    <div className="">
+      {schedule &&
+        Object?.keys(schedule)?.map((day) => (
+          <div key={day} className="">
+            {dayLabels[day] && !!schedule[day].length && (
+              <div className="flex w-full ">
+                <div className="w-2/6 text-right p-1 pr-2">
+                  {dayLabels[day]}
+                </div>
+                <div className="w-4/6 flex items-center overflow-auto  ">
+                  {schedule[day].sort()?.map((hour, i) => (
+                    <button
+                      key={i}
+                      className="relative m-1 bg-gray-600 p-1 rounded-md shadow-md hover:shadow-none "
+                      onClick={() => {
+                        handeleOpenDeleteModal()
+                        setDeleteDisplay({ day, hour })
+                      }}
+                    >
+                      {hour}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      ))}
+            )}
+          </div>
+        ))}
       <Modal
         open={modalDeleteOpen}
         handleOpen={setModalDeleteOpen}

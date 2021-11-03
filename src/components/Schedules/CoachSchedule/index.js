@@ -10,7 +10,7 @@ export default function CoachSchedule({ coachId }) {
   useEffect(() => {
     if (coachId) {
       getSchedules(coachId)
-        .then((res) => setSchedule(res[0]?.schedule))
+        .then(({res}) => setSchedule(res[0]?.schedule))
         .catch((err) => console.log(`err`, err))
     }
   }, [coachId])

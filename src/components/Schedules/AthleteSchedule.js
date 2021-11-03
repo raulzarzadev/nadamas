@@ -16,9 +16,7 @@ export default function AthleteSchedule({ athleteId }) {
   useEffect(() => {
     if (athleteId) {
       getSchedules(athleteId)
-        .then((res) => {
-          setAthleteSchedule(res?.schedule)
-        })
+        .then(({ res }) => setAthleteSchedule(res[0]?.schedule))
         .catch((err) => console.log('err', err))
     }
   }, [athleteId])

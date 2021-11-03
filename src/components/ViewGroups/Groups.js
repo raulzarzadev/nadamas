@@ -27,7 +27,7 @@ export default function Groups() {
   const [coachSchedule, setCoachSchedule] = useState({})
   useEffect(() => {
     getSchedules(user.id)
-      .then((res) => setCoachSchedule(res.schedule))
+      .then(({res}) => setCoachSchedule(res[0].schedule))
       .catch((err) => console.log('err', err))
   }, [])
 

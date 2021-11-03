@@ -28,7 +28,7 @@ export default function Grups() {
 
   useEffect(() => {
     getSchedules(user.id)
-      .then((res) => setCoachSchedule(res.schedule))
+      .then(({res}) => setCoachSchedule(res[0].schedule))
       .catch((err) => console.log('err', err))
   }, [])
   const [showAttendance, setShowAttendance] = useState(false)

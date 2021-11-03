@@ -9,18 +9,16 @@ const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState()
-  const [userSchedule, setUserSchedule] = useState({})
-
+  
   const ENVIROMENT = process.env.NEXT_PUBLIC_ENVIROMENT
   console.log('ENVIROMENT', ENVIROMENT)
-
+  
   useEffect(() => {
     if (ENVIROMENT === 'DEV') {
       setUser({
         email: 'raul3arza@gmail.com',
         id: 'osdRhDFpycZCa2e6o7QdEsDRbzw2',
-        image:
-          '',
+        image: '',
         joinedAt: 324234,
         name: 'Zarza Dev'
       })
@@ -28,14 +26,18 @@ export function AuthProvider({ children }) {
       onAuthStateChanged(setUser)
     }
   }, [])
-
+  
+  /*   
+  const [userSchedule, setUserSchedule] = useState({})
   useEffect(() => {
     if (user) {
-      getSchedules(user.id)
-        .then(setUserSchedule)
+      getSchedules(user?.id)
+        .then(( res ) => {
+          console.log(`res`, res)
+          setUserSchedule(res[0].schedule)})
         .catch((err) => console.log('err', err))
     }
-  }, [user])
+  }, [user]) */
 
   // confirm if user have isActive
 
@@ -56,7 +58,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, userSchedule, googleLogin, signOut }}>
+    <AuthContext.Provider value={{ user,  googleLogin, signOut }}>
       {children}
     </AuthContext.Provider>
   )
