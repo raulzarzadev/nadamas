@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Button from '@comps/inputs/Button'
-import { dayLabels } from '../../utils/Dates'
-import { TrashBinIcon } from '../../utils/Icons'
+import { dayLabels } from '../../../utils/Dates'
+import { TrashBinIcon } from '../../../utils/Icons'
 import s from './styles.module.css'
 
 export const HoursInput = ({

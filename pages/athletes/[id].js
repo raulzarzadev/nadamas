@@ -1,5 +1,5 @@
-import FormAthlete from '@comps/FormAthlete'
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
+import FormAthlete from '@comps/Athlete/FormAthlete'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 

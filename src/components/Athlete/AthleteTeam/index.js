@@ -30,14 +30,12 @@ const TeamCard = ({ team, athleteId }) => {
   const [responseStatus, setResponseStatus] = useState(undefined)
 
   const handleJoin = (teamId) => {
-    if (athleteId) {
-      addJoinRequests(teamId, athleteId)
-        .then((res) => {
-          setResponseStatus(REQUEST_RESPONSES[1])
-          console.log(`res`, res)
-        })
-        .catch((err) => console.log(`err`, err))
-    }
+    addJoinRequests(teamId, athleteId)
+      .then((res) => {
+        setResponseStatus(REQUEST_RESPONSES[1])
+        console.log(`res`, res)
+      })
+      .catch((err) => console.log(`err`, err))
   }
   const handleCancelRequest = (teamId) => {
     cancelRequest(teamId, athleteId)
@@ -49,14 +47,12 @@ const TeamCard = ({ team, athleteId }) => {
   }
 
   const handleUnjoin = (teamId) => {
-    if (athleteId) {
-      unjoinTeam(teamId, athleteId)
-        .then((res) => {
-          setResponseStatus(REQUEST_RESPONSES[0])
-          console.log(`res`, res)
-        })
-        .catch((err) => console.log(`err`, err))
-    }
+    unjoinTeam(teamId, athleteId)
+      .then((res) => {
+        setResponseStatus(REQUEST_RESPONSES[0])
+        console.log(`res`, res)
+      })
+      .catch((err) => console.log(`err`, err))
   }
 
   const REQUEST_RESPONSES = {
@@ -84,12 +80,12 @@ const TeamCard = ({ team, athleteId }) => {
     }
   }
 
-  const getRequestStatus = (userId, { joinRequests, athletes }) => {
-    if (joinRequests?.includes(userId)) {
+  const getRequestStatus = (athleteId, { joinRequests, athletes }) => {
+    if (joinRequests?.includes(athleteId)) {
       return REQUEST_RESPONSES[1]
     } else {
     }
-    if (athletes?.includes(userId)) {
+    if (athletes?.includes(athleteId)) {
       return REQUEST_RESPONSES[3]
     } else {
       return REQUEST_RESPONSES[0]
@@ -99,16 +95,15 @@ const TeamCard = ({ team, athleteId }) => {
   useEffect(() => {
     setResponseStatus(getRequestStatus(athleteId, team))
   }, [])
-
+  const disabled = !athleteId || responseStatus?.type === 'REQUEST_REJECTED'
   return (
     <div
       key={team.id}
       className="bg-gray-600 p-2 rounded-lg shadow-lg w-full flex items-center justify-between my-2"
     >
       <button
-        className="disabled:opacity-30"
-        disabled={responseStatus?.type === 'REQUEST_REJECTED'}
-        className="border p-1"
+        disabled={disabled}
+        className={` p-1  ${disabled ? 'border-none' : 'border'}`}
         onClick={() => responseStatus?.handleClick(team.id)}
       >
         {!!!responseStatus ? <Loading /> : responseStatus?.label}

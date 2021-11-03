@@ -9,10 +9,7 @@ import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
 import { useEffect, useState } from 'react'
 
-export default function TeamMembers({
-  members = [],
-  teamId
-}) {
+export default function TeamMembers({ members = [], teamId }) {
   const [openSearchModal, setOpenSearchModal] = useState(false)
   const handleOpenSearch = () => {
     setOpenSearchModal(!openSearchModal)
@@ -23,7 +20,6 @@ export default function TeamMembers({
   }
   const handleRemoveMember = async (athleteId) => {
     await unjoinTeam(teamId, athleteId)
-    const newList = members.filter((id) => id !== athleteId)
   }
 
   return (
@@ -65,7 +61,6 @@ export default function TeamMembers({
 }
 
 const MemberRow = ({ athlete, handleRemoveMember }) => {
-  console.log(`athlete`, athlete)
   const [openDelete, setOpenDelete] = useState(false)
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
@@ -74,7 +69,13 @@ const MemberRow = ({ athlete, handleRemoveMember }) => {
   useEffect(() => {
     if (athlete) {
       getAthlete(athlete)
-        .then(setAthleteInfo)
+        .then((res) => {
+          if (res) {
+            setAthleteInfo(res)
+          } else {
+            setAthleteInfo({ id: athlete, active: false })
+          }
+        })
         .catch((err) => console.log(`err`, err))
       return () => {
         setAthleteInfo(undefined)
@@ -94,7 +95,12 @@ const MemberRow = ({ athlete, handleRemoveMember }) => {
         >
           <TrashBinIcon size="1rem" />
         </Button>
-        <AthleteRow athlete={athleteInfo} />
+        {athleteInfo.active ? (
+          <AthleteRow athlete={athleteInfo} />
+        ) : (
+          <div className="p-2">Usuario inactivo</div>
+        )}
+
         <DeleteModal
           text="Sacar del equipo a"
           title="Descartar atleta"

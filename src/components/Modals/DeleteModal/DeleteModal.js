@@ -1,6 +1,5 @@
 import Button from '@comps/inputs/Button'
 import Modal from '../Modal'
-import s from './styles.module.css'
 import { useState } from 'react'
 export default function DeleteModal({
   open,
@@ -8,7 +7,7 @@ export default function DeleteModal({
   name,
   handleDelete,
   text = 'De verdad quieres eliminar a este atleta',
-  title = 'Eliminar Nadador'
+  title = 'Eliminar'
 }) {
   const [textButton, setTextButton] = useState('Eliminar')
 

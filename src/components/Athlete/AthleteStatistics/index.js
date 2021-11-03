@@ -2,7 +2,7 @@ import { getAthleteRecords, getRecords } from '@/firebase/records'
 import { STYLES } from '@/src/constants/SWIMMING_TESTS.js'
 import { format } from '@/src/utils/Dates.js'
 import { useEffect, useState } from 'react'
-import LinealChartJs from './LinealChart.js'
+import LinealChartJs from './LinealChart.js/index.js'
 export default function AthleteStatistics({ athleteId }) {
   const [records, setRecords] = useState([])
 

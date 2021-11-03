@@ -1,10 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import {
   firebaseLogout,
-  getAthleteSchedule,
   loginWithGoogle,
   onAuthStateChanged
 } from '@/firebase/client'
+import { getSchedules } from '@/firebase/schedules'
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (user) {
-      getAthleteSchedule(user.id)
+      getSchedules(user.id)
         .then(setUserSchedule)
         .catch((err) => console.log('err', err))
     }
