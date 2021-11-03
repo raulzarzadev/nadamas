@@ -1,5 +1,5 @@
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
-import FormAthlete from '@comps/FormAthlete'
+import FormAthlete from '@comps/Athlete/FormAthlete'
 import Head from 'next/head'
 
 export default function grupos() {

@@ -1,5 +1,5 @@
-import Payments from '@/pages/payments'
-import Records from '@/pages/records'
+
+import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import AthleteSchedule from '@comps/Schedules/AthleteSchedule'
@@ -8,6 +8,8 @@ import { useRouter } from 'next/router'
 import { useState } from 'react'
 import AthleteStatistics from '../AthleteStatistics'
 import AthleteTeam from '../AthleteTeam'
+import Payments from '../Payments'
+import Records from '../Records'
 
 export default function SectionAthleteAlreadyExist({ athleteId }) {
   const router = useRouter()
@@ -28,12 +30,14 @@ export default function SectionAthleteAlreadyExist({ athleteId }) {
   return (
     <>
       {/* ----------------------------------------------TEAMS AND GROUPS */}
+
       <Section title={'Equipos'} indent={false}>
         <AthleteTeam athleteId={athleteId} />
       </Section>
       {/* ----------------------------------------------ESTADISITCAS */}
       <Section title={'Estadisticas'} indent={false}>
-        <AthleteStatistics athleteId={athleteId} />
+        <Info text="Aún no estan listas" />
+        {/* <AthleteStatistics athleteId={athleteId} /> */}
       </Section>
 
       {/* ----------------------------------------------Tests */}

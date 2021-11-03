@@ -89,16 +89,14 @@ export const rejectTeamRequest = async (teamId, athleteId) => {
 }
 
 export const addJoinRequests = async (teamId, athleteId) => {
-  const teamRef = db.collection('teams').doc(teamId)
-
-  try {
-    const res = await teamRef.update({
+  return db
+    .collection('teams')
+    .doc(teamId)
+    .update({
       joinRequests: firebase.firestore.FieldValue.arrayUnion(athleteId)
     })
-    return formatResponse(true, 'REQUEST_ADDED', res)
-  } catch (err) {
-    return formatResponse(false, 'ADD_REQUEST_FAIL', err)
-  }
+    .then((res) => formatResponse(true, 'REQUEST_ADDED', res))
+    .catch((err) => formatResponse(false, 'ADD_REQUEST_FAIL', err))
 }
 export const cancelRequest = async (teamId, athleteId) => {
   const teamRef = db.collection('teams').doc(teamId)
