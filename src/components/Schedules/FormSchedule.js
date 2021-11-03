@@ -1,4 +1,5 @@
 import { dayLabels } from '@/src/utils/Dates'
+import Info from '@comps/Alerts/Info'
 import { useEffect, useState } from 'react'
 
 const SCHEDULE_BASE = {
@@ -20,8 +21,17 @@ function setDayScheduleBetween(startAt = 6, endAt = 22) {
   return res
 }
 
-export default function FormSchedule({ schedule, setSchedule }) {
+export default function FormSchedule({ schedule, setSchedule, coach }) {
+  console.log(`coach`, coach)
   const [form, setForm] = useState({})
+  const [scheduleBase, setScheduleBase] = useState(SCHEDULE_BASE)
+  useEffect(() => {
+    if (coach) {
+      setScheduleBase(coach.schedule)
+    } else {
+      setScheduleBase(SCHEDULE_BASE)
+    }
+  }, [coach])
 
   useEffect(() => {
     if (schedule) {
@@ -33,12 +43,14 @@ export default function FormSchedule({ schedule, setSchedule }) {
     setForm({ ...form, [name]: [value] })
     setSchedule({ ...form, [name]: [value] })
   }
+  console.log(`scheduleBase`, scheduleBase)
+  if (!scheduleBase) return <Info text="Sin horarios disponibles" />
   return (
     <>
       <div className="">
         <div className="flex flex-col">
           <div className="flex flex-wrap justify-center">
-            {Object?.keys(SCHEDULE_BASE)?.map((day, i) => (
+            {Object?.keys(scheduleBase)?.map((day, i) => (
               <label
                 key={day}
                 className="w-1/2 flex flex-col items-center sm:w-1/4 p-1"
@@ -48,11 +60,12 @@ export default function FormSchedule({ schedule, setSchedule }) {
                   <select
                     className=" bg-gray-500 p-1 m-2 text-lg w-full rounded"
                     name={day}
-                    value={form[day] || null}
+                    value={form[day]?.[0]}
                     onChange={handleChange}
                   >
+                    {console.log(`form[day]`, form[day]?.[0])}
                     <option value="">--:--</option>
-                    {SCHEDULE_BASE[day]?.map((hour, i) => (
+                    {scheduleBase[day]?.map((hour, i) => (
                       <option key={i} value={hour}>
                         {hour}
                       </option>

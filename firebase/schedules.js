@@ -2,14 +2,11 @@ import 'firebase/firestore'
 
 import { db } from './client'
 import {
-  datesToFirebaseFromat,
   formatResponse,
-  normalizeDoc,
   normalizeDocs
 } from './firebase-helpers'
 
 export const getSchedules = async (owner) => {
-  console.log(`owner`, owner)
   return await db
     .collection('schedules')
     .where('owner.id', '==', owner)

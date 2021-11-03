@@ -2,6 +2,7 @@ import { getAttendanceDate } from '@/firebase/attendance'
 import { getSchedule, getSchedules } from '@/firebase/schedules'
 import { useAuth } from '@/src/context/AuthContext'
 import useAthletes from '@/src/hooks/useAthletes'
+import { format } from '@/src/utils/Dates'
 import { BackIcon, ForwardIcon } from '@/src/utils/Icons'
 import AthleteRow from '@comps/AthleteRow'
 import Button from '@comps/inputs/Button'
@@ -9,7 +10,7 @@ import Toggle from '@comps/inputs/Toggle'
 import Loading from '@comps/Loading'
 import DayNotesModal from '@comps/Modals/DayNotesModal'
 import SelectGroupsView from '@comps/SelectGroupsView'
-import { addDays, format, getDay, subDays } from 'date-fns'
+import { addDays, getDay, subDays } from 'date-fns'
 import { useEffect, useState } from 'react'
 import TeamsView from './TeamsView'
 
@@ -24,23 +25,24 @@ export default function Grups() {
     setDate(addDays(date, 1))
   }
 
-  const [coachSchedule, setCoachSchedule] = useState({})
+  const [coachSchedule, setCoachSchedule] = useState(undefined)
 
   useEffect(() => {
     getSchedules(user.id)
-      .then(({res}) => setCoachSchedule(res[0].schedule))
+      .then(({ res }) => {
+        const { schedule } = res?.[0]
+        if (schedule) {
+          setCoachSchedule(schedule)
+        }
+      })
       .catch((err) => console.log('err', err))
   }, [])
   const [showAttendance, setShowAttendance] = useState(false)
 
-  const [groupsView, setGroupsView] = useState('schedule')
-  const handleSetView = (view) => setGroupsView(view)
-
+  if (coachSchedule === undefined) return <Loading />
   return (
     <div className="relative">
       <div className=" sticky  top-0 z-10 bg-gray-700 shadow-sm">
-        {/*   <SelectGroupsView /> */}
-
         <div className="flex py-2 justify-center items-center">
           <div className="w-1/4 flex justify-center">
             <Button
@@ -73,7 +75,7 @@ export default function Grups() {
       </div>
       <div className="max-w-lg mx-auto">
         {coachSchedule?.[getDay(date)]?.map((schedule) => (
-          <AthleteList
+          <HourAthleteList
             key={schedule}
             schedule={schedule}
             date={date}
@@ -85,8 +87,9 @@ export default function Grups() {
   )
 }
 
-const AthleteList = ({ schedule, date, showAttendance }) => {
+const HourAthleteList = ({ schedule, date, showAttendance }) => {
   const { athletesWithSchedule } = useAthletes()
+  console.log(`athletesWithSchedule`, athletesWithSchedule)
   const [athltes, setAthltes] = useState(undefined)
 
   useEffect(() => {
@@ -103,7 +106,6 @@ const AthleteList = ({ schedule, date, showAttendance }) => {
 
   const [attendance, setAttendance] = useState([])
   const [notes, setNotes] = useState('')
-
   useEffect(() => {
     if (showAttendance) {
       getAttendanceDate(date, schedule, ({ attendance, notes }) => {
