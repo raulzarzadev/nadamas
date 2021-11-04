@@ -5,7 +5,7 @@ import {
   rejectTeamRequest,
   removeTeam
 } from '@/firebase/teams'
-import { ROUTES } from '@/pages/ROUTES'
+
 import { useAuth } from '@/src/context/AuthContext'
 import { TrashBinIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'

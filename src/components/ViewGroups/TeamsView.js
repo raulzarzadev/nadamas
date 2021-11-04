@@ -1,6 +1,5 @@
-import { ROUTES } from '@/pages/ROUTES'
+import { ROUTES } from '@/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
-import useAthletes from '@/src/hooks/useAthletes'
 import { AddIcon } from '@/src/utils/Icons'
 import AthleteRow from '@comps/AthleteRow'
 import Button from '@comps/inputs/Button'

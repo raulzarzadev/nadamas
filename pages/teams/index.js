@@ -1,8 +1,8 @@
+import { ROUTES } from '@/ROUTES'
 import { AddIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import TeamsList from '@comps/Teams/TeamsList.js'
 import { useRouter } from 'next/router'
-import { ROUTES } from '../ROUTES'
 
 export default function Teams() {
   const router = useRouter()

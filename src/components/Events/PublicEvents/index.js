@@ -1,4 +1,3 @@
-import { ROUTES } from '@/pages/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
 import Button from '@comps/inputs/Button'
 import { useRouter } from 'next/router'
@@ -8,6 +7,7 @@ import Link from 'next/link'
 import { getPublicEvents } from '@/firebase/events'
 import { format } from '@/src/utils/Dates'
 import EventsRow from '../EventsRow'
+import { ROUTES } from '@/ROUTES'
 export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function PublicEvents({ showNew, showGrid }) {
   const { user } = useAuth()
   return (
     <div className=" max-w-3xl mx-auto ">
-      <h3>Proximos</h3>
+      <h3>Proximos eventos</h3>
       <EventsRow events={events} showNew={showNew && user?.coach} />
       {showGrid && <EventsGrid events={events} />}
       {/* 

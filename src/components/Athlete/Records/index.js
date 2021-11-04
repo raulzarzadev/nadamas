@@ -1,5 +1,5 @@
 import { getAthleteRecords, removeRecord } from '@/firebase/records'
-import { ROUTES } from '@/pages/ROUTES'
+import { ROUTES } from '@/ROUTES'
 import SWIMMING_TESTS from '@/src/constants/SWIMMING_TESTS'
 import { format } from '@/src/utils/Dates'
 import { AddIcon } from '@/src/utils/Icons'

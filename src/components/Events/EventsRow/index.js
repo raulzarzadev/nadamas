@@ -1,4 +1,4 @@
-import { ROUTES } from '@/pages/ROUTES'
+import { ROUTES } from '@/ROUTES'
 import { format } from '@/src/utils/Dates'
 import { useRouter } from 'next/router'
 

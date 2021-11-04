@@ -1,5 +1,5 @@
 import { getTeams } from '@/firebase/teams'
-import { ROUTES } from '@/pages/ROUTES'
+import { ROUTES } from '@/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
 import SelectGroupsView from '@comps/SelectGroupsView'
 import { useRouter } from 'next/router'

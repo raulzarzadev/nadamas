@@ -1,4 +1,4 @@
-import { ROUTES } from '@/pages/ROUTES'
+import { ROUTES } from '@/ROUTES'
 import { useRouter } from 'next/router'
 
 export default function SelectGroupsView() {
