@@ -1,4 +1,4 @@
-import { addDays, format as fnsFormat, toDate } from 'date-fns'
+import { addDays, addHours, format as fnsFormat, toDate } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export const dayLabels = [
@@ -11,14 +11,14 @@ export const dayLabels = [
   'Sabado'
 ]
 export const format = (date = new Date(), formatStr = 'PP') => {
-  return fnsFormat(addDays(new Date(date), 1), formatStr, { locale: es })
+  return fnsFormat(new Date(date), formatStr, { locale: es })
   /*   const newDate = zonedTimeToUtc(date, 'America/Los_Angeles')
   return fnsFormat(newDate, formatStr, {
     locale: es // or global.__localeId__
   }) */
 }
 export function formatInputDate(date) {
-  return format(date, 'yyy-MM-dd')
+  return fnsFormat(addHours(new Date(date), 7), 'yyy-MM-dd')
 }
 
 export function simpleDate(date = new Date()) {

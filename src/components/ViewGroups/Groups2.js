@@ -104,11 +104,8 @@ const HourAthleteList = ({ schedule, date, showAttendance, coachId }) => {
         setAthletes(formatList)
       })
       .catch((err) => console.log(`err`, err))
-  }, [])
+  }, [date])
 
-  useEffect(() => {
-    console.log(`schedule, date`, schedule, date)
-  }, [date, schedule])
 
   const [attendance, setAttendance] = useState([])
   const [notes, setNotes] = useState('')
