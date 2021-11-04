@@ -9,12 +9,11 @@ import { ROUTES } from '@/pages/ROUTES'
 import TeamsList from '@comps/Teams/TeamsList.js'
 import FormAthlete from '@comps/Athlete/FormAthlete'
 import CoachSchedule from '@comps/Schedules/CoachSchedule'
+import CoachEvents from '@comps/Events/CoachEvents'
 
 export default function UserProfile() {
   const { user } = useAuth()
-
   const [form, setForm] = useState({})
-
   const handleChange = ({ target: { value, name } }) => {
     setForm({ ...form, [name]: value })
   }
@@ -24,14 +23,13 @@ export default function UserProfile() {
       setForm(user)
     }
   }, [user])
-  console.log(`user`, user)
 
   if (!user) return <Loading />
   return (
     <div className="pt-4">
       <div className="max-w-lg mx-auto pb-6">
         {user?.coach && (
-          <Section title="Entrenador " indent={false}>
+          <Section title="Entrenador">
             <CoachSection coachId={user.id} />
           </Section>
         )}
@@ -85,6 +83,9 @@ const AthleteSection = ({ athleteId }) => {
 
 const CoachSection = ({ coachId }) => (
   <div>
+    <Section title="Eventos" indent={false}>
+      <CoachEvents coachId={coachId} />
+    </Section>
     <Section title="Horario" indent={false}>
       <CoachSchedule coachId={coachId} />
     </Section>

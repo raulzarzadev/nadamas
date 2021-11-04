@@ -4,7 +4,7 @@ export default function Toggle({
   checked = false,
   name = 'toggle',
   labelPosition = 'left', // left | top
-  size = 'md' // sm | md | lg
+  size = 'md' // sm | md |
 }) {
   const labelPos = {
     left: 'mr-3',

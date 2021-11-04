@@ -8,6 +8,11 @@ export default {
       icon: ''
     },
     {
+      href: '/events',
+      label: 'Eventos',
+      icon: ''
+    },
+    {
       href: '/groups',
       label: 'Mis grupos',
       icon: ''

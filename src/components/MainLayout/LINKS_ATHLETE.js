@@ -1,10 +1,15 @@
-import { PersonIcon } from "@/src/utils/Icons";
+import { PersonIcon } from '@/src/utils/Icons'
 
 export default {
   nav: [
     {
       href: '/profile',
       label: 'Mi perfil',
+      icon: ''
+    },
+    {
+      href: '/events',
+      label: 'Eventos',
       icon: ''
     },
     {

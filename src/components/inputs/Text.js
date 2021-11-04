@@ -25,9 +25,8 @@ const Text = React.forwardRef(
         {label && value && `${label} :`}
         <div className={s.icon_container}>
           <input
-          
-            autoComplete={autoComplete}
             ref={ref}
+            autoComplete={autoComplete}
             type={type}
             className={s.text_input}
             placeholder={placeholder || label}

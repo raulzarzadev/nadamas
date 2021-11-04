@@ -32,5 +32,14 @@ export const ROUTES = {
     details: function (id) {
       return `${this.index}/${id}`
     }
+  },
+  events: {
+    index: '/events',
+    new: function () {
+      return `${this.index}/new`
+    },
+    details: function (id) {
+      return `${this.index}/${id}`
+    }
   }
 }
