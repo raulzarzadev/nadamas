@@ -5,12 +5,13 @@ import SectionContact from './SectionContact'
 import SectionMedic from './SectionMedic'
 import SectionEmergency from './SectionEmergency'
 import StickyContactAndSaveBar from './StickyContactAndSaveBar'
-export function Form({
-  form,
-  setForm,
-  handleSubmit,
-  isEditable,
-}) {
+import Payments from '../Payments'
+import AthleteSchedule from '@comps/Schedules/AthleteSchedule'
+import AthleteTeam from '../AthleteTeam'
+import Section from '@comps/Section'
+import Info from '@comps/Alerts/Info'
+import Records from '../Records'
+export function Form({ form, setForm, handleSubmit, isEditable }) {
   return (
     <div className="">
       <div className="relative pt-0 pb-8 max-w-lg mx-auto">
@@ -37,16 +38,38 @@ export function Form({
 
           {/* ----------------------------------------------Personal information */}
           <SectionPersonal form={form} setForm={setForm} />
+          {form?.id && (
+            <Section title="Equipo" sticky>
+              {/* ----------------------------------------------Pyments */}
+              <Section title="Cuotas" indent={false}>
+                <Payments athleteId={form?.id} />
+              </Section>
 
-          {/* ----------------------------------------------Contact */}
-          <SectionContact form={form} setForm={setForm} />
-          {/* ----------------------------------------------Medic information */}
-          <SectionMedic form={form} setForm={setForm} />
+              {/* ----------------------------------------------Schedule */}
+              <Section title={'Horario'} indent={false}>
+                <AthleteSchedule athleteId={form?.id} />
+              </Section>
+              {/* ----------------------------------------------TEAMS AND GROUPS */}
 
-          {/* ----------------------------------------------Emergency contact */}
-          <SectionEmergency form={form} setForm={setForm} />
+              <Section title={'Equipos'} indent={false}>
+                <AthleteTeam athleteId={form?.id} />
+              </Section>
+            </Section>
+          )}
+          {form.id && (
+            <Section title="Desempeño" sticky>
+              {/* ----------------------------------------------Tests */}
+              <Section title={'Pruebas'} indent={false}>
+                <Records athleteId={form.id} />
+              </Section>
+              {/* ----------------------------------------------TESTs */}
+              <Section title={'Estadisticas'} indent={false}>
+                <Info text="Aún no estan listas" />
+              </Section>
+            </Section>
+          )}
         </form>
-        {form?.id && <SectionAthleteAlreadyExist athleteId={form?.id} />}
+        {/*  {form?.id && <SectionAthleteAlreadyExist athleteId={form?.id} />} */}
       </div>
     </div>
   )

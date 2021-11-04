@@ -6,7 +6,7 @@ export default function SectionContact({  form, setForm }) {
     setForm({ ...form, [name]: value })
   }
   return (
-    <Section title={'Contacto'} indent={false}>
+    <Section title={'Contacto'} indent={false} >
       <div className={`flex flex-col p-1`}>
         <div className="my-1">
           <TextEditable

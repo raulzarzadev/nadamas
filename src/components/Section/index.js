@@ -13,10 +13,10 @@ export default function Section({
     setShow(open)
   }, [open])
   return (
-    <section className="my-2  ">
+    <section className="my-2 ">
       <h3
         className={`
-        text-left flex pl-2 mb-4 font-bold bg-gray-700 
+        text-left flex pl-2 mb-4 font-bold bg-gray-700  
         ${sticky && `sticky top-16`}`}
         onClick={() => setShow(!show)}
       >
