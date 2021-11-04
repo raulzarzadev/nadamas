@@ -1,5 +1,10 @@
+import { getAthlete } from '@/firebase/athletes'
 import { getAttendanceDate } from '@/firebase/attendance'
-import { getSchedule, getSchedules } from '@/firebase/schedules'
+import {
+  getAthletesBySchedule,
+  getSchedule,
+  getSchedules
+} from '@/firebase/schedules'
 import { useAuth } from '@/src/context/AuthContext'
 import useAthletes from '@/src/hooks/useAthletes'
 import { format } from '@/src/utils/Dates'
@@ -66,16 +71,17 @@ export default function Grups() {
             </Button>
           </div>
         </div>
-        <div className="py-2">
+        {/*  <div className="py-2">
           <Toggle
             label="Mostrar notas y asistencia "
             onChange={({ target }) => setShowAttendance(target.checked)}
           />
-        </div>
+        </div> */}
       </div>
       <div className="max-w-lg mx-auto">
         {coachSchedule?.[getDay(date)]?.map((schedule) => (
           <HourAthleteList
+            coachId={user.id}
             key={schedule}
             schedule={schedule}
             date={date}
@@ -87,22 +93,22 @@ export default function Grups() {
   )
 }
 
-const HourAthleteList = ({ schedule, date, showAttendance }) => {
-  const { athletesWithSchedule } = useAthletes()
-  console.log(`athletesWithSchedule`, athletesWithSchedule)
-  const [athltes, setAthltes] = useState(undefined)
+const HourAthleteList = ({ schedule, date, showAttendance, coachId }) => {
+  const [athletes, setAthletes] = useState(undefined)
+  useEffect(() => {
+    getAthletesBySchedule(coachId, schedule, date)
+      .then((res) => {
+        const formatList = res.map((athlete) => {
+          return athlete.owner.id
+        })
+        setAthletes(formatList)
+      })
+      .catch((err) => console.log(`err`, err))
+  }, [])
 
   useEffect(() => {
-    const getScheduleAthletes = ({ date = new Date(), schedule = '00:00' }) => {
-      const day = getDay(date)
-      return athletesWithSchedule?.filter(
-        (athlete) =>
-          !!athlete.schedule[day] && athlete.schedule?.[day]?.[0] === schedule
-      )
-    }
-
-    setAthltes(getScheduleAthletes({ date, schedule }))
-  }, [date, schedule, athletesWithSchedule])
+    console.log(`schedule, date`, schedule, date)
+  }, [date, schedule])
 
   const [attendance, setAttendance] = useState([])
   const [notes, setNotes] = useState('')
@@ -117,7 +123,7 @@ const HourAthleteList = ({ schedule, date, showAttendance }) => {
         })
         .catch((err) => console.log('err', err))
     }
-  }, [date, athletesWithSchedule, showAttendance, schedule])
+  }, [date, showAttendance, schedule])
 
   return (
     <div>
@@ -130,16 +136,17 @@ const HourAthleteList = ({ schedule, date, showAttendance }) => {
         <span className="text-2xl font-bold">
           {`${schedule}`}
           <span className="text-base font-thin">{` (${
-            athltes?.length ? athltes.length : ''
+            athletes?.length ? athletes.length : '0'
           })`}</span>
         </span>
-        {athltes === undefined && <Loading />}
-        {athltes?.length === 0 && 'Sin alumnos'}
+        <div className="flex items-center ">
+          {athletes === undefined && <Loading />}
+        </div>
       </div>
-      {athltes?.map((athlete) => (
-        <AthleteRow
+      {athletes?.map((athlete) => (
+        <Athletes
+          key={athlete}
           athlete={athlete}
-          key={athlete.id}
           schedule={schedule}
           date={date}
           displaySetAttendance={showAttendance}
@@ -147,5 +154,42 @@ const HourAthleteList = ({ schedule, date, showAttendance }) => {
         />
       ))}
     </div>
+  )
+}
+
+const Athletes = ({
+  athlete,
+  schedule,
+  date,
+  assist,
+  displaySetAttendance
+}) => {
+  const [athleteInfo, setAthleteInfo] = useState(undefined)
+  useEffect(() => {
+    if (athlete) {
+      getAthlete(athlete)
+        .then((res) => {
+          if (res) {
+            setAthleteInfo(res)
+          } else {
+            setAthleteInfo({ id: athlete, active: false })
+          }
+        })
+        .catch((err) => console.log(`err`, err))
+      return () => {
+        setAthleteInfo(undefined)
+      }
+    }
+  }, [athlete])
+  if (athleteInfo === undefined) return <Loading />
+  return (
+    <AthleteRow
+      athlete={athleteInfo}
+      key={athleteInfo.id}
+      schedule={schedule}
+      date={date}
+      displaySetAttendance={displaySetAttendance}
+      assist={assist}
+    />
   )
 }

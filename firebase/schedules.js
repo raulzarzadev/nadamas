@@ -1,3 +1,4 @@
+import { getDay } from 'date-fns'
 import 'firebase/firestore'
 
 import { db } from './client'
@@ -14,7 +15,7 @@ export const getSchedules = async (owner) => {
     .catch((err) => formatResponse(true, 'GET_SCHEDDULES_FAIL', err))
 }
 
-export const updateSchedule = async ({  owner, schedule, coach }) => {
+export const updateSchedule = async ({ owner, schedule, coach }) => {
   return db
     .collection('schedules')
     .where('owner.id', '==', owner.id)
@@ -38,4 +39,18 @@ export const updateSchedule = async ({  owner, schedule, coach }) => {
           .catch((err) => formatResponse(false, 'ERROR_CREATING_SCHEDULE', err))
       }
     })
+}
+
+export const getAthletesBySchedule = async (coachId, schedule, date) => {
+  const day = getDay(date)
+
+  console.log(`day`, day, schedule, coachId)
+
+  return db
+    .collection('schedules')
+    .where('coach.id', '==', coachId)
+    .where(`schedule.${day}`, 'array-contains', schedule)
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log(`err`, err))
 }
