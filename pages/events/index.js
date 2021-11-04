@@ -23,7 +23,7 @@ export default function Events() {
   return (
     <div className=" max-w-xl mx-auto py-10">
       Eventos Publicos
-      {user.coach && (
+      {user?.coach && (
         <div className="flex w-36 mx-auto my-6">
           <Button
             label="Nuevo Evento"
