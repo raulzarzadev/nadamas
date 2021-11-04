@@ -43,9 +43,6 @@ export const updateSchedule = async ({ owner, schedule, coach }) => {
 
 export const getAthletesBySchedule = async (coachId, schedule, date) => {
   const day = getDay(date)
-
-  console.log(`day`, day, schedule, coachId)
-
   return db
     .collection('schedules')
     .where('coach.id', '==', coachId)

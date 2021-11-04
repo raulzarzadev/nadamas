@@ -3,7 +3,7 @@ import Loading from '@comps/Loading'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-export default function PrivateRoute({ Component, children, ...res }) {
+export default function PrivateRoute({ Component, children }) {
   const router = useRouter()
   const { user } = useAuth()
   const [userData, setUserData] = useState(undefined)
