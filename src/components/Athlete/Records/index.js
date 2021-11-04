@@ -12,19 +12,20 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import DisplayRecords from './DisplayRecords'
 
-export default function Records({ athlete: { id } }) {
+export default function Records({ athleteId }) {
+  const router = useRouter()
   useEffect(() => {
-    if (id) {
-      getAthleteRecords(id)
+    if (athleteId) {
+      getAthleteRecords(athleteId)
         .then(setRecords)
         .catch((err) => console.log('err', err))
     }
-  }, [id])
+  }, [athleteId])
 
   const [records, setRecords] = useState([])
 
   const handleNewRecord = () => {
-    router.push(`/records/new?search=${id}`)
+    router.push(`/records/new?search=${athleteId}`)
   }
 
   const [sortBy, setSortBy] = useState('record')

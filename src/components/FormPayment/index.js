@@ -17,7 +17,7 @@ export default function FormPayment({
   showSearchAthlete = false
 }) {
   const defaultFormValue = { date: new Date() }
-  const [form, setForm] = useState(payment)
+  const [form, setForm] = useState(defaultFormValue)
   const {
     query: { id }
   } = useRouter()
