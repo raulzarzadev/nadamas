@@ -4,10 +4,12 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import Button from '@comps/inputs/Button'
 import Cards from './Cards'
+import EventsRow from '@comps/Events/EventsRow'
+import PublicEvents from '@comps/Events/PublicEvents'
 
 export default function Home() {
   const wordsList = ['natación', 'futbol', 'balete']
-  const { text } = useWriteText({ step: 200, unwriteFast: true, wordsList })
+  //const { text } = useWriteText({ step: 200, unwriteFast: true, wordsList })
   const router = useRouter()
   const handleToSignup = () => {
     router.push('/signin')
@@ -30,8 +32,11 @@ export default function Home() {
         {' '}
         una aplicación web para administrar sus equipos deportivos{' '}
       </p>
+      <div className='mt-6'>
+        <PublicEvents showNew={true} />
+      </div>
       <p className="text-center h-4">
-        <strong className="font-bold ">{text}</strong>
+        {/*  <strong className="font-bold ">{text}</strong> */}
       </p>
       <div className="flex flex-col justify-center md:max-w-screen-md mx-auto">
         <div className="flex items-center justify-center p-2 gap-2 ">

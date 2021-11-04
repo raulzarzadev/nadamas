@@ -1,7 +1,3 @@
-export default function Routes() {
-  return <div className=""></div>
-}
-
 export const ROUTES = {
   groups: {
     index: '/groups'

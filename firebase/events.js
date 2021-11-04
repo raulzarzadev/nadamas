@@ -18,7 +18,8 @@ export const getPublicEvents = async () => {
   return await db
     .collection('events')
     .where('publicEvent', '==', true)
-    /* .orderBy('date')
+    .orderBy('date', 'desc')
+    /* 
     .limit(10) */
     .get()
     .then(({ docs }) => normalizeDocs(docs))

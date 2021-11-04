@@ -20,6 +20,11 @@ export default function EventsRow({ events = [], showNew = false }) {
           Nuevo evento
         </button>
       )}
+      {!events.length && (
+        <div className="flex items-center justify-center">
+          No hay eventos aún
+        </div>
+      )}
       {events.map((event) => (
         <button
           key={event.id}

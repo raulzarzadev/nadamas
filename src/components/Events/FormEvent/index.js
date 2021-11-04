@@ -46,7 +46,11 @@ export default function FormEvent() {
             />
           </label>
           <input className="bg-gray-600" {...register('title')} />
-          <input className="bg-gray-600" {...register('description')} />
+          <textarea
+            rows={5}
+            className="bg-gray-600 resize-none"
+            {...register('description')}
+          />
           <input className="bg-gray-600" {...register('date')} type="date" />
           <Button type="submit" label="Guardar" />
         </div>
