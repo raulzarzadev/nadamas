@@ -41,6 +41,7 @@ const EventsGrid = ({ events }) => {
 }
 
 const Event = ({ event }) => {
+  console.log(`event`, event)
   const { user } = useAuth()
   return (
     <Link href={ROUTES.events.details(event.id)}>
@@ -52,7 +53,11 @@ const Event = ({ event }) => {
           </div>
         </div>
         <p className="max-h-36 overflow-auto">{event?.description}</p>
-        <ButtonJoinEvent athleteId={user?.athleteId} eventId={event.id} />
+        <ButtonJoinEvent
+          athleteId={user?.athleteId}
+          eventId={event.id}
+          event={event}
+        />
       </a>
     </Link>
   )

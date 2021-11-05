@@ -1,3 +1,4 @@
+import firebase from 'firebase/app'
 import { db } from './client'
 import {
   datesToFirebaseFromat,
@@ -73,6 +74,34 @@ export const removeEvent = async (eventId) => {
 export const updateEvent = async (event) => {
   return await _update_event(event)
 }
+
+export const athleteRequestJoinEvent = async (eventId, athleteId) => {
+  return await _update_event({
+    id: eventId,
+    requests: firebase.firestore.FieldValue.arrayUnion(athleteId)
+  })
+}
+export const athleteJoinEvent = async (eventId, athleteId) => {
+  await _update_event({
+    id: eventId,
+    requests: firebase.firestore.FieldValue.arrayRemove(athleteId),
+    participants: firebase.firestore.FieldValue.arrayUnion(athleteId)
+  })
+}
+export const athleteUnjoinEvent = async (eventId, athleteId) => {
+  await _update_event({
+    id: eventId,
+    requests: firebase.firestore.FieldValue.arrayRemove(athleteId),
+    participants: firebase.firestore.FieldValue.arrayRemove(athleteId)
+  })
+}
+export const athleteCancelEventRequest = async (eventId, athleteId) => {
+  await _update_event({
+    id: eventId,
+    requests: firebase.firestore.FieldValue.arrayRemove(athleteId)
+  })
+}
+
 
 const _update_event = async (event) => {
   return await db

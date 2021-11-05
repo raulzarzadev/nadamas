@@ -1,11 +1,21 @@
-import { getEvent, removeEvent } from '@/firebase/events'
-import { ROUTES } from '@/ROUTES'
+import { getAthlete } from '@/firebase/athletes'
+import {
+  athleteCancelEventRequest,
+  athleteJoinEvent,
+  athleteUnjoinEvent,
+  getEvent,
+  removeEvent
+} from '@/firebase/events'
 import { useAuth } from '@/src/context/AuthContext'
-import { format, formatInputDate } from '@/src/utils/Dates'
+import { formatInputDate } from '@/src/utils/Dates'
 import Info from '@comps/Alerts/Info'
+import ParticipantsRows from '@comps/AthleteRow/ParticipantsRows'
+import RequestRows from '@comps/AthleteRow/RequestRows'
 import Button from '@comps/inputs/Button'
+import Loading from '@comps/Loading'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Section from '@comps/Section'
+import MemberRow from '@comps/Teams/MemberRow'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ButtonJoinEvent from './ButtonJoinEvent'
@@ -34,6 +44,7 @@ export default function Event() {
   const handleDiscard = () => {
     handleSetEditable()
   }
+  if (event === undefined) return <Loading />
   return (
     <>
       {isEditable ? (
@@ -46,9 +57,16 @@ export default function Event() {
               {formatInputDate(event?.date, 'dd MMMM yyyy')}
             </h3>
             <div>{event?.description}</div>
-            <ButtonJoinEvent athleteId={athleteId} eventId={event?.id} />
+            <ButtonJoinEvent
+              event={event}
+              athleteId={athleteId}
+              eventId={event?.id}
+            />
             {user?.id === event?.owner?.id && (
-              <ManageEvent handleSetEditable={handleSetEditable} />
+              <ManageEvent
+                handleSetEditable={handleSetEditable}
+                event={event}
+              />
             )}
             <Section title="Resultados" open>
               <Info text="Aún no hay resultados " />
@@ -60,25 +78,36 @@ export default function Event() {
   )
 }
 const ManageEvent = ({ handleSetEditable, event }) => {
-  const router = useRouter()
-
   const [openDelete, setOpenDelete] = useState(false)
 
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
   const handleDelete = () => {
-    const {
-      query: { id: eventId },
-      back
-    } = router
-    removeEvent(eventId)
+    removeEvent(event.id)
       .then((res) => {
         back()
         console.log(`res`, res)
       })
       .catch((err) => console.log(`err`, err))
   }
+
+  const handleAccepRequest = (athleteId) => {
+    athleteJoinEvent(event.id, athleteId)
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
+  }
+  const handleRejectRequest = (athleteId) => {
+    athleteCancelEventRequest(event.id, athleteId)
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
+  }
+  const handleRemoveMember = (athleteId) => {
+    athleteUnjoinEvent(event.id, athleteId)
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
+  }
+
   return (
     <div>
       <Button label="Editar" variant="secondary" onClick={handleSetEditable} />
@@ -94,10 +123,20 @@ const ManageEvent = ({ handleSetEditable, event }) => {
         handleDelete={handleDelete}
       />
       <Section title="Estadisticas">
-        <Section title="Eventos">
-          
+        <Section title="Pruebas"></Section>
+        <Section title={`Participantes (${event?.participants?.length || 0})`}>
+          <ParticipantsRows
+            athletesIds={event?.participants}
+            handleRemoveMember={handleRemoveMember}
+          />
         </Section>
-        <Section title={`Inscritos (${event?.participants || 0})`}></Section>
+        <Section title={`Solicitudes (${event?.requests?.length || 0})`}>
+          <RequestRows
+            athletesIds={event.requests}
+            onAcceptRequest={handleAccepRequest}
+            onRejectRequest={handleRejectRequest}
+          />
+        </Section>
       </Section>
     </div>
   )

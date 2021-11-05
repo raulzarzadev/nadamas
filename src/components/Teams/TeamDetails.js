@@ -8,6 +8,7 @@ import {
 
 import { useAuth } from '@/src/context/AuthContext'
 import { TrashBinIcon } from '@/src/utils/Icons'
+import RequestRows from '@comps/AthleteRow/RequestRows'
 import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
 import DeleteModal from '@comps/Modals/DeleteModal'
@@ -93,15 +94,7 @@ export default function TeamDetails() {
 }
 
 function JoinRequests({ teamId, requests = [] }) {
-  const [athletes, setAthletes] = useState([])
 
-  useEffect(() => {
-    const athletes = requests.map(async (req) => await getAthlete(req))
-    Promise.all(athletes).then(setAthletes)
-    return () => {
-      setAthletes([])
-    }
-  }, [requests])
   const handleAcceptRequest = (athleteId) => {
     acceptTeamRequest(teamId, athleteId)
       .then((res) => {
@@ -119,24 +112,11 @@ function JoinRequests({ teamId, requests = [] }) {
 
   return (
     <div>
-      {!athletes.length && 'No hay solicitudes'}
-      {athletes?.map((athlete) => (
-        <div key={athlete?.id} className="flex justify-evenly">
-          <div>{athlete?.name}</div>
-          <div className="flex">
-            <Button
-              size="xs"
-              variant=""
-              onClick={() => handleRejectRequest(athlete.id)}
-            >
-              Declinar
-            </Button>
-            <Button size="xs" onClick={() => handleAcceptRequest(athlete.id)}>
-              Aceptar
-            </Button>
-          </div>
-        </div>
-      ))}
+      <RequestRows
+        athletesIds={requests}
+        onAcceptRequest={handleAcceptRequest}
+        onRejectRequest={handleRejectRequest}
+      />
     </div>
   )
 }
