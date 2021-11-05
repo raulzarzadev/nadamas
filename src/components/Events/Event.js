@@ -2,8 +2,10 @@ import { getEvent, removeEvent } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
 import { format, formatInputDate } from '@/src/utils/Dates'
+import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
+import Section from '@comps/Section'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ButtonJoinEvent from './ButtonJoinEvent'
@@ -25,23 +27,6 @@ export default function Event() {
   useEffect(() => {
     setAthleteId(user?.athleteId)
   }, [])
-  const [openDelete, setOpenDelete] = useState(false)
-  const handleOpenDelete = () => {
-    setOpenDelete(!openDelete)
-  }
-  const handleDelete = () => {
-    const {
-      query: { id: eventId },
-      back
-    } = router
-    removeEvent(eventId)
-      .then((res) => {
-        back()
-        console.log(`res`, res)
-      })
-      .catch((err) => console.log(`err`, err))
-  }
-
   const [isEditable, setIsEditable] = useState(false)
   const handleSetEditable = () => {
     setIsEditable(!isEditable)
@@ -62,35 +47,41 @@ export default function Event() {
             </h3>
             <div>{event?.description}</div>
             <ButtonJoinEvent athleteId={athleteId} eventId={event?.id} />
-            <Button
-              label="Eliminar evento"
-              variant="danger"
-              onClick={handleOpenDelete}
-            />
-            {user?.id === event?.owner?.id}
-            <Button
-              label="Editar"
-              variant="secondary"
-              onClick={handleSetEditable}
-            />
-            <DeleteModal
-              text="Eliminar este evento de forma permanente"
-              handleOpen={handleOpenDelete}
-              open={openDelete}
-              handleDelete={handleDelete}
-            />
+            {user?.id === event?.owner?.id && (
+              <ManageEvent handleSetEditable={handleSetEditable} />
+            )}
+            <Section title="Resultados" open>
+              <Info text="Aún no hay resultados " />
+            </Section>
           </div>
         </>
       )}
     </>
   )
 }
-{
-  /* <div className="max-w-sm mx-auto py-4 text-center">
-      <div>{format(event?.date, 'dd MMM yy')}</div>
-      <div>{event?.title}</div>
-      <div>{event?.description}</div>
-      <ButtonJoinEvent athleteId={athleteId} eventId={event?.id} />
+const ManageEvent = ({ handleSetEditable, event }) => {
+  const router = useRouter()
+
+  const [openDelete, setOpenDelete] = useState(false)
+
+  const handleOpenDelete = () => {
+    setOpenDelete(!openDelete)
+  }
+  const handleDelete = () => {
+    const {
+      query: { id: eventId },
+      back
+    } = router
+    removeEvent(eventId)
+      .then((res) => {
+        back()
+        console.log(`res`, res)
+      })
+      .catch((err) => console.log(`err`, err))
+  }
+  return (
+    <div>
+      <Button label="Editar" variant="secondary" onClick={handleSetEditable} />
       <Button
         label="Eliminar evento"
         variant="danger"
@@ -101,7 +92,13 @@ export default function Event() {
         handleOpen={handleOpenDelete}
         open={openDelete}
         handleDelete={handleDelete}
-      /> 
-      </div>
-    */
+      />
+      <Section title="Estadisticas">
+        <Section title="Eventos">
+          
+        </Section>
+        <Section title={`Inscritos (${event?.participants || 0})`}></Section>
+      </Section>
+    </div>
+  )
 }

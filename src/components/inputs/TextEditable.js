@@ -24,16 +24,11 @@ const TextEditable = React.forwardRef(
     ref
   ) => {
     const [editable, setEditable] = useState(false)
-    const click = useSingleAndDoubleClick(
-      () => setEditable(false),
-      () => {
-        if (permissionToEdit) {
-          setEditable(true)
-        }
-      }
+    const click = () => {
+      setEditable(true)
+    }
 
-      // solo si userId === athleta
-    )
+    // solo si userId === athleta
     return (
       <span className={s.input_label}>
         {label && `${label} :`}
