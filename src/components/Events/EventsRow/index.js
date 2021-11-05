@@ -1,5 +1,5 @@
 import { ROUTES } from '@/ROUTES'
-import { format } from '@/src/utils/Dates'
+import { format, formatInputDate } from '@/src/utils/Dates'
 import { useRouter } from 'next/router'
 
 export default function EventsRow({ events = [], showNew = false }) {
@@ -32,7 +32,7 @@ export default function EventsRow({ events = [], showNew = false }) {
           onClick={() => handleClickEvent(event.id)}
         >
           <div className="text-center bg-red-400 rounded rounded-b-none w-full">
-            {format(event.date, 'dd MMM yy')}
+            {formatInputDate(event?.date , 'dd MMM yy')}
           </div>
           <div className="p-1 text-center text-xs w-full rounded-b-sm">
             {event.title}

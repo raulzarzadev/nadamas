@@ -17,9 +17,9 @@ export const format = (date = new Date(), formatStr = 'PP') => {
     locale: es // or global.__localeId__
   }) */
 }
-export function formatInputDate(date) {
+export function formatInputDate(date = new Date(), format = 'yyy-MM-dd') {
   console.log(`date`, date)
-  return fnsFormat(addHours(new Date(date), 7), 'yyy-MM-dd')
+  return fnsFormat(addHours(new Date(date), 7), format, { locale: es })
 }
 
 export function simpleDate(date = new Date()) {

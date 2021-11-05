@@ -5,6 +5,7 @@ import * as yup from 'yup'
 import { createOrUpdateEvent } from '@/firebase/events'
 import { useRouter } from 'next/router'
 import { useAuth } from '@/src/context/AuthContext'
+import { format, formatInputDate } from '@/src/utils/Dates'
 
 const schema = yup
   .object({
@@ -13,17 +14,22 @@ const schema = yup
   })
   .required()
 
-export default function FormEvent() {
+export default function FormEvent({ event, discard = () => {} }) {
+  console.log(`event`, event)
   const router = useRouter()
   const { user } = useAuth()
+
   const {
     handleSubmit,
     register,
     setValue,
     watch,
+    reset,
     formState: { errors }
-  } = useForm({ resolver: yupResolver(schema) })
-
+  } = useForm({
+    resolver: yupResolver(schema),
+    defaultValues: { ...event, date: formatInputDate(event?.date) }
+  })
   const onSubmit = (form) => {
     createOrUpdateEvent({ ...form, owner: { id: user.id, name: user.name } })
       .then((res) => {
@@ -32,11 +38,17 @@ export default function FormEvent() {
       })
       .catch((err) => console.log(`err`, err))
   }
+  console.log(`watch()`, watch())
+
+  const handleDiscard = (e) => {
+    reset()
+    discard()
+  }
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="max-w-sm mx-auto p-2 grid gap-2">
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid gap-2 p-2">
+        <div className="grid gap-2">
           <label>
             Evento público
             <input
@@ -55,6 +67,14 @@ export default function FormEvent() {
           <Button type="submit" label="Guardar" />
         </div>
       </form>
+      {discard && (
+        <Button
+          variant="secondary"
+          label="Descartar cambios"
+          type="button"
+          onClick={handleDiscard}
+        />
+      )}
     </div>
   )
 }
