@@ -10,6 +10,7 @@ import {
   normalizeDoc,
   normalizeDocs
 } from './firebase-helpers'
+import { createDefaultAthlete } from './athletes'
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 
 if (!firebase?.apps?.length) {
@@ -69,27 +70,28 @@ const createNewUser = async (user) => {
     .collection('users')
     .doc(user.id)
     .set({ ...user })
-    .then((res) => console.log('USER_CREATED', user))
-    .catch((err) => console.log('err', err))
+    .then(async (res) => {
+      await createDefaultAthlete({ ...user })
+      return formatResponse(true, 'USER_CREATED', res)
+    })
+    .catch((err) => formatResponse(false, 'USER_CREATED_ERROR', err))
+  console.log(`res`, res)
   return user
 }
 
 export const updateUser = async (user) => {
-  console.log('user', user)
-
   const eventRef = db.collection('users').doc(user.id)
   const datesInFirebaseFormat = datesToFirebaseFromat(user)
   try {
-    await eventRef.update({
+    const res = await eventRef.update({
       ...user,
       ...datesInFirebaseFormat
     })
-    return { ok: true, type: 'USER_UPDATED' }
+    return formatResponse(true, 'USER_UPDATED', res)
   } catch (err) {
-    return { ok: false, type: 'UPDATE_ERROR', err }
+    return formatResponse(false, 'UPDATE_ERROR', err)
   }
 }
-
 
 /* -------------------- */
 /* ------FILES------ */

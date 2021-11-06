@@ -5,14 +5,16 @@ import {
   onAuthStateChanged
 } from '@/firebase/client'
 import { getSchedules } from '@/firebase/schedules'
+import { useRouter } from 'next/router'
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
+  const router = useRouter()
   const [user, setUser] = useState()
-  
+
   const ENVIROMENT = process.env.NEXT_PUBLIC_ENVIROMENT
   console.log('ENVIROMENT', ENVIROMENT)
-  
+
   useEffect(() => {
     if (ENVIROMENT === 'DEV') {
       setUser({
@@ -26,7 +28,7 @@ export function AuthProvider({ children }) {
       onAuthStateChanged(setUser)
     }
   }, [])
-  
+
   /*   
   const [userSchedule, setUserSchedule] = useState({})
   useEffect(() => {
@@ -49,7 +51,7 @@ export function AuthProvider({ children }) {
     loginWithGoogle()
       .then(({ user }) => {
         // console.log('user', user)
-
+        router.reload()
         setUser(user)
       })
       .catch((err) => {
@@ -58,7 +60,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user,  googleLogin, signOut }}>
+    <AuthContext.Provider value={{ user, googleLogin, signOut }}>
       {children}
     </AuthContext.Provider>
   )

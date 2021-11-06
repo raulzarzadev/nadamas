@@ -2,7 +2,6 @@ import { useAuth } from '@/src/context/AuthContext'
 import { DownIcon } from '@/src/utils/Icons'
 import Link from '@comps/inputs/Link'
 import Image from 'next/image'
-import { useEffect } from 'react'
 export default function Navbar({ links = [] }) {
   const { user } = useAuth()
 
@@ -16,10 +15,12 @@ export default function Navbar({ links = [] }) {
                 src="/nadamas/logo-2.png"
                 layout="fill"
                 objectFit="contain"
-              />
+                priority={true}
+                />
             </div>
             <div className="relative w-72 h-8  md:hidden ">
               <Image
+                priority={true}
                 src="/nadamas/logo-3.png"
                 layout="fill"
                 objectFit="contain"

@@ -1,4 +1,5 @@
-import { getAthlete, updateAtlete } from '@/firebase/athletes'
+import { getAthlete, getAthleteId, updateAtlete } from '@/firebase/athletes'
+import { updateUser } from '@/firebase/client'
 import { useAuth } from '@/src/context/AuthContext'
 import Loading from '@comps/Loading'
 import { useRouter } from 'next/router'
@@ -20,9 +21,8 @@ export default function FormAthlete({ athleteId = '' }) {
 
   useEffect(() => {
     if (athleteId) {
-      getAthlete(athleteId)
+      getAthleteId(athleteId)
         .then((res) => {
-          console.log(`res`, res)
           setForm(res)
         })
         .catch((err) => console.log(`err`, err))
@@ -35,8 +35,23 @@ export default function FormAthlete({ athleteId = '' }) {
   })
 
   const handleSubmit = async () => {
-    const res = await updateAtlete({ ...form, active: true, userId: user.id })
-    console.log(`res`, res)
+    /*  const res = await */
+    updateAtlete({ ...form, active: true, userId: user.id })
+      .then(({res}) => {
+        console.log(`res`, res)
+        if (configSwimmer) {
+          updateUser({ id: user?.id, athleteId: res?.id })
+            .then((res) => {
+              router.back()
+              console.log(`res`, res)
+            })
+            .catch((err) => console.log(`err`, err))
+        } else {
+          router.push(`/athletes/${res?.id}`)
+        }
+      })
+      .catch((err) => console.log(`err`, err))
+    /*  console.log(`res`, res)
     if (res?.type === 'ATHLETE_CREATED') {
       if (configSwimmer) {
         const updateSwimmer = await updateUser({
@@ -46,17 +61,10 @@ export default function FormAthlete({ athleteId = '' }) {
         console.log(`updateSwimmer`, updateSwimmer)
         router.back()
       } else {
-        router.push(`/athletes/${res?.id}`)
       }
-    }
+    } */
   }
 
-  if (!user) return <Loading />
-  return (
-    <Form
-      form={form}
-      setForm={setForm}
-      handleSubmit={handleSubmit}
-    />
-  )
+  if (!user || !form) return <Loading />
+  return <Form form={form} setForm={setForm} handleSubmit={handleSubmit} />
 }

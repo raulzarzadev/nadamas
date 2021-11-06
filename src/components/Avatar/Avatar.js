@@ -5,13 +5,14 @@ const Avatar = React.forwardRef(
     return (
       <a ref={ref} onClick={onClick} talla={size}>
         {image ? (
-          <div className='relative w-32 h-32 rounded-full'>
+          <div className="relative w-32 h-32 rounded-full">
             <Image
+              priority={true}
               src={image}
               alt={alt.charAt(1).toUpperCase()}
               layout="fill"
               objectFit="cover"
-              className='rounded-full'
+              className="rounded-full"
             />
           </div>
         ) : (

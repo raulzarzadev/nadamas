@@ -1,9 +1,10 @@
 import 'firebase/firestore'
 
-import { db } from './client'
+import { db, updateUser } from './client'
 import {
   datesToFirebaseFromat,
   formatResponse,
+  normalizeDoc,
   normalizeDocs
 } from './firebase-helpers'
 
@@ -17,6 +18,15 @@ export const getAthlete = async (athleteId) => {
     .catch((err) => console.log(`err`, err))
 }
 
+export const getAthleteId = async (athleteId) => {
+  return await db
+    .collection('athletes')
+    .doc(athleteId)
+    .get()
+    .then(normalizeDoc)
+    .catch((err) => console.log(`err`, err))
+}
+
 export const getAthletes = async (userId) => {
   return await db
     .collection('athletes')
@@ -25,6 +35,25 @@ export const getAthletes = async (userId) => {
     .get()
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log(err))
+}
+
+export const createDefaultAthlete = async ({ id, image, email, name }) => {
+  const newAthlete = await _create_athlete({
+    userId: id,
+    avatar: image,
+    email,
+    name
+  })
+  const userUpdated = await updateUser({
+    id,
+    athleteId: newAthlete?.res?.id
+  })
+
+  return formatResponse(ok, 'DEFAULT_ATHLETE_CREATED', {
+    athlete: newAthlete,
+    user: userUpdated
+  })
+
 }
 
 export const updateAtlete = async (athlete = {}) => {

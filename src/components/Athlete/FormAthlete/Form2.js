@@ -60,7 +60,7 @@ export function Form({ form, setForm, handleSubmit, isEditable }) {
             <Section title="Desempeño" sticky>
               {/* ----------------------------------------------Tests */}
               <Section title={'Pruebas'} indent={false}>
-                <Records athleteId={form.id} />
+                <Records athleteId={form?.id} />
               </Section>
               {/* ----------------------------------------------TESTs */}
               <Section title={'Estadisticas'} indent={false}>

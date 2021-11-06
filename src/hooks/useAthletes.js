@@ -1,4 +1,4 @@
-import { getAthletes } from '@/firebase/athletes'
+import { getAthletes as bringAthltes } from '@/firebase/athletes'
 import { getSchedules } from '@/firebase/schedules'
 import { getDay } from 'date-fns'
 import { useEffect, useMemo, useState } from 'react'
@@ -11,7 +11,7 @@ export default function useAthletes() {
   const [athletesWithSchedule, setAthletesWithSchedule] = useState(undefined)
 
   useEffect(() => {
-    getAthletes(user.id)
+    bringAthltes(user.id)
       .then(setAthletes)
       .catch((err) => console.log(err))
   }, [user.ids])
@@ -40,5 +40,6 @@ export default function useAthletes() {
         !!athlete.schedule[day] && athlete.schedule?.[day]?.[0] === schedule
     )
   }
+
   return { athletes, athletesWithSchedule }
 }

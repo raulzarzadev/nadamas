@@ -34,7 +34,8 @@ export default function UserProfile() {
             <CoachSection coachId={user.id} />
           </Section>
         )}
-        {!user?.coach && <AthleteSection athleteId={user.athleteId} />}
+        {user?.athleteId && <AthleteSection athleteId={user?.athleteId} />}
+        {/* {!user?.coach && <AthleteSection athleteId={user?.athleteId} />} */}
 
         <Section title="Información de usuario" indent={false}>
           <div className="flex flex-col items-center px-2 pt-6">
@@ -62,22 +63,9 @@ export default function UserProfile() {
 }
 
 const AthleteSection = ({ athleteId }) => {
-  const router = useRouter()
-  const handleConfigAthlete = () => {
-    router.push(`${ROUTES.athletes.new()}?configSwimmer=true`)
-  }
   return (
     <div className="text-center">
-      {athleteId ? (
-        <FormAthlete athleteId={athleteId} />
-      ) : (
-        <div className="w-3/4 mx-auto p-2">
-          <Button
-            label="Configurar nadador"
-            onClick={handleConfigAthlete}
-          ></Button>
-        </div>
-      )}
+      <FormAthlete athleteId={athleteId} />
     </div>
   )
 }
