@@ -5,8 +5,7 @@ import * as yup from 'yup'
 import { createOrUpdateEvent, updateEvent } from '@/firebase/events'
 import { useRouter } from 'next/router'
 import { useAuth } from '@/src/context/AuthContext'
-import { format, formatInputDate } from '@/src/utils/Dates'
-import { ROUTES } from '@/ROUTES'
+import { formatInputDate } from '@/src/utils/Dates'
 import UploadImage from '@comps/inputs/UploadImage'
 import Image from 'next/image'
 import { useState } from 'react'
@@ -19,8 +18,6 @@ const schema = yup
   .required()
 
 export default function FormEvent({ event, discard = () => {} }) {
-  console.log(`event`, event)
-  const router = useRouter()
   const { user } = useAuth()
 
   const {
@@ -32,17 +29,18 @@ export default function FormEvent({ event, discard = () => {} }) {
     formState: { errors }
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: { ...event, date: formatInputDate(event?.date) }
+    defaultValues: event
+      ? { ...event, date: formatInputDate(event?.date) }
+      : null
   })
   const onSubmit = (form) => {
-    createOrUpdateEvent({ ...form, owner: { id: user.id, name: user.name } })
+    createOrUpdateEvent({ ...form, owner: { id: user?.id, name: user?.name } })
       .then((res) => {
         console.log(`res`, res)
         //router.push(ROUTES.events.details())
       })
       .catch((err) => console.log(`err`, err))
   }
-  console.log(`watch()`, watch())
 
   const handleDiscard = (e) => {
     reset()
@@ -69,9 +67,9 @@ export default function FormEvent({ event, discard = () => {} }) {
             {...register('description')}
           />
           <input className="bg-gray-600" {...register('date')} type="date" />
-          {event.id && (
+          {event?.id && (
             <AlreadySaved
-              eventId={event.id}
+              eventId={event?.id}
               image={event?.image}
               announcement={event?.announcement}
             />
