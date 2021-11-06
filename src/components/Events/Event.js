@@ -83,9 +83,23 @@ const EventDetails = ({ event }) => {
       <h3 className="text-xl my-2">
         {formatInputDate(event?.date, 'dd MMMM yyyy')}
       </h3>
-      <p className='whitespace-pre-wrap text-left' >{event?.description}</p >
-      <div>
-        <embed src={event.announcement} className="w-full h-96" />
+      <p className="whitespace-pre-wrap text-left">{event?.description}</p>
+      <div className="py-4">
+        {event?.announcement && (
+          <div>
+            <div className='m-3'>
+              Descargar{' '}
+              <a
+                className="hover:to-blue-200 font-bold underline"
+                href={event.announcement}
+                download={`convocatoria ${event?.title}`}
+              >
+                convocatoria
+              </a>
+            </div>
+            <embed src={event.announcement} className="w-5/6 mx-auto h-96" />
+          </div>
+        )}
       </div>
     </>
   )
