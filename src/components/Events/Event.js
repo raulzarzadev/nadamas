@@ -1,4 +1,3 @@
-import { getAthlete } from '@/firebase/athletes'
 import {
   athleteCancelEventRequest,
   athleteJoinEvent,
@@ -15,7 +14,6 @@ import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Section from '@comps/Section'
-import MemberRow from '@comps/Teams/MemberRow'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ButtonJoinEvent from './ButtonJoinEvent'
@@ -25,18 +23,16 @@ export default function Event() {
   const { user } = useAuth()
   const [event, setEvent] = useState(undefined)
   const router = useRouter()
+  const {
+    query: { id: eventId }
+  } = router
   useEffect(() => {
-    const {
-      query: { id: eventId }
-    } = router
-    getEvent(eventId)
-      .then(setEvent)
-      .catch((err) => console.log(`err`, err))
-  }, [])
-  const [athleteId, setAthleteId] = useState(undefined)
-  useEffect(() => {
-    setAthleteId(user?.athleteId)
-  }, [])
+    if (eventId)
+      getEvent(eventId)
+        .then(setEvent)
+        .catch((err) => console.log(`err`, err))
+  }, [eventId])
+  
   const [isEditable, setIsEditable] = useState(false)
   const handleSetEditable = () => {
     setIsEditable(!isEditable)
@@ -44,7 +40,7 @@ export default function Event() {
   const handleDiscard = () => {
     handleSetEditable()
   }
-  if (event === undefined) return <Loading />
+  if (!event) return <Loading />
   return (
     <>
       {isEditable ? (
@@ -57,9 +53,10 @@ export default function Event() {
               {formatInputDate(event?.date, 'dd MMMM yyyy')}
             </h3>
             <div>{event?.description}</div>
+
             <ButtonJoinEvent
               event={event}
-              athleteId={athleteId}
+              athleteId={user?.athleteId}
               eventId={event?.id}
             />
             {user?.id === event?.owner?.id && (
@@ -107,7 +104,6 @@ const ManageEvent = ({ handleSetEditable, event }) => {
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
-
   return (
     <div>
       <Button label="Editar" variant="secondary" onClick={handleSetEditable} />
@@ -132,7 +128,7 @@ const ManageEvent = ({ handleSetEditable, event }) => {
         </Section>
         <Section title={`Solicitudes (${event?.requests?.length || 0})`}>
           <RequestRows
-            athletesIds={event.requests}
+            athletesIds={event?.requests}
             onAcceptRequest={handleAccepRequest}
             onRejectRequest={handleRejectRequest}
           />

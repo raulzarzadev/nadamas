@@ -37,7 +37,7 @@ export default function FormAthlete({ athleteId = '' }) {
   const handleSubmit = async () => {
     /*  const res = await */
     updateAtlete({ ...form, active: true, userId: user.id })
-      .then(({res}) => {
+      .then(({ res }) => {
         console.log(`res`, res)
         if (configSwimmer) {
           updateUser({ id: user?.id, athleteId: res?.id })
@@ -64,6 +64,7 @@ export default function FormAthlete({ athleteId = '' }) {
       }
     } */
   }
+  console.log(`user, form`, user, form)
 
   if (!user || !form) return <Loading />
   return <Form form={form} setForm={setForm} handleSubmit={handleSubmit} />

@@ -39,6 +39,7 @@ export const getAthletes = async (userId) => {
 
 export const createDefaultAthlete = async ({ id, image, email, name }) => {
   const newAthlete = await _create_athlete({
+    active: true,
     userId: id,
     avatar: image,
     email,
@@ -53,7 +54,6 @@ export const createDefaultAthlete = async ({ id, image, email, name }) => {
     athlete: newAthlete,
     user: userUpdated
   })
-
 }
 
 export const updateAtlete = async (athlete = {}) => {

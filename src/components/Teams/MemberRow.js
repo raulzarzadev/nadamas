@@ -1,4 +1,4 @@
-import { getAthlete } from "@/firebase/athletes"
+import { getAthlete, getAthleteId } from "@/firebase/athletes"
 import { TrashBinIcon } from "@/src/utils/Icons"
 import AthleteRow from "@comps/AthleteRow"
 import Button from "@comps/inputs/Button"
@@ -14,8 +14,9 @@ const MemberRow = ({ athlete, handleRemoveMember }) => {
   const [athleteInfo, setAthleteInfo] = useState(undefined)
   useEffect(() => {
     if (athlete) {
-      getAthlete(athlete)
+      getAthleteId(athlete)
         .then((res) => {
+          console.log(`res`, res)
           if (res) {
             setAthleteInfo(res)
           } else {
@@ -28,6 +29,7 @@ const MemberRow = ({ athlete, handleRemoveMember }) => {
       }
     }
   }, [athlete])
+  console.log(`athlete`, athlete)
   if (athleteInfo === undefined) return <Loading />
   return (
     <div>

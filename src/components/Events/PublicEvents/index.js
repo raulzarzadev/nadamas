@@ -41,7 +41,6 @@ const EventsGrid = ({ events }) => {
 }
 
 const Event = ({ event }) => {
-  console.log(`event`, event)
   const { user } = useAuth()
   return (
     <Link href={ROUTES.events.details(event.id)}>

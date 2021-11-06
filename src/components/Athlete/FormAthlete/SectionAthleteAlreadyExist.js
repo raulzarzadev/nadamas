@@ -16,7 +16,6 @@ export default function SectionAthleteAlreadyExist({ athleteId }) {
   const handleDelete = () => {
     removeAthlete(athleteId)
       .then((res) => {
-        console.log(`res`, res)
         setTimeout(() => {
           router.back()
         }, 400)

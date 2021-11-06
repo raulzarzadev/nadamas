@@ -9,7 +9,7 @@ export default function ParticipantsRows({
 }) {
   return (
     <div className="">
-      {!athletesIds.length && 'No hay solicitudes'}
+      {!athletesIds?.length && 'No hay participantes aún'}
       {athletesIds?.map((athlete) => (
         <MemberRow
           key={athlete}

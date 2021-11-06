@@ -9,6 +9,7 @@ import Button from '@comps/inputs/Button'
 import { useEffect, useState } from 'react'
 
 export default function ButtonJoinEvent({ eventId, athleteId, event }) {
+
   const [alert, setAlert] = useState(null)
   const handleClick = (e) => {
     if (!athleteId) {
@@ -67,18 +68,17 @@ export default function ButtonJoinEvent({ eventId, athleteId, event }) {
     },
     alreadyIn: {
       type: 'ALREDY_JOINED',
-      label: 'Salir',
+      label: 'Ya estas dentro. ¿Salir?',
       handleClick: handleUnjoin
     }
   }
 
   const getRequestStatus = (athleteId, event) => {
-    console.log(`event`, event, athleteId)
     if (event?.requests?.includes(athleteId)) {
       return REQUEST_STATUS.whatingRes
     } else {
     }
-    if (event?.participans?.includes(athleteId)) {
+    if (event?.participants?.includes(athleteId)) {
       return REQUEST_STATUS.alreadyIn
     } else {
       return REQUEST_STATUS.notJoined
@@ -97,7 +97,9 @@ export default function ButtonJoinEvent({ eventId, athleteId, event }) {
         </div>
       )}
       <Button
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation()
+          e.preventDefault()
           handleClick()
           responseStatus?.handleClick(eventId)
         }}
