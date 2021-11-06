@@ -83,7 +83,10 @@ const EventDetails = ({ event }) => {
       <h3 className="text-xl my-2">
         {formatInputDate(event?.date, 'dd MMMM yyyy')}
       </h3>
-      <div>{event?.description}</div>
+      <p className='whitespace-pre-wrap text-left' >{event?.description}</p >
+      <div>
+        <embed src={event.announcement} className="w-full h-96" />
+      </div>
     </>
   )
 }
