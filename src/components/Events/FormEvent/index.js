@@ -2,10 +2,12 @@ import Button from '@comps/inputs/Button'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup/dist/yup'
 import * as yup from 'yup'
-import { createOrUpdateEvent } from '@/firebase/events'
+import { createOrUpdateEvent, updateEvent } from '@/firebase/events'
 import { useRouter } from 'next/router'
 import { useAuth } from '@/src/context/AuthContext'
 import { format, formatInputDate } from '@/src/utils/Dates'
+import { ROUTES } from '@/ROUTES'
+import UploadImage from '@comps/inputs/UploadImage'
 
 const schema = yup
   .object({
@@ -33,8 +35,8 @@ export default function FormEvent({ event, discard = () => {} }) {
   const onSubmit = (form) => {
     createOrUpdateEvent({ ...form, owner: { id: user.id, name: user.name } })
       .then((res) => {
-        router.back()
         console.log(`res`, res)
+        //router.push(ROUTES.events.details())
       })
       .catch((err) => console.log(`err`, err))
   }
@@ -64,6 +66,8 @@ export default function FormEvent({ event, discard = () => {} }) {
             {...register('description')}
           />
           <input className="bg-gray-600" {...register('date')} type="date" />
+          {event.id && <AlreadySaved eventId={event.id} />}
+
           <Button type="submit" label="Guardar" />
         </div>
       </form>
@@ -75,6 +79,26 @@ export default function FormEvent({ event, discard = () => {} }) {
           onClick={handleDiscard}
         />
       )}
+    </div>
+  )
+}
+const AlreadySaved = ({ eventId }) => {
+  const imageUploaded = (url) => {
+    console.log(`url`, url)
+    updateEvent({ id: eventId, image: url })
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
+  }
+  return (
+    <div>
+      <label>Convocatoria</label>
+      <label>
+        Subir imagen
+        <UploadImage
+          storeRef={`/events/${eventId}`}
+          upladedImage={imageUploaded}
+        />
+      </label>
     </div>
   )
 }

@@ -28,13 +28,14 @@ export default function EventsRow({ events = [], showNew = false }) {
       {events.map((event) => (
         <button
           key={event.id}
-          className="border rounded flex flex-col h-24 justify-between w-32 shadow-md"
+          style={{ backgroundImage: `url(${event.image})` }}
+          className="border rounded flex flex-col h-24 justify-between w-32 shadow-md bg-no-repeat bg-contain"
           onClick={() => handleClickEvent(event.id)}
         >
           <div className="text-center bg-red-400 rounded rounded-b-none w-full">
-            {formatInputDate(event?.date , 'dd MMM yy')}
+            {formatInputDate(event?.date, 'dd MMM yy')}
           </div>
-          <div className="p-1 text-center text-xs w-full rounded-b-sm">
+          <div className="px-1 text-center text-xs w-full rounded-b-sm bg-gray-600">
             {event.title}
           </div>
         </button>

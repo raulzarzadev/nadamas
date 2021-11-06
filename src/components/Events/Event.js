@@ -18,7 +18,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ButtonJoinEvent from './ButtonJoinEvent'
 import FormEvent from './FormEvent'
-
+import Image from 'next/image'
 export default function Event() {
   const { user } = useAuth()
   const [event, setEvent] = useState(undefined)
@@ -32,7 +32,7 @@ export default function Event() {
         .then(setEvent)
         .catch((err) => console.log(`err`, err))
   }, [eventId])
-  
+
   const [isEditable, setIsEditable] = useState(false)
   const handleSetEditable = () => {
     setIsEditable(!isEditable)
@@ -48,11 +48,7 @@ export default function Event() {
       ) : (
         <>
           <div className="max-w-sm mx-auto py-4 text-center">
-            <h3 className="font-bold my-2">{event?.title}</h3>
-            <h3 className="text-xl my-2">
-              {formatInputDate(event?.date, 'dd MMMM yyyy')}
-            </h3>
-            <div>{event?.description}</div>
+            <EventDetails event={event} />
 
             <ButtonJoinEvent
               event={event}
@@ -71,6 +67,23 @@ export default function Event() {
           </div>
         </>
       )}
+    </>
+  )
+}
+
+const EventDetails = ({ event }) => {
+  return (
+    <>
+      <div className="relative w-full h-20">
+        {event?.image && (
+          <Image src={event?.image} layout="fill" objectFit="cover" />
+        )}
+      </div>
+      <h3 className="font-bold my-2">{event?.title}</h3>
+      <h3 className="text-xl my-2">
+        {formatInputDate(event?.date, 'dd MMMM yyyy')}
+      </h3>
+      <div>{event?.description}</div>
     </>
   )
 }
