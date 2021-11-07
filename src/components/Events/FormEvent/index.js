@@ -10,6 +10,7 @@ import UploadImage from '@comps/inputs/UploadImage'
 import Image from 'next/image'
 import { useState } from 'react'
 import UploadFile from '@comps/inputs/UploadFile'
+import { ROUTES } from '@/ROUTES'
 const schema = yup
   .object({
     title: yup.string().required(),
@@ -19,7 +20,7 @@ const schema = yup
 
 export default function FormEvent({ event, discard = () => {} }) {
   const { user } = useAuth()
-
+  const router = useRouter()
   const {
     handleSubmit,
     register,
@@ -35,9 +36,9 @@ export default function FormEvent({ event, discard = () => {} }) {
   })
   const onSubmit = (form) => {
     createOrUpdateEvent({ ...form, owner: { id: user?.id, name: user?.name } })
-      .then((res) => {
+      .then(({ res }) => {
         console.log(`res`, res)
-        //router.push(ROUTES.events.details())
+        router.push(ROUTES.events.details(res.id))
       })
       .catch((err) => console.log(`err`, err))
   }
@@ -48,8 +49,19 @@ export default function FormEvent({ event, discard = () => {} }) {
   }
 
   return (
-    <div className="max-w-sm mx-auto p-2 grid gap-2">
-      <div></div>
+    <div className="max-w-sm mx-auto p-2 grid gap-2 relative">
+      <div className=" grid grid-flow-col grid-cols-2 gap-3 py-3 sticky top-0 z-10 bg-gray-700">
+        {discard && (
+          <Button
+            variant="secondary"
+            label="Descartar cambios"
+            type="button"
+            onClick={handleDiscard}
+          />
+        )}
+        <Button type="submit" label="Guardar" />
+      </div>
+
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid gap-2">
           <label>
@@ -67,25 +79,17 @@ export default function FormEvent({ event, discard = () => {} }) {
             {...register('description')}
           />
           <input className="bg-gray-600" {...register('date')} type="date" />
-          {event?.id && (
-            <AlreadySaved
-              eventId={event?.id}
-              image={event?.image}
-              announcement={event?.announcement}
-            />
-          )}
-
-          <Button type="submit" label="Guardar" />
+          <div>
+            {event?.id && (
+              <AlreadySaved
+                eventId={event?.id}
+                image={event?.image}
+                announcement={event?.announcement}
+              />
+            )}
+          </div>
         </div>
       </form>
-      {discard && (
-        <Button
-          variant="secondary"
-          label="Descartar cambios"
-          type="button"
-          onClick={handleDiscard}
-        />
-      )}
     </div>
   )
 }

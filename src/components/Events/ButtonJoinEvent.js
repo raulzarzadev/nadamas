@@ -90,7 +90,7 @@ export default function ButtonJoinEvent({ eventId, athleteId, event }) {
   }, [])
 
   return (
-    <div>
+    <>
       {alert && (
         <div className="absolute top-0 right-0 left-0 bottom-0 flex items-center justify-center z-10">
           <div className="bg-black border-2 rounded-2xl">{alert}</div>
@@ -105,6 +105,6 @@ export default function ButtonJoinEvent({ eventId, athleteId, event }) {
         }}
         label={responseStatus?.label}
       />
-    </div>
+    </>
   )
 }

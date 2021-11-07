@@ -36,6 +36,12 @@ export const ROUTES = {
     },
     details: function (id) {
       return `${this.index}/${id}`
+    },
+    edit: function (id) {
+      return `${this.index}/${id}/edit`
+    },
+    results: function (id) {
+      return `${this.index}/${id}/results`
     }
   }
 }

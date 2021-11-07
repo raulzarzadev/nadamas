@@ -14,11 +14,12 @@ import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Section from '@comps/Section'
-import { useRouter } from 'next/router'
+import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ButtonJoinEvent from './ButtonJoinEvent'
 import FormEvent from './FormEvent'
 import Image from 'next/image'
+import { ROUTES } from '@/ROUTES'
 export default function Event() {
   const { user } = useAuth()
   const [event, setEvent] = useState(undefined)
@@ -33,40 +34,36 @@ export default function Event() {
         .catch((err) => console.log(`err`, err))
   }, [eventId])
 
-  const [isEditable, setIsEditable] = useState(false)
-  const handleSetEditable = () => {
-    setIsEditable(!isEditable)
+  const isOwner = user?.id === event?.owner?.id
+  const handleClickResults = () => {
+    router.push(ROUTES.events.results(eventId))
   }
-  const handleDiscard = () => {
-    handleSetEditable()
-  }
+
   if (!event) return <Loading />
   return (
     <>
-      {isEditable ? (
-        <FormEvent event={event} discard={handleDiscard} />
-      ) : (
-        <>
-          <div className="max-w-sm mx-auto py-4 text-center">
-            <EventDetails event={event} />
-
-            <ButtonJoinEvent
-              event={event}
-              athleteId={user?.athleteId}
-              eventId={event?.id}
-            />
-            {user?.id === event?.owner?.id && (
-              <ManageEvent
-                handleSetEditable={handleSetEditable}
+      <div className="max-w-sm mx-auto py-4 text-center">
+        <div className="grid grid-flow-col grid-cols-2 gap-3  items-center py-3 sticky top-0 z-10 bg-gray-700">
+          {isOwner ? (
+            <AdminActions eventId={event.id} />
+          ) : (
+            <>
+              <ButtonJoinEvent
                 event={event}
+                athleteId={user?.athleteId}
+                eventId={event?.id}
               />
-            )}
-            <Section title="Resultados" open>
-              <Info text="Aún no hay resultados " />
-            </Section>
-          </div>
-        </>
-      )}
+              <Button
+                label="Resultados"
+                onClick={handleClickResults}
+                variant="secondary"
+              />
+            </>
+          )}
+        </div>
+        {isOwner && <ManageEvent event={event} />}
+        <EventDetails event={event} />
+      </div>
     </>
   )
 }
@@ -87,7 +84,7 @@ const EventDetails = ({ event }) => {
       <div className="py-4">
         {event?.announcement && (
           <div>
-            <div className='m-3'>
+            <div className="m-3">
               Descargar{' '}
               <a
                 className="hover:to-blue-200 font-bold underline"
@@ -104,14 +101,14 @@ const EventDetails = ({ event }) => {
     </>
   )
 }
-const ManageEvent = ({ handleSetEditable, event }) => {
+const AdminActions = ({ eventId }) => {
   const [openDelete, setOpenDelete] = useState(false)
 
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
   const handleDelete = () => {
-    removeEvent(event.id)
+    removeEvent(eventId)
       .then((res) => {
         back()
         console.log(`res`, res)
@@ -119,6 +116,29 @@ const ManageEvent = ({ handleSetEditable, event }) => {
       .catch((err) => console.log(`err`, err))
   }
 
+  const handleEdit = () => {
+    router.push(ROUTES.events.edit(eventId))
+  }
+
+  return (
+    <>
+      <Button label="Eliminar" variant="danger" onClick={handleOpenDelete} />
+      <Button label="Editar" variant="secondary" onClick={handleEdit} />
+      <DeleteModal
+        text={`
+        Tambien se eliminaran los resultados y estadisitcas. 
+        Pero cada athleta conservara sus marcas personales
+        
+        ¿Eliminar este evento de forma permanente?
+        `}
+        handleOpen={handleOpenDelete}
+        open={openDelete}
+        handleDelete={handleDelete}
+      />
+    </>
+  )
+}
+const ManageEvent = ({ event }) => {
   const handleAccepRequest = (athleteId) => {
     athleteJoinEvent(event.id, athleteId)
       .then((res) => console.log(`res`, res))
@@ -135,19 +155,7 @@ const ManageEvent = ({ handleSetEditable, event }) => {
       .catch((err) => console.log(`err`, err))
   }
   return (
-    <div>
-      <Button label="Editar" variant="secondary" onClick={handleSetEditable} />
-      <Button
-        label="Eliminar evento"
-        variant="danger"
-        onClick={handleOpenDelete}
-      />
-      <DeleteModal
-        text="Eliminar este evento de forma permanente"
-        handleOpen={handleOpenDelete}
-        open={openDelete}
-        handleDelete={handleDelete}
-      />
+    <>
       <Section title="Estadisticas">
         <Section title="Pruebas"></Section>
         <Section title={`Participantes (${event?.participants?.length || 0})`}>
@@ -164,6 +172,6 @@ const ManageEvent = ({ handleSetEditable, event }) => {
           />
         </Section>
       </Section>
-    </div>
+    </>
   )
 }

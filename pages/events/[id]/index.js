@@ -1,7 +1,9 @@
-import Event from "@comps/Events/Event";
+import Event from '@comps/Events/Event'
 
 export default function DetailsEvents() {
-  return <div className="">
-   <Event/>
-  </div>
+  return (
+    <div className="">
+      <Event />
+    </div>
+  )
 }
