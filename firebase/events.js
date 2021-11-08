@@ -117,18 +117,22 @@ const getParticipantNumber = async (eventId) => {
 }
 export const athleteAcceptRequestEvent = async (eventId, athleteId) => {
   const currentNumber = await getParticipantNumber(eventId)
-  console.log(`currentNumber`, currentNumber)
-  await _update_event({
+  return await _update_event({
     id: eventId,
+    currentNumber: currentNumber + 1,
+
     requests: firebase.firestore.FieldValue.arrayRemove(athleteId),
-    participants: firebase.firestore.FieldValue.arrayUnion(athleteId)
+    participants: firebase.firestore.FieldValue.arrayUnion({
+      id: athleteId,
+      number: currentNumber + 1
+    })
   })
 }
-export const athleteUnjoinEvent = async (eventId, athleteId) => {
+export const athleteUnjoinEvent = async (eventId, eventAthlete) => {
   await _update_event({
     id: eventId,
-    requests: firebase.firestore.FieldValue.arrayRemove(athleteId),
-    participants: firebase.firestore.FieldValue.arrayRemove(athleteId)
+    requests: firebase.firestore.FieldValue.arrayRemove(athlete.id),
+    participants: firebase.firestore.FieldValue.arrayRemove(eventAthlete)
   })
 }
 export const athleteCancelEventRequest = async (eventId, athleteId) => {

@@ -9,9 +9,10 @@ export default function RequestRows({
 }) {
   return (
     <div className="">
-      {!athletes.length && 'No hay solicitudes'}
+      {!athletesIds.length && 'No hay solicitudes'}
       {athletesIds?.map((athlete) => (
         <RequestAthleteRow
+          key={athlete}
           athleteId={athlete}
           onAcceptRequest={onAcceptRequest}
           onRejectRequest={onRejectRequest}

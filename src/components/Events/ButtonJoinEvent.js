@@ -31,7 +31,8 @@ export default function ButtonJoinEvent({ athleteId, event }) {
   }
 
   const handleUnjoin = (eventId) => {
-    athleteUnjoinEvent(eventId, athleteId)
+    const eventAthlete = event?.participants?.find(({ id }) => id==athleteId)
+    athleteUnjoinEvent(eventId, eventAthlete)
       .then((res) => {
         setResponseStatus(REQUEST_STATUS.notJoined)
         setLoading(false)
@@ -69,7 +70,7 @@ export default function ButtonJoinEvent({ athleteId, event }) {
       return REQUEST_STATUS.whatingRes
     } else {
     }
-    if (event?.participants?.includes(athleteId)) {
+    if (event?.participants?.find(({ id }) => id === athleteId)) {
       return REQUEST_STATUS.alreadyIn
     } else {
       return REQUEST_STATUS.notJoined

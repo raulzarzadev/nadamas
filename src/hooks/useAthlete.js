@@ -20,6 +20,5 @@ export default function useAthlete(athleteId) {
       }
     }
   }, [athleteId])
-  console.log(`athlete`, athlete)
   return { athlete }
 }

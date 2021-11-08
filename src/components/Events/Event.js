@@ -146,8 +146,8 @@ const ManageEvent = ({ event }) => {
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
-  const handleRemoveMember = (athleteId) => {
-    athleteUnjoinEvent(event.id, athleteId)
+  const handleRemoveMember = (eventAthlete) => {
+    athleteUnjoinEvent(event.id, eventAthlete)
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }

@@ -4,6 +4,7 @@ export default function ParticipantsRows({
   athletesIds,
   handleRemoveMember = (athleteId) => {}
 }) {
+  console.log(`athletesIds`, athletesIds)
   return (
     <div className="">
       {!athletesIds?.length && 'No hay participantes aún'}
