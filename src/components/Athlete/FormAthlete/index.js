@@ -8,13 +8,7 @@ import { Form } from './Form2'
 
 export default function FormAthlete({ athleteId = '' }) {
   const { user } = useAuth()
-  /* 
-  // const [isEditable, setisEditable] = useState(true)
-  useEffect(() => {
-    const isTheCoach = user?.id === form?.userId
-    const isOwner = user?.athleteId === athleteId
-    // setisEditable(isTheCoach || isOwner || !alreadyExist)
-  }, [user]) */
+
 
   const router = useRouter()
   const { configSwimmer } = router.query
@@ -35,7 +29,6 @@ export default function FormAthlete({ athleteId = '' }) {
   })
 
   const handleSubmit = async () => {
-    /*  const res = await */
     updateAtlete({ ...form, active: true, userId: user.id })
       .then(({ res }) => {
         console.log(`res`, res)
@@ -47,24 +40,14 @@ export default function FormAthlete({ athleteId = '' }) {
             })
             .catch((err) => console.log(`err`, err))
         } else {
-          router.push(`/athletes/${res?.id}`)
+          if (res) {
+            //console.log(`res`, res)
+            router.push(`/athletes/${res?.id}`)
+          }
         }
       })
       .catch((err) => console.log(`err`, err))
-    /*  console.log(`res`, res)
-    if (res?.type === 'ATHLETE_CREATED') {
-      if (configSwimmer) {
-        const updateSwimmer = await updateUser({
-          id: user.id,
-          athleteId: res?.id
-        })
-        console.log(`updateSwimmer`, updateSwimmer)
-        router.back()
-      } else {
-      }
-    } */
   }
-  console.log(`user, form`, user, form)
 
   if (!user || !form) return <Loading />
   return <Form form={form} setForm={setForm} handleSubmit={handleSubmit} />

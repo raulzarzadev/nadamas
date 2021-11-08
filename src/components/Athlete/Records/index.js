@@ -24,8 +24,9 @@ export default function Records({ athleteId }) {
 
   const [records, setRecords] = useState([])
 
-  const handleNewRecord = () => {
-    router.push(`/records/new?search=${athleteId}`)
+  const handleNewRecord = (e) => {
+    e.preventDefault()
+    router.push(`${ROUTES.records.new()}?search=${athleteId}`)
   }
 
   const [sortBy, setSortBy] = useState('record')
