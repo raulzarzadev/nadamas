@@ -9,7 +9,6 @@ import { Form } from './Form2'
 export default function FormAthlete({ athleteId = '' }) {
   const { user } = useAuth()
 
-
   const router = useRouter()
   const { configSwimmer } = router.query
 
@@ -50,5 +49,13 @@ export default function FormAthlete({ athleteId = '' }) {
   }
 
   if (!user || !form) return <Loading />
-  return <Form form={form} setForm={setForm} handleSubmit={handleSubmit} />
+  const isAthleteOwner = form?.userId === user.id
+  return (
+    <Form
+      form={form}
+      setForm={setForm}
+      handleSubmit={handleSubmit}
+      isEditable={isAthleteOwner}
+    />
+  )
 }

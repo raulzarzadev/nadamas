@@ -141,7 +141,7 @@ export const athleteAcceptRequestEvent = async (eventId, athleteId) => {
 export const athleteUnjoinEvent = async (eventId, eventAthlete) => {
   await _update_event({
     id: eventId,
-    requests: firebase.firestore.FieldValue.arrayRemove(athlete.id),
+    requests: firebase.firestore.FieldValue.arrayRemove(eventAthlete.id),
     participants: firebase.firestore.FieldValue.arrayRemove(eventAthlete)
   })
 }

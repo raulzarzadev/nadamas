@@ -38,6 +38,7 @@ export default function Payments({ athleteId }) {
           <span className="text-sm">+</span>
         </div>
         <NewPaymentModal
+          athleteId={athleteId}
           handleOpen={() => setOpenNewPayment(!openNewPayment)}
           open={openNewPayment}
           paymentUpdated={updatePayments}
@@ -88,7 +89,6 @@ const Payment = ({ payment, updatePayments = () => {} }) => {
 }
 
 const DetailsPaymentModal = ({ handleOpen, open, payment, paymentUpdated }) => {
-  console.log(`payment`, payment)
   return (
     <Modal handleOpen={handleOpen} open={open} title={'Detalles de pago'}>
       <FormPayment
@@ -99,10 +99,14 @@ const DetailsPaymentModal = ({ handleOpen, open, payment, paymentUpdated }) => {
     </Modal>
   )
 }
-const NewPaymentModal = ({ handleOpen, open, paymentUpdated }) => {
+const NewPaymentModal = ({ handleOpen, open, paymentUpdated, athleteId }) => {
   return (
     <Modal handleOpen={handleOpen} open={open} title={'Nuevo Pago'}>
-      <FormPayment handleClose={handleOpen} paymentUpdated={paymentUpdated} />
+      <FormPayment
+        handleClose={handleOpen}
+        paymentUpdated={paymentUpdated}
+        athleteId={athleteId}
+      />
     </Modal>
   )
 }

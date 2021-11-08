@@ -9,8 +9,10 @@ import {
 
 export default function UploadImage({
   storeRef = null,
-  upladedImage = () => {}
+  upladedImage = () => {},
+  isEditable = true
 }) {
+  if (isEditable === false) return <></>
   const [task, setTask] = useState()
   const [progress, setProgress] = useState(0)
   const handleChangeImage = (e) => {

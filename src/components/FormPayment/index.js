@@ -14,9 +14,10 @@ export default function FormPayment({
   payment,
   paymentUpdated = () => {},
   handleClose,
-  showSearchAthlete = false
+  showSearchAthlete = false,
+  athleteId
 }) {
-  const defaultFormValue = { date: new Date() }
+  const defaultFormValue = { date: new Date(), athleteId }
   const [form, setForm] = useState(defaultFormValue)
   const {
     query: { id }
@@ -88,6 +89,7 @@ export default function FormPayment({
       })
       .catch((err) => console.log('err', err))
   }
+  console.log(`form`, form)
   return (
     <div className="">
       {showSearchAthlete && (

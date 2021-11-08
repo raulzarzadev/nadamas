@@ -2,7 +2,12 @@ import { updateAtlete } from '@/firebase/athletes'
 import Avatar from '@comps/Avatar'
 import UploadImage from '@comps/inputs/UploadImage'
 import Image from 'next/image'
-export default function SectionImage({ avatar, setAvatar, athleteId }) {
+export default function SectionImage({
+  avatar,
+  setAvatar,
+  athleteId,
+  isEditable
+}) {
   const upladedImage = (url) => {
     setAvatar(url)
     updateAtlete({ id: athleteId, avatar: url })
@@ -17,6 +22,7 @@ export default function SectionImage({ avatar, setAvatar, athleteId }) {
           <UploadImage
             upladedImage={upladedImage}
             storeRef={`avatar/${athleteId}`}
+            isEditable={isEditable}
           />
         </div>
       )}
@@ -27,6 +33,7 @@ export default function SectionImage({ avatar, setAvatar, athleteId }) {
             <UploadImage
               upladedImage={upladedImage}
               storeRef={`avatar/${athleteId}`}
+              isEditable={isEditable}
             />
           </div>
         </div>
@@ -38,6 +45,7 @@ export default function SectionImage({ avatar, setAvatar, athleteId }) {
             <UploadImage
               upladedImage={upladedImage}
               storeRef={`avatar/${athleteId}`}
+              isEditable={isEditable}
             />
           </div>
         </div>

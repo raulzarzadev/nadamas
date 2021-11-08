@@ -10,7 +10,6 @@ import Modal from '@comps/Modals/Modal'
 import { es } from 'date-fns/locale'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import DisplayRecords from './DisplayRecords'
 
 export default function Records({ athleteId }) {
   const router = useRouter()

@@ -32,7 +32,7 @@ export function Form({ form, setForm, handleSubmit, isEditable }) {
           <StickyContactAndSaveBar
             mobile={form?.mobile}
             email={form?.email}
-            showSaveButton={true}
+            showSaveButton={isEditable}
             ws_text={`Hola ${form?.name}`}
           />
 

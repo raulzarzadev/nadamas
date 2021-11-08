@@ -21,7 +21,6 @@ export default function PublicEvents({ showNew, showGrid }) {
   const { user } = useAuth()
   return (
     <div className=" max-w-3xl mx-auto ">
-      <h3>Proximos eventos</h3>
       <UpcomingEvents events={events} showNew={showNew && user?.coach} />
       {showGrid && <EventsGrid events={events} />}
     </div>
