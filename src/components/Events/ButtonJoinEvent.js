@@ -13,7 +13,6 @@ export default function ButtonJoinEvent({ athleteId, event }) {
   const [responseStatus, setResponseStatus] = useState(undefined)
 
   const handleJoin = (eventId) => {
-    console.log(`eventId, athleteId`, eventId, athleteId)
     athleteSendRequestEvent(eventId, athleteId)
       .then((res) => {
         setResponseStatus(REQUEST_STATUS.whatingRes)

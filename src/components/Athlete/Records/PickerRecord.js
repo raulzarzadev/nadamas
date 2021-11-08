@@ -9,7 +9,8 @@ const formatNumberInput = (value) => {
 export default function PickerRecord({
   value = null,
   setValue = (fieldName = '', value) => {},
-  name = 'record'
+  name = 'record',
+  size = 'md'
 }) {
   const formatValue = (value) => {
     if (typeof value === 'string') {
@@ -64,6 +65,7 @@ export default function PickerRecord({
         onChange={_handleChange}
         value={form.minutes}
         max={99}
+        size={size}
       />
       <InputNumber
         name="seconds"
@@ -71,6 +73,7 @@ export default function PickerRecord({
         onChange={_handleChange}
         value={form.seconds}
         max={60}
+        size={size}
       />
       <InputNumber
         name="ms"
@@ -78,6 +81,7 @@ export default function PickerRecord({
         onChange={_handleChange}
         value={form.ms}
         max={99}
+        size={size}
       />
     </div>
   )
@@ -90,23 +94,33 @@ const InputNumber = ({
   name,
   max,
   min = 0,
-  step = 1
-}) => (
-  <label className="flex flex-col w-16 items-center justify-center text-center m-1 ">
-    {label}
-    <input
-      min={min}
-      max={max}
-      step={step}
-      className="w-full bg-transparent text-center text-xl  "
-      // value={formatNumberInput(value)}
-      onChange={onChange}
-      name={name}
-      // defaultValue={formatNumberInput(value)}
-      placeholder={formatNumberInput(value)}
-      type="number"
-      pattern="[0-9]*"
-      inputMode="numeric"
-    />
-  </label>
-)
+  step = 1,
+  size
+}) => {
+  const sizing = {
+    sm: 'w-12 p-1  text-sm',
+    md: 'w-16 m-1 ',
+    lg: ''
+  }
+  return (
+    <label
+      className={`${sizing[size]} flex flex-col items-center justify-center text-center`}
+    >
+      <span>{label}</span>
+      <input
+        min={min}
+        max={max}
+        step={step}
+        className="w-full bg-transparent text-center text-xl  "
+        // value={formatNumberInput(value)}
+        onChange={onChange}
+        name={name}
+        // defaultValue={formatNumberInput(value)}
+        placeholder={formatNumberInput(value)}
+        type="number"
+        pattern="[0-9]*"
+        inputMode="numeric"
+      />
+    </label>
+  )
+}

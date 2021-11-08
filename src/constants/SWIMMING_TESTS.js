@@ -118,23 +118,28 @@ export default [
 export const STYLES = [
   {
     label: 'C',
-    id: 'crawl'
+    id: 'crawl',
+    largeLabel:'Crol'
   },
   {
     label: 'D',
-    id: 'back'
+    id: 'back',
+    largeLabel:'Dorso'
   },
   {
     label: 'P',
-    id: 'breast'
+    id: 'breast',
+    largeLabel:'Pecho'
   },
   {
     label: 'M',
-    id: 'butterfly'
+    id: 'butterfly',
+    largeLabel:'Mariposa'
   },
   {
     label: 'CI',
-    id: 'combi'
+    id: 'combi',
+    largeLabel:'Combinado individual'
   }
 ]
 

@@ -1,6 +1,6 @@
 import { addEventResult, getEvent } from '@/firebase/events'
 import useAthlete from '@/src/hooks/useAthlete'
-import { AddIcon } from '@/src/utils/Icons'
+import { AddIcon, DoneIcon, SaveIcon } from '@/src/utils/Icons'
 import PickerRecord from '@comps/Athlete/Records/PickerRecord'
 import PickerTest from '@comps/Athlete/Records/PickerTests'
 import Button from '@comps/inputs/Button'
@@ -30,12 +30,21 @@ export default function FormResults() {
     setOpenParticipants(!openParticipants)
   }
   const handleAddCompetitor = (athlete) => {
-    setCompetitors([...competitors, athlete])
+    const competitorAlreadyAdded = competitors.find(
+      ({ id }) => id === athlete.id
+    )
+    if (competitorAlreadyAdded) {
+      const competidorRemoved = competitors.filter(
+        ({ id }) => id !== athlete.id
+      )
+      setCompetitors(competidorRemoved)
+    } else {
+      setCompetitors([...competitors, athlete])
+    }
   }
   const [competitors, setCompetitors] = useState([])
 
   const [test, setTest] = useState()
-  console.log(`test`, test)
   if (event === undefined) return <Loading />
   return (
     <div className="max-w-md mx-auto">
@@ -43,12 +52,18 @@ export default function FormResults() {
       <div className="">
         <PickerTest setTest={(test) => setTest(test)} />
       </div>
-      <h4 className="text-center text-xl">Competidores </h4>
-      <div>
-        <Button onClick={handleOpenParticipants}>
-          Agregar
-          <AddIcon />
-        </Button>
+      <div className="flex justify-center items-center">
+        <h4 className="text-center text-xl mx-3">Competidores </h4>
+        <div className="flex w-16">
+          <Button
+            onClick={handleOpenParticipants}
+            size="sm"
+            variant="secondary"
+          >
+            Agregar
+            <AddIcon />
+          </Button>
+        </div>
       </div>
 
       {competitors.map((athlete) => (
@@ -65,9 +80,15 @@ export default function FormResults() {
           handleOpen={handleOpenParticipants}
           title="Agregar competidores"
         >
+          <div className="flex justify-evenly text-xs mb-3">
+            <div>No.</div>
+            <div>Nombre</div>
+            <div>Acción</div>
+          </div>
           {participants.map((participant) => (
             <Participant
-              athleteId={participant}
+              competitors={competitors}
+              participant={participant}
               key={participant}
               handleAddCompetitor={handleAddCompetitor}
             />
@@ -83,7 +104,11 @@ const CompetitorRow = ({ athlete, test, event }) => {
   const handleSaveResult = () => {
     const resultData = {
       eventData: { id: event.id, title: event.title },
-      athleteData: { id: athlete.id, name: athlete.name },
+      athleteData: {
+        id: athlete.id,
+        name: athlete.name,
+        number: athlete.number
+      },
       test: { ...test, record: form }
     }
     addEventResult(resultData)
@@ -93,33 +118,42 @@ const CompetitorRow = ({ athlete, test, event }) => {
   }
   const [form, setForm] = useState({})
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center justify-evenly">
+      <div>{athlete.number}</div>
       <div>{athlete.name}</div>
-      <PickerRecord setValue={(field, value) => setForm(value)} />
+      <PickerRecord setValue={(field, value) => setForm(value)} size="sm" />
       <Button
         onClick={() => handleSaveResult()}
-        label={saved ? 'List' : 'Guardar'}
-      />
+        iconOnly
+        size="sm"
+        variant={saved ? 'secondary' : 'primary'}
+      >
+        {saved ? <DoneIcon /> : <SaveIcon />}
+      </Button>
     </div>
   )
 }
 
-const Participant = ({ athleteId, handleAddCompetitor }) => {
-  const { athlete } = useAthlete(athleteId)
+const Participant = ({ participant, handleAddCompetitor, competitors }) => {
+  const { athlete } = useAthlete(participant.id)
+  const { number } = participant
+  const competitorAlreadyAdded = competitors.find(
+    ({ id }) => id === participant.id
+  )
+  console.log(`competitorAlreadyAdded`, competitorAlreadyAdded)
   if (athlete === undefined) return <Loading />
   return (
-    <div>
-      <div className="flex w-full justify-evenly">
-        {athlete?.name}
-        <Button
-          variant=""
-          iconOnly
-          size="xs"
-          onClick={() => handleAddCompetitor(athlete)}
-        >
-          <AddIcon />
-        </Button>
-      </div>
+    <div className="flex w-full justify-evenly">
+      <div>{number}</div>
+      <div>{athlete.name}</div>
+      <Button
+        variant={!!competitorAlreadyAdded ? 'secondary' : 'primary'}
+        iconOnly
+        size="xs"
+        onClick={() => handleAddCompetitor({ ...athlete, number })}
+      >
+        {!!competitorAlreadyAdded ? <DoneIcon /> : <AddIcon />}
+      </Button>
     </div>
   )
 }
