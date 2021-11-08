@@ -1,7 +1,4 @@
-import { getAthlete } from '@/firebase/athletes'
-import Button from '@comps/inputs/Button'
 import MemberRow from '@comps/Teams/MemberRow'
-import { useEffect, useState } from 'react'
 
 export default function ParticipantsRows({
   athletesIds,

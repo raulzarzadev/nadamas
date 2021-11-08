@@ -1,34 +1,23 @@
 import {
   athleteCancelEventRequest,
-  athleteJoinEvent,
-  athleteRequestJoinEvent,
+  athleteSendRequestEvent,
   athleteUnjoinEvent
 } from '@/firebase/events'
 import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import { useEffect, useState } from 'react'
 
-export default function ButtonJoinEvent({ eventId, athleteId, event }) {
-
+export default function ButtonJoinEvent({ athleteId, event }) {
   const [alert, setAlert] = useState(null)
-  const handleClick = (e) => {
-    if (!athleteId) {
-      setAlert(<Info text="Debes crear un atleta primero" />)
-      setTimeout(() => {
-        setAlert(null)
-      }, 1000)
-    } else {
-      athleteRequestJoinEvent(eventId, athleteId)
-        .then((res) => console.log(`res`, res))
-        .catch((err) => console.log(`err`, err))
-    }
-  }
+  const [loading, setLoading] = useState(false)
   const [responseStatus, setResponseStatus] = useState(undefined)
 
   const handleJoin = (eventId) => {
-    athleteRequestJoinEvent(eventId, athleteId)
+    console.log(`eventId, athleteId`, eventId, athleteId)
+    athleteSendRequestEvent(eventId, athleteId)
       .then((res) => {
         setResponseStatus(REQUEST_STATUS.whatingRes)
+        setLoading(false)
       })
       .catch((err) => console.log(`err`, err))
   }
@@ -36,6 +25,7 @@ export default function ButtonJoinEvent({ eventId, athleteId, event }) {
     athleteCancelEventRequest(eventId, athleteId)
       .then((res) => {
         setResponseStatus(REQUEST_STATUS.notJoined)
+        setLoading(false)
       })
       .catch((err) => console.log(`err`, err))
   }
@@ -44,6 +34,7 @@ export default function ButtonJoinEvent({ eventId, athleteId, event }) {
     athleteUnjoinEvent(eventId, athleteId)
       .then((res) => {
         setResponseStatus(REQUEST_STATUS.notJoined)
+        setLoading(false)
       })
       .catch((err) => console.log(`err`, err))
   }
@@ -90,21 +81,22 @@ export default function ButtonJoinEvent({ eventId, athleteId, event }) {
   }, [])
 
   return (
-    <>
+    <div>
       {alert && (
         <div className="absolute top-0 right-0 left-0 bottom-0 flex items-center justify-center z-10">
           <div className="bg-black border-2 rounded-2xl">{alert}</div>
         </div>
       )}
       <Button
-        onClick={(e) => {
+        loading={loading}
+        onClick={async (e) => {
+          setLoading(true)
           e.stopPropagation()
           e.preventDefault()
-          handleClick()
-          responseStatus?.handleClick(eventId)
+          responseStatus?.handleClick(event.id)
         }}
         label={responseStatus?.label}
       />
-    </>
+    </div>
   )
 }

@@ -1,36 +1,19 @@
-import { getAthlete, getAthleteId } from "@/firebase/athletes"
-import { TrashBinIcon } from "@/src/utils/Icons"
-import AthleteRow from "@comps/AthleteRow"
-import Button from "@comps/inputs/Button"
-import Loading from "@comps/Loading"
-import DeleteModal from "@comps/Modals/DeleteModal"
-import { useEffect, useState } from "react"
+import { getAthlete, getAthleteId } from '@/firebase/athletes'
+import useAthlete from '@/src/hooks/useAthlete'
+import { TrashBinIcon } from '@/src/utils/Icons'
+import AthleteRow from '@comps/AthleteRow'
+import Button from '@comps/inputs/Button'
+import Loading from '@comps/Loading'
+import DeleteModal from '@comps/Modals/DeleteModal'
+import { useEffect, useState } from 'react'
 
-const MemberRow = ({ athlete, handleRemoveMember }) => {
+const MemberRow = ({ athlete: athleteId, handleRemoveMember }) => {
   const [openDelete, setOpenDelete] = useState(false)
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
-  const [athleteInfo, setAthleteInfo] = useState(undefined)
-  useEffect(() => {
-    if (athlete) {
-      getAthleteId(athlete)
-        .then((res) => {
-          console.log(`res`, res)
-          if (res) {
-            setAthleteInfo(res)
-          } else {
-            setAthleteInfo({ id: athlete, active: false })
-          }
-        })
-        .catch((err) => console.log(`err`, err))
-      return () => {
-        setAthleteInfo(undefined)
-      }
-    }
-  }, [athlete])
-  console.log(`athlete`, athlete)
-  if (athleteInfo === undefined) return <Loading />
+  const { athlete } = useAthlete(athleteId)
+  if (athlete === undefined) return <Loading />
   return (
     <div>
       <div key={athlete.id} className="flex items-center w-full">
@@ -43,8 +26,8 @@ const MemberRow = ({ athlete, handleRemoveMember }) => {
         >
           <TrashBinIcon size="1rem" />
         </Button>
-        {athleteInfo.active ? (
-          <AthleteRow athlete={athleteInfo} />
+        {athlete.active ? (
+          <AthleteRow athlete={athlete} />
         ) : (
           <div className="p-2">Usuario inactivo</div>
         )}
@@ -54,9 +37,9 @@ const MemberRow = ({ athlete, handleRemoveMember }) => {
           title="Descartar atleta"
           open={openDelete}
           handleOpen={handleOpenDelete}
-          name={`${athleteInfo?.name} ${athleteInfo?.lastName}`}
+          name={`${athlete?.name} ${athlete?.lastName}`}
           handleDelete={() => {
-            handleRemoveMember(athleteInfo.id)
+            handleRemoveMember(athlete.id)
             handleOpenDelete()
           }}
         />

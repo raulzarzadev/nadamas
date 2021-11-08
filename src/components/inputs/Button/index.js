@@ -63,6 +63,6 @@ export default function Button({
 
 const Loading = () => (
   <div className="flex justify-center items-center">
-    <div className="border-4 rounded-full w-7 h-7 border-t-transparent animate-spin"></div>
+    <div className="border-8 rounded-full w-7 h-7 border-t-0 border-b-0  border-r-0 animate-spin"></div>
   </div>
 )

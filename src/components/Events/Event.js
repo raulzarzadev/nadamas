@@ -1,13 +1,12 @@
 import {
+  athleteAcceptRequestEvent,
   athleteCancelEventRequest,
-  athleteJoinEvent,
   athleteUnjoinEvent,
   getEvent,
   removeEvent
 } from '@/firebase/events'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
-import Info from '@comps/Alerts/Info'
 import ParticipantsRows from '@comps/AthleteRow/ParticipantsRows'
 import RequestRows from '@comps/AthleteRow/RequestRows'
 import Button from '@comps/inputs/Button'
@@ -38,8 +37,7 @@ export default function Event() {
   const handleClickResults = () => {
     router.push(ROUTES.events.results(eventId))
   }
-
-  if (!event) return <Loading />
+  if (!event || !user) return <Loading size='lg'/>
   return (
     <>
       <div className="max-w-sm mx-auto py-4 text-center">
@@ -51,7 +49,6 @@ export default function Event() {
               <ButtonJoinEvent
                 event={event}
                 athleteId={user?.athleteId}
-                eventId={event?.id}
               />
               <Button
                 label="Resultados"
@@ -140,7 +137,7 @@ const AdminActions = ({ eventId }) => {
 }
 const ManageEvent = ({ event }) => {
   const handleAccepRequest = (athleteId) => {
-    athleteJoinEvent(event.id, athleteId)
+    athleteAcceptRequestEvent(event.id, athleteId)
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
@@ -154,10 +151,15 @@ const ManageEvent = ({ event }) => {
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
+  const handleClickResults = () => {
+    router.push(ROUTES.events.results(event.id))
+  }
   return (
     <>
       <Section title="Estadisticas">
-        <Section title="Pruebas"></Section>
+        <Section title="Pruebas">
+          <Button label="Ver resultados" onClick={handleClickResults} />
+        </Section>
         <Section title={`Participantes (${event?.participants?.length || 0})`}>
           <ParticipantsRows
             athletesIds={event?.participants}

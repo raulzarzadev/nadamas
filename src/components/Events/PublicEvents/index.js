@@ -1,6 +1,4 @@
 import { useAuth } from '@/src/context/AuthContext'
-import Button from '@comps/inputs/Button'
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ButtonJoinEvent from '../ButtonJoinEvent'
 import Link from 'next/link'
@@ -8,6 +6,7 @@ import { getPublicEvents } from '@/firebase/events'
 import { format } from '@/src/utils/Dates'
 import EventsRow from '../EventsRow'
 import { ROUTES } from '@/ROUTES'
+import Loading from '@comps/Loading'
 export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
   useEffect(() => {
@@ -42,6 +41,7 @@ const EventsGrid = ({ events }) => {
 
 const Event = ({ event }) => {
   const { user } = useAuth()
+  if (!event || !user) return <Loading />
   return (
     <Link href={ROUTES.events.details(event.id)}>
       <a className=" mx-auto hover:border-gray-200 border shadow-lg border-gray-500 flex flex-col h-56 w-full rounded text-center justify-between p-1">
@@ -54,7 +54,6 @@ const Event = ({ event }) => {
         <p className="max-h-36 overflow-auto">{event?.description}</p>
         <ButtonJoinEvent
           athleteId={user?.athleteId}
-          eventId={event.id}
           event={event}
         />
       </a>

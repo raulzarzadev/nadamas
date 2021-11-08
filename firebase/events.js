@@ -71,17 +71,53 @@ export const removeEvent = async (eventId) => {
   return await _remove_event(eventId)
 }
 
+export const getEventResults = async (eventId) => {
+  return await db
+    .collection('results')
+    .where('event.id', '==', eventId)
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log(`err`, err))
+}
+export const addEventResult = async ({ eventData, athleteData, test }) => {
+  return await db
+    .collection('results')
+    .add({
+      event: { ...eventData },
+      athlete: {
+        ...athleteData
+      },
+      test
+    })
+    .then((res) => formatResponse(true, ' RESULT_CREATED', res))
+    .catch((err) => formatResponse(false, 'ERROR_CREATING_RESULT', err))
+}
+
 export const updateEvent = async (event) => {
   return await _update_event(event)
 }
 
-export const athleteRequestJoinEvent = async (eventId, athleteId) => {
+export const athleteSendRequestEvent = async (eventId, athleteId) => {
   return await _update_event({
     id: eventId,
     requests: firebase.firestore.FieldValue.arrayUnion(athleteId)
   })
 }
-export const athleteJoinEvent = async (eventId, athleteId) => {
+
+const getParticipantNumber = async (eventId) => {
+  return await db
+    .collection('events')
+    .doc(eventId)
+    .get()
+    .then((res) => {
+      const data = res.data()
+      return data.currentNumber || 0
+    })
+    .catch((err) => console.log(`err`, err))
+}
+export const athleteAcceptRequestEvent = async (eventId, athleteId) => {
+  const currentNumber = await getParticipantNumber(eventId)
+  console.log(`currentNumber`, currentNumber)
   await _update_event({
     id: eventId,
     requests: firebase.firestore.FieldValue.arrayRemove(athleteId),
@@ -101,7 +137,6 @@ export const athleteCancelEventRequest = async (eventId, athleteId) => {
     requests: firebase.firestore.FieldValue.arrayRemove(athleteId)
   })
 }
-
 
 const _update_event = async (event) => {
   return await db
