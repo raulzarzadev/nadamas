@@ -12,8 +12,7 @@ const MemberRow = ({ athlete: athleteId, handleRemoveMember }) => {
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
-  
-  const { athlete } = useAthlete(athleteId?.id)
+  const { athlete } = useAthlete(athleteId)
   if (athlete === undefined) return <Loading />
   return (
     <div>

@@ -11,7 +11,8 @@ import AthleteTeam from '../AthleteTeam'
 import Section from '@comps/Section'
 import Info from '@comps/Alerts/Info'
 import Records from '../Records'
-export function Form({ form, setForm, handleSubmit, isEditable }) {
+export function Form({ form = {}, setForm, handleSubmit, isEditable }) {
+  console.log(`isEditable`, isEditable)
   return (
     <div className="">
       <div className="relative pt-0 pb-8 max-w-lg mx-auto">
@@ -27,6 +28,7 @@ export function Form({ form, setForm, handleSubmit, isEditable }) {
               athleteId={form?.id}
               avatar={form?.avatar}
               setAvatar={(avatar) => setForm({ ...form, avatar })}
+              isEditable={isEditable}
             />
           )}
           <StickyContactAndSaveBar

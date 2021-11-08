@@ -1,4 +1,11 @@
-import { addDays, addHours, format as fnsFormat, toDate } from 'date-fns'
+import {
+  addDays,
+  addHours,
+  format as fnsFormat,
+  formatDistanceStrict,
+  formatDistanceToNowStrict,
+  toDate
+} from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export const dayLabels = [
@@ -19,6 +26,10 @@ export const format = (date = new Date(), formatStr = 'PP') => {
 }
 export function formatInputDate(date = new Date(), format = 'yyy-MM-dd') {
   return fnsFormat(addHours(new Date(date), 7), format, { locale: es })
+}
+
+export function getAge(date = new Date()) {
+  return formatDistanceToNowStrict(date, { locale: es })
 }
 
 export function simpleDate(date = new Date()) {

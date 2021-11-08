@@ -89,7 +89,6 @@ export default function FormPayment({
       })
       .catch((err) => console.log('err', err))
   }
-  console.log(`form`, form)
   return (
     <div className="">
       {showSearchAthlete && (
