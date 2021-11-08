@@ -7,6 +7,7 @@ import { format } from '@/src/utils/Dates'
 import EventsRow from '../EventsRow'
 import { ROUTES } from '@/ROUTES'
 import Loading from '@comps/Loading'
+import UpcomingEvents from './UpcomingEvents'
 export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
   useEffect(() => {
@@ -21,7 +22,7 @@ export default function PublicEvents({ showNew, showGrid }) {
   return (
     <div className=" max-w-3xl mx-auto ">
       <h3>Proximos eventos</h3>
-      <EventsRow events={events} showNew={showNew && user?.coach} />
+      <UpcomingEvents events={events} showNew={showNew && user?.coach} />
       {showGrid && <EventsGrid events={events} />}
     </div>
   )
@@ -52,10 +53,7 @@ const Event = ({ event }) => {
           </div>
         </div>
         <p className="max-h-36 overflow-auto">{event?.description}</p>
-        <ButtonJoinEvent
-          athleteId={user?.athleteId}
-          event={event}
-        />
+        <ButtonJoinEvent athleteId={user?.athleteId} event={event} />
       </a>
     </Link>
   )

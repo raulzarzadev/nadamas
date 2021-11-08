@@ -1,7 +1,7 @@
 import { getAthleteRecords, removeRecord } from '@/firebase/records'
 import { ROUTES } from '@/ROUTES'
 import SWIMMING_TESTS from '@/src/constants/SWIMMING_TESTS'
-import { format } from '@/src/utils/Dates'
+import { format, formatInputDate } from '@/src/utils/Dates'
 import { AddIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
@@ -60,8 +60,13 @@ export default function Records({ athleteId }) {
   return (
     <div className="">
       <div>
-        <div className="w-12 mx-auto">
-          <Button onClick={handleNewRecord} variant="secondary" size="sm">
+        <div className="w-12 mx-auto my-5">
+          <Button
+            type="button"
+            onClick={handleNewRecord}
+            variant="secondary"
+            size="xs"
+          >
             Nuevo <AddIcon />
           </Button>
         </div>
@@ -69,28 +74,44 @@ export default function Records({ athleteId }) {
         <div className="flex justify-evenly my-2 flex-wrap  children:m-1">
           <h3>Order por:</h3>
           <Button
+            type="button"
             label="Fecha"
             size="xs"
             iconOnly
-            onClick={() => handleSortBy('date')}
+            onClick={(e) => {
+              e.preventDefault()
+              handleSortBy('date')
+            }}
           />
           <Button
+            type="button"
             label="Estilo"
             size="xs"
             iconOnly
-            onClick={() => handleSortBy('style')}
+            onClick={(e) => {
+              e.preventDefault()
+              handleSortBy('style')
+            }}
           />
           <Button
+            type="button"
             label="Distancia"
             size="xs"
             iconOnly
-            onClick={() => handleSortBy('distance')}
+            onClick={(e) => {
+              e.preventDefault()
+              handleSortBy('distance')
+            }}
           />
           <Button
+            type="button"
             label="Tiempo"
             size="xs"
             iconOnly
-            onClick={() => handleSortBy('record')}
+            onClick={(e) => {
+              e.preventDefault()
+              handleSortBy('record')
+            }}
           />
         </div>
 
@@ -150,7 +171,7 @@ const RecordRow = ({ record: { id, date, record, style, distance } }) => {
         handleOpen={handleOpenDetail}
         title="Detalles de marca"
       >
-        <div>{format(date, 'ddMMMyy')}</div>
+        <div>{formatInputDate(date, 'ddMMMyy')}</div>
         <div>{style}</div>
         <div>{record}</div>
         <div className="grid gap-4 mt-4">

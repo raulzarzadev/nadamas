@@ -11,6 +11,7 @@ export const getEvents = async (ownerId) => {
   return await db
     .collection('events')
     .where('owner.id', '==', ownerId)
+    .orderBy('date', 'asc')
     .get()
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log('err', err))
@@ -19,9 +20,18 @@ export const getPublicEvents = async () => {
   return await db
     .collection('events')
     .where('publicEvent', '==', true)
-    .orderBy('date', 'desc')
-    /* 
-    .limit(10) */
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log('err', err))
+}
+
+export const getUpcomingEvents = async () => {
+  return await db
+    .collection('events')
+    .where('publicEvent', '==', true)
+    .orderBy('date', 'asc')
+    .startAt(new Date())
+    .limit(10)
     .get()
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log('err', err))
