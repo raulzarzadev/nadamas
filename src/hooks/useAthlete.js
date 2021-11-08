@@ -11,7 +11,7 @@ export default function useAthlete(athleteId) {
           if (res) {
             setAthlete(res)
           } else {
-            setAthlete({ id: athlete, active: false })
+            setAthlete({ id: athleteId, active: false })
           }
         })
         .catch((err) => console.log(`err`, err))

@@ -28,6 +28,7 @@ const RequestAthleteRow = ({
   onRejectRequest = () => {}
 }) => {
   const { athlete } = useAthlete(athleteId)
+  console.log(`athlete.id`, athlete?.id)
   if (athlete === undefined) return <Loading />
   return (
     <div key={athlete?.id} className="flex justify-evenly">

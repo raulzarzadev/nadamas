@@ -48,18 +48,18 @@ export default function FormAthlete({ athleteId = '' }) {
   }
 
   const { isOwner, isCoach } = useEditable({
-    athleteId: form?.id,
+    userId: form?.userId,
     coachId: form?.coachId
   })
 
   if (!user || !form) return <Loading />
-  if (!isOwner || !isCoach) return <ContentNotAvailable />
+  if (!isOwner) return <ContentNotAvailable />
   return (
     <Form
       form={form}
       setForm={setForm}
       handleSubmit={handleSubmit}
-      isEditable={isOwner || isCoach}
+      isEditable={isOwner}
     />
   )
 }

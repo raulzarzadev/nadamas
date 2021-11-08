@@ -22,10 +22,10 @@ import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
 import { updateAttendanceList } from '@/firebase/attendance'
 import { useRouter } from 'next/router'
-import { getLastAthletePayment } from '@/firebase/payments'
+import useEditable from '@/src/hooks/useEditable'
 
 export default function AthleteRow({
-  athlete={},
+  athlete = {},
   displaySetAttendance = false,
   date,
   assist = false,
@@ -34,8 +34,17 @@ export default function AthleteRow({
 }) {
   const router = useRouter()
   const { user } = useAuth()
-  const { emerTitle, emerName, emerMobile, name, lastName, id, mobile, birth , active } =
-    athlete
+  const {
+    emerTitle,
+    emerName,
+    emerMobile,
+    name,
+    lastName,
+    id,
+    mobile,
+    birth,
+    active
+  } = athlete
 
   const wstext = `Hola ${name}. Soy ${user.name} `
 
@@ -57,21 +66,15 @@ export default function AthleteRow({
   }, [date])
 
   const [lastPay, setLastPay] = useState(null)
-  /* useEffect(() => {
-    getLastAthletePayment(id)
-      .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err))
-  }, []) */
+  const { isOwner } = useEditable({ userId: athlete?.userId })
+  console.log(`isOwner`,isOwner, athlete.userId)
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
-        {/*  <span className="text-sm sm:flex items-center hidden ">
-          {formatDistanceToNowStrict(birth, {
-            unit: 'year',
-            addSuffix: false,
-            locale: es
-          }).replace(/años/, '')}
-        </span> */}
+        {isOwner && (
+          <span className="absolute left-0 top-0 bottom-0 w-3  bg-yellow-500  rounded-lg rounded-r-none transform "></span>
+        )}
+       
         {weekBirthday && (
           <span className="relative group flex items-center">
             <BirthCakeIcon />
