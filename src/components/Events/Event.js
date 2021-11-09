@@ -24,7 +24,7 @@ import { ROUTES } from '@/ROUTES'
 import { PlayListIcon, TrashBinIcon } from '@/src/utils/Icons'
 import Modal from '@comps/Modals/Modal'
 import PickerTest from '@comps/Athlete/Records/PickerTests'
-import TestsPicker from '@comps/inputs/TestsPicker'
+import TestsPicker from '@comps/inputs/PickerTests'
 export default function Event() {
   const { user } = useAuth()
   const [event, setEvent] = useState(undefined)
@@ -186,7 +186,8 @@ const ManageEvent = ({ event }) => {
     <>
       <Section title="Estadisticas">
         <Section title={`Pruebas (${event?.tests?.length || 0})`}>
-          <div className="p-2">
+          <Button label="Ver resultados" onClick={handleClickResults} />
+          {/* <div className="p-2">
             <div className="grid grid-flow-col gap-4 mb-4">
               <Button
                 label="Agregar pruebas"
@@ -194,7 +195,6 @@ const ManageEvent = ({ event }) => {
                 size="sm"
                 onClick={handleOpenAddTest}
               />
-              <Button label="Ver resultados" onClick={handleClickResults} />
             </div>
             <div>
               {event?.tests?.map(({ style, distance, ...rest }, i) => (
@@ -237,7 +237,7 @@ const ManageEvent = ({ event }) => {
               <PickerTest setTest={handleSetTest} />
               <Button label="Agregar" onClick={saveNewTest} />
             </Modal>
-          </div>
+          </div> */}
         </Section>
         <Section title={`Participantes (${event?.participants?.length || 0})`}>
           <ParticipantsRows

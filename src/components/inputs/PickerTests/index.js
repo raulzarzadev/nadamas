@@ -2,7 +2,7 @@ import { DISTANCES, STYLES } from '@/src/constants/SWIMMING_TESTS'
 import { DoneIcon } from '@/src/utils/Icons'
 import { useEffect, useState } from 'react'
 
-export default function TestsPicker({
+export default function PickerTests({
   tests,
   setTests = (tests) => {
     console.log(tests)

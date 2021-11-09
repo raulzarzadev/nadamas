@@ -11,6 +11,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import UploadFile from '@comps/inputs/UploadFile'
 import { ROUTES } from '@/ROUTES'
+import PickerTests from '@comps/inputs/PickerTests'
 const schema = yup
   .object({
     title: yup.string().required(),
@@ -83,6 +84,7 @@ export default function FormEvent({ event, discard = () => {} }) {
       </form>
       {event?.id && (
         <AlreadySaved
+          event={event}
           eventId={event?.id}
           image={event?.image}
           announcement={event?.announcement}
@@ -91,7 +93,7 @@ export default function FormEvent({ event, discard = () => {} }) {
     </div>
   )
 }
-const AlreadySaved = ({ eventId, image, announcement }) => {
+const AlreadySaved = ({ event, eventId, image, announcement }) => {
   const [newImage, setNewImage] = useState(null)
   const [newAnnouncement, setNewAnnouncement] = useState(null)
   const imageUploaded = (url) => {
@@ -117,8 +119,21 @@ const AlreadySaved = ({ eventId, image, announcement }) => {
       .catch((err) => console.log(`err`, err))
   }
 
+  const handleSetTests = (tests) => {
+    updateEvent({ id: eventId, tests })
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
+  }
+
   return (
     <div>
+      <div>
+        <h3 className='text-center text-xl font-bold'>
+
+        Pruebas
+        </h3>
+        <PickerTests tests={event?.tests} setTests={handleSetTests} />
+      </div>
       {/* ---------------- SUBIR IMAGEN */}
       <div>
         <label className="flex justify-center items-center">
