@@ -40,8 +40,8 @@ export default function PickerTests({
     )
   }
   return (
-    <div className="flex w-full">
-      <div className="flex flex-col w-24">
+    <div className="flex w-full p-1">
+      <div className="flex flex-col w-16">
         <Cell style="title">Estilo Distancia</Cell>
         {DISTANCES.map(({ id, label: distance }) => (
           <Cell key={id} style="small">
@@ -49,9 +49,12 @@ export default function PickerTests({
           </Cell>
         ))}
       </div>
-      {STYLES.map(({ id: styleId, largeLabel }) => (
+      {STYLES.map(({ id: styleId, label, largeLabel }) => (
         <div key={styleId} className="flex flex-col w-1/6 ">
-          <Cell>{largeLabel}</Cell>
+          <Cell>
+            <div className='hidden md:block'>{largeLabel}</div>
+            <div className='md:hidden'>{label}</div>
+          </Cell>
           {DISTANCES.map(({ id, label: distance }) => (
             <Cell style="small" key={id}>
               <button
@@ -76,7 +79,7 @@ export default function PickerTests({
 }
 const Cell = ({ children, style = 'normal' }) => {
   const styling = {
-    title: `font-bold h-12`,
+    title: `font-bold h-12 text-xs `,
     normal: `h-12`,
     small: `h-8`
   }
