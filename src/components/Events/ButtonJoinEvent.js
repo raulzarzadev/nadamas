@@ -3,7 +3,6 @@ import {
   athleteSendRequestEvent,
   athleteUnjoinEvent
 } from '@/firebase/events'
-import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
@@ -50,7 +49,6 @@ export default function ButtonJoinEvent({ athleteId, event }) {
   const handleOpenAlreadyIn = () => {
     setOpenAlreadyIn(!openAlreadyIn)
   }
-  console.log(`eventAthlete`, eventAthlete)
 
   const REQUEST_STATUS = {
     notJoined: {
