@@ -105,7 +105,6 @@ const AlreadySaved = ({ eventId, image, announcement }) => {
     updateEvent({ id: eventId, announcement: url })
       .then((res) => {
         setNewAnnouncement(url)
-        console.log(`res`, res)
       })
       .catch((err) => console.log(`err`, err))
   }
@@ -114,12 +113,10 @@ const AlreadySaved = ({ eventId, image, announcement }) => {
     updateEvent({ id: eventId, announcement: null })
       .then((res) => {
         setNewAnnouncement(null)
-        console.log(`res`, res)
       })
       .catch((err) => console.log(`err`, err))
   }
 
-  console.log(`newAnnouncement`, newAnnouncement, announcement)
   return (
     <div>
       {/* ---------------- SUBIR IMAGEN */}
