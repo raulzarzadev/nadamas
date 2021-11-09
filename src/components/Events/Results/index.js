@@ -1,7 +1,8 @@
-import { getEventResults } from '@/firebase/events'
+import { getEvent, getEventResults } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
 import { STYLES } from '@/src/constants/SWIMMING_TESTS'
 import Button from '@comps/inputs/Button'
+import PickerTests from '@comps/inputs/PickerTests'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
@@ -11,6 +12,7 @@ export default function Results() {
   const {
     query: { id: eventId }
   } = router
+  const [event, setEvent] = useState({})
 
   useEffect(() => {
     if (eventId)
@@ -20,12 +22,21 @@ export default function Results() {
           console.log(`res`, res)
         })
         .catch((err) => console.log(`err`, err))
+    getEvent(eventId, setEvent)
   }, [eventId])
   const handleClickNew = () => {
     router.push(`${ROUTES.events.results(eventId)}/new`)
   }
+  const handleClickTest = (test) => {
+    console.log(`test`, test)
+  }
   return (
     <div className="">
+      <div className="text-center">
+        {console.log(`event`, event)}
+        <h3 className="text-xl">{event?.title}</h3>
+        <p>Participantes {event?.participants?.length}</p>
+      </div>
       <div className="flex justify-center pt-5">
         <div className="w-28">
           <Button
@@ -37,7 +48,17 @@ export default function Results() {
           />
         </div>
       </div>
+      <div>
+        <h3 className="text-xl text-center mt-4">Pruebas</h3>
+        <PickerTests
+          tests={event?.tests}
+          onTestClick={handleClickTest}
+          disabled
+        />
+      </div>
+
       {/* ----------------------  RESULTS TABLE  ---------------------- */}
+      <h4>Filtro: </h4>
       <div className="max-w-lg mx-auto p-1 mt-3">
         <ResultRow isTitle texts={['No.', 'Prueba', 'Tiempo']} />
         {results.map(({ id, athlete, test }) => (

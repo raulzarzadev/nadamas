@@ -4,9 +4,8 @@ import { useEffect, useState } from 'react'
 
 export default function PickerTests({
   tests,
-  setTests = (tests) => {
-    console.log(tests)
-  },
+  setTests = (tests) => {},
+  onTestClick = () => {},
   disabled = false
 }) {
   const [form, setForm] = useState([])
@@ -52,23 +51,32 @@ export default function PickerTests({
       {STYLES.map(({ id: styleId, label, largeLabel }) => (
         <div key={styleId} className="flex flex-col w-1/6 ">
           <Cell>
-            <div className='hidden md:block'>{largeLabel}</div>
-            <div className='md:hidden'>{label}</div>
+            <div className="hidden md:block">{largeLabel}</div>
+            <div className="md:hidden">{label}</div>
           </Cell>
           {DISTANCES.map(({ id, label: distance }) => (
             <Cell style="small" key={id}>
               <button
+                className="w-full h-full p-1 flex justify-center items-center"
                 disabled={disabled}
                 onClick={(e) => {
                   e.preventDefault()
                   handleAddTest({ distance, style: styleId })
                 }}
               >
-                {testsAlreadyExist({ distance, style: styleId }) ? (
-                  <DoneIcon />
-                ) : (
-                  'o'
-                )}
+                <div
+                  className="w-full h-full flex justify-center items-center"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    onTestClick({ distance, style: styleId })
+                  }}
+                >
+                  {testsAlreadyExist({ distance, style: styleId }) ? (
+                    <DoneIcon />
+                  ) : (
+                    'o'
+                  )}
+                </div>
               </button>
             </Cell>
           ))}
