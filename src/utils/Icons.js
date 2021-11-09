@@ -31,6 +31,7 @@ import { RiFacebookCircleFill } from 'react-icons/ri'
 import { RiMailAddLine } from 'react-icons/ri'
 import { RiDeleteBack2Line } from 'react-icons/ri'
 import { RiCake2Line } from 'react-icons/ri'
+import { RiPlayList2Line } from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -94,3 +95,4 @@ export const CloseBackIcon = (props) => (
 export const BirthCakeIcon = (props) => <RiCake2Line size={size} {...props} />
 /* RiMailAddLine */
 
+export const PlayListIcon = (props) => <RiPlayList2Line size={size} {...props} />

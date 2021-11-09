@@ -42,7 +42,6 @@ export const getEvent = async (id, dispatch) => {
     .collection('events')
     .doc(id)
     .onSnapshot((snapshot) => {
-      console.log(`snapshot`, snapshot)
       dispatch(normalizeDoc(snapshot))
     })
   /* .get()
@@ -153,6 +152,19 @@ export const athleteCancelEventRequest = async (eventId, athleteId) => {
   await _update_event({
     id: eventId,
     requests: firebase.firestore.FieldValue.arrayRemove(athleteId)
+  })
+}
+
+export const addEventTest = async ({ eventId, test }) => {
+  return await _update_event({
+    id: eventId,
+    tests: firebase.firestore.FieldValue.arrayUnion(test)
+  })
+}
+export const removeEventTest = async ({ eventId, test }) => {
+  return await _update_event({
+    id: eventId,
+    tests: firebase.firestore.FieldValue.arrayRemove(test)
   })
 }
 

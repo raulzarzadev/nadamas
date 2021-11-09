@@ -40,8 +40,9 @@ export default function Results() {
       {/* ----------------------  RESULTS TABLE  ---------------------- */}
       <div className="max-w-lg mx-auto p-1 mt-3">
         <ResultRow isTitle texts={['No.', 'Prueba', 'Tiempo']} />
-        {results.map(({ athlete, test }) => (
+        {results.map(({ id, athlete, test }) => (
           <ResultRow
+            key={id}
             texts={[
               `${athlete?.number}`,
               `${test?.distance}m ${

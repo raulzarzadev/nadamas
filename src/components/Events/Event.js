@@ -1,9 +1,12 @@
 import {
+  addEventTest,
   athleteAcceptRequestEvent,
   athleteCancelEventRequest,
   athleteUnjoinEvent,
   getEvent,
-  removeEvent
+  removeEvent,
+  removeEventTest,
+  updateEvent
 } from '@/firebase/events'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
@@ -18,6 +21,9 @@ import { useEffect, useState } from 'react'
 import ButtonJoinEvent from './ButtonJoinEvent'
 import Image from 'next/image'
 import { ROUTES } from '@/ROUTES'
+import { PlayListIcon, TrashBinIcon } from '@/src/utils/Icons'
+import Modal from '@comps/Modals/Modal'
+import PickerTest from '@comps/Athlete/Records/PickerTests'
 export default function Event() {
   const { user } = useAuth()
   const [event, setEvent] = useState(undefined)
@@ -152,11 +158,79 @@ const ManageEvent = ({ event }) => {
   const handleClickResults = () => {
     router.push(ROUTES.events.results(event.id))
   }
+  const [openAddTest, setOpenAddTest] = useState()
+  const handleOpenAddTest = () => {
+    setOpenAddTest(!openAddTest)
+  }
+
+  const handleSetTest = (test) => {
+    setNewTest({ ...newTest, ...test })
+  }
+  const [newTest, setNewTest] = useState({})
+
+  const saveNewTest = () => {
+    addEventTest({ eventId: event.id, test: newTest })
+  }
+  const handleDeleteTest = (test) => {
+    removeEventTest({ eventId: event.id, test })
+  }
+
   return (
     <>
       <Section title="Estadisticas">
-        <Section title="Pruebas">
-          <Button label="Ver resultados" onClick={handleClickResults} />
+        <Section title={`Pruebas (${event?.tests?.length || 0})`}>
+          <div className="p-2">
+            <div className="grid grid-flow-col gap-4 mb-4">
+              <Button
+                label="Agregar pruebas"
+                variant="secondary"
+                size="sm"
+                onClick={handleOpenAddTest}
+              />
+              <Button label="Ver resultados" onClick={handleClickResults} />
+            </div>
+            <div>
+              {event?.tests?.map(({ style, distance, ...rest }, i) => (
+                <div key={i} className="flex justify-center p-2 items-center">
+                  <Button
+                    iconOnly
+                    size="xs"
+                    variant
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleDeleteTest({ style, distance, ...rest })
+                    }}
+                  >
+                    <TrashBinIcon />
+                  </Button>
+                  <div className="w-1/2 text-left pl-2">{` ${distance}m ${style}`}</div>
+                  <Button
+                    iconOnly
+                    size="xs"
+                    variant
+                    onClick={(e) => {
+                      e.preventDefault()
+                      router.push(
+                        `${ROUTES.events.results(
+                          event.id
+                        )}/new?style=${style}&distance=${distance}`
+                      )
+                    }}
+                  >
+                    <PlayListIcon />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Modal
+              open={openAddTest}
+              handleOpen={handleOpenAddTest}
+              title="Agregar prueba"
+            >
+              <PickerTest setTest={handleSetTest} />
+              <Button label="Agregar" onClick={saveNewTest} />
+            </Modal>
+          </div>
         </Section>
         <Section title={`Participantes (${event?.participants?.length || 0})`}>
           <ParticipantsRows

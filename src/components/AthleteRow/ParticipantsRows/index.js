@@ -18,7 +18,6 @@ export default function ParticipantsRows({
   athletesIds,
   handleRemoveMember = (athleteId) => {}
 }) {
-  console.log(`athletesIds`, athletesIds)
   return (
     <div className="">
       {!athletesIds?.length && 'No hay participantes aún'}
@@ -64,7 +63,7 @@ const Row = ({ athlete: athleteId, handleRemoveMember }) => {
         </div>
         {athlete.active ? (
           <>
-            <div>{`${athlete?.name} ${athlete?.lastName}`} </div>
+            <div>{`${athlete?.name} ${athlete?.lastName || ''}`} </div>
             <div>{`${getAge(athlete?.birth)?.split(' ')[0]}`} </div>
 
             <div className="m-1 flex w-1/4 justify-evenly ">

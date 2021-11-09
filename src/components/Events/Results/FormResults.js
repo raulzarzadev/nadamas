@@ -13,11 +13,13 @@ export default function FormResults() {
   const [event, setEvent] = useState(undefined)
   const router = useRouter()
   const {
-    query: { id: eventId }
+    query: { id: eventId, style, distance }
   } = router
   useEffect(() => {
     if (eventId) getEvent(eventId, setEvent)
   }, [eventId])
+
+
   const [openParticipants, setOpenParticipants] = useState()
   const handleOpenParticipants = () => {
     setOpenParticipants(!openParticipants)
@@ -38,12 +40,18 @@ export default function FormResults() {
   const [competitors, setCompetitors] = useState([])
 
   const [test, setTest] = useState()
+  
+  useEffect(() => {
+    if (style || distance) {
+      setTest({ style, distance })
+    }
+  }, [style, distance])
   if (event === undefined) return <Loading />
   return (
     <div className="max-w-md mx-auto">
       <h3 className="text-center text-2xl">Nuevo resultado</h3>
       <div className="">
-        <PickerTest setTest={(test) => setTest(test)} />
+        <PickerTest test={test} setTest={(test) => setTest(test)} />
       </div>
       <div className="flex justify-center items-center">
         <h4 className="text-center text-xl mx-3">Competidores </h4>
@@ -82,7 +90,7 @@ export default function FormResults() {
             <Participant
               competitors={competitors}
               participant={participant}
-              key={participant}
+              key={participant?.id}
               handleAddCompetitor={handleAddCompetitor}
             />
           ))}
@@ -133,7 +141,6 @@ const Participant = ({ participant, handleAddCompetitor, competitors }) => {
   const competitorAlreadyAdded = competitors.find(
     ({ id }) => id === participant.id
   )
-  console.log(`competitorAlreadyAdded`, competitorAlreadyAdded)
   if (athlete === undefined) return <Loading />
   return (
     <div className="flex w-full justify-evenly">

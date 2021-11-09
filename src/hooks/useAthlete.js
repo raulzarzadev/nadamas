@@ -7,7 +7,6 @@ export default function useAthlete(athleteId) {
     if (athleteId) {
       getAthleteId(athleteId)
         .then((res) => {
-          console.log(`res`, res)
           if (res) {
             setAthlete(res)
           } else {
