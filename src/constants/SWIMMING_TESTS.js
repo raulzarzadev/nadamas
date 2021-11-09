@@ -139,7 +139,7 @@ export const STYLES = [
   {
     label: 'CI',
     id: 'combi',
-    largeLabel:'Combinado individual'
+    largeLabel:'Combi'
   }
 ]
 

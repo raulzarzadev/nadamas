@@ -24,6 +24,7 @@ import { ROUTES } from '@/ROUTES'
 import { PlayListIcon, TrashBinIcon } from '@/src/utils/Icons'
 import Modal from '@comps/Modals/Modal'
 import PickerTest from '@comps/Athlete/Records/PickerTests'
+import TestsPicker from '@comps/inputs/TestsPicker'
 export default function Event() {
   const { user } = useAuth()
   const [event, setEvent] = useState(undefined)
@@ -82,6 +83,12 @@ const EventDetails = ({ event }) => {
         {formatInputDate(event?.date, 'dd MMMM yyyy')}
       </h3>
       <p className="whitespace-pre-wrap text-left">{event?.description}</p>
+
+      <div>
+        <h3>Pruebas {` (${event?.tests?.length || 0})`}</h3>
+        <TestsPicker tests={event?.tests} disabled={true}/>
+      </div>
+
       <div className="py-4">
         {event?.announcement && (
           <div>
