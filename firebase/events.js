@@ -37,13 +37,17 @@ export const getUpcomingEvents = async () => {
     .catch((err) => console.log('err', err))
 }
 
-export const getEvent = async (id) => {
-  return await db
+export const getEvent = async (id, dispatch) => {
+  return db
     .collection('events')
     .doc(id)
-    .get()
+    .onSnapshot((snapshot) => {
+      console.log(`snapshot`, snapshot)
+      dispatch(normalizeDoc(snapshot))
+    })
+  /* .get()
     .then((res) => normalizeDoc(res))
-    .catch((err) => console.log('err', err))
+    .catch((err) => console.log('err', err)) */
 }
 
 export const getUserEvents = async (userId) => {

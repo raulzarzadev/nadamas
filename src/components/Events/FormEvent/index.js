@@ -47,23 +47,21 @@ export default function FormEvent({ event, discard = () => {} }) {
     reset()
     discard()
   }
-  console.log(`errors`, errors)
 
   return (
     <div className="max-w-sm mx-auto p-2 grid gap-2 relative">
-
       <form onSubmit={handleSubmit(onSubmit)}>
-      <div className=" grid grid-flow-col grid-cols-2 gap-3 py-3 sticky top-0 z-10 bg-gray-700 mb-2">
-        {discard && (
-          <Button
-            variant="secondary"
-            label="Descartar cambios"
-            type="button"
-            onClick={handleDiscard}
-          />
-        )}
-        <Button type="submit" label="Guardar" />
-      </div>
+        <div className=" grid grid-flow-col grid-cols-2 gap-3 py-3 sticky top-0 z-10 bg-gray-700 mb-2">
+          {discard && (
+            <Button
+              variant="secondary"
+              label="Descartar cambios"
+              type="button"
+              onClick={handleDiscard}
+            />
+          )}
+          <Button type="submit" label="Guardar" />
+        </div>
         <div className="grid gap-2">
           <label>
             Evento público
@@ -80,17 +78,16 @@ export default function FormEvent({ event, discard = () => {} }) {
             {...register('description')}
           />
           <input className="bg-gray-600" {...register('date')} type="date" />
-          <div>
-            {event?.id && (
-              <AlreadySaved
-                eventId={event?.id}
-                image={event?.image}
-                announcement={event?.announcement}
-              />
-            )}
-          </div>
+          <div></div>
         </div>
       </form>
+      {event?.id && (
+        <AlreadySaved
+          eventId={event?.id}
+          image={event?.image}
+          announcement={event?.announcement}
+        />
+      )}
     </div>
   )
 }
@@ -108,10 +105,21 @@ const AlreadySaved = ({ eventId, image, announcement }) => {
     updateEvent({ id: eventId, announcement: url })
       .then((res) => {
         setNewAnnouncement(url)
+        console.log(`res`, res)
       })
       .catch((err) => console.log(`err`, err))
   }
 
+  const fileDeleted = () => {
+    updateEvent({ id: eventId, announcement: null })
+      .then((res) => {
+        setNewAnnouncement(null)
+        console.log(`res`, res)
+      })
+      .catch((err) => console.log(`err`, err))
+  }
+
+  console.log(`newAnnouncement`, newAnnouncement, announcement)
   return (
     <div>
       {/* ---------------- SUBIR IMAGEN */}
@@ -137,12 +145,19 @@ const AlreadySaved = ({ eventId, image, announcement }) => {
           {!!announcement ? 'Cambiar convocatoria' : 'Subir convocatoria'}
         </div>
         <UploadFile
+          file={announcement}
           storeRef={`/events/${eventId}/files`}
           fileUploaded={fileUploaded}
+          fileDeleted={fileDeleted}
         />
       </label>
       <div>
-        <embed src={announcement || newAnnouncement} className="w-full h-96" />
+        {(announcement || newAnnouncement) && (
+          <embed
+            src={announcement || newAnnouncement}
+            className="w-full h-96"
+          />
+        )}
       </div>
     </div>
   )

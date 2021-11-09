@@ -12,9 +12,9 @@ export default function EditEvent() {
   } = router
   useEffect(() => {
     if (eventId)
-      getEvent(eventId)
-        .then(setEvent)
-        .catch((err) => console.log(`err`, err))
+      getEvent(eventId, setEvent)
+       /*  .then(setEvent)
+        .catch((err) => console.log(`err`, err)) */
   }, [eventId])
 
   const handleDiscard = () => {

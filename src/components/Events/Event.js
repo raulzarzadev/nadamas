@@ -16,7 +16,6 @@ import Section from '@comps/Section'
 import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ButtonJoinEvent from './ButtonJoinEvent'
-import FormEvent from './FormEvent'
 import Image from 'next/image'
 import { ROUTES } from '@/ROUTES'
 export default function Event() {
@@ -28,16 +27,18 @@ export default function Event() {
   } = router
   useEffect(() => {
     if (eventId)
-      getEvent(eventId)
-        .then(setEvent)
-        .catch((err) => console.log(`err`, err))
+      getEvent(eventId, (res) => {
+        setEvent(res)
+      })
+    /* .then(setEvent)
+        .catch((err) => console.log(`err`, err)) */
   }, [eventId])
 
   const isOwner = user?.id === event?.owner?.id
   const handleClickResults = () => {
     router.push(ROUTES.events.results(eventId))
   }
-  if (!event || !user) return <Loading size='lg'/>
+  if (!event || !user) return <Loading size="lg" />
   return (
     <>
       <div className="max-w-sm mx-auto py-4 text-center">
@@ -46,10 +47,7 @@ export default function Event() {
             <AdminActions eventId={event.id} />
           ) : (
             <>
-              <ButtonJoinEvent
-                event={event}
-                athleteId={user?.athleteId}
-              />
+              <ButtonJoinEvent event={event} athleteId={user?.athleteId} />
               <Button
                 label="Resultados"
                 onClick={handleClickResults}

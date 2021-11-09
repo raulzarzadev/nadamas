@@ -1,4 +1,4 @@
-import { uploadImage } from '@/firebase/client'
+import { uploadImage } from '@/firebase/files'
 import { useEffect, useState } from 'react'
 import {
   DoneIcon,

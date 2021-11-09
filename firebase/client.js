@@ -93,20 +93,4 @@ export const updateUser = async (user) => {
   }
 }
 
-/* -------------------- */
-/* ------FILES------ */
-/* -------------------- */
 
-export const uploadFile = async ({ storeRef = undefined, file }) => {
-  if (!storeRef) return formatResponse(false, 'TYPE_UNDEFINED')
-  const ref = firebase.storage().ref(storeRef)
-  const task = ref.put(file)
-  return task
-}
-
-export const uploadImage = ({ storeRef = undefined, file }) => {
-  if (!storeRef) return { ok: false, type: 'REF_NOT_INCLUDED' }
-  const ref = firebase.storage().ref(storeRef)
-  const task = ref.put(file)
-  return task
-}

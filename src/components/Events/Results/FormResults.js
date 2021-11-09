@@ -10,20 +10,13 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function FormResults() {
-  const [participants, setParticipants] = useState([])
   const [event, setEvent] = useState(undefined)
   const router = useRouter()
   const {
     query: { id: eventId }
   } = router
   useEffect(() => {
-    if (eventId)
-      getEvent(eventId)
-        .then((res) => {
-          setEvent(res)
-          setParticipants(res.participants)
-        })
-        .catch((err) => console.log(`err`, err))
+    if (eventId) getEvent(eventId, setEvent)
   }, [eventId])
   const [openParticipants, setOpenParticipants] = useState()
   const handleOpenParticipants = () => {
@@ -85,7 +78,7 @@ export default function FormResults() {
             <div>Nombre</div>
             <div>Acción</div>
           </div>
-          {participants.map((participant) => (
+          {event?.participants?.map((participant) => (
             <Participant
               competitors={competitors}
               participant={participant}
