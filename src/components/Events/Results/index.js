@@ -6,7 +6,6 @@ import { getAge } from '@/src/utils/Dates'
 import Button from '@comps/inputs/Button'
 import PickerTests from '@comps/inputs/PickerTests'
 import Modal from '@comps/Modals/Modal'
-import { formatDistanceToNowStrict } from 'date-fns'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
@@ -46,7 +45,7 @@ export default function Results() {
   }
 
   useEffect(() => {
-    const res = results.filter(
+    const res = results?.filter(
       ({ test: { distance, style } }) =>
         distance === filter?.distance && style === filter?.style
     )
@@ -90,7 +89,7 @@ export default function Results() {
         <Modal open={openFilters} handleOpen={handleOpenFilters}>
           <h3 className="text-xl text-center mt-4">Pruebas nadadas</h3>
           <PickerTests
-            tests={results.map((res) => res.test)}
+            tests={results?.map((res) => res.test)}
             onTestClick={(test) => {
               setTimeout(() => {
                 setOpenFilters(false)
