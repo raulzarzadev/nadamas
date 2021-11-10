@@ -86,7 +86,7 @@ const EventDetails = ({ event }) => {
 
       <div>
         <h3>Pruebas {` (${event?.tests?.length || 0})`}</h3>
-        <TestsPicker tests={event?.tests} disabled={true}/>
+        <TestsPicker tests={event?.tests} disabled={true} />
       </div>
 
       <div className="py-4">
@@ -165,79 +165,13 @@ const ManageEvent = ({ event }) => {
   const handleClickResults = () => {
     router.push(ROUTES.events.results(event.id))
   }
-  const [openAddTest, setOpenAddTest] = useState()
-  const handleOpenAddTest = () => {
-    setOpenAddTest(!openAddTest)
-  }
-
-  const handleSetTest = (test) => {
-    setNewTest({ ...newTest, ...test })
-  }
-  const [newTest, setNewTest] = useState({})
-
-  const saveNewTest = () => {
-    addEventTest({ eventId: event.id, test: newTest })
-  }
-  const handleDeleteTest = (test) => {
-    removeEventTest({ eventId: event.id, test })
-  }
-
+  
   return (
     <>
-      <Section title="Estadisticas">
-        <Section title={`Pruebas (${event?.tests?.length || 0})`}>
+      <Section title="Administración" open indent={false}>
+        <Section title={`Resultados `}>
           <Button label="Ver resultados" onClick={handleClickResults} />
-          {/* <div className="p-2">
-            <div className="grid grid-flow-col gap-4 mb-4">
-              <Button
-                label="Agregar pruebas"
-                variant="secondary"
-                size="sm"
-                onClick={handleOpenAddTest}
-              />
-            </div>
-            <div>
-              {event?.tests?.map(({ style, distance, ...rest }, i) => (
-                <div key={i} className="flex justify-center p-2 items-center">
-                  <Button
-                    iconOnly
-                    size="xs"
-                    variant
-                    onClick={(e) => {
-                      e.preventDefault()
-                      handleDeleteTest({ style, distance, ...rest })
-                    }}
-                  >
-                    <TrashBinIcon />
-                  </Button>
-                  <div className="w-1/2 text-left pl-2">{` ${distance}m ${style}`}</div>
-                  <Button
-                    iconOnly
-                    size="xs"
-                    variant
-                    onClick={(e) => {
-                      e.preventDefault()
-                      router.push(
-                        `${ROUTES.events.results(
-                          event.id
-                        )}/new?style=${style}&distance=${distance}`
-                      )
-                    }}
-                  >
-                    <PlayListIcon />
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <Modal
-              open={openAddTest}
-              handleOpen={handleOpenAddTest}
-              title="Agregar prueba"
-            >
-              <PickerTest setTest={handleSetTest} />
-              <Button label="Agregar" onClick={saveNewTest} />
-            </Modal>
-          </div> */}
+   
         </Section>
         <Section title={`Participantes (${event?.participants?.length || 0})`}>
           <ParticipantsRows
