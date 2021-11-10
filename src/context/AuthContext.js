@@ -12,10 +12,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState()
 
   useEffect(() => {
-      onAuthStateChanged(setUser)
+    onAuthStateChanged(setUser)
   }, [])
-
- 
 
   const signOut = () => {
     firebaseLogout()
@@ -25,15 +23,14 @@ export function AuthProvider({ children }) {
     loginWithGoogle()
       .then(({ user }) => {
         // console.log('user', user)
-        router.replace('/profile')
+        //router.replace('/profile')
+        router.push('/profile')
         setUser(user)
       })
       .catch((err) => {
         console.log('err', err)
       })
   }
-
-
 
   return (
     <AuthContext.Provider value={{ user, googleLogin, signOut }}>
