@@ -30,20 +30,27 @@ export default function Home() {
       )}
       <p className="text-center">
         {' '}
-        una aplicación web para administrar sus equipos deportivos{' '}
+        Una aplicación web para atletas y entrenadores{' '}
       </p>
-      <div className='mt-6'>
+      <div className="mt-6">
         <PublicEvents showNew={true} />
       </div>
       <p className="text-center h-4">
         {/*  <strong className="font-bold ">{text}</strong> */}
       </p>
       <div className="flex flex-col justify-center md:max-w-screen-md mx-auto">
+        <div className="flex items-center justify-center p-2 gap-2">
+          <div className="relative h-40 w-40 shadow-lg">
+            <Image
+              src="/nadamas/sherTrhophyes.jpeg"
+              layout="fill"
+              objectFit="cover"
+            />
+          </div>
+          <p className="w-2/3 text-right">Guarda y comparte tus logros</p>
+        </div>
         <div className="flex items-center justify-center p-2 gap-2 ">
-          <p className="w-2/3">
-            Centraliza la información de tus atletas, marcas, lesiones y úsuala
-            para gestionar eventos
-          </p>
+          <p className="w-2/3">Centraliza tu información y la de tu equipo</p>
           <div className="relative h-40 w-40 shadow-lg">
             <Image
               src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80"
@@ -61,11 +68,11 @@ export default function Home() {
             />
           </div>
           <p className="w-2/3 text-right">
-            Crea grupos por horario y revisa asistencia
+            Planea eventos iternos o abiertos, gestionalos y manten el control
           </p>
         </div>
         <div className="flex items-center justify-center p-2 gap-2">
-          <p className="w-2/3">Registra cuotas y programa días de pago</p>
+          <p className="w-2/3">Controla las cuotas y la asistencia</p>
           <div className="relative h-40 w-40 shadow-lg">
             <Image
               src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1172&q=80"
@@ -83,7 +90,7 @@ export default function Home() {
             />
           </div>
           <p className="w-2/3 text-right">
-            Crea entrenamientos, evalúa progresos grupales o individuales
+            Planea clases y entrenamientos. Evalúa tu progreso o el de tu equipo
           </p>
         </div>
       </div>
