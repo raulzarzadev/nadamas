@@ -119,28 +119,38 @@ export const STYLES = [
   {
     label: 'C',
     id: 'crawl',
-    largeLabel:'Crol'
+    largeLabel: 'Crol'
   },
   {
     label: 'D',
     id: 'back',
-    largeLabel:'Dorso'
+    largeLabel: 'Dorso'
   },
   {
     label: 'P',
     id: 'breast',
-    largeLabel:'Pecho'
+    largeLabel: 'Pecho'
   },
   {
     label: 'M',
     id: 'butterfly',
-    largeLabel:'Mariposa'
+    largeLabel: 'Mariposa'
   },
   {
     label: 'CI',
     id: 'combi',
-    largeLabel:'Combi'
+    largeLabel: 'Combi'
   }
+  /* {
+    label: 'RC',
+    id: 'rcombi',
+    largeLabel: 'Relevos combi'
+  },
+  {
+    label: 'RL',
+    id: 'rlibre',
+    largeLabel: 'Relevos libre'
+  } */
 ]
 
 export const DISTANCES = [
@@ -164,8 +174,18 @@ export const DISTANCES = [
     label: '400',
     id: '400'
   },
+  /*
   {
     label: '800',
     id: '800'
-  }
+  }, */
+  /* {
+    label: '4x25',
+    id: '4x25'
+  },
+  {
+    label: '4x50',
+    id: '4x50'
+  } */
+  ,
 ]

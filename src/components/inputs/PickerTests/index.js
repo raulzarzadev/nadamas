@@ -7,7 +7,7 @@ export default function PickerTests({
   setTests = (tests) => {},
   onTestClick = () => {},
   disabled = false,
-  compact = false
+  compact = true
 }) {
   const [form, setForm] = useState([])
   const handleAddTest = (test) => {
