@@ -6,7 +6,8 @@ export default function PickerTests({
   tests,
   setTests = (tests) => {},
   onTestClick = () => {},
-  disabled = false
+  disabled = false,
+  compact = false
 }) {
   const [form, setForm] = useState([])
   const handleAddTest = (test) => {
@@ -39,23 +40,25 @@ export default function PickerTests({
     )
   }
   return (
-    <div className="flex w-full p-1">
+    <div className="flex w-full p-1 max-w-md mx-auto">
       <div className="flex flex-col w-16">
-        <Cell style="title">Estilo Distancia</Cell>
+        <Cell size={compact && 'sm'} style="title">
+          Estilo Distancia
+        </Cell>
         {DISTANCES.map(({ id, label: distance }) => (
-          <Cell key={id} style="small">
+          <Cell key={id} style="small" size={compact && 'sm'}>
             {distance}
           </Cell>
         ))}
       </div>
       {STYLES.map(({ id: styleId, label, largeLabel }) => (
         <div key={styleId} className="flex flex-col w-1/6 ">
-          <Cell>
-            <div className="hidden md:block">{largeLabel}</div>
-            <div className="md:hidden">{label}</div>
+          <Cell size={compact && 'sm'} style='title'>
+            <div className="hidden sm:block">{largeLabel}</div>
+            <div className="sm:hidden">{label}</div>
           </Cell>
           {DISTANCES.map(({ id, label: distance }) => (
-            <Cell style="small" key={id}>
+            <Cell size={compact && 'sm'} style="small" key={id}>
               <button
                 className="w-full h-full p-1 flex justify-center items-center"
                 disabled={disabled}
@@ -69,6 +72,7 @@ export default function PickerTests({
                   onClick={(e) => {
                     e.preventDefault()
                     onTestClick({ distance, style: styleId })
+                    
                   }}
                 >
                   {testsAlreadyExist({ distance, style: styleId }) ? (
@@ -85,16 +89,21 @@ export default function PickerTests({
     </div>
   )
 }
-const Cell = ({ children, style = 'normal' }) => {
+const Cell = ({ children, style = 'normal', size = 'md' }) => {
   const styling = {
-    title: `font-bold h-12 text-xs `,
-    normal: `h-12`,
-    small: `h-8`
+    title: `font-bold  text-xs `,
+    normal: ``,
+    small: ``
+  }
+  const sizign = {
+    sm: `h-6`,
+    md: `h-8`,
+    lg: `h-12`
   }
   return (
     <div
       className={`
-    ${styling[style]} w-full  flex justify-center items-center`}
+    ${styling[style]} ${sizign[size]} w-full  flex justify-center items-center`}
     >
       {children}
     </div>

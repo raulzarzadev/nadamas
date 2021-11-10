@@ -28,7 +28,8 @@ export function formatInputDate(date = new Date(), format = 'yyy-MM-dd') {
   return fnsFormat(addHours(new Date(date), 7), format, { locale: es })
 }
 
-export function getAge(date = new Date()) {
+export function getAge(date = null) {
+  if(!date) return 'sin'
   return formatDistanceToNowStrict(date, { locale: es })
 }
 
