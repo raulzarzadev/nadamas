@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
     loginWithGoogle()
       .then(({ user }) => {
         // console.log('user', user)
-        router.reload()
+        router.replace('/profile')
         setUser(user)
       })
       .catch((err) => {

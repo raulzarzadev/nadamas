@@ -8,6 +8,7 @@ import EventsRow from '../EventsRow'
 import { ROUTES } from '@/ROUTES'
 import Loading from '@comps/Loading'
 import UpcomingEvents from './UpcomingEvents'
+import Info from '@comps/Alerts/Info'
 export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
   useEffect(() => {
@@ -15,10 +16,18 @@ export default function PublicEvents({ showNew, showGrid }) {
       .then((res) => {
         setEvents(res)
       })
-      .catch((err) => console.log(`err`, err))
+      .catch((err) => {
+        console.log(`err`, err)
+      })
   }, [])
 
   const { user } = useAuth()
+  if (!user)
+    return (
+      <h3 className="text-3xl text-center">
+        <Info text="Debes registrarte para ver los eventos " fullWidth />
+      </h3>
+    )
   return (
     <div className=" max-w-3xl mx-auto ">
       <UpcomingEvents events={events} showNew={showNew && user?.coach} />

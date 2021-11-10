@@ -68,10 +68,12 @@ export default function ButtonJoinEvent({ athleteId, event }) {
         console.log('solicitud rechada')
       }
     },
-    alreadyIn: {
-      type: 'ALREDY_JOINED',
-      label: 'Ya eres parte. ¿Salir?',
-      handleClick: handleOpenAlreadyIn
+    alreadyIn: function (participant) {
+      return {
+        type: 'ALREDY_JOINED',
+        label: `Eres el participante No.${participant?.number}`,
+        handleClick: handleOpenAlreadyIn
+      }
     }
   }
 
@@ -80,8 +82,10 @@ export default function ButtonJoinEvent({ athleteId, event }) {
       return REQUEST_STATUS.whatingRes
     } else {
     }
-    if (event?.participants?.find(({ id }) => id === athleteId)) {
-      return REQUEST_STATUS.alreadyIn
+    const participant = event?.participants?.find(({ id }) => id === athleteId)
+    if (participant) {
+      console.log(`participant`, participant)
+      return REQUEST_STATUS.alreadyIn(participant)
     } else {
       return REQUEST_STATUS.notJoined
     }
@@ -117,10 +121,11 @@ export default function ButtonJoinEvent({ athleteId, event }) {
         open={openAlreadyIn}
         title="Participante No."
       >
-        <div className='text-base'>
+        <div className="text-base">
           Tu numero de participante es el:
           <div>
-            No.<span className='font-bold text-3xl mx-2'>{`${eventAthlete?.number}`}</span>
+            No.
+            <span className="font-bold text-3xl mx-2">{`${eventAthlete?.number}`}</span>
           </div>
           <div className="w-1/2 mx-auto">
             <Button variant="danger" size="xs" onClick={handleOpenUnjoin}>

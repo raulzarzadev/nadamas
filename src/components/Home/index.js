@@ -38,7 +38,7 @@ export default function Home() {
       <p className="text-center h-4">
         {/*  <strong className="font-bold ">{text}</strong> */}
       </p>
-      <div className="flex flex-col justify-center md:max-w-screen-md mx-auto">
+      <div className="flex flex-col justify-center md:max-w-screen-md mx-auto text-2xl">
         <div className="flex items-center justify-center p-2 gap-2">
           <div className="relative h-40 w-40 shadow-lg">
             <Image
