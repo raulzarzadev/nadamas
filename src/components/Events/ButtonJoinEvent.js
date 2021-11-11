@@ -84,7 +84,6 @@ export default function ButtonJoinEvent({ athleteId, event }) {
     }
     const participant = event?.participants?.find(({ id }) => id === athleteId)
     if (participant) {
-      console.log(`participant`, participant)
       return REQUEST_STATUS.alreadyIn(participant)
     } else {
       return REQUEST_STATUS.notJoined

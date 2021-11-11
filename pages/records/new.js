@@ -5,9 +5,7 @@ import { Head } from '@comps/Head'
 export default function newRecord() {
   return (
     <div>
-      <Head>
-        <title>Nuevo Atleta</title>
-      </Head>
+      <Head title='Marcas | nueva'/>
       <PrivateRoute>
         <FormRecord searchAthlete/>
       </PrivateRoute>

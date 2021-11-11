@@ -1,9 +1,12 @@
-import FormPayment from "@comps/FormPayment";
+import FormPayment from '@comps/FormPayment'
 
 export default function NewPayment() {
   return (
-    <div className=''>
-      <FormPayment/>
-    </div>
+    <>
+      <Head title="Pagos | nuevo" />
+      <PrivateRoute>
+        <FormPayment />
+      </PrivateRoute>
+    </>
   )
 }

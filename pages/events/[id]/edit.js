@@ -1,9 +1,14 @@
-import EditEvent from "@comps/Events/EditEvent";
+import PrivateRoute from '@/src/HOCS/PrivateRoute'
+import EditEvent from '@comps/Events/EditEvent'
+import { Head } from '@comps/Head'
 
 export default function EventEdit() {
   return (
-    <div className=''>
-      <EditEvent/>
-    </div>
+    <>
+      <Head title="Evento | editar" />
+      <PrivateRoute>
+        <EditEvent />
+      </PrivateRoute>
+    </>
   )
 }

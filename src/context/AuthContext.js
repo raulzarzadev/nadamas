@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
         // console.log('user', user)
         //router.replace('/profile')
         //router.push('/profile')
-        router.replace('/profile')
+        // router.replace('/profile')
         router.reload()
         setUser(user)
       })

@@ -1,9 +1,14 @@
+import PrivateRoute from '@/src/HOCS/PrivateRoute'
+import { Head } from '@comps/Head'
 import FormTeam from '@comps/Teams/FormTeam'
 
 export default function NewTeam() {
   return (
-    <div className="">
-      <FormTeam />
-    </div>
+    <>
+      <Head title="Equipos | nuevo" />
+      <PrivateRoute>
+        <FormTeam />
+      </PrivateRoute>
+    </>
   )
 }
