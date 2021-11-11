@@ -124,8 +124,8 @@ export default function Results() {
             key={id}
             place={i}
             texts={[
-              `${athlete?.number}`,
-              `${athlete.name}`,
+              `${athlete?.number || ''}`,
+              `${athlete?.name || ''}`,
               `${getAge(athlete.birth)}`,
               `${test?.record}`
             ]}

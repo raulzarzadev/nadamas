@@ -31,7 +31,7 @@ const RequestAthleteRow = ({
   if (athlete === undefined) return <Loading />
   return (
     <div key={athlete?.id} className="flex justify-evenly">
-      <div>{athlete?.name}</div>
+      <div>{athlete?.name || ''}</div>
       {console.log(`athlete`, athlete)}
       <div className="flex">
         <Button

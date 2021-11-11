@@ -11,7 +11,6 @@ export default function SearchAthletes({
   athleteSelected = null,
   label = 'Buscar Atleta'
 }) {
- 
   const [athletes, setAthletes] = useState([])
 
   const { user } = useAuth()
@@ -82,7 +81,7 @@ export default function SearchAthletes({
 
   const handleSelectAthlete = (athlete) => {
     setAthlete(athlete)
-    setSearch(`${athlete?.name} ${athlete?.lastName}`)
+    setSearch(`${athlete?.name || ''} ${athlete?.lastName || ''}`)
     setSortedAthletes([])
   }
 
@@ -91,7 +90,7 @@ export default function SearchAthletes({
       <div className="w-full mx-auto my-4">
         <div className="flex items-baseline">
           <Text
-            autoComplete='off'
+            autoComplete="off"
             name="search"
             value={search}
             label={label}
