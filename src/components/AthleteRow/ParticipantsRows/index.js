@@ -43,6 +43,7 @@ const Row = ({ athlete: athleteId, handleRemoveMember }) => {
     setOpenEmergencyModal(!openEmergencyModal)
   }
   if (athlete === undefined) return <Loading />
+  console.log(`athlete.id`,athlete, athlete.id)
   return (
     <div>
       <div
@@ -99,7 +100,7 @@ const Row = ({ athlete: athleteId, handleRemoveMember }) => {
           title="Descartar atleta"
           open={openDelete}
           handleOpen={handleOpenDelete}
-          name={`${athlete?.name} ${athlete?.lastName}`}
+          name={`${athlete?.name} ${athlete?.lastName || ''}`}
           handleDelete={() => {
             handleRemoveMember(athleteId)
             handleOpenDelete()
