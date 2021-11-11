@@ -12,14 +12,21 @@ import Section from '@comps/Section'
 import Info from '@comps/Alerts/Info'
 import Records from '../Records'
 export function Form({ form = {}, setForm, handleSubmit, isEditable }) {
-  console.log(`isEditable`, isEditable)
+
   return (
     <div className="">
       <div className="relative pt-0 pb-8 max-w-lg mx-auto">
+        <StickyContactAndSaveBar
+          mobile={form?.mobile}
+          email={form?.email}
+          showSaveButton={isEditable}
+          ws_text={`Hola ${form?.name}`}
+          handleSave={handleSubmit}
+        />
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            handleSubmit()
+            //handleSubmit()
           }}
           className="relative"
         >
@@ -31,12 +38,6 @@ export function Form({ form = {}, setForm, handleSubmit, isEditable }) {
               isEditable={isEditable}
             />
           )}
-          <StickyContactAndSaveBar
-            mobile={form?.mobile}
-            email={form?.email}
-            showSaveButton={isEditable}
-            ws_text={`Hola ${form?.name}`}
-          />
 
           {/* ----------------------------------------------Personal information */}
           <SectionPersonal form={form} setForm={setForm} />
@@ -58,7 +59,7 @@ export function Form({ form = {}, setForm, handleSubmit, isEditable }) {
               </Section>
             </Section>
           )}
-          {form.id && (
+          {form?.id && (
             <Section title="Desempeño" sticky>
               {/* ----------------------------------------------Tests */}
               <Section title={'Pruebas'} indent={false}>

@@ -21,6 +21,8 @@ export default function FormAthlete({ athleteId = '' }) {
           setForm(res)
         })
         .catch((err) => console.log(`err`, err))
+    } else {
+      setForm(null)
     }
   }, [])
 
@@ -47,13 +49,15 @@ export default function FormAthlete({ athleteId = '' }) {
       .catch((err) => console.log(`err`, err))
   }
 
-  const { isOwner, isCoach } = useEditable({
+  const { isOwner, isThemCoach } = useEditable({
     userId: form?.userId,
     coachId: form?.coachId
   })
 
-  if (!user || !form) return <Loading />
-  if (!isOwner) return <ContentNotAvailable />
+  if (!user || form === undefined) return <Loading />
+  // ni no es dueño ni entrenador no puede ver el contedio
+  // si no es nueño no puede editar
+  if(!isOwner && !user?.coach) return <ContentNotAvailable/>
   return (
     <Form
       form={form}

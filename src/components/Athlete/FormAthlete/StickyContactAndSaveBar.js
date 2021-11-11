@@ -1,7 +1,13 @@
 import { ContactIcon, EmailIcon, SaveIcon } from "@/src/utils/Icons";
 import Button from "@comps/inputs/Button";
 
-export default function StickyContactAndSaveBar ({ mobile, email, showSaveButton, ws_text }) {
+export default function StickyContactAndSaveBar({
+  mobile,
+  email,
+  showSaveButton,
+  ws_text,
+  handleSave
+}) {
   return (
     <div className="sticky top-0 bg-gray-700 z-10 p-2 flex justify-evenly  ">
       <div className="m-2 flex items-center relative">
@@ -24,7 +30,7 @@ export default function StickyContactAndSaveBar ({ mobile, email, showSaveButton
       </div>
       {showSaveButton && (
         <div className="m-2 flex items-center ">
-          <Button size="sm" variant="secondary">
+          <Button size="sm" variant="secondary" onClick={handleSave}>
             guardar
             <SaveIcon />
           </Button>
