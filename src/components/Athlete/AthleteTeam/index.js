@@ -1,9 +1,8 @@
 import {
-  addJoinRequests,
-  cancelRequest,
+  cancelTeamRequest,
   getPublicTeams,
+  sendTeamRequests,
   unjoinTeam,
-  updateTeam
 } from '@/firebase/teams'
 import { useAuth } from '@/src/context/AuthContext'
 import Loading from '@comps/Loading'
@@ -30,7 +29,7 @@ const TeamCard = ({ team, athleteId }) => {
   const [responseStatus, setResponseStatus] = useState(undefined)
 
   const handleJoin = (teamId) => {
-    addJoinRequests(teamId, athleteId)
+    sendTeamRequests(teamId, athleteId)
       .then((res) => {
         setResponseStatus(REQUEST_RESPONSES[1])
         console.log(`res`, res)
@@ -38,7 +37,7 @@ const TeamCard = ({ team, athleteId }) => {
       .catch((err) => console.log(`err`, err))
   }
   const handleCancelRequest = (teamId) => {
-    cancelRequest(teamId, athleteId)
+    cancelTeamRequest(teamId, athleteId)
       .then((res) => {
         setResponseStatus(REQUEST_RESPONSES[0])
         console.log(`res`, res)

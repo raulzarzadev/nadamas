@@ -15,7 +15,9 @@ import DeleteModal from '@comps/Modals/DeleteModal'
 import Section from '@comps/Section'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import ButtonJoinTeam from './ButtonJoinTeam'
 import FormTeam from './FormTeam'
+import MemberTeamView from './MemberTeamview'
 import TeamMembers from './TeamMembers'
 
 export default function TeamDetails() {
@@ -44,6 +46,7 @@ export default function TeamDetails() {
   const handleDeleteTeam = () => {
     removeTeam(team.id)
       .then((res) => {
+        console.log(`res`, res)
         replace('/teams')
       })
       .catch((err) => console.log(`err`, err))
@@ -55,46 +58,96 @@ export default function TeamDetails() {
   }
 
   if (team === undefined) return <Loading />
+
+  const teamCoach = user?.id === team?.coach?.id
   return (
     <div className="max-w-md mx-auto">
-      <FormTeam team={team} />
-      <Section title={`Miembros (${team?.athletes?.length || 0})`}>
-        <TeamMembers teamId={team?.id} members={team?.athletes} />
-      </Section>
-      <Section title={`Solicitudes (${team?.joinRequests?.length || 0})`}>
-        <JoinRequests
-          teamId={teamId}
-          requests={team?.joinRequests}
-          setRequests={(props) => console.log(`props`, props)}
-        />
-      </Section>
-      <Section title="Opciones">
-        {isOwner && (
-          <div className="w-32 flex">
-            <Button
-              label="Eliminar"
-              variant="danger"
-              size="xs"
-              onClick={handleOpenDelete}
-            >
-              Borrar equipo
-              <TrashBinIcon />
-            </Button>
-            <DeleteModal
-              open={openDelete}
-              text="Elimar este equipo de forma permanente"
-              handleDelete={handleDeleteTeam}
-              handleOpen={handleOpenDelete}
-            ></DeleteModal>
-          </div>
-        )}
-      </Section>
+      {teamCoach ? (
+        <>
+          <FormTeam team={team} />
+          <Section title={`Miembros (${team?.athletes?.length || 0})`}>
+            <TeamMembers teamId={team?.id} members={team?.athletes} />
+          </Section>
+          <Section title={`Solicitudes (${team?.joinRequests?.length || 0})`}>
+            <JoinRequests
+              teamId={teamId}
+              requests={team?.joinRequests}
+              setRequests={(props) => console.log(`props`, props)}
+            />
+          </Section>
+          <Section title="Opciones">
+            {isOwner && (
+              <div className="w-32 flex">
+                <Button
+                  label="Eliminar"
+                  variant="danger"
+                  size="xs"
+                  onClick={handleOpenDelete}
+                >
+                  Borrar equipo
+                  <TrashBinIcon />
+                </Button>
+                <DeleteModal
+                  open={openDelete}
+                  text="Elimar este equipo de forma permanente"
+                  handleDelete={handleDeleteTeam}
+                  handleOpen={handleOpenDelete}
+                ></DeleteModal>
+              </div>
+            )}
+          </Section>
+        </>
+      ) : (
+        <div>
+          <TeamPublicDetails team={team} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+const TeamPublicDetails = ({ team }) => {
+  const [alreadyIn, setAlreadyIn] = useState(false)
+  const {
+    user: { athleteId }
+  } = useAuth()
+  useEffect(() => {
+    if (team.athletes.includes(athleteId)) {
+      setAlreadyIn(true)
+    } else {
+      setAlreadyIn(false)
+    }
+  }, [team, athleteId])
+
+  return (
+    <div>
+      <h3 className="text-3xl w-full text-center pt-8">{team?.title}</h3>
+      {team.publicTeam ? (
+        <>
+          <p className="font-thin text-center">
+            Equipo público ({team?.athletes?.length || 0})
+          </p>
+          <p className="font-thin text-center">{team?.coach?.name}</p>
+
+          {athleteId && (
+            <div className='w-48 mx-auto'>
+              <ButtonJoinTeam
+                teamId={team?.id}
+                requestList={team?.joinRequests}
+                participantsList={team?.athletes}
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="font-thin text-center">Equipo cerrado</p>
+      )}
+      {alreadyIn && <MemberTeamView team={team}/>}
     </div>
   )
 }
 
 function JoinRequests({ teamId, requests = [] }) {
-
   const handleAcceptRequest = (athleteId) => {
     acceptTeamRequest(teamId, athleteId)
       .then((res) => {

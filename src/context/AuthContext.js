@@ -5,11 +5,12 @@ import {
   onAuthStateChanged
 } from '@/firebase/client'
 import { useRouter } from 'next/router'
+import Loading from '@comps/Loading'
 const AuthContext = createContext()
 
 export function AuthProvider({ children }) {
   const router = useRouter()
-  const [user, setUser] = useState()
+  const [user, setUser] = useState(undefined)
 
   useEffect(() => {
     onAuthStateChanged(setUser)
@@ -33,6 +34,7 @@ export function AuthProvider({ children }) {
         console.log('err', err)
       })
   }
+  if (user === undefined) return <Loading />
 
   return (
     <AuthContext.Provider value={{ user, googleLogin, signOut }}>

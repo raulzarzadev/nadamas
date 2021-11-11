@@ -1,13 +1,10 @@
 import { getAthlete } from '@/firebase/athletes'
 import { acceptTeamRequest, unjoinTeam } from '@/firebase/teams'
-import { AddIcon, TrashBinIcon } from '@/src/utils/Icons'
-import AthleteRow from '@comps/AthleteRow'
+import { AddIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import SearchAthletes from '@comps/inputs/SearchAthletes'
-import Loading from '@comps/Loading'
-import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import MemberRow from './MemberRow'
 
 export default function TeamMembers({ members = [], teamId }) {
@@ -60,7 +57,6 @@ export default function TeamMembers({ members = [], teamId }) {
     </>
   )
 }
-
 
 const AthleteResponse = ({ athlete, onClick }) => {
   return (

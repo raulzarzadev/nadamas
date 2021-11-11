@@ -26,6 +26,7 @@ export default function TeamsList() {
       setTeams([])
     }
   }, [user])
+  console.log(`teams`, teams)
 
   const handleRedirect = (teamId) => {
     router.push(ROUTES.teams.details(teamId))

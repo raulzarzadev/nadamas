@@ -88,7 +88,7 @@ export const rejectTeamRequest = async (teamId, athleteId) => {
   return formatResponse(true, 'REQUEST_REJECTED', { athleteId })
 }
 
-export const addJoinRequests = async (teamId, athleteId) => {
+export const sendTeamRequests = async (teamId, athleteId) => {
   return db
     .collection('teams')
     .doc(teamId)
@@ -98,7 +98,7 @@ export const addJoinRequests = async (teamId, athleteId) => {
     .then((res) => formatResponse(true, 'REQUEST_ADDED', res))
     .catch((err) => formatResponse(false, 'ADD_REQUEST_FAIL', err))
 }
-export const cancelRequest = async (teamId, athleteId) => {
+export const cancelTeamRequest = async (teamId, athleteId) => {
   const teamRef = db.collection('teams').doc(teamId)
   try {
     const res = await teamRef.update({
