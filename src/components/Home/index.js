@@ -29,8 +29,10 @@ export default function Home() {
         </div>
       )}
       <p className="text-center">
-        {' '}
-        Una aplicación web para atletas y entrenadores{' '}
+        La <span className='font-bold'>aplicación web</span> para atletas y entrenadores
+      </p>
+      <p className="text-center italic font-thin my-2">
+        Sin instalar, sin publicidad, donde sea, cuando sea.
       </p>
       <div className="mt-6">
         <PublicEvents showNew={true} />

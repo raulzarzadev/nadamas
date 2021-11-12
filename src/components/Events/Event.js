@@ -22,6 +22,7 @@ import ButtonJoinEvent from './ButtonJoinEvent'
 import Image from 'next/image'
 import { ROUTES } from '@/ROUTES'
 import TestsPicker from '@comps/inputs/PickerTests'
+import MustBeAuthenticated from '@comps/MainLayout/PageErrors/MustBeAuthenticated'
 export default function Event() {
   const { user } = useAuth()
   const [event, setEvent] = useState(undefined)
@@ -42,7 +43,8 @@ export default function Event() {
   const handleClickResults = () => {
     router.push(ROUTES.events.results(eventId))
   }
-  if (!event || !user) return <Loading size="lg" />
+  if (!user) return <MustBeAuthenticated />
+  if (!event) return <Loading size="lg" />
   return (
     <>
       <div className="max-w-sm mx-auto py-4 text-center">

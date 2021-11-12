@@ -6,9 +6,9 @@ export default function DetailsEvents() {
   return (
     <>
       <Head title="Evento | detalles" />
-      <PrivateRoute>
+   {/*    <PrivateRoute> */}
         <Event />
-      </PrivateRoute>
+    {/*   </PrivateRoute> */}
     </>
   )
 }

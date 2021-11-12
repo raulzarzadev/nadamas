@@ -3,12 +3,13 @@ import PublicEvents from '@comps/Events/PublicEvents'
 import { Head } from '@comps/Head'
 
 export default function Events() {
+  
   return (
     <>
       <Head title="Eventos | todos" />
-      <PrivateRoute>
+     {/*  <PrivateRoute> */}
         <PublicEvents showGrid={true} showNew={true} />
-      </PrivateRoute>
+     {/*  </PrivateRoute> */}
     </>
   )
 }

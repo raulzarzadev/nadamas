@@ -9,8 +9,12 @@ import { ROUTES } from '@/ROUTES'
 import Loading from '@comps/Loading'
 import UpcomingEvents from './UpcomingEvents'
 import Info from '@comps/Alerts/Info'
+import MustBeAuthenticated from '@comps/MainLayout/PageErrors/MustBeAuthenticated'
 export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
+  const { user } = useAuth()
+  if (!user) return <MustBeAuthenticated />
+  
   useEffect(() => {
     getPublicEvents()
       .then((res) => {
@@ -21,13 +25,6 @@ export default function PublicEvents({ showNew, showGrid }) {
       })
   }, [])
 
-  const { user } = useAuth()
-  if (!user)
-    return (
-      <h3 className="text-3xl text-center">
-        <Info text="Debes registrarte para ver los eventos " fullWidth />
-      </h3>
-    )
   return (
     <div className=" max-w-3xl mx-auto ">
       <UpcomingEvents events={events} showNew={showNew && user?.coach} />
