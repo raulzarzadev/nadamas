@@ -48,17 +48,17 @@ export default function Event() {
   return (
     <>
       <div className="max-w-sm mx-auto py-4 text-center">
-        <div className="grid grid-flow-col grid-cols-2 gap-3  items-center py-3 sticky top-0 z-10 bg-gray-700">
+        <div className="grid grid-flow-row gap-3 sm:grid-flow-col items-center py-3 sticky top-0 z-10 bg-gray-700">
           {isOwner ? (
             <AdminActions eventId={event.id} />
           ) : (
             <>
-              <ButtonJoinEvent event={event} athleteId={user?.athleteId} />
               <Button
                 label="ver resultados"
                 onClick={handleClickResults}
                 variant="secondary"
               />
+              <ButtonJoinEvent event={event} athleteId={user?.athleteId} />
             </>
           )}
         </div>
@@ -81,7 +81,7 @@ const EventDetails = ({ event }) => {
       <h3 className="text-xl my-2">
         {formatInputDate(event?.date, 'dd MMMM yyyy')}
       </h3>
-      <p className="whitespace-pre-wrap text-left">{event?.description}</p>
+      <p className="whitespace-pre-wrap text-left p-2">{event?.description}</p>
 
       <div>
         <h3>Pruebas {` (${event?.tests?.length || 0})`}</h3>

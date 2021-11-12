@@ -15,7 +15,7 @@ export default function SectionPersonal({ form, setForm, isEditable = true }) {
     setForm({ ...form, [e.target.name]: e.target.checked })
   }
   return (
-    <Section indent open title="Informacion personal" sticky>
+    <Section indent  title="Informacion personal" sticky >
       <div className="p-2 sm:p-6 grid gap-2">
         <TextEditable
           permissionToEdit={isEditable}
