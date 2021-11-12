@@ -140,7 +140,10 @@ export default function Results() {
         )}
       </div>
       <div className="max-w-lg mx-auto p-1 mt-3">
-        <ResultRow isTitle texts={['No.', 'Nombre', 'Edad', 'Tiempo']} />
+        <ResultRow
+          isTitle
+          texts={['No.', 'Nombre', 'Edad', 'Prueba', 'Tiempo']}
+        />
         {fiteredResults?.length === 0 && (
           <div className="text-center my-4">Aún no hay resultados</div>
         )}
@@ -152,6 +155,7 @@ export default function Results() {
               `${athlete?.number || ''}`,
               `${athlete?.name?.split(' ')?.[0] || ''}`,
               `${athlete?.age || 'sin'}`,
+              `${getTestLabelES({test}).smLabel}`,
               `${test?.record}`
             ]}
           />
@@ -183,6 +187,9 @@ const ResultRow = ({ isTitle, texts = [], place }) => (
       </div>
       <div className={`${isTitle && 'font-bold'} w-2/6 text-center p-0.5`}>
         {texts?.[3]}
+      </div>
+      <div className={`${isTitle && 'font-bold'} w-2/6 text-center p-0.5`}>
+        {texts?.[4]}
       </div>
     </div>
   </div>
