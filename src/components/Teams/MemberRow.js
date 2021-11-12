@@ -7,7 +7,11 @@ import Loading from '@comps/Loading'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import { useEffect, useState } from 'react'
 
-const MemberRow = ({ athlete: athleteId, handleRemoveMember }) => {
+const MemberRow = ({
+  athlete: athleteId,
+  handleRemoveMember,
+  coachView = true
+}) => {
   const [openDelete, setOpenDelete] = useState(false)
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
@@ -17,17 +21,19 @@ const MemberRow = ({ athlete: athleteId, handleRemoveMember }) => {
   return (
     <div>
       <div key={athlete.id} className="flex items-center w-full">
-        <Button
-          variant="danger"
-          className="ml-2 py-1"
-          onClick={handleOpenDelete}
-          iconOnly
-          size="xs"
-        >
-          <TrashBinIcon size="1rem" />
-        </Button>
+        {coachView && (
+          <Button
+            variant="danger"
+            className="ml-2 py-1"
+            onClick={handleOpenDelete}
+            iconOnly
+            size="xs"
+          >
+            <TrashBinIcon size="1rem" />
+          </Button>
+        )}
         {athlete.active ? (
-          <AthleteRow athlete={athlete} />
+          <AthleteRow athlete={athlete} coachView/>
         ) : (
           <div className="p-2">Usuario inactivo</div>
         )}

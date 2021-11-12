@@ -8,6 +8,7 @@ import {
 
 import { useAuth } from '@/src/context/AuthContext'
 import { TrashBinIcon } from '@/src/utils/Icons'
+import Info from '@comps/Alerts/Info'
 import RequestRows from '@comps/AthleteRow/RequestRows'
 import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
@@ -109,7 +110,7 @@ export default function TeamDetails() {
 const TeamPublicDetails = ({ team }) => {
   const [alreadyIn, setAlreadyIn] = useState(false)
   const {
-    user: { athleteId }
+    user: { athleteId, coach }
   } = useAuth()
   useEffect(() => {
     if (team.athletes.includes(athleteId)) {
@@ -128,9 +129,11 @@ const TeamPublicDetails = ({ team }) => {
             Equipo público ({team?.athletes?.length || 0})
           </p>
           <p className="font-thin text-center">{team?.coach?.name}</p>
-
-          {athleteId && (
-            <div className='w-48 mx-auto'>
+          {coach && (
+            <Info text="No te puedes unir por que eres entrenador" fullWidth />
+          )}
+          {athleteId && !coach && (
+            <div className="w-48 mx-auto">
               <ButtonJoinTeam
                 teamId={team?.id}
                 requestList={team?.joinRequests}
@@ -142,7 +145,7 @@ const TeamPublicDetails = ({ team }) => {
       ) : (
         <p className="font-thin text-center">Equipo cerrado</p>
       )}
-      {alreadyIn && <MemberTeamView team={team}/>}
+      {alreadyIn && <MemberTeamView team={team} />}
     </div>
   )
 }

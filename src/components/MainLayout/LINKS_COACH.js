@@ -13,18 +13,18 @@ export default {
       icon: ''
     },
     {
+      href: '/teams',
+      label: 'Equipos',
+      icon: ''
+    },
+    {
       href: '/groups',
       label: 'Mis grupos',
       icon: ''
     },
     {
-      href: '/teams',
-      label: 'Mis equipos',
-      icon: ''
-    },
-    {
       href: '/athletes',
-      label: 'Atletas',
+      label: 'Mis atletas',
       icon: ''
     },
     ,

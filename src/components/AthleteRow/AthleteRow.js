@@ -30,7 +30,8 @@ export default function AthleteRow({
   date,
   assist = false,
   schedule,
-  showLastPay
+  showLastPay,
+  coachView = true
 }) {
   const router = useRouter()
   const { user } = useAuth()
@@ -67,14 +68,14 @@ export default function AthleteRow({
 
   const [lastPay, setLastPay] = useState(null)
   const { isOwner } = useEditable({ userId: athlete?.userId })
-  console.log(`isOwner`,isOwner, athlete.userId)
+  console.log(`isOwner`, isOwner, athlete.userId)
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
         {isOwner && (
           <span className="absolute left-0 top-0 bottom-0 w-3  bg-yellow-500  rounded-lg rounded-r-none transform "></span>
         )}
-       
+
         {weekBirthday && (
           <span className="relative group flex items-center">
             <BirthCakeIcon />
@@ -129,15 +130,17 @@ export default function AthleteRow({
             <ContactIcon size="1rem" />
           </Button>
         </div>
-        <div className="m-1" /* className={s.athlete_action} */>
-          <Button
-            size="sm"
-            iconOnly
-            onClick={() => router.push(`/athletes/${id}`)}
-          >
-            <EditIcon size="1rem" />
-          </Button>
-        </div>
+        {!coachView && (
+          <div className="m-1" /* className={s.athlete_action} */>
+            <Button
+              size="sm"
+              iconOnly
+              onClick={() => router.push(`/athletes/${id}`)}
+            >
+              <EditIcon size="1rem" />
+            </Button>
+          </div>
+        )}
       </div>
       <EmergencyCallModal
         handleOpen={handleOpenEmergencyCall}
