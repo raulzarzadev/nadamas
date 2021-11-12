@@ -43,7 +43,6 @@ const Row = ({ athlete: athleteId, handleRemoveMember }) => {
     setOpenEmergencyModal(!openEmergencyModal)
   }
   if (athlete === undefined) return <Loading />
-  console.log(`athlete.id`,athlete, athlete.id)
   return (
     <div>
       <div

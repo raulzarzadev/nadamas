@@ -21,9 +21,6 @@ import { useEffect, useState } from 'react'
 import ButtonJoinEvent from './ButtonJoinEvent'
 import Image from 'next/image'
 import { ROUTES } from '@/ROUTES'
-import { PlayListIcon, TrashBinIcon } from '@/src/utils/Icons'
-import Modal from '@comps/Modals/Modal'
-import PickerTest from '@comps/Athlete/Records/PickerTests'
 import TestsPicker from '@comps/inputs/PickerTests'
 export default function Event() {
   const { user } = useAuth()
@@ -56,7 +53,7 @@ export default function Event() {
             <>
               <ButtonJoinEvent event={event} athleteId={user?.athleteId} />
               <Button
-                label="Resultados"
+                label="ver resultados"
                 onClick={handleClickResults}
                 variant="secondary"
               />
@@ -124,6 +121,10 @@ const AdminActions = ({ eventId }) => {
       .catch((err) => console.log(`err`, err))
   }
 
+  const handleClickResults = () => {
+    router.push(ROUTES.events.results(eventId))
+  }
+
   const handleEdit = () => {
     router.push(ROUTES.events.edit(eventId))
   }
@@ -132,6 +133,8 @@ const AdminActions = ({ eventId }) => {
     <>
       <Button label="Eliminar" variant="danger" onClick={handleOpenDelete} />
       <Button label="Editar" variant="secondary" onClick={handleEdit} />
+      <Button label="Ver resultados" onClick={handleClickResults} />
+
       <DeleteModal
         text={`
         Tambien se eliminaran los resultados y estadisitcas. 
@@ -162,17 +165,10 @@ const ManageEvent = ({ event }) => {
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
-  const handleClickResults = () => {
-    router.push(ROUTES.events.results(event.id))
-  }
-  
+
   return (
     <>
       <Section title="Administración" open indent={false}>
-        <Section title={`Resultados `}>
-          <Button label="Ver resultados" onClick={handleClickResults} />
-   
-        </Section>
         <Section title={`Participantes (${event?.participants?.length || 0})`}>
           <ParticipantsRows
             athletesIds={event?.participants}

@@ -1,5 +1,6 @@
 import { addEventResult, getEvent } from '@/firebase/events'
 import useAthlete from '@/src/hooks/useAthlete'
+import { getAge } from '@/src/utils/Dates'
 import { AddIcon, DoneIcon, SaveIcon } from '@/src/utils/Icons'
 import PickerRecord from '@comps/Athlete/Records/PickerRecord'
 import PickerTest from '@comps/Athlete/Records/PickerTests'
@@ -18,7 +19,6 @@ export default function FormResults() {
   useEffect(() => {
     if (eventId) getEvent(eventId, setEvent)
   }, [eventId])
-
 
   const [openParticipants, setOpenParticipants] = useState()
   const handleOpenParticipants = () => {
@@ -40,7 +40,7 @@ export default function FormResults() {
   const [competitors, setCompetitors] = useState([])
 
   const [test, setTest] = useState()
-  
+
   useEffect(() => {
     if (style || distance) {
       setTest({ style, distance })
@@ -108,7 +108,8 @@ const CompetitorRow = ({ athlete, test, event }) => {
       athleteData: {
         id: athlete.id,
         name: athlete.name,
-        number: athlete.number
+        number: athlete.number,
+        age: getAge(athlete.birth)?.split(' ')?.[0]
       },
       test: { ...test, record: form }
     }

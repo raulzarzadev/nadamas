@@ -74,7 +74,7 @@ export default function FormEvent({ event, discard = () => {} }) {
           </label>
           <input className="bg-gray-600" {...register('title')} />
           <textarea
-            rows={5}
+            rows={10}
             className="bg-gray-600 resize-none"
             {...register('description')}
           />

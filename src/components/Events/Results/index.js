@@ -3,6 +3,7 @@ import { ROUTES } from '@/ROUTES'
 import { STYLES } from '@/src/constants/SWIMMING_TESTS'
 import { useAuth } from '@/src/context/AuthContext'
 import { getAge } from '@/src/utils/Dates'
+import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import PickerTests from '@comps/inputs/PickerTests'
 import Modal from '@comps/Modals/Modal'
@@ -86,8 +87,11 @@ export default function Results() {
         </div>
       )}
       <div>
-        <Modal open={openFilters} handleOpen={handleOpenFilters}>
-          <h3 className="text-xl text-center mt-4">Pruebas nadadas</h3>
+        <Modal
+          open={openFilters}
+          handleOpen={handleOpenFilters}
+          title="Filtrar pruebas"
+        >
           <PickerTests
             tests={results?.map((res) => res.test)}
             onTestClick={(test) => {
@@ -97,7 +101,7 @@ export default function Results() {
               handleClickTest(test)
             }}
             disabled
-            compact
+            compact={true}
           />
         </Modal>
       </div>
@@ -109,8 +113,9 @@ export default function Results() {
           className="text-center border p-1 text-xl w-2/3 max-w-sm"
         >
           <h4>
-            {getTestLabelES({ test: filter })?.mdLabel ||
-              'Selecciona un prueba'}
+            {getTestLabelES({ test: filter })?.mdLabel || (
+              <Info text="Selecciona un prueba primero" fullWidth />
+            )}
           </h4>
         </button>
       </div>
@@ -126,7 +131,7 @@ export default function Results() {
             texts={[
               `${athlete?.number || ''}`,
               `${athlete?.name || ''}`,
-              `${getAge(athlete.birth)}`,
+              `${athlete?.age || 'sin'}`,
               `${test?.record}`
             ]}
           />
@@ -144,7 +149,7 @@ const ResultRow = ({ isTitle, texts = [], place }) => (
       >
         {texts?.[0]}
         {place === 0 && (
-          <span className="absolute text-xs right-2 -top-1">1°</span>
+          <span className="absolute text-xs right-2 -top-1 ">1°</span>
         )}
         {place === 1 && (
           <span className="absolute text-xs right-2 -top-1">2°</span>

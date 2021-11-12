@@ -43,7 +43,7 @@ export default function PickerTest({
         <h5 className="font-bold">Distancia</h5>
         <div className="flex w-full flex-wrap ">
           {DISTANCES.map(({ label, id }) => (
-            <div className="w-1/5 p-2" key={id}>
+            <div className="w-1/5 p-2 " key={id}>
               <SelectBox
                 label={label}
                 name={id}
