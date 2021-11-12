@@ -6,7 +6,7 @@ export default function PublicTeamCard({
 }) {
   return (
     <a
-      className="bg-gray-600 p-2 rounded-lg shadow-lg w-full relative flex justify-between items-center max-w-lg mx-auto"
+      className="bg-gray-600 p-2 rounded-lg shadow-lg w-full relative flex justify-between items-center max-w-lg mx-auto my-2"
       onClick={(e) => {
         e.stopPropagation()
         e.preventDefault()

@@ -46,11 +46,15 @@ export default function Results() {
   }
 
   useEffect(() => {
-    const res = results?.filter(
-      ({ test: { distance, style } }) =>
-        distance === filter?.distance && style === filter?.style
-    )
-    setFiteredResults(res)
+    if (filter) {
+      const res = results?.filter(
+        ({ test: { distance, style } }) =>
+          distance === filter?.distance && style === filter?.style
+      )
+      setFiteredResults(res)
+    } else {
+      setFiteredResults(results)
+    }
   }, [results, filter])
 
   const [sortBy, setSortBy] = useState('record')
@@ -71,7 +75,7 @@ export default function Results() {
     <div className="">
       <div className="text-center">
         <h3 className="text-xl">{event?.title}</h3>
-        <p>Participantes {event?.participants?.length}</p>
+        <p>Participantes {event?.participants?.length || ''}</p>
       </div>
       {isAdmin && (
         <div className="flex justify-center pt-5">
@@ -93,6 +97,7 @@ export default function Results() {
           title="Filtrar pruebas"
         >
           <PickerTests
+            currentSelected={filter}
             tests={results?.map((res) => res.test)}
             onTestClick={(test) => {
               setTimeout(() => {
@@ -112,12 +117,27 @@ export default function Results() {
           onClick={handleOpenFilters}
           className="text-center border p-1 text-xl w-2/3 max-w-sm"
         >
-          <h4>
-            {getTestLabelES({ test: filter })?.mdLabel || (
-              <Info text="Selecciona un prueba primero" fullWidth />
+          <h4 className="flex flex-col">
+            {filter ? (
+              <>
+                <span className="font-thin text-sm">Filtro:</span>
+                {getTestLabelES({ test: filter })?.mdLabel}
+              </>
+            ) : (
+              <>
+                Todos las pruebas
+                <span className="font-thin">filtrar</span>
+              </>
             )}
           </h4>
         </button>
+        {!!filter && (
+          <div className="font-thin my-2">
+            <button className="font-thin" onClick={() => setFilter(null)}>
+              Limpiar filtro
+            </button>
+          </div>
+        )}
       </div>
       <div className="max-w-lg mx-auto p-1 mt-3">
         <ResultRow isTitle texts={['No.', 'Nombre', 'Edad', 'Tiempo']} />
@@ -130,7 +150,7 @@ export default function Results() {
             place={i}
             texts={[
               `${athlete?.number || ''}`,
-              `${athlete?.name || ''}`,
+              `${athlete?.name?.split(' ')?.[0] || ''}`,
               `${athlete?.age || 'sin'}`,
               `${test?.record}`
             ]}

@@ -7,8 +7,15 @@ export default function PickerTests({
   setTests = (tests) => {},
   onTestClick = () => {},
   disabled = false,
-  compact = true
+  compact = true,
+  currentSelected = null
 }) {
+  const isCurrentlySelected = (test) => {
+    const distance = currentSelected?.distance
+    const style = currentSelected?.style
+    
+    return distance === test?.distance && style === test?.style
+  }
   const [form, setForm] = useState([])
   const handleAddTest = (test) => {
     if (testsAlreadyExist(test)) {
@@ -43,9 +50,9 @@ export default function PickerTests({
     <div className="flex w-full p-1 max-w-md mx-auto">
       <div className="flex flex-col w-16">
         <Cell size={compact ? 'md' : 'lg'} style="title">
-          <div className='flex flex-col'>
-            <span className='text-right text-xs sm:text-sm'>Estilo</span>
-            <span className='text-right text-xs sm:text-sm'>Distancia</span>
+          <div className="flex flex-col">
+            <span className="text-right text-xs sm:text-sm">Estilo</span>
+            <span className="text-right text-xs sm:text-sm">Distancia</span>
           </div>
         </Cell>
         {DISTANCES.map(({ id, label: distance }) => (
@@ -71,16 +78,19 @@ export default function PickerTests({
                 }}
               >
                 <div
-                  className="w-full h-full flex justify-center items-center"
+                  className={`w-full h-full flex justify-center items-center ${
+                    isCurrentlySelected({ distance, style: styleId }) &&
+                    'border-2'
+                  }`}
                   onClick={(e) => {
                     e.preventDefault()
                     onTestClick({ distance, style: styleId })
                   }}
                 >
                   {testsAlreadyExist({ distance, style: styleId }) ? (
-                    <DoneIcon />
+                    <DoneIcon size="1rem" />
                   ) : (
-                    'o'
+                    'x'
                   )}
                 </div>
               </button>
@@ -97,7 +107,7 @@ const Cell = ({ children, style = 'normal', size = 'md' }) => {
     normal: `font-normal`
   }
   const sizign = {
-    sm: `h-6 text-sm`,
+    sm: `h-6 text-xs`,
     md: `h-8 text-sm`,
     lg: `h-10`
   }

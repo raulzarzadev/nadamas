@@ -2,6 +2,7 @@ import { useAuth } from '@/src/context/AuthContext'
 import { DownIcon } from '@/src/utils/Icons'
 import Link from '@comps/inputs/Link'
 import Image from 'next/image'
+import { useState } from 'react'
 export default function Navbar({ links = [] }) {
   const { user } = useAuth()
 
@@ -16,7 +17,7 @@ export default function Navbar({ links = [] }) {
                 layout="fill"
                 objectFit="contain"
                 priority={true}
-                />
+              />
             </div>
             <div className="relative w-72 h-8  md:hidden ">
               <Image
@@ -87,8 +88,15 @@ const NavbarSubMenu = ({
   listItems = [],
   topMenu
 }) => {
+  const [showMenu, setShowMenu] = useState(false)
+  const handleShowMenu = () => {
+    setShowMenu(!showMenu)
+  }
   return (
-    <li className=" group  flex items-end hover:bg-white  px-1 ">
+    <li
+      className=" group  flex items-end hover:bg-white  px-1 "
+      onClick={handleShowMenu}
+    >
       <ul className="group-hover:text-black ">{listComponent}</ul>
       <div className="relative ">
         {/* <!-- Dropdown toggle button --> */}
@@ -99,11 +107,18 @@ const NavbarSubMenu = ({
         )}
 
         {/*  <!-- Dropdown menu --> */}
-        <ul className="absolute hidden group-hover:block -right-1 z-20 w-48 py-2 mt-0 bg-white rounded-sm rounded-t-none shadow-xl dark:bg-gray-800">
+        <ul
+          className={`absolute ${
+            showMenu ? 'block' : 'hidden'
+          } -right-1 z-20 w-48 py-2 mt-0 bg-white rounded-sm rounded-t-none shadow-xl dark:bg-gray-800`}
+        >
           <li>{topMenu}</li>
           {listItems.map(({ href, label }) => (
             <Link href={href} key={label}>
-              <li className="block px-4 py-2 text-sm text-gray-700 capitalize transition-colors duration-200 transform dark:text-gray-300 hover:bg-blue-500 hover:text-white dark:hover:text-white cursor-pointer">
+              <li
+                onClick={() => setShowMenu(false)}
+                className={`block px-4 py-2 text-sm text-gray-700 capitalize transition-colors duration-200 transform dark:text-gray-300 hover:bg-blue-500 hover:text-white dark:hover:text-white cursor-pointer`}
+              >
                 {label}
               </li>
             </Link>
