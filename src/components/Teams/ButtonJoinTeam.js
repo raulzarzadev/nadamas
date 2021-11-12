@@ -72,13 +72,14 @@ export default function ButtonJoinTeam({
     },
     whatingRes: {
       type: 'WATING_RESPONSE',
-      label: 'Cancelar unirse',
+      label: 'CANCELAR UNIRSE',
       handleClick: handleCancelRequest,
       buttonVariant: 'primary'
     },
     resRejected: {
       type: 'REQUEST_REJECTED',
-      label: 'Solicitud rechazada',
+      label: 'RECHAZADA',
+      buttonVariant: 'disabled',
       handleClick: () => {
         console.log('solicitud rechada')
       }
@@ -86,7 +87,7 @@ export default function ButtonJoinTeam({
     alreadyIn: function () {
       return {
         type: 'ALREDY_JOINED',
-        label: `Salir`,
+        label: `SALIR`,
         handleClick: handleOpenAlreadyIn,
         buttonVariant: 'danger'
       }
@@ -110,19 +111,30 @@ export default function ButtonJoinTeam({
     setResponseStatus(getRequestStatus())
   }, [requestList, participantsList])
 
- 
+  const buttonStyle={
+    danger:`border-red-500`,
+    primary:`border-blue-400`,
+    secondary:`border-green-400`
+  }
+
   return (
     <>
-      <Button
+      {/*  <Button
         variant={responseStatus?.buttonVariant}
         loading={loading}
+        label={responseStatus?.label}
+      /> */}
+      <button
+        className={`
+        ${buttonStyle[responseStatus?.buttonVariant] } border-2 p-1 w-full`}
         onClick={async (e) => {
           e.stopPropagation()
           e.preventDefault()
           responseStatus?.handleClick()
         }}
-        label={responseStatus?.label}
-      />
+      >
+        {responseStatus?.label}
+      </button>
       <Modal
         handleOpen={handleOpenAlreadyIn}
         open={openAlreadyIn}
@@ -131,10 +143,14 @@ export default function ButtonJoinTeam({
         <div className="">
           <p>¿De verdad desa salir de este equipo?</p>
           <div className="w-1/2 mx-auto mt-6">
-            <Button variant="danger" size="md" onClick={()=>{
-              handleUnjoin()
-              setOpenAlreadyIn(false)
-            }}>
+            <Button
+              variant="danger"
+              size="md"
+              onClick={() => {
+                handleUnjoin()
+                setOpenAlreadyIn(false)
+              }}
+            >
               Salir
             </Button>
           </div>

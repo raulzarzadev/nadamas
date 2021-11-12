@@ -24,22 +24,30 @@ export default function AuthCard() {
 
         <div className="flex items-center my-4 bg-gray-100 rounded-lg shadow-lg">
           <div className="text-black text-sm ">
-          {/*   <p className="m-2">
+            {/*   <p className="m-2">
               Marca la casilla si estás de acuerdo con el manejo de tu
               información
             </p> */}
             <p className="m-2">
-              Tus datos personales y los de tus atletas son y siempre seran
-              completamente privados.
+              Tus datos personales y los de tus atletas son y siempre serán
+              privados.
             </p>
             <p className="m-2">
-              Por tratarse de una versión beta es probable que futuras
-              actualizaciones invaliden algunos de estos datos
+              Por tratarse de una versión BETA es probable que futuras
+              actualizaciones invaliden algunos datos.
             </p>
             <p className="m-2">
               Siempre puedes pedir una copia de la información generada en tu
               cuenta o pedir que sea eliminada.
             </p>
+            <p className="m-2 ">
+              Para agilizar el registro usamos una cuenta de Google.
+            </p>
+            <ul className="list-disc m-2 pl-8">
+              <li>Nombre de usuario</li>
+              <li>Imagen de usuario</li>
+              <li>Email</li>
+            </ul>
           </div>
         </div>
         {/* <div className="flex items-center my-4 bg-gray-100 rounded-lg shadow-lg">
@@ -56,7 +64,12 @@ export default function AuthCard() {
         </div> */}
         <div className="">
           <label className="text-black">
-            <input className='mr-2' type="checkbox" onChange={handleChange} name="privacity" />
+            <input
+              className="mr-2"
+              type="checkbox"
+              onChange={handleChange}
+              name="privacity"
+            />
             Acepar y continar
           </label>
         </div>

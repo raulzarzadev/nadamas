@@ -5,9 +5,10 @@ export default function PublicTeamCard({
   team
 }) {
   return (
-    <div
+    <a
       className="bg-gray-600 p-2 rounded-lg shadow-lg w-full relative flex justify-between items-center max-w-lg mx-auto"
       onClick={(e) => {
+        e.stopPropagation()
         e.preventDefault()
         onClick(team.id)
       }}
@@ -22,11 +23,11 @@ export default function PublicTeamCard({
       <div>
         <h4 className="text-right">{team.title} </h4>
         <p className="font-extralight text-right">{team.coach.name}</p>
-        <p className="font-extralight text-left">
+        <p className="font-extralight text-right">
           Miembros activos
           <span className="font-normal"> {team.athletes?.length || '0'}</span>
         </p>
       </div>
-    </div>
+    </a>
   )
 }

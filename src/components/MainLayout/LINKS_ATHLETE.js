@@ -13,6 +13,11 @@ export default {
       icon: ''
     },
     {
+      href: '/teams',
+      label: 'Equipos',
+      icon: ''
+    },
+    {
       href: '/signout',
       label: 'Salir',
       icon: ''

@@ -34,21 +34,21 @@ export default function Teams() {
   return (
     <>
       <Head title="Equipos " />
-      <div className="max-w-md mx-auto">
-        <div className="flex w-1/4 mx-auto py-2">
-          <Button onClick={handleClick} size="xs">
-            Nuevo equipo
-            <AddIcon size="3rem" />
-          </Button>
-        </div>
-      </div>
-      <h3>Equipos publicos</h3>
       <PrivateRoute>
+        <div className="max-w-md mx-auto">
+          <div className="flex w-1/4 mx-auto py-2">
+            <Button onClick={handleClick} size="xs">
+              Nuevo equipo
+              <AddIcon size="3rem" />
+            </Button>
+          </div>
+        </div>
+        <h3>Equipos publicos</h3>
         {publicTeams?.map((team) => (
           <PublicTeamCard team={team} onClick={handleClickTeam} key={team.id} />
         ))}
 
-        <TeamsList />
+        {/*         <TeamsList /> */}
       </PrivateRoute>
     </>
   )
