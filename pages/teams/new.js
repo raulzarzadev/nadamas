@@ -6,7 +6,7 @@ export default function NewTeam() {
   return (
     <>
       <Head title="Equipos | nuevo" />
-      <PrivateRoute>
+      <PrivateRoute mustBeCoach>
         <FormTeam />
       </PrivateRoute>
     </>
