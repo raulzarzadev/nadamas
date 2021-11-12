@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 export default function PrivateRoute({
   Component,
   children,
-  mustBeAuthenticated,
+  mustBeAuthenticated = false,
   mustBeCoach
 }) {
   const router = useRouter()
@@ -23,9 +23,8 @@ export default function PrivateRoute({
     }
   }, [user])
 
-  
   if (!user && mustBeAuthenticated) return <MustBeAuthenticated />
-  if(!user?.coach) return <MustBeAuthenticated asCoach/>
+  if (!user?.coach && mustBeCoach) return <MustBeAuthenticated asCoach />
 
   if (loading) return <Loading />
 
