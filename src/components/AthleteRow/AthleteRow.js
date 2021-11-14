@@ -68,7 +68,6 @@ export default function AthleteRow({
 
   const [lastPay, setLastPay] = useState(null)
   const { isOwner } = useEditable({ userId: athlete?.userId })
-  console.log(`isOwner`, isOwner, athlete.userId)
   return (
     <div className={s.athlete_row}>
       <div className={s.athlete} key={id}>
