@@ -155,7 +155,7 @@ export default function Results() {
               `${athlete?.number || ''}`,
               `${athlete?.name?.split(' ')?.[0] || ''}`,
               `${athlete?.age || 'sin'}`,
-              `${getTestLabelES({test}).smLabel}`,
+              `${getTestLabelES({ test }).smLabel}`,
               `${test?.record}`
             ]}
           />
@@ -168,9 +168,7 @@ export default function Results() {
 const ResultRow = ({ isTitle, texts = [], place }) => (
   <div>
     <div className="flex w-full  ">
-      <div
-        className={`${isTitle && 'font-bold'} w-1/6 text-center p-0.5 relative`}
-      >
+      <div className={`${isTitle && 'font-bold'}  w-1/6 p-0.5 relative `}>
         {texts?.[0]}
         {place === 0 && (
           <span className="absolute text-xs right-2 -top-1 ">1°</span>

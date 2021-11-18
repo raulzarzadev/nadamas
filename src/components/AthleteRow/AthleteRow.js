@@ -1,14 +1,4 @@
-import {
-  format,
-  formatDistanceToNow,
-  formatDistanceToNowStrict,
-  fromUnixTime,
-  getDate,
-  getMonth,
-  getWeek,
-  getYear
-} from 'date-fns'
-import { es } from 'date-fns/locale'
+import { getDate, getMonth, getWeek, getYear } from 'date-fns'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import EmergencyCallModal from '../Modals/EmergencyCallModal'
@@ -129,7 +119,7 @@ export default function AthleteRow({
             <ContactIcon size="1rem" />
           </Button>
         </div>
-        {!coachView && (
+        {coachView && (
           <div className="m-1" /* className={s.athlete_action} */>
             <Button
               size="sm"

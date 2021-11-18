@@ -53,7 +53,7 @@ export default function FormResults() {
       <div className="">
         <PickerTest test={test} setTest={(test) => setTest(test)} />
       </div>
-      <div className="flex justify-center items-center">
+      <div className="flex justify-center my-3 items-center">
         <h4 className="text-center text-xl mx-3">Competidores </h4>
         <div className="flex w-16">
           <Button
@@ -82,9 +82,9 @@ export default function FormResults() {
           title="Agregar competidores"
         >
           <div className="flex justify-evenly text-xs mb-3">
-            <div>No.</div>
-            <div>Nombre</div>
-            <div>Acción</div>
+            <div className="font-bold">No.</div>
+            <div className="font-bold">Nombre</div>
+            <div className="font-bold">Acción</div>
           </div>
           {event?.participants?.map((participant) => (
             <Participant
@@ -96,6 +96,7 @@ export default function FormResults() {
           ))}
         </Modal>
       </div>
+      <Button label="Regresar" onClick={() => router.back()} />
     </div>
   )
 }
@@ -120,18 +121,24 @@ const CompetitorRow = ({ athlete, test, event }) => {
   }
   const [form, setForm] = useState({})
   return (
-    <div className="flex items-center justify-evenly">
-      <div>{athlete.number}</div>
-      <div>{athlete.name}</div>
-      <PickerRecord setValue={(field, value) => setForm(value)} size="sm" />
-      <Button
-        onClick={() => handleSaveResult()}
-        iconOnly
-        size="sm"
-        variant={saved ? 'secondary' : 'primary'}
-      >
-        {saved ? <DoneIcon /> : <SaveIcon />}
-      </Button>
+    <div className="flex items-center justify-between w-full  my-2">
+      <div className="w-1/12 text-right pr-1 z font-bold text-xl">
+        {athlete.number}
+      </div>
+      <div className="w-2/6">{athlete.name}</div>
+      <div className="w-3/6">
+        <PickerRecord setValue={(field, value) => setForm(value)} size="sm" />
+      </div>
+      <div className="w-1/6 flex justify-center">
+        <Button
+          onClick={() => handleSaveResult()}
+          iconOnly
+          size="xs"
+          variant={saved ? 'secondary' : 'primary'}
+        >
+          {saved ? <DoneIcon /> : <SaveIcon />}
+        </Button>
+      </div>
     </div>
   )
 }
@@ -144,17 +151,27 @@ const Participant = ({ participant, handleAddCompetitor, competitors }) => {
   )
   if (athlete === undefined) return <Loading />
   return (
-    <div className="flex w-full justify-evenly">
-      <div>{number}</div>
-      <div>{athlete.name}</div>
-      <Button
-        variant={!!competitorAlreadyAdded ? 'secondary' : 'primary'}
-        iconOnly
-        size="xs"
-        onClick={() => handleAddCompetitor({ ...athlete, number })}
-      >
-        {!!competitorAlreadyAdded ? <DoneIcon /> : <AddIcon />}
-      </Button>
+    <div className="flex w-full justify-evenly text-sm">
+      <div className="py-1 w-1/6 flex justify-center items-center">
+        {number}
+      </div>
+      <div className="py-1 w-1/2 flex justify-center items-center">
+        {`${athlete.name?.split(' ')[0]} ${athlete.name?.split(' ')[1] || ''}`}
+      </div>
+      <div className="py-1 w-1/6 flex justify-center items-center">
+        <Button
+          variant={!!competitorAlreadyAdded ? 'secondary' : 'primary'}
+          iconOnly
+          size="xs"
+          onClick={() => handleAddCompetitor({ ...athlete, number })}
+        >
+          {!!competitorAlreadyAdded ? (
+            <DoneIcon size="1rem" />
+          ) : (
+            <AddIcon size="1rem" />
+          )}
+        </Button>
+      </div>
     </div>
   )
 }

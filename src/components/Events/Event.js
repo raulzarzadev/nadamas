@@ -171,7 +171,7 @@ const ManageEvent = ({ event }) => {
   return (
     <>
       <Section title="Administración" open indent={false}>
-        <Section title={`Participantes (${event?.participants?.length || 0})`}>
+        <Section  title={`Participantes (${event?.participants?.length || 0})`} indent={false}>
           <ParticipantsRows
             athletesIds={event?.participants}
             handleRemoveMember={handleRemoveMember}

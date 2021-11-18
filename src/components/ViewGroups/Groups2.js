@@ -9,6 +9,7 @@ import { useAuth } from '@/src/context/AuthContext'
 import useAthletes from '@/src/hooks/useAthletes'
 import { format } from '@/src/utils/Dates'
 import { BackIcon, ForwardIcon } from '@/src/utils/Icons'
+import Info from '@comps/Alerts/Info'
 import AthleteRow from '@comps/AthleteRow'
 import Button from '@comps/inputs/Button'
 import Toggle from '@comps/inputs/Toggle'
@@ -35,9 +36,12 @@ export default function Grups() {
   useEffect(() => {
     getSchedules(user.id)
       .then(({ res }) => {
-        const { schedule } = res?.[0]
+        console.log(`res`, res)
+        const schedule = res?.[0]?.schedule
         if (schedule) {
           setCoachSchedule(schedule)
+        } else {
+          setCoachSchedule(null)
         }
       })
       .catch((err) => console.log('err', err))
@@ -77,6 +81,11 @@ export default function Grups() {
             onChange={({ target }) => setShowAttendance(target.checked)}
           />
         </div> */}
+        <div>
+          {coachSchedule === null && (
+            <Info text="No tienes horarios habiles" fullWidth />
+          )}  
+        </div>
       </div>
       <div className="max-w-lg mx-auto">
         {coachSchedule?.[getDay(date)]?.map((schedule) => (
@@ -105,7 +114,6 @@ const HourAthleteList = ({ schedule, date, showAttendance, coachId }) => {
       })
       .catch((err) => console.log(`err`, err))
   }, [date])
-
 
   const [attendance, setAttendance] = useState([])
   const [notes, setNotes] = useState('')

@@ -21,6 +21,12 @@ export default function ParticipantsRows({
   return (
     <div className="">
       {!athletesIds?.length && 'No hay participantes aún'}
+      <div className="flex w-full justify-between">
+        <div className="font-bold w-1/12">No.</div>
+        <div className="font-bold w-1/4">Nombre</div>
+        <div className="font-bold w-1/6">Edad</div>
+        <div className="font-bold w-1/3">Opciones</div>
+      </div>
       {athletesIds?.map((athlete) => (
         <Row
           key={athlete.id}
@@ -49,24 +55,27 @@ const Row = ({ athlete: athleteId, handleRemoveMember }) => {
         key={athlete.id}
         className="flex items-center w-full justify-between"
       >
-        <Button
-          variant="danger"
-          className="ml-2 py-1"
-          onClick={handleOpenDelete}
-          iconOnly
-          size="xs"
-        >
-          <TrashBinIcon size="1rem" />
-        </Button>
-        <div className="text-xs mx-1">
-          No.<span className="ml-1 font-bold text-lg">{athleteId.number} </span>
+        <div className=" w-1/12 text-right">
+          <span className="ml-1 font-bold text-lg ">{athleteId.number} </span>
         </div>
         {athlete.active ? (
           <>
-            <div>{`${athlete?.name || ''} ${athlete?.lastName || ''}`} </div>
-            <div>{`${getAge(athlete?.birth)?.split(' ')[0]}`} </div>
+            <div className=" flex w-1/4 justify-start">
+              {`${athlete?.name?.split(' ')?.[0] || ''} `}{' '}
+            </div>
+            <div className=" flex w-1/6 justify-evenly">
+              {`${getAge(athlete?.birth)?.split(' ')[0]}`}{' '}
+            </div>
 
-            <div className="m-1 flex w-1/4 justify-evenly ">
+            <div className=" flex w-1/3 justify-evenly ">
+              <Button
+                variant="danger"
+                onClick={handleOpenDelete}
+                iconOnly
+                size="xs"
+              >
+                <TrashBinIcon size="1rem" />
+              </Button>
               <Button
                 size="sm"
                 disabled={!athlete?.emerMobile}
