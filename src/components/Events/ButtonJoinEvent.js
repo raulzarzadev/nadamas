@@ -3,9 +3,11 @@ import {
   athleteSendRequestEvent,
   athleteUnjoinEvent
 } from '@/firebase/events'
+import { formatInputDate } from '@/src/utils/Dates'
 import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
+import { addDays, formatDistanceToNow } from 'date-fns'
 import { useEffect, useState } from 'react'
 
 export default function ButtonJoinEvent({ athleteId, event }) {
@@ -72,7 +74,8 @@ export default function ButtonJoinEvent({ athleteId, event }) {
       return {
         type: 'ALREDY_JOINED',
         label: `Eres el participante No.${participant?.number}`,
-        handleClick: handleOpenAlreadyIn
+        handleClick: handleOpenAlreadyIn,
+        buttonVariant: 'secondary'
       }
     }
   }
@@ -98,6 +101,7 @@ export default function ButtonJoinEvent({ athleteId, event }) {
   const handleOpenUnjoin = () => {
     setOpenUnjoin(!openUnjoin)
   }
+  console.log(`event.status`, event.status)
 
   return (
     <div>
@@ -106,15 +110,18 @@ export default function ButtonJoinEvent({ athleteId, event }) {
           <div className="bg-black border-2 rounded-2xl">{alert}</div>
         </div>
       )}
-      <Button
-        loading={loading}
-        onClick={async (e) => {
-          e.stopPropagation()
-          e.preventDefault()
-          responseStatus?.handleClick(event.id)
-        }}
-        label={responseStatus?.label}
-      />
+      {event.status === 'RUNNING' && (
+        <Button
+          variant={responseStatus?.buttonVariant || 'primary'}
+          loading={loading}
+          onClick={async (e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            responseStatus?.handleClick(event.id)
+          }}
+          label={responseStatus?.label}
+        />
+      )}
       <Modal
         handleOpen={handleOpenAlreadyIn}
         open={openAlreadyIn}

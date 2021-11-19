@@ -10,6 +10,7 @@ import Loading from '@comps/Loading'
 import UpcomingEvents from './UpcomingEvents'
 import Info from '@comps/Alerts/Info'
 import MustBeAuthenticated from '@comps/MainLayout/PageErrors/MustBeAuthenticated'
+import EventStatus from '../EventStatus'
 export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
   const { user } = useAuth()
@@ -40,7 +41,7 @@ const EventsGrid = ({ events }) => {
   }
   return (
     <div>
-      <h3 className='my-3 text-2xl text-center'>Todos los eventos</h3>
+      <h3 className="my-3 text-2xl text-center">Todos los eventos</h3>
       <div className="grid p-3 gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 grid-flow-row ">
         {events?.sort(sortByDate).map((event) => (
           <Event event={event} key={event?.id} />
@@ -55,14 +56,19 @@ const Event = ({ event }) => {
   if (!event || !user) return <Loading />
   return (
     <Link href={ROUTES.events.details(event.id)}>
-      <a className=" mx-auto hover:border-gray-200 border shadow-lg border-gray-500 flex flex-col  w-full rounded text-center justify-between p-1">
+      <a className="  mx-auto hover:border-gray-200 border shadow-lg border-gray-500 flex flex-col  w-full rounded text-center justify-between p-1">
+        <div className="relative">
+          <EventStatus status={event.status} />
+        </div>
         <div>
           <h5 className="font-bold  text-base ">{event?.title}</h5>
           <div className="font-bold text-xs">
             {formatInputDate(event?.date, 'dd MMM yy')}
           </div>
         </div>
-        <p className="max-h-36 overflow-auto whitespace-pre-wrap">{event?.description}</p>
+        <p className="max-h-36  overflow-auto whitespace-pre-wrap truncate">
+          {event?.description}
+        </p>
         <ButtonJoinEvent athleteId={user?.athleteId} event={event} />
       </a>
     </Link>

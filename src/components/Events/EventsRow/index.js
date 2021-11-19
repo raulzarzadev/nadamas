@@ -1,5 +1,6 @@
 import { ROUTES } from '@/ROUTES'
-import {  formatInputDate } from '@/src/utils/Dates'
+import { formatInputDate } from '@/src/utils/Dates'
+import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/router'
 
 export default function EventsRow({ events = [], showNew = false }) {
@@ -26,20 +27,33 @@ export default function EventsRow({ events = [], showNew = false }) {
         </div>
       )}
       {events?.map((event) => (
-        <button
-          key={event.id}
-          style={{ backgroundImage: `url(${event.image})` }}
-          className="border rounded flex flex-col h-36 justify-between w-32 shadow-md bg-no-repeat bg-cover bg-center"
-          onClick={() => handleClickEvent(event.id)}
-        >
-          <div className="text-center bg-red-400 rounded rounded-b-none w-full">
-            {formatInputDate(event?.date, 'dd MMM yy')}
-          </div>
-          <div className="px-1 text-center text-xs w-full rounded-b-sm bg-gray-600">
-            {event.title}
-          </div>
-        </button>
+        <EventSmallCard event={event} key={event.id} handleClickEvent={handleClickEvent}/>
       ))}
     </div>
+  )
+}
+
+const EventSmallCard = ({ event, handleClickEvent }) => {
+  const msDia = 86400000
+  const last5Days = event.date - new Date().getTime() < 5 * msDia
+  console.log(`lastDays`, last5Days)
+  return (
+    <button
+      style={{ backgroundImage: `url(${event.image})` }}
+      className="relative border rounded flex flex-col h-36 justify-between w-32 shadow-md bg-no-repeat bg-cover bg-center"
+      onClick={() => handleClickEvent(event.id)}
+    >
+      {last5Days && (
+        <div className="absolute top-14 right-5 transform -rotate-45  bg-red-500 px-1 rounded-xl">
+          Ultimos Dias
+        </div>
+      )}
+      <div className="text-center bg-red-400 rounded rounded-b-none w-full">
+        {formatInputDate(event?.date, 'dd MMM yy')}
+      </div>
+      <div className="px-1 text-center text-xs w-full rounded-b-sm bg-gray-600">
+        {event.title}
+      </div>
+    </button>
   )
 }
