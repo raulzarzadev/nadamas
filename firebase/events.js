@@ -1,4 +1,4 @@
-import {  subDays } from 'date-fns'
+import { subDays } from 'date-fns'
 import firebase from 'firebase/app'
 import { db } from './client'
 import {
@@ -106,7 +106,14 @@ export const addEventResult = async ({ eventData, athleteData, test }) => {
     .then((res) => formatResponse(true, ' RESULT_CREATED', res))
     .catch((err) => formatResponse(false, 'ERROR_CREATING_RESULT', err))
 }
-
+export const removeEventResult = async (id) => {
+  return await db
+    .collection('results')
+    .doc(id)
+    .delete()
+    .then((res) => formatResponse(true, ' RESULT_DELETED', res))
+    .catch((err) => formatResponse(false, 'ERROR_DELETE_RESULT', err))
+}
 export const updateEvent = async (event) => {
   return await _update_event(event)
 }

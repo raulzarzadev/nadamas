@@ -7,7 +7,8 @@ export default function DeleteModal({
   name,
   handleDelete,
   text = 'De verdad quieres eliminar a este atleta',
-  title = 'Eliminar'
+  title = 'Eliminar',
+  children
 }) {
   const [textButton, setTextButton] = useState('Eliminar')
 
@@ -15,6 +16,7 @@ export default function DeleteModal({
     <Modal handleOpen={handleOpen} open={open} title={title}>
       <p className="my-2 ">{name}</p>
       <p className="my-2 text-sm">{text}</p>
+      {children}
       <Button
         variant="danger"
         p="2"

@@ -1,11 +1,13 @@
-import { getEvent, getEventResults } from '@/firebase/events'
+import { getEvent, getEventResults, removeEventResult } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
 import { STYLES } from '@/src/constants/SWIMMING_TESTS'
 import { useAuth } from '@/src/context/AuthContext'
 import { getAge } from '@/src/utils/Dates'
+import { EditIcon, TrashBinIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import PickerTests from '@comps/inputs/PickerTests'
+import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -142,7 +144,7 @@ export default function Results() {
       <div className="max-w-lg mx-auto p-1 mt-3">
         <ResultRow
           isTitle
-          texts={['No.', 'Nombre', 'Edad', 'Prueba', 'Tiempo']}
+          texts={['No.', 'Nombre', 'Edad', 'Prueba', 'Tiempo', 'Action']}
         />
         {fiteredResults?.length === 0 && (
           <div className="text-center my-4">Aún no hay resultados</div>
@@ -156,7 +158,13 @@ export default function Results() {
               `${athlete?.name?.split(' ')?.[0] || ''}`,
               `${athlete?.age || 'sin'}`,
               `${getTestLabelES({ test }).smLabel}`,
-              `${test?.record}`
+              `${test?.record}`,
+              <DetailsResultCell
+                isAdmin={isAdmin}
+                id={id}
+                test={test}
+                athlete={athlete}
+              />
             ]}
           />
         ))}
@@ -164,31 +172,123 @@ export default function Results() {
     </div>
   )
 }
+const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
+  const [openDetails, setOpenDetails] = useState(false)
+  const handleOpenDetails = () => {
+    setOpenDetails(!openDetails)
+  }
+  return (
+    <>
+      <Button
+        size="xs"
+        iconOnly
+        variant="secondary"
+        onClick={handleOpenDetails}
+      >
+        ver
+      </Button>
+      <Modal open={openDetails} handleOpen={handleOpenDetails} title="Detalles">
+        <div className="text-base mb-6">
+          <div className="my-2">
+            Competidor No.
+            <span className="font-bold text-xl"> {athlete.number}</span>
+          </div>
+          <div>
+            {athlete.name} {athlete.lastName || ''}
+          </div>
+          <div className="text-2xl border my-2 ">
+            {`${test.distance}m ${
+              STYLES.find(({ id }) => test.style === id)?.largeLabel
+            }`}
+            <div className="text-2xl font-thin">{test.record}</div>
+          </div>
+        </div>
+        {isAdmin && (
+          <DeleteResultCell
+            id={id}
+            test={test}
+            athlete={athlete}
+            closeDetails={() => setOpenDetails(false)}
+          />
+        )}
+      </Modal>
+    </>
+  )
+}
+const DeleteResultCell = ({ id, test, athlete, closeDetails = () => {} }) => {
+  const [openDelete, setOpenDelete] = useState(false)
+  const handleOpenDelete = () => {
+    setOpenDelete(!openDelete)
+  }
+  const handleDelete = () => {
+    closeDetails()
+    console.log(`delete`, id)
+    removeEventResult(id)
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
+  }
+
+  return (
+    <>
+      <Button size="xs" variant="danger" onClick={handleOpenDelete}>
+        Borrar
+        <TrashBinIcon />
+      </Button>
+      <DeleteModal
+        open={openDelete}
+        handleOpen={handleOpenDelete}
+        handleDelete={handleDelete}
+        text={''}
+      >
+        <div className="text-base">
+          <h3>Eliminar prueba </h3>
+          <div className="border my-6">
+            <p>{`${test?.distance || ''} ${test?.style || ''}`}</p>
+            <p>{`  ${athlete.name || ''} ${athlete.lastName || ''}`}</p>
+            <p className='text-2xl font-thin m-2'>{`  ${test.record || ''} `}</p>
+          </div>
+        </div>
+      </DeleteModal>
+    </>
+  )
+}
 
 const ResultRow = ({ isTitle, texts = [], place }) => (
   <div>
-    <div className="flex w-full  ">
-      <div className={`${isTitle && 'font-bold'}  w-1/6 p-0.5 relative `}>
-        {texts?.[0]}
-        {place === 0 && (
+    <div className="flex w-full my-2  ">
+      <div
+        className={`${
+          isTitle && 'font-bold'
+        }  w-1/6 p-0.5 relative text-right `}
+      >
+        <Cell>{texts?.[0]}</Cell>
+        {/* {place === 0 && (
           <span className="absolute text-xs right-2 -top-1 ">1°</span>
         )}
         {place === 1 && (
           <span className="absolute text-xs right-2 -top-1">2°</span>
-        )}
+        )} */}
       </div>
-      <div className={`${isTitle && 'font-bold'} w-2/6 text-center p-0.5`}>
-        {texts?.[1]}
+      <div className={`${isTitle && 'font-bold'} w-2/6  `}>
+        <Cell>{texts?.[1]}</Cell>
       </div>
-      <div className={`${isTitle && 'font-bold'} w-1/6 text-center p-0.5`}>
-        {texts?.[2]}
+      <div className={`${isTitle && 'font-bold'}  w-1/6   hidden sm:block`}>
+        <Cell>{texts?.[2]}</Cell>
       </div>
-      <div className={`${isTitle && 'font-bold'} w-2/6 text-center p-0.5`}>
-        {texts?.[3]}
+      <div className={`${isTitle && 'font-bold'} w-1/6   `}>
+        <Cell>{texts?.[3]}</Cell>
       </div>
-      <div className={`${isTitle && 'font-bold'} w-2/6 text-center p-0.5`}>
-        {texts?.[4]}
+      <div className={`${isTitle && 'font-bold'} w-2/6  `}>
+        <Cell>{texts?.[4]}</Cell>
+      </div>
+      <div className={`${isTitle && 'font-bold'} w-1/6 `}>
+        <Cell>{texts?.[5]}</Cell>
       </div>
     </div>
+  </div>
+)
+const Cell = ({ children }) => (
+  <div className="flex w-full justify-center items-center text-center p-0.5 h-full text-sm sm:text-base">
+    {children}
   </div>
 )
