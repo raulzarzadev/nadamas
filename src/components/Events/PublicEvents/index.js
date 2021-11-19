@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import ButtonJoinEvent from '../ButtonJoinEvent'
 import Link from 'next/link'
 import { getPublicEvents } from '@/firebase/events'
-import { format } from '@/src/utils/Dates'
+import { format, formatInputDate } from '@/src/utils/Dates'
 import EventsRow from '../EventsRow'
 import { ROUTES } from '@/ROUTES'
 import Loading from '@comps/Loading'
@@ -14,7 +14,7 @@ export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
   const { user } = useAuth()
   if (!user) return <MustBeAuthenticated />
-  
+
   useEffect(() => {
     getPublicEvents()
       .then((res) => {
@@ -33,11 +33,16 @@ export default function PublicEvents({ showNew, showGrid }) {
   )
 }
 const EventsGrid = ({ events }) => {
+  const sortByDate = (a, b) => {
+    if (a.date > b.date) return 1
+    if (a.date < b.date) return -1
+    return 0
+  }
   return (
     <div>
-      <h3>Todos los eventos</h3>
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 grid-flow-row ">
-        {events?.map((event) => (
+      <h3 className='my-3 text-2xl text-center'>Todos los eventos</h3>
+      <div className="grid p-3 gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 grid-flow-row ">
+        {events?.sort(sortByDate).map((event) => (
           <Event event={event} key={event?.id} />
         ))}
       </div>
@@ -50,14 +55,14 @@ const Event = ({ event }) => {
   if (!event || !user) return <Loading />
   return (
     <Link href={ROUTES.events.details(event.id)}>
-      <a className=" mx-auto hover:border-gray-200 border shadow-lg border-gray-500 flex flex-col h-56 w-full rounded text-center justify-between p-1">
+      <a className=" mx-auto hover:border-gray-200 border shadow-lg border-gray-500 flex flex-col  w-full rounded text-center justify-between p-1">
         <div>
-          <h5 className="font-bold text-sm ">{event?.title}</h5>
+          <h5 className="font-bold  text-base ">{event?.title}</h5>
           <div className="font-bold text-xs">
-            {format(event?.date, 'dd MMM yy')}
+            {formatInputDate(event?.date, 'dd MMM yy')}
           </div>
         </div>
-        <p className="max-h-36 overflow-auto">{event?.description}</p>
+        <p className="max-h-36 overflow-auto whitespace-pre-wrap">{event?.description}</p>
         <ButtonJoinEvent athleteId={user?.athleteId} event={event} />
       </a>
     </Link>

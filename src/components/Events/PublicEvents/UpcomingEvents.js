@@ -16,7 +16,7 @@ export default function UpcomingEvents({ showNew }) {
   const { user } = useAuth()
   return (
     <div className=" max-w-3xl mx-auto ">
-      <h3>Proximos eventos</h3>
+      <h3 className='text-center text-2xl pt-3 mb-3'>Proximos eventos</h3>
       <EventsRow events={events} showNew={showNew && user?.coach} />
     </div>
   )

@@ -1,3 +1,4 @@
+import {  subDays } from 'date-fns'
 import firebase from 'firebase/app'
 import { db } from './client'
 import {
@@ -30,7 +31,7 @@ export const getUpcomingEvents = async () => {
     .collection('events')
     .where('publicEvent', '==', true)
     .orderBy('date', 'asc')
-    .startAt(new Date())
+    .startAt(new Date(subDays(new Date(), 1)))
     .limit(10)
     .get()
     .then(({ docs }) => normalizeDocs(docs))

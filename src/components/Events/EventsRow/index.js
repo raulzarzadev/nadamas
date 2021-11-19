@@ -1,5 +1,5 @@
 import { ROUTES } from '@/ROUTES'
-import { formatInputDate } from '@/src/utils/Dates'
+import {  formatInputDate } from '@/src/utils/Dates'
 import { useRouter } from 'next/router'
 
 export default function EventsRow({ events = [], showNew = false }) {
@@ -11,7 +11,7 @@ export default function EventsRow({ events = [], showNew = false }) {
     router.push(ROUTES.events?.new())
   }
   return (
-    <div className="grid grid-flow-col overflow-auto gap-3 p-2">
+    <div className="grid grid-flow-col overflow-auto gap-4 p-2">
       {showNew && (
         <button
           onClick={handleNewEvent}
