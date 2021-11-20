@@ -48,6 +48,7 @@ export default function FormEvent({ event, discard = () => {} }) {
     reset()
     discard()
   }
+  console.log(`watch()`, watch())
 
   return (
     <div className="max-w-sm mx-auto p-2 grid gap-2 relative">
@@ -63,6 +64,7 @@ export default function FormEvent({ event, discard = () => {} }) {
           )}
           <Button type="submit" label="Guardar" />
         </div>
+
         <div className="grid gap-2">
           <label>
             Evento público
@@ -72,6 +74,43 @@ export default function FormEvent({ event, discard = () => {} }) {
               type="checkbox"
             />
           </label>
+          <div>
+            <h3>Estatus</h3>
+            <div className="grid gap-2 grid-flow-col">
+              <label>
+                En marcha
+                <input
+                  onChange={() => setValue('status', 'RUNNING')}
+                  checked={watch().status === 'RUNNING'}
+                  type="checkbox"
+                ></input>
+              </label>
+              <label>
+                Lleno
+                <input
+                  onChange={() => setValue('status', 'FULL')}
+                  checked={watch().status === 'FULL'}
+                  type="checkbox"
+                ></input>
+              </label>
+              <label>
+                Cancelado
+                <input
+                  onChange={() => setValue('status', 'CANCEL')}
+                  checked={watch().status === 'CANCEL'}
+                  type="checkbox"
+                ></input>
+              </label>
+              <label>
+                Finalizado
+                <input
+                  onChange={() => setValue('status', 'FINISH')}
+                  checked={watch().status === 'FINISH'}
+                  type="checkbox"
+                ></input>
+              </label>
+            </div>
+          </div>
           <input className="bg-gray-600" {...register('title')} />
           <textarea
             rows={10}
@@ -128,10 +167,7 @@ const AlreadySaved = ({ event, eventId, image, announcement }) => {
   return (
     <div>
       <div>
-        <h3 className='text-center text-xl font-bold'>
-
-        Pruebas
-        </h3>
+        <h3 className="text-center text-xl font-bold">Pruebas</h3>
         <PickerTests tests={event?.tests} setTests={handleSetTests} />
       </div>
       {/* ---------------- SUBIR IMAGEN */}

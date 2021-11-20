@@ -66,7 +66,7 @@ const Event = ({ event }) => {
             {formatInputDate(event?.date, 'dd MMM yy')}
           </div>
         </div>
-        <p className="max-h-36  overflow-auto whitespace-pre-wrap truncate">
+        <p style={{minHeight:'50px'}} className="max-h-36   overflow-auto whitespace-pre-wrap truncate">
           {event?.description}
         </p>
         <ButtonJoinEvent athleteId={user?.athleteId} event={event} />

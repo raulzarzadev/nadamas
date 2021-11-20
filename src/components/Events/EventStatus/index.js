@@ -8,23 +8,23 @@ export default function EventStatus({ status = 'RUNNING' }) {
   const EVENT_STATUS = {
     RUNNING: {
       label: 'En marcha',
-      color: 'bg-green-600'
+      color: 'bg-green-500'
     },
     FINISH: {
       label: 'Finalizado',
       color: 'bg-blue-400'
     },
-    CALCEL: {
+    CANCEL: {
       label: 'Cancelado',
-      color: 'bg-red-200'
+      color: 'bg-red-600'
     },
     FULL: {
-      label: 'Lleno',
-      color: 'bg-blue-200'
+      label: 'Sin lugares',
+      color: 'bg-purple-400'
     }
   }
   return (
-    <div className="  z-10 absolute  flex justify-center items-center -left-3 top-5 -rotate-45 transform">
+    <div className="  z-10 absolute  flex justify-center items-center -left-3 top-5 -rotate-45 transform ">
       <div className={`px-1 rounded-xl font-bold ${eventStatus?.color}`}>
         {eventStatus?.label}
       </div>
