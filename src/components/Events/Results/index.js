@@ -49,18 +49,18 @@ export default function Results() {
       label: 'Prueba',
       Component: <ResultsByTest results={results} isAdmin={isAdmin} />
     },
-    category: {
+    /* category: {
       label: 'Categoria',
       Component: <ResultTable isAdmin={isAdmin} results={results} />
-    },
+    }, */
     number: {
       label: 'Numero',
       Component: <ResultsByNumber isAdmin={isAdmin} results={results} />
     },
-    name: {
+    /* name: {
       label: 'Nombre',
       Component: <ResultTable isAdmin={isAdmin} results={results} />
-    }
+    } */
   }
   const [filterBy, setFilterBy] = useState('all')
   return (
@@ -89,7 +89,7 @@ export default function Results() {
         <div>
           <h2>Filtrar por:</h2>
           <div className="flex w-full justify-evenly flex-wrap">
-            {['all', 'test', 'category', 'number', 'name'].map((filter) => (
+            {Object.keys(FILTERS).map((filter) => (
               <button
                 onClick={(e) => {
                   e.preventDefault()
@@ -124,7 +124,7 @@ const ResultsByNumber = ({ results, isAdmin }) => {
   }
 
   return (
-    <div className='text-center'>
+    <div className='text-center my-4'>
       <input
         onChange={handleChange}
         placeholder="Numero de participante"
