@@ -2,9 +2,7 @@ import { getEvent, getEventResults, removeEventResult } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
 import { STYLES } from '@/src/constants/SWIMMING_TESTS'
 import { useAuth } from '@/src/context/AuthContext'
-import { getAge } from '@/src/utils/Dates'
-import { EditIcon, TrashBinIcon } from '@/src/utils/Icons'
-import Info from '@comps/Alerts/Info'
+import { TrashBinIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import PickerTests from '@comps/inputs/PickerTests'
 import DeleteModal from '@comps/Modals/DeleteModal'
@@ -20,6 +18,7 @@ const getTestLabelES = ({ test }) => {
     mdLabel: `${test?.distance}m ${sty?.largeLabel}`
   }
 }
+
 export default function Results() {
   const [results, setResults] = useState([])
   const router = useRouter()
@@ -37,49 +36,39 @@ export default function Results() {
         .catch((err) => console.log(`err`, err))
     getEvent(eventId, setEvent)
   }, [eventId])
-  const handleClickNew = () => {
-    router.push(`${ROUTES.events.results(eventId)}/new`)
-  }
-  const [filter, setFilter] = useState(null)
-  const [fiteredResults, setFiteredResults] = useState(null)
 
-  const handleClickTest = async (test) => {
-    setFilter(test)
-  }
-
-  useEffect(() => {
-    if (filter) {
-      const res = results?.filter(
-        ({ test: { distance, style } }) =>
-          distance === filter?.distance && style === filter?.style
-      )
-      setFiteredResults(res)
-    } else {
-      setFiteredResults(results)
-    }
-  }, [results, filter])
-
-  const [sortBy, setSortBy] = useState('record')
-  const sortResultsBy = (a, b) => {
-    if (a.test[sortBy] < b.test[sortBy]) return -1
-    if (a.test[sortBy] > b.test[sortBy]) return 1
-    return 0
-  }
-  const [openFilters, setOpenFilters] = useState()
-  const handleOpenFilters = () => {
-    setOpenFilters(!openFilters)
-  }
   const { user } = useAuth()
-
   const isAdmin = user?.id === event?.owner?.id
 
+  const FILTERS = {
+    all: {
+      label: 'Todas',
+      Component: <ResultTable isAdmin={isAdmin} results={results} />
+    },
+    test: {
+      label: 'Prueba',
+      Component: <ResultsByTest results={results} isAdmin={isAdmin} />
+    },
+    category: {
+      label: 'Categoria',
+      Component: <ResultTable isAdmin={isAdmin} results={results} />
+    },
+    number: {
+      label: 'Numero',
+      Component: <ResultsByNumber isAdmin={isAdmin} results={results} />
+    },
+    name: {
+      label: 'Nombre',
+      Component: <ResultTable isAdmin={isAdmin} results={results} />
+    }
+  }
+  const [filterBy, setFilterBy] = useState('all')
   return (
-    <div className="">
+    <div className="max-w-lg mx-auto">
       <div className="text-center">
         <h3 className="text-xl">{event?.title}</h3>
-        <p>Participantes {event?.participants?.length || ''}</p>
       </div>
-      {isAdmin && (
+      {isAdmin && !event?.status === 'FINISH' && (
         <div className="flex justify-center pt-5">
           <div className="w-28">
             <Button
@@ -92,47 +81,126 @@ export default function Results() {
           </div>
         </div>
       )}
-      <div>
-        <Modal
-          open={openFilters}
-          handleOpen={handleOpenFilters}
-          title="Filtrar pruebas"
-        >
-          <PickerTests
-            currentSelected={filter}
-            tests={results?.map((res) => res.test)}
-            onTestClick={(test) => {
-              setTimeout(() => {
-                setOpenFilters(false)
-              }, 200)
-              handleClickTest(test)
-            }}
-            disabled
-            compact={true}
-          />
-        </Modal>
+      {event?.status === 'FINISH' && <EventFinished event={event} />}
+      <div className="text-center">
+        <h3 className="text-2xl ">Resultados finales</h3>
+        <h2>Participantes: {event?.participants?.length || ''}</h2>
+        <h2>Pruebas nadadas: {results.length || '0'}</h2>
+        <div>
+          <h2>Filtrar por:</h2>
+          <div className="flex w-full justify-evenly flex-wrap">
+            {['all', 'test', 'category', 'number', 'name'].map((filter) => (
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  setFilterBy(filter)
+                }}
+                key={filter}
+                className={`${
+                  filterBy === filter && 'bg-blue-500'
+                } border p-1 px-5 my-2 mx-1 rounded-full flex justify-center items-center`}
+              >
+                {FILTERS[filter].label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
-
       {/* ----------------------  RESULTS TABLE  ---------------------- */}
+      {FILTERS[filterBy].Component}
+    </div>
+  )
+}
+
+const ResultsByNumber = ({ results, isAdmin }) => {
+  const [filteredResults, setFilteredResults] = useState([])
+  const handleFitlerResultByNumber = (filter) => {
+    const find = results.filter((result) => result?.athlete?.number == filter)
+    setFilteredResults(find)
+  }
+
+  const handleChange = ({ target: { value } }) => {
+    handleFitlerResultByNumber(value)
+  }
+
+  return (
+    <div className='text-center'>
+      <input
+        onChange={handleChange}
+        placeholder="Numero de participante"
+        className="bg-gray-800 text-center p-2 text-xl w-80 mx-auto "
+        type="number"
+        pattern="[0-9]*"
+        inputMode="numeric"
+      ></input>
+      <ResultTable results={filteredResults} isAdmin={isAdmin} />
+    </div>
+  )
+}
+
+const ResultsByTest = ({ results, isAdmin }) => {
+  const [filter, setFilter] = useState(null)
+  const [fiteredResults, setFiteredResults] = useState(null)
+  useEffect(() => {
+    if (filter) {
+      const res = results?.filter(
+        ({ test: { distance, style } }) =>
+          distance === filter?.distance && style === filter?.style
+      )
+      setFiteredResults(res)
+    } else {
+      setFiteredResults(results)
+    }
+  }, [results, filter])
+  const [openFilters, setOpenFilters] = useState()
+  const handleOpenFilters = () => {
+    setOpenFilters(!openFilters)
+  }
+  const [sortBy, setSortBy] = useState('record')
+  const sortResultsBy = (a, b) => {
+    if (a.test[sortBy] < b.test[sortBy]) return -1
+    if (a.test[sortBy] > b.test[sortBy]) return 1
+    return 0
+  }
+  return (
+    <div className="">
+      <button
+        onClick={handleOpenFilters}
+        className="text-center border p-1 text-xl w-2/3 max-w-sm mx-auto flex justify-center"
+      >
+        <h4 className="flex flex-col">
+          {filter ? (
+            <>
+              <span className="font-thin text-sm">Filtro:</span>
+              {getTestLabelES({ test: filter })?.mdLabel}
+            </>
+          ) : (
+            <>
+              Todos las pruebas
+              <span className="font-thin">filtrar</span>
+            </>
+          )}
+        </h4>
+      </button>
+      <Modal
+        open={openFilters}
+        handleOpen={handleOpenFilters}
+        title="Filtrar pruebas"
+      >
+        <PickerTests
+          currentSelected={filter}
+          tests={results?.map((res) => res.test)}
+          onTestClick={(test) => {
+            setTimeout(() => {
+              setOpenFilters(false)
+            }, 200)
+            setFilter(test)
+          }}
+          disabled
+          compact={true}
+        />
+      </Modal>
       <div className="text-center m-2">
-        <button
-          onClick={handleOpenFilters}
-          className="text-center border p-1 text-xl w-2/3 max-w-sm"
-        >
-          <h4 className="flex flex-col">
-            {filter ? (
-              <>
-                <span className="font-thin text-sm">Filtro:</span>
-                {getTestLabelES({ test: filter })?.mdLabel}
-              </>
-            ) : (
-              <>
-                Todos las pruebas
-                <span className="font-thin">filtrar</span>
-              </>
-            )}
-          </h4>
-        </button>
         {!!filter && (
           <div className="font-thin my-2">
             <button className="font-thin" onClick={() => setFilter(null)}>
@@ -141,37 +209,59 @@ export default function Results() {
           </div>
         )}
       </div>
-      <div className="max-w-lg mx-auto p-1 mt-3">
+      <ResultTable
+        results={fiteredResults}
+        sortResultsBy={sortResultsBy}
+        isAdmin={isAdmin}
+      />
+    </div>
+  )
+}
+const ResultTable = ({ results, sortResultsBy, isAdmin }) => {
+  return (
+    <div className=" mx-auto p-1 mt-3">
+      <ResultRow
+        isTitle
+        texts={['No.', 'Nombre', 'Edad', 'Prueba', 'Tiempo', 'Action']}
+      />
+      {results?.length === 0 && (
+        <div className="text-center my-4">Aún no hay resultados</div>
+      )}
+      {results?.sort(sortResultsBy).map(({ id, athlete, test }, i) => (
         <ResultRow
-          isTitle
-          texts={['No.', 'Nombre', 'Edad', 'Prueba', 'Tiempo', 'Action']}
+          key={id}
+          place={i}
+          texts={[
+            `${athlete?.number || ''}`,
+            `${athlete?.name?.split(' ')?.[0] || ''}`,
+            `${athlete?.age || 'sin'}`,
+            `${getTestLabelES({ test }).smLabel}`,
+            `${test?.record}`,
+            <DetailsResultCell
+              isAdmin={isAdmin}
+              id={id}
+              test={test}
+              athlete={athlete}
+            />
+          ]}
         />
-        {fiteredResults?.length === 0 && (
-          <div className="text-center my-4">Aún no hay resultados</div>
-        )}
-        {fiteredResults?.sort(sortResultsBy).map(({ id, athlete, test }, i) => (
-          <ResultRow
-            key={id}
-            place={i}
-            texts={[
-              `${athlete?.number || ''}`,
-              `${athlete?.name?.split(' ')?.[0] || ''}`,
-              `${athlete?.age || 'sin'}`,
-              `${getTestLabelES({ test }).smLabel}`,
-              `${test?.record}`,
-              <DetailsResultCell
-                isAdmin={isAdmin}
-                id={id}
-                test={test}
-                athlete={athlete}
-              />
-            ]}
-          />
-        ))}
+      ))}
+    </div>
+  )
+}
+
+export const EventFinished = () => {
+  return (
+    <div>
+      <div>
+        <h3 className="relative text-center z-10 text-4xl font-bold my-4 bg-purple-500 transform rotate-12">
+          Evento Finalizado
+        </h3>
       </div>
     </div>
   )
 }
+
 const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
   const [openDetails, setOpenDetails] = useState(false)
   const handleOpenDetails = () => {
@@ -245,7 +335,9 @@ const DeleteResultCell = ({ id, test, athlete, closeDetails = () => {} }) => {
           <div className="border my-6">
             <p>{`${test?.distance || ''} ${test?.style || ''}`}</p>
             <p>{`  ${athlete.name || ''} ${athlete.lastName || ''}`}</p>
-            <p className='text-2xl font-thin m-2'>{`  ${test.record || ''} `}</p>
+            <p className="text-2xl font-thin m-2">{`  ${
+              test.record || ''
+            } `}</p>
           </div>
         </div>
       </DeleteModal>

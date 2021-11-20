@@ -193,7 +193,7 @@ const ManageEvent = ({ event }) => {
   )
 }
 
-const EventFinished = ({ event }) => {
+export const EventFinished = ({ event }) => {
   const router = useRouter()
   const handleClickResults = () => {
     router.push(ROUTES.events.results(event.id))
