@@ -77,6 +77,7 @@ const EventDetails = ({ event }) => {
           <Image src={event?.image} layout="fill" objectFit="cover" />
         )}
       </div>
+      {event.status === 'FINISH' && <EventFinished event={event} />}
       <h3 className="font-bold my-2">{event?.title}</h3>
       <h3 className="text-xl my-2">
         {formatInputDate(event?.date, 'dd MMMM yyyy')}
@@ -171,7 +172,10 @@ const ManageEvent = ({ event }) => {
   return (
     <>
       <Section title="Administración" open indent={false}>
-        <Section  title={`Participantes (${event?.participants?.length || 0})`} indent={false}>
+        <Section
+          title={`Participantes (${event?.participants?.length || 0})`}
+          indent={false}
+        >
           <ParticipantsRows
             athletesIds={event?.participants}
             handleRemoveMember={handleRemoveMember}
@@ -186,5 +190,22 @@ const ManageEvent = ({ event }) => {
         </Section>
       </Section>
     </>
+  )
+}
+
+const EventFinished = ({ event }) => {
+  const router = useRouter()
+  const handleClickResults = () => {
+    router.push(ROUTES.events.results(event.id))
+  }
+  return (
+    <div>
+      <div>
+        <h3 className="relative z-10 text-4xl font-bold my-4 bg-purple-500 transform rotate-12">
+          Evento Finalizado
+        </h3>
+      </div>
+      <Button label="Ver resultados" onClick={handleClickResults} />
+    </div>
   )
 }

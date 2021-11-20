@@ -52,6 +52,7 @@ export default function FormEvent({ event, discard = () => {} }) {
 
   return (
     <div className="max-w-sm mx-auto p-2 grid gap-2 relative">
+     
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className=" grid grid-flow-col grid-cols-2 gap-3 py-3 sticky top-0 z-10 bg-gray-700 mb-2">
           {discard && (
