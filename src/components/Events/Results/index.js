@@ -124,7 +124,7 @@ const ResultsByNumber = ({ results, isAdmin }) => {
   }
 
   return (
-    <div className='text-center'>
+    <div className="text-center">
       <input
         onChange={handleChange}
         placeholder="Numero de participante"
@@ -250,7 +250,7 @@ const ResultTable = ({ results, sortResultsBy, isAdmin }) => {
   )
 }
 
-export const EventFinished = () => {
+const EventFinished = () => {
   return (
     <div>
       <div>
@@ -294,7 +294,7 @@ const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
           </div>
         </div>
         {isAdmin && (
-          <DeleteResultCell
+          <ResultDetailsModal
             id={id}
             test={test}
             athlete={athlete}
@@ -305,7 +305,7 @@ const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
     </>
   )
 }
-const DeleteResultCell = ({ id, test, athlete, closeDetails = () => {} }) => {
+const ResultDetailsModal = ({ id, test, athlete, closeDetails = () => {} }) => {
   const [openDelete, setOpenDelete] = useState(false)
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
@@ -317,13 +317,31 @@ const DeleteResultCell = ({ id, test, athlete, closeDetails = () => {} }) => {
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
+  const [openAwardModal, setOpenAwardModal] = useState(false)
+  const handleOpenAwardModal = () => {
+    setOpenAwardModal(!openAwardModal)
+  }
 
   return (
     <>
-      <Button size="xs" variant="danger" onClick={handleOpenDelete}>
-        Borrar
-        <TrashBinIcon />
-      </Button>
+      <div className="grid gap-4">
+        <Button variant="secondary" onClick={handleOpenAwardModal}>
+          Premiar
+        </Button>
+        <Button size="md" variant="danger" onClick={handleOpenDelete}>
+          Borrar
+          <TrashBinIcon />
+        </Button>
+      </div>
+      <Modal
+        open={openAwardModal}
+        handleOpen={handleOpenAwardModal}
+        title="Premiar"
+      >
+           
+
+
+      </Modal>
       <DeleteModal
         open={openDelete}
         handleOpen={handleOpenDelete}
