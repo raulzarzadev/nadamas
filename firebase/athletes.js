@@ -36,6 +36,7 @@ export const getAthletes = async (userId) => {
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log(err))
 }
+export const getAthleteAwards = async () => {}
 
 export const createDefaultAthlete = async ({ id, image, email, name }) => {
   const newAthlete = await _create_athlete({

@@ -1,5 +1,6 @@
 import { getEvent, getEventResults, removeEventResult } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
+import { TEST_AWARDS } from '@/src/constants/AWARDS'
 import { STYLES } from '@/src/constants/SWIMMING_TESTS'
 import { useAuth } from '@/src/context/AuthContext'
 import { TrashBinIcon } from '@/src/utils/Icons'
@@ -59,7 +60,7 @@ export default function Results() {
     number: {
       label: 'Numero',
       Component: <ResultsByNumber isAdmin={isAdmin} results={results} />
-    },
+    }
     /* name: {
       label: 'Nombre',
       Component: <ResultTable isAdmin={isAdmin} results={results} />
@@ -81,7 +82,7 @@ export default function Results() {
               label="Nuevo"
               type="button"
               onClick={handleClickNew}
-              />
+            />
           </div>
         </div>
       )}
@@ -128,7 +129,7 @@ const ResultsByNumber = ({ results, isAdmin }) => {
   }
 
   return (
-    <div className='text-center my-4'>
+    <div className="text-center my-4">
       <input
         onChange={handleChange}
         placeholder="Numero de participante"
@@ -235,6 +236,7 @@ const ResultTable = ({ results, sortResultsBy, isAdmin }) => {
         <ResultRow
           key={id}
           place={i}
+          awards={test?.awards}
           texts={[
             `${athlete?.number || ''}`,
             `${athlete?.name?.split(' ')?.[0] || ''}`,
@@ -309,7 +311,7 @@ const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
     </>
   )
 }
-const ResultRow = ({ isTitle, texts = [], place }) => (
+const ResultRow = ({ isTitle, texts = [], awards }) => (
   <div>
     <div className="flex w-full my-2  ">
       <div
@@ -317,13 +319,14 @@ const ResultRow = ({ isTitle, texts = [], place }) => (
           isTitle && 'font-bold'
         }  w-1/6 p-0.5 relative text-right `}
       >
-        <Cell>{texts?.[0]}</Cell>
-        {/* {place === 0 && (
-          <span className="absolute text-xs right-2 -top-1 ">1°</span>
-        )}
-        {place === 1 && (
-          <span className="absolute text-xs right-2 -top-1">2°</span>
-        )} */}
+        <Cell text="end">
+          {texts?.[0]}
+          <div className="text-yellow-300 text-xl h-4 w-4 absolute -top-5 right-0 flex">
+            {awards?.map((award) => (
+              <div key={award}>{TEST_AWARDS[award].icon}</div>
+            ))}
+          </div>
+        </Cell>
       </div>
       <div className={`${isTitle && 'font-bold'} w-2/6  `}>
         <Cell>{texts?.[1]}</Cell>
@@ -343,7 +346,7 @@ const ResultRow = ({ isTitle, texts = [], place }) => (
     </div>
   </div>
 )
-const Cell = ({ children }) => (
+const Cell = ({ children, text }) => (
   <div className="flex w-full justify-center items-center text-center p-0.5 h-full text-sm sm:text-base">
     {children}
   </div>

@@ -39,6 +39,7 @@ export const getUpcomingEvents = async () => {
     .catch((err) => console.log('err', err))
 }
 
+
 export const getEvent = async (id, dispatch) => {
   return db
     .collection('events')
@@ -116,12 +117,12 @@ export const removeEventResult = async (id) => {
     .catch((err) => formatResponse(false, 'ERROR_DELETE_RESULT', err))
 }
 export const updateAwardsEventResult = async (resultId, awards) => {
-  return await db
+   return await db
     .collection('results')
     .doc(resultId)
-    .update({ awards: firebase.firestore.FieldValue.arrayUnion(awards) })
+    .update({ 'test.awards':awards })
     .then((res) => formatResponse(true, ' AWARD_ADDED', res))
-    .catch((err) => formatResponse(false, 'ERROR_AWARD', err))
+    .catch((err) => formatResponse(false, 'ERROR_AWARD', err)) 
 }
 export const updateEvent = async (event) => {
   return await _update_event(event)

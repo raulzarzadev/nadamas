@@ -3,14 +3,12 @@ import { useAuth } from '../../context/AuthContext'
 import Section from '../Section'
 import Text from '@comps/inputs/Text'
 import Loading from '@comps/Loading'
-import Button from '@comps/inputs/Button'
-import { useRouter } from 'next/router'
-import { ROUTES } from '@/ROUTES'
 
 import TeamsList from '@comps/Teams/TeamsList.js'
 import FormAthlete from '@comps/Athlete/FormAthlete'
 import CoachSchedule from '@comps/Schedules/CoachSchedule'
 import CoachEvents from '@comps/Events/CoachEvents'
+import AthleteProfile from './AthleteProfile'
 
 export default function UserProfile() {
   const { user } = useAuth()
@@ -26,38 +24,10 @@ export default function UserProfile() {
   }, [user])
 
   if (!user) return <Loading />
+
   return (
     <div className="pt-4">
-      <div className="max-w-lg mx-auto pb-6">
-        {user?.coach && (
-          <Section title="Entrenador">
-            <CoachSection coachId={user.id} />
-          </Section>
-        )}
-        {user?.athleteId && <AthleteSection athleteId={user?.athleteId} />}
-        {/* {!user?.coach && <AthleteSection athleteId={user?.athleteId} />} */}
-
-        <Section title="Información de usuario" indent={false}>
-          <div className="flex flex-col items-center px-2 pt-6">
-            <div className="mb-4 md:w-1/2 p-2">
-              <Text
-                label="Nombre"
-                value={form?.name}
-                onChange={handleChange}
-                name="name"
-              />
-            </div>
-            <div className="mb-4 md:w-1/2 p-2">
-              <Text
-                label="Correo"
-                value={form?.email}
-                onChange={handleChange}
-                name="email"
-              />
-            </div>
-          </div>
-        </Section>
-      </div>
+      {user.athleteId && <AthleteProfile athleteId={user.athleteId} />}
     </div>
   )
 }

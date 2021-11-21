@@ -1,5 +1,5 @@
 import { updateAwardsEventResult } from '@/firebase/events'
-import AWARDS from '@/src/constants/AWARDS'
+import AWARDS, { TEST_AWARDS } from '@/src/constants/AWARDS'
 import { TrashBinIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import ButtonSave from '@comps/inputs/ButtonSave'
@@ -77,6 +77,7 @@ const AwardModalAdmin = ({ test, athlete, id, closeDetails }) => {
   const handleOpenAwardModalAdmin = () => {
     setOpenAwardModalAdmin(!openAwardModalAdmin)
   }
+  console.log(`test`, test)
   const [testAwards, setTestAwards] = useState(test?.awards || [])
 
   const handleAssingAdward = (newAward) => {
@@ -90,7 +91,7 @@ const AwardModalAdmin = ({ test, athlete, id, closeDetails }) => {
   }
   const handleSaveAwards = () => {
     // guardar en la prueba/evento
-    updateAwardsEventResult(testAwards)
+    updateAwardsEventResult(id, testAwards)
       .then((res) => {
         setButtonSatatus('saved')
         console.log(`res`, res)
@@ -102,7 +103,7 @@ const AwardModalAdmin = ({ test, athlete, id, closeDetails }) => {
   return (
     <>
       <Button variant="secondary" onClick={handleOpenAwardModalAdmin}>
-        Premiar
+        Premiar prueba
       </Button>
       <Modal
         open={openAwardModalAdmin}
@@ -110,7 +111,7 @@ const AwardModalAdmin = ({ test, athlete, id, closeDetails }) => {
         title="Premiar prueba"
       >
         <div className="flex w-full flex-wrap justify-evenly">
-          {Object.keys(AWARDS).map((award) => (
+          {Object.keys(TEST_AWARDS).map((award) => (
             <button
               onClick={() => handleAssingAdward(award)}
               key={award}
@@ -118,7 +119,7 @@ const AwardModalAdmin = ({ test, athlete, id, closeDetails }) => {
                 awardAlreadyRecived(award) && 'bg-green-700'
               } text-sm  border rounded-full h-16 w-16 flex justify-center items-center m-1`}
             >
-              {AWARDS[award].label}
+              {TEST_AWARDS[award]?.label}
             </button>
           ))}
         </div>

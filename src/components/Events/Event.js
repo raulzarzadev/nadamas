@@ -48,7 +48,7 @@ export default function Event() {
   return (
     <>
       <div className="max-w-sm mx-auto py-4 text-center">
-        <div className="grid grid-flow-row gap-3 sm:grid-flow-col items-center py-3 sticky top-0 z-20 bg-gray-700">
+        <div className="grid grid-flow-row gap-3 sm:grid-flow-col items-center py-3 sticky top-0 z-10 bg-gray-700">
           {isOwner ? (
             <AdminActions eventId={event.id} />
           ) : (
@@ -201,7 +201,7 @@ export const EventFinished = ({ event }) => {
   return (
     <div>
       <div>
-        <h3 className="relative z-10 text-4xl font-bold my-4 bg-purple-500 transform rotate-12">
+        <h3 className="relative -top-10 text-4xl font-bold my-4 bg-purple-500 transform rotate-12">
           Evento Finalizado
         </h3>
       </div>
