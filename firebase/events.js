@@ -1,5 +1,6 @@
 import { subDays } from 'date-fns'
 import firebase from 'firebase/app'
+import 'firebase/firestore'
 import { db } from './client'
 import {
   datesToFirebaseFromat,
@@ -113,6 +114,14 @@ export const removeEventResult = async (id) => {
     .delete()
     .then((res) => formatResponse(true, ' RESULT_DELETED', res))
     .catch((err) => formatResponse(false, 'ERROR_DELETE_RESULT', err))
+}
+export const updateAwardsEventResult = async (resultId, awards) => {
+  return await db
+    .collection('results')
+    .doc(resultId)
+    .update({ awards: firebase.firestore.FieldValue.arrayUnion(awards) })
+    .then((res) => formatResponse(true, ' AWARD_ADDED', res))
+    .catch((err) => formatResponse(false, 'ERROR_AWARD', err))
 }
 export const updateEvent = async (event) => {
   return await _update_event(event)

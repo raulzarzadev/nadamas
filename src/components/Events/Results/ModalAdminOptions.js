@@ -1,5 +1,8 @@
+import { updateAwardsEventResult } from '@/firebase/events'
+import AWARDS from '@/src/constants/AWARDS'
 import { TrashBinIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
+import ButtonSave from '@comps/inputs/ButtonSave'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
 import { useState } from 'react'
@@ -10,6 +13,27 @@ export default function ModalAdminOptions({
   athlete,
   closeDetails = () => {}
 }) {
+  return (
+    <>
+      <div className="grid gap-4">
+        <DeleteModalAdmin
+          test={test}
+          id={id}
+          athlete={athlete}
+          closeDetails={closeDetails}
+        />
+        <AwardModalAdmin
+          test={test}
+          id={id}
+          athlete={athlete}
+          closeDetails={closeDetails}
+        />
+      </div>
+    </>
+  )
+}
+
+const DeleteModalAdmin = ({ test, athlete, id, closeDetails }) => {
   const [openDelete, setOpenDelete] = useState(false)
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
@@ -21,27 +45,12 @@ export default function ModalAdminOptions({
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
-  const [openAwardModal, setOpenAwardModal] = useState(false)
-  const handleOpenAwardModal = () => {
-    setOpenAwardModal(!openAwardModal)
-  }
-
   return (
     <>
-      <div className="grid gap-4">
-        <Button variant="secondary" onClick={handleOpenAwardModal}>
-          Premiar
-        </Button>
-        <Button size="md" variant="danger" onClick={handleOpenDelete}>
-          Borrar
-          <TrashBinIcon />
-        </Button>
-      </div>
-      <Modal
-        open={openAwardModal}
-        handleOpen={handleOpenAwardModal}
-        title="Premiar"
-      ></Modal>
+      <Button size="md" variant="danger" onClick={handleOpenDelete}>
+        Borrar
+        <TrashBinIcon />
+      </Button>
       <DeleteModal
         open={openDelete}
         handleOpen={handleOpenDelete}
@@ -59,6 +68,64 @@ export default function ModalAdminOptions({
           </div>
         </div>
       </DeleteModal>
+    </>
+  )
+}
+
+const AwardModalAdmin = ({ test, athlete, id, closeDetails }) => {
+  const [openAwardModalAdmin, setOpenAwardModalAdmin] = useState(false)
+  const handleOpenAwardModalAdmin = () => {
+    setOpenAwardModalAdmin(!openAwardModalAdmin)
+  }
+  const [testAwards, setTestAwards] = useState(test?.awards || [])
+
+  const handleAssingAdward = (newAward) => {
+    testAwards.includes(newAward)
+      ? setTestAwards(testAwards.filter((id) => id !== newAward))
+      : setTestAwards([...testAwards, newAward])
+    setButtonSatatus('dirty')
+  }
+  const awardAlreadyRecived = (award) => {
+    return testAwards.includes(award)
+  }
+  const handleSaveAwards = () => {
+    // guardar en la prueba/evento
+    updateAwardsEventResult(testAwards)
+      .then((res) => {
+        setButtonSatatus('saved')
+        console.log(`res`, res)
+      })
+      .catch((err) => console.log(`err`, err))
+  }
+
+  const [buttonSatatus, setButtonSatatus] = useState('clean')
+  return (
+    <>
+      <Button variant="secondary" onClick={handleOpenAwardModalAdmin}>
+        Premiar
+      </Button>
+      <Modal
+        open={openAwardModalAdmin}
+        handleOpen={handleOpenAwardModalAdmin}
+        title="Premiar prueba"
+      >
+        <div className="flex w-full flex-wrap justify-evenly">
+          {Object.keys(AWARDS).map((award) => (
+            <button
+              onClick={() => handleAssingAdward(award)}
+              key={award}
+              className={`${
+                awardAlreadyRecived(award) && 'bg-green-700'
+              } text-sm  border rounded-full h-16 w-16 flex justify-center items-center m-1`}
+            >
+              {AWARDS[award].label}
+            </button>
+          ))}
+        </div>
+        <div className="text-base mt-4 flex justify-center w-1/2 mx-auto">
+          <ButtonSave onClick={handleSaveAwards} status={buttonSatatus} />
+        </div>
+      </Modal>
     </>
   )
 }

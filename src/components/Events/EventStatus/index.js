@@ -24,7 +24,7 @@ export default function EventStatus({ status = 'RUNNING' }) {
     }
   }
   return (
-    <div className="  z-10 absolute  flex justify-center items-center -left-3 top-5 -rotate-45 transform ">
+    <div className="  absolute  flex justify-center items-center -left-3 top-5 -rotate-45 transform ">
       <div className={`px-1 rounded-xl font-bold ${eventStatus?.color}`}>
         {eventStatus?.label}
       </div>

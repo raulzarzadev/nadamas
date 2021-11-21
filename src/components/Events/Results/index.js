@@ -9,6 +9,7 @@ import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import ModalAdminOptions from './ModalAdminOptions'
 
 const getTestLabelES = ({ test }) => {
   if (!test) return null
@@ -39,7 +40,9 @@ export default function Results() {
 
   const { user } = useAuth()
   const isAdmin = user?.id === event?.owner?.id
-
+  const handleClickNew = () => {
+    router.push(`${ROUTES.events.results(eventId)}/new`)
+  }
   const FILTERS = {
     all: {
       label: 'Todas',
@@ -68,8 +71,9 @@ export default function Results() {
       <div className="text-center">
         <h3 className="text-xl">{event?.title}</h3>
       </div>
-      {isAdmin && !event?.status === 'FINISH' && (
-        <div className="flex justify-center pt-5">
+      <h3 className="text-2xl text-center ">Resultados</h3>
+      {isAdmin && event?.status !== 'FINISH' && (
+        <div className="flex justify-center my-4">
           <div className="w-28">
             <Button
               size="sm"
@@ -77,14 +81,14 @@ export default function Results() {
               label="Nuevo"
               type="button"
               onClick={handleClickNew}
-            />
+              />
           </div>
         </div>
       )}
+      {console.log(`event.status`, event.status)}
       {event?.status === 'FINISH' && <EventFinished event={event} />}
       <div className="text-center">
-        <h3 className="text-2xl ">Resultados finales</h3>
-        <h2>Participantes: {event?.participants?.length || ''}</h2>
+        <h2>Participantes: {event?.participants?.length || '0'}</h2>
         <h2>Pruebas nadadas: {results.length || '0'}</h2>
         <div>
           <h2>Filtrar por:</h2>
@@ -294,7 +298,7 @@ const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
           </div>
         </div>
         {isAdmin && (
-          <ResultDetailsModal
+          <ModalAdminOptions
             id={id}
             test={test}
             athlete={athlete}
@@ -305,64 +309,6 @@ const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
     </>
   )
 }
-const ResultDetailsModal = ({ id, test, athlete, closeDetails = () => {} }) => {
-  const [openDelete, setOpenDelete] = useState(false)
-  const handleOpenDelete = () => {
-    setOpenDelete(!openDelete)
-  }
-  const handleDelete = () => {
-    closeDetails()
-    console.log(`delete`, id)
-    removeEventResult(id)
-      .then((res) => console.log(`res`, res))
-      .catch((err) => console.log(`err`, err))
-  }
-  const [openAwardModal, setOpenAwardModal] = useState(false)
-  const handleOpenAwardModal = () => {
-    setOpenAwardModal(!openAwardModal)
-  }
-
-  return (
-    <>
-      <div className="grid gap-4">
-        <Button variant="secondary" onClick={handleOpenAwardModal}>
-          Premiar
-        </Button>
-        <Button size="md" variant="danger" onClick={handleOpenDelete}>
-          Borrar
-          <TrashBinIcon />
-        </Button>
-      </div>
-      <Modal
-        open={openAwardModal}
-        handleOpen={handleOpenAwardModal}
-        title="Premiar"
-      >
-           
-
-
-      </Modal>
-      <DeleteModal
-        open={openDelete}
-        handleOpen={handleOpenDelete}
-        handleDelete={handleDelete}
-        text={''}
-      >
-        <div className="text-base">
-          <h3>Eliminar prueba </h3>
-          <div className="border my-6">
-            <p>{`${test?.distance || ''} ${test?.style || ''}`}</p>
-            <p>{`  ${athlete.name || ''} ${athlete.lastName || ''}`}</p>
-            <p className="text-2xl font-thin m-2">{`  ${
-              test.record || ''
-            } `}</p>
-          </div>
-        </div>
-      </DeleteModal>
-    </>
-  )
-}
-
 const ResultRow = ({ isTitle, texts = [], place }) => (
   <div>
     <div className="flex w-full my-2  ">
