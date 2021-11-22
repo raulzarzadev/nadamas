@@ -1,6 +1,8 @@
 import { getAthleteAwards, getAthleteRecords } from '@/firebase/athletes'
 import { getAthleteEvents } from '@/firebase/events'
+import { ROUTES } from '@/ROUTES'
 import { TEST_AWARDS } from '@/src/constants/AWARDS'
+import STATUS_EVENT from '@/src/constants/STATUS_EVENT'
 import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
 import useAthlete from '@/src/hooks/useAthlete'
 import { formatInputDate } from '@/src/utils/Dates'
@@ -11,6 +13,7 @@ import Payments from '@comps/Athlete/Payments'
 import SwimTestDetails from '@comps/Modals/SwimTestDetails'
 import AthleteSchedule from '@comps/Schedules/AthleteSchedule'
 import Section from '@comps/Section'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function AthleteProfile({ athleteId }) {
@@ -94,8 +97,12 @@ export default function AthleteProfile({ athleteId }) {
   )
 }
 const EventCard = ({ event, athleteId }) => {
+  const router = useRouter()
   return (
-    <div className="border w-32 rounded-b-xl">
+    <button
+      onClick={() => router.push(ROUTES.events.details(event.id))}
+      className="border w-32 rounded-b-xl  "
+    >
       <div className="bg-red-400 text-center">
         {formatInputDate(event.date, 'dd MMM yy')}
       </div>
@@ -104,9 +111,21 @@ const EventCard = ({ event, athleteId }) => {
         Prticipante No.
         {event.participants.find(({ id }) => id === athleteId)?.number}
       </div>
-    </div>
+      <div>
+        <div>
+          <div
+            className={`${
+              STATUS_EVENT[event.status]?.color
+            }  rounded-b-xl text-center`}
+          >
+            {STATUS_EVENT[event.status].label}
+          </div>
+        </div>
+      </div>
+    </button>
   )
 }
+
 const ResultCard = ({ result }) => {
   const { record, distance, style, awards } = result?.test
   return (
