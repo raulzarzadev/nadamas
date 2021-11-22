@@ -115,6 +115,10 @@ export default [
   //----------------------- relevos
 ]
 
+export const getStyleInfo = (style) => {
+  return STYLES.find(({ id }) => id === style)
+}
+
 export const STYLES = [
   {
     label: 'C',

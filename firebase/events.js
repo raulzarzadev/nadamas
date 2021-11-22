@@ -66,15 +66,15 @@ export const getUserEvents = async (userId) => {
 export const getAthleteEvents = async (athleteId) => {
   return await db
     .collection('events')
-    .where('participants', 'array-contains', athleteId)
+    .where('participantsList', 'array-contains', athleteId)
     .get()
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log('get_events_err', err))
 }
+
 export const createOrUpdateEvent = async (event) => {
   // search
   const { id } = event
-
   if (id) {
     //update
     return _update_event(event)
@@ -151,7 +151,7 @@ export const athleteAcceptRequestEvent = async (eventId, athleteId) => {
   return await _update_event({
     id: eventId,
     currentNumber: currentNumber + 1,
-
+    participantsList: firebase.firestore.FieldValue.arrayUnion(athleteId),
     requests: firebase.firestore.FieldValue.arrayRemove(athleteId),
     participants: firebase.firestore.FieldValue.arrayUnion({
       id: athleteId,
@@ -162,6 +162,7 @@ export const athleteAcceptRequestEvent = async (eventId, athleteId) => {
 export const athleteUnjoinEvent = async (eventId, eventAthlete) => {
   await _update_event({
     id: eventId,
+    participantsList: firebase.firestore.FieldValue.arrayRemove(athleteId),
     requests: firebase.firestore.FieldValue.arrayRemove(eventAthlete.id),
     participants: firebase.firestore.FieldValue.arrayRemove(eventAthlete)
   })

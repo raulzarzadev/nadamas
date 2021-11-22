@@ -8,7 +8,7 @@ import { useAuth } from '@/src/context/AuthContext'
 import Loading from '@comps/Loading'
 import { useState, useEffect } from 'react'
 
-export default function AthleteTeam() {
+export default function AthleteTeam({athleteId}) {
   const [teams, setTeams] = useState([])
   const { user } = useAuth()
   useEffect(() => {

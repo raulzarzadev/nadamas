@@ -112,7 +112,8 @@ const CompetitorRow = ({ athlete, test, event }) => {
         number: athlete.number,
         age: getAge(athlete.birth)?.split(' ')?.[0]
       },
-      test: { ...test, record: form }
+      test: { ...test, record: form },
+      date: new Date()
     }
     addEventResult(resultData)
       .then((res) => console.log(`res`, res))

@@ -1,13 +1,12 @@
 import { getAthleteRecords, removeRecord } from '@/firebase/records'
 import { ROUTES } from '@/ROUTES'
-import SWIMMING_TESTS from '@/src/constants/SWIMMING_TESTS'
+import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
 import { format, formatInputDate } from '@/src/utils/Dates'
 import { AddIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'
 import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
-import { es } from 'date-fns/locale'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
@@ -126,9 +125,7 @@ export default function Records({ athleteId }) {
 
 const RecordRow = ({ record: { id, date, record, style, distance } }) => {
   const router = useRouter()
-  const getLabelStyle = (style) => {
-    return SWIMMING_TESTS.find(({ id }) => id === style)?.label
-  }
+ 
   const [openDetails, setOpenDetails] = useState(false)
 
   const handleOpenDetail = () => {
@@ -154,7 +151,7 @@ const RecordRow = ({ record: { id, date, record, style, distance } }) => {
       <div className="w-1/4 text-center ">{format(date, 'ddMMMyy')}</div>
       <div className="w-1/4 text-center">
         {distance}
-        {getLabelStyle(style)}
+        {getStyleInfo(style).label}
       </div>
       <div className="w-1/4 text-center">{record}</div>
       <div className="w-1/4 flex justify-center">

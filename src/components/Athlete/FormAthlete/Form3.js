@@ -5,12 +5,7 @@ import SectionContact from './SectionContact'
 import SectionMedic from './SectionMedic'
 import SectionEmergency from './SectionEmergency'
 import StickyContactAndSaveBar from './StickyContactAndSaveBar'
-export function Form({
-  form,
-  setForm,
-  handleSubmit,
-  isEditable,
-}) {
+export function Form({ form, setForm, handleSubmit, isEditable }) {
   return (
     <div className="">
       <div className="relative pt-0 pb-8 max-w-lg mx-auto">
@@ -46,7 +41,7 @@ export function Form({
           {/* ----------------------------------------------Emergency contact */}
           <SectionEmergency form={form} setForm={setForm} />
         </form>
-        {form?.id && <SectionAthleteAlreadyExist athleteId={athleteId} />}
+        {form?.id && <SectionAthleteAlreadyExist athleteId={form.id} />}
       </div>
     </div>
   )

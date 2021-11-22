@@ -6,7 +6,7 @@ import Loading from '@comps/Loading'
 import ContentNotAvailable from '@comps/MainLayout/PageErrors/ContentNotAvailable'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { Form } from './Form2'
+import { Form } from './Form4'
 
 export default function FormAthlete({ athleteId = '' }) {
   const { user } = useAuth()

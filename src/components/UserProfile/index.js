@@ -27,7 +27,8 @@ export default function UserProfile() {
 
   return (
     <div className="pt-4">
-      {user.athleteId && <AthleteProfile athleteId={user.athleteId} />}
+      {user?.coach && <CoachSection coachId={user.id} />}
+      {user?.athleteId && <AthleteProfile athleteId={user.athleteId} />}
     </div>
   )
 }
@@ -42,14 +43,14 @@ const AthleteSection = ({ athleteId }) => {
 
 const CoachSection = ({ coachId }) => (
   <div>
-    <Section title="Eventos" indent={false}>
+    <Section title="Eventos" indent={false} open>
       <CoachEvents coachId={coachId} />
+    </Section>
+    <Section title="Equipos" indent={false} open>
+      <TeamsList coachId={coachId} />
     </Section>
     <Section title="Horario" indent={false}>
       <CoachSchedule coachId={coachId} />
-    </Section>
-    <Section title="Equipos" indent={false}>
-      <TeamsList coachId={coachId} />
     </Section>
   </div>
 )
