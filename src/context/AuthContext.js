@@ -25,15 +25,20 @@ export function AuthProvider({ children }) {
       .then(({ user }) => {
         // console.log('user', user)
         //router.replace('/profile')
-        //router.push('/profile')
         // router.replace('/profile')
-        router.reload()
+        //router.reload()
+        // router.push('/profile')
         setUser(user)
       })
       .catch((err) => {
         console.log('err', err)
       })
   }
+
+  useEffect(() => {
+    if (user) router.replace('/profile')
+  }, [user])
+  
   if (user === undefined) return <Loading />
 
   return (
