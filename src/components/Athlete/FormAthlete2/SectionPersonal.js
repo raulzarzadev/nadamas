@@ -1,39 +1,21 @@
 import { formatInputDate } from '@/src/utils/Dates'
-import ButtonSave from '@comps/inputs/ButtonSave'
 import TextEditable from '@comps/inputs/TextEditable'
 import Toggle from '@comps/inputs/Toggle'
 import Section from '@comps/Section'
-import { useState } from 'react'
 import SectionContact from './SectionContact'
 import SectionEmergency from './SectionEmergency'
 import SectionMedic from './SectionMedic'
 
-export default function SectionPersonal({
-  form,
-  setForm,
-  isEditable = true,
-  handleSave
-}) {
+export default function SectionPersonal({ form, setForm, isEditable = true }) {
   const handleChange = ({ target: { name, value } }) => {
     setForm({ ...form, [name]: value })
-    setButtonStatus('dirty')
   }
 
   const handleChangeTaggle = (e) => {
     setForm({ ...form, [e.target.name]: e.target.checked })
-    setButtonStatus('dirty')
   }
-  const [buttonStatus, setButtonStatus] = useState('clean')
-
   return (
-    <Section indent={false} title="Informacion personalss">
-      <ButtonSave
-        onClick={() => {
-          handleSave()
-          setButtonStatus('saved')
-        }}
-        status={buttonStatus}
-      />
+    <Section indent  title="Informacion personal" sticky >
       <div className="p-2 sm:p-6 grid gap-2">
         <TextEditable
           permissionToEdit={isEditable}

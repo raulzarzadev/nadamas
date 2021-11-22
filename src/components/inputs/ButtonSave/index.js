@@ -17,7 +17,7 @@ export default function ButtonSave({ status = 'clean', onClick }) {
     },
     saved: {
       variant: 'primary',
-      label: 'Guardar',
+      label: 'Guardado',
       disabled: true,
       icon: <SaveIcon />
     }

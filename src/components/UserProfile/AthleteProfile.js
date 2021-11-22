@@ -8,7 +8,7 @@ import useAthlete from '@/src/hooks/useAthlete'
 import { formatInputDate } from '@/src/utils/Dates'
 import { averageRecordSpeed } from '@/src/utils/Records'
 import AthleteTeam from '@comps/Athlete/AthleteTeam'
-import FormAthlete from '@comps/Athlete/FormAthlete'
+import FormAthlete from '@comps/Athlete/FormAthlete2'
 import Payments from '@comps/Athlete/Payments'
 import SwimTestDetails from '@comps/Modals/SwimTestDetails'
 import AthleteSchedule from '@comps/Schedules/AthleteSchedule'
@@ -135,7 +135,7 @@ const ResultCard = ({ result }) => {
       </div>
       <div className="absolute -top-4 -right-5">
         {awards?.map((award) => (
-          <AwardPin award={award} size="xs" />
+          <AwardPin key={award} award={award} size="xs" />
         ))}
       </div>
       <div className="p-1 text-sm text-center">
