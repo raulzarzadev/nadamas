@@ -16,7 +16,7 @@ export default function BottomNav({ links = [] }) {
     router.back()
   }
   return (
-    <div className="bg-blue-400 relative ">
+    <div className="bg-secondary dark:bg-secondary-dark relative ">
       <div className="flex justify-evenly p-1">
         {user ? (
           <>

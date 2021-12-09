@@ -10,20 +10,20 @@ export default function AuthCard() {
   const isValid = !!form?.privacity
 
   return (
-    <div className="w-full max-w-sm p-6 m-auto bg-white rounded-md shadow-md dark:bg-gray-800">
-      <h1 className="text-3xl font-semibold text-center text-gray-700 dark:text-white">
+    <div className="w-full max-w-sm p-6 m-auto  bg-white dark:bg-secondary-dark text-dark dark:text-light rounded-md shadow-md ">
+      <h1 className="text-3xl font-semibold text-center  ">
         Ingresa
       </h1>
 
       <div className="flex items-center flex-col justify-between mt-4">
-        <span className="w-1/5 border-b dark:border-gray-600 lg:w-1/5"></span>
+        <span className="w-1/5 border-b border-dark dark:border-dark lg:w-1/5"></span>
 
-        <div className="text-xs text-center text-gray-500 uppercase dark:text-gray-400 hover:underline">
+        <div className="text-xs text-center uppercase hover:underline">
           Registro a la version beta completamente gratis
         </div>
 
-        <div className="flex items-center my-4 bg-gray-100 rounded-lg shadow-lg">
-          <div className="text-black text-sm ">
+        <div className="flex items-center my-4 bg-white dark:bg-secondary-dark rounded-lg shadow-lg">
+          <div className=" text-sm ">
             {/*   <p className="m-2">
               Marca la casilla si estás de acuerdo con el manejo de tu
               información
@@ -63,7 +63,7 @@ export default function AuthCard() {
           </div>
         </div> */}
         <div className="">
-          <label className="text-black">
+          <label className="">
             <input
               className="mr-2"
               type="checkbox"
@@ -73,7 +73,7 @@ export default function AuthCard() {
             Acepar y continar
           </label>
         </div>
-        <span className="w-1/5 border-b dark:border-gray-400 lg:w-1/5"></span>
+        <span className="w-1/5 border-b dark:border-light lg:w-1/5"></span>
       </div>
 
       <SocialMediaLogin disabled={!isValid} />

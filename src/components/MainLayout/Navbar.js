@@ -3,11 +3,12 @@ import { DownIcon } from '@/src/utils/Icons'
 import Link from '@comps/inputs/Link'
 import Image from 'next/image'
 import { useState } from 'react'
+import DarkModeToggle from './DarkModeToggle'
 export default function Navbar({ links = [] }) {
   const { user } = useAuth()
 
   return (
-    <div className="bg-blue-400  pb-0 flex justify-between">
+    <div className="bg-secondary dark:bg-secondary-dark  pb-0 flex justify-between">
       <div className="flex w-1/6 justify-center items-center p-1">
         <Link href="/">
           <>
@@ -19,14 +20,14 @@ export default function Navbar({ links = [] }) {
                 priority={true}
               />
             </div>
-            <div className="relative w-72 h-8  md:hidden ">
+            {/* <div className="relative w-72 h-8  md:hidden ">
               <Image
                 priority={true}
                 src="/nadamas/logo-3.png"
                 layout="fill"
                 objectFit="contain"
               />
-            </div>
+            </div> */}
           </>
         </Link>
       </div>
@@ -38,6 +39,9 @@ export default function Navbar({ links = [] }) {
         </ul>
       </div>
       <ul className=" flex justify-end items-center cursor-pointer">
+        <div className="mx-4">
+          <DarkModeToggle />
+        </div>
         {user && (
           <NavbarSubMenu
             listItems={links}
@@ -76,7 +80,7 @@ const TodgleProfile = () => {
     user: { coach }
   } = useAuth()
   return (
-    <div className="text-black text-center">
+    <div className="text-dark dark:text-light text-center">
       {coach ? 'Entrenador' : 'Nadador'}
     </div>
   )
@@ -94,7 +98,7 @@ const NavbarSubMenu = ({
   }
   return (
     <li
-      className=" group  flex items-end hover:bg-white  px-1 "
+      className=" group  flex items-end hover:bg-transparent  px-1 "
       onClick={handleShowMenu}
     >
       <ul className="group-hover:text-black ">{listComponent}</ul>
@@ -110,14 +114,14 @@ const NavbarSubMenu = ({
         <ul
           className={`absolute ${
             showMenu ? 'block' : 'hidden'
-          } -right-1 z-20 w-48 py-2 mt-0 bg-white rounded-sm rounded-t-none shadow-xl dark:bg-gray-800`}
+          } -right-1 z-20 w-48 py-2 mt-0 bg-secondary text-light  rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
         >
           <li>{topMenu}</li>
           {listItems.map(({ href, label }) => (
             <Link href={href} key={label}>
               <li
                 onClick={() => setShowMenu(false)}
-                className={`block px-4 py-2 text-sm text-gray-700 capitalize transition-colors duration-200 transform dark:text-gray-300 hover:bg-blue-500 hover:text-white dark:hover:text-white cursor-pointer`}
+                className={`block px-4 py-2 text-sm  capitalize transition-colors duration-200 transform hover:text-white dark:text-light   dark:hover:text-white cursor-pointer`}
               >
                 {label}
               </li>

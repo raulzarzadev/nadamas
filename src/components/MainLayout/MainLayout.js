@@ -28,7 +28,8 @@ export default function MainLayout({ children }) {
       </Head>
       <div>
         <Navbar links={links?.nav} />
-        <main className="bg-gray-700 min-h-screen ">{children}</main>
+        <main className="
+        bg-primary dark:bg-primary-dark min-h-screen pb-10 ">{children}</main>
         <div className="sm:hidden sticky bottom-0">
           <BottomNav user={user} links={links?.bottom} />
         </div>

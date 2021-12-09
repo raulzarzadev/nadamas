@@ -14,13 +14,51 @@ module.exports = {
     './src/**/*.{js,ts,jsx,tsx}',
     './src/components/**/*.{js}'
   ],
-  darkMode: false, // or 'media' or 'class'
+  darkMode: 'class', // or 'media' or 'class'
   theme: {
+    colors: {
+      primary: {
+        DEFAULT: '#00b7fa',
+        dark: '#094f68'
+      },
+      secondary: {
+        DEFAULT: '#ae83e6',
+        dark: '#173e4d'
+      },
+      success: {
+        DEFAULT: '#81e686'
+      },
+      danger: {
+        DEFAULT: '#ff443b'
+      },
+      warning: {
+        DEFAULT: '#ffe600'
+      },
+      info: {
+        DEFAULT: '#daf3fc'
+      },
+      dark: {
+        DEFAULT: '#292d33'
+      },
+      light: {
+        DEFAULT: '#bfc8d4'
+      },
+      white: {
+        DEFAULT: '#e9edf3'
+      },
+      black: {
+        DEFAULT: '#242525'
+      }
+    },
+    fontFamily: {
+      sans: ['Graphik', 'sans-serif'],
+      serif: ['Merriweather', 'serif']
+    },
     extend: {}
   },
   variants: {
     extend: {
-      display: ['group-hover', ],
+      display: ['group-hover'],
       opacity: ['disabled'],
       backgroundColor: ['checked', 'checked-sibiling'],
       borderColor: ['checked'],

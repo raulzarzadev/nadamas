@@ -1,11 +1,7 @@
 import { useAuth } from '@/src/context/AuthContext'
-import useWriteText from '@/src/hooks/useWriteText'
+import Button from '@comps/inputs/Button'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import Button from '@comps/inputs/Button'
-import Cards from './Cards'
-import EventsRow from '@comps/Events/EventsRow'
-import PublicEvents from '@comps/Events/PublicEvents'
 
 export default function Home() {
   const wordsList = ['natación', 'futbol', 'balete']
@@ -18,95 +14,71 @@ export default function Home() {
 
   return (
     <div className="py-6">
-      <h1 className="text-center font-extrabold text-4xl">nadamas</h1>
-      {!user && (
-        <div className="flex justify-end p-2">
-          <div className="w-40">
-            <Button variant="social" onClick={handleToSignup}>
-              Registrate gratis
-            </Button>
-          </div>
-        </div>
-      )}
       <p className="text-center">
-        La <span className='font-bold'>aplicación web</span> para atletas y entrenadores
+        La <span className="font-bold">aplicación web</span> para atletas y
+        entrenadores
       </p>
       <p className="text-center italic font-thin my-2">
         Sin instalar, sin publicidad, donde sea, cuando sea.
       </p>
-      <div className="mt-6">
+      <div className='flex justify-center m-4'  >
+        <Button  label="Registrate" variant="success" onClick={()=>router.push('/signin')} />
+      </div>
+      {/* <div className="mt-6">
         <PublicEvents showNew={true} />
-      </div>
-      <p className="text-center h-4">
-        {/*  <strong className="font-bold ">{text}</strong> */}
-      </p>
-      <div className="flex flex-col justify-center md:max-w-screen-md mx-auto text-2xl">
-        <div className="flex items-center justify-center p-2 gap-2">
-          <div className="relative h-40 w-40 shadow-lg">
-            <Image
-              src="/nadamas/sherTrhophyes.jpeg"
-              layout="fill"
-              objectFit="cover"
-            />
-          </div>
-          <p className="w-2/3 text-right">Guarda y comparte tus logros</p>
-        </div>
-        <div className="flex items-center justify-center p-2 gap-2 ">
-          <p className="w-2/3">Centraliza tu información y la de tu equipo</p>
-          <div className="relative h-40 w-40 shadow-lg">
-            <Image
-              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80"
-              layout="fill"
-              objectFit="cover"
-            />
-          </div>
-        </div>
-        <div className="flex items-center justify-center p-2 gap-2">
-          <div className="relative h-40 w-40 shadow-lg">
-            <Image
-              src="https://images.unsplash.com/photo-1509062522246-3755977927d7?ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8Y2xhc3Nyb29tfGVufDB8fDB8fA%3D%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
-              layout="fill"
-              objectFit="cover"
-            />
-          </div>
-          <p className="w-2/3 text-right">
-            Planea eventos iternos o abiertos, gestionalos y manten el control
-          </p>
-        </div>
-        <div className="flex items-center justify-center p-2 gap-2">
-          <p className="w-2/3">Controla las cuotas y la asistencia</p>
-          <div className="relative h-40 w-40 shadow-lg">
-            <Image
-              src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1172&q=80"
-              layout="fill"
-              objectFit="cover"
-            />
-          </div>
-        </div>
-        <div className="flex items-center justify-center p-2 gap-2">
-          <div className="relative h-40 w-40 shadow-lg">
-            <Image
-              src="https://images.unsplash.com/photo-1600965962361-9035dbfd1c50?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80"
-              layout="fill"
-              objectFit="cover"
-            />
-          </div>
-          <p className="w-2/3 text-right">
-            Planea clases y entrenamientos. Evalúa tu progreso o el de tu equipo
-          </p>
-        </div>
-      </div>
-      {!user && (
-        <div className="">
-          <div className="m-2 my-6">
-            <Button variant="social" onClick={handleToSignup}>
-              Registrate gratis
-            </Button>
-          </div>
-        </div>
-      )}
+      </div> */}
 
-      {/* <Cards/> */}
+      <div className="flex flex-col justify-center md:max-w-screen-md mx-auto text-2xl">
+        <HomeRow
+          image="/nadamas/sherTrhophyes.jpeg"
+          text="Guarda y comparte tus logros"
+          imageSide="right"
+        />
+        <HomeRow
+          image="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80"
+          text="Centraliza tu información y la de tu equipo"
+          imageSide="left"
+        />
+        <HomeRow
+          image="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1172&q=80"
+          text="Controla las cuotas y la asistencia"
+          imageSide="right"
+        />
+        <HomeRow
+          image="https://images.unsplash.com/photo-1600965962361-9035dbfd1c50?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80"
+          text="Planea clases y entrenamientos. Evalúa tu progreso o el de tu equipo"
+          imageSide="left"
+        />
+      </div>
+    </div>
+  )
+}
+
+const HomeRow = ({
+  image = '',
+  imageSide = 'left' || 'right',
+  text = 'Text'
+}) => {
+  const imageIsInleftSide = imageSide === 'left'
+  return (
+    <div
+      className={`flex items-center justify-center flex-col sm:flex-row p-2 ${
+        imageIsInleftSide ? 'flex-col-reverse' : ''
+      }`}
+    >
+      {imageIsInleftSide && (
+        <p className="md:w-2/3 text-center md:text-left">{text}</p>
+      )}
+      <div
+        className={`relative h-56 w-56 shadow-lg md:transform hover:rotate-0 ${
+          imageIsInleftSide ? 'rotate-12' : '-rotate-12'
+        }`}
+      >
+        <Image src={image} layout="fill" objectFit="cover" />
+      </div>
+      {imageSide === 'right' && (
+        <p className="md:w-2/3 text-center md:text-right">{text}</p>
+      )}
     </div>
   )
 }

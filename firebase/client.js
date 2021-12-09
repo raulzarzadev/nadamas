@@ -75,7 +75,6 @@ const createNewUser = async (user) => {
       return formatResponse(true, 'USER_CREATED', res)
     })
     .catch((err) => formatResponse(false, 'USER_CREATED_ERROR', err))
-  console.log(`res`, res)
   return user
 }
 

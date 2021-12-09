@@ -16,11 +16,12 @@ export default function Button({
 }) {
   const router = useRouter()
   const style = {
-    social: 'bg-blue-500 ',
-    primary: 'bg-blue-500',
-    secondary: 'bg-green-500',
+    social: 'bg-primary dark:bg-secondary text-dark dark:text-light ',
+    primary: 'bg-primary',
+    secondary: 'bg-secondary',
+    success: 'bg-success text-dark',
     disabled: 'opacity-50 shadow-none ',
-    danger: `bg-red-600 `
+    danger: `bg-danger `
   }
   const sizing = {
     xs: `py-0 px-1`,
@@ -36,6 +37,7 @@ export default function Button({
       {...rest}
       disabled={disabled || loading}
       className={`
+      uppercase
       items-center
       shadow-lg 
       hover:shadow-none 
@@ -52,7 +54,7 @@ export default function Button({
       ${disabled ? style.disabled : ''}
       ${style[variant]}
       ${sizing[size]}
-      ${fullWidth ? 'w-full' : 'min-w-min'}
+      ${fullWidth ? 'w-full' : 'w-min'}
       ${iconOnly && ` p-0  rounded-full w-min border`}
       `}
     >
