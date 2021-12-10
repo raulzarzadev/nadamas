@@ -30,20 +30,19 @@ const RequestAthleteRow = ({
   const { athlete } = useAthlete(athleteId)
   if (athlete === undefined) return <Loading />
   return (
-    <div key={athlete?.id} className="flex justify-evenly">
-      <div>{athlete?.name || ''}</div>
-      {console.log(`athlete`, athlete)}
-      <div className="flex">
-        <Button
+    <div key={athlete?.id} className="flex my-2 p-1">
+      <div className='truncate w-1/2 text-left'>{athlete?.name || ''}</div>
+      <div className=" flex justify-evenly w-1/2">
+       <Button
           size="xs"
-          variant=""
+          variant=''
           onClick={() => onRejectRequest(athlete.id)}
         >
           Declinar
         </Button>
-        <Button size="xs" onClick={() => onAcceptRequest(athlete.id)}>
+        <Button variant='success' size="xs" onClick={() => onAcceptRequest(athlete.id)}>
           Aceptar
-        </Button>
+        </Button> 
       </div>
     </div>
   )

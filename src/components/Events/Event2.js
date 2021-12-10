@@ -89,7 +89,7 @@ const EventDetails = ({ event, isOwner, athleteId }) => {
       </h3>
 
       {isOwner && (
-        <div cxlassName="m-2 shadow-lg p-1 bg-secondary">
+        <div className="m-2 shadow-lg p-1 bg-secondary rounded-md">
           <AdminActions eventId={event.id} />
           <ManageEvent event={event} />
         </div>
@@ -146,7 +146,7 @@ const AdminActions = ({ eventId }) => {
   }
 
   return (
-    <>
+    <div className='grid gap-2'>
       <Button
         label="Eliminar"
         variant="danger"
@@ -172,7 +172,7 @@ const AdminActions = ({ eventId }) => {
         open={openDelete}
         handleDelete={handleDelete}
       />
-    </>
+    </div>
   )
 }
 const ManageEvent = ({ event }) => {
@@ -203,7 +203,7 @@ const ManageEvent = ({ event }) => {
           handleRemoveMember={handleRemoveMember}
         />
       </Section>
-      <Section title={`Solicitudes (${event?.requests?.length || 0})`}>
+      <Section title={`Solicitudes (${event?.requests?.length || 0})`} indent={false}>
         <RequestRows
           athletesIds={event?.requests}
           onAcceptRequest={handleAccepRequest}

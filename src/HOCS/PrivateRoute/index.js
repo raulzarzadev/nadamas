@@ -12,16 +12,15 @@ export default function PrivateRoute({
 }) {
   const router = useRouter()
   const { user } = useAuth()
-  const [userData, setUserData] = useState(undefined)
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     if (user) {
-      setUserData(user)
       setLoading(false)
     } else {
-      // if (user === null) router.replace('/')
+      if (user === null) router.replace('/')
     }
   }, [user])
+
 
   if (!user && mustBeAuthenticated) return <MustBeAuthenticated />
   if (!user?.coach && mustBeCoach) return <MustBeAuthenticated asCoach />

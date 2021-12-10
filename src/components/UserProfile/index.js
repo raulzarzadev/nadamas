@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import Section from '../Section'
-import Text from '@comps/inputs/Text'
 import Loading from '@comps/Loading'
 
 import TeamsList from '@comps/Teams/TeamsList.js'
@@ -27,13 +25,13 @@ export default function UserProfile() {
 
 const CoachSection = ({ coachId }) => (
   <div>
-    <Section title="Eventos" indent={false} open>
+    <Section title="Eventos organizados" indent={false} >
       <CoachEvents coachId={coachId} />
     </Section>
-    <Section title="Equipos" indent={false} open>
+    <Section title="Mis equipos" indent={false} >
       <TeamsList coachId={coachId} />
     </Section>
-    <Section title="Horario" indent={false}>
+    <Section title="Mi horario" indent={false}>
       <CoachSchedule coachId={coachId} />
     </Section>
   </div>

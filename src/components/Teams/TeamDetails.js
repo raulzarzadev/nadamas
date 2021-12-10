@@ -1,4 +1,3 @@
-import { getAthlete } from '@/firebase/athletes'
 import {
   acceptTeamRequest,
   getTeam,
@@ -30,11 +29,6 @@ export default function TeamDetails() {
   useEffect(() => {
     if (teamId) {
       getTeam(teamId, setTeam)
-      /* .then((res) => {
-          if (res === null) replace(ROUTES.teams.index)
-          setTeam(res)
-        })
-        .catch((err) => console.log('err', err)) */
     }
   }, [teamId])
 

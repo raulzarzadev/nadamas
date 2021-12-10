@@ -38,7 +38,7 @@ const TextEditable = React.forwardRef(
               autoComplete={autoComplete}
               ref={ref}
               type={type}
-              className={`${s.text_input} bg-secondary-dark`}
+              className={` bg-primary-light dark:bg-secondary-dark w-full `}
               placeholder={placeholder || label}
               name={name}
               value={value || ''}
@@ -55,7 +55,7 @@ const TextEditable = React.forwardRef(
                 e.preventDefault()
                 click()
               }}
-              className={`${s.text_input}  flex justify-center items-center bg-primary-dark`}
+              className={`  flex justify-center items-center w-full `}
             >
               {value}
               <div className="ml-2">
@@ -81,7 +81,5 @@ const TextEditable = React.forwardRef(
     )
   }
 )
-
-
 
 export default TextEditable

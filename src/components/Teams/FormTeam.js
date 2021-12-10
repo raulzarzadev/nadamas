@@ -62,21 +62,16 @@ export default function FormTeam({ team = null }) {
         }}
       >
         {dirty && (
-          <div className="sticky top-0 flex p-2 justify-end bg-gray-700">
-            <div className="w-1/2">
-              <Button size="sm ">Guardar</Button>
-            </div>
+          <div className="flex justify-center p-2">
+              <Button size="lg">Guardar</Button>
           </div>
         )}
-        <h3 className="text-center pt-2">
-          {teamAlreadyExist ? 'Equipo' : 'Nuevo equipo'}
-        </h3>
         <div className="flex justify-center items-center">
           <TextEditable
             value={form?.title}
             name="title"
             onChange={handleChange}
-            // label="Nombre del equipo"
+            label={teamAlreadyExist ? 'Equipo' : 'Nuevo equipo'}
           />
         </div>
         <div className="p-2 text-sm">
@@ -87,16 +82,7 @@ export default function FormTeam({ team = null }) {
             onChange={handleSetPublicTeam}
             checked={form?.publicTeam}
           />
-          {form.publicTeam && (
-            <Info
-              text={`Si es público, otras personas podrán verlo, sabrán 
-                      la cantidad de miembros y el nombre del entrenador.  
-                      También podrán solicitar unirse en cualquier momento
-                      `}
-            />
-          )}
         </div>
-        
       </form>
     </div>
   )

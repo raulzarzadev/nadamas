@@ -1,24 +1,6 @@
 
 
-.athlete {
-  background-color: var(--bg-dark);
-  padding: 4px 8px;
-  padding-left: 16px;
-  border-radius: 8px;
-  margin: 4px;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  position: relative;
-}
-.athlete_row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1.5rem;
-  width: 100%;
-}
+
 .athlete_actions {
   display: flex;
   align-items: center;

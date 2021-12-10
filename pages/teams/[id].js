@@ -6,8 +6,7 @@ export default function Details() {
   return (
     <>
       <Head title="Equipos | detalles" />
-      <PrivateRoute >
-        
+      <PrivateRoute >      
         <TeamDetails />
       </PrivateRoute>
     </>

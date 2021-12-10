@@ -24,9 +24,10 @@ export default function Button({
     danger: `bg-danger `
   }
   const sizing = {
-    xs: `py-0 px-1`,
+    xs: `py-0 px-0.5`,
     sm: `py-1 px-2`,
-    md: `py-2 px-4 `
+    md: `py-2 px-4 `,
+    lg:'py-2 px-6'
   }
 
   return (
@@ -38,6 +39,7 @@ export default function Button({
       disabled={disabled || loading}
       className={`
       uppercase
+      px-1
       items-center
       shadow-lg 
       hover:shadow-none 
@@ -49,6 +51,7 @@ export default function Button({
       transform 
       flex 
       justify-evenly
+      text-sm
       
       ${disabled ? style.disabled : ''}
       ${style[variant]}

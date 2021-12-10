@@ -1,7 +1,7 @@
 export default function TeamCard({ onClick, team }) {
   return (
     <button
-      className="bg-gray-600 p-2 rounded-lg shadow-lg w-full"
+      className="bg-primary-light p-2 rounded-lg shadow-lg w-full"
       onClick={(e) => {
         e.preventDefault()
         onClick()

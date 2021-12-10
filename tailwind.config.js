@@ -1,4 +1,5 @@
 const plugin = require('tailwindcss/plugin')
+const { myTheme } = require('./myThemes/theme')
 
 const checkedSiblingPlugin = plugin(function ({ addVariant, e }) {
   addVariant('checked-sibiling', ({ container }) => {
@@ -19,7 +20,8 @@ module.exports = {
     colors: {
       primary: {
         DEFAULT: '#00b7fa',
-        dark: '#094f68'
+        dark: '#094f68',
+        light: '#22c4ff'
       },
       secondary: {
         DEFAULT: '#ae83e6',
@@ -54,9 +56,9 @@ module.exports = {
     fontFamily: {
       sans: ['Graphik', 'sans-serif'],
       serif: ['Merriweather', 'serif']
-    },
-    extend: {}
+    }
   },
+
   variants: {
     extend: {
       display: ['group-hover'],

@@ -1,12 +1,12 @@
-import { getAthlete, getAthleteId, updateAtlete } from '@/firebase/athletes'
+import { getAthleteId, updateAtlete } from '@/firebase/athletes'
 import { updateUser } from '@/firebase/client'
 import { useAuth } from '@/src/context/AuthContext'
 import useEditable from '@/src/hooks/useEditable'
+import { format } from '@/src/utils/Dates'
 import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
 import ContentNotAvailable from '@comps/MainLayout/PageErrors/ContentNotAvailable'
 import Modal from '@comps/Modals/Modal'
-import { format } from 'date-fns'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import SectionPersonal from '../FormAthlete/SectionPersonal'
@@ -60,14 +60,17 @@ export default function FormAthlete({ athleteId = '' }) {
     setOpenAthleteForm(!openAthleteForm)
   }
 
+
   if (!user || form === undefined) return <Loading />
   // ni no es dueño ni entrenador no puede ver el contedio
   // si no es nueño no puede editar
   if (!isOwner && !user?.coach) return <ContentNotAvailable />
   return (
-    <div className="">
-      <Button label="editar" onClick={handleOpenAthleteForm} />
+    <div className='m-2'>
       <Info ahtlete={form} />
+      <div className="flex flex-col justify-center items-center">
+        <Button size='xs' label="editar" onClick={handleOpenAthleteForm} />
+      </div>
       <Modal
         open={openAthleteForm}
         handleOpen={handleOpenAthleteForm}
@@ -88,7 +91,7 @@ const Info = ({
   ahtlete: { name, email, birth, goals, blodType, mobile, lastName }
 }) => {
   return (
-    <div className=" text-center">
+    <div className=" flex flex-col justify-center items-center">
       <div>
         {name} {lastName}
       </div>

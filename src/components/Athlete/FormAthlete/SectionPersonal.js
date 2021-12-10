@@ -27,13 +27,16 @@ export default function SectionPersonal({
 
   return (
     <div className="text-sm">
+      <div className='flex justify-center'>
+
       <ButtonSave
         onClick={() => {
           handleSave()
           setButtonStatus('saved')
         }}
         status={buttonStatus}
-      />
+        />
+        </div>
       <div className="p-2 sm:p-6 grid gap-2 ">
         <TextEditable
           permissionToEdit={isEditable}

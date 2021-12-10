@@ -4,7 +4,6 @@ import { ROUTES } from '@/ROUTES'
 import { TEST_AWARDS } from '@/src/constants/AWARDS'
 import STATUS_EVENT from '@/src/constants/STATUS_EVENT'
 import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
-import useAthlete from '@/src/hooks/useAthlete'
 import { formatInputDate } from '@/src/utils/Dates'
 import { averageRecordSpeed } from '@/src/utils/Records'
 import AthleteTeam from '@comps/Athlete/AthleteTeam'
@@ -17,9 +16,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function AthleteProfile({ athleteId }) {
-  const { athlete } = useAthlete(athleteId)
   const [awards, setAwards] = useState(undefined)
-console.log(`athlete`, athlete)
   useEffect(() => {
     getAthleteAwards(athleteId)
       .then(setAwards)
@@ -81,7 +78,6 @@ console.log(`athlete`, athlete)
         </div>
       </div>
 
-
       <div>
         <Section title="Cuotas" indent={false}>
           <Payments athleteId={athleteId} />
@@ -93,7 +89,6 @@ console.log(`athlete`, athlete)
           <AthleteSchedule athleteId={athleteId} />
         </Section>
       </div>
-
     </div>
   )
 }

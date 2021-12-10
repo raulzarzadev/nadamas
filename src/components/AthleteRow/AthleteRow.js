@@ -58,11 +58,12 @@ export default function AthleteRow({
 
   const [lastPay, setLastPay] = useState(null)
   const { isOwner } = useEditable({ userId: athlete?.userId })
+
   return (
-    <div className={s.athlete_row}>
-      <div className={s.athlete} key={id}>
+    <div className='bg-primary-light dark:bg-secondary-dark flex w-full justify-between relative rounded-md my-1 pl-4 items-center '>
+      <div className='' key={id}>
         {isOwner && (
-          <span className="absolute left-0 top-0 bottom-0 w-3  bg-yellow-500  rounded-lg rounded-r-none transform "></span>
+          <span className="absolute left-0 top-0 bottom-0 w-3  bg-warning rounded-md rounded-r-none transform "></span>
         )}
 
         {weekBirthday && (
@@ -78,7 +79,7 @@ export default function AthleteRow({
         } `}</span>
         {showLastPay && <span className="text-xs">last pay {lastPay}</span>}
       </div>
-      <div className={s.athlete_actions}>
+      <div className="flex justify-evenly items-center">
         {!!displaySetAttendance && (
           <div className="m-1">
             <label
@@ -93,34 +94,34 @@ export default function AthleteRow({
                 name="attendance"
                 type="checkbox"
               />
-              <span className="text-sm h-8 font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full ">
+              <span className="text-sm h-8 font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-success w-full ">
                 A
               </span>
             </label>
           </div>
         )}
-        <div className="m-1" /* className={s.athlete_action} */>
+        <div className="m-1">
           <Button
             size="sm"
             disabled={!emerMobile}
             onClick={handleOpenEmergencyCall}
             iconOnly
           >
-            <EmergencyIcon size="1rem" className="text-red-500" />
+            <EmergencyIcon size="1rem" className="text-danger" />
           </Button>
         </div>
-        <div className="m-1" /* className={s.athlete_action} */>
+        <div className="m-1">
           <Button
             size="sm"
             disabled={!mobile}
             href={`https://wa.me/521${mobile}?text=${wstext}`}
             iconOnly
           >
-            <ContactIcon size="1rem" />
+            <ContactIcon size="1rem" className="" />
           </Button>
         </div>
         {coachView && (
-          <div className="m-1" /* className={s.athlete_action} */>
+          <div className="m-1">
             <Button
               size="sm"
               iconOnly

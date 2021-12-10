@@ -1,13 +1,9 @@
 .text_input {
   padding: 4px;
   border: none;
-  border-radius: 5px;
-  font-size: 1.2rem;
   width: 100%;
 }
-.text_input_not_editable{
-  
-}
+
 .text_area {
   resize: none;
 }
