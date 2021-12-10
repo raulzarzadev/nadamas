@@ -131,7 +131,7 @@ const AdminActions = ({ eventId }) => {
   const handleDelete = () => {
     removeEvent(eventId)
       .then((res) => {
-        back()
+        router.back()
         console.log(`res`, res)
       })
       .catch((err) => console.log(`err`, err))

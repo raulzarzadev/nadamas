@@ -10,16 +10,14 @@ export default function Athletes() {
     <div className="max-w-xl mx-auto">
       <h3 className="text-center font-bold text-lg">Todos los atletas</h3>
       {/* LISTA DE ATLETAS */}
-      <div className="flex w-32 mx-auto">
+      <div className="flex justify-center">
         <Button
-          size="xs"
+          size="sm"
           variant="secondary"
           onClick={() => router.push('/athletes/new')}
         >
-          <div className="flex flex-col items-center">
-            <AddPersonIcon />
-            Nuevo Atleta
-          </div>
+          <div className="truncate ">Nuevo Atleta</div>
+          <AddPersonIcon />
         </Button>
       </div>
 

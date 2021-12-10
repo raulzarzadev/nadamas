@@ -48,22 +48,20 @@ export default function FormEvent({ event, discard = () => {} }) {
     reset()
     discard()
   }
-  console.log(`watch()`, watch())
 
   return (
     <div className="max-w-sm mx-auto p-2 grid gap-2 relative">
-     
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className=" grid grid-flow-col grid-cols-2 gap-3 py-3 sticky top-0 z-10 bg-gray-700 mb-2">
+        <div className=" flex justify-evenly py-2 sticky top-0 z-10 bg-primary dark:bg-primary-dark mb-2">
           {discard && (
-            <Button
-              variant="secondary"
-              label="Descartar cambios"
+            <Button size='sm'
+              variant=""
+              label="Descartar"
               type="button"
               onClick={handleDiscard}
             />
           )}
-          <Button type="submit" label="Guardar" />
+          <Button size='sm' type="submit" label="Guardar" variant='success'/>
         </div>
 
         <div className="grid gap-2">
@@ -76,7 +74,7 @@ export default function FormEvent({ event, discard = () => {} }) {
             />
           </label>
           <div>
-            <h3>Estatus</h3>
+            <h3>Estatus del evento</h3>
             <div className="grid gap-2 grid-flow-col">
               <label>
                 En marcha

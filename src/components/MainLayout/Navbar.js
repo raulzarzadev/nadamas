@@ -8,33 +8,48 @@ export default function Navbar({ links = [] }) {
   const { user } = useAuth()
 
   return (
-    <div className="bg-secondary dark:bg-secondary-dark  pb-0 flex justify-between">
+    <div className="bg-secondary dark:bg-secondary-dark  pb-0 flex justify-between items-center">
       <div className="flex w-1/6 justify-center items-center p-1">
-        <Link href="/">
-          <>
-            <div className="relative w-72 h-8 hidden md:block">
+        <div className="relative w-full h-8 hidden md:block">
+          <Link href="/">
+            <>
               <Image
                 src="/nadamas/logo-2.png"
                 layout="fill"
                 objectFit="contain"
                 priority={true}
               />
-            </div>
-            {/* <div className="relative w-72 h-8  md:hidden ">
+              {/* <div className="relative w-72 h-8  md:hidden ">
               <Image
-                priority={true}
-                src="/nadamas/logo-3.png"
-                layout="fill"
-                objectFit="contain"
+              priority={true}
+              src="/nadamas/logo-3.png"
+              layout="fill"
+              objectFit="contain"
               />
             </div> */}
-          </>
-        </Link>
+            </>
+          </Link>
+        </div>
+        <div className="relative w-72 h-8  md:hidden ">
+          <Link href="/">
+            <Image
+              priority={true}
+              src="/nadamas/logo-3.png"
+              layout="fill"
+              objectFit="contain"
+            />
+          </Link>
+        </div>
       </div>
-      <div className="hidden sm:flex w-full  justify-start items-center  px-1 ">
+      <div className=" sm:flex w-full  justify-start items-center  px-1 ">
         <ul className="flex items-center">
           <li>
-            <Link href="/">saber más</Link>
+            <Link href="/events">
+              <div className="relative ">
+                Eventos
+                <div className="absolute -top-1 -right-3 bg-warning h-3 w-3 rounded-full animate-bounce"></div>
+              </div>
+            </Link>
           </li>
         </ul>
       </div>
