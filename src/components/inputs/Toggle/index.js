@@ -42,10 +42,10 @@ export default function Toggle({
             name={name}
           />
           <div
-            className={`block bg-gray-600 ${sizign[size].container} rounded-full`}
+            className={`block bg-secondary-dark ${sizign[size].container} rounded-full`}
           ></div>
           <div
-            className={`checked-sibiling:bg-green-500 transform checked-sibiling:translate-x-full  absolute left-1 top-0 bg-white ${sizign[size].circle} rounded-full transition`}
+            className={`checked-sibiling:bg-success transform checked-sibiling:translate-x-full  absolute left-1 top-0 bg-white ${sizign[size].circle} rounded-full transition`}
           ></div>
         </div>
       </label>

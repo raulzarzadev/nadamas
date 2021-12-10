@@ -26,7 +26,7 @@ export default function SectionPersonal({
   const [buttonStatus, setButtonStatus] = useState('clean')
 
   return (
-    <Section indent={false} title="Informacion personalss">
+    <div className="text-sm">
       <ButtonSave
         onClick={() => {
           handleSave()
@@ -34,7 +34,7 @@ export default function SectionPersonal({
         }}
         status={buttonStatus}
       />
-      <div className="p-2 sm:p-6 grid gap-2">
+      <div className="p-2 sm:p-6 grid gap-2 ">
         <TextEditable
           permissionToEdit={isEditable}
           value={form?.name}
@@ -85,6 +85,6 @@ export default function SectionPersonal({
 
       {/* ----------------------------------------------Emergency contact */}
       <SectionEmergency form={form} setForm={setForm} />
-    </Section>
+    </div>
   )
 }

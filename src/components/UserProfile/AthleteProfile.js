@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react'
 export default function AthleteProfile({ athleteId }) {
   const { athlete } = useAthlete(athleteId)
   const [awards, setAwards] = useState(undefined)
-
+console.log(`athlete`, athlete)
   useEffect(() => {
     getAthleteAwards(athleteId)
       .then(setAwards)
@@ -44,7 +44,7 @@ export default function AthleteProfile({ athleteId }) {
   return (
     <div className="max-w-xl mx-auto ">
       <div>
-        <h3 className="font-bold text-xl">Premios</h3>
+        <h3 className="font-bold text-md">Premios</h3>
         <div className="flex ">
           {awards?.resultsAwards?.map((result) => (
             <AwardsCard key={result.id} result={result} />
@@ -52,7 +52,7 @@ export default function AthleteProfile({ athleteId }) {
         </div>
       </div>
       <div>
-        <h3 className="font-bold text-xl">Pruebas</h3>
+        <h3 className="font-bold text-md">Pruebas</h3>
 
         <div className="grid grid-flow-col overflow-auto gap-5 px-5 py-2">
           {eventResults?.map((result) => (
@@ -62,7 +62,7 @@ export default function AthleteProfile({ athleteId }) {
       </div>
 
       <div>
-        <h3 className="font-bold text-xl">Eventos</h3>
+        <h3 className="font-bold text-md">Eventos</h3>
         <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
           {athleteEvents.map((event) => (
             <EventCard key={event.id} event={event} athleteId={athleteId} />
@@ -71,11 +71,16 @@ export default function AthleteProfile({ athleteId }) {
       </div>
 
       <div>
-        <h3 className="font-bold text-xl">Equipos</h3>
+        <FormAthlete athleteId={athleteId} />
+      </div>
+
+      <div>
+        <h3 className="font-bold text-md">Equipos</h3>
         <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
           <AthleteTeam />
         </div>
       </div>
+
 
       <div>
         <Section title="Cuotas" indent={false}>
@@ -89,10 +94,6 @@ export default function AthleteProfile({ athleteId }) {
         </Section>
       </div>
 
-      <div>
-        <h3 className="font-bold text-xl">Información</h3>
-        <FormAthlete athleteId={athleteId} />
-      </div>
     </div>
   )
 }
@@ -186,7 +187,7 @@ const AwardPin = ({ award, size = 'md' }) => {
   }
   return (
     <div
-      className={`${sizign[size]} m-2 bg-gray-600 text-yellow-400  border rounded-full border-yellow-300 p-1 flex justify-center items-center`}
+      className={`${sizign[size]} m-2 text-warning  border rounded-full border-yellow-300 p-1 flex justify-center items-center`}
     >
       {TEST_AWARDS[award].icon}
     </div>

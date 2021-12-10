@@ -20,7 +20,7 @@ export default function Autocomplete({
     <span className={s.input_label}>
       {label && value && `${label} :`}
       <ReactAutocomplete
-        inputProps={{ className: s.text_input, placeholder, name }}
+        inputProps={{ className: `${s.text_input} bg-primary-dark`, placeholder, name }}
         getItemValue={(item) => item.label}
         onChange={onChange}
         value={value}
@@ -29,7 +29,7 @@ export default function Autocomplete({
         menuStyle={{
           borderRadius: '3px',
           boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
-          background: 'rgba(255, 255, 255, 0.9)',
+          background: 'rgba(122, 122, 122)',
           padding: '2px 0',
           fontSize: '90%',
           position: 'fixed',

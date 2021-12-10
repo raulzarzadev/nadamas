@@ -9,13 +9,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-trans);
+  background-color: #0009;
   cursor: default;
   z-index: 999;
   
 }
 .modal_dialog {
-  background-color: var(--bg-main);
   min-width: 200px;
   min-height: 200px;
   border-radius: 8px;

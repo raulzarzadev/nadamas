@@ -1,5 +1,5 @@
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
-import Event from '@comps/Events/Event'
+import Event from '@comps/Events/Event2'
 import { Head } from '@comps/Head'
 
 export default function DetailsEvents() {

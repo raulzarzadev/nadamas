@@ -39,3 +39,5 @@ export function simpleDate(date = new Date()) {
   const dateYear = date.getFullYear()
   return new Date(dateYear, dateMonth, dateDay)
 }
+
+

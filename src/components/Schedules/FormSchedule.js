@@ -56,7 +56,7 @@ export default function FormSchedule({ schedule, setSchedule, coach }) {
                 {dayLabels[day]}
                 <div className="flex justify-center">
                   <select
-                    className=" bg-gray-500 p-1 m-2 text-lg w-full rounded"
+                    className=" bg-secondary-dark p-1 m-2 text-lg w-full rounded"
                     name={day}
                     value={form[day]?.[0]}
                     onChange={handleChange}

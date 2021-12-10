@@ -5,23 +5,13 @@ import Text from '@comps/inputs/Text'
 import Loading from '@comps/Loading'
 
 import TeamsList from '@comps/Teams/TeamsList.js'
-import FormAthlete from '@comps/Athlete/FormAthlete'
 import CoachSchedule from '@comps/Schedules/CoachSchedule'
 import CoachEvents from '@comps/Events/CoachEvents'
 import AthleteProfile from './AthleteProfile'
 
 export default function UserProfile() {
   const { user } = useAuth()
-  const [form, setForm] = useState({})
-  const handleChange = ({ target: { value, name } }) => {
-    setForm({ ...form, [name]: value })
-  }
 
-  useEffect(() => {
-    if (user) {
-      setForm(user)
-    }
-  }, [user])
 
   if (!user) return <Loading />
 
@@ -33,13 +23,7 @@ export default function UserProfile() {
   )
 }
 
-const AthleteSection = ({ athleteId }) => {
-  return (
-    <div className="text-center">
-      <FormAthlete athleteId={athleteId} />
-    </div>
-  )
-}
+
 
 const CoachSection = ({ coachId }) => (
   <div>

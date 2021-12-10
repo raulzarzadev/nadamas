@@ -3,14 +3,13 @@ import { useEffect, useState } from 'react'
 import ButtonJoinEvent from '../ButtonJoinEvent'
 import Link from 'next/link'
 import { getPublicEvents } from '@/firebase/events'
-import { format, formatInputDate } from '@/src/utils/Dates'
-import EventsRow from '../EventsRow'
+import { formatInputDate } from '@/src/utils/Dates'
 import { ROUTES } from '@/ROUTES'
 import Loading from '@comps/Loading'
 import UpcomingEvents from './UpcomingEvents'
-import Info from '@comps/Alerts/Info'
 import MustBeAuthenticated from '@comps/MainLayout/PageErrors/MustBeAuthenticated'
 import EventStatus from '../EventStatus'
+import Image from 'next/image'
 export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
   const { user } = useAuth()
@@ -56,20 +55,33 @@ const Event = ({ event }) => {
   if (!event || !user) return <Loading />
   return (
     <Link href={ROUTES.events.details(event.id)}>
-      <a className="  mx-auto hover:border-gray-200 border shadow-lg border-gray-500 flex flex-col  w-full rounded text-center justify-between p-1">
-        <div className="relative">
-          <EventStatus status={event.status} />
+      <a className="relative bg-secondary dark:bg-secondary-dark hover:border-primary border-2 border-transparent mx-auto  shadow-lg  flex flex-col  w-full rounded text-center justify-between ">
+        <div className="absolute top-0 right-0 left-0 bottom-0   bg-primary opacity-20">
+          <Image
+            src={event.image}
+            layout="fill"
+            objectFit="cover"
+            className=""
+          />
         </div>
-        <div>
+        <header className="relative " className="p-0.5">
           <h5 className="font-bold  text-base ">{event?.title}</h5>
           <div className="font-bold text-xs">
             {formatInputDate(event?.date, 'dd MMM yy')}
           </div>
-        </div>
-        <p style={{minHeight:'50px'}} className="max-h-36   overflow-auto whitespace-pre-wrap truncate">
-          {event?.description}
-        </p>
-        <ButtonJoinEvent athleteId={user?.athleteId} event={event} />
+          <EventStatus status={event.status} />
+        </header>
+        <main className="p-0.5">
+          <p
+            style={{ minHeight: '50px' }}
+            className="max-h-36   overflow-auto whitespace-pre-wrap truncate"
+          >
+            {event?.description}
+          </p>
+        </main>
+        <footer className="flex justify-center p-2">
+          <ButtonJoinEvent athleteId={user?.athleteId} event={event} />
+        </footer>
       </a>
     </Link>
   )

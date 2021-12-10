@@ -70,7 +70,7 @@ export default function FormEvent({ event, discard = () => {} }) {
           <label>
             Evento público
             <input
-              className="bg-gray-600"
+              className="bg-secondary-dark p-1"
               {...register('publicEvent')}
               type="checkbox"
             />
@@ -112,13 +112,13 @@ export default function FormEvent({ event, discard = () => {} }) {
               </label>
             </div>
           </div>
-          <input className="bg-gray-600" {...register('title')} />
+          <input className="bg-secondary-dark p-1" {...register('title')} />
           <textarea
             rows={10}
-            className="bg-gray-600 resize-none"
+            className="bg-secondary-dark p-1 resize-none"
             {...register('description')}
           />
-          <input className="bg-gray-600" {...register('date')} type="date" />
+          <input className="bg-secondary-dark p-1" {...register('date')} type="date" />
           <div></div>
         </div>
       </form>

@@ -41,7 +41,6 @@ export default function Button({
       items-center
       shadow-lg 
       hover:shadow-none 
-      text-white 
       w-full  
       rounded-md 
       transition-colors 

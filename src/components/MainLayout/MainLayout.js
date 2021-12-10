@@ -26,17 +26,22 @@ export default function MainLayout({ children }) {
           content="Una aplicación para entrenadores y administradores de actividades deportivas. Mantén la información importante de tus atletas centralizada y organizada. Saca el máximo provecho de tus atletas con estadísticas que te ayudan a planear un mejor entrenamiento personalizado."
         ></meta>
       </Head>
-      <div>
-        <Navbar links={links?.nav} />
-        <main className="
-        bg-primary dark:bg-primary-dark min-h-screen pb-10 ">{children}</main>
-        <div className="sm:hidden sticky bottom-0">
-          <BottomNav user={user} links={links?.bottom} />
-        </div>
-        <div className="hidden sm:block bottom-0">
-          <Footer />
-        </div>
-      </div>
+      <>
+        <header>
+          <Navbar links={links?.nav} />
+        </header>
+        <main className="bg-primary dark:bg-primary-dark min-h-screen pb-10">
+          <div className="max-w-lg mx-auto">{children}</div>
+        </main>
+        <footer>
+          <div className="sm:hidden sticky bottom-0">
+            <BottomNav user={user} links={links?.bottom} />
+          </div>
+          <div className="hidden sm:block bottom-0">
+            <Footer />
+          </div>
+        </footer>
+      </>
     </>
   )
 }

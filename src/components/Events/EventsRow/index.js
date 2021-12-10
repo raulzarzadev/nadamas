@@ -36,7 +36,6 @@ export default function EventsRow({ events = [], showNew = false }) {
 const EventSmallCard = ({ event, handleClickEvent }) => {
   const msDia = 86400000
   const last5Days = event.date - new Date().getTime() < 5 * msDia
-  console.log(`lastDays`, last5Days)
   return (
     <button
       style={{ backgroundImage: `url(${event.image})` }}
@@ -44,14 +43,14 @@ const EventSmallCard = ({ event, handleClickEvent }) => {
       onClick={() => handleClickEvent(event.id)}
     >
       {last5Days && (
-        <div className="absolute top-14 right-5 transform -rotate-45  bg-red-500 px-1 rounded-xl">
+        <div className="absolute top-14 right-5 transform -rotate-45  bg-danger p-0.5 px-2 rounded-full">
           Ultimos Dias
         </div>
       )}
-      <div className="text-center bg-red-400 rounded rounded-b-none w-full">
+      <div className="text-center bg-primary rounded rounded-b-none w-full">
         {formatInputDate(event?.date, 'dd MMM yy')}
       </div>
-      <div className="px-1 text-center text-xs w-full rounded-b-sm bg-gray-600">
+      <div className="px-1 text-center text-xs w-full rounded-b-sm bg-primary">
         {event.title}
       </div>
     </button>

@@ -8,19 +8,19 @@ export default function EventStatus({ status = 'RUNNING' }) {
   const EVENT_STATUS = {
     RUNNING: {
       label: 'En marcha',
-      color: 'bg-green-500'
+      color: 'bg-success'
     },
     FINISH: {
       label: 'Finalizado',
-      color: 'bg-blue-400'
+      color: 'bg-primary'
     },
     CANCEL: {
       label: 'Cancelado',
-      color: 'bg-red-600'
+      color: 'bg-danger'
     },
     FULL: {
       label: 'Sin lugares',
-      color: 'bg-purple-400'
+      color: 'bg-secondary'
     }
   }
   return (

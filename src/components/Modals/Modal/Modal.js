@@ -17,11 +17,14 @@ export default function Modal({
   }, [open])
   return (
     <div
-      className={styles.modal}
+      className={`${styles.modal}`}
       id={`modal-${title}`}
       style={{ display: !open && 'none' }}
     >
-      <div id="modal" className={styles.modal_dialog}>
+      <div
+        id="modal"
+        className={`${styles.modal_dialog} bg-light dark:bg-primary-dark`}
+      >
         <header className={styles.modal_header}>
           <div className={styles.modal_title}>
             <h5>{title}</h5>

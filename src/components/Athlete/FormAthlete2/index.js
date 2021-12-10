@@ -2,8 +2,11 @@ import { getAthlete, getAthleteId, updateAtlete } from '@/firebase/athletes'
 import { updateUser } from '@/firebase/client'
 import { useAuth } from '@/src/context/AuthContext'
 import useEditable from '@/src/hooks/useEditable'
+import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
 import ContentNotAvailable from '@comps/MainLayout/PageErrors/ContentNotAvailable'
+import Modal from '@comps/Modals/Modal'
+import { format } from 'date-fns'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import SectionPersonal from '../FormAthlete/SectionPersonal'
@@ -44,7 +47,7 @@ export default function FormAthlete({ athleteId = '' }) {
           }
         }
       })
-      .catch((err) => console.log(`err`, err)) 
+      .catch((err) => console.log(`err`, err))
   }
 
   const { isOwner, isThemCoach } = useEditable({
@@ -52,13 +55,47 @@ export default function FormAthlete({ athleteId = '' }) {
     coachId: form?.coachId
   })
 
+  const [openAthleteForm, setOpenAthleteForm] = useState()
+  const handleOpenAthleteForm = () => {
+    setOpenAthleteForm(!openAthleteForm)
+  }
+
   if (!user || form === undefined) return <Loading />
   // ni no es dueño ni entrenador no puede ver el contedio
   // si no es nueño no puede editar
   if (!isOwner && !user?.coach) return <ContentNotAvailable />
   return (
-    <div>
-      <SectionPersonal handleSave={handleSubmit} form={form} setForm={setForm} isEditable={true} />
+    <div className="">
+      <Button label="editar" onClick={handleOpenAthleteForm} />
+      <Info ahtlete={form} />
+      <Modal
+        open={openAthleteForm}
+        handleOpen={handleOpenAthleteForm}
+        title="Editar atleta"
+      >
+        <SectionPersonal
+          handleSave={handleSubmit}
+          form={form}
+          setForm={setForm}
+          isEditable={true}
+        />
+      </Modal>
+    </div>
+  )
+}
+
+const Info = ({
+  ahtlete: { name, email, birth, goals, blodType, mobile, lastName }
+}) => {
+  return (
+    <div className=" text-center">
+      <div>
+        {name} {lastName}
+      </div>
+      <div>{email}</div>
+      <div>{format(birth, 'dd MMM yy')}</div>
+      <div>{mobile}</div>
+      <div>{blodType}</div>
     </div>
   )
 }

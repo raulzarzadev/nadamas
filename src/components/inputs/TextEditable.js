@@ -38,7 +38,7 @@ const TextEditable = React.forwardRef(
               autoComplete={autoComplete}
               ref={ref}
               type={type}
-              className={s.text_input}
+              className={`${s.text_input} bg-secondary-dark`}
               placeholder={placeholder || label}
               name={name}
               value={value || ''}
@@ -55,7 +55,7 @@ const TextEditable = React.forwardRef(
                 e.preventDefault()
                 click()
               }}
-              className={`${s.text_input} ${s.text_input_not_editable} flex justify-center items-center`}
+              className={`${s.text_input}  flex justify-center items-center bg-primary-dark`}
             >
               {value}
               <div className="ml-2">
@@ -82,28 +82,6 @@ const TextEditable = React.forwardRef(
   }
 )
 
-function useSingleAndDoubleClick(
-  actionSimpleClick,
-  actionDoubleClick,
-  delay = 250
-) {
-  const [click, setClick] = useState(0)
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // simple click
-      if (click === 1) actionSimpleClick()
-      setClick(0)
-    }, delay)
-
-    // the duration between this click and the previous one
-    // is less than the value of delay = double-click
-    if (click === 2) actionDoubleClick()
-
-    return () => clearTimeout(timer)
-  }, [click])
-
-  return () => setClick((prev) => prev + 1)
-}
 
 export default TextEditable

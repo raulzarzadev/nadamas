@@ -48,7 +48,8 @@ module.exports = {
       },
       black: {
         DEFAULT: '#242525'
-      }
+      },
+      transparent: 'rgb(0,0,0,0)'
     },
     fontFamily: {
       sans: ['Graphik', 'sans-serif'],

@@ -3,11 +3,13 @@ import {
   athleteSendRequestEvent,
   athleteUnjoinEvent
 } from '@/firebase/events'
+import { ROUTES } from '@/ROUTES'
 import { formatInputDate } from '@/src/utils/Dates'
 import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
 import { addDays, formatDistanceToNow } from 'date-fns'
+import router from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function ButtonJoinEvent({ athleteId, event }) {
@@ -70,6 +72,15 @@ export default function ButtonJoinEvent({ athleteId, event }) {
         console.log('solicitud rechada')
       }
     },
+    eventFinished: {
+      type: 'EVENT_FINISHED',
+      label: 'Evento finalizado. Ver resultados',
+      buttonVariant:'success',
+      handleClick: () => {
+        router.push(ROUTES.events.results(event.id))
+        console.log('solicitud rechada')
+      }
+    },
     alreadyIn: function (participant) {
       return {
         type: 'ALREDY_JOINED',
@@ -85,6 +96,7 @@ export default function ButtonJoinEvent({ athleteId, event }) {
       return REQUEST_STATUS.whatingRes
     } else {
     }
+    if(event.status==='FINISH') return REQUEST_STATUS.eventFinished
     const participant = event?.participants?.find(({ id }) => id === athleteId)
     if (participant) {
       return REQUEST_STATUS.alreadyIn(participant)
@@ -101,27 +113,25 @@ export default function ButtonJoinEvent({ athleteId, event }) {
   const handleOpenUnjoin = () => {
     setOpenUnjoin(!openUnjoin)
   }
-  console.log(`event.status`, event.status)
+ 
 
   return (
-    <div>
+    <div className="flex justify-center">
       {alert && (
         <div className="absolute top-0 right-0 left-0 bottom-0 flex items-center justify-center z-10">
           <div className="bg-black border-2 rounded-2xl">{alert}</div>
         </div>
       )}
-      {event.status === 'RUNNING' && (
-        <Button
-          variant={responseStatus?.buttonVariant || 'primary'}
-          loading={loading}
-          onClick={async (e) => {
-            e.stopPropagation()
-            e.preventDefault()
-            responseStatus?.handleClick(event.id)
-          }}
-          label={responseStatus?.label}
-        />
-      )}
+      <Button
+        variant={responseStatus?.buttonVariant || 'primary'}
+        loading={loading}
+        onClick={async (e) => {
+          e.stopPropagation()
+          e.preventDefault()
+          responseStatus?.handleClick(event.id)
+        }}
+        label={responseStatus?.label}
+      />
       <Modal
         handleOpen={handleOpenAlreadyIn}
         open={openAlreadyIn}
