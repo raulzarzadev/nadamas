@@ -1,5 +1,4 @@
 const plugin = require('tailwindcss/plugin')
-const { myTheme } = require('./myThemes/theme')
 
 const checkedSiblingPlugin = plugin(function ({ addVariant, e }) {
   addVariant('checked-sibiling', ({ container }) => {
