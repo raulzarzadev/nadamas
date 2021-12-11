@@ -38,7 +38,6 @@ export default function EventsRow({ events = [], showNew = false }) {
 const EventSmallCard = ({ event, handleClickEvent }) => {
   const msDia = 86400000
   const last5Days = event.date - new Date().getTime() < 5 * msDia
-  console.log(`event`, event)
   return (
     <button
       style={{ backgroundImage: `url(${event.image})` }}

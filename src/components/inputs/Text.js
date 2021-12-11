@@ -21,14 +21,14 @@ const Text = React.forwardRef(
     ref
   ) => {
     return (
-      <span className={s.input_label}>
+      <span className="">
         {label && value && `${label} :`}
-        <div className={s.icon_container}>
+        <div className="">
           <input
             ref={ref}
             autoComplete={autoComplete}
             type={type}
-            className={s.text_input}
+            className="p-1 bg-secondary-dark rounded-lg text-white "
             placeholder={placeholder || label}
             name={name}
             value={value || ''}
@@ -39,7 +39,7 @@ const Text = React.forwardRef(
           </input>
           {Icon && (
             <button
-              className={s.icon}
+              className=''
               onClick={(e) => {
                 e.preventDefault()
                 onClickIcon()
@@ -49,7 +49,7 @@ const Text = React.forwardRef(
             </button>
           )}
         </div>
-        <em className={s.input_error}>{error}</em>
+        <em className="">{error}</em>
       </span>
     )
   }

@@ -13,6 +13,7 @@ import Autocomplete from '@comps/inputs/TextAutocomplete'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { addEventResult } from '@/firebase/events'
 
 const swimmingStyles = [
   {
@@ -63,11 +64,7 @@ const distances = [
     id: '800'
   }
 ]
-export default function FormRecord({
-  searchAthlete,
-  record,
-  callback = () => {}
-}) {
+export default function FormRecord({ searchAthlete, record, personalRecord }) {
   useEffect(() => {
     if (record) {
       setForm(record)
@@ -77,8 +74,15 @@ export default function FormRecord({
   const [form, setForm] = useState({ date: new Date() })
   const router = useRouter()
   const [athleteId, setAthleteId] = useState('')
+  const { search } = router?.query
   useEffect(() => {
-    setAthleteId(router?.query?.search)
+    if (search) setAthleteId(search)
+  }, [])
+
+  const { user } = useAuth()
+  useEffect(() => {
+    if (personalRecord)
+      handleChangeAthlete({ id: user.athleteId, name: user.name })
   }, [])
 
   const handleChangeDistance = ({ target }) => {
@@ -94,7 +98,7 @@ export default function FormRecord({
         athleteId,
         athlete: {
           id: athlete.id,
-          name: `${athlete?.name} ${athlete?.lastName}`
+          name: `${athlete?.name || ''} ${athlete?.lastName || ''}`
         }
       })
     } else {
@@ -104,7 +108,6 @@ export default function FormRecord({
   const handleChangeDate = ({ target }) => {
     setForm({ ...form, date: target.value })
   }
-  console.log(`form`, form)
   const [saving, setSaving] = useState(false)
 
   const handleRemoveRecord = (id) => {
@@ -116,13 +119,20 @@ export default function FormRecord({
       .catch((err) => console.log(`err`, err))
   }
   const handleAddRecord = async (newRecord) => {
-    setSaving(true)
-    await createOrUpdateRecord({
-      ...newRecord,
-      athleteId: newRecord.athlete.id
-    })
-      .then((res) => console.log('res', res))
-      .catch((err) => console.log('err', err))
+    console.log(`newRecord`, newRecord)
+    const { distance, record, style, athlete } = newRecord
+    const resultData = {
+      eventData: null,
+      athleteId: athlete.id,
+      athleteData: {
+        ...newRecord.athlete
+      },
+      test: { distance, record, style },
+      date: new Date()
+    }
+    addEventResult(resultData)
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
     setSaving(false)
   }
   const handleSetRecord = (field, value) => {
@@ -143,9 +153,7 @@ export default function FormRecord({
 
   return (
     <div className="max-w-sm mx-auto pt-3 p-1">
-      <h3 className="font-bold text-2xl text-center my-3">
-        Detalles de prueba
-      </h3>
+      <h3 className="font-bold text-2xl text-center ">Detalles de prueba</h3>
       {searchAthlete && (
         <SearchAthletes
           athleteSelected={athleteId}
@@ -153,7 +161,7 @@ export default function FormRecord({
           AthleteRowResponse={AthleteSimpleRow}
         />
       )}
-      <div className="my-6">
+      <div className="my-2 flex justify-center">
         <Text
           onChange={handleChangeDate}
           name="date"
@@ -197,7 +205,17 @@ export default function FormRecord({
           Tiempo
           <PickerRecord setValue={handleSetRecord} value={form?.record} />
         </div>
-        <div className="grid gap-2">
+        <div className="flex justify-evenly">
+          <Button
+            variant="danger"
+            fullWidth={false}
+            onClick={(e) => {
+              e.preventDefault()
+              handleOpenDelete()
+            }}
+          >
+            Eliminar <TrashBinIcon />
+          </Button>
           <Button
             disabled={!isValid}
             variant="primary"
@@ -208,17 +226,6 @@ export default function FormRecord({
             }}
           >
             Guardar <SaveIcon />
-          </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            fullWidth={false}
-            onClick={(e) => {
-              e.preventDefault()
-              handleOpenDelete()
-            }}
-          >
-            Eliminar <TrashBinIcon />
           </Button>
         </div>
         <DeleteModal
@@ -237,19 +244,19 @@ const SelectBox = ({ label, name, onChange, checked }) => (
   <label
     key={name}
     className={` 
-            group
-            flex
-            relative
-            h-full
-            w-full
-            justify-center
-            items-center
-            cursor-pointer
-            shadow-lg 
-            hover:shadow-sm
-            bg-gray-600
-            rounded-lg
-            ${false && `opacity-40 shadow-none cursor- cursor-not-allowed`}
+    group
+    flex
+    relative
+    h-full
+    w-full
+    justify-center
+    items-center
+    cursor-pointer
+    shadow-lg 
+    hover:shadow-sm
+    bg-secondary-dark
+    rounded-lg
+    ${false && `opacity-40 shadow-none cursor- cursor-not-allowed`}
             `}
   >
     <input
@@ -261,7 +268,7 @@ const SelectBox = ({ label, name, onChange, checked }) => (
       name={name}
       type="checkbox"
     />
-    <div className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full ">
+    <div className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-primary w-full ">
       {label}
     </div>
   </label>

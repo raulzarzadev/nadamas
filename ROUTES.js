@@ -18,6 +18,9 @@ export const ROUTES = {
     },
     details: function (id) {
       return `${this.index}/${id}`
+    },
+    newPersonal: function () {
+      return `${this.index}/new-personal-record`
     }
   },
   teams: {

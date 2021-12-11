@@ -95,7 +95,7 @@ export const getEventResults = async (eventId) => {
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log(`err`, err))
 }
-export const addEventResult = async ({ eventData, athleteData, test }) => {
+export const addEventResult = async ({ eventData, athleteData, test, ...rest }) => {
   return await db
     .collection('results')
     .add({
@@ -103,7 +103,8 @@ export const addEventResult = async ({ eventData, athleteData, test }) => {
       athlete: {
         ...athleteData
       },
-      test
+      test,
+      ...datesToFirebaseFromat(rest)
     })
     .then((res) => formatResponse(true, ' RESULT_CREATED', res))
     .catch((err) => formatResponse(false, 'ERROR_CREATING_RESULT', err))

@@ -19,14 +19,6 @@ export default function Navbar({ links = [] }) {
                 objectFit="contain"
                 priority={true}
               />
-              {/* <div className="relative w-72 h-8  md:hidden ">
-              <Image
-              priority={true}
-              src="/nadamas/logo-3.png"
-              layout="fill"
-              objectFit="contain"
-              />
-            </div> */}
             </>
           </Link>
         </div>

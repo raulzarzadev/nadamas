@@ -5,6 +5,7 @@ import { TEST_AWARDS } from '@/src/constants/AWARDS'
 import STATUS_EVENT from '@/src/constants/STATUS_EVENT'
 import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
 import { formatInputDate } from '@/src/utils/Dates'
+import { AddIcon } from '@/src/utils/Icons'
 import { averageRecordSpeed } from '@/src/utils/Records'
 import AthleteTeam from '@comps/Athlete/AthleteTeam'
 import FormAthlete from '@comps/Athlete/FormAthlete2'
@@ -14,6 +15,8 @@ import AthleteSchedule from '@comps/Schedules/AthleteSchedule'
 import Section from '@comps/Section'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import AwardBadge from './AwardBadge'
+import ResultsRow from './ResultsRow'
 
 export default function AthleteProfile({ athleteId }) {
   const [awards, setAwards] = useState(undefined)
@@ -41,25 +44,21 @@ export default function AthleteProfile({ athleteId }) {
   return (
     <div className="max-w-xl mx-auto ">
       <div>
-        <h3 className="font-bold text-md">Premios</h3>
+        <h3 className="">Premios ganados</h3>
         <div className="flex ">
           {awards?.resultsAwards?.map((result) => (
-            <AwardsCard key={result.id} result={result} />
-          ))}
-        </div>
-      </div>
-      <div>
-        <h3 className="font-bold text-md">Pruebas</h3>
-
-        <div className="grid grid-flow-col overflow-auto gap-5 px-5 py-2">
-          {eventResults?.map((result) => (
-            <ResultCard key={result?.id} result={result} />
+            <AwardsRow key={result.id} result={result} />
           ))}
         </div>
       </div>
 
       <div>
-        <h3 className="font-bold text-md">Eventos</h3>
+        <h3>Ultimos resultados</h3>
+        <ResultsRow results={eventResults} />
+      </div>
+
+      <div>
+        <h3 className="">Eventos asistidos</h3>
         <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
           {athleteEvents.map((event) => (
             <EventCard key={event.id} event={event} athleteId={athleteId} />
@@ -72,7 +71,7 @@ export default function AthleteProfile({ athleteId }) {
       </div>
 
       <div>
-        <h3 className="font-bold text-md">Equipos</h3>
+        <h3 className="">Equipos</h3>
         <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
           <AthleteTeam />
         </div>
@@ -122,32 +121,8 @@ const EventCard = ({ event, athleteId }) => {
   )
 }
 
-const ResultCard = ({ result }) => {
-  const { record, distance, style, awards } = result?.test
-  return (
-    <div className="relative text-base border h-full rounded-b-3xl w-24">
-      <div className="italic text-xs flex w-full justify-center items-center bg-red-400">
-        {result?.date || 'no date'}
-      </div>
-      <div className="absolute -top-4 -right-5">
-        {awards?.map((award) => (
-          <AwardPin key={award} award={award} size="xs" />
-        ))}
-      </div>
-      <div className="p-1 text-sm text-center">
-        <div>{`${distance}m `}</div>
-        <div>{`${getStyleInfo(style).largeLabel}`}</div>
-        <div className="text-lg font-thin">{record}</div>
-        <div className="text-lg font-thin">
-          {averageRecordSpeed(distance, record)}
-          <span className="text-xs">ms</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-const AwardsCard = ({ result }) => {
-  const { awards } = result.test
+const AwardsRow = ({ result }) => {
+  const { awards } = result?.test
   const [openTestDetails, setOpenTestDetails] = useState(false)
   const handleOpenTestDetails = () => {
     setOpenTestDetails(!openTestDetails)
@@ -162,7 +137,7 @@ const AwardsCard = ({ result }) => {
           }}
           key={award}
         >
-          <AwardPin award={award} />
+          <AwardBadge award={award} />
         </button>
       ))}
       <SwimTestDetails
@@ -170,21 +145,6 @@ const AwardsCard = ({ result }) => {
         open={openTestDetails}
         handleOpen={handleOpenTestDetails}
       />
-    </div>
-  )
-}
-const AwardPin = ({ award, size = 'md' }) => {
-  const sizign = {
-    xs: 'w-8 h-8 text-2xl',
-    sm: '',
-    md: 'w-10 h-10 text-2xl',
-    lg: ''
-  }
-  return (
-    <div
-      className={`${sizign[size]} m-2 text-warning  border rounded-full border-yellow-300 p-1 flex justify-center items-center`}
-    >
-      {TEST_AWARDS[award].icon}
     </div>
   )
 }

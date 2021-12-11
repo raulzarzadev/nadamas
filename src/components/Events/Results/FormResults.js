@@ -17,7 +17,11 @@ export default function FormResults() {
     query: { id: eventId, style, distance }
   } = router
   useEffect(() => {
-    if (eventId) getEvent(eventId, setEvent)
+    if (eventId) {
+      getEvent(eventId, setEvent)
+    } else {
+      setEvent(null)
+    }
   }, [eventId])
 
   const [openParticipants, setOpenParticipants] = useState()
