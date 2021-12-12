@@ -10,7 +10,7 @@ import { useRouter } from 'next/router'
 export default function BottomNav({ links = [] }) {
   const router = useRouter()
   const { user } = useAuth()
-  const home = router.pathname === '/'
+  const home = router.pathname === '/profile'
 
   const handleBack = () => {
     router.back()
@@ -47,7 +47,7 @@ export default function BottomNav({ links = [] }) {
           </Link>
         )}
         {!home && (
-          <Link href="/">
+          <Link href="/profile">
             <div className="p-3 rounded-lg mx-2 shadow-lg hover:shadow-inner">
               <HomeIcon />
             </div>
