@@ -33,13 +33,11 @@ export default function MainLayout({ children }) {
         <main className="bg-primary dark:bg-primary-dark min-h-screen pb-10">
           <div className="max-w-lg mx-auto">{children}</div>
         </main>
-        <footer>
-          <div className="sm:hidden sticky bottom-0">
-            <BottomNav user={user} links={links?.bottom} />
-          </div>
-          <div className="hidden sm:block bottom-0">
-            <Footer />
-          </div>
+        <footer className="sm:hidden sticky bottom-0 ">
+          <BottomNav user={user} links={links?.bottom} />
+        </footer>
+        <footer className="hidden sm:block">
+          <Footer />
         </footer>
       </>
     </>
