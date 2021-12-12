@@ -45,7 +45,7 @@ export default function PickerDays({
             name={i}
             type="checkbox"
           />
-          <span className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-green-400 w-full h">
+          <span className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-primary w-full h">
             {day[0]}
           </span>
         </label>

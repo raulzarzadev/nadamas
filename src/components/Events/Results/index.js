@@ -73,13 +73,14 @@ export default function Results() {
         <h3 className="text-xl">{event?.title}</h3>
       </div>
       <h3 className="text-2xl text-center ">Resultados</h3>
-      {isAdmin && event?.status !== 'FINISH' && (
+      {isAdmin && (
         <div className="flex justify-center my-4">
           <div className="w-28">
             <Button
               size="sm"
+              fullWidth
               variant="secondary"
-              label="Nuevo"
+              label="Nuevo resultado"
               type="button"
               onClick={handleClickNew}
             />
