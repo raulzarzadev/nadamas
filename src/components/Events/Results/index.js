@@ -1,4 +1,5 @@
-import { getEvent, getEventResults, removeEventResult } from '@/firebase/events'
+import { getEvent } from '@/firebase/events'
+import { getEventResults } from '@/firebase/results'
 import { ROUTES } from '@/ROUTES'
 import { TEST_AWARDS } from '@/src/constants/AWARDS'
 import { STYLES } from '@/src/constants/SWIMMING_TESTS'

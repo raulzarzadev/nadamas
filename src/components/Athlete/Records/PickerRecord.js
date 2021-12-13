@@ -12,6 +12,7 @@ export default function PickerRecord({
   name = 'record',
   size = 'md'
 }) {
+  console.log(`value`, value)
   const formatValue = (value) => {
     if (typeof value === 'string') {
       const auxArr = value.split(/[:\.]/g)
@@ -102,6 +103,7 @@ const InputNumber = ({
     md: 'w-16 m-1 ',
     lg: ''
   }
+  console.log(`value`, formatNumberInput(value))
   return (
     <label
       className={`${sizing[size]} flex flex-col items-center justify-center text-center`}
@@ -112,7 +114,7 @@ const InputNumber = ({
         max={max}
         step={step}
         className="w-full bg-transparent text-center text-xl  "
-        // value={formatNumberInput(value)}
+        value={formatNumberInput(value)}
         onChange={onChange}
         name={name}
         // defaultValue={formatNumberInput(value)}

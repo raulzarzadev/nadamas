@@ -1,12 +1,9 @@
 import {
-  addEventTest,
   athleteAcceptRequestEvent,
   athleteCancelEventRequest,
   athleteUnjoinEvent,
   getEvent,
-  removeEvent,
-  removeEventTest,
-  updateEvent
+  removeEvent
 } from '@/firebase/events'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
@@ -30,13 +27,12 @@ export default function Event() {
   const {
     query: { id: eventId }
   } = router
+
   useEffect(() => {
     if (eventId)
       getEvent(eventId, (res) => {
         setEvent(res)
       })
-    /* .then(setEvent)
-        .catch((err) => console.log(`err`, err)) */
   }, [eventId])
 
   const isOwner = user?.id === event?.owner?.id
@@ -72,11 +68,11 @@ export default function Event() {
 const EventDetails = ({ event }) => {
   return (
     <>
-      <div className="relative w-full h-20">
-        {event?.image && (
-          <Image src={event?.image} layout="fill" objectFit="cover" />
-        )}
-      </div>
+      {event?.image && (
+        <div className="relative w-full h-20">
+          <Image src={event?.image} layout="fill" objectFit="cover" priority />
+        </div>
+      )}
       {event.status === 'FINISH' && <EventFinished event={event} />}
       <h3 className="font-bold my-2">{event?.title}</h3>
       <h3 className="text-xl my-2">

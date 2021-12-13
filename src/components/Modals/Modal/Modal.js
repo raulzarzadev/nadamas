@@ -14,6 +14,10 @@ export default function Modal({
       const { id } = e.target
       if (id === `modal-${title}`) handleOpen()
     })
+    a.removeEventListener('click', (e) => {
+      const { id } = e.target
+      if (id === `modal-${title}`) handleOpen()
+    })
   }, [open])
   return (
     <div

@@ -1,4 +1,4 @@
-import { deleteUserResult } from '@/firebase/results'
+import { deleteResult, deleteUserResult } from '@/firebase/results'
 import { ROUTES } from '@/ROUTES'
 import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
 import { formatInputDate } from '@/src/utils/Dates'
@@ -81,20 +81,26 @@ const ResultCard = ({ result }) => {
 function ResultModal({ open, handleOpen = () => {}, result }) {
   useEffect(() => {
     const a = document.getElementById(`modal-${result.id}`)
+
     a.addEventListener('click', (e) => {
       const { id } = e.target
       if (id === `modal-${result.id}`) handleOpen()
     })
   }, [open])
+
   const [openDeleteModal, setOpenDeleteModal] = useState(false)
   const handleOpenDeleteModal = () => {
     setOpenDeleteModal(!openDeleteModal)
   }
   const handleDelete = () => {
-    deleteUserResult(result.id)
-      .then((res) => console.log(`res`, res))
-      .catch((err) => console.log(`err`, err))
+    const isEventNull = !!Object.keys(result.event).length
+    if (isEventNull) {
+      deleteResult(result.id)
+    } else {
+      deleteUserResult(result.id)
+    }
   }
+
   const { record = '', distance, style, awards } = result?.test || {}
 
   return (
@@ -113,8 +119,9 @@ function ResultModal({ open, handleOpen = () => {}, result }) {
         <div>
           {result.date ? formatInputDate(result?.date, 'dd MMM yy') : 'no date'}
         </div>
-        <div>{result?.event?.title || ''}</div>
+        <div>{result?.event?.title || 'Registro personal'}</div>
         <div>
+          {!awards?.length && 'Sin premios aún '}
           {awards?.map((award) => (
             <AwardBadge key={award} award={award} size="xs" />
           ))}

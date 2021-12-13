@@ -44,6 +44,17 @@ export const removeEventResult = async (id) => {
     .catch((err) => formatResponse(false, 'ERROR_DELETE_RESULT', err))
 }
 
+export const deleteResult = async (id) => {
+  return await db
+    .collection('results')
+    .doc(id)
+    .delete()
+    .then((res) => formatResponse(true, ' RESULT_DELETED', res))
+    .catch((err) => formatResponse(false, 'ERROR_DELETE_RESULT', err))
+}
+
+
+
 export const deleteUserResult = async (id) => {
   return await db
     .collection('results')
@@ -52,6 +63,7 @@ export const deleteUserResult = async (id) => {
     .then((res) => formatResponse(true, ' RESULT_DELETED', res))
     .catch((err) => formatResponse(true, ' RESULT_DELETE_ERROR', res))
 }
+
 
 export const updateResult = async (id, result) => {
   return await db

@@ -1,12 +1,8 @@
 import { getAthleteAwards, getAthleteResults } from '@/firebase/results'
 import { getAthleteEvents } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
-import { TEST_AWARDS } from '@/src/constants/AWARDS'
 import STATUS_EVENT from '@/src/constants/STATUS_EVENT'
-import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
 import { formatInputDate } from '@/src/utils/Dates'
-import { AddIcon } from '@/src/utils/Icons'
-import { averageRecordSpeed } from '@/src/utils/Records'
 import AthleteTeam from '@comps/Athlete/AthleteTeam'
 import FormAthlete from '@comps/Athlete/FormAthlete2'
 import Payments from '@comps/Athlete/Payments'
@@ -29,6 +25,9 @@ export default function AthleteProfile({ athleteId }) {
   const [athleteResults, setAthleteResults] = useState([])
   useEffect(() => {
     getAthleteResults(athleteId, setAthleteResults)
+    return () => {
+      setAthleteResults([])
+    }
   }, [])
 
   const [athleteEvents, setAthleteEvents] = useState([])

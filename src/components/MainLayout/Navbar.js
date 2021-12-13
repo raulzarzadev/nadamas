@@ -10,28 +10,22 @@ export default function Navbar({ links = [] }) {
   return (
     <div className="bg-secondary dark:bg-secondary-dark  pb-0 flex justify-between items-center">
       <div className="flex w-1/6 justify-center items-center p-1">
-        <div className="relative w-full h-8 hidden md:block">
-          <Link href="/">
-            <>
-              <Image
-                src="/nadamas/logo-2.png"
-                layout="fill"
-                objectFit="contain"
-                priority={true}
-              />
-            </>
-          </Link>
-        </div>
-        <div className="relative w-72 h-8  md:hidden ">
-          <Link href="/">
-            <Image
-              priority={true}
-              src="/nadamas/logo-3.png"
-              layout="fill"
-              objectFit="contain"
-            />
-          </Link>
-        </div>
+        <Link href="/" className="relative w-full h-8 hidden md:block ">
+          <Image
+            src="/nadamas/logo-2.png"
+            layout="fill"
+            objectFit="contain"
+            priority={true}
+          />
+        </Link>
+        <Link href="/" className="relative w-72 h-8  md:hidden ">
+          <Image
+            priority={true}
+            src="/nadamas/logo-3.png"
+            layout="fill"
+            objectFit="contain"
+          />
+        </Link>
       </div>
       <div className=" sm:flex w-full  justify-start items-center  px-1 ">
         <ul className="flex items-center">

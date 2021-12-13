@@ -13,7 +13,7 @@ import Autocomplete from '@comps/inputs/TextAutocomplete'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { addEventResult } from '@/firebase/results'
+import { addEventResult, deleteResult, deleteUserResult } from '@/firebase/results'
 
 const swimmingStyles = [
   {
@@ -71,7 +71,9 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
     }
   }, [record])
 
-  const [form, setForm] = useState({ date: new Date() })
+  const initalState = { date: new Date() }
+
+  const [form, setForm] = useState(initalState)
   const router = useRouter()
   const [athleteId, setAthleteId] = useState('')
   const { search } = router?.query
@@ -108,18 +110,18 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
   const handleChangeDate = ({ target }) => {
     setForm({ ...form, date: target.value })
   }
+  const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const handleRemoveRecord = (id) => {
-    removeRecord(id)
+    deleteResult(id)
       .then((res) => {
-        console.log(`res`, res)
-        router.back()
+        setForm(initalState)
       })
       .catch((err) => console.log(`err`, err))
   }
+
   const handleAddRecord = async (newRecord) => {
-    console.log(`newRecord`, newRecord)
     const { distance, record, style, athlete } = newRecord
     const resultData = {
       eventData: null,
@@ -131,7 +133,11 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
       date: new Date()
     }
     addEventResult(resultData)
-      .then((res) => console.log(`res`, res))
+      .then((res) => {
+        setForm({ ...form, id: res?.res?.id })
+        setSaved(true)
+        console.log(`res`, res)
+      })
       .catch((err) => console.log(`err`, err))
     setSaving(false)
   }
@@ -148,8 +154,6 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
   const handleOpenDelete = () => {
     setOpenDelete(!openDelete)
   }
-
-  // console.log(`form`, form)
 
   return (
     <div className="max-w-sm mx-auto pt-3 p-1">
@@ -203,19 +207,27 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
       <div className="flex flex-col text-center w-full justify-evenly py-2 px-1 items-center">
         <div className="my-2">
           Tiempo
+          {console.log(`form`, form)}
           <PickerRecord setValue={handleSetRecord} value={form?.record} />
         </div>
         <div className="flex justify-evenly w-full">
           <Button
-            variant="danger"
-            fullWidth={false}
-            onClick={(e) => {
-              e.preventDefault()
-              handleOpenDelete()
-            }}
-          >
-            Eliminar <TrashBinIcon />
-          </Button>
+            label="Regresar"
+            variant="outlined"
+            onClick={() => router.back()}
+          />
+          {saved && (
+            <Button
+              variant="danger"
+              fullWidth={false}
+              onClick={(e) => {
+                e.preventDefault()
+                handleOpenDelete()
+              }}
+            >
+              Eliminar <TrashBinIcon />
+            </Button>
+          )}
           <Button
             disabled={!isValid}
             variant="primary"
@@ -225,7 +237,8 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
               handleAddRecord(form)
             }}
           >
-            Guardar <SaveIcon />
+            {saved ? 'Guardado' : 'Guardar'}
+            <SaveIcon />
           </Button>
         </div>
         <DeleteModal

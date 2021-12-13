@@ -4,7 +4,7 @@ export default function Button({
   label = 'label',
   type = 'submit',
   children,
-  variant = 'primary', //| 'social' | 'secondary' | 'disabled' | 'danger'
+  variant = 'primary', //| 'social' | 'secondary' | 'disabled' | 'danger' | 'outlined'
   disabled = false,
   iconOnly = false,
   href,
@@ -21,13 +21,14 @@ export default function Button({
     secondary: 'bg-secondary',
     success: 'bg-success text-dark',
     disabled: 'opacity-50 shadow-none ',
-    danger: `bg-danger `
+    danger: `bg-danger `,
+    outlined: ' border border-primary border-opacity-40'
   }
   const sizing = {
     xs: `py-0 px-0.5`,
     sm: `py-1 px-2`,
     md: `py-2 px-4 `,
-    lg:'py-2 px-6'
+    lg: 'py-2 px-6'
   }
 
   return (

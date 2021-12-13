@@ -1,12 +1,9 @@
 import {
-  addEventTest,
   athleteAcceptRequestEvent,
   athleteCancelEventRequest,
   athleteUnjoinEvent,
   getEvent,
-  removeEvent,
-  removeEventTest,
-  updateEvent
+  removeEvent
 } from '@/firebase/events'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
@@ -48,22 +45,6 @@ export default function Event() {
   return (
     <>
       <div className="max-w-sm mx-auto text-center">
-        {/*  <div className="grid grid-flow-row gap-3 sm:grid-flow-col items-center py-3 sticky top-0 z-10 bg-primary-dark">
-          {isOwner ? (
-            <AdminActions eventId={event.id} />
-          ) : (
-            <>
-              <Button
-                label="ver resultados"
-                onClick={handleClickResults}
-                variant="secondary"
-                fullWidth
-              />
-              <ButtonJoinEvent event={event} athleteId={user?.athleteId} />
-            </>
-          )}
-        </div> */}
-
         <EventDetails
           event={event}
           isOwner={isOwner}
@@ -77,12 +58,12 @@ export default function Event() {
 const EventDetails = ({ event, isOwner, athleteId }) => {
   return (
     <>
-      <div className="relative w-full h-32">
-        {event?.image && (
+      {event?.image && (
+        <div className="relative w-full h-32">
           <Image src={event?.image} layout="fill" objectFit="cover" />
-        )}
-        {event.status === 'FINISH' && <EventFinishedBadge />}
-      </div>
+          {event.status === 'FINISH' && <EventFinishedBadge />}
+        </div>
+      )}
       <h3 className="font-bold my-2">{event?.title}</h3>
       <h3 className="text-xl my-2">
         {formatInputDate(event?.date, 'dd MMMM yyyy')}
@@ -146,7 +127,7 @@ const AdminActions = ({ eventId }) => {
   }
 
   return (
-    <div className='grid gap-2'>
+    <div className="grid gap-2">
       <Button
         label="Eliminar"
         variant="danger"
@@ -203,7 +184,10 @@ const ManageEvent = ({ event }) => {
           handleRemoveMember={handleRemoveMember}
         />
       </Section>
-      <Section title={`Solicitudes (${event?.requests?.length || 0})`} indent={false}>
+      <Section
+        title={`Solicitudes (${event?.requests?.length || 0})`}
+        indent={false}
+      >
         <RequestRows
           athletesIds={event?.requests}
           onAcceptRequest={handleAccepRequest}
