@@ -1,4 +1,5 @@
-import { addEventResult, getEvent } from '@/firebase/events'
+import {  getEvent } from '@/firebase/events'
+import { addEventResult } from '@/firebase/results'
 import useAthlete from '@/src/hooks/useAthlete'
 import { getAge } from '@/src/utils/Dates'
 import { AddIcon, DoneIcon, SaveIcon } from '@/src/utils/Icons'

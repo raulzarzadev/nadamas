@@ -1,3 +1,4 @@
+import { deleteUserResult } from '@/firebase/results'
 import { ROUTES } from '@/ROUTES'
 import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
 import { formatInputDate } from '@/src/utils/Dates'
@@ -5,19 +6,18 @@ import { AddIcon, CloseIcon, TrashBinIcon } from '@/src/utils/Icons'
 import { averageRecordSpeed } from '@/src/utils/Records'
 import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
-import Modal from '@comps/Modals/Modal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import AwardBadge from './AwardBadge'
 
-export default function ResultsRow({ results }) {
+export default function ResultsRow({ results = [] }) {
   return (
     <div className="">
       <h3 className="font-bold text-md"></h3>
 
       <div className="grid grid-flow-col overflow-auto gap-5 px-5 py-2">
         <NewResultCard />
-        {results.map((result) => (
+        {results?.map((result) => (
           <ResultCard key={result?.id} result={result} />
         ))}
       </div>
@@ -91,7 +91,9 @@ function ResultModal({ open, handleOpen = () => {}, result }) {
     setOpenDeleteModal(!openDeleteModal)
   }
   const handleDelete = () => {
-    console.log(`delete`)
+    deleteUserResult(result.id)
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
   }
   const { record = '', distance, style, awards } = result?.test || {}
 

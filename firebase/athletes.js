@@ -37,39 +37,6 @@ export const getAthletes = async (userId) => {
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log(err))
 }
-export const getAthleteAwards = async (athleteId) => {
-  const availableTestAwards = Object.keys(TEST_AWARDS)
-  const resultsAwards = await db
-    .collection('results')
-    .where('athlete.id', '==', athleteId)
-    .where('test.awards', 'array-contains-any', availableTestAwards)
-    // .orderBy('date')
-    .get()
-    .then(({ docs }) => normalizeDocs(docs))
-    .catch((err) => console.log(err))
-  return { resultsAwards }
-}
-export const getAthleteRecords = async (athleteId) => {
-  const eventResults = await db
-    .collection('results')
-    .where('athlete.id', '==', athleteId)
-    //  .where('test.awards', 'array-contains-any', availableTestAwards)
-    // .orderBy('date')
-    .get()
-    .then(({ docs }) => normalizeDocs(docs))
-    .catch((err) => console.log(err))
-  const personalRecords = await db
-    .collection('records')
-    .where('athlete.id', '==', athleteId)
-    //.where('test.awards', 'array-contains-any', availableTestAwards)
-    .orderBy('date')
-    .get()
-    .then(({ docs }) => normalizeDocs(docs))
-    .catch((err) => console.log(err))
-
-  return [...eventResults, ...personalRecords]
-}
-
 
 export const createDefaultAthlete = async ({ id, image, email, name }) => {
   const newAthlete = await _create_athlete({
@@ -92,8 +59,7 @@ export const createDefaultAthlete = async ({ id, image, email, name }) => {
 
 export const updateAtlete = async (athlete = {}) => {
   // Look for the athlete
-  const athleteExist = (await db.collection('athletes').doc(athlete?.id).get())
-    .exists
+  const athleteExist = (await db.collection('athletes').doc(athlete?.id).get())?.exists
   if (!athleteExist) {
     // if exist create it
     return await _create_athlete(athlete)

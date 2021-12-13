@@ -12,7 +12,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import ModalAdminOptions from './ModalAdminOptions'
 
-const getTestLabelES = ({ test }) => {
+const getTestLabelTests = ({ test }) => {
   if (!test) return null
   const sty = STYLES.find(({ id }) => id === test?.style)
   return {
@@ -178,7 +178,7 @@ const ResultsByTest = ({ results, isAdmin }) => {
           {filter ? (
             <>
               <span className="font-thin text-sm">Filtro:</span>
-              {getTestLabelES({ test: filter })?.mdLabel}
+              {getTestLabelTests({ test: filter })?.mdLabel}
             </>
           ) : (
             <>
@@ -242,7 +242,7 @@ const ResultTable = ({ results, sortResultsBy, isAdmin }) => {
             `${athlete?.number || ''}`,
             `${athlete?.name?.split(' ')?.[0] || ''}`,
             `${athlete?.age || 'sin'}`,
-            `${getTestLabelES({ test }).smLabel}`,
+            `${getTestLabelTests({ test }).smLabel}`,
             `${test?.record}`,
             <DetailsResultCell
               isAdmin={isAdmin}

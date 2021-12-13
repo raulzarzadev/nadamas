@@ -39,7 +39,6 @@ export const getUpcomingEvents = async () => {
     .catch((err) => console.log('err', err))
 }
 
-
 export const getEvent = async (id, dispatch) => {
   return db
     .collection('events')
@@ -85,45 +84,6 @@ export const createOrUpdateEvent = async (event) => {
 }
 export const removeEvent = async (eventId) => {
   return await _remove_event(eventId)
-}
-
-export const getEventResults = async (eventId) => {
-  return await db
-    .collection('results')
-    .where('event.id', '==', eventId)
-    .get()
-    .then(({ docs }) => normalizeDocs(docs))
-    .catch((err) => console.log(`err`, err))
-}
-export const addEventResult = async ({ eventData, athleteData, test, ...rest }) => {
-  return await db
-    .collection('results')
-    .add({
-      event: { ...eventData },
-      athlete: {
-        ...athleteData
-      },
-      test,
-      ...datesToFirebaseFromat(rest)
-    })
-    .then((res) => formatResponse(true, ' RESULT_CREATED', res))
-    .catch((err) => formatResponse(false, 'ERROR_CREATING_RESULT', err))
-}
-export const removeEventResult = async (id) => {
-  return await db
-    .collection('results')
-    .doc(id)
-    .delete()
-    .then((res) => formatResponse(true, ' RESULT_DELETED', res))
-    .catch((err) => formatResponse(false, 'ERROR_DELETE_RESULT', err))
-}
-export const updateAwardsEventResult = async (resultId, awards) => {
-   return await db
-    .collection('results')
-    .doc(resultId)
-    .update({ 'test.awards':awards })
-    .then((res) => formatResponse(true, ' AWARD_ADDED', res))
-    .catch((err) => formatResponse(false, 'ERROR_AWARD', err)) 
 }
 export const updateEvent = async (event) => {
   return await _update_event(event)

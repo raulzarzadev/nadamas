@@ -22,23 +22,10 @@ export function AuthProvider({ children }) {
 
   const googleLogin = async () => {
     loginWithGoogle()
-      .then(({ user }) => {
-        // console.log('user', user)
-        //router.replace('/profile')
-        // router.replace('/profile')
-        //router.reload()
-        // router.push('/profile')
-        setUser(user)
-      })
-      .catch((err) => {
-        console.log('err', err)
-      })
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
   }
 
-  useEffect(() => {
-    if (user) router.replace('/profile')
-  }, [user])
-  
   if (user === undefined) return <Loading />
 
   return (

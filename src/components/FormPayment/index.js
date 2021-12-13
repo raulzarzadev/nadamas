@@ -113,7 +113,7 @@ export default function FormPayment({
       />
       <div className="flex justify-center items-center">
         Comprobante
-        <div className=" m-4">
+        <div className=" m-2">
           <UploadImage
             upladedImage={upladedImage}
             storeRef={`payments/${form?.athleteId}-${form?.id || ''}`}
@@ -122,8 +122,8 @@ export default function FormPayment({
       </div>
 
       {!!form?.image && (
-        <div className="relative p-4">
-          <div className="relative w-full  h-52 border">
+        <div className="relative my-2">
+          <div className="relative w-full  h-52 shadow-xl ">
             <Image
               src={form?.image}
               layout="fill"
@@ -134,13 +134,13 @@ export default function FormPayment({
         </div>
       )}
 
-      <Button label="Guardar" onClick={handleSavePayment} />
-      <div className="mt-4">
+      <div className="flex justify-evenly mt-4">
         <Button
           label="Eliminar"
           variant="danger"
           onClick={() => handleDeletePayment(form?.id)}
         />
+        <Button label="Guardar" onClick={handleSavePayment} />
       </div>
     </div>
   )

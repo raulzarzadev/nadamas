@@ -1,4 +1,4 @@
-import { getAthleteAwards, getAthleteRecords } from '@/firebase/athletes'
+import { getAthleteAwards, getAthleteResults } from '@/firebase/results'
 import { getAthleteEvents } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
 import { TEST_AWARDS } from '@/src/constants/AWARDS'
@@ -26,11 +26,9 @@ export default function AthleteProfile({ athleteId }) {
       .catch((err) => console.log(`err`, err))
   }, [])
 
-  const [eventResults, setEventResults] = useState([])
+  const [athleteResults, setAthleteResults] = useState([])
   useEffect(() => {
-    getAthleteRecords(athleteId)
-      .then(setEventResults)
-      .catch((err) => console.log(`err`, err))
+    getAthleteResults(athleteId, setAthleteResults)
   }, [])
 
   const [athleteEvents, setAthleteEvents] = useState([])
@@ -54,7 +52,7 @@ export default function AthleteProfile({ athleteId }) {
 
       <div>
         <h3>Ultimos resultados</h3>
-        <ResultsRow results={eventResults} />
+        <ResultsRow results={athleteResults} />
       </div>
 
       <div>

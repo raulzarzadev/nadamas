@@ -21,14 +21,14 @@ const Text = React.forwardRef(
     ref
   ) => {
     return (
-      <span className="">
+      <div className=" text-left my-1 ">
         {label && value && `${label} :`}
-        <div className="">
+        <div className=" ">
           <input
             ref={ref}
             autoComplete={autoComplete}
             type={type}
-            className="p-1 bg-secondary-dark rounded-lg text-white "
+            className="p-1 bg-secondary-dark text-white max-w-full w-full rounded-md"
             placeholder={placeholder || label}
             name={name}
             value={value || ''}
@@ -50,7 +50,7 @@ const Text = React.forwardRef(
           )}
         </div>
         <em className="">{error}</em>
-      </span>
+      </div>
     )
   }
 )

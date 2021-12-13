@@ -13,7 +13,7 @@ import Autocomplete from '@comps/inputs/TextAutocomplete'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { addEventResult } from '@/firebase/events'
+import { addEventResult } from '@/firebase/results'
 
 const swimmingStyles = [
   {
@@ -153,7 +153,7 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
 
   return (
     <div className="max-w-sm mx-auto pt-3 p-1">
-      <h3 className="font-bold text-2xl text-center ">Detalles de prueba</h3>
+      <h3 className="font-bold text-2xl text-center ">Nueva prueba</h3>
       {searchAthlete && (
         <SearchAthletes
           athleteSelected={athleteId}
@@ -200,12 +200,12 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
           ))}
         </div>
       </div>
-      <div className="sm:flex text-center w-full justify-evenly py-2 px-1 items-center">
+      <div className="flex flex-col text-center w-full justify-evenly py-2 px-1 items-center">
         <div className="my-2">
           Tiempo
           <PickerRecord setValue={handleSetRecord} value={form?.record} />
         </div>
-        <div className="flex justify-evenly">
+        <div className="flex justify-evenly w-full">
           <Button
             variant="danger"
             fullWidth={false}

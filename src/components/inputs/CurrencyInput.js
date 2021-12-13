@@ -14,12 +14,12 @@ function CurrencyInput({
   ...rest
 }) {
   return (
-    <span className={s.input_label}>
+   <div className=" text-left my-1 ">
       {label && value && `${label} :`}
-      <div className={s.icon_container}>
+      
         <ReactCurrencyInput
           prefix="$"
-          className={s.text_input}
+          className='bg-secondary-dark max-w-full w-full p-1 rounded-md'
           placeholder={placeholder || label}
           value={value || ''}
           id={id}
@@ -30,9 +30,8 @@ function CurrencyInput({
           onValueChange={handleChange}
           {...rest}
         />
-      </div>
       <em className={s.input_error}>{error}</em>
-    </span>
+    </div>
   )
 }
 

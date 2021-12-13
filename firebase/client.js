@@ -38,6 +38,7 @@ export const loginWithGoogle = async () => {
       if (userAlreadyExist) return userAlreadyExist
       return createNewUser(mapUserFromFirebase(user))
     })
+    .catch((err) => console.log(`err`, err))
   return res
   // googleProvider.addScope('https://www.googleapis.com/auth/contacts.readonly');
 }
@@ -91,5 +92,3 @@ export const updateUser = async (user) => {
     return formatResponse(false, 'UPDATE_ERROR', err)
   }
 }
-
-

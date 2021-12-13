@@ -1,4 +1,5 @@
-import { updateAwardsEventResult } from '@/firebase/events'
+import { updateAwardsEventResult } from '@/firebase/results'
+import { removeEventResult } from '@/firebase/results'
 import AWARDS, { TEST_AWARDS } from '@/src/constants/AWARDS'
 import { TrashBinIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
