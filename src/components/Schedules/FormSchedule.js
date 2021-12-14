@@ -21,16 +21,16 @@ function setDayScheduleBetween(startAt = 6, endAt = 22) {
   return res
 }
 
-export default function FormSchedule({ schedule, setSchedule, coach }) {
+export default function FormSchedule({ schedule, setSchedule, coach, availableSchedule }) {
   const [form, setForm] = useState({})
-  const [scheduleBase, setScheduleBase] = useState(SCHEDULE_BASE)
+  const [scheduleBase, setScheduleBase] = useState()
   useEffect(() => {
     if (coach) {
-      setScheduleBase(coach.schedule)
+      setScheduleBase(availableSchedule)
     } else {
       setScheduleBase(SCHEDULE_BASE)
     }
-  }, [coach])
+  }, [coach, availableSchedule])
 
   useEffect(() => {
     if (schedule) {

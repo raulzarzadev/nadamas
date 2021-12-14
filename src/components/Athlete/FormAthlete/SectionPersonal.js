@@ -26,7 +26,7 @@ export default function SectionPersonal({
   const [buttonStatus, setButtonStatus] = useState('clean')
 
   return (
-    <div className="text-sm">
+    <div className="text-sm mx-1">
       <div className='flex justify-center'>
 
       <ButtonSave

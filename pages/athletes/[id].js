@@ -1,5 +1,5 @@
 import PrivateRoute from '@/src/HOCS/PrivateRoute'
-import FormAthlete from '@comps/Athlete/FormAthlete'
+import AthleteProfile from '@comps/UserProfile/AthleteProfile'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 
@@ -14,7 +14,7 @@ export default function grupos() {
         <title>Atleta - detalles</title>
       </Head>
       <PrivateRoute>
-        <FormAthlete athleteId={athleteId} />
+        <AthleteProfile athleteId={athleteId} />
       </PrivateRoute>
     </>
   )

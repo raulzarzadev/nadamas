@@ -126,7 +126,6 @@ export default function AthleteRow({
             <ContactIcon size="1rem" className="" />
           </Button>
         </div>{' '}
-        {/* TODO change button edit to show when is not user or owner, modal can works enough  */}
         {coachView && (
           <div className="m-1">
             <Button

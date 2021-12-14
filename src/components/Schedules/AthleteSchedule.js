@@ -5,69 +5,59 @@ import Select from '@comps/inputs/Select'
 import { getPublicCoachSchedules } from '@/firebase/coaches'
 import Button from '@comps/inputs/Button'
 import { useAuth } from '@/src/context/AuthContext'
+import Loading from '@comps/Loading'
 
 export default function AthleteSchedule({ athleteId }) {
+  const { user } = useAuth()
   const handleScheduleChange = (newSchedule) => {
-    setIsDirty(true)
     setForm({ ...form, schedule: newSchedule })
   }
-  const [form, setForm] = useState({ owner: { id: athleteId } })
+
+  // TODO fix no renderiza correctamente la primera vez que se abre
+  const ownerIfo = { id: user.id, name: user.name } 
+
+  const [form, setForm] = useState({})
 
   useEffect(() => {
     if (athleteId) {
       getSchedules(athleteId)
         .then(({ res }) => {
-          setForm({ ...res[0] })
+          setForm({ ...form, ...res[0] })
         })
         .catch((err) => console.log('err', err))
     }
   }, [athleteId])
 
-  const [coach, setCoach] = useState(null)
   const handleSetCoach = (coach) => {
-    if (coach) {
-      setIsDirty(true)
-      setCoach(coach)
-      setForm({
-        ...form,
-        schedule: null,
-        coach: { id: coach?.id || null, name: coach?.name || null }
-      })
-    } else {
-      setCoach(null)
-      setForm({
-        schedule: null,
-        coach: null
-      })
-    }
+    console.log(`coach`, coach)
+    setForm({
+      ...form,
+      coach: coach ? { id: coach?.id, name: coach?.name } : null
+    })
+    setAvailableSchedule(coach ? coach.schedule : null)
   }
 
-  const { user } = useAuth()
+  const [availableSchedule, setAvailableSchedule] = useState(null)
 
-
-  const [isDirty, setIsDirty] = useState(false)
   const handleSubmit = () => {
-    console.log(`form`, form)
     addSchedule({
       ...form,
-      owner:{
-        id:user.id,
-        name:user.name,
-      },
-      athleteId:user.athleteId,
+      athleteId: athleteId,
+      owner: ownerIfo
     })
-      .then((res) => {
-        setIsDirty(false)
-      })
+      .then((res) => {})
       .catch((err) => console.log('err', err))
   }
+
+  const [isDirty, setIsDirty] = useState(false)
+
   return (
     <div>
       <SelectCoach coach={form?.coach} setCoach={handleSetCoach} />
-
       <FormSchedule
-        coach={coach}
+        coach={form.coach}
         schedule={form?.schedule}
+        availableSchedule={availableSchedule}
         setSchedule={handleScheduleChange}
       />
       {isDirty && (
@@ -76,25 +66,29 @@ export default function AthleteSchedule({ athleteId }) {
             Actualizar horario
           </Button>
         </div>
-      )}
+      )}{' '}
     </div>
   )
 }
 
-const SelectCoach = ({ coach = {}, setCoach = () => {} }) => {
+const SelectCoach = ({ coach = null, setCoach = () => {} }) => {
   const [coachesList, setCoachesList] = useState([])
+
   useEffect(() => {
     getPublicCoachSchedules()
       .then((res) => setCoachesList(res))
       .catch((err) => console.log(`err`, err))
-    // getPublicCoaches()
-    // getCoachesSchedules()
   }, [])
+
+  useEffect(() => {
+    setCoach(coachesList.find(({ id }) => id === coach.id))
+  }, [])
+
   const handleChangeCoach = ({ target: { value } }) => {
     const coach = coachesList.find(({ id }) => value === id)
     setCoach(coach || null)
-    // setCoach(coach)
   }
+
   return (
     <Select
       value={coach?.id}

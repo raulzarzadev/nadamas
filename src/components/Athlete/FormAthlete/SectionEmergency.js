@@ -7,16 +7,12 @@ export default function SectionEmergency({ form, setForm }) {
   }
   return (
     <Section title={'Contacto de emergencia'} indent={false}>
-      <div className={`flex flex-col  p-1`}>
-        <div className="my-1">
           <TextEditable
             onChange={handleChange}
             name="emerName"
             value={form?.emerName}
             label="Nombre"
           />
-        </div>
-        <div className="my-1">
           <TextEditable
             type="tel"
             onChange={handleChange}
@@ -24,16 +20,12 @@ export default function SectionEmergency({ form, setForm }) {
             value={form?.emerMobile}
             label="Teléfono"
           />
-        </div>
-        <div className="my-1">
           <TextEditable
             onChange={handleChange}
             name="emerTitle"
             value={form?.emerTitle}
             label="Perentesco"
           />
-        </div>
-      </div>
     </Section>
   )
 }

@@ -13,17 +13,17 @@ export default function Section({
     setShow(open)
   }, [open])
   return (
-    <section className="my-2 ">
+    <section className="my-2 dark:bg-primary dark:bg-opacity-5 shadow-lg">
       <h3
         className={`
-        text-left flex pl-2 mb-4 font-bold bg-gray-700  
+        text-left flex pl-2 mb-4 font-bold items-center   
         ${sticky && `sticky top-16`}`}
         onClick={() => setShow(!show)}
       >
         {title}
         {show ? <DownIcon /> : <ForwardIcon />}
       </h3>
-      <div className={`${indent && 'pl-6'}`}>{show && children}</div>
+      <div className={`${indent && 'pl-6 '} `}>{show && children}</div>
     </section>
   )
 }

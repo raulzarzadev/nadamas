@@ -22,6 +22,7 @@ export function Form({ form = {}, setForm, handleSubmit, isEditable }) {
           }}
           className="relative"
         >
+          {/* TODO hay que agregar records y de mas cosas que vienen en profile */}
           {/* ----------------------------------------------Personal information */}
           <SectionPersonal form={form} setForm={setForm} />
          
