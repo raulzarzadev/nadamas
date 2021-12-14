@@ -30,15 +30,15 @@ const TextEditable = React.forwardRef(
 
     // solo si userId === athleta
     return (
-      <span className={s.input_label}>
+      <span className='flex flex-col items-start w-full max-w-full'>
         {label && `${label} :`}
-        <div className={s.icon_container}>
+        <div className={`flex w-full`}>
           {editable ? (
             <input
               autoComplete={autoComplete}
               ref={ref}
               type={type}
-              className={` bg-primary-light dark:bg-secondary-dark w-full `}
+              className={` bg-primary-light dark:bg-secondary-dark w-full p-1`}
               placeholder={placeholder || label}
               name={name}
               value={value || ''}
@@ -55,7 +55,7 @@ const TextEditable = React.forwardRef(
                 e.preventDefault()
                 click()
               }}
-              className={`  flex justify-center items-center w-full `}
+              className={`  flex justify-center items-center border p-1 w-full rounded-md`}
             >
               {value}
               <div className="ml-2">
@@ -66,7 +66,7 @@ const TextEditable = React.forwardRef(
 
           {Icon && (
             <button
-              className={s.icon}
+              className={`m-1 p-1`}
               onClick={(e) => {
                 e.preventDefault()
                 onClickIcon()
@@ -76,7 +76,7 @@ const TextEditable = React.forwardRef(
             </button>
           )}
         </div>
-        <em className={s.input_error}>{error}</em>
+        <em className={`w-full text-left text-xs`}>{error}</em>
       </span>
     )
   }

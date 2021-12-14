@@ -37,7 +37,7 @@ export default function SectionPersonal({
         status={buttonStatus}
         />
         </div>
-      <div className="p-2 sm:p-6 grid gap-2 ">
+      <div className=" grid gap-2 sm:grid-cols-2">
         <TextEditable
           permissionToEdit={isEditable}
           value={form?.name}

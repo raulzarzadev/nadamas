@@ -1,5 +1,4 @@
 import Button from '@comps/inputs/Button'
-import AthleteRow from '../AthleteRow'
 import { AddPersonIcon } from '../../utils/Icons'
 import { useRouter } from 'next/router'
 import SearchAthletes from '@comps/inputs/SearchAthletes'
@@ -22,7 +21,7 @@ export default function Athletes() {
       </div>
 
       <div className="px-1 mx-auto my-4">
-        <SearchAthletes AthleteRowResponse={AthleteRow} />
+        <SearchAthletes  />
       </div>
     </div>
   )

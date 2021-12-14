@@ -2,12 +2,12 @@ import { getAthletes } from '@/firebase/athletes'
 import { useAuth } from '@/src/context/AuthContext'
 import { CloseBackIcon, CloseIcon } from '@/src/utils/Icons'
 import { sortArrayObjectsByField } from '@/src/utils/Sorts'
+import AthleteRow from '@comps/AthleteRow'
 import { useEffect, useState } from 'react'
 import Text from '../Text'
 
 export default function SearchAthletes({
   setAthlete = () => {},
-  AthleteRowResponse = <div>Row</div>,
   athleteSelected = null,
   label = 'Buscar Atleta'
 }) {
@@ -105,11 +105,7 @@ export default function SearchAthletes({
         </div>
         <div>
           {sortedAthletes?.map((athlete) => (
-            <AthleteRowResponse
-              key={athlete.id}
-              athlete={athlete}
-              onClick={() => handleSelectAthlete(athlete)}
-            />
+            <AthleteRow athlete={athlete} key={athlete.id} coachView />
           ))}
         </div>
       </div>

@@ -21,9 +21,9 @@ const Text = React.forwardRef(
     ref
   ) => {
     return (
-      <div className=" text-left my-1 ">
+      <div className=" text-left my-1 mx-auto w-full ">
         {label && value && `${label} :`}
-        <div className=" ">
+        <div className=" flex mx-auto w-full">
           <input
             ref={ref}
             autoComplete={autoComplete}
@@ -39,7 +39,7 @@ const Text = React.forwardRef(
           </input>
           {Icon && (
             <button
-              className=''
+              className='ml-1'
               onClick={(e) => {
                 e.preventDefault()
                 onClickIcon()
