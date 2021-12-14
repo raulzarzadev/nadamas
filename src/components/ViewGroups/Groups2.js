@@ -2,11 +2,12 @@ import { getAthlete } from '@/firebase/athletes'
 import { getAttendanceDate } from '@/firebase/attendance'
 import {
   getAthletesBySchedule,
+  getCoachSchedule,
   getSchedule,
   getSchedules
 } from '@/firebase/schedules'
 import { useAuth } from '@/src/context/AuthContext'
-import useAthletes from '@/src/hooks/useAthletes'
+import useAthlete from '@/src/hooks/useAthlete'
 import { format } from '@/src/utils/Dates'
 import { BackIcon, ForwardIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'
@@ -34,10 +35,10 @@ export default function Grups() {
   const [coachSchedule, setCoachSchedule] = useState(undefined)
 
   useEffect(() => {
-    getSchedules(user.id)
+    getCoachSchedule({coachId:user.id})
       .then(({ res }) => {
         console.log(`res`, res)
-        const schedule = res?.[0]?.schedule
+        const schedule = res?.schedule
         if (schedule) {
           setCoachSchedule(schedule)
         } else {
@@ -83,7 +84,7 @@ export default function Grups() {
         </div> */}
         <div>
           {coachSchedule === null && (
-            <Info text="No tienes horarios habiles" fullWidth />
+            <Info text="No tienes horarios habilitados" fullWidth />
           )}  
         </div>
       </div>
@@ -108,7 +109,7 @@ const HourAthleteList = ({ schedule, date, showAttendance, coachId }) => {
     getAthletesBySchedule(coachId, schedule, date)
       .then((res) => {
         const formatList = res.map((athlete) => {
-          return athlete.owner.id
+          return athlete?.athleteId
         })
         setAthletes(formatList)
       })
@@ -129,6 +130,7 @@ const HourAthleteList = ({ schedule, date, showAttendance, coachId }) => {
         .catch((err) => console.log('err', err))
     }
   }, [date, showAttendance, schedule])
+  console.log(`athletes`, athletes)
 
   return (
     <div>
@@ -169,26 +171,13 @@ const Athletes = ({
   assist,
   displaySetAttendance
 }) => {
-  const [athleteInfo, setAthleteInfo] = useState(undefined)
-  useEffect(() => {
-    if (athlete) {
-      getAthlete(athlete)
-        .then((res) => {
-          if (res) {
-            setAthleteInfo(res)
-          } else {
-            setAthleteInfo({ id: athlete, active: false })
-          }
-        })
-        .catch((err) => console.log(`err`, err))
-      return () => {
-        setAthleteInfo(undefined)
-      }
-    }
-  }, [athlete])
+console.log(`athlete`, athlete)
+  const { athlete: athleteInfo } = useAthlete(athlete)
+  console.log(`athleteInfo`, athleteInfo)
   if (athleteInfo === undefined) return <Loading />
   return (
     <AthleteRow
+    groupView={true}
       athlete={athleteInfo}
       key={athleteInfo.id}
       schedule={schedule}

@@ -6,13 +6,15 @@ import {
   BirthCakeIcon,
   ContactIcon,
   EditIcon,
-  EmergencyIcon
+  EmergencyIcon,
+  InfoIcon
 } from '../../utils/Icons'
 import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
 import { updateAttendanceList } from '@/firebase/attendance'
 import { useRouter } from 'next/router'
 import useEditable from '@/src/hooks/useEditable'
+import AthleteInformationModal from './AthleteInformationModal'
 
 export default function AthleteRow({
   athlete = {},
@@ -21,7 +23,8 @@ export default function AthleteRow({
   assist = false,
   schedule,
   showLastPay,
-  coachView = true
+  coachView = false,
+  groupView = false
 }) {
   const router = useRouter()
   const { user } = useAuth()
@@ -58,10 +61,13 @@ export default function AthleteRow({
 
   const [lastPay, setLastPay] = useState(null)
   const { isOwner } = useEditable({ userId: athlete?.userId })
-
+  const [openAthleteInfo, setOpenAthleteInfo] = useState(false)
+  const handleOpenAthleteInfo = () => {
+    setOpenAthleteInfo(!openAthleteInfo)
+  }
   return (
-    <div className='bg-primary-light dark:bg-secondary-dark flex w-full justify-between relative rounded-md my-1 pl-4 items-center '>
-      <div className='' key={id}>
+    <div className="bg-primary-light dark:bg-secondary-dark flex w-full justify-between relative rounded-md my-1 pl-4 items-center ">
+      <div className="" key={id}>
         {isOwner && (
           <span className="absolute left-0 top-0 bottom-0 w-3  bg-warning rounded-md rounded-r-none transform "></span>
         )}
@@ -119,7 +125,8 @@ export default function AthleteRow({
           >
             <ContactIcon size="1rem" className="" />
           </Button>
-        </div>
+        </div>{' '}
+        {/* TODO change button edit to show when is not user or owner, modal can works enough  */}
         {coachView && (
           <div className="m-1">
             <Button
@@ -131,7 +138,15 @@ export default function AthleteRow({
             </Button>
           </div>
         )}
+        {groupView && (
+          <div className="m-1">
+            <Button size="sm" iconOnly onClick={handleOpenAthleteInfo}>
+              <InfoIcon size="1rem" />
+            </Button>
+          </div>
+        )}
       </div>
+      <AthleteInformationModal open={openAthleteInfo} handleOpen={handleOpenAthleteInfo} athlete={athlete} />
       <EmergencyCallModal
         handleOpen={handleOpenEmergencyCall}
         open={openEmergencyModal}

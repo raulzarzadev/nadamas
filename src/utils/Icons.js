@@ -32,6 +32,7 @@ import { RiMailAddLine } from 'react-icons/ri'
 import { RiDeleteBack2Line } from 'react-icons/ri'
 import { RiCake2Line } from 'react-icons/ri'
 import { RiPlayList2Line } from 'react-icons/ri'
+import { RiInformationLine } from 'react-icons/ri'
 
 const size = '1.5rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -54,6 +55,7 @@ export const TrashBinIcon = (props) => (
 )
 
 
+export const InfoIcon = (props) => <RiInformationLine size={size} {...props} />
 export const UploadIcon = (props) => <RiUpload2Fill size={size} {...props} />
 export const SaveIcon = (props) => <RiSave2Fill size={size} {...props} />
 export const AddPersonIcon = (props) => <RiUserAddFill size={size} {...props} />

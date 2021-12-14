@@ -17,8 +17,8 @@ export const dayLabels = [
   'Viernes',
   'Sabado'
 ]
-export const format = (date = new Date(), formatStr = 'PP') => {
-  return fnsFormat(new Date(date), formatStr, { locale: es })
+export const format = (date = new Date(), formatStr = 'dd MM yy') => {
+  return fnsFormat(addHours(new Date(date), 7), formatStr, { locale: es })
   /*   const newDate = zonedTimeToUtc(date, 'America/Los_Angeles')
   return fnsFormat(newDate, formatStr, {
     locale: es // or global.__localeId__

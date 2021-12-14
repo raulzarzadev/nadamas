@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import FormSchedule from './FormSchedule'
-import { getSchedules, updateSchedule } from '@/firebase/schedules'
+import { addSchedule, getSchedules } from '@/firebase/schedules'
 import Select from '@comps/inputs/Select'
 import { getPublicCoachSchedules } from '@/firebase/coaches'
 import Button from '@comps/inputs/Button'
@@ -44,15 +44,17 @@ export default function AthleteSchedule({ athleteId }) {
 
   const { user } = useAuth()
 
-  console.log(`user`, user)
 
   const [isDirty, setIsDirty] = useState(false)
   const handleSubmit = () => {
     console.log(`form`, form)
-    updateSchedule({
+    addSchedule({
       ...form,
+      owner:{
+        id:user.id,
+        name:user.name,
+      },
       athleteId:user.athleteId,
-
     })
       .then((res) => {
         setIsDirty(false)
