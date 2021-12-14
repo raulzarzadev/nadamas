@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { RiZzzFill } from 'react-icons/ri'
 import s from './styles.module.css'
 
 export default function PickerTime({
@@ -43,9 +44,11 @@ export default function PickerTime({
     handleSetTime({ ..._time, [name]: parseInt(value) })
   }
 
-
+  
+  
   const [hoursOptions, setHoursOptions] = useState([])
   const [minutesOptions, setMinutesOptions] = useState([])
+  console.log(`hoursOptions`, hoursOptions)
 
   return (
     <div className={s.time}>

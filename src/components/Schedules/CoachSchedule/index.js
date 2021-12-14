@@ -1,4 +1,9 @@
-import { getSchedules, updateSchedule } from '@/firebase/schedules'
+import {
+  addSchedule,
+  getCoachSchedule,
+  getSchedules,
+  updateSchedule
+} from '@/firebase/schedules'
 import { formatObjectTimeToString } from '@/src/utils/Hours'
 import { WarningIcon } from '@/src/utils/Icons'
 import { useEffect, useState } from 'react'
@@ -9,8 +14,11 @@ import CoachScheduleDisplay from './CoachScheduleDisplay'
 export default function CoachSchedule({ coachId }) {
   useEffect(() => {
     if (coachId) {
-      getSchedules(coachId)
-        .then(({res}) => setSchedule(res[0]?.schedule))
+      getCoachSchedule({ coachId })
+        .then(({ res }) => {
+          console.log(`res`, res)
+          setSchedule(res.schedule)
+        })
         .catch((err) => console.log(`err`, err))
     }
   }, [coachId])
@@ -20,13 +28,20 @@ export default function CoachSchedule({ coachId }) {
     const updatedSchedule = formatNewSchedule(newSchedule, schedule)
 
     setSchedule(updatedSchedule)
-    updateSchedule({
-      owner: { id: coachId },
-      schedule: updatedSchedule
-    })
+    addSchedule({ schedule: updatedSchedule, owner: { id: coachId, name: '' } })
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
+    /*
+     */
+    /* updateSchedule({
+      owner: { id: coachId },
+      schedule: updatedSchedule,
+      athleteId: null
+    })
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err)) */
   }
+  console.log(`schedule`, schedule)
 
   return (
     <div>

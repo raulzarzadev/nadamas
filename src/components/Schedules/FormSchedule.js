@@ -58,7 +58,7 @@ export default function FormSchedule({ schedule, setSchedule, coach }) {
                   <select
                     className=" bg-secondary-dark p-1 m-2 text-lg w-full rounded"
                     name={day}
-                    value={form[day]?.[0]}
+                    value={form[day]?.[0] || ''}
                     onChange={handleChange}
                   >
                     <option value="">--:--</option>

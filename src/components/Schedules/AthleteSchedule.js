@@ -4,6 +4,7 @@ import { getSchedules, updateSchedule } from '@/firebase/schedules'
 import Select from '@comps/inputs/Select'
 import { getPublicCoachSchedules } from '@/firebase/coaches'
 import Button from '@comps/inputs/Button'
+import { useAuth } from '@/src/context/AuthContext'
 
 export default function AthleteSchedule({ athleteId }) {
   const handleScheduleChange = (newSchedule) => {
@@ -22,20 +23,36 @@ export default function AthleteSchedule({ athleteId }) {
     }
   }, [athleteId])
 
-  const [coach, setcoach] = useState(null)
+  const [coach, setCoach] = useState(null)
   const handleSetCoach = (coach) => {
-    setIsDirty(true)
-    setcoach(coach)
-    setForm({
-      ...form,
-      coach: { id: coach?.id || null, name: coach?.name || null }
-    })
+    if (coach) {
+      setIsDirty(true)
+      setCoach(coach)
+      setForm({
+        ...form,
+        schedule: null,
+        coach: { id: coach?.id || null, name: coach?.name || null }
+      })
+    } else {
+      setCoach(null)
+      setForm({
+        schedule: null,
+        coach: null
+      })
+    }
   }
+
+  const { user } = useAuth()
+
+  console.log(`user`, user)
 
   const [isDirty, setIsDirty] = useState(false)
   const handleSubmit = () => {
+    console.log(`form`, form)
     updateSchedule({
-      ...form
+      ...form,
+      athleteId:user.athleteId,
+
     })
       .then((res) => {
         setIsDirty(false)
@@ -44,13 +61,20 @@ export default function AthleteSchedule({ athleteId }) {
   }
   return (
     <div>
-      {isDirty && <Button onClick={handleSubmit}>Actualizar</Button>}
       <SelectCoach coach={form?.coach} setCoach={handleSetCoach} />
+
       <FormSchedule
         coach={coach}
         schedule={form?.schedule}
         setSchedule={handleScheduleChange}
       />
+      {isDirty && (
+        <div className="flex justify-center ">
+          <Button fullWidth onClick={handleSubmit}>
+            Actualizar horario
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

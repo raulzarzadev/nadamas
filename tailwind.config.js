@@ -9,7 +9,7 @@ const checkedSiblingPlugin = plugin(function ({ addVariant, e }) {
 })
 module.exports = {
   // mode: 'jit',
-  purge: [
+  content: [
     './pages/**/*.{js,ts,jsx,tsx}',
     './src/**/*.{js,ts,jsx,tsx}',
     './src/components/**/*.{js}'
