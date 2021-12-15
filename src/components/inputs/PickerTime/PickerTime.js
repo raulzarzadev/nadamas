@@ -48,7 +48,6 @@ export default function PickerTime({
   
   const [hoursOptions, setHoursOptions] = useState([])
   const [minutesOptions, setMinutesOptions] = useState([])
-  console.log(`hoursOptions`, hoursOptions)
 
   return (
     <div className={s.time}>

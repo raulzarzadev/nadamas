@@ -28,11 +28,10 @@ export default function Select({
       >
         {children}
       </select>
-      {error ? (
-        <span className={s.error}>{error}</span>
-      ) : (
+      {error && <span className={s.error}>{error}</span>}
+      {helperText && (
         <span className={s.helperText}>
-          <WarningIcon size='1rem'/>
+          <WarningIcon size="1rem" />
           <div>{helperText}</div>
         </span>
       )}

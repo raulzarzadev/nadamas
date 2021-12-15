@@ -71,7 +71,6 @@ export const addSchedule = async ({
 }) => {
   
   const ownerData = owner ? { id: owner?.id, name: owner?.name } : null
-  console.log(`ownerData, coach, athleteId, schedule`, ownerData, coach, athleteId, schedule)
   const scheduleExist = await db
     .collection('schedules')
     .where('owner.id', '==', owner?.id)
@@ -93,7 +92,6 @@ export const addSchedule = async ({
       owner: ownerData
     })
   }
-  console.log(`scheduleExist`, scheduleExist)
 }
 
 const _updateSchedule = async (scheduleId = '', schedule) => {

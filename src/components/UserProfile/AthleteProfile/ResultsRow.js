@@ -15,7 +15,7 @@ export default function ResultsRow({ results = [] }) {
     <div className="">
       <h3 className="font-bold text-md"></h3>
 
-      <div className="grid grid-flow-col overflow-auto gap-5 px-5 py-2">
+      <div className="grid grid-flow-col overflow-auto gap-5 px-3 py-2">
         <NewResultCard />
         {results?.map((result) => (
           <ResultCard key={result?.id} result={result} />

@@ -28,11 +28,11 @@ export default function PickerDays({
   }, [days])
 
   return (
-    <div className="flex flex-wrap justify-center">
+    <div className="flex flex-wrap justify-center items-center">
       {dayLabels.map((day, i) => (
         <label
           key={i}
-          className={` group flex relative h-9 w-9 justify-center items-center m-2 cursor-pointer shadow-lg hover:shadow-sm ${
+          className={` group flex relative h-9 w-9 justify-center items-center m-2 cursor-pointer shadow-lg hover:shadow-sm rounded-lg  ${
             disabled && `opacity-40 shadow-none cursor- cursor-not-allowed`
           }`}
         >
@@ -45,7 +45,7 @@ export default function PickerDays({
             name={i}
             type="checkbox"
           />
-          <span className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-primary w-full h">
+          <span className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-primary w-full h-full">
             {day[0]}
           </span>
         </label>

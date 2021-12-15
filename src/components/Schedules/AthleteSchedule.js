@@ -3,18 +3,13 @@ import FormSchedule from './FormSchedule'
 import { addSchedule, getSchedules } from '@/firebase/schedules'
 import Select from '@comps/inputs/Select'
 import { getPublicCoachSchedules } from '@/firebase/coaches'
-import Button from '@comps/inputs/Button'
 import { useAuth } from '@/src/context/AuthContext'
-import Loading from '@comps/Loading'
+import Button from '@comps/inputs/Button'
 
 export default function AthleteSchedule({ athleteId }) {
   const { user } = useAuth()
-  const handleScheduleChange = (newSchedule) => {
-    setForm({ ...form, schedule: newSchedule })
-  }
 
-  // TODO fix no renderiza correctamente la primera vez que se abre
-  const ownerIfo = { id: user.id, name: user.name } 
+  const ownerIfo = { id: user.id, name: user.name }
 
   const [form, setForm] = useState({})
 
@@ -22,22 +17,28 @@ export default function AthleteSchedule({ athleteId }) {
     if (athleteId) {
       getSchedules(athleteId)
         .then(({ res }) => {
-          setForm({ ...form, ...res[0] })
+          setForm({ ...res[0] })
         })
         .catch((err) => console.log('err', err))
     }
   }, [athleteId])
 
-  const handleSetCoach = (coach) => {
-    console.log(`coach`, coach)
+  const handleScheduleChange = (newSchedule) => {
+    setIsDirty(true)
+    setForm({ ...form, schedule: newSchedule })
+  }
+  const handleSetCoach = (coach, props = { defaultValue: false }) => {
+   // defaultValue es una bandera que previene renderice el boton de guardar con la primer modificaci
+    const { defaultValue } = props
+    if (!defaultValue) setIsDirty(true)
+    setCoach(coach)
     setForm({
       ...form,
       coach: coach ? { id: coach?.id, name: coach?.name } : null
     })
-    setAvailableSchedule(coach ? coach.schedule : null)
   }
 
-  const [availableSchedule, setAvailableSchedule] = useState(null)
+  const [coach, setCoach] = useState(undefined)
 
   const handleSubmit = () => {
     addSchedule({
@@ -45,7 +46,9 @@ export default function AthleteSchedule({ athleteId }) {
       athleteId: athleteId,
       owner: ownerIfo
     })
-      .then((res) => {})
+      .then((res) => {
+        setIsDirty(false)
+      })
       .catch((err) => console.log('err', err))
   }
 
@@ -55,10 +58,9 @@ export default function AthleteSchedule({ athleteId }) {
     <div>
       <SelectCoach coach={form?.coach} setCoach={handleSetCoach} />
       <FormSchedule
-        coach={form.coach}
         schedule={form?.schedule}
-        availableSchedule={availableSchedule}
         setSchedule={handleScheduleChange}
+        coachSchedule={coach?.schedule}
       />
       {isDirty && (
         <div className="flex justify-center ">
@@ -66,35 +68,37 @@ export default function AthleteSchedule({ athleteId }) {
             Actualizar horario
           </Button>
         </div>
-      )}{' '}
+      )}
     </div>
   )
 }
 
 const SelectCoach = ({ coach = null, setCoach = () => {} }) => {
   const [coachesList, setCoachesList] = useState([])
-
   useEffect(() => {
     getPublicCoachSchedules()
-      .then((res) => setCoachesList(res))
+      .then((res) => setCoachesList(res.filter(({ schedule }) => !!schedule)))
       .catch((err) => console.log(`err`, err))
   }, [])
 
-  useEffect(() => {
-    setCoach(coachesList.find(({ id }) => id === coach.id))
-  }, [])
-
-  const handleChangeCoach = ({ target: { value } }) => {
-    const coach = coachesList.find(({ id }) => value === id)
+  const handleChangeCoach = (coachSelected) => {
+    const coach = coachesList.find(({ id }) => coachSelected === id)
     setCoach(coach || null)
   }
+
+  useEffect(() => {
+    if (coach)
+      setCoach(
+        coachesList.find(({ id }) => id === coach?.id),
+        { defaultValue: true }
+      )
+  }, [coachesList])
 
   return (
     <Select
       value={coach?.id}
       label=" Horario de entrenador"
-      onChange={handleChangeCoach}
-      helperText="Seleccionar un entrenador te permitira saber sus horarios"
+      onChange={({ target: { value } }) => handleChangeCoach(value)}
     >
       <option value="">Sin entrenador</option>
       {coachesList.map((coach) => (

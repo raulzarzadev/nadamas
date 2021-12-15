@@ -16,7 +16,6 @@ export default function CoachSchedule({ coachId }) {
     if (coachId) {
       getCoachSchedule({ coachId })
         .then(({ res }) => {
-          console.log(`res`, res)
           setSchedule(res.schedule)
         })
         .catch((err) => console.log(`err`, err))
@@ -29,7 +28,7 @@ export default function CoachSchedule({ coachId }) {
 
     setSchedule(updatedSchedule)
     addSchedule({ schedule: updatedSchedule, owner: { id: coachId, name: '' } })
-      .then((res) => console.log(`res`, res))
+      .then((res) => {})
       .catch((err) => console.log(`err`, err))
     /*
      */
@@ -41,7 +40,6 @@ export default function CoachSchedule({ coachId }) {
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err)) */
   }
-  console.log(`schedule`, schedule)
 
   return (
     <div>
@@ -52,7 +50,6 @@ export default function CoachSchedule({ coachId }) {
         Actualiza los dias y horas en que tus alumnos podran encontrarte
       </span> */}
       <div className=" ">
-        <div className="text-center">Nuevo horario:</div>
         <ScheduleSelect
           schedule={schedule}
           handleAddSchedule={handleAddSchedule}

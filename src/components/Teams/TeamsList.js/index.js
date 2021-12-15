@@ -33,7 +33,7 @@ export default function TeamsList() {
   }
 
   return (
-    <div className="p-2">
+    <div className="">
       {/* <SelectGroupsView /> */}
       {teams?.map((team) => (
         <div className="my-2 " key={team.id}>

@@ -13,7 +13,7 @@ export default function Section({
     setShow(open)
   }, [open])
   return (
-    <section className="my-2 dark:bg-primary dark:bg-opacity-5 shadow-lg">
+    <section className="my-2 dark:bg-primary dark:bg-opacity-5 shadow-lg px-1">
       <h3
         className={`
         text-left flex pl-2 mb-4 font-bold items-center   

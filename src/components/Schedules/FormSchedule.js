@@ -21,16 +21,9 @@ function setDayScheduleBetween(startAt = 6, endAt = 22) {
   return res
 }
 
-export default function FormSchedule({ schedule, setSchedule, coach, availableSchedule }) {
+export default function FormSchedule({ schedule, setSchedule, coachSchedule }) {
   const [form, setForm] = useState({})
   const [scheduleBase, setScheduleBase] = useState()
-  useEffect(() => {
-    if (coach) {
-      setScheduleBase(availableSchedule)
-    } else {
-      setScheduleBase(SCHEDULE_BASE)
-    }
-  }, [coach, availableSchedule])
 
   useEffect(() => {
     if (schedule) {
@@ -38,11 +31,22 @@ export default function FormSchedule({ schedule, setSchedule, coach, availableSc
     }
   }, [schedule])
 
+
+  useEffect(() => {
+    if (coachSchedule) {
+      setScheduleBase(coachSchedule)
+    } else {
+      setScheduleBase(SCHEDULE_BASE)
+    }
+  }, [coachSchedule])
+
   const handleChange = ({ target: { value, name } }) => {
     setForm({ ...form, [name]: [value] })
     setSchedule({ ...form, [name]: [value] })
   }
+
   if (!scheduleBase) return <Info text="Sin horarios disponibles" />
+
   return (
     <>
       <div className="">
