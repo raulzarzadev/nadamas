@@ -1,4 +1,4 @@
-import {  getEvent } from '@/firebase/events'
+import { getEvent } from '@/firebase/events'
 import { addEventResult } from '@/firebase/results'
 import useAthlete from '@/src/hooks/useAthlete'
 import { getAge } from '@/src/utils/Dates'
@@ -58,12 +58,11 @@ export default function FormResults() {
       <div className="">
         <PickerTest test={test} setTest={(test) => setTest(test)} />
       </div>
-      <div className="flex justify-center my-3 items-center">
+      <div className="flex justify-center my-3 items-center flex-col ">
         <h4 className="text-center text-xl mx-3">Competidores </h4>
-        <div className="flex w-16">
+        <div className="flex">
           <Button
             onClick={handleOpenParticipants}
-            size="sm"
             variant="secondary"
           >
             Agregar
@@ -101,7 +100,14 @@ export default function FormResults() {
           ))}
         </Modal>
       </div>
-      <Button label="Regresar" onClick={() => router.back()} />
+      <div className='flex w-full justify-center'>
+
+      <Button
+        variant="secondary"
+        label="Regresar"
+        onClick={() => router.back()}
+        />
+        </div>
     </div>
   )
 }
@@ -125,7 +131,12 @@ const CompetitorRow = ({ athlete, test, event }) => {
       .catch((err) => console.log(`err`, err))
     setSaved(true)
   }
-  const [form, setForm] = useState({})
+  const [form, setForm] = useState('')
+  const [openRecord, setOpenRecord] = useState(false)
+  const handleOpenRecord = () => {
+    setOpenRecord(!openRecord)
+  }
+
   return (
     <div className="flex items-center justify-between w-full  my-2">
       <div className="w-1/12 text-right pr-1 z font-bold text-xl">
@@ -133,7 +144,15 @@ const CompetitorRow = ({ athlete, test, event }) => {
       </div>
       <div className="w-2/6">{athlete.name}</div>
       <div className="w-3/6">
-        <PickerRecord setValue={(field, value) => setForm(value)} size="sm" />
+        <div
+          className="flex w-full justify-center items-center"
+          onClick={handleOpenRecord}
+        >
+          {form}
+        </div>
+        <Modal open={openRecord} handleOpen={handleOpenRecord} title='Record'>
+          <PickerRecord setValue={(field, value) => setForm(value)} size="sm" />
+        </Modal>
       </div>
       <div className="w-1/6 flex justify-center">
         <Button

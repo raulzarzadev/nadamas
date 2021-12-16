@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 const formatNumberInput = (value) => {
   const num = parseInt(value)
-  if (!num) return '00'
+  if (!num) return ''
   return value < 1 ? '00' : value < 10 ? `0${value}` : `${value}`
 }
 
@@ -12,7 +12,6 @@ export default function PickerRecord({
   name = 'record',
   size = 'md'
 }) {
-  console.log(`value`, value)
   const formatValue = (value) => {
     if (typeof value === 'string') {
       const auxArr = value.split(/[:\.]/g)
@@ -33,7 +32,6 @@ export default function PickerRecord({
   const [form, setForm] = useState({ minutes: null, seconds: null, ms: null })
 
   const _handleChange = ({ target: { name, value } }) => {
-    console.log(`form[name]`, form[name])
     setForm({ ...form, [name]: value })
   }
 
@@ -41,7 +39,7 @@ export default function PickerRecord({
     const secs = formatNumberInput(seconds)
     const mins = formatNumberInput(minutes)
     const mili = formatNumberInput(ms)
-    const res = `${mins}:${secs}.${mili}`
+    const res = `${mins||'00'}:${secs||'00'}.${mili||'00'}`
     return res
   }
 
@@ -57,72 +55,106 @@ export default function PickerRecord({
   }, [value])
 
   //console.log(`form`, form)
+  const nextInput = (nextInputName) => {
+    if (nextInputName === 'minutes') return minutesRef.current.focus()
+    if (nextInputName === 'seconds') return secondsRef.current.focus()
+    if (nextInputName === 'ms') return msRef.current.focus()
+  }
+  const minutesRef = useRef(null)
+  const secondsRef = useRef(null)
+  const msRef = useRef(null)
+
+  useEffect(() => {
+    // TODO hacer que esto funcione
+    if (minutesRef?.current) minutesRef?.current?.focus()
+  }, [minutesRef])
 
   return (
     <div className="  flex justify-center">
       <InputNumber
+        ref={minutesRef}
         name="minutes"
         label="Mins"
         onChange={_handleChange}
         value={form.minutes}
         max={99}
         size={size}
+        nextInput={() => nextInput('seconds')}
       />
       <InputNumber
+        ref={secondsRef}
         name="seconds"
         label="Segs"
         onChange={_handleChange}
         value={form.seconds}
         max={60}
+        nextInput={() => nextInput('ms')}
         size={size}
       />
       <InputNumber
+        ref={msRef}
         name="ms"
         label="Ms"
         onChange={_handleChange}
         value={form.ms}
         max={99}
-        size={size}
+        maxLength={3}
+        nextInput={() => nextInput('minutes')}
+        size={'lg'}
       />
     </div>
   )
 }
 
-const InputNumber = ({
-  label,
-  onChange,
-  value,
-  name,
-  max,
-  min = 0,
-  step = 1,
-  size
-}) => {
+const InputNumber = React.forwardRef((props, ref) => {
+  const {
+    label,
+    onChange,
+    value,
+    name,
+    max,
+    min = 0,
+    step = 1,
+    size,
+    maxLength = 2,
+    nextInput = () => {},
+    ...rest
+  } = props
   const sizing = {
     sm: 'w-12 p-1  text-sm',
-    md: 'w-16 m-1 ',
-    lg: ''
+    md: 'w-16 m-1 text-sm',
+    lg: 'w-18 p-1 text-sm'
   }
-  console.log(`value`, formatNumberInput(value))
   return (
     <label
       className={`${sizing[size]} flex flex-col items-center justify-center text-center`}
     >
       <span>{label}</span>
       <input
+        ref={ref}
         min={min}
         max={max}
         step={step}
-        className="w-full bg-transparent text-center text-xl  "
-        value={formatNumberInput(value)}
+        className="w-full bg-primary-light dark:bg-secondary-dark bg-opacity-20 text-center text-xl  rounded-md  flex "
+        onBlur={(e) => {
+          e.target.value = ''
+        }}
         onChange={onChange}
         name={name}
-        // defaultValue={formatNumberInput(value)}
         placeholder={formatNumberInput(value)}
         type="number"
         pattern="[0-9]*"
         inputMode="numeric"
+        maxLength={maxLength}
+        onKeyUp={(e) => {
+          const length = e.target.value.length
+          const maxLength = e.target.maxLength
+          if (length >= maxLength) {
+            nextInput()
+          }
+        }}
+        {...rest}
       />
     </label>
   )
-}
+})
