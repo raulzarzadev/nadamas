@@ -33,7 +33,7 @@ const MemberRow = ({
           </Button>
         )}
         {athlete.active ? (
-          <AthleteRow athlete={athlete} coachView/>
+          <AthleteRow athlete={athlete} coachView={coachView} groupView/>
         ) : (
           <div className="p-2">Usuario inactivo</div>
         )}

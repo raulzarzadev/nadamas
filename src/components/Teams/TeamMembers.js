@@ -7,7 +7,7 @@ import Modal from '@comps/Modals/Modal'
 import { useState } from 'react'
 import MemberRow from './MemberRow'
 
-export default function TeamMembers({ members = [], teamId }) {
+export default function TeamMembers({ members = [], teamId, coachView }) {
   const [openSearchModal, setOpenSearchModal] = useState(false)
   const handleOpenSearch = () => {
     setOpenSearchModal(!openSearchModal)
@@ -51,6 +51,7 @@ export default function TeamMembers({ members = [], teamId }) {
             key={memberId}
             athlete={memberId}
             handleRemoveMember={handleRemoveMember}
+            coachView={coachView}
           />
         ))}
       </div>

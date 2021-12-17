@@ -61,7 +61,11 @@ export default function TeamDetails() {
         <>
           <FormTeam team={team} />
           <Section title={`Miembros (${team?.athletes?.length || 0})`}>
-            <TeamMembers teamId={team?.id} members={team?.athletes} />
+            <TeamMembers
+              teamId={team?.id}
+              members={team?.athletes}
+              coachView={teamCoach}
+            />
           </Section>
           <Section title={`Solicitudes (${team?.joinRequests?.length || 0})`}>
             <JoinRequests

@@ -13,7 +13,7 @@ export const getEvents = async (ownerId) => {
   return await db
     .collection('events')
     .where('owner.id', '==', ownerId)
-    .orderBy('date', 'asc')
+    .orderBy('date', 'desc')
     .get()
     .then(({ docs }) => normalizeDocs(docs))
     .catch((err) => console.log('err', err))

@@ -34,8 +34,8 @@ export default function PublicEvents({ showNew, showGrid }) {
 }
 const EventsGrid = ({ events }) => {
   const sortByDate = (a, b) => {
-    if (a.date > b.date) return 1
-    if (a.date < b.date) return -1
+    if (a.date > b.date) return -1
+    if (a.date < b.date) return 1
     return 0
   }
   return (
@@ -55,15 +55,13 @@ const Event = ({ event }) => {
   if (!event || !user) return <Loading />
   return (
     <Link href={ROUTES.events.details(event.id)}>
-      <a className="relative bg-secondary dark:bg-secondary-dark hover:border-primary border-2 border-transparent mx-auto  shadow-lg  flex flex-col  w-full rounded text-center justify-between ">
-        <div className="absolute top-0 right-0 left-0 bottom-0   bg-primary opacity-20">
+      <a className="relative bg-secondary  dark:bg-secondary-dark hover:border-primary border-2 border-transparent mx-auto  shadow-lg  flex flex-col  w-full rounded text-center justify-between ">
           <Image
             src={event.image}
             layout="fill"
             objectFit="cover"
-            className=""
+            className="opacity-20"
           />
-        </div>
         <header className="relative " className="p-0.5">
           <h5 className="font-bold  text-base ">{event?.title}</h5>
           <div className="font-bold text-xs">

@@ -4,7 +4,7 @@ import { useAuth } from '@/src/context/AuthContext'
 import { AddIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
-import PublicTeamCard from '@comps/Teams/TeamsList.js/PublicTeamCard'
+import PublicTeamCard from '@comps/Teams/TeamsList/PublicTeamCard'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
@@ -22,9 +22,7 @@ export default function Teams() {
       setPublicTeams([])
     }
   }, [])
-  const handleClickTeam = (id) => {
-    router.push(`${ROUTES.teams.details(id)}`)
-  }
+
 
   const {
     user: { coach }
@@ -44,7 +42,7 @@ export default function Teams() {
         </div>
       )}
       {publicTeams?.map((team) => (
-        <PublicTeamCard team={team} onClick={handleClickTeam} key={team.id} />
+        <PublicTeamCard team={team} redirectTeam key={team.id} />
       ))}
     </div>
   )
