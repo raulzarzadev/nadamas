@@ -34,7 +34,7 @@ import { RiCake2Line } from 'react-icons/ri'
 import { RiPlayList2Line } from 'react-icons/ri'
 import { RiInformationLine } from 'react-icons/ri'
 
-const size = '1.5rem'
+const size = '1.2rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
 export const EmergencyIcon = (props) => (
   <RiHeartPulseLine size={size} {...props} />

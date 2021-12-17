@@ -9,7 +9,11 @@ import Text from '@comps/inputs/Text'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { addEventResult, deleteResult, deleteUserResult } from '@/firebase/results'
+import {
+  addEventResult,
+  deleteResult,
+  deleteUserResult
+} from '@/firebase/results'
 import PickerTest from '@comps/inputs/PickerTest'
 
 export default function FormRecord({ searchAthlete, record, personalRecord }) {
@@ -126,25 +130,26 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
           Tiempo
           <PickerRecord setValue={handleSetRecord} value={form?.record} />
         </div>
-        <div className="flex justify-evenly w-full">
+        <div className="grid gap-2 place-items-center sm:flex">
           <Button
-            label="Regresar"
+            fullWidth
             variant="outlined"
             onClick={() => router.back()}
-          />
+          >Regresar</Button>
           {saved && (
             <Button
+              fullWidth
               variant="danger"
-              fullWidth={false}
               onClick={(e) => {
                 e.preventDefault()
                 handleOpenDelete()
               }}
             >
-              Eliminar <TrashBinIcon />
+              Eliminar <TrashBinIcon   />
             </Button>
           )}
           <Button
+            fullWidth
             disabled={!isValid}
             variant="primary"
             loading={saving}
@@ -154,7 +159,7 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
             }}
           >
             {saved ? 'Guardado' : 'Guardar'}
-            <SaveIcon />
+            <SaveIcon   />
           </Button>
         </div>
         <DeleteModal
