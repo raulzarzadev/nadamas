@@ -86,7 +86,7 @@ const SelectBox = ({ label, name, onChange, checked }) => (
       name={name}
       type="checkbox"
     />
-    <div className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-primary w-full ">
+    <div className=" font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-primary w-full ">
       {label}
     </div>
   </label>

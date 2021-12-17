@@ -1,7 +1,5 @@
-import { removeRecord } from '@/firebase/records'
 import SWIMMING_TESTS from '@/src/constants/SWIMMING_TESTS'
 import { format } from '@/src/utils/Dates'
-import { AddIcon, GaleryIcon, TrashBinIcon } from '@/src/utils/Icons'
 import FormRecord from '@comps/FormRecord2'
 import Button from '@comps/inputs/Button'
 import UploadImage from '@comps/inputs/UploadImage'

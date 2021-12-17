@@ -1,69 +1,17 @@
-import { getAthletes } from '@/firebase/athletes'
-import { createOrUpdateRecord, removeRecord } from '@/firebase/records'
 import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
 import { SaveIcon, TrashBinIcon } from '@/src/utils/Icons'
 import AthleteSimpleRow from '@comps/AthleteRow/AthleteSimpleRow'
-import PickerRecord from '@comps/Athlete/Records/PickerRecord'
+import PickerRecord from '@comps/inputs/PickerRecord'
 import Button from '@comps/inputs/Button'
-import PickerTime from '@comps/inputs/PickerTime'
 import SearchAthletes from '@comps/inputs/SearchAthletes'
 import Text from '@comps/inputs/Text'
-import Autocomplete from '@comps/inputs/TextAutocomplete'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { addEventResult, deleteResult, deleteUserResult } from '@/firebase/results'
+import PickerTest from '@comps/inputs/PickerTest'
 
-const swimmingStyles = [
-  {
-    label: 'C',
-    id: 'crawl'
-  },
-  {
-    label: 'D',
-    id: 'back'
-  },
-  {
-    label: 'P',
-    id: 'breast'
-  },
-  {
-    label: 'M',
-    id: 'butterfly'
-  },
-  {
-    label: 'CI',
-    id: 'combi'
-  }
-]
-
-const distances = [
-  {
-    label: '25',
-    id: '25'
-  },
-  {
-    label: '50',
-    id: '50'
-  },
-  {
-    label: '100',
-    id: '100'
-  },
-  {
-    label: '200',
-    id: '200'
-  },
-  {
-    label: '400',
-    id: '400'
-  },
-  {
-    label: '800',
-    id: '800'
-  }
-]
 export default function FormRecord({ searchAthlete, record, personalRecord }) {
   useEffect(() => {
     if (record) {
@@ -87,12 +35,10 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
       handleChangeAthlete({ id: user.athleteId, name: user.name })
   }, [])
 
-  const handleChangeDistance = ({ target }) => {
-    setForm({ ...form, distance: target.name })
+  const handleSetTest = (newTest) => {
+    setForm({ ...form, ...newTest })
   }
-  const handleChangeStyle = ({ target }) => {
-    setForm({ ...form, style: target.name })
-  }
+
   const handleChangeAthlete = (athlete) => {
     if (athlete) {
       setForm({
@@ -174,40 +120,10 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
           label="Fecha"
         />
       </div>
-      <div>
-        <h5 className="font-bold">Estilo</h5>
-        <div className="flex w-full justify-evenly flex-wrap">
-          {swimmingStyles.map(({ label, id }) => (
-            <div className="w-1/5 p-2" key={id}>
-              <SelectBox
-                label={label}
-                name={id}
-                onChange={handleChangeStyle}
-                checked={form?.style === id}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h5 className="font-bold">Distancia</h5>
-        <div className="flex w-full flex-wrap ">
-          {distances.map(({ label, id }) => (
-            <div className="w-1/5 p-2" key={id}>
-              <SelectBox
-                label={label}
-                name={id}
-                onChange={handleChangeDistance}
-                checked={form?.distance === id}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
+      <PickerTest setTest={handleSetTest} />
       <div className="flex flex-col text-center w-full justify-evenly py-2 px-1 items-center">
         <div className="my-2">
           Tiempo
-          {console.log(`form`, form)}
           <PickerRecord setValue={handleSetRecord} value={form?.record} />
         </div>
         <div className="flex justify-evenly w-full">
@@ -252,37 +168,3 @@ export default function FormRecord({ searchAthlete, record, personalRecord }) {
     </div>
   )
 }
-
-const SelectBox = ({ label, name, onChange, checked }) => (
-  <label
-    key={name}
-    className={` 
-    group
-    flex
-    relative
-    h-full
-    w-full
-    justify-center
-    items-center
-    cursor-pointer
-    shadow-lg 
-    hover:shadow-sm
-    bg-secondary-dark
-    rounded-lg
-    ${false && `opacity-40 shadow-none cursor- cursor-not-allowed`}
-            `}
-  >
-    <input
-      checked={checked}
-      //disabled={disabled}
-      onChange={onChange}
-      className="absolute opacity-0 h-0 w-0 "
-      // className={`${s.check_input} ${disabled && style[disabled]}`}
-      name={name}
-      type="checkbox"
-    />
-    <div className="text-2xl font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-primary w-full ">
-      {label}
-    </div>
-  </label>
-)
