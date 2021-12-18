@@ -15,6 +15,7 @@ import DeleteModal from '@comps/Modals/DeleteModal'
 import Section from '@comps/Section'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import AddMyOwnTeamMembers from './AddMyOwnTeamMembers'
 import ButtonJoinTeam from './ButtonJoinTeam'
 import FormTeam from './FormTeam'
 import MemberTeamView from './MemberTeamview'
@@ -60,7 +61,8 @@ export default function TeamDetails() {
       {teamCoach ? (
         <>
           <FormTeam team={team} />
-          <Section title={`Miembros (${team?.athletes?.length || 0})`}>
+          <Section title={`Miembros (${team?.athletes?.length || 0})`} indent={false}>
+            <AddMyOwnTeamMembers teamId={team.id} />
             <TeamMembers
               teamCoaches={team?.coaches}
               teamId={team?.id}

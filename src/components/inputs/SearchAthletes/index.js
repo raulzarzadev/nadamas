@@ -105,7 +105,9 @@ export default function SearchAthletes({
         </div>
         <div>
           {sortedAthletes?.map((athlete) => (
-            <AthleteRow athlete={athlete} key={athlete.id} coachView />
+            <div key={athlete.id} onClick={() => handleSelectAthlete(athlete)}>
+              <AthleteRow athlete={athlete} coachView />
+            </div>
           ))}
         </div>
       </div>

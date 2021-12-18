@@ -1,10 +1,5 @@
-import { getAthlete } from '@/firebase/athletes'
-import { acceptTeamRequest, unjoinTeam, assignAsCoach } from '@/firebase/teams'
-import { AddIcon } from '@/src/utils/Icons'
-import Button from '@comps/inputs/Button'
-import SearchAthletes from '@comps/inputs/SearchAthletes'
-import Modal from '@comps/Modals/Modal'
-import { useState } from 'react'
+
+import { unjoinTeam } from '@/firebase/teams'
 import MemberRow from './MemberRow'
 
 export default function TeamMembers({
@@ -13,44 +8,16 @@ export default function TeamMembers({
   coachView,
   teamCoaches
 }) {
-  const [openSearchModal, setOpenSearchModal] = useState(false)
-  const handleOpenSearch = () => {
-    setOpenSearchModal(!openSearchModal)
-  }
 
-  const handleAddMember = async (athleteId) => {
-    await acceptTeamRequest(teamId, athleteId, true)
-  }
   const handleRemoveMember = async (athleteId) => {
     await unjoinTeam(teamId, athleteId)
   }
 
   return (
     <>
-      <div className="flex justify-center items-center">
-        <h4 className="mx-2 text-center font-bold">Agregar </h4>
-        <Button iconOnly size="xs" onClick={handleOpenSearch}>
-          <AddIcon />
-        </Button>
-      </div>
-      <Modal
-        open={openSearchModal}
-        handleOpen={handleOpenSearch}
-        title="Nuevo integrante"
-      >
-        <SearchAthletes
-          AthleteRowResponse={AthleteResponse}
-          setAthlete={(athlete) => {
-            handleAddMember(athlete.id)
-            setTimeout(() => {
-              handleOpenSearch()
-            }, 400)
-          }}
-          label="Agregar atleta"
-        />
-      </Modal>
+     
       Entrenadores
-      <div className="p-2 max-w-md mx-auto">
+      <div className=" max-w-md mx-auto">
         {teamCoaches?.map((memberId, i) => (
           <MemberRow
             teamId={teamId}
@@ -63,7 +30,7 @@ export default function TeamMembers({
         ))}
       </div>
       Integrantes
-      <div className="p-2 max-w-md mx-auto">
+      <div className=" max-w-md mx-auto">
         {members?.map((memberId, i) => (
           <MemberRow
             teamId={teamId}
