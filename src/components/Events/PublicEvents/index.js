@@ -13,7 +13,6 @@ import Image from 'next/image'
 export default function PublicEvents({ showNew, showGrid }) {
   const [events, setEvents] = useState([])
   const { user } = useAuth()
-  if (!user) return <MustBeAuthenticated />
 
   useEffect(() => {
     getPublicEvents()
@@ -24,7 +23,6 @@ export default function PublicEvents({ showNew, showGrid }) {
         console.log(`err`, err)
       })
   }, [])
-
   return (
     <div className=" max-w-3xl mx-auto ">
       <UpcomingEvents events={events} showNew={showNew && user?.coach} />
@@ -52,7 +50,7 @@ const EventsGrid = ({ events }) => {
 
 const Event = ({ event }) => {
   const { user } = useAuth()
-  if (!event || !user) return <Loading />
+  if (!event) return <Loading />
   return (
     <Link href={ROUTES.events.details(event.id)}>
       <a className="relative bg-secondary  dark:bg-secondary-dark hover:border-primary border-2 border-transparent mx-auto  shadow-lg  flex flex-col  w-full rounded text-center justify-between ">

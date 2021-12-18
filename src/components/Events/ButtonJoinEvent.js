@@ -4,8 +4,10 @@ import {
   athleteUnjoinEvent
 } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
+import { useAuth } from '@/src/context/AuthContext'
 import { formatInputDate } from '@/src/utils/Dates'
 import Button from '@comps/inputs/Button'
+import MustBeAuthenticated from '@comps/MainLayout/PageErrors/MustBeAuthenticated'
 import DeleteModal from '@comps/Modals/DeleteModal'
 import Modal from '@comps/Modals/Modal'
 import { addDays, formatDistanceToNow } from 'date-fns'
@@ -19,6 +21,7 @@ export default function ButtonJoinEvent({ athleteId, event }) {
   const [eventAthlete] = useState(
     event?.participants?.find(({ id }) => id == athleteId)
   )
+  const { user } = useAuth()
 
   const handleJoin = (eventId) => {
     setLoading(true)
@@ -75,10 +78,11 @@ export default function ButtonJoinEvent({ athleteId, event }) {
     eventFinished: {
       type: 'EVENT_FINISHED',
       label: 'Evento finalizado. Ver resultados',
-      buttonVariant:'success',
+      buttonVariant: 'success',
       handleClick: () => {
-        router.push(ROUTES.events.results(event.id))
-        console.log('solicitud rechada')
+        user
+          ? router.push(ROUTES.events.results(event.id))
+          : handleOpenMostBeAutenticated()
       }
     },
     alreadyIn: function (participant) {
@@ -91,12 +95,18 @@ export default function ButtonJoinEvent({ athleteId, event }) {
     }
   }
 
+  const [openMustBeAutenticated, setOpenMostBeAutenticated] = useState(false)
+  const handleOpenMostBeAutenticated = () => {
+    console.log('ora')
+    setOpenMostBeAutenticated(!openMustBeAutenticated)
+  }
+
   const getRequestStatus = (athleteId, event) => {
     if (event?.requests?.includes(athleteId)) {
       return REQUEST_STATUS.whatingRes
     } else {
     }
-    if(event.status==='FINISH') return REQUEST_STATUS.eventFinished
+    if (event.status === 'FINISH') return REQUEST_STATUS.eventFinished
     const participant = event?.participants?.find(({ id }) => id === athleteId)
     if (participant) {
       return REQUEST_STATUS.alreadyIn(participant)
@@ -113,7 +123,6 @@ export default function ButtonJoinEvent({ athleteId, event }) {
   const handleOpenUnjoin = () => {
     setOpenUnjoin(!openUnjoin)
   }
- 
 
   return (
     <div className="flex justify-center">
@@ -132,6 +141,9 @@ export default function ButtonJoinEvent({ athleteId, event }) {
         }}
         label={responseStatus?.label}
       />
+      <Modal open={openMustBeAutenticated} handleOpen={handleOpenMostBeAutenticated} title='Autenticacón requerida'>
+        <MustBeAuthenticated />
+      </Modal>
       <Modal
         handleOpen={handleOpenAlreadyIn}
         open={openAlreadyIn}

@@ -40,7 +40,6 @@ export default function Event() {
   const handleClickResults = () => {
     router.push(ROUTES.events.results(eventId))
   }
-  if (!user) return <MustBeAuthenticated />
   if (!event) return <Loading size="lg" />
   return (
     <>
