@@ -135,7 +135,7 @@ const InputNumber = React.forwardRef((props, ref) => {
         min={min}
         max={max}
         step={step}
-        className="w-full bg-primary-light dark:bg-secondary-dark bg-opacity-20 text-center text-xl  rounded-md  flex "
+        className="w-full bg-primary-dark dark:bg-secondary-dark bg-opacity-20 text-center text-xl  rounded-md  flex "
         onBlur={(e) => {
           e.target.value = ''
         }}

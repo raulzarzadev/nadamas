@@ -4,9 +4,9 @@ import { useAuth } from '@/src/context/AuthContext'
 import { AddIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import Loading from '@comps/Loading'
-import PublicTeamCard from '@comps/Teams/TeamsList/PublicTeamCard'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import TeamCard from './TeamsList/TeamCard'
 
 export default function Teams() {
   const router = useRouter()
@@ -42,7 +42,7 @@ export default function Teams() {
         </div>
       )}
       {publicTeams?.map((team) => (
-        <PublicTeamCard team={team} redirectTeam key={team.id} />
+        <TeamCard team={team} redirectTeam key={team.id} />
       ))}
     </div>
   )

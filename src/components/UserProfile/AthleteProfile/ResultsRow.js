@@ -27,6 +27,7 @@ export default function ResultsRow({ results = [] }) {
 
 const NewResultCard = () => {
   const router = useRouter()
+  // TODO deberia crear un nuevo record para el athleta no para el usuario
   return (
     <button
       onClick={() => router.push(ROUTES.records.newPersonal())}
@@ -111,7 +112,7 @@ function ResultModal({ open, handleOpen = () => {}, result }) {
     >
       <div
         id="modal-content"
-        className={`relative z-50 bg-white  dark:bg-primary-dark rounded-b-full  h-72 w-48 border px-2 flex flex-col justify-between items-center pb-4`}
+        className={`relative z-50 bg-primary  dark:bg-primary-dark rounded-b-full  h-72 w-48 border px-2 flex flex-col justify-between items-center pb-4`}
       >
         <button className="absolute -top-6 right-0" onClick={handleOpen}>
           <CloseIcon />

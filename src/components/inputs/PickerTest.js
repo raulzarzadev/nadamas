@@ -72,7 +72,6 @@ const SelectBox = ({ label, name, onChange, checked }) => (
             cursor-pointer
             shadow-lg 
             hover:shadow-sm
-            bg-gray-600
             rounded-lg
             ${false && `opacity-40 shadow-none cursor- cursor-not-allowed`}
             `}
@@ -86,7 +85,7 @@ const SelectBox = ({ label, name, onChange, checked }) => (
       name={name}
       type="checkbox"
     />
-    <div className=" font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-primary w-full ">
+    <div className=" font-bold flex justify-center items-center rounded-lg checked-sibiling:bg-secondary checked-sibiling:dark:bg-primary w-full ">
       {label}
     </div>
   </label>

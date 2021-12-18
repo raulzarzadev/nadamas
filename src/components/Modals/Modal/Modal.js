@@ -27,7 +27,7 @@ export default function Modal({
     >
       <div
         id="modal"
-        className={`${styles.modal_dialog} bg-light dark:bg-primary-dark`}
+        className={`${styles.modal_dialog} bg-primary dark:bg-primary-dark`}
       >
         <header className={styles.modal_header}>
           <div className={styles.modal_title}>
