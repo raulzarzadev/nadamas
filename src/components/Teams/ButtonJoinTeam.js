@@ -109,12 +109,12 @@ export default function ButtonJoinTeam({
 
   useEffect(() => {
     setResponseStatus(getRequestStatus())
-  }, [requestList, participantsList])
+  }, [requestList, participantsList]) 
 
   const buttonStyle={
-    danger:`border-red-500`,
-    primary:`border-blue-400`,
-    secondary:`border-green-400`
+    danger:`border-danger`,
+    primary:`border-success`,
+    secondary:`border-primary`
   }
 
   return (

@@ -68,9 +68,9 @@ export default function AthleteProfile({ athleteId }) {
       </div>
 
       <div>
-        <h3 className="">Equipos</h3>
+        <h3 className="">Equipos </h3>
         <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
-          <AthleteTeam />
+          <AthleteTeam athleteId={athleteId} />
         </div>
       </div>
 

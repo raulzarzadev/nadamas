@@ -60,16 +60,20 @@ export default function FormAthlete({ athleteId = '' }) {
     setOpenAthleteForm(!openAthleteForm)
   }
 
-
   if (!user || form === undefined) return <Loading />
   // ni no es dueño ni entrenador no puede ver el contedio
   // si no es nueño no puede editar
   if (!isOwner && !user?.coach) return <ContentNotAvailable />
   return (
-    <div className='m-2'>
+    <div className="m-2">
       <Info ahtlete={form} />
       <div className="flex flex-col justify-center items-center">
-        <Button size='xs' label="editar" onClick={handleOpenAthleteForm} />
+        <Button
+          variant="success"
+          label="editar perfil"
+          noWrapText
+          onClick={handleOpenAthleteForm}
+        />
       </div>
       <Modal
         open={openAthleteForm}

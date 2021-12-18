@@ -1,5 +1,5 @@
 import { getAthlete } from '@/firebase/athletes'
-import { acceptTeamRequest, unjoinTeam } from '@/firebase/teams'
+import { acceptTeamRequest, unjoinTeam, assignAsCoach } from '@/firebase/teams'
 import { AddIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import SearchAthletes from '@comps/inputs/SearchAthletes'
@@ -7,7 +7,12 @@ import Modal from '@comps/Modals/Modal'
 import { useState } from 'react'
 import MemberRow from './MemberRow'
 
-export default function TeamMembers({ members = [], teamId, coachView }) {
+export default function TeamMembers({
+  members = [],
+  teamId,
+  coachView,
+  teamCoaches
+}) {
   const [openSearchModal, setOpenSearchModal] = useState(false)
   const handleOpenSearch = () => {
     setOpenSearchModal(!openSearchModal)
@@ -28,7 +33,6 @@ export default function TeamMembers({ members = [], teamId, coachView }) {
           <AddIcon />
         </Button>
       </div>
-
       <Modal
         open={openSearchModal}
         handleOpen={handleOpenSearch}
@@ -45,9 +49,25 @@ export default function TeamMembers({ members = [], teamId, coachView }) {
           label="Agregar atleta"
         />
       </Modal>
+      Entrenadores
+      <div className="p-2 max-w-md mx-auto">
+        {teamCoaches?.map((memberId, i) => (
+          <MemberRow
+            teamId={teamId}
+            teamCoaches={teamCoaches}
+            key={memberId}
+            athlete={memberId}
+            handleRemoveMember={handleRemoveMember}
+            coachView={coachView}
+          />
+        ))}
+      </div>
+      Integrantes
       <div className="p-2 max-w-md mx-auto">
         {members?.map((memberId, i) => (
           <MemberRow
+            teamId={teamId}
+            teamCoaches={teamCoaches}
             key={memberId}
             athlete={memberId}
             handleRemoveMember={handleRemoveMember}

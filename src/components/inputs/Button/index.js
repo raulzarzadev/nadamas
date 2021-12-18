@@ -12,6 +12,7 @@ export default function Button({
   size = 'md',
   fullWidth = false,
   loading,
+  noWrapText,
   ...rest
 }) {
   const router = useRouter()
@@ -53,6 +54,7 @@ export default function Button({
       flex 
       justify-evenly
       text-sm
+      ${noWrapText && 'whitespace-nowrap'}
       
       ${disabled ? style.disabled : ''}
       ${style[variant]}

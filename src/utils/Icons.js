@@ -33,6 +33,7 @@ import { RiDeleteBack2Line } from 'react-icons/ri'
 import { RiCake2Line } from 'react-icons/ri'
 import { RiPlayList2Line } from 'react-icons/ri'
 import { RiInformationLine } from 'react-icons/ri'
+import { RiUserStarLine } from 'react-icons/ri'
 
 const size = '1.2rem'
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
@@ -97,4 +98,8 @@ export const CloseBackIcon = (props) => (
 export const BirthCakeIcon = (props) => <RiCake2Line size={size} {...props} />
 /* RiMailAddLine */
 
-export const PlayListIcon = (props) => <RiPlayList2Line size={size} {...props} />
+export const PlayListIcon = (props) => (
+  <RiPlayList2Line size={size} {...props} />
+)
+export const CoachIcon = (props) => <RiUserStarLine size={size} {...props} />
+

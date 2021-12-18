@@ -47,6 +47,44 @@ export const getPublicTeams = async () => {
     .catch((err) => console.log(err))
 }
 
+export const getTeamWhereAthleteAlreadyAre = async ({ athleteId }) => {
+  console.log(`athleteId`, athleteId)
+  const alreadyInAthletes = await db
+    .collection('teams')
+    .where('athletes', 'array-contains', athleteId)
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log(err))
+  console.log(`alreadyInAthletes`, alreadyInAthletes)
+  const alreadyInRequest = await db
+    .collection('teams')
+    .where('joinRequests', 'array-contains', athleteId)
+    .get()
+    .then(({ docs }) => normalizeDocs(docs))
+    .catch((err) => console.log(err))
+  console.log(`alreadyInRequest`, alreadyInRequest)
+  return [...alreadyInAthletes, ...alreadyInRequest]
+}
+
+export const assignAsCoach = async (teamId, athleteId) => {
+  return await db
+    .collection('teams')
+    .doc(teamId)
+    .update({ coaches: firebase.firestore.FieldValue.arrayUnion(athleteId) })
+    .then((res) => formatResponse(true, 'TEAM_UPDATED', res))
+    .catch((err) => formatResponse(false, 'TEAM_UPDATED_ERROR', err))
+}
+
+
+export const removeAsCoach = async (teamId, athleteId) => {
+  return await db
+    .collection('teams')
+    .doc(teamId)
+    .update({ coaches: firebase.firestore.FieldValue.arrayRemove(athleteId) })
+    .then((res) => formatResponse(true, 'TEAM_UPDATED', res))
+    .catch((err) => formatResponse(false, 'TEAM_UPDATED_ERROR', err))
+}
+
 export const updateTeam = async (team = {}) => {
   // Look for the team
   const teamExist = (await db.collection('teams').doc(team?.id).get()).exists

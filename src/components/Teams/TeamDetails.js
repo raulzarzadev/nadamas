@@ -62,8 +62,10 @@ export default function TeamDetails() {
           <FormTeam team={team} />
           <Section title={`Miembros (${team?.athletes?.length || 0})`}>
             <TeamMembers
+              teamCoaches={team?.coaches}
               teamId={team?.id}
               members={team?.athletes}
+              coaches={team?.coaches}
               coachView={teamCoach}
             />
           </Section>
@@ -121,7 +123,7 @@ const TeamPublicDetails = ({ team }) => {
   return (
     <div>
       <h3 className="text-3xl w-full text-center pt-8">{team?.title}</h3>
-      {team.publicTeam ? (
+      {team?.publicTeam ? (
         <>
           <p className="font-thin text-center">
             Equipo público ({team?.athletes?.length || 0})
