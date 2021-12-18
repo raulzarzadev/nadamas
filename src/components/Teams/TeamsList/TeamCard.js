@@ -24,7 +24,7 @@ export default function TeamCard({ redirectTeam, team }) {
     >
       <div className="flex w-full justify-between items-center">
         <div>
-          <h4 className="text-right">
+          <h4 className="">
             {team.title}{' '}
             <span className="font-thin text-sm">({team.athletes?.length})</span>
             <span className="text-xs font-thin mx-2">
