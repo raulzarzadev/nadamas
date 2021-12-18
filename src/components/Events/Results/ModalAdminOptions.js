@@ -16,7 +16,7 @@ export default function ModalAdminOptions({
 }) {
   return (
     <>
-      <div className="grid gap-4">
+      <div className="grid gap-2  sm:grid-cols-2 place-content-center ">
         <DeleteModalAdmin
           test={test}
           id={id}
@@ -48,7 +48,7 @@ const DeleteModalAdmin = ({ test, athlete, id, closeDetails }) => {
   }
   return (
     <>
-      <Button size="md" variant="danger" onClick={handleOpenDelete}>
+      <Button size="md" variant="danger" onClick={handleOpenDelete} fullWidth>
         Borrar
         <TrashBinIcon />
       </Button>
@@ -103,7 +103,7 @@ const AwardModalAdmin = ({ test, athlete, id, closeDetails }) => {
   const [buttonSatatus, setButtonSatatus] = useState('clean')
   return (
     <>
-      <Button variant="secondary" onClick={handleOpenAwardModalAdmin}>
+      <Button variant="secondary" onClick={handleOpenAwardModalAdmin} fullWidth>
         Premiar prueba
       </Button>
       <Modal

@@ -2,7 +2,7 @@ import { useAuth } from '@/src/context/AuthContext'
 import { DownIcon } from '@/src/utils/Icons'
 import Link from '@comps/inputs/Link'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DarkModeToggle from './DarkModeToggle'
 export default function Navbar({ links = [] }) {
   const { user } = useAuth()
@@ -97,11 +97,29 @@ const NavbarSubMenu = ({
   const handleShowMenu = () => {
     setShowMenu(!showMenu)
   }
+  useEffect(() => {
+    const eventClick = (e) => {
+      const { id } = e.target
+      if (id === `nav-menu`) handleShowMenu()
+    }
+    const a = document.getElementById(`nav-menu`)
+    a.addEventListener('click', eventClick)
+    return () => {
+      a.removeEventListener('click', eventClick)
+    }
+  }, [showMenu])
   return (
     <li
+      id="nav-menu"
       className=" group  flex items-end hover:bg-transparent  px-1 "
       onClick={handleShowMenu}
     >
+      {showMenu && (
+        <div
+          className="absolute top-0 right-0 bottom-0 left-0 bg-dark bg-opacity-20 z-10"
+          id="hola"
+        ></div>
+      )}
       <ul className="group-hover:text-black ">{listComponent}</ul>
       <div className="relative ">
         {/* <!-- Dropdown toggle button --> */}

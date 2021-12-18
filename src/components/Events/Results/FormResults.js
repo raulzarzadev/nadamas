@@ -124,7 +124,8 @@ const CompetitorRow = ({ athlete, test, event }) => {
         age: getAge(athlete.birth)?.split(' ')?.[0]
       },
       test: { ...test, record: form },
-      date: new Date()
+      // TODO verificar que se guarde con la fecha del evento si es que existe
+      date: event?.date || new Date()
     }
     addEventResult(resultData)
       .then((res) => console.log(`res`, res))

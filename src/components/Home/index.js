@@ -21,9 +21,15 @@ export default function Home() {
       <p className="text-center italic font-thin my-2">
         Sin instalar, sin publicidad, donde sea, cuando sea.
       </p>
-      <div className='flex justify-center m-4'  >
-        <Button  label="Registrate" variant="success" onClick={()=>router.push('/signin')} />
-      </div>
+      {!user && (
+        <div className="flex justify-center m-4">
+          <Button
+            label="Registrate"
+            variant="success"
+            onClick={() => router.push('/signin')}
+          />
+        </div>
+      )}
       {/* <div className="mt-6">
         <PublicEvents showNew={true} />
       </div> */}

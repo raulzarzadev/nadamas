@@ -104,7 +104,6 @@ export const getAthleteResults = async (athleteId, callback = () => {}) => {
       snapshot.forEach((doc) => {
         res.push(normalizeDoc(doc))
       })
-      console.log(`res`, res)
       // Filtramos los que tienen un campo delete por que así es como eliminamos las pruebas sin generar conflictos en los eventos
       callback(res.filter(({ deleted }) => deleted !== true))
     })

@@ -88,7 +88,6 @@ export default function Results() {
           </div>
         </div>
       )}
-      {console.log(`event.status`, event.status)}
       {event?.status === 'FINISH' && <EventFinished event={event} />}
       <div className="text-center">
         <h2>Participantes: {event?.participants?.length || '0'}</h2>
@@ -300,6 +299,14 @@ const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
             }`}
             <div className="text-2xl font-thin">{test.record}</div>
           </div>
+          <div>
+            <div>Premios</div>
+            <div className=" text-md h-4 justify-center w-full flex text-warning">
+              {test?.awards?.map((award) => (
+                <div key={award}>{TEST_AWARDS[award].icon}</div>
+              ))}
+            </div>
+          </div>
         </div>
         {isAdmin && (
           <ModalAdminOptions
@@ -313,6 +320,7 @@ const DetailsResultCell = ({ id, test, athlete, isAdmin }) => {
     </>
   )
 }
+
 const ResultRow = ({ isTitle, texts = [], awards }) => (
   <div>
     <div className="flex w-full my-2  ">
@@ -321,14 +329,7 @@ const ResultRow = ({ isTitle, texts = [], awards }) => (
           isTitle && 'font-bold'
         }  w-1/6 p-0.5 relative text-right `}
       >
-        <Cell text="end">
-          {texts?.[0]}
-          <div className="text-yellow-300 text-xl h-4 w-4 absolute -top-5 right-0 flex">
-            {awards?.map((award) => (
-              <div key={award}>{TEST_AWARDS[award].icon}</div>
-            ))}
-          </div>
-        </Cell>
+        <Cell text="end">{texts?.[0]}</Cell>
       </div>
       <div className={`${isTitle && 'font-bold'} w-2/6  `}>
         <Cell>{texts?.[1]}</Cell>
@@ -339,8 +340,13 @@ const ResultRow = ({ isTitle, texts = [], awards }) => (
       <div className={`${isTitle && 'font-bold'} w-1/6   `}>
         <Cell>{texts?.[3]}</Cell>
       </div>
-      <div className={`${isTitle && 'font-bold'} w-2/6  `}>
+      <div className={`${isTitle && 'font-bold'} w-2/6  relative`}>
         <Cell>{texts?.[4]}</Cell>
+        <div className="text-warning text-sm h-4 w-4 absolute -top-1 right-0 flex">
+          {awards?.map((award) => (
+            <div key={award}>{TEST_AWARDS[award].icon}</div>
+          ))}
+        </div>
       </div>
       <div className={`${isTitle && 'font-bold'} w-1/6 `}>
         <Cell>{texts?.[5]}</Cell>

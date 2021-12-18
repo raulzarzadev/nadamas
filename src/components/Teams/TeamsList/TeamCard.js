@@ -11,8 +11,6 @@ export default function TeamCard({ redirectTeam, team }) {
     setTeamCoach(user?.id === team.coach.id)
   }, [user])
 
-  console.log(`team`, team)
-  // TODO si eres dueño del equipo deberias ver algo
   return (
     <button
       className="bg-primary-light dark:bg-secondary-dark p-2 rounded-lg shadow-lg w-full"
