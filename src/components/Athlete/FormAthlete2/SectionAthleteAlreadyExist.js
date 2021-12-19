@@ -7,7 +7,7 @@ import Section from '@comps/Section'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import AthleteStatistics from '../AthleteStatistics'
-import AthleteTeam from '../AthleteTeam'
+import AthleteTeam from '../AthleteTeams'
 import Payments from '../Payments'
 import Records from '../Records'
 

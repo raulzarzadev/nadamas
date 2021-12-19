@@ -7,6 +7,9 @@ import CoachSchedule from '@comps/Schedules/CoachSchedule'
 import CoachEvents from '@comps/Events/CoachEvents'
 import AthleteProfile from './AthleteProfile'
 import { useEffect, useState } from 'react'
+import Button from '@comps/inputs/Button'
+import { AddIcon } from '@/src/utils/Icons'
+import ButtonNewTeam from '@comps/inputs/ButtonNewTeam'
 
 export default function UserProfile() {
   const { user } = useAuth()
@@ -45,13 +48,18 @@ export default function UserProfile() {
 
 const CoachSection = ({ isCoach = false, coachId }) => {
   if (!isCoach)
-    return <div className='text-center'>No eres entrenador. ¿Quieres ser entrendor en nadamas?</div>
+    return (
+      <div className="text-center">
+        No eres entrenador. ¿Quieres ser entrendor en nadamas?
+      </div>
+    )
   return (
     <div>
       <Section title="Eventos organizados" indent={false}>
         <CoachEvents coachId={coachId} />
       </Section>
       <Section title="Mis equipos" indent={false}>
+        <ButtonNewTeam />
         <TeamsList coachId={coachId} />
       </Section>
       <Section title="Mi horario" indent={false}>

@@ -54,6 +54,7 @@ export default function Button({
       flex 
       justify-evenly
       text-sm
+      mx-auto
       ${noWrapText && 'whitespace-nowrap'}
       
       ${disabled ? style.disabled : ''}

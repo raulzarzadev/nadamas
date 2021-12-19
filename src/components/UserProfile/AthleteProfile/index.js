@@ -3,7 +3,7 @@ import { getAthleteEvents } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
 import STATUS_EVENT from '@/src/constants/STATUS_EVENT'
 import { formatInputDate } from '@/src/utils/Dates'
-import AthleteTeam from '@comps/Athlete/AthleteTeam'
+import AthleteTeams from '@comps/Athlete/AthleteTeams'
 import FormAthlete from '@comps/Athlete/FormAthlete2'
 import Payments from '@comps/Athlete/Payments'
 import SwimTestDetails from '@comps/Modals/SwimTestDetails'
@@ -68,10 +68,11 @@ export default function AthleteProfile({ athleteId }) {
       </div>
 
       <div>
-        <h3 className="">Equipos </h3>
-        <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
-          <AthleteTeam athleteId={athleteId} />
-        </div>
+        <Section title="Equipos" indent={false} open>
+          
+            <AthleteTeams athleteId={athleteId} />
+          
+        </Section>
       </div>
 
       <div>

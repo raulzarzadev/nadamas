@@ -39,7 +39,7 @@ const EventsGrid = ({ events }) => {
   return (
     <div>
       <h3 className="my-3 text-2xl text-center">Todos los eventos</h3>
-      <div className="grid p-3 gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 grid-flow-row ">
+      <div className="grid p-3 gap-8 grid-cols-1 sm:grid-cols-2  grid-flow-row ">
         {events?.sort(sortByDate).map((event) => (
           <Event event={event} key={event?.id} />
         ))}

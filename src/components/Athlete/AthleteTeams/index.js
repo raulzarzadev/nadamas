@@ -1,9 +1,12 @@
 import { getPublicTeams, getTeamWhereAthleteAlreadyAre } from '@/firebase/teams'
+import { ROUTES } from '@/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
+import Button from '@comps/inputs/Button'
 import TeamCard from '@comps/Teams/TeamsList/TeamCard'
+import router from 'next/router'
 import { useState, useEffect } from 'react'
 
-export default function AthleteTeam({ athleteId }) {
+export default function AthleteTeams({ athleteId }) {
   const [teams, setTeams] = useState([])
   const { user } = useAuth()
   useEffect(() => {
@@ -15,12 +18,18 @@ export default function AthleteTeam({ athleteId }) {
     }
   }, [])
 
-
   return (
-    <div className="p-1">
-      {teams?.map((team) => (
-        <TeamCard  redirectTeam team={team} key={team.id} />
-      ))}
+    <div>
+      <Button
+        onClick={() => router.push(ROUTES.teams.index)}
+        label="Ver todos los equipos"
+        noWrapText
+      />
+      <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
+        {teams?.map((team) => (
+          <TeamCard redirectTeam team={team} key={team.id} />
+        ))}
+      </div>
     </div>
   )
 }
