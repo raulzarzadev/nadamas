@@ -1,0 +1,6 @@
+Sitemap: https://domain.com/api/posts-sitemap
+
+User-agent: *
+Allow: /*
+
+Disallow: /api/*
