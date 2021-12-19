@@ -7,12 +7,9 @@
   left: 0;
   right: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
   background-color: #0009;
   cursor: default;
   z-index: 999;
-  
 }
 .modal_dialog {
   min-width: 200px;
@@ -22,6 +19,8 @@
   grid-template-rows: 35px auto 20px;
   width: 95%;
   border: 1px solid;
+  margin: auto;
+
 }
 
 .modal_header {
@@ -48,8 +47,8 @@
   max-height: calc(100vh - 8rem);
 }
 
-@media (max-width:600px) {
-  .modal_content{
+@media (max-width: 600px) {
+  .modal_content {
   }
 }
 
