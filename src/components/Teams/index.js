@@ -1,5 +1,4 @@
 import { getPublicTeams } from '@/firebase/teams'
-import { useAuth } from '@/src/context/AuthContext'
 import Loading from '@comps/Loading'
 import { useEffect, useState } from 'react'
 import TeamCard from './TeamsList/TeamCard'
@@ -15,9 +14,7 @@ export default function Teams() {
     }
   }, [])
 
-  const {
-    user: { coach }
-  } = useAuth()
+
 
   if (publicTeams === undefined) return <Loading />
 

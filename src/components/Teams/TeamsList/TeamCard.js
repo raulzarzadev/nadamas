@@ -1,13 +1,12 @@
 import { ROUTES } from '@/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
-import { useRouter } from 'next/router'
+import router from 'next/router'
 import { useEffect, useState } from 'react'
 import ButtonJoinTeam from '../ButtonJoinTeam'
 
 export default function TeamCard({ redirectTeam, team }) {
-  const router = useRouter()
-  const { user } = useAuth()
   const [teamCoach, setTeamCoach] = useState(false)
+  const { user } = useAuth()
   useEffect(() => {
     if (user) setTeamCoach(user?.id === team.coach.id)
   }, [user])
@@ -17,6 +16,7 @@ export default function TeamCard({ redirectTeam, team }) {
       className="bg-primary-light dark:bg-secondary-dark p-2 rounded-lg shadow-lg w-full"
       onClick={(e) => {
         e.preventDefault()
+        e.stopPropagation()
         if (redirectTeam) {
           router.push(ROUTES.teams.details(team.id))
         }

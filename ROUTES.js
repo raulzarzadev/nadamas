@@ -1,4 +1,5 @@
 export const ROUTES = {
+  signin: '/signin',
   groups: {
     index: '/groups'
   },

@@ -3,9 +3,11 @@ import {
   sendTeamRequests,
   unjoinTeam
 } from '@/firebase/teams'
+import { ROUTES } from '@/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
 import Button from '@comps/inputs/Button'
 import Modal from '@comps/Modals/Modal'
+import router from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function ButtonJoinTeam({
@@ -13,14 +15,19 @@ export default function ButtonJoinTeam({
   participantsList = [],
   teamId = null
 }) {
-  const {
-    user: { athleteId = null }
-  } = useAuth()
+  const { user } = useAuth()
+  const athleteId = user?.athleteId || null
+
   const [loading, setLoading] = useState(false)
   const [responseStatus, setResponseStatus] = useState(undefined)
-
+  const [openAutenticateFirst, setOpenAutenticateFirst] = useState(false)
+  const handleOpenAutenticateFirst = () => {
+    setOpenAutenticateFirst(!openAutenticateFirst)
+  }
   const handleJoin = () => {
+    if (!athleteId) return setOpenAutenticateFirst(true)
     setLoading(true)
+
     sendTeamRequests(teamId, athleteId).then((res) => {
       if (res.ok) {
         setResponseStatus(REQUEST_STATUS.whatingRes)
@@ -109,12 +116,12 @@ export default function ButtonJoinTeam({
 
   useEffect(() => {
     setResponseStatus(getRequestStatus())
-  }, [requestList, participantsList]) 
+  }, [])
 
-  const buttonStyle={
-    danger:`border-danger`,
-    primary:`border-success`,
-    secondary:`border-primary`
+  const buttonStyle = {
+    danger: `border-danger`,
+    primary: `border-success`,
+    secondary: `border-primary`
   }
 
   return (
@@ -126,7 +133,7 @@ export default function ButtonJoinTeam({
       /> */}
       <button
         className={`
-        ${buttonStyle[responseStatus?.buttonVariant] } border-2 p-1 w-full`}
+        ${buttonStyle[responseStatus?.buttonVariant]} border-2 p-1 w-full`}
         onClick={async (e) => {
           e.stopPropagation()
           e.preventDefault()
@@ -135,6 +142,21 @@ export default function ButtonJoinTeam({
       >
         {responseStatus?.label}
       </button>
+      <Modal
+        open={openAutenticateFirst}
+        handleOpen={handleOpenAutenticateFirst}
+        title="Neceistas autenticarte"
+      >
+        Para poder unirte a un equipo debes autenticarte primero.
+        <Button
+          label="Ingresar"
+          onClick={(e) => {
+            e.stopPropagation()
+            e.preventDefault()
+            router.push(ROUTES.signin)
+          }}
+        />
+      </Modal>
       <Modal
         handleOpen={handleOpenAlreadyIn}
         open={openAlreadyIn}

@@ -6,9 +6,9 @@ export default function TeamsPage() {
   return (
     <>
       <Head title="Equipos " />
-      <PrivateRoute mustBeAuthenticated>
+    {/*   <PrivateRoute mustBeAuthenticated> */}
         <Teams />
-      </PrivateRoute>
+     {/*  </PrivateRoute> */}
     </>
   )
 }
