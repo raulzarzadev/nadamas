@@ -18,7 +18,7 @@ export default function Button({
   const router = useRouter()
   const style = {
     social: 'bg-primary dark:bg-secondary text-dark dark:text-light ',
-    primary: 'bg-primary',
+    primary: 'bg-primary-dark dark:bg-primary',
     secondary: 'bg-secondary',
     success: 'bg-success text-dark',
     disabled: 'opacity-50 shadow-none ',

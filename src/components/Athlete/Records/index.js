@@ -1,6 +1,6 @@
 import { getAthleteRecords, removeRecord } from '@/firebase/records'
 import { ROUTES } from '@/ROUTES'
-import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
+import { getStyleInfo } from '@/src/CONSTANTS/SWIMMING_TESTS'
 import { format, formatInputDate } from '@/src/utils/Dates'
 import { AddIcon } from '@/src/utils/Icons'
 import Info from '@comps/Alerts/Info'

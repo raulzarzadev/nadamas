@@ -1,4 +1,4 @@
-import { DISTANCES, STYLES } from '@/src/constants/SWIMMING_TESTS'
+import { DISTANCES, STYLES } from '@/src/CONSTANTS/SWIMMING_TESTS'
 import { DoneIcon } from '@/src/utils/Icons'
 import { useEffect, useState } from 'react'
 

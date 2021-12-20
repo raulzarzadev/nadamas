@@ -1,4 +1,4 @@
-import { getPublicTeams, getTeamWhereAthleteAlreadyAre } from '@/firebase/teams'
+import { getTeamWhereAthleteAlreadyAre } from '@/firebase/teams'
 import { ROUTES } from '@/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
 import Button from '@comps/inputs/Button'
@@ -24,8 +24,9 @@ export default function AthleteTeams({ athleteId }) {
         onClick={() => router.push(ROUTES.teams.index)}
         label="Ver todos los equipos"
         noWrapText
+        variant="primary"
       />
-      <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
+      <div className="grid grid-flow-row gap-5 px-5 py-2 overflow-auto">
         {teams?.map((team) => (
           <TeamCard redirectTeam team={team} key={team.id} />
         ))}

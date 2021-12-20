@@ -1,4 +1,4 @@
-import { TEST_AWARDS } from '@/src/constants/AWARDS'
+import { TEST_AWARDS } from '@/src/CONSTANTS/AWARDS'
 import 'firebase/firestore'
 import { db } from './client'
 import {

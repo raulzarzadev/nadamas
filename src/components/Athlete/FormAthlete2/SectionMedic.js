@@ -1,4 +1,4 @@
-import BLOD_TYPES from '@/src/constants/BLOD_TYPES'
+import BLOD_TYPES from '@/src/CONSTANTS/BLOD_TYPES'
 import Textarea from '@comps/inputs/Textarea'
 import Autocomplete from '@comps/inputs/TextAutocomplete'
 import TextEditable from '@comps/inputs/TextEditable'

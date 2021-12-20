@@ -1,7 +1,7 @@
 import { getAthleteAwards, getAthleteResults } from '@/firebase/results'
 import { getAthleteEvents } from '@/firebase/events'
 import { ROUTES } from '@/ROUTES'
-import STATUS_EVENT from '@/src/constants/STATUS_EVENT'
+import STATUS_EVENT from '@/src/CONSTANTS/STATUS_EVENT'
 import { formatInputDate } from '@/src/utils/Dates'
 import AthleteTeams from '@comps/Athlete/AthleteTeams'
 import FormAthlete from '@comps/Athlete/FormAthlete2'

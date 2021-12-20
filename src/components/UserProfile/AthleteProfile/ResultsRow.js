@@ -1,6 +1,6 @@
 import { deleteResult, deleteUserResult } from '@/firebase/results'
 import { ROUTES } from '@/ROUTES'
-import { getStyleInfo } from '@/src/constants/SWIMMING_TESTS'
+import { getStyleInfo } from '@/src/CONSTANTS/SWIMMING_TESTS'
 import { formatInputDate } from '@/src/utils/Dates'
 import { AddIcon, CloseIcon, TrashBinIcon } from '@/src/utils/Icons'
 import { averageRecordSpeed } from '@/src/utils/Records'

@@ -1,4 +1,4 @@
-import SWIMMING_TESTS from '@/src/constants/SWIMMING_TESTS'
+import SWIMMING_TESTS from '@/src/CONSTANTS/SWIMMING_TESTS'
 import { format } from '@/src/utils/Dates'
 import FormRecord from '@comps/FormRecord2'
 import Button from '@comps/inputs/Button'

@@ -1,4 +1,4 @@
-import { TEST_AWARDS } from "@/src/constants/AWARDS"
+import { TEST_AWARDS } from "@/src/CONSTANTS/AWARDS"
 
 const AwardBadge = ({ award, size = 'md' }) => {
   const sizign = {
