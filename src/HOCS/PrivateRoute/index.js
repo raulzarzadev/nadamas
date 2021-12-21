@@ -8,7 +8,8 @@ export default function PrivateRoute({
   Component,
   children,
   mustBeAuthenticated = false,
-  mustBeCoach
+  mustBeCoach,
+  mustBeAdmin
 }) {
   const router = useRouter()
   const { user } = useAuth()
@@ -21,9 +22,9 @@ export default function PrivateRoute({
     }
   }, [user])
 
-
   if (!user && mustBeAuthenticated) return <MustBeAuthenticated />
-  if (!user?.coach && mustBeCoach) return <MustBeAuthenticated asCoach />
+  if (!user?.coach && mustBeCoach) return <MustBeAuthenticated as="coach" />
+  if (!user?.admin && mustBeAdmin) return <MustBeAuthenticated as="admin" />
 
   if (loading) return <Loading />
 

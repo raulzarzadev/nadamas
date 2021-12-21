@@ -28,8 +28,8 @@ export default function Navbar({ links = [] }) {
         </Link>
       </div>
       <div className=" sm:flex w-full  justify-start items-center  px-1 ">
-        <ul className="flex items-center">
-          <li>
+        <ul className="flex items-center ">
+          <li className="mx-2">
             <Link href="/events">
               <div className="relative ">
                 Eventos
@@ -37,6 +37,13 @@ export default function Navbar({ links = [] }) {
               </div>
             </Link>
           </li>
+          {user?.admin && (
+            <li className="mx-2">
+              <Link href="/admin">
+                <div className="relative ">Panel</div>
+              </Link>
+            </li>
+          )}
         </ul>
       </div>
       <ul className=" flex justify-end items-center cursor-pointer">

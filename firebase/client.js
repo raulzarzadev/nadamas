@@ -53,6 +53,7 @@ export const db = firebase.firestore()
 /* ---------USERS------ */
 /* -------------------- */
 
+
 const getUser = async (userId) => {
   return await db
     .collection('users')
