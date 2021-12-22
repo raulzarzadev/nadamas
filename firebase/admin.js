@@ -1,5 +1,4 @@
-import { db } from './client'
-import 'firebase/firestore'
+import { db } from '.'
 import { formatResponse, normalizeDocs } from './firebase-helpers'
 
 export const _getUsers = async ({ active = true }) => {
@@ -32,4 +31,20 @@ export const _getAthletes = async () => {
     })
 
   return [...notActives, ...actives]
+}
+
+export const _deleteAthlete = async (athleteId) => {
+  return await db.collection('athletes')
+    .doc(athleteId)
+    .delete()
+    .then((res) => console.log(`res`, res))
+    .catch((err) => console.log(`err`, err))
+}
+
+export const _deleteUser = async (userId) => {
+  return await db.collection('users')
+    .doc(userId)
+    .delete()
+    .then((res) => console.log(`res`, res))
+    .catch((err) => console.log(`err`, err))
 }

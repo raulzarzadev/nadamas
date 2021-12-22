@@ -1,5 +1,5 @@
-import firebase from 'firebase/app'
-import 'firebase/firestore'
+import { mFirebase } from "."
+
 export const formatResponse = (ok, type, res) => {
   return { type, ok, res }
 }
@@ -59,7 +59,7 @@ export const datesToFirebaseFromat = ({
 }
 
 export const dateToFirebaseFormat = (date) =>
-  firebase.firestore.Timestamp.fromDate(new Date(date)) || null
+  mFirebase.firestore.Timestamp.fromDate(new Date(date)) || null
 
 export const mapUserFromFirebase = (user) => {
   const { email, displayName, photoURL } = user

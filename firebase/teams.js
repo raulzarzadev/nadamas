@@ -1,7 +1,5 @@
-import { useAuth } from '@/src/context/AuthContext'
-import firebase from 'firebase/app'
-import 'firebase/firestore'
-import { db } from './client'
+
+import { db } from '.'
 import {
   datesToFirebaseFromat,
   formatResponse,
@@ -88,7 +86,6 @@ export const removeAsCoach = async (teamId, athleteId) => {
 
 
 export const updateTeam = async (team = {}) => {
-  const {user}=useAuth()
   // Look for the team
   const teamExist = (await db.collection('teams').doc(team?.id).get()).exists
   if (!teamExist) {

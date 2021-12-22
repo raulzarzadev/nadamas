@@ -1,7 +1,5 @@
-import firebase from 'firebase/app'
-import 'firebase/firestore'
+import { db, mFirebase } from '.'
 
-import { db } from './client'
 import { format, simpleDate } from '@/src/utils/Dates'
 import {
   datesToFirebaseFromat,
@@ -78,14 +76,14 @@ export const updateAttendanceList = async ({
         // borrar si lo incluye
         return await attendanceList
           .update({
-            attendance: firebase.firestore.FieldValue.arrayRemove(athleteId)
+            attendance: mFirebase.firestore.FieldValue.arrayRemove(athleteId)
           })
           .then((res) => formatResponse(true, 'ATTENDANCE_LIST_UPDATED', res))
           .catch((err) => console.log(err))
       } else {
         return await attendanceList
           .update({
-            attendance: firebase.firestore.FieldValue.arrayUnion(athleteId)
+            attendance: mFirebase.firestore.FieldValue.arrayUnion(athleteId)
           })
           .then((res) => formatResponse(true, 'ATTENDANCE_LIST_UPDATED', res))
           .catch((err) => console.log('err', err))

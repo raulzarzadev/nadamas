@@ -1,6 +1,5 @@
+import { db } from '.'
 import { getDay } from 'date-fns'
-import 'firebase/firestore'
-import { db } from './client'
 import { formatResponse, normalizeDoc, normalizeDocs } from './firebase-helpers'
 
 export const getSchedules = async (athleteId) => {

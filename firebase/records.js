@@ -1,4 +1,4 @@
-import { db } from './client'
+import { db } from '.'
 import {
   datesToFirebaseFromat,
   formatResponse,

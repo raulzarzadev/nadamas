@@ -1,7 +1,6 @@
 import { subDays } from 'date-fns'
 import firebase from 'firebase/app'
-import 'firebase/firestore'
-import { db } from './client'
+import { db } from '.'
 import {
   datesToFirebaseFromat,
   formatResponse,

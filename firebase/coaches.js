@@ -1,5 +1,4 @@
-import 'firebase/firestore'
-import { db } from './client'
+import { db } from '.'
 import { normalizeDocs } from './firebase-helpers'
 
 export const getPublicCoachSchedules = async () => {

@@ -1,24 +1,20 @@
-import firebase from 'firebase/app'
-import 'firebase/storage'
-import 'firebase/firestore'
-import 'firebase/auth'
 
+import { db, mFirebase } from '.'
 import {
   datesToFirebaseFromat,
   formatResponse,
   mapUserFromFirebase,
   normalizeDoc,
-  normalizeDocs
 } from './firebase-helpers'
-import { createDefaultAthlete } from './athletes'
-const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 
-if (!firebase?.apps?.length) {
-  firebase.initializeApp(JSON.parse(firebaseConfig))
-}
+import { createDefaultAthlete } from './athletes'
+
+
+
+
 
 export const onAuthStateChanged = (onChange) => {
-  return firebase.auth().onAuthStateChanged((user) => {
+  return mFirebase.auth().onAuthStateChanged((user) => {
     if (user) {
       getUser(user?.uid).then(onChange)
     } else {
@@ -27,9 +23,11 @@ export const onAuthStateChanged = (onChange) => {
   })
 }
 
+
+
 export const loginWithGoogle = async () => {
-  const googleProvider = new firebase.auth.GoogleAuthProvider()
-  const res = await firebase
+  const googleProvider = new mFirebase.auth.GoogleAuthProvider()
+  const res = await mFirebase
     .auth()
     .signInWithPopup(googleProvider)
     .then(async ({ credential: { accessToken }, user }) => {
@@ -44,10 +42,10 @@ export const loginWithGoogle = async () => {
 }
 
 export const firebaseLogout = () => {
-  firebase.auth().signOut()
+  mFirebase.auth().signOut()
 }
 
-export const db = firebase.firestore()
+
 
 /* -------------------- */
 /* ---------USERS------ */

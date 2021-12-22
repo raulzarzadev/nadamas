@@ -1,6 +1,5 @@
+import { db } from '.'
 import { TEST_AWARDS } from '@/src/CONSTANTS/AWARDS'
-import 'firebase/firestore'
-import { db } from './client'
 import {
   datesToFirebaseFromat,
   formatResponse,
