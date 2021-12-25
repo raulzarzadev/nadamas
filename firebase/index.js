@@ -12,6 +12,7 @@ if (!firebase?.apps?.length) {
   firebase.initializeApp(JSON.parse(firebaseConfig))
 
   firebase.firestore().settings({
+    merge: true,
     cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
   });
 
