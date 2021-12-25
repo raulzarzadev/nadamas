@@ -1,6 +1,6 @@
 import { db } from '.'
 
-import {  updateUser } from './client'
+import { updateUser } from './client'
 import {
   datesToFirebaseFromat,
   formatResponse,
@@ -73,27 +73,27 @@ export const removeAthlete = async (athleteId = '') => {
   const athleteRef = db.collection('athletes').doc(athleteId)
   try {
     const updateAthlete = await athleteRef
-      .update({ active: false })
-      .catch((err) => console.log(`err`, err))
-
+    .update({ active: false })
+    .catch((err) => console.log(`err`, err))
+    
     const updateUsers = await db
-      .collection('users')
-      .where('athleteId', '==', athleteId)
-      .get()
-      .then((res) => {
-        return res.docs.map(async (doc) => {
-          const userRef = db.collection('users').doc(doc.id)
-          console.log(`doc`, userRef)
-          try {
-            const res = await userRef.update({ athleteId: null })
-            return console.log(`res`, res)
-          } catch (err) {
-            return console.log(`err`, err)
-          }
-        })
+    .collection('users')
+    .where('athleteId', '==', athleteId)
+    .get()
+    .then((res) => {
+      return res.docs.map(async (doc) => {
+        const userRef = db.collection('users').doc(doc.id)
+        console.log(`doc`, userRef)
+        try {
+          const res = await userRef.update({ athleteId: null })
+          return console.log(`res`, res)
+        } catch (err) {
+          return console.log(`err`, err)
+        }
       })
-      .catch((err) => console.log(`err`, err))
-
+    })
+    .catch((err) => console.log(`err`, err))
+    
     console.log(`updateAthlete, updateUsers`, updateAthlete, updateUsers)
   } catch (error) {
     console.log(`error`, error)
@@ -104,15 +104,21 @@ const _update_athlete = async (athlete) => {
   const eventRef = db.collection('athletes').doc(athlete.id)
   const datesInFirebaseFormat = datesToFirebaseFromat(athlete)
   return await eventRef
-    .update({
-      ...athlete,
-      ...datesInFirebaseFormat
-    })
-    .then((res) => formatResponse(true, 'ATHLETE_UPDATED', res))
-    .catch((err) => formatResponse(false, 'ERROR_UPDATE_ATHLETE', err))
+  .update({
+    ...athlete,
+    ...datesInFirebaseFormat
+  })
+  .then((res) => formatResponse(true, 'ATHLETE_UPDATED', res))
+  .catch((err) => formatResponse(false, 'ERROR_UPDATE_ATHLETE', err))
 }
 const _create_athlete = async (athlete) => {
-  return await db
+  // Si el atheta.id se proporciona, pero no existe. Se crea entonces un athleta con ese nuevo id ...
+  if (athlete.id) {
+    return await db.collection('athletes').doc(athlete.id).set(athlete)
+    .then((res) => formatResponse(true, 'ATHLETE_CREATED', res))
+    .catch((err) => formatResponse(false, 'ERROR_CREATE_ATHLETE', err))
+  } else {
+    return await db
     .collection('athletes')
     .add({
       ...athlete,
@@ -120,4 +126,5 @@ const _create_athlete = async (athlete) => {
     })
     .then((res) => formatResponse(true, 'ATHLETE_CREATED', res))
     .catch((err) => formatResponse(false, 'ERROR_CREATE_ATHLETE', err))
+  }
 }

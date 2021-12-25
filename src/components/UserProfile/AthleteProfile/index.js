@@ -4,7 +4,6 @@ import { ROUTES } from '@/ROUTES'
 import STATUS_EVENT from '@/src/CONSTANTS/STATUS_EVENT'
 import { formatInputDate } from '@/src/utils/Dates'
 import AthleteTeams from '@comps/Athlete/AthleteTeams'
-import FormAthlete from '@comps/Athlete/FormAthlete2'
 import Payments from '@comps/Athlete/Payments'
 import SwimTestDetails from '@comps/Modals/SwimTestDetails'
 import AthleteSchedule from '@comps/Schedules/AthleteSchedule'
@@ -13,6 +12,7 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import AwardBadge from './AwardBadge'
 import ResultsRow from './ResultsRow'
+import FormAthleteModal from '@comps/Athlete/FormAthlete/FormAthleteModal'
 
 export default function AthleteProfile({ athleteId }) {
   const [awards, setAwards] = useState(undefined)
@@ -64,7 +64,8 @@ export default function AthleteProfile({ athleteId }) {
       </div>
 
       <div>
-        <FormAthlete athleteId={athleteId} />
+        <FormAthleteModal athleteId={athleteId}/>
+
       </div>
 
       <div>
