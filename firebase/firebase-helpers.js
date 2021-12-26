@@ -71,3 +71,4 @@ export const mapUserFromFirebase = (user) => {
     id: user.uid
   }
 }
+

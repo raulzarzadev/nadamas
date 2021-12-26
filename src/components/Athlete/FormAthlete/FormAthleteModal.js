@@ -43,7 +43,6 @@ const Info = ({ athleteId }) => {
   const {
     athlete
   } = useAthlete(athleteId)
-  console.log(`athlete`, athlete)
   if (!athlete) return <Loading />
 
   const { name, email, birth, goals, blodType, mobile, lastName } = athlete

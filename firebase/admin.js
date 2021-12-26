@@ -42,9 +42,12 @@ export const _deleteAthlete = async (athleteId) => {
 }
 
 export const _deleteUser = async (userId) => {
+  const userRef = db.collection('users').doc(userId)
+  const userExist = (await userRef.get()).exists
+  if (!userExist) return formatResponse(false, 'USER_NOT_EXIST', { userId })
   return await db.collection('users')
     .doc(userId)
     .delete()
-    .then((res) => console.log(`res`, res))
-    .catch((err) => console.log(`err`, err))
+    .then((res) => formatResponse(true, 'USER_DELETED', res))
+    .catch((err) => formatResponse(false, 'USER_DELETED_ERROR', err))
 }

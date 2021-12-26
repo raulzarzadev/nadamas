@@ -4,12 +4,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 
 export default function Home() {
-  const wordsList = ['natación', 'futbol', 'balete']
-  //const { text } = useWriteText({ step: 200, unwriteFast: true, wordsList })
   const router = useRouter()
-  const handleToSignup = () => {
-    router.push('/signin')
-  }
   const { user } = useAuth()
 
   return (
@@ -80,7 +75,7 @@ const HomeRow = ({
           imageIsInleftSide ? 'rotate-12' : '-rotate-12'
         }`}
       >
-        <Image src={image} layout="fill" objectFit="cover" />
+        <Image src={image} layout="fill" objectFit="cover" priority />
       </div>
       {imageSide === 'right' && (
         <p className="md:w-2/3 text-center md:text-right">{text}</p>

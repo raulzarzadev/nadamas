@@ -1,24 +1,19 @@
 import { _getAthletes, _getUsers } from '@/firebase/admin'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-export default function useAdmin({
+export default function useAdmin ({
   getUsers = false,
   getAthletes = false,
-  getEvents = false,
-  getResults = false,
-  getAttendance = false,
-  getTeams = false,
-  getSchedules = false
+  // getEvents = false,
+  // getResults = false,
+  // getAttendance = false,
+  // getTeams = false,
+  // getSchedules = false
 }) {
   const [data, setData] = useState({})
 
-  useEffect(() => {
-    getData()
-      .then((res) => setData(res))
-      .catch((err) => console.log(`err`, err))
-  }, [])
-
   const getData = async () => {
+    console.log(`requested`)
     let data = {}
     getUsers &&
       (await _getUsers({ active: true })
@@ -30,6 +25,14 @@ export default function useAdmin({
         .catch((err) => console.log(`err`, err)))
     return data
   }
+    useEffect(() => {
+      memoizedData
+       .then((res) => setData(res))
+       .catch((err) => console.log(`err`, err))
+    }, []) 
+
+  const memoizedData = useMemo(() => getData(), [])
+
 
   return { data }
 }

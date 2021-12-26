@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
 
   const googleLogin = async () => {
     loginWithGoogle()
-      .then((res) => console.log(`res`, res))
+      .then((res) => console.log(`logged`))
       .catch((err) => console.log(`err`, err))
   }
 

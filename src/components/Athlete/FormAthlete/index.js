@@ -52,7 +52,6 @@ export default function FormAthlete ({ athleteId }) {
       })
       .catch((err) => console.log(`err`, err))
   }
-  // TODO falla cuando el ususario no tiene userId
   const { isOwner, isThemCoach } = useEditable({
     userId: form?.userId,
     coachId: form?.coachId
@@ -62,10 +61,6 @@ export default function FormAthlete ({ athleteId }) {
     setButtonStatus('dirty')
     setForm(newForm)
   }
-
-  console.log(`form`, form)
-
-
 
   const [buttonStatus, setButtonStatus] = useState('clean')
 
