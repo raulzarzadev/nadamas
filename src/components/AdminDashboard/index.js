@@ -2,15 +2,14 @@ import { _deleteAthlete, _deleteUser } from '@/firebase/admin'
 import { useAuth } from '@/src/context/AuthContext'
 import useAdmin from '@/src/hooks/useAdmin'
 import useCopyToClipboard from '@/src/hooks/useCopyToClipboard'
-import { TrashBinIcon } from '@/src/utils/Icons'
+import { CopyIcon, TrashBinIcon, UpRigthIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
 import DeleteModal from '@comps/Modals/DeleteModal'
-import { formatDistanceToNowStrict } from 'date-fns'
+import Modal from '@comps/Modals/Modal'
+import { formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns'
 import { useEffect, useState } from 'react'
-import { bool } from 'yup'
 
 export default function AdminDashboard() {
-  const { user } = useAuth()
   const { data } = useAdmin({ getUsers: true, getAthletes: true })
   const sortBy = (a, b) => {
     if (a.name < b.name) return 1
@@ -18,7 +17,7 @@ export default function AdminDashboard() {
     return 0
   }
 
-  const columns = [
+  const TABLE_COLUMNS = [
     {
       label: 'AC',
       title: 'Active',
@@ -87,24 +86,14 @@ export default function AdminDashboard() {
       }
     }
     setFiltered(athletesFiltered(filterBy, data?.athletes))
+    return () => {
+      setUserSelected(null)
+    }
   }, [filterBy, data.athletes])
 
   const handleSetFilter = (field, value = undefined) => {
     setFilterBy({ field, value })
   }
-
-  /*  const handleSetFilter = (field, value = true) => {
-     if (typeof value === bool) {
-       if (filterBy?.value === true) {
-         setFilterBy({ field, value })
-       } else {
-         setFilterBy({ field, value: false })
-       }
-     }else{
-       setF
-     }
-   }
-  */
 
   const [userSelected, setUserSelected] = useState(null)
 
@@ -112,106 +101,28 @@ export default function AdminDashboard() {
     setUserSelected(data?.users?.find(({ id }) => id === filterBy?.value))
   }, [filterBy])
 
-  /*  console.log(`filtered`, filtered)
-  console.log(`filterBy`, filterBy)
-  console.log(`userSelected`, userSelected)
- */
-  const [openDeleteUser, setOpenDeleteUser] = useState()
-  const handleOpenDeleteUser = () => {
-    setOpenDeleteUser(!openDeleteUser)
-  }
-  const handleDeleteUser = (userId) => {
-    console.log(`userId`, userId)
-    _deleteUser(userId)
-      .then((res) => console.log(`res`, res))
-      .catch((err) => console.log(`err`, err))
-  }
-  const limits = {
-    teams: 3,
-    claps: 5
-  }
-  const [value, copy, visible] = useCopyToClipboard()
-
   return (
     <div className="">
       Cantidad de usuarios Estado actual de cada usuario athleta asosciado
       cantidad de atletas
       <div>
         <div>
-          Usuarios
-          <div className="flex flex-wrap justify-center ">
-            {data?.users?.sort(sortBy).map((user) => (
-              <div
-                className={`relative w-1/6 text-xs m-1 truncate ${
-                  filterBy?.value === user?.id && 'border'
-                }`}
-                key={user.id}
-                onClick={() => handleSetFilter('userId', user.id)}
-              >
-                {user.name}
-              </div>
-            ))}
-          </div>
-          <div>
+          <UsersTable
+            users={data?.users}
+            handleSetFilter={handleSetFilter}
+            filterBy={filterBy}
+          />
+          <div className="h-25">
             Usuario:
-            <div className="flex">
-              <div className="w-1/12">Coach</div>
-            </div>
-            {userSelected && (
-              <div>
-                <div className="flex justify-between items-center">
-                  <input
-                    className="w-1/12"
-                    checked={userSelected?.coach}
-                    type="checkbox"
-                  />
-                  {`${userSelected?.name} ${userSelected?.lastName || 'sin'}  ${
-                    userSelected?.email
-                  } ${
-                    userSelected?.joinedAt &&
-                    formatDistanceToNowStrict(userSelected?.joinedAt)
-                  }`}
-                  <div
-                    className="relative"
-                    onClick={() => copy(userSelected.id)}
-                  >
-                    id
-                    {visible && value === userSelected.id && (
-                      <div className="absolute -right-20 -top-2 bg-success text-dark">
-                        id copiado
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Button
-                      iconOnly
-                      onClick={handleOpenDeleteUser}
-                      size="xs"
-                      variant="danger"
-                    >
-                      <TrashBinIcon />
-                    </Button>
-                    <DeleteModal
-                      handleOpen={handleOpenDeleteUser}
-                      open={openDeleteUser}
-                      title="Eliminar usuario"
-                      handleDelete={() => handleDeleteUser(userSelected.id)}
-                    />
-                  </div>
-                </div>
-                <div className="border min-h-[100px]">
-                  <h3>Configuración:</h3>
-                  <div>{/*                     {limits} */}</div>
-                </div>
-              </div>
-            )}
+            {userSelected && <AdminUserRow user={userSelected} />}
           </div>
         </div>
         <div>Atletas totales {`${data?.athletes?.length}`}</div>
         <div>Filtro {`${filtered?.length}`}</div>
+
         <div className="flex ">
           <div className="grid grid-flow-col gap-1  content-center">
-            {columns.map((col) => (
+            {TABLE_COLUMNS.map((col) => (
               <div
                 key={col.fieldName}
                 className="relative group   w-8 flex justify-center items-center "
@@ -245,10 +156,10 @@ export default function AdminDashboard() {
         </div>
         <div className="flex flex-col">
           {filtered?.sort(sortBy).map((athlete) => (
-            <AthleteRow
+            <AdminAthleteRow
               key={athlete.id}
               athlete={athlete}
-              columns={columns}
+              columns={TABLE_COLUMNS}
               users={data?.users}
             />
           ))}
@@ -258,7 +169,147 @@ export default function AdminDashboard() {
   )
 }
 
-const AthleteRow = ({ athlete, columns, users }) => {
+const UsersTable = ({ users, handleSetFilter = () => {}, filterBy }) => {
+  const sortBy = (a, b) => {
+    if (a.name < b.name) return 1
+    if (a.name > b.name) return -1
+    return 0
+  }
+  return (
+    <div>
+      <h3>
+        Usuarios: <span>({users?.length})</span>{' '}
+      </h3>
+      <div className="flex flex-wrap justify-center border max-h-16 overflow-y-auto  ">
+        {users?.sort(sortBy).map((user) => (
+          <div
+            className={`relative w-1/6 text-xs m-1 truncate ${
+              filterBy?.value === user?.id && 'border'
+            }`}
+            key={user.id}
+            onClick={() => handleSetFilter('userId', user.id)}
+          >
+            {user.name}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const AdminUserRow = ({ user }) => {
+  const [openDeleteUser, setOpenDeleteUser] = useState()
+  const handleOpenDeleteUser = () => {
+    setOpenDeleteUser(!openDeleteUser)
+  }
+  const handleDeleteUser = (userId) => {
+    console.log(`userId`, userId)
+    _deleteUser(userId)
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
+  }
+
+  const [openUserDetails, setOpenUserDetails] = useState()
+  const handleOpenUserDetails = () => {
+    setOpenUserDetails(!openUserDetails)
+  }
+  const DEFAULT_OPTIONS = {
+    active: true,
+    coach: false
+  }
+  const handleChangeOptions = ({target}) => {
+    console.log(`target`, target)
+    
+  }
+  return (
+    <div>
+      <div className="text-center flex justify-center items-center">
+        <span>{user?.name}</span>
+        <div className="m-1">
+          <Button onClick={handleOpenUserDetails} iconOnly size="sm">
+            <UpRigthIcon />
+          </Button>
+        </div>
+        <Modal
+          title="Información de usuario"
+          open={openUserDetails}
+          handleOpen={handleOpenUserDetails}
+        >
+          <div>
+            <div className="flex items-center justify-center">
+              {user?.id}
+              <CopyButton value={user?.id} />
+            </div>
+            <div className="flex items-center justify-center">
+              {user?.name}
+              <CopyButton value={user?.name} />
+            </div>
+            <div className="flex items-center justify-center">
+              {user?.lastName}
+            </div>
+            <div className="flex items-center justify-center">
+              {user?.email}
+              <CopyButton value={user?.email} />
+            </div>
+            <div className="">
+              Joined{' '}
+              {user?.joinedAt &&
+                formatDistanceToNow(user?.joinedAt, { addSuffix: true })}
+            </div>
+          </div>
+          <div className="border  my-2">
+            Opciones
+            {Object.keys(DEFAULT_OPTIONS).map((key) => {
+              return (
+                <div>
+                  {`${key} :`}{' '}
+                  <input
+                    onChange={handleChangeOptions}
+                    type="checkbox"
+                    name={key}
+                    defaultChecked={DEFAULT_OPTIONS[key]}
+                  />
+                </div>
+              )
+            })}
+          </div>
+          <div>
+            <Button onClick={handleOpenDeleteUser} size="sm" variant="danger">
+              Eliminar
+              <TrashBinIcon />
+            </Button>
+            <DeleteModal
+              handleOpen={handleOpenDeleteUser}
+              open={openDeleteUser}
+              title="Eliminar usuario"
+              handleDelete={() => handleDeleteUser(user.id)}
+            />
+          </div>
+        </Modal>
+        {/*  
+       
+        */}
+      </div>
+    </div>
+  )
+}
+
+const CopyButton = ({ value }) => {
+  const [currentValor, copy, visible] = useCopyToClipboard()
+
+  return (
+    <button className="relative" onClick={() => copy(value)}>
+      <CopyIcon />
+      {visible && currentValor === value && (
+        <div className="absolute right-0 -top-2 bg-success text-dark">
+          Copiado
+        </div>
+      )}
+    </button>
+  )
+}
+
+const AdminAthleteRow = ({ athlete, columns, users }) => {
   const [value, copy, visible] = useCopyToClipboard()
   const [openDelete, setOpenDelete] = useState(false)
   const handleOpenDelete = () => {

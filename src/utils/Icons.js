@@ -34,8 +34,10 @@ import { RiCake2Line } from 'react-icons/ri'
 import { RiPlayList2Line } from 'react-icons/ri'
 import { RiInformationLine } from 'react-icons/ri'
 import { RiUserStarLine } from 'react-icons/ri'
-
+import { RiArrowRightUpLine } from 'react-icons/ri'
+import { RiFileCopyLine } from 'react-icons/ri'
 const size = '1.2rem'
+export const CopyIcon = (props) => <RiFileCopyLine size={size} {...props} />
 export const EditIcon = (props) => <RiEditFill size={size} {...props} />
 export const EmergencyIcon = (props) => (
   <RiHeartPulseLine size={size} {...props} />
@@ -55,7 +57,9 @@ export const TrashBinIcon = (props) => (
   <RiDeleteBin6Fill size={size} {...props} />
 )
 
-
+export const UpRigthIcon = (props) => (
+  <RiArrowRightUpLine size={size} {...props} />
+)
 export const InfoIcon = (props) => <RiInformationLine size={size} {...props} />
 export const UploadIcon = (props) => <RiUpload2Fill size={size} {...props} />
 export const SaveIcon = (props) => <RiSave2Fill size={size} {...props} />
@@ -85,7 +89,6 @@ export const ClipboardIcon = (props) => (
   <RiClipboardLine size={size} {...props} />
 )
 
-
 /* SOCIAL MEDIA  */
 
 export const FacebookIcon = (props) => (
@@ -102,4 +105,3 @@ export const PlayListIcon = (props) => (
   <RiPlayList2Line size={size} {...props} />
 )
 export const CoachIcon = (props) => <RiUserStarLine size={size} {...props} />
-
