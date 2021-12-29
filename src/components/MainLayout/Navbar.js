@@ -1,3 +1,4 @@
+import { ROUTES } from '@/ROUTES'
 import { useAuth } from '@/src/context/AuthContext'
 import { DownIcon } from '@/src/utils/Icons'
 import Link from '@comps/inputs/Link'
@@ -27,8 +28,8 @@ export default function Navbar({ links = [] }) {
           />
         </Link>
       </div>
-      <div className=" sm:flex w-full  justify-start items-center  px-1 ">
-        <ul className="flex items-center ">
+      <div className=" flex  w-full  justify-start items-center  px-1 ">
+        <ul className=" sm:flex items-center ">
           <li className="mx-2">
             <Link href="/events">
               <div className="relative ">
@@ -38,8 +39,8 @@ export default function Navbar({ links = [] }) {
             </Link>
           </li>
           {user?.admin && (
-            <li className="mx-2">
-              <Link href="/admin">
+            <li className="mx-2 hidden sm:block">
+              <Link href={ROUTES.admin}>
                 <div className="relative ">Panel</div>
               </Link>
             </li>
@@ -100,6 +101,7 @@ const NavbarSubMenu = ({
   listItems = [],
   topMenu
 }) => {
+  const { user } = useAuth()
   const [showMenu, setShowMenu] = useState(false)
   const handleShowMenu = () => {
     setShowMenu(!showMenu)
@@ -143,6 +145,17 @@ const NavbarSubMenu = ({
           } -right-1 z-20 w-48 py-2 mt-0 bg-secondary text-light  rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
         >
           <li>{topMenu}</li>
+          {user?.admin && (
+            <Link href={ROUTES.admin}>
+              <li
+                onClick={() => setShowMenu(false)}
+                className={`block px-4 py-2 text-sm  capitalize transition-colors duration-200 transform hover:text-white dark:text-light   dark:hover:text-white cursor-pointer`}
+              >
+                Panel
+              </li>
+            </Link>
+          )}
+
           {listItems.map(({ href, label }) => (
             <Link href={href} key={label}>
               <li

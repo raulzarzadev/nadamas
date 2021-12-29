@@ -56,7 +56,6 @@ export default function Button({
       text-sm
       mx-auto
       ${noWrapText && 'whitespace-nowrap'}
-      
       ${disabled ? style.disabled : ''}
       ${style[variant]}
       ${sizing[size]}

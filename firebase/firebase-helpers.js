@@ -8,7 +8,7 @@ export const normalizeDoc = (doc) => {
   const data = doc.data()
   const id = doc.id
 
-  const { updatedAt, registryDate, createdAt, date, birth, joinedAt } = data
+  const { updatedAt, registryDate, createdAt, date, birth, joinedAt , options } = data
   const dates = unfierebazeDates({
     updatedAt,
     registryDate,
@@ -17,7 +17,6 @@ export const normalizeDoc = (doc) => {
     birth,
     date
   })
-
   return {
     id,
     ...data,

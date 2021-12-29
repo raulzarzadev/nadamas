@@ -1,4 +1,5 @@
 export const ROUTES = {
+  admin: '/admin',
   signin: '/signin',
   groups: {
     index: '/groups'

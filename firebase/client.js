@@ -1,17 +1,12 @@
-
 import { db, mFirebase } from '.'
 import {
   datesToFirebaseFromat,
   formatResponse,
   mapUserFromFirebase,
-  normalizeDoc,
+  normalizeDoc
 } from './firebase-helpers'
 
 import { createDefaultAthlete } from './athletes'
-
-
-
-
 
 export const onAuthStateChanged = (onChange) => {
   return mFirebase.auth().onAuthStateChanged((user) => {
@@ -22,8 +17,6 @@ export const onAuthStateChanged = (onChange) => {
     }
   })
 }
-
-
 
 export const loginWithGoogle = async () => {
   const googleProvider = new mFirebase.auth.GoogleAuthProvider()
@@ -45,12 +38,9 @@ export const firebaseLogout = () => {
   mFirebase.auth().signOut()
 }
 
-
-
 /* -------------------- */
 /* ---------USERS------ */
 /* -------------------- */
-
 
 const getUser = async (userId) => {
   return await db
@@ -79,7 +69,7 @@ const createNewUser = async (user) => {
 }
 
 export const updateUser = async (user) => {
-  const eventRef = db.collection('users').doc(user.id)
+  const eventRef = db.collection('users').doc(user?.id)
   const datesInFirebaseFormat = datesToFirebaseFromat(user)
   try {
     const res = await eventRef.update({
