@@ -1,8 +1,11 @@
-import useCopyToClipboard from '@/src/hooks/useCopyToClipboard'
-import { TrashBinIcon } from '@/src/utils/Icons'
+import { TrashBinIcon, UpRigthIcon } from '@/src/utils/Icons'
 import Button from '@comps/inputs/Button'
+import CopyButton from '@comps/inputs/CopyButton'
 import DeleteModal from '@comps/Modals/DeleteModal'
+import Modal from '@comps/Modals/Modal'
+import { formatDistanceToNow } from 'date-fns'
 import { useEffect, useState } from 'react'
+import { OptionsMenu } from '../OptionsMenu'
 
 export default function AthletesSection({ athletes, userSelected }) {
   const [userAthletes, setUserAthletes] = useState(undefined)
@@ -13,145 +16,117 @@ export default function AthletesSection({ athletes, userSelected }) {
   }, [userSelected])
 
   return (
-    <div className="">
-      <AthletesTable atheltes={userAthletes} userSelected={userSelected} />
-    </div>
-  )
-}
-
-const AthletesTable = ({ atheltes, userSelected }) => {
-  const TABLE_COLUMNS = [
-    {
-      label: 'AC',
-      title: 'Active',
-      fieldName: 'active',
-      onchange: (e) => console.log(`e`, e)
-    },
-    {
-      label: 'AV',
-      title: 'avatar',
-      onChange: (e) => console.log(e),
-      fieldName: 'avatar'
-    },
-    {
-      label: 'E@',
-      title: 'email',
-      onChange: (e) => console.log(e),
-      fieldName: 'email'
-    },
-    {
-      label: 'LN',
-      title: 'lastName',
-      onChange: (e) => console.log(e),
-      fieldName: 'lastName'
-    },
-    {
-      label: 'EM',
-      title: 'emerMobile',
-      onChange: (e) => console.log(e),
-      fieldName: 'emerMobile'
-    },
-    {
-      label: 'MB',
-      title: 'mobile',
-      onChange: (e) => console.log(e),
-      fieldName: 'mobile'
-    },
-    {
-      label: 'SC',
-      title: 'schedule',
-      onChange: (e) => console.log(e),
-      fieldName: 'schedule'
-    },
-    {
-      label: 'CO',
-      title: 'coach',
-      onChange: (e) => console.log(e),
-      fieldName: 'coach'
-    }
-  ]
-  const handleSetFilter = () => {}
-  const sortBy = (a, b) => {
-    if (a.name > b.name) return 1
-    if (a.name < b.name) return -1
-    return 0
-  }
-  return (
-    <div className=" ">
-      <div className="grid grid-flow-col gap-1  content-center">
-        {TABLE_COLUMNS.map((col) => (
-          <div
-            key={col.fieldName}
-            className="relative group   w-8 flex justify-center items-center "
-            onClick={() => handleSetFilter(col.fieldName)}
-          >
-            <label>{col.label}</label>
-            <label className="absolute -top-5 -right-3  hidden group-hover:block bg-primary p-1 py-0.5 rounded-lg z-10">
-              {col.title}
-            </label>
-          </div>
-        ))}
-      </div>
-      <div className="relative group w-20 flex justify-center items-center ">
-        <label>OW</label>
-        <label className="absolute -top-5 -right-3  hidden group-hover:block bg-primary p-1 py-0.5 rounded-lg z-10">
-          owner
-        </label>
-      </div>
-      <div className="relative group w-20 flex justify-center items-center ">
-        <label>Nombre</label>
-        <label className="absolute -top-5 -right-3  hidden group-hover:block bg-primary p-1 py-0.5 rounded-lg z-10">
-          name
-        </label>
-      </div>
-      <div className="relative group w-20 flex justify-center items-center ">
-        <label>ACTIONS</label>
-        <label className="absolute -top-5 -right-3  hidden group-hover:block bg-primary p-1 py-0.5 rounded-lg z-10">
-          actions
-        </label>
-      </div>
-      <div className="flex flex-col">
-        {atheltes?.sort(sortBy).map((athlete) => (
-          <AdminAthleteRow
-            key={athlete.id}
-            athlete={athlete}
-            columns={TABLE_COLUMNS}
-            woner={userSelected}
-          />
+    <div className="max-w-sm mx-auto p-2">
+      <div className="grid  overflow-auto max-h-60 shadow-inner ">
+        {userAthletes?.map((athlete) => (
+          <AdminAthleteRow key={athlete.id} athlete={athlete} />
         ))}
       </div>
     </div>
   )
 }
 
-const AdminAthleteRow = ({ athlete, columns, owner }) => {
-  const [value, copy, visible] = useCopyToClipboard()
-  const [openDelete, setOpenDelete] = useState(false)
-  const handleOpenDelete = () => {
-    setOpenDelete(!openDelete)
+const AdminAthleteRow = ({ athlete: user }) => {
+  const [openDeleteUser, setOpenDeleteUser] = useState()
+  const handleOpenDeleteUser = () => {
+    setOpenDeleteUser(!openDeleteUser)
   }
-  const handleDeleteAthlete = (athleteId) => {
-    _deleteAthlete(athleteId)
+  const handleDeleteUser = (userId) => {
+    console.log('delete user')
+    /* _deleteUser(userId)
       .then((res) => console.log(`res`, res))
-      .catch((err) => console.log(`err`, err))
+      .catch((err) => console.log(`err`, err)) */
   }
+
+  const [openUserDetails, setOpenUserDetails] = useState()
+  const handleOpenUserDetails = () => {
+    setOpenUserDetails(!openUserDetails)
+  }
+
+  const handleUpdateOptions = (options) => {
+    console.log('update options')
+   /*  updateUser({ id: user.id, options }).then((res) => console.log(`res`, res)) */
+  }
+
   return (
-    <div className="flex " key={athlete.id}>
-      <div className="grid grid-flow-col gap-1 content-center">
-        {columns.map((col) => (
-          <div
-            key={col.fieldName}
-            className=" w-8 flex justify-center items-center"
+    <div className="">
+      {user && (
+        <div className="m-1">
+          <button onClick={handleOpenUserDetails} className='border w-full'>
+            <span className=" truncate ">
+              {user?.name ?? ' '} {user?.lastName}
+            </span>
+          </button>
+          {/*  <div className="m-1">
+            <Button onClick={handleOpenUserDetails} iconOnly size="sm">
+              <UpRigthIcon />
+            </Button>
+          </div> */}
+          <Modal
+            title="Información de usuario"
+            open={openUserDetails}
+            handleOpen={handleOpenUserDetails}
           >
-            <input
-              type="checkbox"
-              defaultChecked={athlete[col.fieldName]}
-            ></input>
-          </div>
-        ))}
-        <div className="w-20 truncate">
-          {owner?.name}
+            <div>
+              <h3 className="text-left">Usuario</h3>
+              <div className="flex items-center justify-center">
+                <span className="truncate max-w-[10rem]">{user?.id}</span>
+                <CopyButton value={user?.id} />
+              </div>
+              <div className="flex items-center justify-center">
+                <span className="truncate max-w-[10rem]">{user?.name}</span>
+                <CopyButton value={user?.name} />
+              </div>
+              <div className="flex items-center justify-center">
+                <span className="truncate max-w-[10rem]">{user?.lastName}</span>
+              </div>
+              <div className="flex items-center justify-center">
+                <span className="truncate max-w-[10rem]">{user?.email}</span>
+                <CopyButton value={user?.email} />
+              </div>
+              <div className="">
+                <span className="truncate max-w-[10rem]">
+                  Joined{' '}
+                  {user?.joinedAt &&
+                    formatDistanceToNow(user?.joinedAt, { addSuffix: true })}
+                </span>
+              </div>
+            </div>
+            <div>
+              <OptionsMenu
+                options={user?.options}
+                setOptions={handleUpdateOptions}
+              />
+            </div>
+            <div className="border m-2 grid place-content-center p-2">
+              <Button onClick={handleOpenDeleteUser} size="sm" variant="danger">
+                Eliminar
+                <TrashBinIcon />
+              </Button>
+              <DeleteModal
+                handleOpen={handleOpenDeleteUser}
+                open={openDeleteUser}
+                title="Eliminar usuario"
+                handleDelete={() => handleDeleteUser(user.id)}
+              />
+            </div>
+          </Modal>
         </div>
+      )}
+    </div>
+  )
+}
+/* 
+div className="relative w-12 mx-1 flex justify-center items-center ">
+        <Button iconOnly onClick={handleOpenDelete} size="xs" variant="danger">
+          <TrashBinIcon />
+        </Button>
+        <DeleteModal
+          handleOpen={handleOpenDelete}
+          open={openDelete}
+          title="Eliminar atleta"
+          handleDelete={() => handleDeleteAthlete(athlete.id)}
+        />
       </div>
       <div
         className={`${
@@ -168,17 +143,17 @@ const AdminAthleteRow = ({ athlete, columns, owner }) => {
           )}
         </label>
       </div>
-      <div className="relative w-20 flex justify-center items-center ">
-        <Button iconOnly onClick={handleOpenDelete} size="xs" variant="danger">
-          <TrashBinIcon />
-        </Button>
-        <DeleteModal
-          handleOpen={handleOpenDelete}
-          open={openDelete}
-          title="Eliminar atleta"
-          handleDelete={() => handleDeleteAthlete(athlete.id)}
-        />
-      </div>
-    </div>
-  )
-}
+      <div className="w-20 truncate">{owner?.name}</div>
+      <div className="grid grid-flow-col gap-1 content-center">
+        {columns.map((col) => (
+          <div
+            key={col.fieldName}
+            className="   items-center w-[20px] min-w-fit  flex justify-center"
+          >
+            <input
+              type="checkbox"
+              defaultChecked={athlete[col.fieldName]}
+            ></input>
+          </div>
+        ))}
+      </div> */
