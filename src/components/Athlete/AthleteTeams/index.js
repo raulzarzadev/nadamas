@@ -20,16 +20,18 @@ export default function AthleteTeams({ athleteId }) {
 
   return (
     <div>
-      <Button
-        onClick={() => router.push(ROUTES.teams.index)}
-        label="Ver todos los equipos"
-        noWrapText
-        variant="primary"
-      />
       <div className="grid grid-flow-row gap-5 px-5 py-2 overflow-auto">
         {teams?.map((team) => (
           <TeamCard redirectTeam team={team} key={team.id} />
         ))}
+      </div>
+      <div className='pb-2'>
+        <Button
+          onClick={() => router.push(ROUTES.teams.index)}
+          label="Buscar equipo"
+          noWrapText
+          variant="secondary"
+        />
       </div>
     </div>
   )

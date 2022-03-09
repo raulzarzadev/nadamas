@@ -55,20 +55,23 @@ export default function TeamDetails() {
 
   if (team === undefined) return <Loading />
 
-  const teamCoach = user?.id === team?.coach?.id
+  const teamOwner = user?.id === team?.coach?.id
   return (
     <div className="max-w-md mx-auto">
-      {teamCoach ? (
+      {teamOwner ? (
         <>
           <FormTeam team={team} />
-          <Section title={`Miembros (${team?.athletes?.length || 0})`} indent={false}>
+          <Section
+            title={`Miembros (${team?.athletes?.length || 0})`}
+            indent={false}
+          >
             <AddMyOwnTeamMembers teamId={team.id} />
             <TeamMembers
               teamCoaches={team?.coaches}
               teamId={team?.id}
               members={team?.athletes}
               coaches={team?.coaches}
-              coachView={teamCoach}
+              coachView={teamOwner}
             />
           </Section>
           <Section title={`Solicitudes (${team?.joinRequests?.length || 0})`}>
@@ -80,15 +83,15 @@ export default function TeamDetails() {
           </Section>
           <Section title="Opciones">
             {isOwner && (
-              <div className="w-32 flex">
+              <div className="py-4 w-full flex justify-center items-center">
                 <Button
                   label="Eliminar"
                   variant="danger"
-                  size="xs"
+                  size="xl"
                   onClick={handleOpenDelete}
                 >
-                  Borrar equipo
-                  <TrashBinIcon />
+                  Eliminar
+                  <TrashBinIcon size='2rem' />
                 </Button>
                 <DeleteModal
                   open={openDelete}

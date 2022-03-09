@@ -94,7 +94,7 @@ export default function ButtonJoinTeam({
     alreadyIn: function () {
       return {
         type: 'ALREDY_JOINED',
-        label: `SALIR`,
+        label: `MIEMBRO`,
         handleClick: handleOpenAlreadyIn,
         buttonVariant: 'danger'
       }

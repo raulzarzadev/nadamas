@@ -28,8 +28,9 @@ export default function Button({
   const sizing = {
     xs: `py-0 px-0.5`,
     sm: `py-1 px-2`,
-    md: `py-2 px-4 `,
-    lg: 'py-2 px-6'
+    md: `py-2 px-4`,
+    lg: 'py-2 px-6',
+    xl: 'py-2 px-7'
   }
 
   return (
