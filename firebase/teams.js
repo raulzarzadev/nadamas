@@ -1,5 +1,5 @@
 
-import { db } from '.'
+import { db, mFirebase } from '.'
 import {
   datesToFirebaseFromat,
   formatResponse,
@@ -69,7 +69,7 @@ export const assignAsCoach = async (teamId, athleteId) => {
   return await db
     .collection('teams')
     .doc(teamId)
-    .update({ coaches: firebase.firestore.FieldValue.arrayUnion(athleteId) })
+    .update({ coaches: mFirebase.firestore.FieldValue.arrayUnion(athleteId) })
     .then((res) => formatResponse(true, 'TEAM_UPDATED', res))
     .catch((err) => formatResponse(false, 'TEAM_UPDATED_ERROR', err))
 }
@@ -79,7 +79,7 @@ export const removeAsCoach = async (teamId, athleteId) => {
   return await db
     .collection('teams')
     .doc(teamId)
-    .update({ coaches: firebase.firestore.FieldValue.arrayRemove(athleteId) })
+    .update({ coaches: mFirebase.firestore.FieldValue.arrayRemove(athleteId) })
     .then((res) => formatResponse(true, 'TEAM_UPDATED', res))
     .catch((err) => formatResponse(false, 'TEAM_UPDATED_ERROR', err))
 }
@@ -106,10 +106,10 @@ export const acceptTeamRequest = async (
   const athleteStillWating = teamData?.joinRequests?.includes(athleteId)
   if (athleteStillWating || addedByCoach) {
     await teamRef.update({
-      joinRequests: firebase.firestore.FieldValue.arrayRemove(athleteId)
+      joinRequests: mFirebase.firestore.FieldValue.arrayRemove(athleteId)
     })
     await teamRef.update({
-      athletes: firebase.firestore.FieldValue.arrayUnion(athleteId)
+      athletes: mFirebase.firestore.FieldValue.arrayUnion(athleteId)
     })
     return formatResponse(true, 'REQUEST_ACCEPTED', { athleteId })
   } else {
@@ -121,7 +121,7 @@ export const rejectTeamRequest = async (teamId, athleteId) => {
   const teamRef = db.collection('teams').doc(teamId)
 
   await teamRef.update({
-    joinRequests: firebase.firestore.FieldValue.arrayRemove(athleteId)
+    joinRequests: mFirebase.firestore.FieldValue.arrayRemove(athleteId)
   })
   return formatResponse(true, 'REQUEST_REJECTED', { athleteId })
 }
@@ -131,7 +131,7 @@ export const sendTeamRequests = async (teamId, athleteId) => {
     .collection('teams')
     .doc(teamId)
     .update({
-      joinRequests: firebase.firestore.FieldValue.arrayUnion(athleteId)
+      joinRequests: mFirebase.firestore.FieldValue.arrayUnion(athleteId)
     })
     .then((res) => formatResponse(true, 'REQUEST_ADDED', res))
     .catch((err) => formatResponse(false, 'ADD_REQUEST_FAIL', err))
@@ -140,7 +140,7 @@ export const cancelTeamRequest = async (teamId, athleteId) => {
   const teamRef = db.collection('teams').doc(teamId)
   try {
     const res = await teamRef.update({
-      joinRequests: firebase.firestore.FieldValue.arrayRemove(athleteId)
+      joinRequests: mFirebase.firestore.FieldValue.arrayRemove(athleteId)
     })
     return formatResponse(true, 'REQUEST_CANCEL_SUCCESS', res)
   } catch (err) {
@@ -160,7 +160,7 @@ export const unjoinTeam = async (teamId, athleteId) => {
   const teamRef = db.collection('teams').doc(teamId)
   try {
     const res = await teamRef.update({
-      athletes: firebase.firestore.FieldValue.arrayRemove(athleteId)
+      athletes: mFirebase.firestore.FieldValue.arrayRemove(athleteId)
     })
     return formatResponse(true, 'SUCCESSFUL_UNJOIN', res)
   } catch (err) {

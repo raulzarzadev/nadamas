@@ -1,4 +1,4 @@
-import { mFirebase } from "."
+import { mFirebase } from '.'
 
 export const formatResponse = (ok, type, res) => {
   return { type, ok, res }
@@ -8,7 +8,7 @@ export const normalizeDoc = (doc) => {
   const data = doc.data()
   const id = doc.id
 
-  const { updatedAt, registryDate, createdAt, date, birth, joinedAt , options } = data
+  const { updatedAt, registryDate, createdAt, date, birth, joinedAt } = data
   const dates = unfierebazeDates({
     updatedAt,
     registryDate,
@@ -38,7 +38,8 @@ export const unfierebazeDates = (dates = {}) => {
   return aux
 }
 
-export const normalizeDocs = (docs = []) => docs?.map((doc) => normalizeDoc(doc))
+export const normalizeDocs = (docs = []) =>
+  docs?.map((doc) => normalizeDoc(doc))
 
 export const datesToFirebaseFromat = ({
   birth,
@@ -70,4 +71,3 @@ export const mapUserFromFirebase = (user) => {
     id: user.uid
   }
 }
-
