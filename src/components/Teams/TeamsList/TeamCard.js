@@ -5,11 +5,13 @@ import { useEffect, useState } from 'react'
 import ButtonJoinTeam from '../ButtonJoinTeam'
 
 export default function TeamCard({ redirectTeam, team }) {
-  const [teamCoach, setTeamCoach] = useState(false)
+  const [teamOwner, setTeamOwner] = useState(false)
   const { user } = useAuth()
   useEffect(() => {
-    if (user) setTeamCoach(user?.id === team.coach.id)
+    if (user) setTeamOwner(user?.id === team.coach.id)
   }, [user])
+
+  console.log(user?.id, team.coach.id)
 
   return (
     <div
@@ -33,15 +35,17 @@ export default function TeamCard({ redirectTeam, team }) {
           </h4>
           <p className="font-extralight ">{team.coach.name} </p>
         </div>
-        <div className="w-1/3">
-          <ButtonJoinTeam
-            participantsList={team?.athletes}
-            requestList={team?.joinRequests}
-            teamId={team.id}
-          />
-        </div>
+        {!teamOwner && (
+          <div className="w-1/3">
+            <ButtonJoinTeam
+              participantsList={team?.athletes}
+              requestList={team?.joinRequests}
+              teamId={team.id}
+            />
+          </div>
+        )}
       </div>
-      {teamCoach && (
+      {teamOwner && (
         <div>
           <p className="font-extralight text-left">
             Solicitudes pendientes:

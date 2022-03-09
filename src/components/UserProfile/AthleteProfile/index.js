@@ -41,38 +41,35 @@ export default function AthleteProfile({ athleteId }) {
   return (
     <div className="max-w-xl mx-auto ">
       <div>
-        <h3 className="">Premios ganados</h3>
+        <FormAthleteModal athleteId={athleteId} />
+      </div>
+
+      <Section title="Premios" indent={false} open={true}>
         <div className="flex ">
           {awards?.resultsAwards?.map((result) => (
             <AwardsRow key={result.id} result={result} />
           ))}
         </div>
-      </div>
+      </Section>
 
-      <div>
-        <h3>Ultimos resultados</h3>
-        <ResultsRow results={athleteResults} />
-      </div>
-
-      <div>
-        <h3 className="">Eventos asistidos</h3>
-        <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
-          {athleteEvents.map((event) => (
-            <EventCard key={event.id} event={event} athleteId={athleteId} />
-          ))}
+      <Section title={'Resultados'} indent={false}>
+        <div className="py-2">
+          Eventos
+          <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
+            {athleteEvents.map((event) => (
+              <EventCard key={event.id} event={event} athleteId={athleteId} />
+            ))}
+          </div>
+          Pruebas
+          <div className="grid grid-flow-col gap-5 px-5 py-2 overflow-auto">
+            <ResultsRow results={athleteResults} />
+          </div>
         </div>
-      </div>
-
-      <div>
-        <FormAthleteModal athleteId={athleteId}/>
-
-      </div>
+      </Section>
 
       <div>
         <Section title="Equipos" indent={false} open>
-          
-            <AthleteTeams athleteId={athleteId} />
-          
+          <AthleteTeams athleteId={athleteId} />
         </Section>
       </div>
 

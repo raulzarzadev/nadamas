@@ -55,7 +55,7 @@ export default function Navbar({ links = [] }) {
           <NavbarSubMenu
             listItems={links}
             listComponent={
-              <Link href="/profile">
+              <>
                 {!!user?.image && (
                   <li className="relative bg-white w-12 h-12 rounded-full">
                     <Image
@@ -66,7 +66,7 @@ export default function Navbar({ links = [] }) {
                     />
                   </li>
                 )}
-              </Link>
+              </>
             }
             topMenu={<TodgleProfile />}
           />

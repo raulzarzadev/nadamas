@@ -3,7 +3,8 @@ import { useAuth } from '@/src/context/AuthContext'
 import { useEffect, useState } from 'react'
 import TeamCard from './TeamCard'
 
-export default function TeamsList() {
+export default function TeamsList ({ coachId }) {
+  console.log(coachId)
   const { user } = useAuth()
   const [teams, setTeams] = useState([])
   
