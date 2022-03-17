@@ -1,24 +1,50 @@
-
 import { unjoinTeam } from '@/firebase/teams'
+import useTeams from '@/src/hooks/useTeams'
+import AthleteRow from '@comps/AthleteRow'
+import Section from '@comps/Section'
+import AddMyOwnTeamMembers from './AddMyOwnTeamMembers'
 import MemberRow from './MemberRow'
 
-export default function TeamMembers({
-  members = [],
+export default function TeamMembersSection({
+  /*   members = [],
   teamId,
-  coachView,
-  teamCoaches
+  teamCoaches,
+  coachView, */
+  team
 }) {
+  const { teamOwner } = useTeams({ team })
+  const teamId = team?.id
+  const coachView = teamOwner
+  const teamCoaches = team?.coaches
+  const members = team?.athletes
+
+  console.log(team)
 
   const handleRemoveMember = async (athleteId) => {
     await unjoinTeam(teamId, athleteId)
   }
 
+  console.log('team.coach', team.coach)
+
   return (
-    <>
-     
-      Entrenadores
+    <Section
+      title={'Miembros '}
+      subtitle={`(${members?.length || 0})`}
+      indent={false}
+      close
+    >
+      {/*  {coachView && <AddMyOwnTeamMembers teamId={teamId} />} */}
+      Entrenador
       <div className=" max-w-md mx-auto">
-        {teamCoaches?.map((memberId, i) => (
+        <MemberRow
+          teamId={teamId}
+          teamCoaches={teamCoaches}
+          athlete={team?.coach?.id}
+          // key={memberId}
+          // handleRemoveMember={handleRemoveMember}
+          coachView={coachView}
+        />
+        {/* {teamCoaches?.map((memberId, i) => (
           <MemberRow
             teamId={teamId}
             teamCoaches={teamCoaches}
@@ -27,7 +53,7 @@ export default function TeamMembers({
             handleRemoveMember={handleRemoveMember}
             coachView={coachView}
           />
-        ))}
+        ))} */}
       </div>
       Integrantes
       <div className=" max-w-md mx-auto">
@@ -42,7 +68,7 @@ export default function TeamMembers({
           />
         ))}
       </div>
-    </>
+    </Section>
   )
 }
 

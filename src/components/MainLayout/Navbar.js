@@ -52,24 +52,27 @@ export default function Navbar({ links = [] }) {
           <DarkModeToggle />
         </div>
         {user && (
-          <NavbarSubMenu
-            listItems={links}
-            listComponent={
-              <>
-                {!!user?.image && (
-                  <li className="relative bg-white w-12 h-12 rounded-full">
-                    <Image
-                      layout="fill"
-                      objectFit="cover"
-                      className="rounded-full"
-                      src={user?.image}
-                    />
-                  </li>
-                )}
-              </>
-            }
-            topMenu={<TodgleProfile />}
-          />
+          <div className="">
+            {user && <div className="text-xs">{user.name?.slice(0, 10)}</div>}
+            <NavbarSubMenu
+              listItems={links}
+              listComponent={
+                <>
+                  {!!user?.image && (
+                    <li className="relative bg-white w-10 h-10 rounded-full">
+                      <Image
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-full"
+                        src={user?.image}
+                      />
+                    </li>
+                  )}
+                </>
+              }
+              topMenu={<TodgleProfile />}
+            />
+          </div>
         )}
         {!user && (
           <>

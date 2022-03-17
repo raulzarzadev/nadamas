@@ -9,7 +9,6 @@ import {
   EmergencyIcon,
   InfoIcon
 } from '../../utils/Icons'
-import s from './styles.module.css'
 import Button from '@comps/inputs/Button'
 import { updateAttendanceList } from '@/firebase/attendance'
 import { useRouter } from 'next/router'

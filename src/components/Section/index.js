@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 export default function Section({
   title,
+  subtitle,
   children,
   open,
   indent = true,
@@ -20,7 +21,7 @@ export default function Section({
         ${sticky && `sticky top-16`}`}
         onClick={() => setShow(!show)}
       >
-        {title}
+        {title} <span className='font-thin  text-xs mx-2'>{subtitle}</span>
         {show ? <DownIcon /> : <ForwardIcon />}
       </h3>
       <div className={`${indent && 'pl-6 '} `}>{show && children}</div>

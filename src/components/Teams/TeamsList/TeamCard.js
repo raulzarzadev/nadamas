@@ -11,7 +11,6 @@ export default function TeamCard({ redirectTeam, team }) {
     if (user) setTeamOwner(user?.id === team.coach.id)
   }, [user])
 
-  console.log(user?.id, team.coach.id)
 
   return (
     <div
