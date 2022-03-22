@@ -12,7 +12,6 @@ export default function TeamOptionsSection({ team }) {
   const { teamOwner } = useTeams({ team })
   const { user } = useAuth()
   const router = useRouter()
-  console.log(user)
   const handleDeleteTeam = () => {
     removeTeam(team.id)
       .then((res) => {

@@ -24,8 +24,8 @@ export default function UserProfile() {
   if (!user) return <Loading />
 
   return (
-    <div className="">
-      <div
+    <div className="pt-4">
+   {/*    <div
         className={` py-2  flex w-full justify-around bg-gradient-to-r ${
           view === views.COACH
             ? 'from-primary dark:from-primary-light to-primary-dark '
@@ -33,26 +33,26 @@ export default function UserProfile() {
         }`}
       >
         <button
-          className={`w-1/3 text-2xl   ${
-            view === views.ATHLETE ? ' font-bold' : 'font-thin'
+          className={`w-1/2    ${
+            view === views.ATHLETE ? ' font-bold text-2xl' : 'font-thin text-sm'
           }`}
           onClick={() => setView(views.ATHLETE)}
         >
           {views.ATHLETE}
         </button>
         <button
-          className={`w-1/3 text-2xl ${
-            view === views.COACH ? ' font-bold' : 'font-thin'
+          className={`w-1/2  ${
+            view === views.COACH ? ' font-bold text-2xl' : 'font-thin text-sm'
           }`}
           onClick={() => setView(views.COACH)}
         >
           {views.COACH}
         </button>
-      </div>
+      </div> */}
       {view === views.COACH && (
         <CoachProfile coachId={user.id} isCoach={user?.coach} />
       )}
-      {view === views.ATHLETE && <AthleteProfile athleteId={user.athleteId} />}
+      {view === views.ATHLETE && <AthleteProfile athleteId={user.id} />}
     </div>
   )
 }

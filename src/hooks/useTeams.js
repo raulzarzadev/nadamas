@@ -14,7 +14,6 @@ export default function useTeams({ team }) {
 
   const [teamMember, setTeamMember] = useState(false)
 
-  console.log(team)
   useEffect(() => {
     if (
       team?.athletes.includes(user?.athleteId) ||

@@ -61,7 +61,7 @@ const createNewUser = async (user) => {
     .doc(user.id)
     .set({ ...user })
     .then(async (res) => {
-      await createDefaultAthlete({ ...user })
+      // await createDefaultAthlete({ ...user })
       return formatResponse(true, 'USER_CREATED', res)
     })
     .catch((err) => formatResponse(false, 'USER_CREATED_ERROR', err))
