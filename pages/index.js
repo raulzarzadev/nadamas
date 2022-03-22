@@ -1,5 +1,6 @@
-import { Head } from '@/src/components/Head'
-import Home from '@/src/components/Home'
+import { Head } from "@comps/Head";
+import Home from "@comps/Home";
+
 export default function HomePage() {
   return (
     <>

@@ -8,55 +8,15 @@ const checkedSiblingPlugin = plugin(function ({ addVariant, e }) {
   })
 })
 module.exports = {
-  // mode: 'jit',
   content: [
     './pages/**/*.{js,ts,jsx,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
     './src/**/*.{js,ts,jsx,tsx}',
     './src/components/**/*.{js}'
   ],
-  darkMode: 'class', // or 'media' or 'class'
-  theme: {
-    colors: {
-      primary: {
-        DEFAULT: '#00b7fa',
-        dark: '#094f68',
-        light: '#22c4ff'
-      },
-      secondary: {
-        light: '#3093e4',
-        DEFAULT: '#ae83e6',
-        dark: '#173e4d'
-      },
-      success: {
-        DEFAULT: '#81e686'
-      },
-      danger: {
-        DEFAULT: '#ff443b'
-      },
-      warning: {
-        DEFAULT: '#ffe600'
-      },
-      info: {
-        DEFAULT: '#daf3fc'
-      },
-      dark: {
-        DEFAULT: '#292d33'
-      },
-      light: {
-        DEFAULT: '#bfc8d4'
-      },
-      white: {
-        DEFAULT: '#e9edf3'
-      },
-      black: {
-        DEFAULT: '#242525'
-      },
-      transparent: 'rgb(0,0,0,0)'
-    },
-    fontFamily: {
-      sans: ['Graphik', 'sans-serif'],
-      serif: ['Merriweather', 'serif']
-    }
+  darkTheme: 'dark',
+  daisyui: {
+    themes: ['dark', 'light', 'cupcake']
   },
 
   variants: {
@@ -68,5 +28,49 @@ module.exports = {
       translate: ['active', 'checked-sibiling']
     }
   },
-  plugins: [checkedSiblingPlugin]
+  plugins: [checkedSiblingPlugin, require('daisyui')]
+}
+
+const theme = {
+  colors: {
+    primary: {
+      DEFAULT: '#00b7fa',
+      dark: '#094f68',
+      light: '#22c4ff'
+    },
+    secondary: {
+      light: '#3093e4',
+      DEFAULT: '#ae83e6',
+      dark: '#173e4d'
+    },
+    success: {
+      DEFAULT: '#81e686'
+    },
+    danger: {
+      DEFAULT: '#ff443b'
+    },
+    warning: {
+      DEFAULT: '#ffe600'
+    },
+    info: {
+      DEFAULT: '#daf3fc'
+    },
+    dark: {
+      DEFAULT: '#292d33'
+    },
+    light: {
+      DEFAULT: '#bfc8d4'
+    },
+    white: {
+      DEFAULT: '#e9edf3'
+    },
+    black: {
+      DEFAULT: '#242525'
+    },
+    transparent: 'rgb(0,0,0,0)'
+  },
+  fontFamily: {
+    sans: ['Graphik', 'sans-serif'],
+    serif: ['Merriweather', 'serif']
+  }
 }

@@ -1,37 +1,50 @@
-import firebase from 'firebase/app'
-import 'firebase/storage'
-import 'firebase/firestore'
-import 'firebase/auth'
-
+import { initializeApp } from 'firebase/app'
+import {
+  browserSessionPersistence,
+  getAuth,
+  GoogleAuthProvider,
+  initializeAuth,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut
+} from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
+import { mapUserFromFirebase } from './firebase-helpers'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 
+export const app = initializeApp(JSON.parse(firebaseConfig))
+export const auth = getAuth()
 
+export const db = getFirestore(app)
 
-if (!firebase?.apps?.length) {
-  firebase.initializeApp(JSON.parse(firebaseConfig))
-
-  firebase.firestore().settings({
-    merge: true,
-    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
-  });
-
-
-  firebase.firestore().enablePersistence()
-    .catch((err) => {
-      if (err.code == 'failed-precondition') {
-        // Multiple tabs open, persistence can only be enabled
-        // in one tab at a a time.
-        // ...
-      } else if (err.code == 'unimplemented') {
-        // The current browser does not support all of the
-        // features required to enable persistence
-        // ...
-      }
-    });
-
+export const authStateChanged = (cb) => {
+  return onAuthStateChanged(auth, (user) => cb(mapUserFromFirebase(user)))
+}
+export const googleLogin = async () => {
+  const provider = new GoogleAuthProvider()
+  provider.addScope('profile')
+  provider.addScope('email')
+  try {
+    const result = await signInWithPopup(auth, provider)
+    // This gives you a Google Access Token. You can use it to access the Google API.
+    const credential = GoogleAuthProvider.credentialFromResult(result)
+    const token = credential.accessToken
+    // The signed-in user info.
+    const user = result.user
+  } catch (error) {
+    console.log(error)
+    // Handle Errors here.
+    const errorCode = error.code
+    const errorMessage = error.message
+    // The email of the user's account used.
+    const email = error.email
+    // The AuthCredential type that was used.
+    const credential_1 = GoogleAuthProvider.credentialFromError(error)
+  }
 }
 
-
-export const mFirebase = firebase
-export const db = firebase.firestore()
+export const logOut = () =>
+  signOut(auth)
+    .then((res) => console.log(`res`, res))
+    .catch((err) => console.log(`err`, err))

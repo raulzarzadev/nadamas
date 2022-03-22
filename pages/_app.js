@@ -1,15 +1,15 @@
-import { AuthProvider } from '@/src/context/AuthContext'
 import '../styles/globals.css'
 import 'tailwindcss/tailwind.css'
-import MainLayout from '@comps/MainLayout'
+import Layout from '@comps/Layout'
+import { UserProvider } from '@/context/UserContext'
 
 function MyApp({ Component, pageProps }) {
   return (
-    <AuthProvider>
-      <MainLayout>
+    <UserProvider>
+      <Layout>
         <Component {...pageProps} />
-      </MainLayout>
-    </AuthProvider>
+      </Layout>
+    </UserProvider>
   )
 }
 
