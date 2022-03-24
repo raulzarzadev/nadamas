@@ -14,6 +14,22 @@ import { TiFilter } from '@react-icons/all-files/ti/TiFilter'
 import { TiEdit } from '@react-icons/all-files/ti/TiEdit'
 import { TiTrash } from '@react-icons/all-files/ti/TiTrash'
 
+import {
+  TiArrowSortedDown,
+  TiArrowSortedUp,
+  TiChevronLeft,
+  TiChevronRight,
+  TiGroup,
+  TiHome,
+  TiMediaPlay,
+  TiMediaPlayReverse,
+  TiTick,
+  TiUser,
+  TiUserAdd,
+  TiUserDelete,
+  TiWiFi,
+  TiZoom
+} from 'react-icons/ti'
 
 const ICON_LIST = {
   save: AiOutlineSave,
@@ -28,6 +44,20 @@ const ICON_LIST = {
   info: TiInfoLarge,
   filter: TiFilter,
   edit: TiEdit,
-  trash:TiTrash
+  trash: TiTrash,
+  down: TiArrowSortedDown,
+  up: TiArrowSortedUp,
+  back: TiChevronLeft,
+  forward: TiChevronRight,
+  home: TiHome,
+  group: TiGroup,
+  user: TiUser,
+  wifi: TiWiFi,
+  done: TiTick,
+  addUser: TiUserAdd,
+  removeUser: TiUserDelete,
+  search: TiZoom,
+  right: TiMediaPlay,
+  left: TiMediaPlayReverse
 }
 export default ICON_LIST

@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { mapUserFromFirebase } from './firebase-helpers'
+import { createNewUser } from './users'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 
@@ -32,6 +33,8 @@ export const googleLogin = async () => {
     const token = credential.accessToken
     // The signed-in user info.
     const user = result.user
+    await createNewUser(user)
+    console.log(user)
   } catch (error) {
     console.log(error)
     // Handle Errors here.

@@ -24,22 +24,16 @@ export default function BottomNav({ links = [] }) {
           <>
             <button onClick={handleBack}>
               <div className="p-3 rounded-lg mx-2 shadow-lg hover:shadow-inner">
-                <Icon name="trash" />
+                <Icon name="back" />
               </div>
             </button>
             {links?.map(({ href, icon, label }) => (
               <Link key={label} href={href}>
                 <div className="p-3 rounded-lg mx-2 shadow-lg hover:shadow-inner">
-                  {icon}
+                  <Icon name={icon} />
                 </div>
               </Link>
             ))}
-            {/*
-            <Link href="/athletes">
-              <div className="p-3 rounded-lg mx-2  shadow-lg hover:shadow-inner">
-                <PersonIcon />
-              </div>
-            </Link> */}
           </>
         ) : (
           <Link href="/signin">

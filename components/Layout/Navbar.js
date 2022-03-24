@@ -4,8 +4,8 @@ import DarkModeToggle from './DarkModeToggle'
 import { useUser } from '@/context/UserContext'
 import Icon from '@comps/Icon'
 import Link from '@comps/Link'
-export default function Navbar({ links = [] }) {
-  const { user, logout } = useUser()
+export default function Navbar ({ links = [] }) {
+  const { user } = useUser()
   return (
     <div className="  pb-0 flex justify-between items-center">
       <div className="flex w-1/6 justify-center items-center p-1">
@@ -28,14 +28,14 @@ export default function Navbar({ links = [] }) {
       </div>
       <div className=" flex  w-full  justify-start items-center  px-1 ">
         <ul className=" sm:flex items-center ">
-          <li className="mx-2">
+          {/* <li className="mx-2">
             <Link href="/events">
               <div className="relative ">
                 Eventos
                 <div className="absolute -top-1 -right-3 bg-warning h-3 w-3 rounded-full animate-bounce"></div>
               </div>
             </Link>
-          </li>
+          </li> */}
           {/* {user?.admin && (
             <li className="mx-2 hidden sm:block">
               <Link href={ROUTES.admin}>
@@ -49,9 +49,9 @@ export default function Navbar({ links = [] }) {
         <div className="mx-4">
           <DarkModeToggle />
         </div>
-        {user && (
+        {user ? (
           <div className="">
-            {user && <div className="text-xs">{user.name?.slice(0, 10)}</div>}
+            {/* {user && <div className="text-xs">{user.name?.slice(0, 10)}</div>} */}
             <NavbarSubMenu
               listItems={links}
               listComponent={
@@ -71,17 +71,6 @@ export default function Navbar({ links = [] }) {
               topMenu={<TodgleProfile />}
             />
           </div>
-        )}
-        {user ? (
-          <li>
-            <button
-              onClick={() => {
-                logout()
-              }}
-            >
-              <div className="mx-2 ">Salir</div>
-            </button>
-          </li>
         ) : (
           <li>
             <Link href="/login">

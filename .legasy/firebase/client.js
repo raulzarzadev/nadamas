@@ -25,7 +25,7 @@ export const loginWithGoogle = async () => {
       // check if user exist in db
       const userAlreadyExist = await getUser(user?.uid)
       if (userAlreadyExist) return userAlreadyExist
-      return createNewUser(mapUserFromFirebase(user))
+      return createNewUser(user)
     })
     .catch((err) => console.log(`err`, err))
   return res

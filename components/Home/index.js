@@ -1,12 +1,9 @@
 import { useUser } from '@/context/UserContext'
-import Button from '@comps/Inputs/Button'
 import Link from '@comps/Link'
 import Image from 'next/image'
-import { useRouter } from 'next/router'
 
 export default function Home() {
   const { user } = useUser()
-
 
   return (
     <div className="py-6">
@@ -67,11 +64,7 @@ const HomeRow = ({
       {imageIsInleftSide && (
         <p className="md:w-2/3 text-center md:text-left">{text}</p>
       )}
-      <div
-        className={`relative h-56 w-56 shadow-lg md:transform hover:rotate-0 ${
-          imageIsInleftSide ? 'rotate-12' : '-rotate-12'
-        }`}
-      >
+      <div className={`relative h-56 w-56 shadow-lg `}>
         <Image src={image} layout="fill" objectFit="cover" priority />
       </div>
       {imageSide === 'right' && (
