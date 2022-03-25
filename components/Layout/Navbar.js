@@ -47,7 +47,7 @@ export default function Navbar ({ links = [] }) {
       </div>
       <ul className=" flex justify-end items-center cursor-pointer">
         <div className="mx-4">
-          <DarkModeToggle />
+          <DarkModeToggle  />
         </div>
         {user ? (
           <div className="">

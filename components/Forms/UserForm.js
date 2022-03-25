@@ -65,7 +65,7 @@ export default function UserForm({ user }) {
           />
         </Section>
 
-        <Section title="Informacion Médica " open indent={false}>
+        <Section title="Informacion Médica "  indent={false}>
           <TextInput
             label={'Tipo de sangre'}
             placeholder=" (recomendado)"
@@ -84,7 +84,7 @@ export default function UserForm({ user }) {
           
         </Section>
 
-        <Section title="Contacto de Emergencia" open indent={false}>
+        <Section title="Contacto de Emergencia"  indent={false}>
           <TextInput
             label={'Nombre'}
             placeholder="(recomendado)"

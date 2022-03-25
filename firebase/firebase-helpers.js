@@ -10,7 +10,6 @@ export const normalizeDoc = (doc) => {
   const data = doc.data()
   const id = doc.id
   const res = deepFormatDocumentDates(data, { format: 'millis' })
-  console.log(res)
   return {
     id,
     ...res
@@ -92,13 +91,16 @@ export const dateToFirebaseFormat = (date) =>
   Timestamp.fromDate(new Date(date)) || null
 
 export const mapUserFromFirebase = (user) => {
-  const { email, displayName, photoURL } = user
+  const { email, displayName, photoURL, phoneNumber } = user
   return {
     joinedAt: dateToFirebaseFormat(new Date()),
     email,
     displayName,
     name: displayName,
-
+    contact: {
+      email,
+      phone: phoneNumber
+    },
     image: photoURL,
     id: user.uid
   }

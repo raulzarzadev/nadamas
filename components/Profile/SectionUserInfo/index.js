@@ -16,9 +16,10 @@ export default function SectionUserInfo({ userId }) {
     displayName,
     alias,
     birth,
-    phoneNumber,
+    contact,
     email,
-    medicalInformation,
+    phone,
+    medicInformation,
     emergencyContact
   } = user || {}
   const [openEditUser, setOpenEditUser] = useState(false)
@@ -33,16 +34,24 @@ export default function SectionUserInfo({ userId }) {
         <button className="btn" onClick={() => handleOpenEditUser()}>
           Editar
         </button>
-        <div>
-          <div>nombre : {name || displayName}</div>
-          <div>fecha de nac:{dateFormat(birth, 'dd MMM yy')}</div>
-          <div>email: {email}</div>
-          <div>phone: {phoneNumber}</div>
-          <div>alias: {alias}</div>
+        <div className="text-center">
+          <div>{name || displayName}</div>
+          <div>
+            <span className="italic font-thin">{alias}</span>
+          </div>
+          <div>{dateFormat(birth, 'dd MMM yy')}</div>
         </div>
-
-        <Section title={'Información medica'}> Información médica</Section>
-        <Section title={'Contacto emergencia '}>Contacto de emergencia</Section>
+        <Section title="Contacto" indent={false}>
+          <div>Telefono : {contact?.phone || phone}</div>
+          <div>Correo: {contact?.email || email}</div>
+        </Section>
+        <Section title={'Información medica'} indent={false}>
+          {' '}
+          Información médica
+        </Section>
+        <Section title={'Contacto emergencia '} indent={false}>
+          Contacto de emergencia
+        </Section>
 
         <Modal
           title="Editar usuario"

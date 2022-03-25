@@ -1,13 +1,12 @@
-import useDarkMode from "@/hooks/useDarkModes"
+import { useTheme } from "@/context/ThemeContext"
 
 export default function DarkModeToggle() {
-    const [colorTheme, setTheme] = useDarkMode()
-
+  const [theme, setTheme] = useTheme()
   return (
     <div className="">
-      {colorTheme === 'light' ? (
+      {theme === 'light' ? (
         <svg
-          onClick={() => setTheme('light')}
+          onClick={() => setTheme('dark')}
           xmlns="http://www.w3.org/2000/svg"
           className="h-6 w-6"
           fill="none"
@@ -23,7 +22,7 @@ export default function DarkModeToggle() {
         </svg>
       ) : (
         <svg
-          onClick={() => setTheme('dark')}
+          onClick={() => setTheme('light')}
           xmlns="http://www.w3.org/2000/svg"
           className="h-6 w-6"
           fill="none"

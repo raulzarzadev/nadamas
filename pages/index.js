@@ -4,7 +4,7 @@ import Home from "@comps/Home";
 export default function HomePage() {
   return (
     <>
-      <Head title='nadamas - inicio'/>
+      <Head title='nadamas'/>
       <Home />
     </>
   )
