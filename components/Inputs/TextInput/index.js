@@ -24,7 +24,7 @@ const TextInput = React.forwardRef(
           type={type}
           {...rest}
         />
-        {helperText && <span className="label-text">{helperText}</span>}
+        {helperText && <span className="label-text text-info">{helperText}</span>}
         {error && <span className="label-text text-error">{error}</span>}
       </div>
     )

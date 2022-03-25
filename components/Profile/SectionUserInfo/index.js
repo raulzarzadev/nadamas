@@ -28,16 +28,22 @@ export default function SectionUserInfo({ userId }) {
 
   if (!user) return <Loading />
   return (
-    <Section title={'Información personal'} indent={false}>
-      <div>
-        <div>nombre : {name || displayName}</div>
-        <div>fecha de nac:{dateFormat(birth, 'dd MMM yy')}</div>
-        <div>email: {email}</div>
-        <div>phone: {phoneNumber}</div>
-        <div>alias: {alias}</div>
+    <div>
+      <Section title={'Información personal'} indent={false}>
         <button className="btn" onClick={() => handleOpenEditUser()}>
           Editar
         </button>
+        <div>
+          <div>nombre : {name || displayName}</div>
+          <div>fecha de nac:{dateFormat(birth, 'dd MMM yy')}</div>
+          <div>email: {email}</div>
+          <div>phone: {phoneNumber}</div>
+          <div>alias: {alias}</div>
+        </div>
+
+        <Section title={'Información medica'}> Información médica</Section>
+        <Section title={'Contacto emergencia '}>Contacto de emergencia</Section>
+
         <Modal
           title="Editar usuario"
           open={openEditUser}
@@ -45,10 +51,7 @@ export default function SectionUserInfo({ userId }) {
         >
           <UserForm user={user} />
         </Modal>
-      </div>
-
-      <Section title={'Información medica'}> Información médica</Section>
-      <Section title={'Contacto emergencia '}>Contacto de emergencia</Section>
-    </Section>
+      </Section>
+    </div>
   )
 }
