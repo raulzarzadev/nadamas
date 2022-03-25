@@ -15,7 +15,7 @@ export default function Modal({
         e.target.id === 'modal-1' && handleOpen()
       }}
     >
-      <div className="modal-box  p-2 py-1 bg-slate-700 ">
+      <div className="modal-box  p-2 py-1 bg-base-300 ">
         <header className={'flex justify-between'}>
           <div className={'w-[80%] text-center'}>
             <h5>{title}</h5>
@@ -30,7 +30,7 @@ export default function Modal({
             <Icon name="cross" />
           </button>
         </header>
-        <main className={'min-h-44 grid place-content-center'}>{children}</main>
+        <main className={'min-h-44 '}>{children}</main>
       </div>
     </div>
   )

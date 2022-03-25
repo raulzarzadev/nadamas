@@ -1,8 +1,6 @@
 import { updateUser } from '@/firebase/users'
-import { dateFormat } from '@/utils/dates'
-import Button from '@comps/Inputs/Button'
+import ButtonSave from '@comps/Inputs/Button/ButtonSave'
 import TextInput from '@comps/Inputs/TextInput'
-import Loading from '@comps/Loading'
 import Section from '@comps/Section'
 import { useForm } from 'react-hook-form'
 
@@ -65,7 +63,7 @@ export default function UserForm({ user }) {
           />
         </Section>
 
-        <Section title="Informacion Médica "  indent={false}>
+        <Section title="Informacion Médica " indent={false}>
           <TextInput
             label={'Tipo de sangre'}
             placeholder=" (recomendado)"
@@ -81,10 +79,9 @@ export default function UserForm({ user }) {
             //  error={errors.name.message}
             {...register('medicInformation.considerations')}
           />
-          
         </Section>
 
-        <Section title="Contacto de Emergencia"  indent={false}>
+        <Section title="Contacto de Emergencia" indent={false}>
           <TextInput
             label={'Nombre'}
             placeholder="(recomendado)"
@@ -103,8 +100,9 @@ export default function UserForm({ user }) {
             {...register('emergencyContact.relationship')}
           />
         </Section>
-
-        <Button>Guardar</Button>
+        <div className="flex justify-end">
+          <ButtonSave />
+        </div>
       </form>
     </div>
   )

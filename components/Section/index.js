@@ -14,7 +14,7 @@ export default function Section({
     setShow(open)
   }, [open])
   return (
-    <section className="my-2 bg-base-100   text-base-content shadow-lg px-1 ">
+    <section className="my-2 bg-base-100   text-base-content shadow-lg px-1 rounded-md pb-2 pt-1 ">
       <h3
         className={`
         text-left flex pl-2 mb-4 font-bold items-center   

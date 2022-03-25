@@ -1,6 +1,7 @@
 import { getUser } from '@/firebase/users'
 import { dateFormat } from '@/utils/dates'
 import UserForm from '@comps/Forms/UserForm'
+import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import Loading from '@comps/Loading'
 import Modal from '@comps/Modal'
 import Section from '@comps/Section'
@@ -31,9 +32,7 @@ export default function SectionUserInfo({ userId }) {
   return (
     <div>
       <Section title={'Información personal'} indent={false}>
-        <button className="btn" onClick={() => handleOpenEditUser()}>
-          Editar
-        </button>
+        <ButtonIcon label={'Editar'} iconName="edit" className='rounded-full'  onClick={()=>handleOpenEditUser()}/>
         <div className="text-center">
           <div>{name || displayName}</div>
           <div>
