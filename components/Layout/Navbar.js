@@ -4,11 +4,11 @@ import DarkModeToggle from './DarkModeToggle'
 import { useUser } from '@/context/UserContext'
 import Icon from '@comps/Icon'
 import Link from '@comps/Link'
-export default function Navbar ({ links = [] }) {
+export default function Navbar({ links = [] }) {
   const { user } = useUser()
   return (
-    <div className="  pb-0 flex justify-between items-center">
-      <div className="flex w-1/6 justify-center items-center p-1">
+    <div className="  pb-0 flex justify-between items-center   bg-base-100 text-base-content">
+      <div className="flex w-1/6 justify-center items-center p-1 ">
         <Link href="/" className="relative w-full h-8 hidden md:block ">
           <Image
             src="/nadamas/logo-2.png"
@@ -47,17 +47,17 @@ export default function Navbar ({ links = [] }) {
       </div>
       <ul className=" flex justify-end items-center cursor-pointer">
         <div className="mx-4">
-          <DarkModeToggle  />
+          <DarkModeToggle />
         </div>
         {user ? (
-          <div className="">
+          <div className=" ">
             {/* {user && <div className="text-xs">{user.name?.slice(0, 10)}</div>} */}
             <NavbarSubMenu
               listItems={links}
               listComponent={
                 <>
                   {!!user?.image && (
-                    <li className="relative bg-white w-10 h-10 rounded-full">
+                    <li className="relative  w-10 h-10 rounded-full">
                       <Image
                         layout="fill"
                         objectFit="cover"
@@ -118,20 +118,20 @@ const NavbarSubMenu = ({
   return (
     <li
       id="nav-menu"
-      className=" group  flex items-end hover:bg-transparent  px-1 "
+      className=" group  flex items-end hover:bg-transparent  px-1"
       onClick={handleShowMenu}
     >
       {showMenu && (
         <div
-          className="absolute top-0 right-0 bottom-0 left-0 bg-dark bg-opacity-20 z-10"
+          className="absolute top-0 right-0 bottom-0 left-0 bg-dark bg-opacity-20 z-10 "
           id="hola"
         ></div>
       )}
-      <ul className="group-hover:text-black ">{listComponent}</ul>
+      <ul className="">{listComponent}</ul>
       <div className="relative ">
         {/* <!-- Dropdown toggle button --> */}
         {downIcon && (
-          <button className=" group-hover:text-black ">
+          <button className="  ">
             <Icon name="down" />
           </button>
         )}
@@ -140,7 +140,7 @@ const NavbarSubMenu = ({
         <ul
           className={`absolute ${
             showMenu ? 'block' : 'hidden'
-          } -right-1 z-20 w-48 py-2 mt-0 bg-secondary text-light  rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
+          } -right-1 z-20 w-48 py-2 mt-0  bg-base-100 rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
         >
           <li>{topMenu}</li>
           {/* {user?.admin && (

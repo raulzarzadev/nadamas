@@ -27,12 +27,20 @@ export default function SectionUserInfo({ userId }) {
   const handleOpenEditUser = () => {
     setOpenEditUser(!openEditUser)
   }
+  
 
   if (!user) return <Loading />
   return (
     <div>
       <Section title={'Información personal'} indent={false}>
-        <ButtonIcon label={'Editar'} iconName="edit" className='rounded-full'  onClick={()=>handleOpenEditUser()}/>
+        <div className='flex justify-center'>
+          <ButtonIcon
+            label={'Editar'}
+            iconName="edit"
+            className="rounded-full "
+            onClick={() => handleOpenEditUser()}
+          />
+        </div>
         <div className="text-center">
           <div>{name || displayName}</div>
           <div>
