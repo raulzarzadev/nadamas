@@ -4,14 +4,21 @@ import DarkModeToggle from './DarkModeToggle'
 import { useUser } from '@/context/UserContext'
 import Icon from '@comps/Icon'
 import Link from '@comps/Link'
+import { useTheme } from '@/context/ThemeContext'
 export default function Navbar({ links = [] }) {
   const { user } = useUser()
+  const [theme] = useTheme()
+
   return (
     <div className="  pb-0 flex justify-between items-center   bg-base-100 text-base-content">
       <div className="flex w-1/6 justify-center items-center p-1 ">
         <Link href="/" className="relative w-full h-8 hidden md:block ">
           <Image
-            src="/nadamas/logo-2.png"
+            src={
+              theme === 'light'
+                ? '/nadamas/logo-light.png'
+                : '/nadamas/logo-dark.png'
+            }
             layout="fill"
             objectFit="contain"
             priority={true}

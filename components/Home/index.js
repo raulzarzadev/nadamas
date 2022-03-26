@@ -6,8 +6,8 @@ export default function Home() {
   const { user } = useUser()
 
   return (
-    <div className="py-6">
-      <p className="text-center">
+    <div className="py-6 text-base-content">
+      <p className="text-center ">
         La <span className="font-bold">aplicación web</span> para atletas y
         entrenadores
       </p>
