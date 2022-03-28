@@ -12,7 +12,8 @@ export default function Icon({ name = '', size = 'md', ...rest }) {
 }
 
 const sizign = {
-  sm: '1rem',
-  md: '1.4rem',
+  xs: '1.2rem',
+  sm: '1.4rem',
+  md: '1.6rem',
   lg: '2rem'
 }

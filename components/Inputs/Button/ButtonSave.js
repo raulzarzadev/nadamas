@@ -1,5 +1,11 @@
-import ButtonIcon from "./ButtonIcon";
+import ButtonIcon from './ButtonIcon'
 
-export default function ButtonSave({ ...rest }) {
-  return <ButtonIcon label={'Guardar'} iconName="save" {...rest}/>
+export default function ButtonSave({ saved = false, ...rest }) {
+  return (
+    <ButtonIcon
+      label={saved ? 'Guardado' : 'Guardar'}
+      iconName="save"
+      {...rest}
+    />
+  )
 }

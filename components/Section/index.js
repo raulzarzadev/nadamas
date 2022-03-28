@@ -6,7 +6,7 @@ export default function Section({
   subtitle,
   children,
   open,
-  indent = true,
+  indent = false,
   sticky = false
 }) {
   const [show, setShow] = useState(open || false)

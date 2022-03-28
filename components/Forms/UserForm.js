@@ -24,6 +24,7 @@ export default function UserForm({ user }) {
       .catch((err) => console.log(`err`, err))
   }
 
+
   return (
     <div className="">
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -46,6 +47,14 @@ export default function UserForm({ user }) {
             //  error={errors.name.message}
             {...register('birth')}
           />
+          <label className="label cursor-pointer ">
+            <span className="label-text">Eres entrenador</span>
+            <input
+              type="checkbox"
+              className="toggle toggle-xs toggle-accent "
+              {...register('isCoach')}
+            ></input>
+          </label>
         </Section>
 
         <Section title="Contacto " open indent={false}>

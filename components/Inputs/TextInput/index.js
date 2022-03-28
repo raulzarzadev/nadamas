@@ -16,7 +16,7 @@ const TextInput = React.forwardRef(
     
     return (
       <div className="form-control w-full max-w-xs">
-        <span className="label-text">{label}</span>
+        <span className="label-text capitalize-first">{label}</span>
         <input
           ref={ref}
           className="input input-bordered input-xs w-full max-w-xs"

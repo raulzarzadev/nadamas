@@ -1,7 +1,7 @@
 /* -------------------- */
 /* ---------USERS------ */
 /* -------------------- */
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '.'
 import {
   deepFormatDocumentDates,
@@ -10,16 +10,17 @@ import {
 } from './firebase-helpers'
 
 export const getUser = async (userId) => {
+  // TODO transform to listenUser
   const docRef = doc(db, 'users', userId)
   const docSnap = await getDoc(docRef)
   return normalizeDoc(docSnap)
 }
 
 export const createNewUser = async (user) => {
-  const res = await db
-    .collection('users')
-    .doc(user.id)
-    .set({ ...user })
+  const ref = doc(db, 'users', user.id)
+  const newUser = {...user, id:user.id, createdAt: new Date(), updatedAt: new Date()}
+  setDoc(ref, {...deepFormatDocumentDates(newUser)})
+   
     .then(async (res) => {
       // await createDefaultAthlete({ ...user })
       return formatResponse(true, 'USER_CREATED', res)
@@ -33,13 +34,5 @@ export const updateUser = async (user) => {
   updateDoc(doc(db, 'users', user.id), userFormat)
     .then((res) => console.log(`res`, res))
     .catch((err) => console.log(`err`, err))
-  /*  try {
-    const res = await eventRef.update({
-      ...user,
-      ...datesInFirebaseFormat
-    })
-    return formatResponse(true, 'USER_UPDATED', res)
-  } catch (err) {
-    return formatResponse(false, 'UPDATE_ERROR', err)
-  } */
+ 
 }
