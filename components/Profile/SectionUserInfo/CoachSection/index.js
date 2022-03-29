@@ -2,6 +2,7 @@ import { deleteTeam, getUserTeams } from '@/firebase/teams'
 import Link from '@comps/Link'
 import ModalDelete from '@comps/Modal/ModalDelete'
 import Section from '@comps/Section'
+import TeamsList from '@comps/Teams/TeamsList'
 import { useState, useEffect } from 'react'
 export default function CoachSection({ user }) {
   const [userTeams, setUserTeams] = useState([])
@@ -13,7 +14,6 @@ export default function CoachSection({ user }) {
   const getAndSetUserTeams = () => {
     getUserTeams(user.id).then(setUserTeams)
   }
-
   console.log(userTeams)
 
   return (
@@ -29,22 +29,8 @@ export default function CoachSection({ user }) {
             Nuevo equipo
           </Link>
         </div>
-        {userTeams?.map((team) => (
-          <div key={team.id} className="flex">
-            <ModalDelete
-              handleDelete={deleteTeam}
-              itemId={team.id}
-              labelDelete={`Equipo: ${team.name || team.title}`}
-              deleteSuccessful={() => {
-                console.log('delete success')
-                getAndSetUserTeams()
-              }}
-            />
-            <Link href={`/teams/${team.id}`}>
-              <h3>{team.name || team.title}</h3>
-            </Link>
-          </div>
-        ))}
+        <TeamsList coachId={user.id} teams={userTeams} />
+      
       </Section>
       <Section title={'Eventos'}></Section>
       <Section title={'Configuración'}></Section>

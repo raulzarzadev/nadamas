@@ -17,7 +17,8 @@ import Button from './Button'
 export default function ButtonJoinTeam({
   requestList = [],
   membersList = [],
-  teamId = null
+  teamId = null,
+  disabled = false
 }) {
   console.log(teamId)
   const { user } = useUser()
@@ -129,6 +130,7 @@ export default function ButtonJoinTeam({
     secondary: `border-info`
   }
 
+
   return (
     <>
       {/*  <Button
@@ -137,8 +139,9 @@ export default function ButtonJoinTeam({
         label={responseStatus?.label}
       /> */}
       <button
+        disabled={disabled}
         className={`
-        ${buttonStyle[responseStatus?.buttonVariant]} border-2 p-1 w-full`}
+        ${buttonStyle[responseStatus?.buttonVariant]} border-2 p-1 w-full disabled:opacity-50 disabled:border-opacity-50`}
         onClick={async (e) => {
           e.stopPropagation()
           e.preventDefault()

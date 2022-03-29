@@ -7,6 +7,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   query,
   updateDoc,
   where
@@ -15,7 +16,8 @@ import { db } from '.'
 import {
   deepFormatDocumentDates,
   formatResponse,
-  normalizeDoc
+  normalizeDoc,
+  normalizeDocs
 } from './firebase-helpers'
 
 const createTeam = async (team, user) => {
@@ -32,6 +34,30 @@ const createTeam = async (team, user) => {
 const getUserTeams = async (userId) => {
   const res = []
   const q = query(collection(db, 'teams'), where('userId', '==', userId))
+
+  const querySnapshot = await getDocs(q)
+
+  querySnapshot.forEach((doc) => {
+    console.log(doc.id, '=>', doc.data())
+    res.push({ ...normalizeDoc(doc) })
+  })
+  return res
+}
+
+const listenPublicTeams = async (cb) => {
+  const q = query(collection(db, 'teams'), where('isPublic', '==', true))
+  const unsuscribe = onSnapshot(q, (querySnapshot) => {
+    const res = []
+    querySnapshot.forEach((doc) => {
+      res.push(normalizeDoc(doc))
+    })
+    cb(res)
+  })
+}
+
+const getPublicTeams = async () => {
+  const res = []
+  const q = query(collection(db, 'teams'), where('isPublic', '==', true))
 
   const querySnapshot = await getDocs(q)
 
@@ -93,6 +119,13 @@ const removeMember = async (teamId, userId) => {
     .catch((err) => formatResponse(false, 'MEMBER_REMOVED_ERROR', err))
 }
 
-export { createTeam, getUserTeams, deleteTeam, getTeam }
+export {
+  createTeam,
+  getUserTeams,
+  deleteTeam,
+  getTeam,
+  getPublicTeams,
+  listenPublicTeams
+}
 
 export { sendRequest, acceptRequest, removeRequest, removeMember }

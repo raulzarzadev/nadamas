@@ -1,13 +1,12 @@
-import Team from '@comps/Team'
+import TeamDetails from '@comps/Teams/TeamDetails'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
 export default function team() {
   const {
     query: { id }
   } = useRouter()
   return (
     <div className="">
-      <Team teamId={id} />
+      <TeamDetails teamId={id} />
     </div>
   )
 }

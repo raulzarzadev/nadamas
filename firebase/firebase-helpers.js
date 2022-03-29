@@ -91,7 +91,6 @@ export const dateToFirebaseFormat = (date) =>
   Timestamp.fromDate(new Date(date)) || null
 
 export const mapUserFromFirebase = (user) => {
-  console.log(user)
   if(!user) return null
   const { email, displayName, photoURL, phoneNumber } = user
   return {
