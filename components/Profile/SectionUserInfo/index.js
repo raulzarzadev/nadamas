@@ -60,20 +60,22 @@ export default function SectionUserInfo({ userId }) {
           <div>{dateFormat(birth, 'dd MMM yy')}</div>
         </div>
 
+        {openEditUser && (
+          <Modal
+            title="Editar usuario"
+            open={openEditUser}
+            handleOpen={handleOpenEditUser}
+          >
+            <UserForm user={user} />
+          </Modal>
+        )}
+
         <Section title="Contacto">
           <div>Telefono : {contact?.phone || phone}</div>
           <div>Correo: {contact?.email || email}</div>
         </Section>
         <Section title={'Información medica'}> Información médica</Section>
         <Section title={'Contacto emergencia '}>Contacto de emergencia</Section>
-
-        <Modal
-          title="Editar usuario"
-          open={openEditUser}
-          handleOpen={handleOpenEditUser}
-        >
-          <UserForm user={user} />
-        </Modal>
       </Section>
     </div>
   )

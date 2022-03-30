@@ -7,7 +7,9 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
   onSnapshot,
+  orderBy,
   query,
   updateDoc,
   where
@@ -31,6 +33,16 @@ const createTeam = async (team, user) => {
     .then((res) => formatResponse(true, 'TEAM_CREATED', res))
     .catch((err) => formatResponse(false, 'TEAM_CREATED_ERROR', err))
 }
+const updateTeam = async (team) => {
+  try {
+    const res = await updateDoc(doc(db, 'teams', team.id), {
+      ...deepFormatDocumentDates({ ...team, updatedAt: new Date() })
+    })
+    return formatResponse(true, 'TEAM_UPDATED', res)
+  } catch (err) {
+    return formatResponse(false, 'TEAM_UPDATED_ERROR', err)
+  }
+}
 const getUserTeams = async (userId) => {
   const res = []
   const q = query(collection(db, 'teams'), where('userId', '==', userId))
@@ -38,15 +50,19 @@ const getUserTeams = async (userId) => {
   const querySnapshot = await getDocs(q)
 
   querySnapshot.forEach((doc) => {
-    console.log(doc.id, '=>', doc.data())
     res.push({ ...normalizeDoc(doc) })
   })
   return res
 }
 
 const listenPublicTeams = async (cb) => {
-  const q = query(collection(db, 'teams'), where('isPublic', '==', true))
-  const unsuscribe = onSnapshot(q, (querySnapshot) => {
+  const q = query(
+    collection(db, 'teams'),
+    where('isPublic', '==', true),
+    limit(4),
+    //orderBy('updatedAt')
+  )
+  onSnapshot(q, (querySnapshot) => {
     const res = []
     querySnapshot.forEach((doc) => {
       res.push(normalizeDoc(doc))
@@ -67,7 +83,11 @@ const getPublicTeams = async () => {
   })
   return res
 }
-
+const listenTeam = (teamId, cb) => {
+  onSnapshot(doc(db, 'teams', teamId), (doc) => {
+    cb(normalizeDoc(doc))
+  })
+}
 const getTeam = async (teamId) => {
   const ref = doc(db, 'teams', teamId)
   const docSnap = await getDoc(ref)
@@ -121,11 +141,13 @@ const removeMember = async (teamId, userId) => {
 
 export {
   createTeam,
+  updateTeam,
   getUserTeams,
   deleteTeam,
   getTeam,
   getPublicTeams,
-  listenPublicTeams
+  listenPublicTeams,
+  listenTeam
 }
 
 export { sendRequest, acceptRequest, removeRequest, removeMember }

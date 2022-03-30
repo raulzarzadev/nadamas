@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { createTeam } from '@/firebase/teams'
+import { createTeam, updateTeam } from '@/firebase/teams'
 import ButtonSave from '@comps/Inputs/Button/ButtonSave'
 import TextInput from '@comps/Inputs/TextInput'
 import { useForm } from 'react-hook-form'
 import { useUser } from '@/context/UserContext'
+import Toggle from '@comps/Inputs/Toggle'
 
 export default function TeamForm({ team }) {
   const { user } = useUser()
@@ -11,23 +12,32 @@ export default function TeamForm({ team }) {
     register,
     handleSubmit,
     reset,
+    watch,
+
     formState: { isSubmitSuccessful, isSubmitting, isDirty }
   } = useForm({
     defaultValues: team
   })
   const onSubmit = (form) => {
-    createTeam(form, user).then((res) => {
-      reset({ keepValues: true, keepIsSubmitted: true })
-    })
+    team?.id
+      ? updateTeam(form).then((res) => {
+          console.log(res)
+          // reset({ keepValues: true, keepIsSubmitted: true })
+        })
+      : createTeam(form, user).then((res) => {
+          console.log(res)
+          reset({ keepValues: true, keepIsSubmitted: true })
+        })
+
     // console.log(form)
   }
-  console.log('isSubmitting', isSubmitting)
-  console.log('isDirty', isDirty)
+
   return (
     <div className="">
       <form onSubmit={handleSubmit(onSubmit)}>
         <TextInput {...register('name')} label="Nombre del equipo" />
         <TextInput {...register('description')} label="descripción" />
+        <Toggle {...register('isPublic')} label="Equipo público" />
         <div className="flex justify-center my-4">
           <ButtonSave loading={isSubmitting} saved={isSubmitSuccessful} />
         </div>

@@ -33,11 +33,9 @@ export default function TeamCard({ redirectTeam, team }) {
               ({team.athletes?.length || team?.members?.length || 0})
             </span>
             <span className="text-xs font-thin mx-2">
-              {team?.publicTeam ? 'Público' : 'Privado'}
+              {team?.isPublic ? 'Público' : 'Privado'}
             </span>
-            <span className="text-xs font-thin ">
-              {teamOwner && ' (Tuyo)'}
-            </span>
+            <span className="text-xs font-thin ">{teamOwner && ' (Tuyo)'}</span>
           </h4>
           <p className="font-extralight ">{team?.coach?.name} </p>
         </div>

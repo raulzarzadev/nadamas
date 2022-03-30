@@ -1,6 +1,7 @@
 import { updateUser } from '@/firebase/users'
 import ButtonSave from '@comps/Inputs/Button/ButtonSave'
 import TextInput from '@comps/Inputs/TextInput'
+import Toggle from '@comps/Inputs/Toggle'
 import Section from '@comps/Section'
 import { useForm } from 'react-hook-form'
 
@@ -18,12 +19,18 @@ export default function UserForm({ user }) {
     }
   })
 
+  console.log(watch())
+  console.log(errors)
+
+  // TODO - add validation or avoid that undefined values are sent to firebase
+
   const onSubmit = (form) => {
+    console.log(form)
+
     updateUser(form)
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
-
 
   return (
     <div className="">
@@ -33,42 +40,38 @@ export default function UserForm({ user }) {
             label={'Nombre'}
             placeholder="Nombre"
             //  error={errors.name.message}
-            {...register('displayName')}
+            {...register('name', { value: watch('name') || null })}
           />
           <TextInput
             label={'Alias publico (opcional)'}
             placeholder="Alias (opcional)"
             //  error={errors.name.message}
-            {...register('alias')}
+            {...register('alias', { value: watch('alias') || null })}
           />
           <TextInput
             label={'Fecha de nacimiento'}
             type="date"
             //  error={errors.name.message}
-            {...register('birth')}
+            {...register('birth', { value: watch('birth') || null })}
           />
-          <label className="label cursor-pointer ">
-            <span className="label-text">Eres entrenador</span>
-            <input
-              type="checkbox"
-              className="toggle toggle-xs toggle-accent "
-              {...register('isCoach')}
-            ></input>
-          </label>
+          <Toggle label={'Eres entrenador'} {...register('isCoach')} />
         </Section>
 
         <Section title="Contacto " open indent={false}>
           <TextInput
-            label={'Telefono'}
+            label={'Whatsapp'}
             placeholder="Telefono (opcional)"
             //  error={errors.name.message}
-            {...register('contact.phone')}
+            {...register('contact.whatsapp', {
+              value: watch('contact.whatsapp') || null
+            })}
           />
           <TextInput
+            disabled
             label={'Correo'}
             placeholder="Email (recomendado)"
             //  error={errors.name.message}
-            {...register('contact.email')}
+            {...register('email', { value: watch('email') || null })}
           />
         </Section>
 
@@ -77,7 +80,9 @@ export default function UserForm({ user }) {
             label={'Tipo de sangre'}
             placeholder=" (recomendado)"
             //  error={errors.name.message}
-            {...register('medicInformation.blodType')}
+            {...register('medicInformation.blodType', {
+              value: watch('medicInformation.blodType') || null
+            })}
           />
           <TextInput
             label={'Consideraciones medicas'}
@@ -86,7 +91,9 @@ export default function UserForm({ user }) {
               'Lesiones, alergias, condiciones, enfermedades, medicamentos, etc.'
             }
             //  error={errors.name.message}
-            {...register('medicInformation.considerations')}
+            {...register('medicInformation.considerations', {
+              value: watch('medicInformation.considerations') || null
+            })}
           />
         </Section>
 
@@ -95,18 +102,24 @@ export default function UserForm({ user }) {
             label={'Nombre'}
             placeholder="(recomendado)"
             //  error={errors.name.message}
-            {...register('emergencyContact.name')}
+            {...register('emergencyContact.name', {
+              value: watch('emergencyContact.name') || null
+            })}
           />
           <TextInput
             label={'Telefono'}
             placeholder="(recomendado)"
             //  error={errors.name.message}
-            {...register('emergencyContact.phone')}
+            {...register('emergencyContact.phone', {
+              value: watch('emergencyContact.phone') || null
+            })}
           />
           <TextInput
             label={'Parentesco'}
             placeholder=" (recomendado)"
-            {...register('emergencyContact.relationship')}
+            {...register('emergencyContact.relationship', {
+              value: watch('emergencyContact.relationship') || null
+            })}
           />
         </Section>
         <div className="flex justify-end">

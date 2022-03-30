@@ -14,7 +14,6 @@ export default function CoachSection({ user }) {
   const getAndSetUserTeams = () => {
     getUserTeams(user.id).then(setUserTeams)
   }
-  console.log(userTeams)
 
   return (
     <Section title={'Perfil de entrenador'}>

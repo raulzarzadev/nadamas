@@ -2,7 +2,6 @@ import { AiOutlineSave } from '@react-icons/all-files/ai/AiOutlineSave'
 import { AiOutlineRight } from '@react-icons/all-files/ai/AiOutlineRight'
 import { AiOutlineLeft } from '@react-icons/all-files/ai/AiOutlineLeft'
 
-// https://react-icons.github.io/react-icons/icons?name=ti
 import { TiDocumentText } from '@react-icons/all-files/ti/TiDocumentText'
 import { TiCogOutline } from '@react-icons/all-files/ti/TiCogOutline'
 import { TiPhoneOutline } from '@react-icons/all-files/ti/TiPhoneOutline'
@@ -14,6 +13,7 @@ import { TiFilter } from '@react-icons/all-files/ti/TiFilter'
 import { TiEdit } from '@react-icons/all-files/ti/TiEdit'
 import { TiTrash } from '@react-icons/all-files/ti/TiTrash'
 
+// https://react-icons.github.io/react-icons/icons?name=ti
 import {
   TiArrowSortedDown,
   TiArrowSortedUp,
@@ -21,6 +21,7 @@ import {
   TiChevronRight,
   TiGroup,
   TiHome,
+  TiMail,
   TiMediaPlay,
   TiMediaPlayReverse,
   TiTick,
@@ -31,13 +32,25 @@ import {
   TiZoom
 } from 'react-icons/ti'
 
+// https://react-icons.github.io/react-icons/icons?name=si
+import { SiWhatsapp } from 'react-icons/si'
+
+//https://react-icons.github.io/react-icons/icons?name=md
+import { MdOutlineEmergency, MdOutlinePhoneForwarded } from 'react-icons/md'
+
+
+// ALL ICONS SHOULD BE OUTLINE
+
 const ICON_LIST = {
+  emergency: MdOutlineEmergency,
+  email: TiMail,
+  whatsapp: SiWhatsapp,
   save: AiOutlineSave,
   'rigth-arrow': AiOutlineRight,
   'left-arrow': AiOutlineLeft,
   document: TiDocumentText,
   gear: TiCogOutline,
-  phone: TiPhoneOutline,
+  phone: MdOutlinePhoneForwarded,
   cross: TiTimes,
   plus: TiPlusOutline,
   minus: TiMinusOutline,

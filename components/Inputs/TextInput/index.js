@@ -9,11 +9,13 @@ const TextInput = React.forwardRef(
       type = 'text',
       error = '',
       helperText = '',
+      defaultValue,
+      value,
       ...rest
     },
     ref
-  ) => { 
-    
+  ) => {
+
     return (
       <div className="form-control w-full max-w-xs">
         <span className="label-text capitalize-first">{label}</span>
@@ -24,7 +26,9 @@ const TextInput = React.forwardRef(
           type={type}
           {...rest}
         />
-        {helperText && <span className="label-text text-info">{helperText}</span>}
+        {helperText && (
+          <span className="label-text text-info">{helperText}</span>
+        )}
         {error && <span className="label-text text-error">{error}</span>}
       </div>
     )

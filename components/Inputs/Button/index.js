@@ -4,6 +4,7 @@ export default function Button({
   size = 'sm',
   rounded,
   circle,
+  variant,
   label,
   ...props
 }) {
@@ -13,11 +14,17 @@ export default function Button({
     md: 'btn-md',
     lg: 'btn-lg'
   }
+  const variants = {
+    outline: 'btn-outline',
+    circle: 'btn-circle',
+    rounded: 'rounded-full'
+  }
   return (
     <button
-      className={`btn
+      className={`btn 
      ${className} 
      ${sizign[size]}
+     ${variants[variant]}
       ${rounded && ' rounded-full '}
       ${circle && ' btn-circle '}
       `}

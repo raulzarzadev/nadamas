@@ -1,23 +1,31 @@
 import { useUser } from '@/context/UserContext'
-import { getTeam } from '@/firebase/teams'
+import { listenTeam } from '@/firebase/teams'
+import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import ButtonJoinTeam from '@comps/Inputs/ButtonJoinTeam'
 import Loading from '@comps/Loading'
+import Modal from '@comps/Modal'
 import Section from '@comps/Section'
 import TeamMember from '@comps/TeamMember'
 import { useState, useEffect } from 'react'
+import TeamForm from '../TeamForm'
 export default function TeamDetails({ teamId }) {
   const [team, setTeam] = useState(null)
   const { user } = useUser()
   useEffect(() => {
-    getTeam(teamId).then(setTeam)
+    listenTeam(teamId, setTeam)
   }, [])
 
   const isOwner = user?.id === team?.coach?.id || user.id === team?.userId
 
-  if (!team) return <Loading />
   console.log('team', team)
+
+  const [openTeamForm, setOpenTeamForm] = useState()
+  const handleOpenTeamForm = () => {
+    setOpenTeamForm(!openTeamForm)
+  }
+  if (!team) return <Loading />
   const {
-    name,
+    name = '',
     title,
     description,
     image,
@@ -28,13 +36,14 @@ export default function TeamDetails({ teamId }) {
     coachId,
     createdAt
   } = team
+
   return (
     <div className="">
       <div
         style={{ backgroundImage: image }}
         className="bg-green-50 h-10"
       ></div>
-      <div className="text-center">git c
+      <div className="text-center">
         <h1 className="text-xl ">{name || title}</h1>
         <p className="">
           Equipo <span>{isPublic ? 'publico' : 'privado'}</span>
@@ -42,6 +51,19 @@ export default function TeamDetails({ teamId }) {
         {isOwner && <p className="font-thin italic">Eres dueño</p>}
         <p>{description}</p>
       </div>
+
+      {isOwner && (
+        <div className="flex justify-center my-2">
+          <ButtonIcon
+            label="Editar"
+            iconName="edit"
+            onClick={handleOpenTeamForm}
+          />
+          <Modal open={openTeamForm} handleOpen={handleOpenTeamForm}>
+            <TeamForm team={team} />
+          </Modal>
+        </div>
+      )}
 
       <div>
         <ButtonJoinTeam
@@ -57,8 +79,8 @@ export default function TeamDetails({ teamId }) {
         subtitle={`(${members?.length || 0})`}
       >
         {members?.map((memberId) => (
-          <div>
-            <p>{memberId}</p>
+          <div key={memberId}>
+            <TeamMember isTeamRow memberId={memberId} team={team} />
           </div>
         ))}
       </Section>
@@ -68,9 +90,8 @@ export default function TeamDetails({ teamId }) {
           subtitle={`(${joinRequests?.length || 0})`}
         >
           {joinRequests?.map((memberId) => (
-            <div>
-              <TeamMember memberId={memberId} />
-              <p>{memberId}</p>
+            <div key={memberId}>
+              <TeamMember memberId={memberId} isRequestRow team={team} />
             </div>
           ))}
         </Section>

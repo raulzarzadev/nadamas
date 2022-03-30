@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import { format, formatDistance } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export const dateFormat = (date = new Date(), output = 'yyyy-MM-dd') => {
@@ -10,5 +10,17 @@ export const dateFormat = (date = new Date(), output = 'yyyy-MM-dd') => {
   const date_string = `${year}-${month}-${day}`
 
   const date_formated = format(new Date(date_string), output, { locale: es })
+  return date_formated
+}
+
+export const dateDistance = (
+  fromDate = new Date(),
+  toDate = new Date(),
+  { ...options }
+) => {
+  const date_formated = formatDistance(new Date(fromDate), new Date(toDate), {
+    locale: es,
+    ...options
+  })
   return date_formated
 }

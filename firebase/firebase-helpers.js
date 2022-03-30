@@ -51,6 +51,7 @@ export const deepFormatDocumentDates = (
   object,
   { format = 'firebase' } = {}
 ) => {
+  if (!object) return
   const transformDateToMs = (date) => {
     if (typeof date === 'number') return date
     if (typeof date === 'string') return new Date(date).getTime()
@@ -58,10 +59,14 @@ export const deepFormatDocumentDates = (
     return date?.toMillis()
   }
 
+  console.log(object)
+
   const AUX_OBJ = { ...object }
   Object.keys(object).forEach((key) => {
     if (DATE_FIELDS.includes(key)) {
       const firebaseDate = object[key]
+
+      if (!firebaseDate) return (AUX_OBJ[key] = null)
 
       format === 'millis' &&
         (AUX_OBJ[key] = dateFormat(transformDateToMs(firebaseDate)))
@@ -91,7 +96,7 @@ export const dateToFirebaseFormat = (date) =>
   Timestamp.fromDate(new Date(date)) || null
 
 export const mapUserFromFirebase = (user) => {
-  if(!user) return null
+  if (!user) return null
   const { email, displayName, photoURL, phoneNumber } = user
   return {
     joinedAt: dateToFirebaseFormat(new Date()),
