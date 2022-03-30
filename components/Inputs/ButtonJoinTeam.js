@@ -15,8 +15,8 @@ import { useEffect, useState } from 'react'
 import Button from './Button'
 
 export default function ButtonJoinTeam({
-  requestList = [],
   membersList = [],
+  requestList = [],
   teamId = null,
   disabled = false
 }) {
@@ -85,7 +85,7 @@ export default function ButtonJoinTeam({
     },
     whatingRes: {
       type: 'WATING_RESPONSE',
-      label: 'CANCELAR UNIRSE',
+      label: 'CANCELAR SOLICITUD',
       handleClick: handleCancelRequest,
       buttonVariant: 'primary'
     },
@@ -130,7 +130,6 @@ export default function ButtonJoinTeam({
     secondary: `border-info`
   }
 
-
   return (
     <>
       {/*  <Button
@@ -141,7 +140,9 @@ export default function ButtonJoinTeam({
       <button
         disabled={disabled}
         className={`
-        ${buttonStyle[responseStatus?.buttonVariant]} border-2 p-1 w-full disabled:opacity-50 disabled:border-opacity-50`}
+        ${
+          buttonStyle[responseStatus?.buttonVariant]
+        } border-2 p-1 w-full disabled:opacity-50 disabled:border-opacity-50 text-xs`}
         onClick={async (e) => {
           e.stopPropagation()
           e.preventDefault()
@@ -161,7 +162,7 @@ export default function ButtonJoinTeam({
           onClick={(e) => {
             e.stopPropagation()
             e.preventDefault()
-            router.push(ROUTES.signin)
+            router.push('/login')
           }}
         />
       </Modal>

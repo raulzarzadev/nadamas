@@ -59,8 +59,6 @@ export const deepFormatDocumentDates = (
     return date?.toMillis()
   }
 
-  console.log(object)
-
   const AUX_OBJ = { ...object }
   Object.keys(object).forEach((key) => {
     if (DATE_FIELDS.includes(key)) {

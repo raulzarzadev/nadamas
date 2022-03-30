@@ -59,7 +59,7 @@ const listenPublicTeams = async (cb) => {
   const q = query(
     collection(db, 'teams'),
     where('isPublic', '==', true),
-    limit(4),
+    limit(4)
     //orderBy('updatedAt')
   )
   onSnapshot(q, (querySnapshot) => {
@@ -139,6 +139,22 @@ const removeMember = async (teamId, userId) => {
     .catch((err) => formatResponse(false, 'MEMBER_REMOVED_ERROR', err))
 }
 
+const listenAthleteTeams = (athelteId, cb) => {
+  const q = query(
+    collection(db, 'teams'),
+    where('members', 'array-contains', athelteId),
+    limit(4)
+    //orderBy('updatedAt')
+  )
+  onSnapshot(q, (querySnapshot) => {
+    const res = []
+    querySnapshot.forEach((doc) => {
+      res.push(normalizeDoc(doc))
+    })
+    cb(res)
+  })
+}
+
 export {
   createTeam,
   updateTeam,
@@ -147,7 +163,8 @@ export {
   getTeam,
   getPublicTeams,
   listenPublicTeams,
-  listenTeam
+  listenTeam,
+  listenAthleteTeams
 }
 
 export { sendRequest, acceptRequest, removeRequest, removeMember }

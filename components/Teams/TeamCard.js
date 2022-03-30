@@ -3,7 +3,11 @@ import ButtonJoinTeam from '@comps/Inputs/ButtonJoinTeam'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
 
-export default function TeamCard({ redirectTeam, team }) {
+export default function TeamCard({
+  redirectTeam = false,
+  team,
+  // athleteView = false
+}) {
   const [teamOwner, setTeamOwner] = useState(false)
   const { user } = useUser()
   useEffect(() => {
@@ -13,6 +17,8 @@ export default function TeamCard({ redirectTeam, team }) {
         user?.id === team?.coach?.id || user.id === team?.userId || user.isCoach
       )
   }, [user])
+
+ 
 
   return (
     <div
@@ -42,7 +48,7 @@ export default function TeamCard({ redirectTeam, team }) {
         {!teamOwner && (
           <div className="w-1/3">
             <ButtonJoinTeam
-              participantsList={team?.athletes}
+              membersList={team?.members}
               requestList={team?.joinRequests}
               teamId={team.id}
             />
