@@ -19,7 +19,7 @@ export default function Teams() {
         <h4 className="text-center">Equipo publicos</h4>
         <div className='grid gap-2'>
           {teams?.map((team) => (
-            <TeamCard team={team} />
+            <TeamCard team={team} redirectTeam />
           ))}
         </div>
       </Section>
