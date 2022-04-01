@@ -5,10 +5,12 @@ import { useUser } from '@/context/UserContext'
 import Icon from '@comps/Icon'
 import Link from '@comps/Link'
 import { useTheme } from '@/context/ThemeContext'
-export default function Navbar({ links = [] }) {
+import { NAV_LINKS } from '@/CONSTANTS/ROUTES'
+export default function Navbar() {
   const { user } = useUser()
   const [theme] = useTheme()
-
+  const links = NAV_LINKS
+  console.log(links)
   return (
     <div className="  pb-0 flex justify-between items-center   bg-base-100 text-base-content">
       <div className="flex w-1/6 justify-center items-center p-1 ">
@@ -60,7 +62,8 @@ export default function Navbar({ links = [] }) {
           <div className=" ">
             {/* {user && <div className="text-xs">{user.name?.slice(0, 10)}</div>} */}
             <NavbarSubMenu
-              listItems={links}
+             listItems={links}
+              topMenu={<TodgleProfile />}
               listComponent={
                 <>
                   {!!user?.image && (
@@ -75,7 +78,6 @@ export default function Navbar({ links = [] }) {
                   )}
                 </>
               }
-              topMenu={<TodgleProfile />}
             />
           </div>
         ) : (

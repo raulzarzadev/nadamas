@@ -1,9 +1,8 @@
-import Teams from "@comps/Teams";
+import authRoute from '@comps/HOC/authRoute'
+import Teams from '@comps/Teams'
 
-export default function teams() {
-  return (
-    <div className="">
-      <Teams />
-    </div>
-  )
+function TeamsPage() {
+  return <Teams />
 }
+
+export default authRoute(TeamsPage)

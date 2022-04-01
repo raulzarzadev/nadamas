@@ -31,8 +31,8 @@ export default function CoachSection({ user }) {
         <TeamsList coachId={user.id} teams={userTeams} />
       
       </Section>
-      <Section title={'Eventos'}></Section>
-      <Section title={'Configuración'}></Section>
+     {/*  <Section title={'Eventos'}></Section>
+      <Section title={'Configuración'}></Section> */}
     </Section>
   )
 }

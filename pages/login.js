@@ -10,10 +10,10 @@ export default function Singin() {
   useEffect(() => {
     if (user) router.push('/')
   }, [user])
+  
   return (
     <>
       <Head title="Ingresar" />
-
       <div className="pt-4 md:pt-10 pb-10">
         <AuthCard />
       </div>

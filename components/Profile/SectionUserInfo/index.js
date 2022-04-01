@@ -28,7 +28,6 @@ export default function SectionUserInfo({ userId }) {
     emergencyContact
   } = user || {}
 
-
   const [openEditUser, setOpenEditUser] = useState(false)
   const handleOpenEditUser = () => {
     setOpenEditUser(!openEditUser)
@@ -39,7 +38,7 @@ export default function SectionUserInfo({ userId }) {
   return (
     <div>
       {isCoach && <CoachSection user={user} />}
-      <AthleteTeamsSection userId={userId} openSection={true} />
+      {!isCoach && <AthleteTeamsSection userId={userId} openSection={true} />}
       <Section title={'Información personal'}>
         <div className="flex justify-center">
           <ButtonIcon
@@ -59,7 +58,7 @@ export default function SectionUserInfo({ userId }) {
           <div>
             <span className="italic font-thin">{alias}</span>
           </div>
-         {/*  <div>{birth}</div> */}
+          {/*  <div>{birth}</div> */}
         </div>
 
         {openEditUser && (

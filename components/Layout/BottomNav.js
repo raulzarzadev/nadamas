@@ -8,8 +8,10 @@ import { useRouter } from 'next/router'
 import { useUser } from '@/context/UserContext'
 import Icon from '@comps/Icon'
 import Link from '@comps/Link'
+import { BOTTOM_LINKS } from '@/CONSTANTS/ROUTES'
 
-export default function BottomNav({ links = [] }) {
+export default function BottomNav ({ }) {
+  const links=BOTTOM_LINKS
   const router = useRouter()
   const { user } = useUser()
   const home = router.pathname === '/profile'
