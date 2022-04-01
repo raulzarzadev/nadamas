@@ -10,10 +10,12 @@ export default function Icon({ name = '', size = 'md', ...rest }) {
   }
 }
 
+const SIZE = 25
+
 const sizign = {
-  xs: '1.2rem',
-  sm: '1.4rem',
-  md: '1.6rem',
-  lg: '2rem',
-  xl: '2.4rem'
+  xs: `${SIZE * 0.85}px`,
+  sm: `${SIZE * 0.92}px`,
+  md: `${SIZE * 1}px`,
+  lg: `${SIZE * 1.2}px`,
+  xl: `${SIZE * 1.4}px`
 }

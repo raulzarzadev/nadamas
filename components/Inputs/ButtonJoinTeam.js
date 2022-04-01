@@ -1,12 +1,3 @@
-/* import {
-  cancelTeamRequest,
-  sendTeamRequests,
-  unjoinTeam
-} from '@/legasy/firebase/teams'
-import { ROUTES } from '@/legasy/ROUTES'
-import { useAuth } from '@/legasy/src/context/AuthContext'
-import Button from '@/legasy/src/components/inputs/Button'
-import Modal from '@/legasy/src/components/Modals/Modal' */
 import { useUser } from '@/context/UserContext'
 import { removeMember, removeRequest, sendRequest } from '@/firebase/teams'
 import Modal from '@comps/Modal'
@@ -20,7 +11,6 @@ export default function ButtonJoinTeam({
   teamId = null,
   disabled = false
 }) {
-  console.log(teamId)
   const { user } = useUser()
   const userId = user?.id || null
 

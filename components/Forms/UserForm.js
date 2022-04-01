@@ -19,14 +19,7 @@ export default function UserForm({ user }) {
     }
   })
 
-  console.log(watch())
-  console.log(errors)
-
-  // TODO - add validation or avoid that undefined values are sent to firebase
-
   const onSubmit = (form) => {
-    console.log(form)
-
     updateUser(form)
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
