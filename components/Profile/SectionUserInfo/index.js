@@ -1,17 +1,14 @@
-import { getUserTeams, listenAthleteTeams } from '@/firebase/teams'
 import { getUser } from '@/firebase/users'
 import { dateFormat } from '@/utils/dates'
 import UserForm from '@comps/Forms/UserForm'
-import Button from '@comps/Inputs/Button'
 import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
-import Link from '@comps/Link'
 import Loading from '@comps/Loading'
 import Modal from '@comps/Modal'
 import Section from '@comps/Section'
 import AthleteTeamsSection from '@comps/Teams/AthleteTeamsSecttion'
-import TeamCard from '@comps/Teams/TeamCard'
 import { useState, useEffect } from 'react'
 import CoachSection from './CoachSection'
+
 export default function SectionUserInfo({ userId }) {
   const [user, setUser] = useState(undefined)
   useEffect(() => {
@@ -30,6 +27,8 @@ export default function SectionUserInfo({ userId }) {
     medicInformation,
     emergencyContact
   } = user || {}
+
+
   const [openEditUser, setOpenEditUser] = useState(false)
   const handleOpenEditUser = () => {
     setOpenEditUser(!openEditUser)
@@ -60,7 +59,7 @@ export default function SectionUserInfo({ userId }) {
           <div>
             <span className="italic font-thin">{alias}</span>
           </div>
-          <div>{dateFormat(birth, 'dd MMM yy')}</div>
+         {/*  <div>{birth}</div> */}
         </div>
 
         {openEditUser && (

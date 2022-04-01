@@ -9,7 +9,9 @@ export const normalizeDoc = (doc) => {
   if (!doc?.exists()) return null // The document  not exist
   const data = doc.data()
   const id = doc.id
+
   const res = deepFormatDocumentDates(data, { format: 'millis' })
+
   return {
     id,
     ...res
@@ -53,33 +55,33 @@ export const deepFormatDocumentDates = (
 ) => {
   if (!object) return
   const transformDateToMs = (date) => {
+    if (date instanceof Date) return date.getTime()
     if (typeof date === 'number') return date
     if (typeof date === 'string') return new Date(date).getTime()
-    if (date instanceof Date) return date.getTime()
-    return date?.toMillis()
+    if (date instanceof Timestamp) return date.toMillis()
+    return date
   }
 
   const AUX_OBJ = { ...object }
   Object.keys(object).forEach((key) => {
     if (DATE_FIELDS.includes(key)) {
       const firebaseDate = object[key]
-
       if (!firebaseDate) return (AUX_OBJ[key] = null)
 
       format === 'millis' &&
         (AUX_OBJ[key] = dateFormat(transformDateToMs(firebaseDate)))
 
       format === 'firebase' &&
-        (AUX_OBJ[key] = Timestamp.fromDate(new Date(object[key])))
+        (AUX_OBJ[key] = Timestamp.fromDate(new Date(firebaseDate)))
     }
-    if (typeof object[key] === 'object') {
+    if (typeof firebaseDate === 'object') {
       // ------------------------------ IF IS ARRAY ------------------------------
-      if (Array.isArray(object[key])) {
-        object[key].map((item) => {
+      if (Array.isArray(firebaseDate)) {
+        firebaseDate.map((item) => {
           return deepFormatDocumentDates(item)
         })
       } else {
-        deepFormatDocumentDates(object[key])
+        deepFormatDocumentDates(firebaseDate)
       }
       // ------------------------------ IF IS OBJECT ------------------------------
     }
@@ -90,9 +92,9 @@ export const deepFormatDocumentDates = (
 export const normalizeDocs = (docs = []) =>
   docs?.map((doc) => normalizeDoc(doc))
 
-export const dateToFirebaseFormat = (date) =>
-  Timestamp.fromDate(new Date(date)) || null
-
+export const dateToFirebaseFormat = (date) => {
+  return Timestamp.fromDate(new Date(date)) || null
+}
 export const mapUserFromFirebase = (user) => {
   if (!user) return null
   const { email, displayName, photoURL, phoneNumber } = user
