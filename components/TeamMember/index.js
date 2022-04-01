@@ -17,7 +17,6 @@ export default function TeamMember({
   team,
   isTeamRow
 }) {
-  console.log(memberId)
   const { user } = useUser()
   const [member, setMember] = useState()
   useEffect(() => {
@@ -38,7 +37,6 @@ export default function TeamMember({
     })
   }
 
-  console.log(member)
 
   const emailCC = null
   const subject = 'Infomación relevante de nadamas'

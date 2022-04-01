@@ -37,6 +37,9 @@ export default function TeamDetails({ teamId }) {
     createdAt
   } = team
 
+  const userIsMember = members?.includes(userId)
+  console.log(userIsMember)
+
   return (
     <div className="">
       <div
@@ -73,17 +76,31 @@ export default function TeamDetails({ teamId }) {
           requestList={team?.joinRequests || []}
         />
       </div>
-      <Section
-        open
-        title={'Integrantes'}
-        subtitle={`(${members?.length || 0})`}
-      >
-        {members?.map((memberId) => (
-          <div key={memberId}>
-            <TeamMember isTeamRow memberId={memberId} team={team} />
+
+      {!userIsMember && (
+        <>
+          <div className="text-center my-2 ">
+            <p>No eres miembro.</p>
+            <p> Únete a este equipo para ver mas detalles</p>
           </div>
-        ))}
-      </Section>
+        </>
+      )}
+
+      {userIsMember && (
+        <>
+          <Section
+            open
+            title={'Integrantes'}
+            subtitle={`(${members?.length || 0})`}
+          >
+            {members?.map((memberId) => (
+              <div key={memberId}>
+                <TeamMember isTeamRow memberId={memberId} team={team} />
+              </div>
+            ))}
+          </Section>
+        </>
+      )}
       {isOwner && (
         <Section
           title={`Solicitudes `}

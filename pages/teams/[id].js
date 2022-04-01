@@ -1,6 +1,7 @@
+import authRoute from '@comps/HOC/authRoute'
 import TeamDetails from '@comps/Teams/TeamDetails'
 import { useRouter } from 'next/router'
-export default function team() {
+ function team() {
   const {
     query: { id }
   } = useRouter()
@@ -10,3 +11,6 @@ export default function team() {
     </div>
   )
 }
+
+
+export default authRoute(team)

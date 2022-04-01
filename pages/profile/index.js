@@ -1,6 +1,7 @@
 import { useUser } from '@/context/UserContext'
 import UserForm from '@comps/Forms/UserForm'
 import { Head } from '@comps/Head'
+import authRoute from '@comps/HOC/authRoute'
 import Icon from '@comps/Icon'
 import Link from '@comps/Link'
 import Modal from '@comps/Modal'
@@ -8,7 +9,7 @@ import SectionUserInfo from '@comps/Profile/SectionUserInfo'
 import Section from '@comps/Section'
 import { useState } from 'react'
 
-export default function profile() {
+function profile() {
   const {
     user: { name, displayName, id }
   } = useUser()
@@ -37,3 +38,5 @@ const JoinTeam = () => {
     </>
   )
 }
+
+export default authRoute(profile)

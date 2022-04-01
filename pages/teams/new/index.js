@@ -1,6 +1,7 @@
+import authRoute from '@comps/HOC/authRoute'
 import TeamForm from '@comps/Teams/TeamForm'
 
-export default function newTeam() {
+function newTeam() {
   return (
     <div className="">
       <h1 className="text-center my-2">Nuevo equipo</h1>
@@ -8,3 +9,5 @@ export default function newTeam() {
     </div>
   )
 }
+
+export default authRoute(newTeam)

@@ -15,11 +15,11 @@ export default function Teams() {
     <div className="">
       <AthleteTeamsSection userId={user.id} openSection={true} />
       <Section title={'Buscar equipos'} indent={false}>
-        Busca equipos y unete
-        <h4 className="text-center">Equipo publicos</h4>
-        <div className='grid gap-2'>
+        <p className="text-center my-3">Busca equipos  y unete</p>
+        {/* <h4 className="text-center">Equipo publicos</h4> */}
+        <div className="grid gap-2">
           {teams?.map((team) => (
-            <TeamCard team={team} redirectTeam />
+            <TeamCard key={team.id} team={team} redirectTeam />
           ))}
         </div>
       </Section>
