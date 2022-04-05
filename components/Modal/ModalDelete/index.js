@@ -7,14 +7,17 @@ export default function ModalDelete({
   handleDelete = null,
   deleteSuccessful = () => {},
   labelDelete,
-  itemId
+  itemId = '',
+  buttonVariant = 'circle',
+  buttonLabel = null,
+  buttonSize = 'xs'
 }) {
   const [open, setOpen] = useState()
   const handleOpen = () => {
     setOpen(!open)
   }
   const [loading, setLoading] = useState(false)
-  const [buttonLabel, setButtonLabel] = useState('Eliminar')
+  const [buttonLabelModal, setButtonLabelModal] = useState('Eliminar')
 
   const functionDelete = async () => {
     setLoading(true)
@@ -22,19 +25,25 @@ export default function ModalDelete({
       console.log(res)
       setLoading(false)
       if (res.ok) {
-        setButtonLabel('Eliminado')
+        setButtonLabelModal('Eliminado')
         deleteSuccessful()
       } else {
-        setButtonLabel('Error')
+        setButtonLabelModal('Error')
         setTimeout(() => {
-          setButtonLabel('Eliminar')
+          setButtonLabelModal('Eliminar')
         }, 1000)
       }
     })
   }
   return (
     <div>
-      <ButtonIcon iconName={'trash'} onClick={handleOpen} size="xs" circle />
+      <ButtonIcon
+        iconName={'trash'}
+        onClick={handleOpen}
+        size={buttonSize}
+        label={buttonLabel}
+        variant={buttonVariant}
+      />
       <Modal title="Eliminar" open={open} handleOpen={handleOpen}>
         <div>
           <p className="text-center my-6">Eliminar de forma permanente</p>
@@ -56,7 +65,7 @@ export default function ModalDelete({
                 handleDelete && functionDelete()
               }}
             >
-              {buttonLabel}
+              {buttonLabelModal}
             </Button>
           </div>
         </div>

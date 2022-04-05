@@ -1,6 +1,5 @@
-import { deleteTeam, getUserTeams } from '@/firebase/teams'
+import { getUserTeams } from '@/firebase/teams'
 import Link from '@comps/Link'
-import ModalDelete from '@comps/Modal/ModalDelete'
 import Section from '@comps/Section'
 import TeamsList from '@comps/Teams/TeamsList'
 import { useState, useEffect } from 'react'

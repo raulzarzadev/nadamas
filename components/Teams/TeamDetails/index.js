@@ -1,15 +1,19 @@
 import { useUser } from '@/context/UserContext'
-import { listenTeam } from '@/firebase/teams'
+import { deleteTeam, listenTeam } from '@/firebase/teams'
+import Button from '@comps/Inputs/Button'
 import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import ButtonJoinTeam from '@comps/Inputs/ButtonJoinTeam'
 import Loading from '@comps/Loading'
 import Modal from '@comps/Modal'
+import ModalDelete from '@comps/Modal/ModalDelete'
 import Section from '@comps/Section'
 import TeamMember from '@comps/TeamMember'
+import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import TeamForm from '../TeamForm'
 export default function TeamDetails({ teamId }) {
-  const [team, setTeam] = useState(null)
+  const [team, setTeam] = useState(undefined)
+  const router = useRouter()
   const { user } = useUser()
   useEffect(() => {
     listenTeam(teamId, setTeam)
@@ -23,7 +27,16 @@ export default function TeamDetails({ teamId }) {
   const handleOpenTeamForm = () => {
     setOpenTeamForm(!openTeamForm)
   }
-  if (!team) return <Loading />
+  if (team === undefined) return <Loading />
+  if (team === null)
+    return (
+      <div className="text-center my-10">
+        <p className="p-4">Este equipo ya no existe.</p>
+        <Button onClick={() => router.back()} variant="info">
+          Regresar
+        </Button>
+      </div>
+    )
   const {
     name = '',
     title,
@@ -86,7 +99,7 @@ export default function TeamDetails({ teamId }) {
         </>
       )}
 
-      {userIsMember && (
+      {(userIsMember || isOwner) && (
         <>
           <Section
             open
@@ -102,16 +115,31 @@ export default function TeamDetails({ teamId }) {
         </>
       )}
       {isOwner && (
-        <Section
-          title={`Solicitudes `}
-          subtitle={`(${joinRequests?.length || 0})`}
-        >
-          {joinRequests?.map((memberId) => (
-            <div key={memberId}>
-              <TeamMember memberId={memberId} isRequestRow team={team} />
+        <>
+          <Section
+            title={`Solicitudes `}
+            subtitle={`(${joinRequests?.length || 0})`}
+          >
+            {joinRequests?.map((memberId) => (
+              <div key={memberId}>
+                <TeamMember memberId={memberId} isRequestRow team={team} />
+              </div>
+            ))}
+          </Section>
+          <Section title={`Opciones `}>
+            <div className="flex justify-center">
+              <ModalDelete
+                buttonLabel={'Borrar equipo'}
+                labelDelete="equipo"
+                buttonSize="sm"
+                buttonVariant="error"
+                handleDelete={() => {
+                  deleteTeam(teamId)
+                }}
+              />
             </div>
-          ))}
-        </Section>
+          </Section>
+        </>
       )}
     </div>
   )

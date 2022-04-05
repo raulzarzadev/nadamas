@@ -4,7 +4,7 @@ export default function Button({
   size = 'sm',
   rounded,
   circle,
-  variant,
+  variant = '',
   label,
   ...props
 }) {
@@ -15,9 +15,12 @@ export default function Button({
     lg: 'btn-lg'
   }
   const variants = {
+    btn: '',
+    error:'btn-error',
     outline: 'btn-outline',
     circle: 'btn-circle',
-    rounded: 'rounded-full'
+    rounded: 'rounded-full',
+    info:'btn-info',
   }
   return (
     <button
