@@ -68,11 +68,14 @@ export const deepFormatDocumentDates = (
       const firebaseDate = object[key]
       if (!firebaseDate) return (AUX_OBJ[key] = null)
 
-      format === 'millis' &&
-        (AUX_OBJ[key] = dateFormat(transformDateToMs(firebaseDate)))
+      if (format === 'millis') {
+        AUX_OBJ[key] = dateFormat(firebaseDate)
+        console.log(AUX_OBJ[key])
+      }
 
-      format === 'firebase' &&
-        (AUX_OBJ[key] = Timestamp.fromDate(new Date(firebaseDate)))
+      if (format === 'firebase') {
+        AUX_OBJ[key] = Timestamp.fromDate(new Date(firebaseDate))
+      }
     }
     if (typeof firebaseDate === 'object') {
       // ------------------------------ IF IS ARRAY ------------------------------

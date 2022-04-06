@@ -1,18 +1,21 @@
-import { format, formatDistance } from 'date-fns'
+import { addMilliseconds, addSeconds, format, formatDistance } from 'date-fns'
+import {  getTimezoneOffset, utcToZonedTime } from 'date-fns-tz'
+
 import { es } from 'date-fns/locale'
+import { Timestamp } from 'firebase/firestore'
 
 export const dateFormat = (date = new Date(), output = 'yyyy-MM-dd') => {
   // *** the format have some strong dependencies for render properly the inputs and others formats ***
-  const aux_date = new Date(date)
-  if (!aux_date) return null
-  const day = aux_date.getUTCDate()
-  const month = aux_date.getUTCMonth() + 1
-  const year = aux_date.getUTCFullYear()
-  const date_string = `${year}-${month < 10 ? `0${month}` : month}-${
-    day < 10 ? `0${day}` : day
-  }`
-  const date_formated = format(new Date(date_string), output, { locale: es })
-  return date_formated
+  let aux_date = null
+  if (date instanceof Timestamp) {
+    aux_date = new Date(date.toDate())
+  } else {
+    aux_date = new Date(date)
+  }
+  if (!aux_date) throw new Error('Invalid date')
+
+  const time = utcToZonedTime(aux_date, getTimezoneOffset())
+  return format(time, output, { locale: es })
 }
 
 export const dateDistance = (
