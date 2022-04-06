@@ -61,8 +61,8 @@ export default function Navbar() {
           <div className=" ">
             {/* {user && <div className="text-xs">{user.name?.slice(0, 10)}</div>} */}
             <NavbarSubMenu
-             listItems={links}
-              topMenu={<TodgleProfile />}
+              listItems={links}
+              topMenu={<div className='text-center font-bold'>{user.isCoach ? 'Entrenador' : 'Nadador'}</div>}
               listComponent={
                 <>
                   {!!user?.image && (
@@ -90,16 +90,18 @@ export default function Navbar() {
     </div>
   )
 }
-const TodgleProfile = () => {
+/* const TodgleProfile = () => {
   const {
-    user: { coach }
+    user: { isCoach }
   } = useUser()
+  console.log(user)
   return (
     <div className="text-dark dark:text-light text-center">
-      {coach ? 'Entrenador' : 'Nadador'}
+      {isCoach ? 'Entrenador' : 'Nadador'}
     </div>
-  )
+  ) 
 }
+*/
 
 const NavbarSubMenu = ({
   listComponent,

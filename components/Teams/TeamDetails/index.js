@@ -115,11 +115,13 @@ export default function TeamDetails({ teamId }) {
             title={'Integrantes'}
             subtitle={`(${members?.length || 0})`}
           >
-            {members?.map((memberId) => (
-              <div key={memberId}>
-                <TeamMember isTeamRow memberId={memberId} team={team} />
-              </div>
-            ))}
+            <div className='grid gap-2'>
+              {members?.map((memberId) => (
+                <div key={memberId}>
+                  <TeamMember isTeamRow memberId={memberId} team={team} />
+                </div>
+              ))}
+            </div>
           </Section>
         </>
       )}

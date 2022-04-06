@@ -1,14 +1,15 @@
 import { initializeApp } from 'firebase/app'
 import {
+  browserSessionPersistence,
   getAuth,
   GoogleAuthProvider,
+  initializeAuth,
   onAuthStateChanged,
   signInWithPopup,
   signOut
 } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
-import { mapUserFromFirebase } from './firebase-helpers'
-import { createNewUser } from './users'
+import { getUser } from './users'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 
@@ -17,8 +18,15 @@ export const auth = getAuth()
 
 export const db = getFirestore(app)
 
-export const authStateChanged = (cb) => {
-  return onAuthStateChanged(auth, (user) => cb(mapUserFromFirebase(user)))
+export const authStateChanged = (cb = () => {}) => {
+  return onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const userData = await getUser(user.uid)
+      cb(userData)
+    } else {
+      cb(null)
+    }
+  })
 }
 
 export const googleLogin = async () => {
@@ -45,7 +53,7 @@ export const googleLogin = async () => {
 
     // return await createNewUser(user)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     // Handle Errors here.
     const errorCode = error.code
     const errorMessage = error.message
@@ -60,5 +68,5 @@ export const googleLogin = async () => {
 
 export const logOut = () =>
   signOut(auth)
-    .then((res) => console.log(`res`, res))
-    .catch((err) => console.log(`err`, err))
+    .then((res) => console.log(`signout`))
+    .catch((err) => console.error(`err`, err))

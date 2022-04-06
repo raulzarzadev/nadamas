@@ -26,6 +26,8 @@ export function UserProvider({ children }) {
         .then((user) => {
           loginUser(user)
             .then((res) => {
+              setUser(res)
+              // console.log('login', res)
               setTimeout(() => {
                 redirectTo && router.replace(redirectTo)
               }, 400)

@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react'
 import { getTeamMember } from '@/firebase/users'
 import Loading from '@comps/Loading'
 import { useUser } from '@/context/UserContext'
-import { dateDistance } from '@/utils/dates'
 import Button from '@comps/Inputs/Button'
 import { acceptRequest } from '@/firebase/teams'
-import Section from '@comps/Section'
 import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import Link from '@comps/Link'
 import Icon from '@comps/Icon'
@@ -13,8 +11,8 @@ import Modal from '@comps/Modal'
 
 export default function TeamMember({
   memberId,
-  isRequestRow,
   team,
+  isRequestRow,
   isTeamRow
 }) {
   const { user } = useUser()
@@ -22,8 +20,6 @@ export default function TeamMember({
   useEffect(() => {
     getTeamMember(memberId).then(setMember)
   }, [])
-
-  console.log(member)
 
   if (!member) return <Loading />
 
@@ -39,7 +35,6 @@ export default function TeamMember({
     })
   }
 
-
   const emailCC = null
   const subject = 'Infomación relevante de nadamas'
 
@@ -53,17 +48,19 @@ export default function TeamMember({
                 <img src={image} />
               </div>
             </div>
-
-            <h4 className=" ml-1">
-              {name}
-              <span className="text-xs font-thin ">{itsMe && ' (Tú)'}</span>
-              {/* <span className="font-thin text-sm">
+            <div>
+              <h4 className=" ml-1">
+                {name}
+                <span className="text-xs font-thin ">{itsMe && ' (Tú)'}</span>
+                {/* <span className="font-thin text-sm">
               
             </span> */}
-              {/* <span className="text-xs font-thin mx-2">
+                {/* <span className="text-xs font-thin mx-2">
               {team?.isPublic ? 'Público' : 'Privado'}
             </span> */}
-            </h4>
+              </h4>
+              <p className="font-thin text-sm">{email}</p>
+            </div>
           </div>
 
           {/* -------------------------------------------------------------------- Quick actions buttons  */}

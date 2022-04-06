@@ -11,6 +11,7 @@ import {
 
 export const getUser = async (userId) => {
   // TODO transform to listenUser
+  if (!userId) throw new Error('No userId provided')
   const docRef = doc(db, 'users', userId)
   const docSnap = await getDoc(docRef)
   return normalizeDoc(docSnap)
@@ -32,12 +33,14 @@ export const loginUser = async (user) => {
   const userRef = doc(db, 'users', user.id)
   const userSnap = await getDoc(userRef)
   const normalizedUser = normalizeDoc(userSnap)
-  if (!normalizedUser) { 
+  if (!normalizedUser) {
     console.log('Creating user')
     return createNewUser(user)
   } else {
     console.log('Getting user')
-    return updateUser(user)
+    const u = getUser(user.id)
+    console.log(u)
+    return u
   }
   // cconsole.log(normalizedUser)
 }

@@ -35,15 +35,15 @@ export default function TeamForm({ team }) {
   }
 
   return (
-    <div className="">
-      <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div className="grid justify-center ">
         <TextInput {...register('name')} label="Nombre del equipo" />
         <TextInput {...register('description')} label="descripción" />
         <Toggle {...register('isPublic')} label="Equipo público" />
         <div className="flex justify-center my-4">
           <ButtonSave loading={isSubmitting} saved={isSubmitSuccessful} />
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   )
 }
