@@ -23,7 +23,14 @@ export default function TeamMember({
 
   if (!member) return <Loading />
 
-  const { name, image, joinedAt, contact, email, emergencyContact } = member
+  const {
+    name,
+    photoURL: image,
+    joinedAt,
+    contact,
+    email,
+    emergencyContact
+  } = member
 
   const itsMe = member.id === user.id
 

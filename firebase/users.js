@@ -39,7 +39,6 @@ export const loginUser = async (user) => {
   } else {
     console.log('Getting user')
     const u = getUser(user.id)
-    console.log(u)
     return u
   }
   // cconsole.log(normalizedUser)

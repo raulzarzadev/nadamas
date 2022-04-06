@@ -38,10 +38,13 @@ import { SiWhatsapp } from 'react-icons/si'
 //https://react-icons.github.io/react-icons/icons?name=md
 import { MdOutlineEmergency, MdOutlinePhoneForwarded } from 'react-icons/md'
 
+//react-icons.github.io/react-icons/icons?name=fc
+import { FcGoogle } from 'react-icons/fc'
 
 // ALL ICONS SHOULD BE OUTLINE
 
 const ICON_LIST = {
+  'color-google': FcGoogle,
   emergency: MdOutlineEmergency,
   email: TiMail,
   whatsapp: SiWhatsapp,

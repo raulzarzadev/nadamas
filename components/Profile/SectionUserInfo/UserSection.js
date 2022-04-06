@@ -20,7 +20,7 @@ export default function UserSection({ user }) {
     email,
     medicInformation,
     emergencyContact,
-    image
+    photoURL:image
   } = user
 
   return (

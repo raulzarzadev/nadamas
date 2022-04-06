@@ -20,7 +20,6 @@ export default function TeamCard({
       )
   }, [user])
 
-  console.log(team)
 
   return (
     <CardV2 team={team} teamOwner={teamOwner} redirectTeam={redirectTeam} />

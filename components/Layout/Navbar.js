@@ -65,13 +65,13 @@ export default function Navbar() {
               topMenu={<div className='text-center font-bold'>{user.isCoach ? 'Entrenador' : 'Nadador'}</div>}
               listComponent={
                 <>
-                  {!!user?.image && (
+                  {!!user?.photoURL && (
                     <li className="relative  w-10 h-10 rounded-full">
                       <Image
                         layout="fill"
                         objectFit="cover"
                         className="rounded-full"
-                        src={user?.image}
+                        src={user?.photoURL}
                       />
                     </li>
                   )}
