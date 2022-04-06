@@ -37,6 +37,7 @@ export default function TeamMember({
     email,
     alias,
     emergencyContact,
+    medicInformation,
     birth
   } = member
 
@@ -162,6 +163,16 @@ export default function TeamMember({
             )}
             {emergencyContact?.phone && (
               <EmergencyCall contact={emergencyContact} />
+            )}
+          </div>
+
+          <div>
+            <h4>Información médica</h4>
+            {medicInformation.blodType && (
+              <p>Tipo de sangre: {medicInformation.blodType}</p>
+            )}
+            {medicInformation.considerations && (
+              <p>Alergias: {medicInformation.considerations}</p>
             )}
           </div>
         </div>
