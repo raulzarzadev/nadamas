@@ -7,7 +7,6 @@ import UserSection from './UserSection'
 
 export default function SectionUserInfo({ userId }) {
   const [user, setUser] = useState(undefined)
-  console.log(user)
   useEffect(() => {
     userId && getUser(userId).then(setUser)
   }, [])

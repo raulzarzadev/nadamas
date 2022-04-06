@@ -19,7 +19,6 @@ export default function TeamDetails({ teamId }) {
     listenTeam(teamId, setTeam)
   }, [])
 
-  const isOwner = user?.id === team?.coach?.id || user.id === team?.userId
 
   const [openTeamForm, setOpenTeamForm] = useState()
   const handleOpenTeamForm = () => {
@@ -35,6 +34,7 @@ export default function TeamDetails({ teamId }) {
         </Button>
       </div>
     )
+  
   const {
     name = '',
     title,
@@ -43,21 +43,29 @@ export default function TeamDetails({ teamId }) {
     members = [],
     joinRequests = [],
     isPublic,
-    userId,
+    // userId,
     coachId,
     createdAt
   } = team
 
-  const userIsMember = members?.includes(userId)
+  const teamOwner = team?.userId
+  const teamCoach = {
+    id: team?.coach?.id || null,
+    name: team?.coach?.name || null
+  }
+  const userId = user?.id
+
+  const isOwnerOrCoach = userId === teamCoach?.id || userId === teamOwner
+  const isMember = members?.includes(user.id)
 
   return (
     <div className="">
       <div className="grid mt-2">
         <div className="flex justify-end text-sm font-thin ">
-          {isOwner && <p className="mx-1">tuyo</p>}
+          {isOwnerOrCoach && <p className="mx-1">tuyo</p>}
           <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
           <p className="mx-1">{members.length}</p>
-          {isOwner && (
+          {isOwnerOrCoach && (
             <p className="mx-1">
               <span className="font-bold">{joinRequests.length}</span>
             </p>
@@ -69,7 +77,7 @@ export default function TeamDetails({ teamId }) {
         </div>
       </div>
 
-      {isOwner ? (
+      {isOwnerOrCoach ? (
         <div className="flex justify-center my-2">
           <ButtonIcon
             label="Editar"
@@ -82,7 +90,7 @@ export default function TeamDetails({ teamId }) {
         </div>
       ) : (
         <div>
-          {!userIsMember && (
+          {!isMember && (
             <>
               <div className="text-center my-2 ">
                 <p>No eres miembro.</p>
@@ -91,7 +99,7 @@ export default function TeamDetails({ teamId }) {
             </>
           )}
           <ButtonJoinTeam
-            disabled={isOwner}
+            disabled={isOwnerOrCoach}
             teamId={teamId}
             membersList={team?.members || []}
             requestList={team?.joinRequests || []}
@@ -108,14 +116,14 @@ export default function TeamDetails({ teamId }) {
         </>
       )} */}
 
-      {(userIsMember || isOwner) && (
+      {(isMember || isOwnerOrCoach) && (
         <>
           <Section
             open
             title={'Integrantes'}
             subtitle={`(${members?.length || 0})`}
           >
-            <div className='grid gap-2'>
+            <div className="grid gap-2">
               {members?.map((memberId) => (
                 <div key={memberId}>
                   <TeamMember isTeamRow memberId={memberId} team={team} />
@@ -125,7 +133,7 @@ export default function TeamDetails({ teamId }) {
           </Section>
         </>
       )}
-      {isOwner && (
+      {isOwnerOrCoach && (
         <>
           <Section
             title={`Solicitudes `}
