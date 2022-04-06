@@ -1,4 +1,6 @@
+import UserForm from '@comps/Forms/UserForm'
 import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
+import Modal from '@comps/Modal'
 import Section from '@comps/Section'
 import { useState } from 'react'
 
@@ -20,7 +22,6 @@ export default function UserSection({ user }) {
     emergencyContact,
     image
   } = user
-  console.log(user)
 
   return (
     <Section title={'Información personal'}>

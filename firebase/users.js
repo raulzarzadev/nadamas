@@ -1,7 +1,7 @@
 /* -------------------- */
 /* ---------USERS------ */
 /* -------------------- */
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '.'
 import {
   deepFormatDocumentDates,
@@ -21,33 +21,56 @@ export const getTeamMember = async (userId) => {
   const docSnap = await getDoc(docRef)
   const user = normalizeDoc(docSnap)
   // TODO set just the data that is necesary
+  console.log('user', user)
   const member = {
     ...user
   }
   return member
 }
 
+export const loginUser = async (user) => {
+  const userRef = doc(db, 'users', user.id)
+  const userSnap = await getDoc(userRef)
+  const normalizedUser = normalizeDoc(userSnap)
+  if (!normalizedUser) { 
+    console.log('Creating user')
+    return createNewUser(user)
+  } else {
+    console.log('Getting user')
+    return updateUser(user)
+  }
+  // cconsole.log(normalizedUser)
+}
+
 export const createNewUser = async (user) => {
-  const ref = doc(db, 'users', user.id)
+  return await setDoc(doc(db, 'users', user.id), {
+    ...user,
+    createdAt: new Date()
+  })
+  /*  .then(async (res) => {
+       // await createDefaultAthlete({ ...user })
+       return formatResponse(true, 'USER_CREATED', res)
+     })
+     .catch((err) => formatResponse(false, 'USER_CREATED_ERROR', err)) */
+  /*  const ref = doc(db, 'users', user.id)
+  console.log(ref, user)
   const newUser = {
     ...user,
     id: user.id,
     createdAt: new Date(),
     updatedAt: new Date()
   }
-  setDoc(ref, { ...deepFormatDocumentDates(newUser) })
+  return await setDoc(ref, { ...deepFormatDocumentDates(newUser) })
     .then(async (res) => {
       // await createDefaultAthlete({ ...user })
-      return formatResponse(true, 'USER_CREATED', res)
+       formatResponse(true, 'USER_CREATED', res)
     })
-    .catch((err) => formatResponse(false, 'USER_CREATED_ERROR', err))
-  return user
+     .catch((err) => formatResponse(false, 'USER_CREATED_ERROR', err))
+  */
 }
 
 export const updateUser = async (user) => {
-  console.log(user)
   const userFormat = deepFormatDocumentDates(user, { format: 'firebase' })
-  console.log(userFormat)
   updateDoc(doc(db, 'users', user.id), userFormat)
     .then((res) => console.log(`res`, res))
     .catch((err) => console.log(`err`, err))

@@ -15,7 +15,6 @@ export function ThemeProvider({ children }) {
     }
   }, [theme])
 
-  console.log(theme)
 
   return (
     <ThemeContext.Provider value={[theme, setTheme]}>

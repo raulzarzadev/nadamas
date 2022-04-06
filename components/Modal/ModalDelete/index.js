@@ -21,7 +21,24 @@ export default function ModalDelete({
 
   const functionDelete = async () => {
     setLoading(true)
-    handleDelete(itemId).then((res) => {
+    setButtonLabelModal('Eliminando')
+
+    const deleteFunc = async () => {
+      try {
+        await handleDelete(itemId)
+      } catch (error) {
+        throw new Error(error)
+      } finally {
+        setLoading(false)
+        setButtonLabelModal('Eliminado')
+        deleteSuccessful()
+        setTimeout(() => {
+          setButtonLabelModal('Eliminar')
+        }, 1000)
+      }
+    }
+    deleteFunc()
+    /*  handleDelete(itemId).then((res) => {
       console.log(res)
       setLoading(false)
       if (res.ok) {
@@ -32,8 +49,8 @@ export default function ModalDelete({
         setTimeout(() => {
           setButtonLabelModal('Eliminar')
         }, 1000)
-      }
-    })
+      } */
+    /*  }) */
   }
   return (
     <div>

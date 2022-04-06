@@ -14,7 +14,7 @@ export default function UserForm({ user }) {
   } = useForm({
     defaultValues: {
       ...user,
-      displayName: user.name
+      name: user.displayName,
       // birth: dateFormat(user.birth, 'yyyy-MM-dd')
     }
   })

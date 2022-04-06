@@ -21,8 +21,6 @@ export default function TeamDetails({ teamId }) {
 
   const isOwner = user?.id === team?.coach?.id || user.id === team?.userId
 
-  console.log('team', team)
-
   const [openTeamForm, setOpenTeamForm] = useState()
   const handleOpenTeamForm = () => {
     setOpenTeamForm(!openTeamForm)
@@ -51,24 +49,27 @@ export default function TeamDetails({ teamId }) {
   } = team
 
   const userIsMember = members?.includes(userId)
-  console.log(userIsMember)
 
   return (
     <div className="">
-      <div
-        style={{ backgroundImage: image }}
-        className="bg-green-50 h-10"
-      ></div>
-      <div className="text-center">
-        <h1 className="text-xl ">{name || title}</h1>
-        <p className="">
-          Equipo <span>{isPublic ? 'publico' : 'privado'}</span>
-        </p>
-        {isOwner && <p className="font-thin italic">Eres dueño</p>}
-        <p>{description}</p>
+      <div className="grid mt-2">
+        <div className="flex justify-end text-sm font-thin ">
+          {isOwner && <p className="mx-1">tuyo</p>}
+          <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
+          <p className="mx-1">{members.length}</p>
+          {isOwner && (
+            <p className="mx-1">
+              <span className="font-bold">{joinRequests.length}</span>
+            </p>
+          )}
+        </div>
+        <div className="text-center">
+          <h1 className="text-2xl ">{name || title}</h1>
+          <p>{description}</p>
+        </div>
       </div>
 
-      {isOwner && (
+      {isOwner ? (
         <div className="flex justify-center my-2">
           <ButtonIcon
             label="Editar"
@@ -79,25 +80,33 @@ export default function TeamDetails({ teamId }) {
             <TeamForm team={team} />
           </Modal>
         </div>
+      ) : (
+        <div>
+          {!userIsMember && (
+            <>
+              <div className="text-center my-2 ">
+                <p>No eres miembro.</p>
+                <p> Únete a este equipo para ver mas detalles</p>
+              </div>
+            </>
+          )}
+          <ButtonJoinTeam
+            disabled={isOwner}
+            teamId={teamId}
+            membersList={team?.members || []}
+            requestList={team?.joinRequests || []}
+          />
+        </div>
       )}
 
-      <div>
-        <ButtonJoinTeam
-          disabled={isOwner}
-          teamId={teamId}
-          membersList={team?.members || []}
-          requestList={team?.joinRequests || []}
-        />
-      </div>
-
-      {!userIsMember && (
+      {/* {!userIsMember && (
         <>
           <div className="text-center my-2 ">
             <p>No eres miembro.</p>
             <p> Únete a este equipo para ver mas detalles</p>
           </div>
         </>
-      )}
+      )} */}
 
       {(userIsMember || isOwner) && (
         <>
@@ -133,6 +142,7 @@ export default function TeamDetails({ teamId }) {
                 labelDelete="equipo"
                 buttonSize="sm"
                 buttonVariant="error"
+                deleteSuccessful={() => router.back()}
                 handleDelete={() => {
                   deleteTeam(teamId)
                 }}

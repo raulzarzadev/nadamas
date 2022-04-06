@@ -10,7 +10,6 @@ export default function Navbar() {
   const { user } = useUser()
   const [theme] = useTheme()
   const links = NAV_LINKS
-  console.log(links)
   return (
     <div className="  pb-0 flex justify-between items-center   bg-base-100 text-base-content">
       <div className="flex w-1/6 justify-center items-center p-1 ">

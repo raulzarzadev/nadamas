@@ -23,6 +23,8 @@ export default function TeamMember({
     getTeamMember(memberId).then(setMember)
   }, [])
 
+  console.log(member)
+
   if (!member) return <Loading />
 
   const { name, image, joinedAt, contact, email, emergencyContact } = member
@@ -32,7 +34,7 @@ export default function TeamMember({
   const isOwner = [team.userId, team?.coach?.id].includes(user.id)
 
   const handleAcceptRequest = () => {
-    acceptRequest(team.id, member.id).then((res) => {
+    acceptRequest(team.id, memberId).then((res) => {
       console.log(res)
     })
   }

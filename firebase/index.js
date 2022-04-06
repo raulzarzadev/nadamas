@@ -1,9 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import {
-  browserSessionPersistence,
   getAuth,
   GoogleAuthProvider,
-  initializeAuth,
   onAuthStateChanged,
   signInWithPopup,
   signOut
@@ -22,11 +20,12 @@ export const db = getFirestore(app)
 export const authStateChanged = (cb) => {
   return onAuthStateChanged(auth, (user) => cb(mapUserFromFirebase(user)))
 }
+
 export const googleLogin = async () => {
   const provider = new GoogleAuthProvider()
   provider.addScope('profile')
   provider.addScope('email')
- 
+
   try {
     const result = await signInWithPopup(auth, provider)
     // This gives you a Google Access Token. You can use it to access the Google API.
@@ -34,8 +33,17 @@ export const googleLogin = async () => {
     const token = credential.accessToken
     // The signed-in user info.
     const user = result.user
-    await createNewUser(user)
-    console.log(user)
+    // console.log(user)
+    const { displayName, email, photoURL, providerId, uid } = user
+    return {
+      id: uid,
+      displayName,
+      email,
+      photoURL,
+      providerId
+    }
+
+    // return await createNewUser(user)
   } catch (error) {
     console.log(error)
     // Handle Errors here.
@@ -45,6 +53,8 @@ export const googleLogin = async () => {
     const email = error.email
     // The AuthCredential type that was used.
     const credential_1 = GoogleAuthProvider.credentialFromError(error)
+    throw new Error('Could not login with Google')
+    return null
   }
 }
 

@@ -112,6 +112,7 @@ const sendRequest = async (teamId, userId) => {
 }
 
 const acceptRequest = async (teamId, userId) => {
+  console.log('team, userId', teamId, userId)
   const ref = doc(db, 'teams', teamId)
   return await updateDoc(ref, {
     members: arrayUnion(userId),

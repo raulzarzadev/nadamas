@@ -5,9 +5,11 @@ import TextInput from '@comps/Inputs/TextInput'
 import { useForm } from 'react-hook-form'
 import { useUser } from '@/context/UserContext'
 import Toggle from '@comps/Inputs/Toggle'
+import { useRouter } from 'next/router'
 
 export default function TeamForm({ team }) {
   const { user } = useUser()
+  const router = useRouter()
   const {
     register,
     handleSubmit,
@@ -24,9 +26,9 @@ export default function TeamForm({ team }) {
           console.log(res)
           // reset({ keepValues: true, keepIsSubmitted: true })
         })
-      : createTeam(form, user).then((res) => {
-          console.log(res)
+      : createTeam(form, user).then(({ ok, res }) => {
           reset({ keepValues: true, keepIsSubmitted: true })
+          ok && router.push(`/teams/${res.id}`)
         })
 
     // console.log(form)
