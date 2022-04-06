@@ -8,9 +8,10 @@ export default function ModalDelete({
   deleteSuccessful = () => {},
   labelDelete,
   itemId = '',
-  buttonVariant = 'circle',
+  buttonVariant = 'circle', // btn | outline | circle
   buttonLabel = null,
-  buttonSize = 'xs'
+  buttonSize = 'xs',
+  deleteParagraph = null
 }) {
   const [open, setOpen] = useState()
   const handleOpen = () => {
@@ -60,10 +61,11 @@ export default function ModalDelete({
         size={buttonSize}
         label={buttonLabel}
         variant={buttonVariant}
+        className="btn-error"
       />
       <Modal title="Eliminar" open={open} handleOpen={handleOpen}>
         <div>
-          <p className="text-center my-6">Eliminar de forma permanente</p>
+          <p>{deleteParagraph || '¿Estás seguro de eliminar este elemento?'}</p>
           {labelDelete && <p className="text-center my-6">{labelDelete}</p>}
           <div className="w-full justify-center flex my-4 ">
             <Button

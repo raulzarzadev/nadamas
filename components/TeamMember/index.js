@@ -9,6 +9,8 @@ import Link from '@comps/Link'
 import Icon from '@comps/Icon'
 import Modal from '@comps/Modal'
 import { dateFormat } from '@/utils/dates'
+import Section from '@comps/Section'
+import ModalDelete from '@comps/Modal/ModalDelete'
 
 export default function TeamMember({
   memberId,
@@ -175,6 +177,15 @@ export default function TeamMember({
               <p>Alergias: {medicInformation.considerations}</p>
             )}
           </div>
+          <Section title={'Opciones'}>
+            <ModalDelete
+              buttonVariant="btn"
+              buttonLabel={'Sacar del equipo'}
+              labelDelete={ 'Miembro del equipo: ' + name }
+              // TODO integrar kick member : handleDelete={handleDelete}
+              //deleteParagraph={`Sacar del equipo a ${name}`}
+            />
+          </Section>
         </div>
       </Modal>
     </>
