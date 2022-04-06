@@ -41,9 +41,12 @@ import { MdOutlineEmergency, MdOutlinePhoneForwarded } from 'react-icons/md'
 //react-icons.github.io/react-icons/icons?name=fc
 import { FcGoogle } from 'react-icons/fc'
 
+import { FaSignInAlt } from 'react-icons/fa'
+
 // ALL ICONS SHOULD BE OUTLINE
 
 const ICON_LIST = {
+  signin: FaSignInAlt,
   'color-google': FcGoogle,
   emergency: MdOutlineEmergency,
   email: TiMail,
