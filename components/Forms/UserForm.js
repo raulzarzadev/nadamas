@@ -5,7 +5,8 @@ import Toggle from '@comps/Inputs/Toggle'
 import Section from '@comps/Section'
 import { useForm } from 'react-hook-form'
 
-export default function UserForm({ user }) {
+export default function UserForm ({ user }) {
+  console.log(user)
   const {
     register,
     handleSubmit,

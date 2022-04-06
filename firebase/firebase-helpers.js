@@ -11,7 +11,7 @@ export const normalizeDoc = (doc) => {
   const id = doc.id
 
   const res = deepFormatDocumentDates(data, { format: 'millis' })
-
+  console.log(res)
   return {
     id,
     ...res
