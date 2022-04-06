@@ -8,6 +8,7 @@ import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import Link from '@comps/Link'
 import Icon from '@comps/Icon'
 import Modal from '@comps/Modal'
+import { dateFormat } from '@/utils/dates'
 
 export default function TeamMember({
   memberId,
@@ -21,6 +22,11 @@ export default function TeamMember({
     getTeamMember(memberId).then(setMember)
   }, [])
 
+  const [openmemberModal, setOpenmemberModal] = useState()
+  const handleOpenmemberModal = () => {
+    setOpenmemberModal(!openmemberModal)
+  }
+
   if (!member) return <Loading />
 
   const {
@@ -29,7 +35,9 @@ export default function TeamMember({
     joinedAt,
     contact,
     email,
-    emergencyContact
+    alias,
+    emergencyContact,
+    birth
   } = member
 
   const itsMe = member.id === user.id
@@ -47,7 +55,10 @@ export default function TeamMember({
 
   return (
     <>
-      <div className=" bg-base-300 p-1 rounded-lg shadow-lg w-full">
+      <div
+        className=" bg-base-300 p-1 rounded-lg shadow-lg w-full"
+        onClick={() => handleOpenmemberModal()}
+      >
         <div className=" flex justify-around">
           <div className="flex w-full  items-center">
             <div className="avatar">
@@ -66,7 +77,7 @@ export default function TeamMember({
               {team?.isPublic ? 'Público' : 'Privado'}
             </span> */}
               </h4>
-              <p className="font-thin text-sm">{email}</p>
+              <p className="font-thin text-sm hidden sm:block">{email}</p>
             </div>
           </div>
 
@@ -120,6 +131,41 @@ export default function TeamMember({
           </Section>
         </div> */}
       </div>
+      <Modal
+        open={openmemberModal}
+        handleOpen={handleOpenmemberModal}
+        title="Detalles del integrante"
+      >
+        <div className="text-center">
+          <p>{name}</p>
+          <p>{email}</p>
+          {alias && <p>{alias}</p>}
+          {birth && <p>{dateFormat(birth, 'dd MMM yy')}</p>}
+          <div className=" flex w-full justify-evenly items-center">
+            {contact?.whatsapp && (
+              <Link
+                href={`https://wa.me/${contact?.whatsapp}`}
+                className="btn btn-circle btn-sm"
+              >
+                <Icon name="whatsapp" />
+              </Link>
+            )}
+            {email && (
+              <Link
+                href={`mailto:${email}?${
+                  emailCC ? `cc=${emailCC}&` : ''
+                }subject=${subject}`}
+                className="btn btn-circle btn-sm"
+              >
+                <Icon name="email" />
+              </Link>
+            )}
+            {emergencyContact?.phone && (
+              <EmergencyCall contact={emergencyContact} />
+            )}
+          </div>
+        </div>
+      </Modal>
     </>
   )
 }
