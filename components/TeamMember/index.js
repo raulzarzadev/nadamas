@@ -40,7 +40,8 @@ export default function TeamMember({
     alias,
     emergencyContact,
     medicInformation,
-    birth
+    birth,
+    athleteId,
   } = member
 
   const itsMe = member.id === user.id
@@ -170,18 +171,23 @@ export default function TeamMember({
 
           <div>
             <h4>Información médica</h4>
-            {medicInformation.blodType && (
-              <p>Tipo de sangre: {medicInformation.blodType}</p>
+            {medicInformation?.blodType && (
+              <p>Tipo de sangre: {medicInformation?.blodType}</p>
             )}
-            {medicInformation.considerations && (
-              <p>Alergias: {medicInformation.considerations}</p>
+            {medicInformation?.considerations && (
+              <p>Alergias: {medicInformation?.considerations}</p>
             )}
           </div>
+          <Section title={ 'Registros' }>
+            <div>
+              
+            </div>
+          </Section>
           <Section title={'Opciones'}>
             <ModalDelete
               buttonVariant="btn"
               buttonLabel={'Sacar del equipo'}
-              labelDelete={ 'Miembro del equipo: ' + name }
+              labelDelete={'Miembro del equipo: ' + name}
               // TODO integrar kick member : handleDelete={handleDelete}
               //deleteParagraph={`Sacar del equipo a ${name}`}
             />
