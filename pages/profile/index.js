@@ -6,8 +6,6 @@ import Icon from '@comps/Icon'
 import Link from '@comps/Link'
 import Modal from '@comps/Modal'
 import SectionUserInfo from '@comps/Profile/SectionUserInfo'
-import Section from '@comps/Section'
-import { useState } from 'react'
 
 function profile() {
   const {

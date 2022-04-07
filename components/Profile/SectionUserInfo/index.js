@@ -2,6 +2,7 @@ import { getUser } from '@/firebase/users'
 import Loading from '@comps/Loading'
 import AthleteTeamsSection from '@comps/Teams/AthleteTeamsSecttion'
 import { useState, useEffect } from 'react'
+import AthleteSection from './AthleteSection'
 import CoachSection from './CoachSection'
 import UserSection from './UserSection'
 
@@ -19,8 +20,13 @@ export default function SectionUserInfo({ userId }) {
   return (
     <div>
       {isCoach && <CoachSection user={user} />}
-      {!isCoach && <AthleteTeamsSection userId={userId} openSection={true} />}
-      <UserSection user={user}/>
+      {!isCoach && (
+        <>
+          <AthleteTeamsSection userId={userId} openSection={true} />
+          <AthleteSection userId={userId} />
+        </>
+      )}
+      <UserSection user={user} />
     </div>
   )
 }

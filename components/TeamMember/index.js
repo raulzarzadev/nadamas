@@ -11,6 +11,7 @@ import Modal from '@comps/Modal'
 import { dateFormat } from '@/utils/dates'
 import Section from '@comps/Section'
 import ModalDelete from '@comps/Modal/ModalDelete'
+import AthleteSection from '@comps/Profile/SectionUserInfo/AthleteSection'
 
 export default function TeamMember({
   memberId,
@@ -178,11 +179,7 @@ export default function TeamMember({
               <p>Alergias: {medicInformation?.considerations}</p>
             )}
           </div>
-          <Section title={ 'Registros' }>
-            <div>
-              
-            </div>
-          </Section>
+          <AthleteSection userId={member.id} />
           <Section title={'Opciones'}>
             <ModalDelete
               buttonVariant="btn"

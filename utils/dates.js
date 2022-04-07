@@ -1,10 +1,11 @@
-import {  format, formatDistance } from 'date-fns'
-import {  getTimezoneOffset, utcToZonedTime } from 'date-fns-tz'
+import { format, formatDistance } from 'date-fns'
+import { getTimezoneOffset, utcToZonedTime } from 'date-fns-tz'
 
 import { es } from 'date-fns/locale'
 import { Timestamp } from 'firebase/firestore'
 
-export const dateFormat = (date = new Date(), output = 'yyyy-MM-dd') => {
+export const dateFormat = (date, output = 'yyyy-MM-dd') => {
+  if (!date) throw new Error('date is required')
   // *** the format have some strong dependencies for render properly the inputs and others formats ***
   let aux_date = null
   if (date instanceof Timestamp) {
