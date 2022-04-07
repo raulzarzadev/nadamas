@@ -84,7 +84,7 @@ export default function TeamDetails({ teamId }) {
             iconName="edit"
             onClick={handleOpenTeamForm}
           />
-          <Modal open={openTeamForm} handleOpen={handleOpenTeamForm}>
+          <Modal title='Editar equipo' open={openTeamForm} handleOpen={handleOpenTeamForm}>
             <TeamForm team={team} />
           </Modal>
         </div>

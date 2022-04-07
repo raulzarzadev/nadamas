@@ -11,9 +11,9 @@ export default function Home() {
         La <span className="font-bold">aplicación web</span> para atletas y
         entrenadores
       </p>
-      <p className="text-center italic font-thin my-2">
+      {/*  <p className="text-center italic font-thin my-2">
         Sin instalar, sin publicidad, donde sea, cuando sea.
-      </p>
+      </p> */}
       {!user && (
         <div className="flex justify-center m-4">
           <Link href={'/login'}>Ingresar</Link>
@@ -36,12 +36,12 @@ export default function Home() {
         />
         <HomeRow
           image="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1172&q=80"
-          text="Controla las cuotas y la asistencia"
+          text="Controla las cuotas y asistencias"
           imageSide="right"
         />
         <HomeRow
           image="https://images.unsplash.com/photo-1600965962361-9035dbfd1c50?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80"
-          text="Planea clases y entrenamientos. Evalúa tu progreso o el de tu equipo"
+          text="Planea, registra y evalúa clases y entrenamientos"
           imageSide="left"
         />
       </div>
