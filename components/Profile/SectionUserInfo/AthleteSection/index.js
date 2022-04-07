@@ -1,39 +1,94 @@
-import {
-  getAthleteRecords,
-  getAthleteResults,
-  getUserAthlete
-} from '@/firebase/athletes'
+import { useUser } from '@/context/UserContext'
+import { getOldAthlete } from '@/firebase/athletes'
+import { getAthleteResults, newAtheleteResult } from '@/firebase/results'
+import { getUser } from '@/firebase/users'
 import { dateFormat } from '@/utils/dates'
+import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
+import Modal from '@comps/Modal'
+import FormRecord from '@comps/Records/FormRecord'
 import Section from '@comps/Section'
 import { useState, useEffect } from 'react'
 
-export default function AthleteSection({ userId }) {
+export default function AthleteSection({ userId, canCreateNewRecord }) {
   // TODO get athletes information fron athletesId and userId. for legasy info
-  // *** this options are for legasy info
 
-  const [athlete, setAthlete] = useState()
+  //********************************************************* */
+  // *** this options are for legasy info ***
+  //********************************************************* */
+  const [oldAthlete, setOldAthlete] = useState(undefined)
+  const [oldResults, setOldResults] = useState([])
   useEffect(() => {
-    if (userId) getUserAthlete(userId).then(setAthlete)
+    if (userId)
+      getOldAthlete(userId).then((res) => {
+        if (res) {
+          getAthleteResults(res.id).then((res) => setOldResults([...res]))
+        }
+      })
   }, [])
 
-  const [records, setRecords] = useState([])
+  console.log(oldAthlete)
+  console.log('old results', oldResults)
+  //********************************************************* */
+  // *** this options are for legasy info ***
+  //********************************************************* */
+
+  const { user } = useUser()
+  const [userAthlete, setUserAthlete] = useState(undefined)
+  useEffect(() => {
+    if (userId) getUser(userId).then(setUserAthlete)
+  }, [])
+
   const [results, setResults] = useState([])
 
   useEffect(() => {
-    if (athlete) {
-      getAthleteRecords(athlete.id).then(setRecords)
-      getAthleteResults(athlete.id).then(setResults)
+    if (userAthlete) {
+      getAthleteResults(userAthlete.id).then((res) => setResults([...res]))
     }
-  }, [athlete])
+  }, [userAthlete])
 
-  console.log(records, results)
+  // console.log(userAthlete)
 
-  // *** this options are for legasy info
+  const [openNewRecord, setOpenNewRecord] = useState()
+  const handleOpenNewRecord = () => {
+    setOpenNewRecord(!openNewRecord)
+  }
+
+  console.log('results', results)
+
+  const handleSaveRecord = (record) => {
+    const athlete = {
+      id: userAthlete?.id,
+      name: userAthlete?.name,
+      alias: userAthlete?.alias,
+      birth: userAthlete?.birth
+    }
+    newAtheleteResult(athlete, record, { userId: user.id })
+      .then((res) => console.log(`res`, res))
+      .catch((err) => console.log(`err`, err))
+  }
+
+  // const canCreateNewRecord = true
 
   return (
     <Section title="Registros">
+      {canCreateNewRecord && (
+        <>
+          <ButtonIcon
+            iconName="plus"
+            variant="circle"
+            onClick={handleOpenNewRecord}
+          />
+          <Modal
+            open={openNewRecord}
+            handleOpen={handleOpenNewRecord}
+            title="Nuevo registro"
+          >
+            <FormRecord setRecord={handleSaveRecord} />
+          </Modal>
+        </>
+      )}
       <div>
-        {results.map(({ id, test, date }) => (
+        {[...results, ...oldResults].map(({ id, test, date }) => (
           <div key={id} className="flex justify-between text-sm">
             <div className="p-0.5 justify-end flex   w-[30%]">
               {date ? dateFormat(date, 'dd MMM yy') : '-'}

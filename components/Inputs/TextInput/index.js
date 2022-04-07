@@ -9,13 +9,12 @@ const TextInput = React.forwardRef(
       type = 'text',
       error = '',
       helperText = '',
-      defaultValue,
-      value,
+      // defaultValue,
+      // value,
       ...rest
     },
     ref
   ) => {
-
     return (
       <div className="form-control w-full max-w-xs">
         <span className="label-text capitalize-first">{label}</span>

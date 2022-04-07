@@ -3,7 +3,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '.'
 import { normalizeDoc } from './firebase-helpers'
 
-export const getUserAthlete = async (userId) => {
+export const getOldAthlete = async (userId) => {
   if (!userId) throw new Error('userId is required')
   const res = []
   const q = query(collection(db, 'athletes'), where('userId', '==', userId))
@@ -20,21 +20,6 @@ export const getAthleteRecords = async (athleteId) => {
   const res = []
   const q = query(
     collection(db, 'records'),
-    where('athleteId', '==', athleteId)
-  )
-
-  const querySnapshot = await getDocs(q)
-
-  querySnapshot.forEach((doc) => {
-    res.push({ ...normalizeDoc(doc) })
-  })
-  return res
-}
-
-export const getAthleteResults = async (athleteId) => {
-  const res = []
-  const q = query(
-    collection(db, 'results'),
     where('athlete.id', '==', athleteId)
   )
 

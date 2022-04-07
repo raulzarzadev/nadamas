@@ -179,7 +179,7 @@ export default function TeamMember({
               <p>Alergias: {medicInformation?.considerations}</p>
             )}
           </div>
-          <AthleteSection userId={member.id} />
+          <AthleteSection userId={member.id} canCreateNewRecord={isOwner} />
           <Section title={'Opciones'}>
             <ModalDelete
               buttonVariant="btn"

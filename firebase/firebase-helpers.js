@@ -3,6 +3,7 @@ import { format as fns_format } from 'date-fns'
 import { dateFormat } from '@/utils/dates'
 
 export const formatResponse = (ok, type, res) => {
+  if (!ok) throw new Error(type)
   return { type, ok, res }
 }
 export const normalizeDoc = (doc) => {
