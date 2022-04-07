@@ -63,7 +63,7 @@ export default function FormRecord({ record, setRecord = () => {} }) {
         </div>
         <div className="grid gap-2 place-items-center sm:flex">
           <Button
-            fullWidth
+            // fullWidth
             // disabled={!isValid}
             variant="primary"
             // loading={saving}

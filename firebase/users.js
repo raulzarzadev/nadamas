@@ -22,7 +22,6 @@ export const getTeamMember = async (userId) => {
   const docSnap = await getDoc(docRef)
   const user = normalizeDoc(docSnap)
   // TODO set just the data that is necesary
-  console.log('user', user)
   const member = {
     ...user
   }

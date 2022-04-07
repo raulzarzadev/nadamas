@@ -15,7 +15,6 @@ export default function AthleteSection({ userId, canCreateNewRecord }) {
   //********************************************************* */
   // *** this options are for legasy info ***
   //********************************************************* */
-  const [oldAthlete, setOldAthlete] = useState(undefined)
   const [oldResults, setOldResults] = useState([])
   useEffect(() => {
     if (userId)
@@ -26,8 +25,6 @@ export default function AthleteSection({ userId, canCreateNewRecord }) {
       })
   }, [])
 
-  console.log(oldAthlete)
-  console.log('old results', oldResults)
   //********************************************************* */
   // *** this options are for legasy info ***
   //********************************************************* */
@@ -46,14 +43,12 @@ export default function AthleteSection({ userId, canCreateNewRecord }) {
     }
   }, [userAthlete])
 
-  // console.log(userAthlete)
 
   const [openNewRecord, setOpenNewRecord] = useState()
   const handleOpenNewRecord = () => {
     setOpenNewRecord(!openNewRecord)
   }
 
-  console.log('results', results)
 
   const handleSaveRecord = (record) => {
     const athlete = {
