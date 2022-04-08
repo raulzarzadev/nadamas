@@ -7,6 +7,7 @@ import { useUser } from '@/context/UserContext'
 import Toggle from '@comps/Inputs/Toggle'
 import { useRouter } from 'next/router'
 
+// TODO Add fields: image, schedule, place, 
 export default function TeamForm({ team }) {
   const { user } = useUser()
   const router = useRouter()

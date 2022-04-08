@@ -1,7 +1,11 @@
 import { TEST_AWARDS } from '@/CONSTANTS/AWARDS'
 import { addDoc, collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '.'
-import { deepFormatDocumentDates, formatResponse, normalizeDoc } from './firebase-helpers'
+import {
+  deepFormatDocumentDates,
+  formatResponse,
+  normalizeDoc
+} from './firebase-helpers'
 /* import { db } from '.'
 import {
   datesToFirebaseFromat,
@@ -10,11 +14,7 @@ import {
   normalizeDocs
 } from './firebase-helpers' */
 
-export const newAtheleteResult = async (
-  athlete,
-  result,
-  { userId = null }
-) => {
+export const newAtheleteResult = async (athlete, result, { userId = null }) => {
   const newResult = {
     ...deepFormatDocumentDates({
       createdBy: userId,
@@ -25,11 +25,15 @@ export const newAtheleteResult = async (
   }
   // console.log(newResult)
 
-   return await addDoc(collection(db, 'results'), newResult).catch((err) =>
+  return await addDoc(collection(db, 'results'), newResult).catch((err) =>
     formatResponse(false, 'TEAM_CREATED_ERROR', err)
-  ) 
+  )
 }
 
+export const deleteResult = async (resultId) => {
+  // TODO delete result
+  console.log('deleteResult', resultId)
+}
 
 export const getAthleteResults = async (athleteId) => {
   const res = []
@@ -45,4 +49,3 @@ export const getAthleteResults = async (athleteId) => {
   })
   return res
 }
-

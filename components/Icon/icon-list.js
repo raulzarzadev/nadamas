@@ -36,7 +36,7 @@ import {
 import { SiWhatsapp } from 'react-icons/si'
 
 //https://react-icons.github.io/react-icons/icons?name=md
-import { MdOutlineEmergency, MdOutlinePhoneForwarded } from 'react-icons/md'
+import { MdOutlineEmergency, MdOutlineMoreVert, MdOutlinePhoneForwarded } from 'react-icons/md'
 
 //react-icons.github.io/react-icons/icons?name=fc
 import { FcGoogle } from 'react-icons/fc'
@@ -77,6 +77,7 @@ const ICON_LIST = {
   removeUser: TiUserDelete,
   search: TiZoom,
   right: TiMediaPlay,
-  left: TiMediaPlayReverse
+  left: TiMediaPlayReverse,
+  dots: MdOutlineMoreVert
 }
 export default ICON_LIST

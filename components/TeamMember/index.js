@@ -12,6 +12,7 @@ import { dateFormat } from '@/utils/dates'
 import Section from '@comps/Section'
 import ModalDelete from '@comps/Modal/ModalDelete'
 import AthleteSection from '@comps/Profile/SectionUserInfo/AthleteSection'
+import Image from 'next/image'
 
 export default function TeamMember({
   memberId,
@@ -42,12 +43,8 @@ export default function TeamMember({
     emergencyContact,
     medicInformation,
     birth,
-    athleteId,
+    athleteId
   } = member
-
-  const itsMe = member.id === user.id
-
-  const isOwner = [team.userId, team?.coach?.id].includes(user.id)
 
   const handleAcceptRequest = () => {
     acceptRequest(team.id, memberId).then((res) => {
@@ -58,36 +55,63 @@ export default function TeamMember({
   const emailCC = null
   const subject = 'Infomación relevante de nadamas'
 
+  // *** *** *** *** *** ***  *** *** ***  *** *** ***
+  //                  CONFIGURATIONS
+  // *** *** *** *** *** ***  *** *** ***  *** *** ***
+
+  // Should be condigurable
+  const isPublicProfile = false
+
+  // Is the owner team or de coach
+  const isOwner = [team.userId, team?.coach?.id].includes(user.id)
+
+  // is the current user, it can see their own info
+  const ITS_ME = member.id === user.id
+
+  const SHOW_QUICK_ACTIONS =
+    (isTeamRow && isOwner) ||
+    (isTeamRow && isPublicProfile) ||
+    (isTeamRow && ITS_ME)
+
+  // just coachs can see and accepts new members
+
+  const SHOW_REQUEST_ROW = isRequestRow && isOwner
+
+  // IF you can not se quick actions you can not see more data ?
+
+  const OPEN_MEMBER_DETAILS = SHOW_QUICK_ACTIONS
+
+  // You can open the modal, but what info you can see ?
+  //const OPEN_MEMBER_DETAILS = true
+
   return (
     <>
       <div
         className=" bg-base-300 p-1 rounded-lg shadow-lg w-full"
-        onClick={() => handleOpenmemberModal()}
+        onClick={() => {
+          OPEN_MEMBER_DETAILS && handleOpenmemberModal()
+        }}
       >
         <div className=" flex justify-around">
           <div className="flex w-full  items-center">
             <div className="avatar">
-              <div className="w-10 rounded-full">
-                <img src={image} />
+              <div className="relative w-10 rounded-full bg-blue-300 ">
+                {image && (
+                  <Image src={image} layout="fill" className="rounded-full " />
+                )}
               </div>
             </div>
-            <div>
-              <h4 className=" ml-1">
+            <div className="ml-1">
+              <h4 className="">
                 {name}
-                <span className="text-xs font-thin ">{itsMe && ' (Tú)'}</span>
-                {/* <span className="font-thin text-sm">
-              
-            </span> */}
-                {/* <span className="text-xs font-thin mx-2">
-              {team?.isPublic ? 'Público' : 'Privado'}
-            </span> */}
+                <span className="text-xs font-thin ">{ITS_ME && ' (Tú)'}</span>
               </h4>
               <p className="font-thin text-sm hidden sm:block">{email}</p>
             </div>
           </div>
 
           {/* -------------------------------------------------------------------- Quick actions buttons  */}
-          {isTeamRow && (
+          {SHOW_QUICK_ACTIONS && (
             <div className=" flex w-full justify-evenly items-center">
               {contact?.whatsapp && (
                 <Link
@@ -115,7 +139,7 @@ export default function TeamMember({
           {/* <p className="whitespace-nowrap">
         Activo desde {dateDistance(joinedAt, new Date(), { addSuffix9: true })}
       </p> */}
-          {isRequestRow && isOwner && (
+          {SHOW_REQUEST_ROW && (
             <div className="flex items-center ml-2">
               <Button
                 onClick={(e) => {
