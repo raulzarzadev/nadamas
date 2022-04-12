@@ -140,6 +140,10 @@ const removeMember = async (teamId, userId) => {
     .catch((err) => formatResponse(false, 'MEMBER_REMOVED_ERROR', err))
 }
 
+// *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+//                                             MEMBERS
+// *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+
 const listenAthleteTeams = (athelteId, cb) => {
   const q = query(
     collection(db, 'teams'),

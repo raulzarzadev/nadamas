@@ -3,7 +3,7 @@ import { getTeamMember } from '@/firebase/users'
 import Loading from '@comps/Loading'
 import { useUser } from '@/context/UserContext'
 import Button from '@comps/Inputs/Button'
-import { acceptRequest } from '@/firebase/teams'
+import { acceptRequest, removeMember } from '@/firebase/teams'
 import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import Link from '@comps/Link'
 import Icon from '@comps/Icon'
@@ -50,6 +50,15 @@ export default function TeamMember({
     acceptRequest(team.id, memberId).then((res) => {
       console.log(res)
     })
+  }
+
+  const handleDeleteMember = () => {
+    removeMember(team.id, memberId).then((res) => {
+      res.ok 
+      // console.log(res)
+
+    }
+    )
   }
 
   const emailCC = null
@@ -123,9 +132,8 @@ export default function TeamMember({
               )}
               {email && (
                 <Link
-                  href={`mailto:${email}?${
-                    emailCC ? `cc=${emailCC}&` : ''
-                  }subject=${subject}`}
+                  href={`mailto:${email}?${emailCC ? `cc=${emailCC}&` : ''
+                    }subject=${subject}`}
                   className="btn btn-circle btn-sm"
                 >
                   <Icon name="email" />
@@ -181,9 +189,8 @@ export default function TeamMember({
             )}
             {email && (
               <Link
-                href={`mailto:${email}?${
-                  emailCC ? `cc=${emailCC}&` : ''
-                }subject=${subject}`}
+                href={`mailto:${email}?${emailCC ? `cc=${emailCC}&` : ''
+                  }subject=${subject}`}
                 className="btn btn-circle btn-sm"
               >
                 <Icon name="email" />
@@ -208,9 +215,9 @@ export default function TeamMember({
             <ModalDelete
               buttonVariant="btn"
               buttonLabel={'Sacar del equipo'}
-              labelDelete={'Miembro del equipo: ' + name}
-              // TODO integrar kick member : handleDelete={handleDelete}
-              //deleteParagraph={`Sacar del equipo a ${name}`}
+              labelDelete={name ? `Miembro del equipo: ${name}` : null}
+              handleDelete={handleDeleteMember}
+              
             />
           </Section>
         </div>
