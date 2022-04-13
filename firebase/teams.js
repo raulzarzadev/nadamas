@@ -102,6 +102,10 @@ const deleteTeam = async (teamId) => {
   }
 }
 
+// *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+//                                             MEMBERS REQUESTS
+// *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+
 const sendRequest = async (teamId, userId) => {
   const ref = doc(db, 'teams', teamId)
   return await updateDoc(ref, {
@@ -131,17 +135,10 @@ const removeRequest = async (teamId, userId) => {
     .catch((err) => formatResponse(false, 'REQUESTS_UPDATED_ERROR', err))
 }
 
-const removeMember = async (teamId, userId) => {
-  const ref = doc(db, 'teams', teamId)
-  return await updateDoc(ref, {
-    members: arrayRemove(userId)
-  })
-    .then((res) => formatResponse(true, 'MEMBER_REMOVED', res))
-    .catch((err) => formatResponse(false, 'MEMBER_REMOVED_ERROR', err))
-}
+
 
 // *** *** *** *** *** *** *** *** *** *** *** *** *** ***
-//                                             MEMBERS
+//                                             MEMBERS CRUD
 // *** *** *** *** *** *** *** *** *** *** *** *** *** ***
 
 const listenAthleteTeams = (athelteId, cb) => {
@@ -159,6 +156,19 @@ const listenAthleteTeams = (athelteId, cb) => {
     cb(res)
   })
 }
+const removeMember = async (teamId, userId) => {
+  const ref = doc(db, 'teams', teamId)
+  return await updateDoc(ref, {
+    members: arrayRemove(userId)
+  })
+    .then((res) => formatResponse(true, 'MEMBER_REMOVED', res))
+    .catch((err) => formatResponse(false, 'MEMBER_REMOVED_ERROR', err))
+}
+
+
+// *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+//                                             TEAM FUNTIONS
+// *** *** *** *** *** *** *** *** *** *** *** *** *** ***
 
 export {
   createTeam,
@@ -171,5 +181,11 @@ export {
   listenTeam,
   listenAthleteTeams
 }
+
+
+// *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+//                                             MEMBER FUNTIONS
+// *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+
 
 export { sendRequest, acceptRequest, removeRequest, removeMember }
