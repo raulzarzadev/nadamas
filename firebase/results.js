@@ -1,5 +1,6 @@
 import { TEST_AWARDS } from '@/CONSTANTS/AWARDS'
-import { addDoc, collection, getDocs, query, where } from 'firebase/firestore'
+import { async } from '@firebase/util'
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore'
 import { db } from '.'
 import {
   deepFormatDocumentDates,
@@ -31,8 +32,27 @@ export const newAtheleteResult = async (athlete, result, { userId = null }) => {
 }
 
 export const deleteResult = async (resultId) => {
-  // TODO delete result
   console.log('deleteResult', resultId)
+  try {
+    await deleteDoc(doc(db, 'results', resultId))
+    return formatResponse(true, 'RESULT_DELETED', resultId)
+  } catch (error) {
+    throw new Error(error)
+  }
+
+}
+
+export const updateResutl = async (result) => {
+  const docRef = doc(db, 'results', result.id)
+  try {
+    const res = await updateDoc(docRef, {
+      ...deepFormatDocumentDates({ ...result, updatedAt: new Date() })
+    })
+    return formatResponse(true, 'RESULT_UPDATED', res)
+  } catch (err) {
+    return formatResponse(false, 'RESULT_UPDATED_ERROR', err)
+  }
+
 }
 
 export const getAthleteResults = async (athleteId) => {
@@ -48,4 +68,21 @@ export const getAthleteResults = async (athleteId) => {
     res.push({ ...normalizeDoc(doc) })
   })
   return res
+}
+
+export const listenAthleteResults = async (athleteId, callback) => {
+  const q = query(
+    collection(db, 'results'),
+    where('athlete.id', '==', athleteId)
+  )
+
+  onSnapshot(q, (querySnapshot) => {
+    const res = []
+    querySnapshot.forEach((doc) => {
+      res.push(normalizeDoc(doc))
+    })
+    callback(res)
+  })
+
+
 }

@@ -20,7 +20,6 @@ import PickerTest from '@/legasy/src/components/inputs/PickerTest' */
 export default function FormRecord({ record, setRecord = () => {} }) {
   const initalFormState = { date: dateFormat(new Date(), 'yyyy-MM-dd') }
   const [form, setForm] = useState(initalFormState)
-
   useEffect(() => {
     record && setForm(record)
   }, [record])
@@ -63,10 +62,7 @@ export default function FormRecord({ record, setRecord = () => {} }) {
         </div>
         <div className="grid gap-2 place-items-center sm:flex">
           <Button
-            // fullWidth
-            // disabled={!isValid}
             variant="primary"
-            // loading={saving}
             onClick={(e) => {
               e.preventDefault()
               handleSaveRecord()

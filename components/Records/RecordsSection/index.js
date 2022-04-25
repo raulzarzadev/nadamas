@@ -1,11 +1,12 @@
 import { useUser } from '@/context/UserContext'
 import { getOldAthlete } from '@/firebase/athletes'
-import { deleteResult, getAthleteResults, newAtheleteResult } from '@/firebase/results'
+import { deleteResult, getAthleteResults, listenAthleteResults, newAtheleteResult, updateResutl } from '@/firebase/results'
 import { getUser } from '@/firebase/users'
 import { dateFormat } from '@/utils/dates'
 import Icon from '@comps/Icon'
 import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import Modal from '@comps/Modal'
+import MainModal from '@comps/Modal/MainModal'
 import ModalDelete from '@comps/Modal/ModalDelete'
 import FormRecord from '@comps/Records/FormRecord'
 import Section from '@comps/Section'
@@ -33,17 +34,17 @@ export default function RecordsSection({ userId, canCreateNewRecord }) {
 
   const { user } = useUser()
   const [userAthlete, setUserAthlete] = useState(undefined)
-  useEffect(() => {
-    if (userId) getUser(userId).then(setUserAthlete)
-  }, [])
-
   const [results, setResults] = useState([])
 
   useEffect(() => {
-    if (userAthlete) {
-      getAthleteResults(userAthlete.id).then((res) => setResults([...res]))
+    if (userId) {
+      listenAthleteResults(userId, res => {
+        setResults([...res])
+      })
+      getUser(userId).then(setUserAthlete)
     }
-  }, [userAthlete])
+  }, [userId])
+
 
   const [openNewRecord, setOpenNewRecord] = useState()
   const handleOpenNewRecord = () => {
@@ -52,15 +53,16 @@ export default function RecordsSection({ userId, canCreateNewRecord }) {
 
   const handleSaveRecord = (record) => {
     const athlete = {
-      id: userAthlete?.id,
-      name: userAthlete?.name,
-      alias: userAthlete?.alias,
-      birth: userAthlete?.birth
+      id: userAthlete?.id || null,
+      name: userAthlete?.name || null,
+      alias: userAthlete?.alias || null,
+      birth: userAthlete?.birth || null
     }
     newAtheleteResult(athlete, record, { userId: user.id })
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
+
 
   // const canCreateNewRecord = true
 
@@ -82,19 +84,36 @@ export default function RecordsSection({ userId, canCreateNewRecord }) {
           </Modal>
         </>
       )}
-      <div>
-        {[...oldResults, ...results].map((record) => (
-          <RecordRow key={record.id} record={record} />
-        ))}
-      </div>
+      <ResultsRows results={[...results, ...oldResults]} />
     </Section>
   )
 }
 
-const RecordRow = ({ record: { test, date, id, event, ...rest } }) => {
+const ResultsRows = ({ results }) => {
+  results.sort((a, b) => {
+    if (a?.date > b?.date) return -1
+    if (a?.date < b?.date) return 1
+    return 0
+  })
+  return <div>
+    {results.map((record) => (
+      <RecordRow key={record.id} record={record} />
+    ))
+    }
+  </div>
+}
+
+
+
+const RecordRow = ({ record }) => {
+  const { test, date, id, event, ...rest } = record
   const [openDetails, setOpenDetails] = useState()
   const handleOpenDetails = () => {
     setOpenDetails(!openDetails)
+  }
+
+  const handleEditRecord = (record) => {
+    updateResutl(record).then((res) => console.log('updated', res)).catch(err => console.log('err', err)).finally(() => console.log('finaliza'))
   }
   // console.log(rest)
 
@@ -105,8 +124,11 @@ const RecordRow = ({ record: { test, date, id, event, ...rest } }) => {
       </div>
       <div className="p-0.5 justify-end flex w-[15%] ">{test.distance}</div>
       <div className="p-0.5 flex justify-center w-[25%] ">{test.style}</div>
-      <div className="p-0.5 flex justify-between w-[30%] ">
+      <div className="p-0.5 justify-between w-[30%] hidden sm:flex truncate">
         {test.record}
+
+      </div>
+      <div className='p-0.5 justify-between w-[10%] flex'>
         <span>
           <button
             onClick={() => {
@@ -117,32 +139,52 @@ const RecordRow = ({ record: { test, date, id, event, ...rest } }) => {
           </button>
         </span>
       </div>
+      {/* 
+      
+      // *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+      //                                             Modal Registro
+      // *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+       */}
       <Modal
-        title="Resultado"
+        title="Detalles de resultado "
         open={openDetails}
         handleOpen={handleOpenDetails}
       >
-        <div>Fecha:{date ? dateFormat(date, 'dd MMM yy') : '-'}</div>
-        <div>Evento: {event && <div>{event.name || event.title}</div>}</div>
+        <div>{date ? dateFormat(date, 'dd MMM yy') : '-'}</div>
+        <div> {event && <div>Evento:{event.name || event.title}</div>}</div>
         <div>
-          Prueba:{' '}
           {test && (
             <div>
-              <p>{`${test.distance} x ${test.style} @${test.record}`}</p>
+              <p> Prueba:</p>
+              <p> {`${test.distance} x ${test.style} `}</p>
+              <p><span className='text-2xl font-bold'>{test.record}</span></p>
             </div>
           )}
         </div>
-        <div>Premios</div>
+        {/* 
+        
+        // *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+        //                                            Sub Modal Delete Registro
+        // *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+         */}
         <Section title={'Opciones'}>
-          <ModalDelete
-            buttonLabel="Eliminar registro"
-            buttonVariant="btn"
-            handleDelete={() => {
-              deleteResult(id)
-                .then((res) => console.log(res))
-                .catch((err) => console.log(err))
-            }}
-          />
+          <div className='grid gap-2 place-content-center place-items-center'>
+
+            <MainModal title='Editar registro' buttonLabel='Editar  '>
+              <FormRecord record={record} setRecord={handleEditRecord} />
+            </MainModal>
+
+            <ModalDelete
+              buttonLabel="Eliminar registro"
+              buttonVariant="btn"
+              handleDelete={() => {
+                deleteResult(id)
+                  .then((res) => console.log(res))
+                  .catch((err) => console.log(err))
+              }}
+            />
+          </div>
+
         </Section>
       </Modal>
     </div>

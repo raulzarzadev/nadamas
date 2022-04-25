@@ -6,8 +6,9 @@ export default function ButtonIcon({
   iconName,
   label,
   loading = false,
-  className,
-  //iconSize, // sm, md, lg
+  className = '',
+  //iconSize, // sm, md, lg,
+  fullwidth = false,
   size,
   ...rest
 }) {
@@ -15,8 +16,8 @@ export default function ButtonIcon({
     <Button
       size={size}
       className={` 
-     
-      ${className}`}
+      ${fullwidth ? ' w-full ' : ' w-max '} 
+      ${className} `}
       {...rest}
     >
       {label && <span className="mr-1">{label}</span>}

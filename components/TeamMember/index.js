@@ -13,6 +13,7 @@ import Section from '@comps/Section'
 import ModalDelete from '@comps/Modal/ModalDelete'
 import AthleteSection from '@comps/Profile/SectionUserInfo/AthleteSection'
 import Image from 'next/image'
+import RecordsSection from '@comps/Records/RecordsSection'
 
 export default function TeamMember({
   memberId,
@@ -54,7 +55,7 @@ export default function TeamMember({
 
   const handleDeleteMember = () => {
     removeMember(team.id, memberId).then((res) => {
-      res.ok 
+      res.ok
       // console.log(res)
 
     }
@@ -210,14 +211,15 @@ export default function TeamMember({
               <p>Alergias: {medicInformation?.considerations}</p>
             )}
           </div>
-          <AthleteSection userId={member.id} canCreateNewRecord={isOwner} />
+          <RecordsSection userId={member.id} canCreateNewRecord={isOwner} />
+          {/*  <AthleteSection userId={member.id} canCreateNewRecord={isOwner} /> */}
           <Section title={'Opciones'}>
             <ModalDelete
               buttonVariant="btn"
               buttonLabel={'Sacar del equipo'}
               labelDelete={name ? `Miembro del equipo: ${name}` : null}
               handleDelete={handleDeleteMember}
-              
+
             />
           </Section>
         </div>
