@@ -1,16 +1,18 @@
 import { updateUser } from '@/firebase/users'
 import ButtonSave from '@comps/Inputs/Button/ButtonSave'
+import Phone from '@comps/Inputs/Phone'
 import TextInput from '@comps/Inputs/TextInput'
 import Toggle from '@comps/Inputs/Toggle'
 import Section from '@comps/Section'
 import { useForm } from 'react-hook-form'
 
-export default function UserForm ({ user }) {
+export default function UserForm({ user }) {
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors }
+    formState: { errors },
+    setValue
   } = useForm({
     defaultValues: {
       ...user,
@@ -24,6 +26,8 @@ export default function UserForm ({ user }) {
       .then((res) => console.log(`res`, res))
       .catch((err) => console.log(`err`, err))
   }
+
+  console.log(watch());
 
   return (
     <div className="">
@@ -51,18 +55,23 @@ export default function UserForm ({ user }) {
         </Section>
 
         <Section title="Contacto " open indent={false}>
-          <TextInput
+          <Phone
             label={'Whatsapp'}
             placeholder="Telefono (opcional)"
             //  error={errors.name.message}
-            {...register('contact.whatsapp', {
-              value: watch('contact.whatsapp') || null
-            })}
+            onChange={(value) => {
+              setValue('contact.whatsapp', value)
+            }}
+            value={watch('contact.whatsapp')}
+          /* {...register('contact.whatsapp', {
+            value: watch('contact.whatsapp') || null
+          })} */
           />
           <TextInput
             disabled
             label={'Correo'}
             placeholder="Email (recomendado)"
+            onChange={(e) => console.log(e.target.value)}
             //  error={errors.name.message}
             {...register('email', { value: watch('email') || null })}
           />
@@ -99,14 +108,13 @@ export default function UserForm ({ user }) {
               value: watch('emergencyContact.name') || null
             })}
           />
-          <TextInput
-            label={'Telefono'}
+          {/* <TextInput
             placeholder="(recomendado)"
             //  error={errors.name.message}
             {...register('emergencyContact.phone', {
               value: watch('emergencyContact.phone') || null
             })}
-          />
+          /> */}
           <TextInput
             label={'Parentesco'}
             placeholder=" (recomendado)"
@@ -114,6 +122,13 @@ export default function UserForm ({ user }) {
               value: watch('emergencyContact.relationship') || null
             })}
           />
+          <Phone
+            label={'Telefono'}
+            placeholder="Telefono (opcional)"
+            //  error={errors.name.message}
+            onChange={(value) => {
+              setValue('emergencyContact.phone', value)
+            }} />
         </Section>
         <div className="flex justify-end">
           <ButtonSave />

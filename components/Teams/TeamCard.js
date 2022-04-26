@@ -1,6 +1,5 @@
 import { useUser } from '@/context/UserContext'
 import { getUser } from '@/firebase/users'
-import teams from '@/pages/teams'
 import ButtonJoinTeam from '@comps/Inputs/ButtonJoinTeam'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
@@ -28,7 +27,6 @@ const CardV2 = ({
     id
   },
   redirectTeam,
-  teamOwner
 }) => {
   const [coach, setCoach] = useState(null)
   useEffect(() => {
