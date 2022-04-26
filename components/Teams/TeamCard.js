@@ -8,21 +8,69 @@ import { useEffect, useState } from 'react'
 export default function TeamCard({
   redirectTeam = false,
   team
-  // athleteView = false
 }) {
-  const [teamOwner, setTeamOwner] = useState(false)
-  const { user } = useUser()
-  useEffect(() => {
-    if (user)
-      // if coach, owner or coach setOwner as true
-      setTeamOwner(
-        user?.id === team?.coach?.id || user.id === team?.userId || user.isCoach
-      )
-  }, [user])
-
 
   return (
-    <CardV2 team={team} teamOwner={teamOwner} redirectTeam={redirectTeam} />
+    <CardV2 team={team} redirectTeam={redirectTeam} />
+  )
+}
+
+
+
+const CardV2 = ({
+  team: {
+    name,
+    userId:teamUserId,
+    description,
+    members = [],
+    joinRequests = [],
+    isPublic,
+    id
+  },
+  redirectTeam,
+  teamOwner
+}) => {
+  const [coach, setCoach] = useState(null)
+  useEffect(() => {
+    getUser(teamUserId).then(setCoach)
+  }, [])
+
+  const { user } = useUser()
+  const teamOwner = user.id === teamUserId
+
+  return (
+    <div
+      className=" bg-base-300 p-2 rounded-lg shadow-lg w-full grid"
+      onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (redirectTeam) {
+          router.push(`/teams/${id}`)
+        }
+      }}
+    >
+      <div className="flex justify-end text-sm font-thin ">
+        {teamOwner && <p className="mx-1">tuyo</p>}
+        <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
+        <p className="mx-1">{members.length}</p>
+        {teamOwner && (
+          <p className="mx-1">
+            <span className="font-bold">{joinRequests.length}</span>
+          </p>
+        )}
+      </div>
+      <div>
+        <h3 className="font-bold text-lg">
+          {name}
+          <span className="font-thin text-sm mx-2">
+            {coach?.alias || coach?.name}
+          </span>
+        </h3>
+      </div>
+      <div className="text-sm">
+        <p>{description}</p>
+      </div>
+    </div>
   )
 }
 
@@ -78,56 +126,3 @@ const CardV1 = ({ team, teamOwner, redirectTeam }) => (
     )}
   </div>
 )
-
-const CardV2 = ({
-  team: {
-    name,
-    userId,
-    description,
-    members = [],
-    joinRequests = [],
-    isPublic,
-    id
-  },
-  redirectTeam,
-  teamOwner
-}) => {
-  const [coach, setCoach] = useState(null)
-  useEffect(() => {
-    getUser(userId).then(setCoach)
-  }, [])
-  return (
-    <div
-      className=" bg-base-300 p-2 rounded-lg shadow-lg w-full grid"
-      onClick={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        if (redirectTeam) {
-          router.push(`/teams/${id}`)
-        }
-      }}
-    >
-      <div className="flex justify-end text-sm font-thin ">
-        {teamOwner && <p className="mx-1">tuyo</p>}
-        <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
-        <p className="mx-1">{members.length}</p>
-        {teamOwner && (
-          <p className="mx-1">
-            <span className="font-bold">{joinRequests.length}</span>
-          </p>
-        )}
-      </div>
-      <div>
-        <h3 className="font-bold text-lg">
-          {name}
-          <span className="font-thin text-sm mx-2">
-            {coach?.alias || coach?.name}
-          </span>
-        </h3>
-      </div>
-      <div className="text-sm">
-        <p>{description}</p>
-      </div>
-    </div>
-  )
-}
