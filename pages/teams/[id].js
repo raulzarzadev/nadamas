@@ -6,9 +6,7 @@ import { useRouter } from 'next/router'
     query: { id }
   } = useRouter()
   return (
-    <div className="">
       <TeamDetails teamId={id} />
-    </div>
   )
 }
 

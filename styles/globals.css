@@ -1,45 +1,4 @@
+
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
-
-html,
-body {
-  padding: 0;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-  background-color: black;
-  font-size: 1rem;
-  color: #fff;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-:root {
-  --bg-main: #242525;
-  --bg-ligth: rgb(83, 83, 104);
-  --bg-dark: rgb(45, 52, 66);
-  --bg-trans: rgba(45, 52, 66, 0.568);
-
-  --primary: rgb(56, 147, 189);
-  --secondary: rgb(87, 66, 126);
-  --danger: rgb(224, 101, 101);
-  --success: rgb(101, 224, 132);
-
-  --text-main: #fff;
-  --text-light: rgb(194, 76, 76);
-
-  --color-a: #ff443b;
-  --color-b: #ae83e6;
-  --color-c: #173e4d;
-  --color-d: #81e686;
-  --color-e: #3093e4;
-}
-

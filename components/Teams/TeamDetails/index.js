@@ -60,7 +60,7 @@ export default function TeamDetails({ teamId }) {
 
   return (
     <div className="">
-      <div className="grid mt-2">
+      <div className="grid mt-2 text-base-content">
         <div className="flex justify-end text-sm font-thin ">
           {isOwnerOrCoach && <p className="mx-1">tuyo</p>}
           <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
