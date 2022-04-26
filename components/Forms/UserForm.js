@@ -60,9 +60,9 @@ export default function UserForm({ user }) {
             placeholder="Telefono (opcional)"
             //  error={errors.name.message}
             onChange={(value) => {
-              setValue('contact.whatsapp', value)
+              setValue('contact.phone', value)
             }}
-            value={watch('contact.whatsapp')}
+            value={watch('contact.phone')}
           /* {...register('contact.whatsapp', {
             value: watch('contact.whatsapp') || null
           })} */
