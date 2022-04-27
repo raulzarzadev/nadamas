@@ -27,7 +27,6 @@ export default function UserForm({ user }) {
       .catch((err) => console.log(`err`, err))
   }
 
-  console.log(watch());
 
   return (
     <div className="">
