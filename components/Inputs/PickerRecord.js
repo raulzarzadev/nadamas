@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react'
 
 const formatNumberInput = (value) => {
@@ -8,11 +9,13 @@ const formatNumberInput = (value) => {
 
 export default function PickerRecord({
   value = null,
-  setValue = (fieldName = '', value) => {},
+  setValue = (fieldName = '', value) => { },
   name = 'record',
   size = 'md'
 }) {
   const formatValue = (value) => {
+    if (!value) return { minutes: '00', seconds: '00', ms: '00' }
+
     if (typeof value === 'string') {
       const auxArr = value.split(/[:\.]/g)
       const minutes = auxArr[0]
@@ -24,12 +27,10 @@ export default function PickerRecord({
         seconds: parseInt(seconds),
         ms: parseInt(ms)
       }
-    } else {
-      return { minutes: '00', seconds: '00', ms: '00' }
     }
   }
 
-  const [form, setForm] = useState({ minutes: null, seconds: null, ms: null })
+  const [form, setForm] = useState(formatValue(value))
 
   const _handleChange = ({ target: { name, value } }) => {
     setForm({ ...form, [name]: value })
@@ -39,7 +40,7 @@ export default function PickerRecord({
     const secs = formatNumberInput(seconds)
     const mins = formatNumberInput(minutes)
     const mili = formatNumberInput(ms)
-    const res = `${mins||'00'}:${secs||'00'}.${mili||'00'}`
+    const res = `${mins || '00'}:${secs || '00'}.${mili || '00'}`
     return res
   }
 
@@ -48,11 +49,11 @@ export default function PickerRecord({
     setValue(name, transformRecord({ ...form }))
   }, [form])
 
-  useEffect(() => {
+ /*  useEffect(() => {
     if (value) {
       setForm(formatValue(value))
     }
-  }, [value])
+  }, [value]) */
 
   //console.log(`form`, form)
   const nextInput = (nextInputName) => {
@@ -68,6 +69,9 @@ export default function PickerRecord({
     // TODO hacer que esto funcione
     if (minutesRef?.current) minutesRef?.current?.focus()
   }, [minutesRef])
+
+  console.log(value);
+  console.log(form);
 
   return (
     <div className="  flex justify-center">
@@ -117,7 +121,7 @@ const InputNumber = React.forwardRef((props, ref) => {
     step = 1,
     size,
     maxLength = 2,
-    nextInput = () => {},
+    nextInput = () => { },
     ...rest
   } = props
   const sizing = {
@@ -135,7 +139,7 @@ const InputNumber = React.forwardRef((props, ref) => {
         min={min}
         max={max}
         step={step}
-        className="w-full bg-primary-dark dark:bg-secondary-dark bg-opacity-20 text-center text-xl  rounded-md  flex "
+        className="w-full bg-primary-dark dark:bg-secondary-dark bg-opacity-20 text-center text-xl rounded-md flex "
         onBlur={(e) => {
           e.target.value = ''
         }}

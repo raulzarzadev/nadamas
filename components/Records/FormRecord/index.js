@@ -17,19 +17,25 @@ import { useEffect, useState } from 'react'
 } from '@/legasy/firebase/results'
 import PickerTest from '@/legasy/src/components/inputs/PickerTest' */
 
-export default function FormRecord({ record, setRecord = () => {} }) {
+export default function FormRecord({ record, setRecord = () => { } }) {
   const initalFormState = { date: dateFormat(new Date(), 'yyyy-MM-dd') }
   const [form, setForm] = useState(initalFormState)
+
+  const [alreadySent, setAlreadySent] = useState(false)
+
   useEffect(() => {
     record && setForm(record)
   }, [record])
 
 
+
   const handleChange = ({ target }) => {
+    setAlreadySent(false)
     setForm({ ...form, [target.name]: target.value })
   }
 
   const handleSetFormValue = (fieldName, fieldValue) => {
+    setAlreadySent(false)
     setForm({ ...form, [fieldName]: fieldValue })
   }
 
@@ -40,7 +46,11 @@ export default function FormRecord({ record, setRecord = () => {} }) {
 
   const handleSaveRecord = () => {
     setRecord({ ...form, test: { ...form.test, record: form.record } })
+    setAlreadySent(true)
+    setForm(initalFormState)
   }
+
+  console.log(form);
 
 
   return (
@@ -62,13 +72,14 @@ export default function FormRecord({ record, setRecord = () => {} }) {
         </div>
         <div className="grid gap-2 place-items-center sm:flex">
           <Button
+            disabled={alreadySent}
             variant="primary"
             onClick={(e) => {
               e.preventDefault()
               handleSaveRecord()
             }}
           >
-            Guardar
+            {alreadySent ? 'Guardado' : 'Guardar'}
             <Icon name="save" />
           </Button>
         </div>

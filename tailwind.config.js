@@ -19,9 +19,9 @@ const checkedSiblingPlugin = plugin(function ({ addVariant, e }) {
 module.exports = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx}',
-    './components/**/*.{js,ts,jsx,tsx}',
     './src/**/*.{js,ts,jsx,tsx}',
-    './src/components/**/*.{js}'
+    // './src/components/**/*.{js}',
+    './components/**/*.{js,ts,jsx,tsx}',
   ],
   darkTheme: 'dark',
   daisyui: {
