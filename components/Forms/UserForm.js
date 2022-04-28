@@ -1,12 +1,15 @@
 import { updateUser } from '@/firebase/users'
+import { dateFormat } from '@/utils/dates'
 import ButtonSave from '@comps/Inputs/Button/ButtonSave'
 import Phone from '@comps/Inputs/Phone'
 import TextInput from '@comps/Inputs/TextInput'
 import Toggle from '@comps/Inputs/Toggle'
 import Section from '@comps/Section'
+import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
 
 export default function UserForm({ user }) {
+  console.log(user);
   const {
     register,
     handleSubmit,
@@ -17,16 +20,14 @@ export default function UserForm({ user }) {
     defaultValues: {
       ...user,
       name: user.displayName,
-      // birth: dateFormat(user.birth, 'yyyy-MM-dd')
+      birth: dateFormat(user.birth, 'yyyy-MM-dd')
     }
   })
 
   const onSubmit = (form) => {
     updateUser(form)
-      .then((res) => console.log(`res`, res))
-      .catch((err) => console.log(`err`, err))
+      .then((res) => console.log(`User updated`, res))
   }
-
 
   return (
     <div className="">
@@ -48,7 +49,7 @@ export default function UserForm({ user }) {
             label={'Fecha de nacimiento'}
             type="date"
             //  error={errors.name.message}
-            {...register('birth', { value: watch('birth') || null })}
+            {...register('birth', { value: dateFormat(watch('birth')) || null })}
           />
           <Toggle label={'Eres entrenador'} {...register('isCoach')} />
         </Section>

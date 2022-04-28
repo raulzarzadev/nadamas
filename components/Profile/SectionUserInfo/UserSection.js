@@ -1,3 +1,4 @@
+import { dateFormat } from '@/utils/dates'
 import UserForm from '@comps/Forms/UserForm'
 import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import Modal from '@comps/Modal'
@@ -20,7 +21,8 @@ export default function UserSection({ user }) {
     email,
     medicInformation,
     emergencyContact,
-    photoURL:image
+    photoURL:image,
+    birth
   } = user
 
   return (
@@ -57,7 +59,7 @@ export default function UserSection({ user }) {
             <h4>{alias}</h4>
           </span>
         </div>
-        {/*  <div>{birth}</div> */}
+        <div>{dateFormat(birth, 'dd MMM yy')}</div>
       </div>
 
       {openEditUser && (

@@ -2,8 +2,9 @@ import { TEST_AWARDS } from '@/CONSTANTS/AWARDS'
 import { async } from '@firebase/util'
 import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore'
 import { db } from '.'
+import { deepFormatFirebaseDates } from './deepFormatFirebaseDates'
 import {
-  deepFormatDocumentDates,
+
   formatResponse,
   normalizeDoc
 } from './firebase-helpers'
@@ -17,7 +18,7 @@ import {
 
 export const newAtheleteResult = async (athlete, result, { userId = null }) => {
   const newResult = {
-    ...deepFormatDocumentDates({
+    ...deepFormatFirebaseDates({
       createdBy: userId,
       createdAt: new Date(),
       athlete,
@@ -46,7 +47,7 @@ export const updateResutl = async (result) => {
   const docRef = doc(db, 'results', result.id)
   try {
     const res = await updateDoc(docRef, {
-      ...deepFormatDocumentDates({ ...result, updatedAt: new Date() })
+      ...deepFormatFirebaseDates({ ...result, updatedAt: new Date() })
     })
     return formatResponse(true, 'RESULT_UPDATED', res)
   } catch (err) {

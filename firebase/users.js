@@ -3,9 +3,9 @@
 /* -------------------- */
 import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '.'
+import { deepFormatFirebaseDates } from './deepFormatFirebaseDates'
 import {
-  deepFormatDocumentDates,
-  formatResponse,
+
   normalizeDoc
 } from './firebase-helpers'
 
@@ -48,31 +48,11 @@ export const createNewUser = async (user) => {
     ...user,
     createdAt: new Date()
   })
-  /*  .then(async (res) => {
-       // await createDefaultAthlete({ ...user })
-       return formatResponse(true, 'USER_CREATED', res)
-     })
-     .catch((err) => formatResponse(false, 'USER_CREATED_ERROR', err)) */
-  /*  const ref = doc(db, 'users', user.id)
-  console.log(ref, user)
-  const newUser = {
-    ...user,
-    id: user.id,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-  return await setDoc(ref, { ...deepFormatDocumentDates(newUser) })
-    .then(async (res) => {
-      // await createDefaultAthlete({ ...user })
-       formatResponse(true, 'USER_CREATED', res)
-    })
-     .catch((err) => formatResponse(false, 'USER_CREATED_ERROR', err))
-  */
+
 }
 
 export const updateUser = async (user) => {
-  const userFormat = deepFormatDocumentDates(user, { format: 'firebase' })
-  updateDoc(doc(db, 'users', user.id), userFormat)
-    .then((res) => console.log(`res`, res))
+  const userFormat = deepFormatFirebaseDates(user, 'firebase')
+  return updateDoc(doc(db, 'users', user.id), userFormat)
     .catch((err) => console.log(`err`, err))
 }

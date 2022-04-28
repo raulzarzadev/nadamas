@@ -15,8 +15,9 @@ import {
   where
 } from 'firebase/firestore'
 import { db } from '.'
+import { deepFormatFirebaseDates } from './deepFormatFirebaseDates'
 import {
-  deepFormatDocumentDates,
+ 
   formatResponse,
   normalizeDoc,
   normalizeDocs
@@ -24,7 +25,7 @@ import {
 
 const createTeam = async (team, user) => {
   return await addDoc(collection(db, 'teams'), {
-    ...deepFormatDocumentDates({
+    ...deepFormatFirebaseDates({
       ...team,
       createdAt: new Date(),
       userId: user.id
@@ -36,7 +37,7 @@ const createTeam = async (team, user) => {
 const updateTeam = async (team) => {
   try {
     const res = await updateDoc(doc(db, 'teams', team.id), {
-      ...deepFormatDocumentDates({ ...team, updatedAt: new Date() })
+      ...deepFormatFirebaseDates({ ...team, updatedAt: new Date() })
     })
     return formatResponse(true, 'TEAM_UPDATED', res)
   } catch (err) {

@@ -178,7 +178,8 @@ export default function TeamMember({
           <p>{name}</p>
           <p>{email}</p>
           {alias && <p>{alias}</p>}
-          {birth && <p>{dateFormat(birth, 'dd MMM yy')}</p>}
+          <p>Fecha {dateFormat(birth, 'dd MMM yy')}</p>
+         {/*  {birth && <p>Fecha {dateFormat(birth, 'dd MMM yy')}</p>} */}
           <div className=" flex w-full justify-evenly items-center">
             {contact?.whatsapp && (
               <Link
