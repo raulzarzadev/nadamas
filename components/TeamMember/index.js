@@ -4,17 +4,12 @@ import Loading from '@comps/Loading'
 import { useUser } from '@/context/UserContext'
 import Button from '@comps/Inputs/Button'
 import { acceptRequest, removeMember } from '@/firebase/teams'
-import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import Link from '@comps/Link'
 import Icon from '@comps/Icon'
-import Modal from '@comps/Modal'
-import { dateFormat } from '@/utils/dates'
-import Section from '@comps/Section'
-import ModalDelete from '@comps/Modal/ModalDelete'
-import AthleteSection from '@comps/Profile/SectionUserInfo/AthleteSection'
 import Image from 'next/image'
-import RecordsSection from '@comps/Records/RecordsSection'
 import MainModal from '@comps/Modal/MainModal'
+import MemberDetails from '@comps/User/MemberDetails'
+import EmergencyCall from '@comps/User/EmergencyCall'
 
 export default function TeamMember({
   memberId,
@@ -52,15 +47,6 @@ export default function TeamMember({
     acceptRequest(team.id, memberId).then((res) => {
       console.log(res)
     })
-  }
-
-  const handleDeleteMember = () => {
-    removeMember(team.id, memberId).then((res) => {
-      res.ok
-      // console.log(res)
-
-    }
-    )
   }
 
   const emailCC = null
@@ -163,58 +149,12 @@ export default function TeamMember({
               </Button>
             </div>
           )}
-          <MainModal OpenComponent={Icon} OpenComponentProps={{ name: 'dots' }}>
-            <div className="text-center">
-              <p>{name}</p>
-              <p>{email}</p>
-              {alias && <p>{alias}</p>}
-              <p>Fecha {dateFormat(birth, 'dd MMM yy')}</p>
-              {/*  {birth && <p>Fecha {dateFormat(birth, 'dd MMM yy')}</p>} */}
-              <div className=" flex w-full justify-evenly items-center">
-                {contact?.whatsapp && (
-                  <Link
-                    href={`https://wa.me/${contact?.whatsapp}`}
-                    className="btn btn-circle btn-sm"
-                  >
-                    <Icon name="whatsapp" />
-                  </Link>
-                )}
-                {email && (
-                  <Link
-                    href={`mailto:${email}?${emailCC ? `cc=${emailCC}&` : ''
-                      }subject=${subject}`}
-                    className="btn btn-circle btn-sm"
-                  >
-                    <Icon name="email" />
-                  </Link>
-                )}
-                {emergencyContact?.phone && (
-                  <EmergencyCall contact={emergencyContact} />
-                )}
-              </div>
-
-              <div>
-                <h4>Información médica</h4>
-                {medicInformation?.blodType && (
-                  <p>Tipo de sangre: {medicInformation?.blodType}</p>
-                )}
-                {medicInformation?.considerations && (
-                  <p>Alergias: {medicInformation?.considerations}</p>
-                )}
-              </div>
-              <RecordsSection userId={member.id} canCreateNewRecord={isOwner} />
-              {/*  <AthleteSection userId={member.id} canCreateNewRecord={isOwner} /> */}
-              <Section title={'Opciones'}>
-                <ModalDelete
-                  buttonVariant="btn"
-                  buttonLabel={'Sacar del equipo'}
-                  labelDelete={name ? `Miembro del equipo: ${name}` : null}
-                  handleDelete={handleDeleteMember}
-
-                />
-              </Section>
-            </div>
-          </MainModal>
+          <Link href={`/teams/${team.id}/member?memberId=${member.id}`}>
+            <Icon name='dots' />
+          </Link>
+         {/*  <MainModal OpenComponent={Icon} OpenComponentProps={{ name: 'dots' }}>
+            <MemberDetails member={member} team={team} />
+          </MainModal> */}
         </div>
         {/*  <div className="w-full">
           <Section title={ 'Detalles' }>
@@ -228,36 +168,4 @@ export default function TeamMember({
   )
 }
 
-const EmergencyCall = ({ contact }) => {
-  const [open, setOpen] = useState()
-  const handleOpen = () => {
-    setOpen(!open)
-  }
-  return (
-    <>
-      <ButtonIcon
-        iconName={'emergency'}
-        className="btn-circle btn-sm text-error"
-        onClick={handleOpen}
-      />
-      <Modal open={open} handleOpen={handleOpen} title="Llamada de emergencia">
-        <div className="w-[90%] min-h-[10rem] flex justify-center items-center">
-          <div>
-            <p>
-              Llamar a{' '}
-              <span className="font-bold text-lg">{contact?.name}</span>
-            </p>
-            <div className="flex justify-center text-error">
-              <Link
-                href={`tel:${contact?.phone}`}
-                className="btn btn-circle btn-warning"
-              >
-                <Icon name="phone" size="xl" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </Modal>
-    </>
-  )
-}
+

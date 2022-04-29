@@ -17,7 +17,7 @@ export default function Modal({
         e.target.id === modalId && handleOpen()
       }}
     >
-      <div className="modal-box   py-1 pt-0 bg-base-300  top-0 bottom-0 relative ">
+      <div className="modal-box py-1 pt-0 bg-base-300 min-h-screen  ">
         <header className={'flex justify-between sticky top-0 bg-base-300'}>
           <div className={'w-[80%] text-center'}>
             <h5>{title}</h5>

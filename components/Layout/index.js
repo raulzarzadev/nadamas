@@ -9,7 +9,7 @@ export default function Layout({ children }) {
   return (
     <>
       <Head title={'nadamas'}></Head>
-      <div data-theme={theme} className="bg-base-300">
+      <div data-theme={theme} className="bg-base-300 relative">
         <header>
           <Navbar /* links={NAV_LINKS.map((link) => ROUTES[link.toUpperCase()])} */ />
         </header>

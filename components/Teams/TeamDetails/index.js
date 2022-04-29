@@ -12,9 +12,9 @@ import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import TeamForm from '../TeamForm'
 export default function TeamDetails({ teamId }) {
-  const [team, setTeam] = useState(undefined)
   const router = useRouter()
   const { user } = useUser()
+  const [team, setTeam] = useState(undefined)
   useEffect(() => {
     listenTeam(teamId, setTeam)
   }, [])

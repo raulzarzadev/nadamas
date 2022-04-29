@@ -1,8 +1,8 @@
 import '../styles/globals.css'
 import 'tailwindcss/tailwind.css'
-import Layout from '@comps/Layout'
 import { UserProvider } from '@/context/UserContext'
 import { ThemeProvider } from '@/context/ThemeContext'
+import Layout from '@comps/Layout'
 
 function MyApp({ Component, pageProps }) {
   return (
