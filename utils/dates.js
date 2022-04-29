@@ -29,7 +29,7 @@ export const dateFormat = (date, output = 'yyyy-MM-dd') => {
     return this.getTime() === this.getTime();
   };
   let time
-  if (!date) return null
+  if (!date) return format(new Date(), output, { locale: es })
 
   if (date instanceof Timestamp) {
     time = date.toDate()

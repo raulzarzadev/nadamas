@@ -14,6 +14,7 @@ import ModalDelete from '@comps/Modal/ModalDelete'
 import AthleteSection from '@comps/Profile/SectionUserInfo/AthleteSection'
 import Image from 'next/image'
 import RecordsSection from '@comps/Records/RecordsSection'
+import MainModal from '@comps/Modal/MainModal'
 
 export default function TeamMember({
   memberId,
@@ -162,69 +163,67 @@ export default function TeamMember({
               </Button>
             </div>
           )}
+          <MainModal OpenComponent={Icon} OpenComponentProps={{ name: 'dots' }}>
+            <div className="text-center">
+              <p>{name}</p>
+              <p>{email}</p>
+              {alias && <p>{alias}</p>}
+              <p>Fecha {dateFormat(birth, 'dd MMM yy')}</p>
+              {/*  {birth && <p>Fecha {dateFormat(birth, 'dd MMM yy')}</p>} */}
+              <div className=" flex w-full justify-evenly items-center">
+                {contact?.whatsapp && (
+                  <Link
+                    href={`https://wa.me/${contact?.whatsapp}`}
+                    className="btn btn-circle btn-sm"
+                  >
+                    <Icon name="whatsapp" />
+                  </Link>
+                )}
+                {email && (
+                  <Link
+                    href={`mailto:${email}?${emailCC ? `cc=${emailCC}&` : ''
+                      }subject=${subject}`}
+                    className="btn btn-circle btn-sm"
+                  >
+                    <Icon name="email" />
+                  </Link>
+                )}
+                {emergencyContact?.phone && (
+                  <EmergencyCall contact={emergencyContact} />
+                )}
+              </div>
+
+              <div>
+                <h4>Información médica</h4>
+                {medicInformation?.blodType && (
+                  <p>Tipo de sangre: {medicInformation?.blodType}</p>
+                )}
+                {medicInformation?.considerations && (
+                  <p>Alergias: {medicInformation?.considerations}</p>
+                )}
+              </div>
+              <RecordsSection userId={member.id} canCreateNewRecord={isOwner} />
+              {/*  <AthleteSection userId={member.id} canCreateNewRecord={isOwner} /> */}
+              <Section title={'Opciones'}>
+                <ModalDelete
+                  buttonVariant="btn"
+                  buttonLabel={'Sacar del equipo'}
+                  labelDelete={name ? `Miembro del equipo: ${name}` : null}
+                  handleDelete={handleDeleteMember}
+
+                />
+              </Section>
+            </div>
+          </MainModal>
         </div>
         {/*  <div className="w-full">
           <Section title={ 'Detalles' }>
             
           </Section>
         </div> */}
+
       </div>
-      <Modal
-        open={openmemberModal}
-        handleOpen={handleOpenmemberModal}
-        title="Detalles del integrante"
-      >
-        <div className="text-center">
-          <p>{name}</p>
-          <p>{email}</p>
-          {alias && <p>{alias}</p>}
-          <p>Fecha {dateFormat(birth, 'dd MMM yy')}</p>
-         {/*  {birth && <p>Fecha {dateFormat(birth, 'dd MMM yy')}</p>} */}
-          <div className=" flex w-full justify-evenly items-center">
-            {contact?.whatsapp && (
-              <Link
-                href={`https://wa.me/${contact?.whatsapp}`}
-                className="btn btn-circle btn-sm"
-              >
-                <Icon name="whatsapp" />
-              </Link>
-            )}
-            {email && (
-              <Link
-                href={`mailto:${email}?${emailCC ? `cc=${emailCC}&` : ''
-                  }subject=${subject}`}
-                className="btn btn-circle btn-sm"
-              >
-                <Icon name="email" />
-              </Link>
-            )}
-            {emergencyContact?.phone && (
-              <EmergencyCall contact={emergencyContact} />
-            )}
-          </div>
 
-          <div>
-            <h4>Información médica</h4>
-            {medicInformation?.blodType && (
-              <p>Tipo de sangre: {medicInformation?.blodType}</p>
-            )}
-            {medicInformation?.considerations && (
-              <p>Alergias: {medicInformation?.considerations}</p>
-            )}
-          </div>
-          <RecordsSection userId={member.id} canCreateNewRecord={isOwner} />
-          {/*  <AthleteSection userId={member.id} canCreateNewRecord={isOwner} /> */}
-          <Section title={'Opciones'}>
-            <ModalDelete
-              buttonVariant="btn"
-              buttonLabel={'Sacar del equipo'}
-              labelDelete={name ? `Miembro del equipo: ${name}` : null}
-              handleDelete={handleDeleteMember}
-
-            />
-          </Section>
-        </div>
-      </Modal>
     </>
   )
 }

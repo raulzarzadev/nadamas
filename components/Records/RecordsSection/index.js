@@ -70,18 +70,10 @@ export default function RecordsSection({ userId, canCreateNewRecord }) {
     <Section title="Registros">
       {canCreateNewRecord && (
         <>
-          <ButtonIcon
-            iconName="plus"
-            variant="circle"
-            onClick={handleOpenNewRecord}
-          />
-          <Modal
-            open={openNewRecord}
-            handleOpen={handleOpenNewRecord}
-            title="Nuevo registro"
-          >
+          <MainModal OpenComponent={ButtonIcon} OpenComponentProps={{ iconName: 'plus', variant: 'circle' }}>
             <FormRecord setRecord={handleSaveRecord} />
-          </Modal>
+          </MainModal>
+         
         </>
       )}
       <ResultsRows results={[...results, ...oldResults]} />
@@ -128,7 +120,7 @@ const RecordRow = ({ record }) => {
         {test.record}
 
       </div>
-      <div className='p-0.5 justify-between w-[10%] flex'>
+      {/*   <div className='p-0.5 justify-between w-[10%] flex'>
         <span>
           <button
             onClick={() => {
@@ -138,18 +130,14 @@ const RecordRow = ({ record }) => {
             <Icon name="dots" />
           </button>
         </span>
-      </div>
+      </div> */}
       {/* 
       
       // *** *** *** *** *** *** *** *** *** *** *** *** *** ***
       //                                             Modal Registro
       // *** *** *** *** *** *** *** *** *** *** *** *** *** ***
        */}
-      <Modal
-        title="Detalles de resultado "
-        open={openDetails}
-        handleOpen={handleOpenDetails}
-      >
+      <MainModal OpenComponent={Icon} OpenComponentProps={{ name: 'dots' }}>
         <div>{date ? dateFormat(date, 'dd MMM yy') : '-'}</div>
         <div> {event && <div>Evento:{event.name || event.title}</div>}</div>
         <div>
@@ -186,7 +174,14 @@ const RecordRow = ({ record }) => {
           </div>
 
         </Section>
-      </Modal>
+      </MainModal>
+      {/* <Modal
+        title="Detalles de resultado "
+        open={openDetails}
+        handleOpen={handleOpenDetails}
+      >
+     
+      </Modal> */}
     </div>
   )
 }

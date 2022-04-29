@@ -9,8 +9,8 @@ import { format } from 'date-fns'
 import { useEffect, useState } from 'react'
 
 export default function FormRecord({ record, setRecord = () => { } }) {
-  const initialDate = record?.date ? dateFormat(record?.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
-  const initalFormState = { date: initialDate }
+  // const initialDate = record?.date ? dateFormat(record?.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+  const initalFormState = { date: record?.date }
 
   const [form, setForm] = useState(initalFormState)
 
@@ -51,7 +51,7 @@ export default function FormRecord({ record, setRecord = () => { } }) {
           onChange={handleChange}
           name="date"
           type="date"
-          value={initialDate}
+          value={dateFormat(form?.date, 'yyyy-MM-dd')}
           label="Fecha"
         />
       </div>
