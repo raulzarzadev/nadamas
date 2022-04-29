@@ -1,6 +1,3 @@
-/* import { useAuth } from '@/legasy/src/context/AuthContext'
-import DeleteModal from '@/legasy/src/components/Modals/DeleteModal' */
-import { useUser } from '@/context/UserContext'
 import { dateFormat } from '@/utils/dates'
 import Icon from '@comps/Icon'
 import Button from '@comps/Inputs/Button'
@@ -8,17 +5,13 @@ import PickerRecord from '@comps/Inputs/PickerRecord'
 import PickerTest from '@comps/Inputs/PickerTest'
 import TextInput from '@comps/Inputs/TextInput'
 import ModalDelete from '@comps/Modal/ModalDelete'
-import { useRouter } from 'next/router'
+import { format } from 'date-fns'
 import { useEffect, useState } from 'react'
-/* import {
-  addEventResult,
-  deleteResult,
-  deleteUserResult
-} from '@/legasy/firebase/results'
-import PickerTest from '@/legasy/src/components/inputs/PickerTest' */
 
 export default function FormRecord({ record, setRecord = () => { } }) {
-  const initalFormState = { date: dateFormat(new Date(), 'yyyy-MM-dd') }
+  const initialDate = record?.date ? dateFormat(record?.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+  const initalFormState = { date: initialDate }
+
   const [form, setForm] = useState(initalFormState)
 
   const [alreadySent, setAlreadySent] = useState(false)
@@ -26,7 +19,6 @@ export default function FormRecord({ record, setRecord = () => { } }) {
   useEffect(() => {
     record && setForm(record)
   }, [record])
-
 
 
   const handleChange = ({ target }) => {
@@ -50,7 +42,6 @@ export default function FormRecord({ record, setRecord = () => { } }) {
     setForm(initalFormState)
   }
 
-  console.log(form);
 
 
   return (
@@ -60,7 +51,7 @@ export default function FormRecord({ record, setRecord = () => { } }) {
           onChange={handleChange}
           name="date"
           type="date"
-          value={dateFormat(form?.date || new Date())}
+          value={initialDate}
           label="Fecha"
         />
       </div>

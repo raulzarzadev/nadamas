@@ -115,12 +115,12 @@ const RecordRow = ({ record }) => {
   const handleEditRecord = (record) => {
     updateResutl(record).then((res) => console.log('updated', res)).catch(err => console.log('err', err)).finally(() => console.log('finaliza'))
   }
-  // console.log(rest)
+  console.log(new Date())
 
   return (
     <div key={id} className="flex justify-between text-sm">
       <div className="p-0.5 justify-end flex   w-[30%]">
-        {date ? dateFormat(date, 'dd MMM yy') : '-'}
+        {date ? dateFormat(date, 'dd MMM yy HH:mm') : '-'}
       </div>
       <div className="p-0.5 justify-end flex w-[15%] ">{test.distance}</div>
       <div className="p-0.5 flex justify-center w-[25%] ">{test.style}</div>
