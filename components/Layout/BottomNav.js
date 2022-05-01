@@ -34,7 +34,7 @@ export default function BottomNav ({ }) {
             ))}
           </>
         ) : (
-          <Link href="/signin">
+          <Link href="/login">
             <ButtonIcon iconName={'signin'} />
           </Link>
         )}
