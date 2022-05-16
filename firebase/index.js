@@ -9,6 +9,7 @@ import {
   signOut
 } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 import { getUser } from './users'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
@@ -17,6 +18,7 @@ export const app = initializeApp(JSON.parse(firebaseConfig))
 export const auth = getAuth()
 
 export const db = getFirestore(app)
+export const storage = getStorage(app);
 
 export const authStateChanged = (cb = () => {}) => {
   return onAuthStateChanged(auth, async (user) => {

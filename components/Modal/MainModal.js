@@ -1,23 +1,37 @@
 import Modal from "."
 import { useState, useRef } from 'react'
-import ButtonIcon from "@comps/Inputs/Button/ButtonIcon"
 
-export default function MainModal({ children, title = "Opening modal", buttonLabel = 'open modal', OpenComponent, OpenComponentProps }) {
+export default function MainModal({
+  children,
+  title,
+  buttonLabel = 'open modal',
+  OpenComponent = null,
+  OpenComponentProps = null,
+  OpenComponentType = null
+}) {
 
-    const [openModal, setOpenModal] = useState(false)
-    const modalRef = useRef(null)
-    const handleOpenModal = () => {
-        setOpenModal(!openModal)
+  const OPEN_COMPONENT_STYLE = {
+    delete: `btn btn-error btn-sm`,
+    primary: `btn btn-primary btn-sm`,
+  }
+  const [openModal, setOpenModal] = useState(false)
+  const modalRef = useRef(null)
+  const handleOpenModal = () => {
+    setOpenModal(!openModal)
+  }
+
+  return <>
+    {OpenComponent ? <OpenComponent onClick={handleOpenModal}  {...OpenComponentProps} /> :
+      <button
+        onClick={() => handleOpenModal()}
+        {...OpenComponentProps}
+        className={`${OpenComponentProps?.className || ''} ${OPEN_COMPONENT_STYLE[OpenComponentType]}`}
+      >
+        {buttonLabel}
+      </button>
     }
-
-    return <div className="">
-        {OpenComponent ? <OpenComponent onClick={handleOpenModal}  {...OpenComponentProps} /> :
-            <ButtonIcon fullwidth onClick={handleOpenModal} variant='info' size='xs' iconName={'edit'} label={buttonLabel} />
-        }
-        <div className="absolute">
-            <Modal ref={modalRef} title={title} open={openModal} handleOpen={handleOpenModal} >
-                {children}
-            </Modal>
-        </div>
-    </div>
+    <Modal ref={modalRef} title={title} open={openModal} handleOpen={handleOpenModal} >
+      {children}
+    </Modal>
+  </>
 }

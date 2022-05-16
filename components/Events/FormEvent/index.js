@@ -19,6 +19,8 @@ import PickerTests from '@comps/Inputs/PickerTests'
 import { format } from '@/utils/dates'
 import Button from '@comps/Inputs/Button'
 import { submitEvent } from '@/firebase/events'
+import { uploadFile } from '@/firebase/uploadImage'
+import File from '@comps/Inputs/file'
 const schema = yup
   .object({
     title: yup.string().required(),
@@ -35,13 +37,13 @@ export default function FormEvent({ event, discard = () => { } }) {
     setValue,
     watch,
     reset,
-    formState: { errors }
+    formState: { errors, isDirty }
   } = useForm({
     // resolver: yupResolver(schema),
     defaultValues: event
       // ? { ...event, date: formatInputDate(event?.date) }
       ? { ...event, date: format(event?.date) }
-      : {date:format(new Date(),'yyyy-MM-dd')}
+      : { date: format(new Date(), 'yyyy-MM-dd') }
   })
   const onSubmit = (form) => {
     submitEvent({ ...form })
@@ -52,8 +54,14 @@ export default function FormEvent({ event, discard = () => { } }) {
       .catch((err) => console.log(`err`, err))
   }
 
+  const handleSetValue = (fieldName, fieldValue) => {
+    setValue(fieldName, fieldValue, { shouldDirty: true })
+  }
 
-  console.log(watch())
+
+
+
+  console.log(watch(), isDirty)
 
   return (
     <div className="max-w-sm mx-auto p-2 grid gap-2 relative">
@@ -67,7 +75,7 @@ export default function FormEvent({ event, discard = () => { } }) {
               onClick={handleDiscard}
             />
           )} */}
-          <Button size='sm' type="submit" label="Guardar" variant='success' />
+          <Button size='sm' type="submit" label="Guardar" variant='info' disabled={!isDirty} />
         </div>
 
         <div className="grid gap-2">
@@ -85,7 +93,7 @@ export default function FormEvent({ event, discard = () => { } }) {
               <label>
                 En marcha
                 <input
-                  onChange={() => setValue('status', 'RUNNING')}
+                  onChange={() => handleSetValue('status', 'RUNNING')}
                   checked={watch().status === 'RUNNING'}
                   type="checkbox"
                 ></input>
@@ -93,7 +101,7 @@ export default function FormEvent({ event, discard = () => { } }) {
               <label>
                 Lleno
                 <input
-                  onChange={() => setValue('status', 'FULL')}
+                  onChange={() => handleSetValue('status', 'FULL')}
                   checked={watch().status === 'FULL'}
                   type="checkbox"
                 ></input>
@@ -101,7 +109,7 @@ export default function FormEvent({ event, discard = () => { } }) {
               <label>
                 Cancelado
                 <input
-                  onChange={() => setValue('status', 'CANCEL')}
+                  onChange={() => handleSetValue('status', 'CANCEL')}
                   checked={watch().status === 'CANCEL'}
                   type="checkbox"
                 ></input>
@@ -109,7 +117,7 @@ export default function FormEvent({ event, discard = () => { } }) {
               <label>
                 Finalizado
                 <input
-                  onChange={() => setValue('status', 'FINISH')}
+                  onChange={() => handleSetValue('status', 'FINISH')}
                   checked={watch().status === 'FINISH'}
                   type="checkbox"
                 ></input>
@@ -125,63 +133,60 @@ export default function FormEvent({ event, discard = () => { } }) {
           <input className="bg-secondary-dark p-1" {...register('date')} type="date" />
           <div></div>
         </div>
+        {event?.id && (
+          <AlreadySaved
+            event={event}
+            eventId={event?.id}
+            image={event?.image}
+            announcement={event?.announcement}
+            setValue={handleSetValue}
+          />
+        )}
       </form>
-      {event?.id && (
-        <AlreadySaved
-          event={event}
-          eventId={event?.id}
-          image={event?.image}
-          announcement={event?.announcement}
-        />
-      )}
     </div>
   )
 }
-const AlreadySaved = ({ event, eventId, image, announcement }) => {
+const AlreadySaved = ({ event, eventId, image, announcement, setValue }) => {
   const [newImage, setNewImage] = useState(null)
   const [newAnnouncement, setNewAnnouncement] = useState(null)
-  const imageUploaded = (url) => {
-    updateEvent({ id: eventId, image: url })
-      .then((res) => {
-        setNewImage(url)
-      })
-      .catch((err) => console.log(`err`, err))
-  }
-  const fileUploaded = (url) => {
-    updateEvent({ id: eventId, announcement: url })
-      .then((res) => {
-        setNewAnnouncement(url)
-      })
-      .catch((err) => console.log(`err`, err))
-  }
-
-  const fileDeleted = () => {
-    updateEvent({ id: eventId, announcement: null })
-      .then((res) => {
-        setNewAnnouncement(null)
-      })
-      .catch((err) => console.log(`err`, err))
-  }
+  const [tests, setTests] = useState(event?.tests)
 
   const handleSetTests = (tests) => {
-    updateEvent({ id: eventId, tests })
-      .then((res) => console.log(`res`, res))
-      .catch((err) => console.log(`err`, err))
+    setValue('tests', tests)
+
+
+
+    /*  console.log(tests)
+     console.log(event.tests) */
+    /*     updateEvent({ id: eventId, tests })
+          .then((res) => console.log(`res`, res))
+          .catch((err) => console.log(`err`, err)) */
   }
+
+  const handleUploadFile = async ({ fieldName, file }) => {
+    uploadFile(file, `places/${fieldName}s/`, (progress, downloadURL) => {
+      if (downloadURL) {
+        setValue(fieldName, downloadURL)
+
+      }
+    });
+  }
+
 
   return (
     <div>
       <div>
         <h3 className="text-center text-xl font-bold">Pruebas</h3>
-        <PickerTests tests={event?.tests} setTests={handleSetTests} />
+        <PickerTests tests={tests} setTests={handleSetTests} />
       </div>
       {/* ---------------- SUBIR IMAGEN */}
       <div>
         <label className="flex justify-center items-center">
-          <div className="mr-3 my-2">
+          {/* <div className="mr-3 my-2">
             {!!image ? 'Cambiar imagen' : 'Subir imagen'}
-          </div>
-         {/*  <UploadImage
+          </div> */}
+          <File onChange={({ target: { files } }) => handleUploadFile({ fieldName: 'image', file: files[0] })} label={'Imagen'} />
+          {/*  <UploadImage
             storeRef={`/events/${eventId}/images`}
             upladedImage={imageUploaded}
           /> */}
@@ -194,9 +199,10 @@ const AlreadySaved = ({ event, eventId, image, announcement }) => {
       </div>
       {/* ---------------- SUBIR CONVOCATORIA */}
       <label className="flex justify-center items-center">
-        <div className="mr-3 my-2">
+        {/*   <div className="mr-3 my-2">
           {!!announcement ? 'Cambiar convocatoria' : 'Subir convocatoria'}
-        </div>
+        </div> */}
+        {/* <File onChange={({ target: { files } }) => handleUploadFile({ fieldName: 'image', file: files[0] })} label={'Imagen'} preview={watch('image')} /> */}
         {/*  <UploadFile
           file={announcement}
           storeRef={`/events/${eventId}/files`}
