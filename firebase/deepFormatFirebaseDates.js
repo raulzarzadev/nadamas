@@ -25,7 +25,6 @@ export function deepFormatFirebaseDates(
   // target is to date transofrm to Date
 
   const transformAnyToDate = (date) => {
-    console.log(date);
     if (!date) return null
     if (date instanceof Timestamp) {
       return date.toDate()
@@ -55,10 +54,10 @@ export function deepFormatFirebaseDates(
     const objProperty = object[key]
     if (DATE_FIELDS.includes(key)) {
       const date = transformAnyToDate(objProperty)
-      console.log('target', target)
+      /* console.log('target', target) */
       const res = date ? (objective[target](date)) : null
       aux_obj[key] = res
-      console.log('res', res);
+      // console.log('res', res);
 
       // ***************************+RECURSIVO OBJECTS AND ARRAYS
       // if is object

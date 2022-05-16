@@ -62,7 +62,8 @@ export default function Navbar() {
             {/* {user && <div className="text-xs">{user.name?.slice(0, 10)}</div>} */}
             <NavbarSubMenu
               listItems={links}
-              topMenu={<div className='text-center font-bold'>{user.isCoach ? 'Entrenador' : 'Nadador'}</div>}
+             /*  topMenu={<div className='text-center font-bold'>{user.isCoach ? 'Entrenador' : 'Nadador'}</div>} */
+              topMenu={<div className='text-right pr-1 text-xs'>{user?.email}</div>}
               listComponent={
                 <>
                   {!!user?.photoURL && (

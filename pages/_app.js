@@ -6,7 +6,7 @@ import Layout from '@comps/Layout'
 import { useEffect } from 'react'
 
 function MyApp({ Component, pageProps }) {
-  useEffect(() => {
+/*   useEffect(() => {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
         navigator.serviceWorker.register("/sw.js").then(
@@ -21,7 +21,7 @@ function MyApp({ Component, pageProps }) {
     }else{
       console.log("Service Worker was not found");
     }
-  }, [])
+  }, []) */
   return (
     <UserProvider>
       <ThemeProvider>

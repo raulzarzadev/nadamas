@@ -1,5 +1,5 @@
 //@ts-check
-import { addMinutes, format, formatDistance, subMinutes } from 'date-fns'
+import { addMinutes, format as fnsFormat, formatDistance, subMinutes } from 'date-fns'
 import { getTimezoneOffset, utcToZonedTime } from 'date-fns-tz'
 
 import { es } from 'date-fns/locale'
@@ -20,6 +20,23 @@ import { Timestamp } from 'firebase/firestore'
   return format(time, output, { locale: es })
 } */
 
+
+export const format = (date, stringFormat = 'dd/MM/yy') => {
+  const objectDate = new Date(date)
+  function isValidDate(d) {
+    return d instanceof Date && !isNaN(d)
+  }
+
+  if (isValidDate(objectDate)) {
+    return fnsFormat(new Date(objectDate.setMinutes(objectDate.getMinutes() + objectDate.getTimezoneOffset())), stringFormat)
+  } else {
+    return console.error('date is not valid date')
+  }
+
+}
+
+
+
 export const dateFormat = (date, output = 'yyyy-MM-dd') => {
   console.log(date);
   // @ts-ignore
@@ -29,7 +46,7 @@ export const dateFormat = (date, output = 'yyyy-MM-dd') => {
     return this.getTime() === this.getTime();
   };
   let time
-  if (!date) return format(new Date(), output, { locale: es })
+  if (!date) return fnsFormat(new Date(), output, { locale: es })
 
   if (date instanceof Timestamp) {
     time = date.toDate()
@@ -46,7 +63,7 @@ export const dateFormat = (date, output = 'yyyy-MM-dd') => {
   // console.log(getTimezoneOffset('America/Mazatlan', time));
   const timezoneAdded = addMinutes(time, COMPENZATION_TIME_ZONE_IN_MINUTES)
 
-  const formated = time && format(timezoneAdded, output, { locale: es })
+  const formated = time && fnsFormat(timezoneAdded, output, { locale: es })
   return formated
 
 }
