@@ -62,8 +62,15 @@ export default function Navbar() {
             {/* {user && <div className="text-xs">{user.name?.slice(0, 10)}</div>} */}
             <NavbarSubMenu
               listItems={links}
-             /*  topMenu={<div className='text-center font-bold'>{user.isCoach ? 'Entrenador' : 'Nadador'}</div>} */
-              topMenu={<div className='text-right pr-1 text-xs'>{user?.email}</div>}
+              /*  topMenu={<div className='text-center font-bold'>{user.isCoach ? 'Entrenador' : 'Nadador'}</div>} */
+              topMenu={
+                <div className='text-right pr-1 text-xs'>
+                  {user?.email}
+                  <div>
+                    {user.isCoach ? 'Entrenador' : 'Nadador'}
+                  </div>
+                </div>
+              }
               listComponent={
                 <>
                   {!!user?.photoURL && (
@@ -149,9 +156,8 @@ const NavbarSubMenu = ({
 
         {/*  <!-- Dropdown menu --> */}
         <ul
-          className={`absolute ${
-            showMenu ? 'block' : 'hidden'
-          } -right-1 z-20 w-48 py-2 mt-0  bg-base-100 rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
+          className={`absolute ${showMenu ? 'block' : 'hidden'
+            } -right-1 z-20 w-48 py-2 mt-0  bg-base-100 rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
         >
           <li>{topMenu}</li>
           {/* {user?.admin && (

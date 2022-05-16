@@ -38,7 +38,7 @@ export const format = (date, stringFormat = 'dd/MM/yy') => {
 
 
 export const dateFormat = (date, output = 'yyyy-MM-dd') => {
-  console.log(date);
+ //  console.log(date);
   // @ts-ignore
   Date.prototype.isValid = function () {
     // An invalid date object returns NaN for getTime() and NaN is the only
