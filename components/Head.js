@@ -1,10 +1,10 @@
 import NextHead from 'next/head'
 
-export function Head({ title, children }) {
+export function Head({ title='nadamas', children = null }) {
   return (
     <NextHead>
       {title && <title>{title}</title>}
-      {children}
+
       <link rel="shortcut icon" href="/favicon.ico" />
       <meta name='application-name' content='PWA App' />
       <meta name='apple-mobile-web-app-capable' content='yes' />
@@ -15,11 +15,11 @@ export function Head({ title, children }) {
       <meta name='mobile-web-app-capable' content='yes' />
       <meta name='msapplication-TileColor' content='#2B5797' />
       <meta name='msapplication-tap-highlight' content='no' />
-      <meta name="theme-color" content="#317EFB"/>
+      <meta name="theme-color" content="#317EFB" />
 
-      <link rel='apple-touch-icon' sizes='120x128' href='/icons/icon_x128.png'  />
-      <link rel='apple-touch-icon' sizes='192x192' href='/icons/icon_x192.png'  />
-      <link rel='apple-touch-icon' sizes='512x512' href='/icons/icon_x512.png'  />
+      <link rel='apple-touch-icon' sizes='120x128' href='/icons/icon_x128.png' />
+      <link rel='apple-touch-icon' sizes='192x192' href='/icons/icon_x192.png' />
+      <link rel='apple-touch-icon' sizes='512x512' href='/icons/icon_x512.png' />
 
       <link rel='manifest' href='/manifest.json' />
       <link rel='mask-icon' href='/icons/maskable_icon_x512.png' color='#5bbad5' />
@@ -54,6 +54,7 @@ export function Head({ title, children }) {
         name="description"
         content="Una aplicación para entrenadores y administradores de actividades deportivas. Mantén la información importante de tus atletas centralizada y organizada. Saca el máximo provecho de tus atletas con estadísticas que te ayudan a planear un mejor entrenamiento personalizado."
       ></meta>
+      {children}
     </NextHead>
   )
 }

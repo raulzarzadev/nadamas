@@ -1,3 +1,4 @@
+import { format } from "@/utils/dates"
 import { Timestamp } from "firebase/firestore"
 
 const DATE_FIELDS = [
@@ -13,7 +14,7 @@ const DATE_FIELDS = [
   'publishStart',
   'lastUpdate'
 ]
-const TARGETS = ['firebase', 'milliseconds', 'date']
+const TARGETS = ['firebase', 'milliseconds', 'date','fieldDate']
 
 export function deepFormatFirebaseDates(
   object,
@@ -21,8 +22,9 @@ export function deepFormatFirebaseDates(
 ) {
   if (!TARGETS.includes(target)) return console.error('target must be one of:', TARGETS)
   // target is firebase transform to Timestamp
-  // target is to milis transform to milis
-  // target is to date transofrm to Date
+  // target is milis transform to milis
+  // target is date transofrm to Date
+  // target is fieldDate transform to yyyy-mm-dd
 
   const transformAnyToDate = (date) => {
     if (!date) return null
@@ -40,12 +42,13 @@ export function deepFormatFirebaseDates(
         return aux
       }
     }
-  } 
+  }
 
   const objective = {
     firebase: (date) => Timestamp.fromDate(date),
     milliseconds: (date) => date.getTime(),
-    date: (date) => date
+    date: (date) => date,
+    fieldDate: (date) => format(date, 'yyyy-MM-dd')
   }
 
   let aux_obj = { ...object }

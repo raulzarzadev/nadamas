@@ -30,7 +30,7 @@ export const format = (date, stringFormat = 'dd/MM/yy') => {
   if (isValidDate(objectDate)) {
     return fnsFormat(new Date(objectDate.setMinutes(objectDate.getMinutes() + objectDate.getTimezoneOffset())), stringFormat)
   } else {
-    return console.error('date is not valid date')
+    console.error('date is not valid date')
   }
 
 }

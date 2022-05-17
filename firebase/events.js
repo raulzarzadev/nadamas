@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, onSnapshot, query, where } from "firebase/firestore"
+import { addDoc, collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from "firebase/firestore"
 import { auth, db } from "."
 import { deepFormatFirebaseDates } from "./deepFormatFirebaseDates"
 import { formatResponse, normalizeDoc } from "./firebase-helpers"
@@ -32,15 +32,30 @@ export const listenEvent = (...props) => {
 
 }
 
+export const deleteEvent = async (eventId) => {
+    const eventRef = doc(db, 'events', eventId)
+    return await deleteDoc(eventRef)
+        .then((res) => formatResponse(true, 'EVENT_DELETED', res))
+}
+
 export const submitEvent = async (event) => {
     const user = auth?.currentUser
-    const docRef = event.id ? doc(db, 'results', event?.id) : null
-    console.log(docRef)
+    const docRef = event.id ? doc(db, 'events', event?.id) : null
+
     const eventAlreadyExist = docRef
 
     if (eventAlreadyExist) {
+        return await updateDoc(
+            doc(db, 'events', event.id),
+            {
+                ...deepFormatFirebaseDates({
+                    ...event, updatedAt: new Date(),
+                })
+            }
+        )
+            .then(res => formatResponse(true, 'EVENT_UPDATED', { id: event.id, ...res }))
+            .catch(err => console.error(err))
 
-        // edit event
     } else {
 
         return await addDoc(collection(db, 'events'), {

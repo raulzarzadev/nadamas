@@ -16,7 +16,6 @@ import { useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import { ROUTES } from '@/CONSTANTS/ROUTES'
 import PickerTests from '@comps/Inputs/PickerTests'
-import { format } from '@/utils/dates'
 import Button from '@comps/Inputs/Button'
 import { submitEvent } from '@/firebase/events'
 import { uploadFile } from '@/firebase/uploadImage'
@@ -28,28 +27,24 @@ const schema = yup
   })
   .required()
 
-export default function FormEvent({ event, discard = () => { } }) {
-  const { user } = useUser()
+export default function FormEvent({ event }) {
   const router = useRouter()
   const {
     handleSubmit,
     register,
     setValue,
     watch,
-    reset,
     formState: { errors, isDirty }
   } = useForm({
     // resolver: yupResolver(schema),
-    defaultValues: event
-      // ? { ...event, date: formatInputDate(event?.date) }
-      ? { ...event, date: format(event?.date) }
-      : { date: format(new Date(), 'yyyy-MM-dd') }
+    defaultValues: { ...event }
   })
   const onSubmit = (form) => {
     submitEvent({ ...form })
-      .then(({ res }) => {
-        console.log(`res`, res)
-        router.push(`${ROUTES.EVENTS.href}/${res.id}`)
+      .then(({ ok, res }) => {
+        if (ok && res) {
+          router.push(`${ROUTES.EVENTS.href}/${res.id}`)
+        }
       })
       .catch((err) => console.log(`err`, err))
   }
@@ -58,23 +53,23 @@ export default function FormEvent({ event, discard = () => { } }) {
     setValue(fieldName, fieldValue, { shouldDirty: true })
   }
 
+  const handleSetTests = (tests) => {
+    handleSetValue('tests', tests)
+  }
 
+  const handleUploadFile = async ({ fieldName, file }) => {
+    uploadFile(file, `places/${fieldName}s/`, (progress, downloadURL) => {
+      if (downloadURL) {
+        handleSetValue(fieldName, downloadURL)
+      }
+    });
+  }
 
-
-  console.log(watch(), isDirty)
 
   return (
     <div className="max-w-sm mx-auto p-2 grid gap-2 relative">
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className=" flex justify-end py-2 sticky top-0 z-10  mb-2 bg-base-300">
-          {/* {discard && (
-            <Button size='sm'
-              variant=""
-              label="Descartar"
-              type="button"
-              onClick={handleDiscard}
-            />
-          )} */}
           <Button size='sm' type="submit" label="Guardar" variant='info' disabled={!isDirty} />
         </div>
 
@@ -124,100 +119,36 @@ export default function FormEvent({ event, discard = () => { } }) {
               </label>
             </div>
           </div>
-          <input className="bg-secondary-dark p-1" {...register('title')} />
+          <input className="bg-secondary-dark p-1 text-black " {...register('title')} />
           <textarea
             rows={10}
-            className="bg-secondary-dark p-1 resize-none"
+            className=" p-1 resize-none  text-black"
             {...register('description')}
           />
-          <input className="bg-secondary-dark p-1" {...register('date')} type="date" />
+          <input className="bg-secondary-dark p-1 text-black" {...register('date')} type="date" />
           <div></div>
         </div>
-        {event?.id && (
-          <AlreadySaved
-            event={event}
-            eventId={event?.id}
-            image={event?.image}
-            announcement={event?.announcement}
-            setValue={handleSetValue}
-          />
-        )}
-      </form>
-    </div>
-  )
-}
-const AlreadySaved = ({ event, eventId, image, announcement, setValue }) => {
-  const [newImage, setNewImage] = useState(null)
-  const [newAnnouncement, setNewAnnouncement] = useState(null)
-  const [tests, setTests] = useState(event?.tests)
+        <div>
+          <div>
+            <h3 className="text-center text-xl font-bold">Pruebas</h3>
+            <PickerTests tests={event?.tests} setTests={handleSetTests} />
+          </div>
+          {/* ---------------- SUBIR IMAGEN */}
+          <div>
+            <label className="flex justify-center items-center">
 
-  const handleSetTests = (tests) => {
-    setValue('tests', tests)
+              <File onChange={({ target: { files } }) => handleUploadFile({ fieldName: 'image', file: files[0] })} label={'Imagen'} />
 
-
-
-    /*  console.log(tests)
-     console.log(event.tests) */
-    /*     updateEvent({ id: eventId, tests })
-          .then((res) => console.log(`res`, res))
-          .catch((err) => console.log(`err`, err)) */
-  }
-
-  const handleUploadFile = async ({ fieldName, file }) => {
-    uploadFile(file, `places/${fieldName}s/`, (progress, downloadURL) => {
-      if (downloadURL) {
-        setValue(fieldName, downloadURL)
-
-      }
-    });
-  }
-
-
-  return (
-    <div>
-      <div>
-        <h3 className="text-center text-xl font-bold">Pruebas</h3>
-        <PickerTests tests={tests} setTests={handleSetTests} />
-      </div>
-      {/* ---------------- SUBIR IMAGEN */}
-      <div>
-        <label className="flex justify-center items-center">
-          {/* <div className="mr-3 my-2">
-            {!!image ? 'Cambiar imagen' : 'Subir imagen'}
-          </div> */}
-          <File onChange={({ target: { files } }) => handleUploadFile({ fieldName: 'image', file: files[0] })} label={'Imagen'} />
-          {/*  <UploadImage
-            storeRef={`/events/${eventId}/images`}
-            upladedImage={imageUploaded}
-          /> */}
-        </label>
-        <div className="relative w-full h-20">
-          {image && (
-            <Image src={newImage || image} layout="fill" objectFit="cover" />
-          )}
+            </label>
+            <div className="relative aspect-video mt-2 ">
+              {watch('image') && (
+                <Image src={watch('image')} layout="fill" objectFit="cover" />
+              )}
+            </div>
+          </div>
         </div>
-      </div>
-      {/* ---------------- SUBIR CONVOCATORIA */}
-      <label className="flex justify-center items-center">
-        {/*   <div className="mr-3 my-2">
-          {!!announcement ? 'Cambiar convocatoria' : 'Subir convocatoria'}
-        </div> */}
-        {/* <File onChange={({ target: { files } }) => handleUploadFile({ fieldName: 'image', file: files[0] })} label={'Imagen'} preview={watch('image')} /> */}
-        {/*  <UploadFile
-          file={announcement}
-          storeRef={`/events/${eventId}/files`}
-          fileUploaded={fileUploaded}
-          fileDeleted={fileDeleted}
-        /> */}
-      </label>
-      <div>
-        {(announcement || newAnnouncement) && (
-          <embed
-            src={announcement || newAnnouncement}
-            className="w-full h-96"
-          />
-        )}
-      </div>
+
+      </form>
     </div>
   )
 }
