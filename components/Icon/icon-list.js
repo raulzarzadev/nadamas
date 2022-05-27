@@ -64,6 +64,7 @@ const ICON_LIST = {
   filter: TiFilter,
   edit: TiEdit,
   trash: TiTrash,
+  delete: TiTrash,
   down: TiArrowSortedDown,
   up: TiArrowSortedUp,
   back: TiChevronLeft,

@@ -1,17 +1,7 @@
-// import Button from '@/legasy/src/components/inputs/Button'
 import { useForm } from 'react-hook-form'
-// import { yupResolver } from '@hookform/resolvers/yup/dist/yup'
 import * as yup from 'yup'
-//import { createOrUpdateEvent, updateEvent } from '@/legasy/firebase/events'
 import { useRouter } from 'next/router'
-//import { useAuth } from '@/legasy/src/context/AuthContext'
-// import { formatInputDate } from '@/legasy/src/utils/Dates'
-// import  from '@/legasy/src/components/inputs/UploadImage'
 import Image from 'next/image'
-import { useState } from 'react'
-// import UploadFile from '@/legasy/src/components/inputs/UploadFile'
-// import { ROUTES } from '@/legasy/ROUTES'
-// import PickerTests from '@/legasy/src/components/inputs/PickerTests'
 
 import { useUser } from '@/context/UserContext'
 import { ROUTES } from '@/CONSTANTS/ROUTES'
@@ -20,13 +10,15 @@ import Button from '@comps/Inputs/Button'
 import { submitEvent } from '@/firebase/events'
 import { uploadFile } from '@/firebase/uploadImage'
 import File from '@comps/Inputs/file'
-const schema = yup
+import Checkbox from '@comps/Inputs/Checkbox'
+
+/* const schema = yup
   .object({
     title: yup.string().required(),
     date: yup.string().required()
   })
   .required()
-
+ */
 export default function FormEvent({ event }) {
   const router = useRouter()
   const {
@@ -65,6 +57,8 @@ export default function FormEvent({ event }) {
     });
   }
 
+  console.log(watch())
+
 
   return (
     <div className="max-w-sm mx-auto p-2 grid gap-2 relative">
@@ -93,6 +87,7 @@ export default function FormEvent({ event }) {
                   type="checkbox"
                 ></input>
               </label>
+              <Checkbox label='En marcha' labelPosition='bottom' {...register('status', { value: 'RUNNING' })} />
               <label>
                 Lleno
                 <input

@@ -5,7 +5,8 @@ import { deepFormatFirebaseDates } from './deepFormatFirebaseDates.js'
 
 export const formatResponse = (ok, type, res) => {
   if (!ok) throw new Error(type)
-  return { type, ok, res }
+  const formatedType = type.toUpperCase().slice(0, -1)
+  return { type: formatedType, ok, res }
 }
 export const normalizeDoc = (doc) => {
   if (!doc?.exists()) return null // The document  not exist

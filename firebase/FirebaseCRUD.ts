@@ -1,0 +1,51 @@
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { db } from ".";
+import { deepFormatFirebaseDates } from "./deepFormatFirebaseDates";
+import { formatResponse, normalizeDoc } from "./firebase-helpers";
+
+export class FirebaseCRUD {
+  constructor(
+    private collectionName: string = '',
+  ) { }
+
+  async create(item: object) {
+    return await addDoc(collection(db, this.collectionName), {
+      ...deepFormatFirebaseDates({
+        createdAt: new Date(),
+        ...item
+      })
+    })
+      .then((res) => formatResponse(true, `${this.collectionName}_CREATED`, res))
+      .catch((err) => console.error(err))
+  }
+
+  async update(itemId: string, item: object) {
+    return await updateDoc(doc(db, this.collectionName, itemId), {
+      ...deepFormatFirebaseDates({ ...item, updatedAt: new Date() })
+    })
+      .then(res => formatResponse(true, `${this.collectionName}_UPDATED`, res))
+      .catch(err => console.error(err))
+  }
+
+  async delete(itemId: string) {
+    return await deleteDoc(doc(db, this.collectionName, itemId))
+      .then(res => formatResponse(true, `${this.collectionName}_DELETED`, res))
+      .catch(err => console.error(err))
+  }
+
+  async get(itemId: string) {
+    const ref = doc(db, this.collectionName, itemId)
+    const docSnap = await getDoc(ref)
+    return normalizeDoc(docSnap)
+  }
+
+  async listen(itemId: string, cb: CallableFunction) {
+    const q = doc(db, this.collectionName, itemId)
+    onSnapshot(q, (doc) => {
+      cb(normalizeDoc(doc))
+    })
+
+  }
+}
+
+

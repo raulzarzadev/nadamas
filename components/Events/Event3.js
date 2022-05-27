@@ -17,8 +17,6 @@ const Event = ({ event }) => {
 
   const isOwner = user.id === userId
 
-  console.log(isOwner)
-
   return (
     <div>
       <div>
