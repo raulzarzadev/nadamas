@@ -1,17 +1,23 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, updateDoc, where } from "firebase/firestore";
 import { db } from ".";
 import { deepFormatFirebaseDates } from "./deepFormatFirebaseDates";
 import { formatResponse, normalizeDoc } from "./firebase-helpers";
 
+
 export class FirebaseCRUD {
   constructor(
     private collectionName: string = '',
-  ) { }
 
-  async create(item: object) {
+  ) { }
+  async createa(item: object) {
+    const currentUser = getAuth().currentUser
+    console.log(currentUser)
+    // if (!this.currentUser) return console.error('No user logged')
     return await addDoc(collection(db, this.collectionName), {
       ...deepFormatFirebaseDates({
         createdAt: new Date(),
+        userId: currentUser?.uid,
         ...item
       })
     })
@@ -43,6 +49,24 @@ export class FirebaseCRUD {
     const q = doc(db, this.collectionName, itemId)
     onSnapshot(q, (doc) => {
       cb(normalizeDoc(doc))
+    })
+
+  }
+
+  async listenDocs(filters: any, cb: CallableFunction) {
+    // let = filters = {"athlete.id":'sdasd3232 sfsf sdf'}
+    if (!filters) return console.error('Should have filters implentade')
+    const q = query(
+      collection(db, this.collectionName),
+      filters
+    )
+
+    onSnapshot(q, (querySnapshot) => {
+      const res = []
+      querySnapshot.forEach((doc) => {
+        res.push(normalizeDoc(doc))
+      })
+      cb(res)
     })
 
   }

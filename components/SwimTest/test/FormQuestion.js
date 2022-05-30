@@ -1,51 +1,68 @@
-import { createQuestion } from '@/firebase/questions/main.ts'
+import { createQuestion, editQuestion } from '@/firebase/questions/main.ts'
 import Icon from '@comps/Icon'
 import { useFieldArray, useForm } from 'react-hook-form'
 
-const FormQuestion = ({ addQuestion = () => { } }) => {
+const FormQuestion = ({ testId = null, question = null }) => {
+  console.log(question)
+  const defaultValues = question || { options: [{ text: '', value: 0 }] }
+  // console.log(defaultValues)
   const { register, watch, control, reset } = useForm({
-    defaultValues: {
-      options: [
-        {
-          text: '',
-          value: 0
-        }
-      ]
-    }
+    defaultValues
   })
   const handleSubmit = (newQuestion) => {
-    // console.log('new q', newQuestion)
-    // addQuestion(newQuestion)
-    createQuestion(newQuestion).then(res => console.log(res))
+    question
+      ?
+      editQuestion(question.id, newQuestion)
+      :
+      createQuestion({ ...newQuestion, testId }).then(res => {
+        console.log(res)
+        if (res) reset()
+      })
   }
 
 
   const fieldsArray = useFieldArray({
     control, // control props comes from useForm (optional: if you are using FormContext)
-    name: "questions-options", // unique name for your Field Array,
+    name: "options", // unique name for your Field Array,
   });
+
+
+  const LABELS = {
+    edit: {
+      title: 'Editar pregunta',
+      button: 'Editar'
+    },
+    new: {
+      title: 'Nueva pregunta',
+      button: 'Guardar'
+    }
+  }
+
+  const FormType = question ? 'edit' : 'new'
+
 
 
   return (
     <div>
       <h2 className='text-xl font-bold text-center'>
-        Nueva pregunta
+        {LABELS[FormType].title}
       </h2>
-      <form className='grid gap-2'>
+      <div className='grid gap-2'>
         <input {...register('text')} className='input input-bordered' placeholder="Question"></input>
-        <input {...register('key')} className='input input-bordered' placeholder="key"></input>
+        {/* <input {...register('key')} className='input input-bordered' placeholder="key"></input> */}
+        <input {...register('multiplier')} type='number' className='input input-bordered' placeholder="0 - 100" max={100} min={0} ></input>
         <h3 className='text-lg font-bold'>
           Opciones
         </h3>
         <FieldArray  {...fieldsArray} register={register} />
         <button className='btn btn-primary mx-auto' onClick={() => {
           handleSubmit(watch())
-          reset()
+
         }}>
-          Agregar pregunta
+          {LABELS[FormType].button}
         </button>
 
-      </form>
+      </div>
     </div>
   )
 }
@@ -64,9 +81,11 @@ function FieldArray({ register, fields, append, remove }) {
   }
 
 
+
+
   return (
     <div className='' >
-      {fields.map((field, index) => (
+      {fields?.map((field, index) => (
         <div key={field.id} className='flex items-center '>
           <span className='whitespace-nowrap'>
             Opcion {index + 1}:

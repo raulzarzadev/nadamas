@@ -5,7 +5,8 @@
     "paths": {
       "@comps/*": ["components/*"],
       "@legasy/*": [".legasy/src/components/*"],
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@context":["context/*"]
     },
     "target": "es5",
     "lib": [

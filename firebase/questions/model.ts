@@ -4,5 +4,5 @@ export interface Question {
   text: string
   options: Option[]
   key: string,
-
+  testId?: string,
 }
