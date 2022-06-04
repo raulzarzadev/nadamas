@@ -23,6 +23,13 @@ function MyApp({ Component, pageProps }) {
     }
   }, []) */
   return (
+    <>
+    <Head>
+      <title>
+        nadamas app
+     </title>
+      <meta name='description' content='An app designed for trainers, and coaches focused on the performance of them athletes' '/>
+    <Head>
     <UserProvider>
       <ThemeProvider>
         <Layout>
@@ -30,6 +37,7 @@ function MyApp({ Component, pageProps }) {
         </Layout>
       </ThemeProvider>
     </UserProvider>
+  </>
   )
 }
 
