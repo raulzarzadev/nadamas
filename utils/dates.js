@@ -24,6 +24,7 @@ import { Timestamp } from 'firebase/firestore'
 export const format = (date, stringFormat = 'dd/MM/yy') => {
   const objectDate = new Date(date)
   function isValidDate(d) {
+    // @ts-ignore
     return d instanceof Date && !isNaN(d)
   }
 
