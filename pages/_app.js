@@ -30,7 +30,7 @@ function MyApp({ Component, pageProps }) {
         nadamas app
      </title>
       <meta name='description' content='An app designed for trainers, and coaches focused on the performance of them athletes '/>
-      <link rel='icon' href='icon.png' />
+      <link rel='icon' href='/icon.png' />
     </Head>
     <UserProvider>
       <ThemeProvider>
