@@ -4,6 +4,7 @@ import { UserProvider } from '@/context/UserContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import Layout from '@comps/Layout'
 import { useEffect } from 'react'
+import Head from 'next/head'
 
 function MyApp({ Component, pageProps }) {
 /*   useEffect(() => {
