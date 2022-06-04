@@ -28,7 +28,7 @@ function MyApp({ Component, pageProps }) {
       <title>
         nadamas app
      </title>
-      <meta name='description' content='An app designed for trainers, and coaches focused on the performance of them athletes' '/>
+      <meta name='description' content='An app designed for trainers, and coaches focused on the performance of them athletes '/>
     <Head>
     <UserProvider>
       <ThemeProvider>
