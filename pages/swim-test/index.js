@@ -1,12 +1,11 @@
 import Link from "@comps/Link"
+import Tests from "@comps/SwimTest/Tests"
 
 const swimTest = () => {
   return (
     <div className="grid place-content-center">
-      <p>
-        the test starts here
-      </p>
       
+      <Tests />
       <Link href={'/swim-test/new'} className='btn btn-outline'>
         Crear Examen
       </Link>

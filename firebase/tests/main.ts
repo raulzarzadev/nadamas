@@ -8,3 +8,4 @@ export const updateTest = (testId: string, newTest: Test) => testsCRUD.update(te
 export const deleteTest = (testId: string) => testsCRUD.delete(testId)
 export const getTest = (testId: string) => testsCRUD.get(testId)
 export const listen = (testId: string, cb: CallableFunction) => testsCRUD.listen(testId, cb)
+export const listenAllTests = (cb: CallableFunction) => testsCRUD.listenAll(cb)

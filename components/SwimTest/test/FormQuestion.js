@@ -12,7 +12,7 @@ const FormQuestion = ({ testId = null, question = null }) => {
   const handleSubmit = (newQuestion) => {
     question
       ?
-      editQuestion(question.id, newQuestion)
+      editQuestion(question?.id, newQuestion)
       :
       createQuestion({ ...newQuestion, testId }).then(res => {
         console.log(res)
@@ -61,7 +61,6 @@ const FormQuestion = ({ testId = null, question = null }) => {
         }}>
           {LABELS[FormType].button}
         </button>
-
       </div>
     </div>
   )

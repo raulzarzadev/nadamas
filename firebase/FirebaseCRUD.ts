@@ -10,7 +10,7 @@ export class FirebaseCRUD {
     private collectionName: string = '',
 
   ) { }
-  async createa(item: object) {
+  async create(item: object) {
     const currentUser = getAuth().currentUser
     console.log(currentUser)
     // if (!this.currentUser) return console.error('No user logged')
@@ -53,6 +53,7 @@ export class FirebaseCRUD {
 
   }
 
+
   async listenDocs(filters: any, cb: CallableFunction) {
     // let = filters = {"athlete.id":'sdasd3232 sfsf sdf'}
     if (!filters) return console.error('Should have filters implentade')
@@ -69,6 +70,20 @@ export class FirebaseCRUD {
       cb(res)
     })
 
+  }
+  
+  async listenAll(cb: CallableFunction) {
+    const q = query(
+      collection(db, this.collectionName),
+    )
+
+    onSnapshot(q, (querySnapshot) => {
+      const res = []
+      querySnapshot.forEach((doc) => {
+        res.push(normalizeDoc(doc))
+      })
+      cb(res)
+    })
   }
 }
 
