@@ -14,7 +14,11 @@ const Modal = React.forwardRef(({
       className={` top-0 bottom-0 left-0 right-0 flex justify-center items-center bg-black bg-opacity-50 z-10 ${open ? 'fixed' : 'hidden'} `}
       id={modalId}
       onClick={(e) => {
-        e.preventDefault()
+         // e.preventDefault()
+         /**
+         *!TODO: if e.preventDefault() is called, the modal will make fails the form inside
+         *
+         */
         e.stopPropagation()
         e.target.id === modalId && handleOpen()
       }}
