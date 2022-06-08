@@ -28,19 +28,17 @@ const CardV2 = ({
   },
   redirectTeam,
 }) => {
-  console.log(name, members, joinRequests)
   const [coach, setCoach] = useState(null)
   useEffect(() => {
     getUser(teamUserId).then(setCoach)
   }, [])
-  
+
   const { user } = useUser()
-  const teamOwner = user.id === teamUserId
-  console.log(user.id)
+  const isTheTeamOwner = user.id === teamUserId
 
   return (
     <div
-      className=" bg-base-300 p-2 rounded-lg shadow-lg w-full grid"
+      className=" bg-base-300 p-2 rounded-lg shadow-lg w-full grid border border-transparent hover:border-gray-600 "
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -50,33 +48,39 @@ const CardV2 = ({
       }}
     >
       <div className="flex justify-end text-sm font-thin ">
-        {teamOwner && <p className="mx-1">tuyo</p>}
+       {/*  {isTheTeamOwner && <p className="mx-1">tuyo</p>} */}
         <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
         <p className="mx-1">{members.length}</p>
-        {teamOwner && (
+        {isTheTeamOwner && (
           <p className="mx-1">
             <span className="font-bold">{joinRequests.length}</span>
           </p>
         )}
       </div>
-      <div>
-        <h3 className="font-bold text-lg">
-          {name}
-          <span className="font-thin text-sm mx-2">
-            {coach?.alias || coach?.name}
-          </span>
-        </h3>
-      </div>
-      <div className="text-sm">
-        <p>{description}</p>
-      </div>
-      <div>
-        <ButtonJoinTeam
-          membersList={members}
-          requestList={joinRequests}
-          teamId={id}
-          disabled={true}
-        />
+      <div className='flex items-center justify-between'>
+        <div>
+          <div>
+            <h3 className="font-bold text-lg">
+              {name}
+              <span className="font-thin text-sm mx-2">
+                {coach?.alias || coach?.name}
+              </span>
+            </h3>
+          </div>
+          <div className="text-sm">
+            <p>{description}</p>
+          </div>
+
+        </div>
+        <div>
+          <ButtonJoinTeam
+            membersList={members}
+            requestList={joinRequests}
+            teamId={id}
+            disabled={isTheTeamOwner}
+            isTheTeamOwner={isTheTeamOwner}
+          />
+        </div>
       </div>
     </div>
   )

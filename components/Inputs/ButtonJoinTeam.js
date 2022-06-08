@@ -9,7 +9,8 @@ export default function ButtonJoinTeam({
   membersList = [],
   requestList = [],
   teamId = null,
-  disabled = false
+  disabled = false,
+  isTheTeamOwner = false,
 }) {
   const { user } = useUser()
   const userId = user?.id || null
@@ -90,14 +91,23 @@ export default function ButtonJoinTeam({
     alreadyIn: function () {
       return {
         type: 'ALREDY_JOINED',
-        label: `MIEMBRO`,
+        label: `ERES MIEMBRO`,
         handleClick: handleOpenAlreadyIn,
         buttonVariant: 'danger'
+      }
+    },
+    isTheTeamOwner: {
+      type: 'IS_THE_TEAM_OWNER',
+      label: 'ERES DUEÑO',
+      buttonVariant: 'disabled',
+      handleClick: () => {
+        console.log('solicitud rechada, no te puedes unir a tu propio equipo')
       }
     }
   }
 
   const getRequestStatus = () => {
+    if (isTheTeamOwner) return REQUEST_STATUS.isTheTeamOwner
     if (requestList?.includes(userId)) {
       return REQUEST_STATUS.whatingRes
     } else {
@@ -130,9 +140,8 @@ export default function ButtonJoinTeam({
       <button
         disabled={disabled}
         className={`
-        ${
-          buttonStyle[responseStatus?.buttonVariant]
-        } border-2 p-1 w-full disabled:opacity-50 disabled:border-opacity-50 text-xs`}
+        ${buttonStyle[responseStatus?.buttonVariant]
+          } border-2  p-1 w-full disabled:opacity-50 border-opacity-60 hover:border-opacity-100 text-xs`}
         onClick={async (e) => {
           e.stopPropagation()
           e.preventDefault()

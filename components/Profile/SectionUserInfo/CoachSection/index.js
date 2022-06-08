@@ -16,13 +16,12 @@ export default function CoachSection({ user }) {
     getUserTeams(user.id).then(setUserTeams)
   }
 
-  const [userEvents, setUserEvets] = useState()
+ /*  const [userEvents, setUserEvets] = useState()
 
   useEffect(() => {
     listenUserEvents(setUserEvets)
-  }, [])
+  }, []) */
 
-  console.log(userEvents);
 
   return (
     <Section title={'Perfil de entrenador'} open>
@@ -42,14 +41,14 @@ export default function CoachSection({ user }) {
         </div>
 
       </Section>
-      <Section title={'Mis eventos'}>
+     {/*  <Section title={'Mis eventos'}>
         <div className="text-center pb-2">
           <Link href={'/events/new'} className="btn btn-outline btn-sm">
             Nuevo evento
           </Link>
         </div>
         <EventsList events={userEvents} />
-      </Section>
+      </Section> */}
       {/*  
       <Section title={'Configuración'}></Section> */}
     </Section>
