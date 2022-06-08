@@ -48,7 +48,7 @@ const CardV2 = ({
       }}
     >
       <div className="flex justify-end text-sm font-thin ">
-       {/*  {isTheTeamOwner && <p className="mx-1">tuyo</p>} */}
+        {/*  {isTheTeamOwner && <p className="mx-1">tuyo</p>} */}
         <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
         <p className="mx-1">{members.length}</p>
         {isTheTeamOwner && (
@@ -57,8 +57,8 @@ const CardV2 = ({
           </p>
         )}
       </div>
-      <div className='flex items-center justify-between'>
-        <div>
+      <div className='flex items-center justify-between '>
+        <div className='w-3/4'>
           <div>
             <h3 className="font-bold text-lg">
               {name}
@@ -68,11 +68,15 @@ const CardV2 = ({
             </h3>
           </div>
           <div className="text-sm">
-            <p>{description}</p>
+            <p>{description?.slice(0, 100)}
+              <a className=' link'>
+                {` ver mas`}
+              </a>
+            </p>
           </div>
 
         </div>
-        <div>
+        <div className='w-1/4' >
           <ButtonJoinTeam
             membersList={members}
             requestList={joinRequests}

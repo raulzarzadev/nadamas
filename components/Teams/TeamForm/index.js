@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useUser } from '@/context/UserContext'
 import Toggle from '@comps/Inputs/Toggle'
 import { useRouter } from 'next/router'
+import TextArea from '@comps/Inputs/TextArea'
 
 // TODO Add fields: image, schedule, place, 
 export default function TeamForm({ team }) {
@@ -39,7 +40,7 @@ export default function TeamForm({ team }) {
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="grid justify-center ">
         <TextInput {...register('name')} label="Nombre del equipo" />
-        <TextInput {...register('description')} label="descripción" />
+        <TextArea  {...register('description')} label="descripción" />
         <Toggle {...register('isPublic')} label="Equipo público" />
         <div className="flex justify-center my-4">
           <ButtonSave loading={isSubmitting} saved={isSubmitSuccessful} />
