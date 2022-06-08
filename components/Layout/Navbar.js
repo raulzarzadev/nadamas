@@ -36,14 +36,14 @@ export default function Navbar() {
       </div>
       <div className=" flex  w-full  justify-start items-center  px-1 ">
         <ul className=" sm:flex items-center ">
-          <li className="mx-2">
+         {/*  <li className="mx-2">
             <Link href="/swim-test">
               <div className="relative ">
                 Swim-test
                 <div className="absolute -top-0 -right-1 bg-warning h-1 w-1 rounded-full animate-bounce"></div>
               </div>
             </Link>
-          </li>
+          </li> */}
           {/* <li className="mx-2">
             <Link href="/events">
               <div className="relative ">

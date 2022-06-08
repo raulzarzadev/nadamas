@@ -19,7 +19,7 @@ export default function TeamCard({
 const CardV2 = ({
   team: {
     name,
-    userId:teamUserId,
+    userId: teamUserId,
     description,
     members = [],
     joinRequests = [],
@@ -28,13 +28,15 @@ const CardV2 = ({
   },
   redirectTeam,
 }) => {
+  console.log(name, members, joinRequests)
   const [coach, setCoach] = useState(null)
   useEffect(() => {
     getUser(teamUserId).then(setCoach)
   }, [])
-
+  
   const { user } = useUser()
   const teamOwner = user.id === teamUserId
+  console.log(user.id)
 
   return (
     <div
@@ -67,6 +69,14 @@ const CardV2 = ({
       </div>
       <div className="text-sm">
         <p>{description}</p>
+      </div>
+      <div>
+        <ButtonJoinTeam
+          membersList={members}
+          requestList={joinRequests}
+          teamId={id}
+          disabled={true}
+        />
       </div>
     </div>
   )

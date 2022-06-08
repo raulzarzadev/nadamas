@@ -10,7 +10,7 @@ export default function AthleteTeamsSection({ userId, openSection = false }) {
   }, [])
 
   return (
-    <Section title="Equipos" open={openSection}>
+    <Section title="Equipos" subtitle='A los que perteneces' open={openSection}>
       {!userTeams.length && (
         <div>
           <p>Aun no estas en un equipo</p>
