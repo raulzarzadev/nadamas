@@ -14,7 +14,7 @@ export default function Teams() {
   return (
     <div className="">
       <AthleteTeamsSection userId={user.id} openSection={true} />
-      <Section title={'Buscar equipos'} indent={false}>
+      <Section title={'Buscar equipos'} indent={false} open >
         <p className="text-center my-3">Busca equipos  y unete</p>
         {/* <h4 className="text-center">Equipo publicos</h4> */}
         <div className="grid gap-2">
