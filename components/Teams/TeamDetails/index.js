@@ -10,6 +10,7 @@ import Section from '@comps/Section'
 import TeamMember from '@comps/TeamMember'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
+import Post from '../Posts/post'
 import TeamForm from '../TeamForm'
 export default function TeamDetails({ teamId }) {
   const router = useRouter()
@@ -28,13 +29,13 @@ export default function TeamDetails({ teamId }) {
   if (team === null)
     return (
       <div className="text-center my-10">
-        <p className="p-4">Este equipo ya no existe.</p>
+        <p className="p-4">Este equipo no existe.</p>
         <Button onClick={() => router.back()} variant="info">
           Regresar
         </Button>
       </div>
     )
-  
+
   const {
     name = '',
     title,
@@ -57,7 +58,6 @@ export default function TeamDetails({ teamId }) {
 
   const isOwnerOrCoach = userId === teamCoach?.id || userId === teamOwner
   const isMember = members?.includes(user.id)
-
   return (
     <div className="">
       <div className="grid mt-2 text-base-content">
@@ -116,7 +116,31 @@ export default function TeamDetails({ teamId }) {
         </>
       )} */}
 
-      {(isMember || isOwnerOrCoach) && (
+
+      <div>
+        <h2 className='font-bold text-lg text-center'>
+          Publicaciones
+        </h2>
+        <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
+          <Post isMemeber={isMember} />
+          <Post isMemeber={isMember} />
+          <Post isMemeber={false} />
+          <Post isMemeber={isMember} />
+          <Post isMemeber={false} />
+        </div>
+      </div>
+
+      {isMember && (
+        <div>
+          <h2 className='font-bold text-lg text-center'>
+            Miembro
+          </h2>
+          <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
+            <TeamMember memberId={user.id} team={team} />
+          </div>
+        </div>)}
+
+      {(isOwnerOrCoach) && (
         <>
           <Section
             open
