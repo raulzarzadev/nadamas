@@ -19,14 +19,14 @@ const Post = ({ post, isMemeber = false }) => {
     images: []
 
   }
-  const { title, content, isPublic, createdAt, updatedAt, image, images } = POST_TEST
+  const { title, content, isPublic, createdAt, updatedAt, image, images } = post
   const visibility = isPublic || isMemeber
   return (
     <div className="w-44 border-2 border-transparent hover:border-base-100 rounded" onClick={handleOpenModal}>
       <p className="text-right">{isPublic ? 'Público' : 'Privado'}</p>
       <h1 className=" font-bold">{title}</h1>
       <p className="font-thin text-sm">Editado: {updatedAt}</p>
-      <span className=" text-sm whitespace-pre-line">{visibility ? content.slice(0, 100) : 'Post privado.'}</span>
+      <span className=" text-sm whitespace-pre-line">{visibility ? content?.slice(0, 100) : 'Post privado.'}</span>
       <Modal open={openModal} handleOpen={handleOpenModal} title={title}>
         <p className="text-right">{isPublic ? 'Público' : 'Privado'}</p>
         <h1 className=" font-bold">{title}</h1>

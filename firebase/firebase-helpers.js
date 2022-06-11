@@ -5,7 +5,7 @@ import { deepFormatFirebaseDates } from './deepFormatFirebaseDates.js'
 
 export const formatResponse = (ok, type, res) => {
   if (!ok) throw new Error(type)
-  const formatedType = type
+  const formatedType = type?.toUpperCase()
   return { type: formatedType, ok, res }
 }
 export const normalizeDoc = (doc) => {

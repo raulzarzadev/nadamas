@@ -10,14 +10,22 @@ import Section from '@comps/Section'
 import TeamMember from '@comps/TeamMember'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
+import MainModal from '../../Modal/MainModal'
+import FormPost from '../Posts/formPost'
 import Post from '../Posts/post'
 import TeamForm from '../TeamForm'
+import { listenTeamPosts } from '@/firebase/posts/main'
 export default function TeamDetails({ teamId }) {
   const router = useRouter()
   const { user } = useUser()
   const [team, setTeam] = useState(undefined)
   useEffect(() => {
     listenTeam(teamId, setTeam)
+  }, [])
+
+  const [teamPosts, setTeamPosts] = useState([])
+  useEffect(() => {
+    listenTeamPosts(teamId, setTeamPosts)
   }, [])
 
 
@@ -58,6 +66,8 @@ export default function TeamDetails({ teamId }) {
 
   const isOwnerOrCoach = userId === teamCoach?.id || userId === teamOwner
   const isMember = members?.includes(user.id)
+
+  console.log(teamPosts)
   return (
     <div className="">
       <div className="grid mt-2 text-base-content">
@@ -121,12 +131,22 @@ export default function TeamDetails({ teamId }) {
         <h2 className='font-bold text-lg text-center'>
           Publicaciones
         </h2>
+        {isOwnerOrCoach &&
+          <div className='flex justify-center'>
+            <MainModal title={'Nuevo post'} buttonLabel='Publicar' OpenComponentType='primary'>
+              <FormPost team={team} />
+            </MainModal>
+          </div>
+        }
         <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
-          <Post isMemeber={isMember} />
+          {teamPosts.map(post => (
+            <Post key={post.id} post={post} isMemeber={isMember} />
+          ))}
+          {/*  <Post isMemeber={isMember} />
           <Post isMemeber={isMember} />
           <Post isMemeber={false} />
           <Post isMemeber={isMember} />
-          <Post isMemeber={false} />
+          <Post isMemeber={false} /> */}
         </div>
       </div>
 
@@ -142,6 +162,7 @@ export default function TeamDetails({ teamId }) {
 
       {(isOwnerOrCoach) && (
         <>
+
           <Section
             open
             title={'Integrantes'}
