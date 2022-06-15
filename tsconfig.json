@@ -6,7 +6,8 @@
       "@comps/*": ["components/*"],
       "@legasy/*": [".legasy/src/components/*"],
       "@/*": ["./*"],
-      "@context":["context/*"]
+      "@context":["context/*"],
+      "@utils/*": ["utils/*"],
     },
     "target": "es5",
     "lib": [

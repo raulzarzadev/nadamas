@@ -15,6 +15,8 @@ import FormPost from '../Posts/formPost'
 import Post from '../Posts/post'
 import TeamForm from '../TeamForm'
 import { listenTeamPosts } from '@/firebase/posts/main'
+import Image from 'next/image'
+
 export default function TeamDetails({ teamId }) {
   const router = useRouter()
   const { user } = useUser()
@@ -68,9 +70,15 @@ export default function TeamDetails({ teamId }) {
   const isMember = members?.includes(user.id)
 
   console.log(teamPosts)
+
   return (
     <div className="">
       <div className="grid mt-2 text-base-content">
+        <div className='h-40 w-full relative mx-auto'>
+          {team?.image &&
+            <Image src={team?.image} objectFit='cover'  layout='fill'  />
+          }
+        </div>
         <div className="flex justify-end text-sm font-thin ">
           {isOwnerOrCoach && <p className="mx-1">tuyo</p>}
           <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
@@ -140,7 +148,7 @@ export default function TeamDetails({ teamId }) {
         }
         <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
           {teamPosts.map(post => (
-            <Post key={post.id} post={post} isMemeber={isMember} />
+            <Post key={post.id} post={post} isMemeber={isOwnerOrCoach || isMember} />
           ))}
           {/*  <Post isMemeber={isMember} />
           <Post isMemeber={isMember} />

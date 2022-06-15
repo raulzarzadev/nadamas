@@ -13,6 +13,7 @@ export default function MainModal({
   const OPEN_COMPONENT_STYLE = {
     delete: `btn btn-error `,
     primary: `btn btn-primary `,
+    info:`btn btn-info `,
   }
   const [openModal, setOpenModal] = useState(false)
   const modalRef = useRef(null)

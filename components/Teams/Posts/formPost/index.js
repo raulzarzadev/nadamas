@@ -2,19 +2,31 @@ import { useForm } from "react-hook-form"
 import TextArea from "../../../Inputs/TextArea"
 import TextInput from "../../../Inputs/TextInput"
 import Toggle from "../../../Inputs/Toggle"
-import { createPost } from '@/firebase/posts/main'
-const FormPost = ({ team }) => {
-  const { register, handleSubmit } = useForm()
+import { createPost, editPost } from '@/firebase/posts/main'
+const FormPost = ({ team, post }) => {
+  const { register, handleSubmit } = useForm({
+    defaultValues: post
+  })
   const onSubmit = (data) => {
-    createPost({
-      ...data,
-      teamId: team.id,
-    }).then((res) => {
-      console.log(res)
-    }).catch(err => {
-      console.log(err)
-    })
-   
+    post?.id
+      ?
+      editPost(post?.id, data)
+        .then((res) => {
+          console.log(res)
+        }).catch(err => {
+          console.log(err)
+        })
+      :
+      createPost({
+        ...data,
+        teamId: team.id,
+      })
+        .then((res) => {
+          console.log(res)
+        }).catch(err => {
+          console.log(err)
+        })
+
   }
   return (
     <div>
