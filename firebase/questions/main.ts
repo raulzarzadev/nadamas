@@ -10,4 +10,4 @@ export const editQuestion = (itemId: string, item: UpdateQuestionDto) => questio
 export const deleteQuestion = (itemId: string) => questionCRUD.delete(itemId)
 export const getQuestion = (itemId: string) => questionCRUD.get(itemId)
 export const listenQuestion = (itemId: string, cb: CallableFunction) => questionCRUD.listen(itemId, cb)
-export const listenUserQuestions = (userId: string, cb: CallableFunction) => questionCRUD.listenDocs(where('userId', '==', userId || null), cb)
+export const listenUserQuestions = (userId: string, cb: CallableFunction) => questionCRUD.listenDocs([where('userId', '==', userId || null)], cb)
