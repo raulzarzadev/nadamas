@@ -13,7 +13,7 @@ export const normalizeDoc = (doc) => {
   const data = doc.data()
   const id = doc.id
 
-  const res = deepFormatFirebaseDates(data, 'fieldDate')
+  const res = deepFormatFirebaseDates(data, 'milliseconds')
 
   return {
     id,

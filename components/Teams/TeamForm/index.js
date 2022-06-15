@@ -25,6 +25,7 @@ export default function TeamForm({ team }) {
   } = useForm({
     defaultValues: team
   })
+  console.log(watch('isPublic'))
   const onSubmit = (form) => {
     team?.id
       ? updateTeam(form).then((res) => {
@@ -50,16 +51,15 @@ export default function TeamForm({ team }) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="grid justify-center ">
+      <div className="grid justify-center  relative">
+        <div className="flex justify-between my-4 sticky top-8 w-full bg-base-100">
+          <Toggle {...register('isPublic')} label="Equipo público" />
+          <ButtonSave loading={isSubmitting} saved={isSubmitSuccessful} />
+        </div>
         <TextInput {...register('name')} label="Nombre del equipo" />
-        <TextArea  {...register('social')} label="descripción" />
         <TextArea  {...register('description')} label="descripción" />
         {/*   <InputDate  {...register('dates.startAt')} /> */}
         <InputFile label='Imagen de equipo:' onUpload={handleUploadFile} progress={imageProgress} preview={watch('image')} />
-        <Toggle {...register('isPublic')} label="Equipo público" />
-        <div className="flex justify-center my-4">
-          <ButtonSave loading={isSubmitting} saved={isSubmitSuccessful} />
-        </div>
       </div>
     </form>
   )

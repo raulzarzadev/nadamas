@@ -16,6 +16,7 @@ import Post from '../Posts/post'
 import TeamForm from '../TeamForm'
 import { listenTeamPosts } from '@/firebase/posts/main'
 import Image from 'next/image'
+import PostSquare from '../Posts/postSquare'
 
 export default function TeamDetails({ teamId }) {
   const router = useRouter()
@@ -69,14 +70,13 @@ export default function TeamDetails({ teamId }) {
   const isOwnerOrCoach = userId === teamCoach?.id || userId === teamOwner
   const isMember = members?.includes(user.id)
 
-  console.log(teamPosts)
 
   return (
     <div className="">
       <div className="grid mt-2 text-base-content">
         <div className='h-40 w-full relative mx-auto'>
           {team?.image &&
-            <Image src={team?.image} objectFit='cover'  layout='fill'  />
+            <Image src={team?.image} objectFit='cover' layout='fill' />
           }
         </div>
         <div className="flex justify-end text-sm font-thin ">
@@ -94,6 +94,12 @@ export default function TeamDetails({ teamId }) {
           <p>{description}</p>
         </div>
       </div>
+
+     {/*  <div>
+        <button>
+          Enviar invitación
+        </button>
+      </div> */}
 
       {isOwnerOrCoach ? (
         <div className="flex justify-center my-2">
@@ -125,6 +131,8 @@ export default function TeamDetails({ teamId }) {
         </div>
       )}
 
+
+
       {/* {!userIsMember && (
         <>
           <div className="text-center my-2 ">
@@ -136,19 +144,18 @@ export default function TeamDetails({ teamId }) {
 
 
       <div>
-        <h2 className='font-bold text-lg text-center'>
+        <h2 className='font-bold text-lg text-left'>
           Publicaciones
         </h2>
-        {isOwnerOrCoach &&
-          <div className='flex justify-center'>
-            <MainModal title={'Nuevo post'} buttonLabel='Publicar' OpenComponentType='primary'>
+        <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
+          {isOwnerOrCoach &&
+            <MainModal title={'Nuevo post'} OpenComponent={SquareAdd}>
               <FormPost team={team} />
             </MainModal>
-          </div>
-        }
-        <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
+          }
+
           {teamPosts.map(post => (
-            <Post key={post.id} post={post} isMemeber={isOwnerOrCoach || isMember} />
+            <PostSquare key={post.id} post={post} isMemeber={isOwnerOrCoach || isMember} />
           ))}
           {/*  <Post isMemeber={isMember} />
           <Post isMemeber={isMember} />
@@ -214,6 +221,17 @@ export default function TeamDetails({ teamId }) {
           </Section>
         </>
       )}
+    </div>
+  )
+}
+
+const SquareAdd = ({ ...props }) => {
+  return (
+    <div {...props} className='h-full border-2 border-dashed rounded-lg min-w-[4rem] flex justify-center items-center hover:border-dotted cursor-pointer'>
+      <span className='text-5xl'>
+        +
+      </span>
+
     </div>
   )
 }

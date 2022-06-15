@@ -57,12 +57,16 @@ export class FirebaseCRUD {
   }
 
 
-  async listenDocs(filters: any, cb: CallableFunction) {
-    // let = filters = {"athlete.id":'sdasd3232 sfsf sdf'}
+  async listenDocs(filters: any[], cb: CallableFunction) {
+    /**
+    * @param filters: any[]
+    * * Recive an array of where firebase filters 
+    *  [where('userId', '==', userId || null)]
+    */
     if (!filters) return console.error('Should have filters implentade')
     const q = query(
       collection(db, this.collectionName),
-      filters
+      ...filters
     )
 
     onSnapshot(q, (querySnapshot) => {

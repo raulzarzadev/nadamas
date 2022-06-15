@@ -30,6 +30,7 @@ const InputFile = React.forwardRef(({
           input-bordered w-full
           file:btn
           file:rounded-r-none
+          max-w-xs
           p-0
           "
         type="file"
