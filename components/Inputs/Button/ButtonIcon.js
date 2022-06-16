@@ -10,6 +10,7 @@ export default function ButtonIcon({
   //iconSize, // sm, md, lg,
   fullwidth = false,
   size,
+  iconOnly,
   ...rest
 }) {
   return (
@@ -17,7 +18,9 @@ export default function ButtonIcon({
       size={size}
       className={` 
       ${fullwidth ? ' w-full ' : ' w-max '} 
-      ${className} `}
+      ${className} 
+      ${iconOnly ? ' btn-circle btn-sm  ' : ''}
+      `}
       {...rest}
     >
       {label && <span className="mr-1">{label}</span>}

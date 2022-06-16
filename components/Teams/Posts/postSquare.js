@@ -6,6 +6,7 @@ import FormPost from "./formPost"
 import { deletePost } from '@/firebase/posts/main'
 import { useUser } from "../../../context/UserContext"
 import { Dates } from '@utils/Dates.utils'
+import ButtonIcon from "../../Inputs/Button/ButtonIcon"
 const PostSquare = ({ post, isMemeber = false }) => {
   const [openModal, setOpenModal] = useState(false)
   const handleOpenModal = () => {
@@ -24,29 +25,34 @@ const PostSquare = ({ post, isMemeber = false }) => {
   const { user } = useUser()
   const isOwner = userId === user.id
 
-  console.log(post)
 
   return (
-    <div className="w-44 border-2 border-transparent hover:border-base-100 rounded" onClick={handleOpenModal}>
+    <div className="w-44 border-2 border-transparent hover:border-base-100 rounded relative" onClick={handleOpenModal}>
       <p className="text-right text-xs">{isPublic ? 'Público' : 'Privado'}</p>
       <h1 className=" font-bold">{title}</h1>
-      <p className="font-thin text-sm">Editado: {Dates.fromNow(updatedAt || createdAt)}</p>
-      <span className=" text-sm whitespace-pre-line">{visibility ? content?.slice(0, 100) : 'Post privado.'}</span>
+      <p className="font-thin text-sm">
+        Editado: {Dates.fromNow(updatedAt || createdAt)}
+      </p>
+      <p className="max-h-32 overflow-y-auto">
+
+        <span className=" text-sm whitespace-pre-line ">{visibility ? content?.slice(0, 100) : 'Post privado.'}</span>
+      </p>
       <Modal open={openModal} handleOpen={handleOpenModal} title={title}>
-        <p className="text-right">{isPublic ? 'Público' : 'Privado'}</p>
-        <h1 className=" font-bold">{title}</h1>
-        <p className="font-thin text-sm">Editado: {updatedAt}</p>
-        <span className=" text-sm whitespace-pre-line">{visibility && visibility ? content : 'Post privado.'}</span>
+        <div className="relative">
+          {isOwner &&
+            <div className="flex justify-around sticky top-8 w-full pb-2 bg-base-100">
+              <ModalDelete handleDelete={() => handleDelete(id)} buttonVariant='btn' buttonLabel='Eliminar' buttonSize="sm" />
+              <MainModal title='Editar post' OpenComponent={ButtonIcon} OpenComponentProps={{ iconName: 'edit', label: 'editar' }}>
+                <FormPost post={post} />
+              </MainModal>
+            </div>
+          }
+          <p className="text-right">{isPublic ? 'Público' : 'Privado'}</p>
+          <h1 className=" font-bold">{title}</h1>
+          <p className="font-thin text-sm"> Editado: {Dates.fromNow(updatedAt || createdAt)}</p>
+          <span className=" text-sm whitespace-pre-line">{visibility && visibility ? content : 'Post privado.'}</span>
 
-        {isOwner &&
-          <div>
-            <ModalDelete handleDelete={() => handleDelete(id)} />
-            <MainModal title='Editar post' buttonLabel="Editar" OpenComponentType='info'>
-
-              <FormPost post={post} />
-            </MainModal>
-          </div>
-        }
+        </div>
       </Modal>
     </div>
   )
