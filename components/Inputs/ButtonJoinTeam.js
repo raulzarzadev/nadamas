@@ -1,7 +1,7 @@
 import { useUser } from '@/context/UserContext'
 import { removeMember, removeRequest, sendRequest } from '@/firebase/teams'
 import Modal from '@comps/Modal'
-import router from 'next/router'
+import router, { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import Button from './Button'
 
@@ -13,6 +13,7 @@ export default function ButtonJoinTeam({
   isTheTeamOwner = false,
 }) {
   const { user } = useUser()
+  const router = useRouter()
   const userId = user?.id || null
 
   const [loading, setLoading] = useState(false)
@@ -130,6 +131,7 @@ export default function ButtonJoinTeam({
     secondary: `border-info`
   }
 
+
   return (
     <>
       {/*  <Button
@@ -161,7 +163,7 @@ export default function ButtonJoinTeam({
           onClick={(e) => {
             e.stopPropagation()
             e.preventDefault()
-            router.push('/login')
+            router.push(`/login?redirectTo=/teams/${teamId || ''}`)
           }}
         />
       </Modal>

@@ -20,6 +20,7 @@ export function UserProvider({ children }) {
     logOut()
   }
 
+
   const login = async (provider = 'google') => {
     if (provider === 'google')
       return googleLogin()
@@ -28,9 +29,8 @@ export function UserProvider({ children }) {
             .then((res) => {
               setUser(res)
               // console.log('login', res)
-              setTimeout(() => {
-                redirectTo && router.replace(redirectTo)
-              }, 400)
+              redirectTo ? router.push(redirectTo) : router.push('/profile')
+
             })
             .catch((err) => {
               console.error(err)
