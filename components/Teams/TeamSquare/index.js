@@ -1,12 +1,16 @@
 import Link from "next/link"
+import Image from 'next/image'
+import PreviewImage from "../../PreviewImage"
 
 const TeamSquare = ({ team }) => {
   console.log(team)
   const { name, id, image, description, joinRequests = [], members = [], isPublic } = team
   return (
     <Link href={`/teams/${id}`}>
-      <a className="border-base-100 border-2  hover:border-base-content rounded p-0.5">
-        <div className=" h-40 w-28  flex flex-col justify-between" >
+      <a className="border-base-100 border-2  hover:border-base-content rounded">
+        <div className={`h-10 bg-center bg-cover rounded-t`} style={{ backgroundImage: `url(${image})` }} />
+        {/* <PreviewImage image={image} /> */}
+        <div className=" h-40 w-28  flex flex-col justify-between  p-0.5" >
           <div>
             <p className=" text-xs text-right">{isPublic ? 'publico' : 'privado'}</p>
 

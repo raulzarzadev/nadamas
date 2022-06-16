@@ -2,7 +2,7 @@ import { where } from "firebase/firestore";
 import { FirebaseCRUD } from "../FirebaseCRUD";
 import { CreateQuestionDto, UpdateQuestionDto } from "./dto";
 
-const COLLECTION_NAME = 'questions'
+const COLLECTION_NAME = 'questions'c
 
 const questionCRUD = new FirebaseCRUD(COLLECTION_NAME)
 export const createQuestion = (item: CreateQuestionDto) => questionCRUD.create(item)

@@ -17,6 +17,8 @@ import TeamForm from '../TeamForm'
 import { listenTeamPosts } from '@/firebase/posts/main'
 import Image from 'next/image'
 import PostSquare from '../Posts/postSquare'
+import { SquareAdd } from '../../SquareAdd'
+import PreviewImage from '../../PreviewImage'
 
 export default function TeamDetails({ teamId }) {
   const router = useRouter()
@@ -74,9 +76,9 @@ export default function TeamDetails({ teamId }) {
   return (
     <div className="">
       <div className="grid mt-2 text-base-content">
-        <div className='h-40 w-full relative mx-auto'>
+        <div className='h-32'>
           {team?.image &&
-            <Image src={team?.image} objectFit='cover' layout='fill' />
+            <PreviewImage image={team.image} previewSize='full-w' />
           }
         </div>
         <div className="flex justify-end text-sm font-thin ">
@@ -95,7 +97,7 @@ export default function TeamDetails({ teamId }) {
         </div>
       </div>
 
-     {/*  <div>
+      {/*  <div>
         <button>
           Enviar invitación
         </button>
@@ -149,9 +151,11 @@ export default function TeamDetails({ teamId }) {
         </h2>
         <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
           {isOwnerOrCoach &&
-            <MainModal title={'Nuevo post'} OpenComponent={SquareAdd}>
-              <FormPost team={team} />
-            </MainModal>
+            <div className='w-32'>
+              <MainModal title={'Nuevo post'} OpenComponent={SquareAdd}>
+                <FormPost team={team} />
+              </MainModal>
+            </div>
           }
 
           {teamPosts.map(post => (
@@ -225,13 +229,3 @@ export default function TeamDetails({ teamId }) {
   )
 }
 
-const SquareAdd = ({ ...props }) => {
-  return (
-    <div {...props} className='h-full border-2 border-dashed rounded-lg min-w-[4rem] flex justify-center items-center hover:border-dotted cursor-pointer'>
-      <span className='text-5xl'>
-        +
-      </span>
-
-    </div>
-  )
-}
