@@ -5,4 +5,4 @@ function TeamsPage() {
   return <Teams />
 }
 
-export default authRoute(TeamsPage)
+export default TeamsPage

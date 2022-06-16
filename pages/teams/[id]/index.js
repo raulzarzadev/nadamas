@@ -11,4 +11,4 @@ import { useRouter } from 'next/router'
 }
 
 
-export default authRoute(team)
+export default team

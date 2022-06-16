@@ -23,7 +23,7 @@ const PostSquare = ({ post, isMemeber = false }) => {
   }
 
   const { user } = useUser()
-  const isOwner = userId === user.id
+  const isOwner = userId === user?.id
 
 
   return (

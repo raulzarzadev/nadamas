@@ -70,7 +70,7 @@ export default function TeamDetails({ teamId }) {
   const userId = user?.id
 
   const isOwnerOrCoach = userId === teamCoach?.id || userId === teamOwner
-  const isMember = members?.includes(user.id)
+  const isMember = members?.includes(user?.id)
 
 
   return (

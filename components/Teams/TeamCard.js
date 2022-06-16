@@ -29,12 +29,12 @@ const CardV2 = ({
   redirectTeam,
 }) => {
   const [coach, setCoach] = useState(null)
+  const { user } = useUser()
   useEffect(() => {
-    getUser(teamUserId).then(setCoach)
+    user && getUser(teamUserId).then(setCoach)
   }, [])
 
-  const { user } = useUser()
-  const isTheTeamOwner = user.id === teamUserId
+  const isTheTeamOwner = user?.id === teamUserId
 
   return (
     <div
