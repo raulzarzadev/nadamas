@@ -12,10 +12,8 @@ import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import MainModal from '../../Modal/MainModal'
 import FormPost from '../Posts/formPost'
-import Post from '../Posts/post'
 import TeamForm from '../TeamForm'
 import { listenTeamPosts } from '@/firebase/posts/main'
-import Image from 'next/image'
 import PostSquare from '../Posts/postSquare'
 import { SquareAdd } from '../../SquareAdd'
 import PreviewImage from '../../PreviewImage'
@@ -97,24 +95,9 @@ export default function TeamDetails({ teamId }) {
         </div>
       </div>
 
-      {/*  <div>
-        <button>
-          Enviar invitación
-        </button>
-      </div> */}
 
-      {isOwnerOrCoach ? (
-        <div className="flex justify-center my-2">
-          <ButtonIcon
-            label="Editar"
-            iconName="edit"
-            onClick={handleOpenTeamForm}
-          />
-          <Modal title='Editar equipo' open={openTeamForm} handleOpen={handleOpenTeamForm}>
-            <TeamForm team={team} />
-          </Modal>
-        </div>
-      ) : (
+
+      {!isOwnerOrCoach &&
         <div>
           {!isMember && (
             <>
@@ -130,8 +113,7 @@ export default function TeamDetails({ teamId }) {
             membersList={team?.members || []}
             requestList={team?.joinRequests || []}
           />
-        </div>
-      )}
+        </div>}
 
 
 
@@ -210,7 +192,15 @@ export default function TeamDetails({ teamId }) {
             ))}
           </Section>
           <Section title={`Opciones `}>
-            <div className="flex justify-center">
+            <div className="flex justify-evenly">
+              <ButtonIcon
+                label="Editar"
+                iconName="edit"
+                onClick={handleOpenTeamForm}
+              />
+              <Modal title='Editar equipo' open={openTeamForm} handleOpen={handleOpenTeamForm}>
+                <TeamForm team={team} />
+              </Modal>
               <ModalDelete
                 buttonLabel={'Borrar equipo'}
                 labelDelete="equipo"
