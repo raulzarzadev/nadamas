@@ -7,6 +7,7 @@ import { deletePost } from '@/firebase/posts/main'
 import { useUser } from "../../../context/UserContext"
 import { Dates } from '@utils/Dates.utils'
 import ButtonIcon from "../../Inputs/Button/ButtonIcon"
+
 const PostSquare = ({ post, isMemeber = false }) => {
   const [openModal, setOpenModal] = useState(false)
   const handleOpenModal = () => {
@@ -27,7 +28,7 @@ const PostSquare = ({ post, isMemeber = false }) => {
 
 
   return (
-    <div className="w-44 border-2 border-transparent hover:border-base-100 rounded relative" onClick={handleOpenModal}>
+    <div className="w-44 border-2  hover:border-base-200 shadow-md border-base-100 rounded relative p-0.5" onClick={handleOpenModal}>
       <p className="text-right text-xs">{isPublic ? 'Público' : 'Privado'}</p>
       <h1 className=" font-bold">{title}</h1>
       <p className="font-thin text-sm">

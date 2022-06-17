@@ -70,6 +70,9 @@ export default function TeamDetails({ teamId }) {
   const isOwnerOrCoach = userId === teamCoach?.id || userId === teamOwner
   const isMember = members?.includes(user?.id)
 
+  const sortByUpdatedAt = (a, b) => {
+    return b.updatedAt - a.updatedAt
+  }
 
   return (
     <div className="">
@@ -90,7 +93,7 @@ export default function TeamDetails({ teamId }) {
           )}
         </div>
         <div className="text-center">
-          <h1 className="text-2xl ">{name || title}</h1>
+          <h1 className="text-4xl ">{name || title}</h1>
           <p>{description}</p>
         </div>
       </div>
@@ -125,6 +128,8 @@ export default function TeamDetails({ teamId }) {
           </div>
         </>
       )} */}
+      
+
 
 
       <div>
@@ -140,7 +145,7 @@ export default function TeamDetails({ teamId }) {
             </div>
           }
 
-          {teamPosts.map(post => (
+          {teamPosts.sort(sortByUpdatedAt).map(post => (
             <PostSquare key={post.id} post={post} isMemeber={isOwnerOrCoach || isMember} />
           ))}
           {/*  <Post isMemeber={isMember} />

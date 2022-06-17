@@ -26,7 +26,9 @@ export default function CoachSection({ user }) {
      listenUserEvents(setUserEvets)
    }, []) */
 
-
+  const sortByUpdatedAt = (a, b) => {
+    return b.updatedAt - a.updatedAt
+  }
   return (
     <>
       <div>
@@ -37,7 +39,7 @@ export default function CoachSection({ user }) {
               <TeamForm />
             </MainModal>
           </div>
-          {userTeams?.map((team) => (
+          {userTeams?.sort(sortByUpdatedAt).map((team) => (
             <TeamSquare team={team} key={team.id} />
           ))}
         </div>

@@ -8,10 +8,11 @@ import { useUser } from '@/context/UserContext'
 import Toggle from '@comps/Inputs/Toggle'
 import { useRouter } from 'next/router'
 import TextArea from '@comps/Inputs/TextArea'
-import InputDate from '../../Inputs/InputDate'
 import InputFile from '../../Inputs/InutFile'
 import { FirebaseCRUD } from '@/firebase/FirebaseCRUD'
+
 // TODO Add fields: image, schedule, place, 
+
 export default function TeamForm({ team }) {
   const { user } = useUser()
   const router = useRouter()
@@ -25,7 +26,6 @@ export default function TeamForm({ team }) {
   } = useForm({
     defaultValues: team
   })
-  console.log(watch('isPublic'))
   const onSubmit = (form) => {
     team?.id
       ? updateTeam(form).then((res) => {
@@ -45,7 +45,7 @@ export default function TeamForm({ team }) {
       setImageProgress(progress)
       setValue('image', downloadURL)
     })
-    console.log(fileName, file)
+    // console.log(fileName, file)
   }
   const [imageProgress, setImageProgress] = useState(null)
 

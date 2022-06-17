@@ -48,10 +48,10 @@ const FormPost = ({ team, post }) => {
           <ButtonSave />
 
         </div>
-        <Toggle {...register('isPublic')} label="Publicación visible para todo el mundo" size='lg' />
-        <InputFile label='Imagen' onUpload={handleUpdateImage} progress={imageProgress} preview={watch('image')} />
+        <Toggle {...register('isPublic')} label="Visible para todo el mundo" size='lg' />
         <TextInput label='Titulo' {...register('title')} />
         <TextArea label='Contenido' {...register('content')} />
+        <InputFile label='Imagen' onUpload={handleUpdateImage} progress={imageProgress} preview={watch('image')} />
       </form>
     </div>
   )

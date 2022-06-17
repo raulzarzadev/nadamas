@@ -7,7 +7,7 @@ const Toggle = React.forwardRef(({ label = null, size = 'xs', ...rest }, ref) =>
     xs: 'toggle-xs',
   }
   return (
-    <label className="label cursor-pointer w-fit ">
+    <label className="label cursor-pointer w-full">
       {label && <span className="label-text mr-1 whitespace-nowrap">{label}</span>}
       <input
         ref={ref}
