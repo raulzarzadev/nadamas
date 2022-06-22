@@ -7,6 +7,7 @@ import { deletePost } from '@/firebase/posts/main'
 import { useUser } from "../../../context/UserContext"
 import { Dates } from '@utils/Dates.utils'
 import ButtonIcon from "../../Inputs/Button/ButtonIcon"
+import Icon from "../../Icon"
 
 const PostSquare = ({ post, isMemeber = false }) => {
   const [openModal, setOpenModal] = useState(false)
@@ -26,14 +27,20 @@ const PostSquare = ({ post, isMemeber = false }) => {
   const { user } = useUser()
   const isOwner = userId === user?.id
 
-
+  const POST_TYPE = {
+    workout: <Icon name="workout" />,
+    event: <Icon name="event" />,
+    info: <Icon name="info" />,
+  }
   return (
     <div className="w-44 border-2  hover:border-base-200 shadow-md border-base-100 rounded relative p-0.5" onClick={handleOpenModal}>
+      {POST_TYPE[post?.type || 'info']}
       <p className="text-right text-xs">{isPublic ? 'Público' : 'Privado'}</p>
-      <h1 className=" font-bold">{title}</h1>
-      <p className="font-thin text-sm">
+      <p className="font-thin text-2xs">
         Editado: {Dates.fromNow(updatedAt || createdAt)}
       </p>
+      <h1 className=" font-bold">{title}</h1>
+
       <p className="max-h-32 overflow-y-auto">
 
         <span className=" text-sm whitespace-pre-line ">{visibility ? content?.slice(0, 100) : 'Post privado.'}</span>

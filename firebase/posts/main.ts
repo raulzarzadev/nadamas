@@ -1,4 +1,4 @@
-import { where } from "firebase/firestore";
+import { orderBy, where } from "firebase/firestore";
 import { FirebaseCRUD } from "../FirebaseCRUD";
 import { Post } from "./post.model";
 
@@ -11,4 +11,4 @@ export const deletePost = (itemId: string) => postCRUD.delete(itemId)
 export const getPost = (itemId: string) => postCRUD.get(itemId)
 export const listenPost = (itemId: string, cb: CallableFunction) => postCRUD.listen(itemId, cb)
 export const listenUserPosts = (userId: string, cb: CallableFunction) => postCRUD.listenDocs([where('userId', '==', userId || null)], cb)
-export const listenTeamPosts = (teamId: string, cb: CallableFunction) => postCRUD.listenDocs([where('teamId', '==', teamId || null)], cb)
+export const listenTeamPosts = (teamId: string, cb: CallableFunction) => postCRUD.listenDocs([where('teamId', '==', teamId || null), orderBy('createdAt','desc')], cb)

@@ -100,7 +100,7 @@ export default function TeamMember({
             </div>
             <div className="ml-1">
               <h4 className="">
-                {name}
+                {name?.split(' ')?.[0]} {name?.split(' ')?.[2] || name?.split(' ')?.[1]}
                 <span className="text-xs font-thin ">{ITS_ME && ' (Tú)'}</span>
               </h4>
               <p className="font-thin text-sm hidden sm:block">{email}</p>
@@ -152,7 +152,7 @@ export default function TeamMember({
           <Link href={`/teams/${team.id}/member?memberId=${member.id}`}>
             <Icon name='dots' />
           </Link>
-         {/*  <MainModal OpenComponent={Icon} OpenComponentProps={{ name: 'dots' }}>
+          {/*  <MainModal OpenComponent={Icon} OpenComponentProps={{ name: 'dots' }}>
             <MemberDetails member={member} team={team} />
           </MainModal> */}
         </div>

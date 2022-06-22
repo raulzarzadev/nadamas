@@ -13,6 +13,9 @@ import { TiFilter } from '@react-icons/all-files/ti/TiFilter'
 import { TiEdit } from '@react-icons/all-files/ti/TiEdit'
 import { TiTrash } from '@react-icons/all-files/ti/TiTrash'
 
+//https://react-icons.github.io/react-icons/icons?name=cg
+import { CgGym } from "react-icons/cg";
+
 // https://react-icons.github.io/react-icons/icons?name=ti
 import {
   TiArrowSortedDown,
@@ -36,7 +39,7 @@ import {
 import { SiWhatsapp } from 'react-icons/si'
 
 //https://react-icons.github.io/react-icons/icons?name=md
-import { MdOutlineEmergency, MdOutlineMoreVert, MdOutlinePhoneForwarded } from 'react-icons/md'
+import { MdOutlineEmergency, MdOutlineEvent, MdOutlineMoreVert, MdOutlinePhoneForwarded, MdWorkspacesOutline } from 'react-icons/md'
 
 //react-icons.github.io/react-icons/icons?name=fc
 import { FcGoogle } from 'react-icons/fc'
@@ -79,6 +82,8 @@ const ICON_LIST = {
   search: TiZoom,
   right: TiMediaPlay,
   left: TiMediaPlayReverse,
-  dots: MdOutlineMoreVert
+  dots: MdOutlineMoreVert,
+  workout: CgGym,
+  event: MdOutlineEvent,
 }
 export default ICON_LIST

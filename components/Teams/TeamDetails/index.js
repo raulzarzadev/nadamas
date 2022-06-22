@@ -28,7 +28,7 @@ export default function TeamDetails({ teamId }) {
 
   const [teamPosts, setTeamPosts] = useState([])
   useEffect(() => {
-    listenTeamPosts(teamId, setTeamPosts)
+    listenTeamPosts(teamId, (teams) => setTeamPosts(teams))
   }, [])
 
 
@@ -70,9 +70,7 @@ export default function TeamDetails({ teamId }) {
   const isOwnerOrCoach = userId === teamCoach?.id || userId === teamOwner
   const isMember = members?.includes(user?.id)
 
-  const sortByUpdatedAt = (a, b) => {
-    return b.updatedAt - a.updatedAt
-  }
+
 
   return (
     <div className="">
@@ -128,7 +126,7 @@ export default function TeamDetails({ teamId }) {
           </div>
         </>
       )} */}
-      
+
 
 
 
@@ -138,14 +136,14 @@ export default function TeamDetails({ teamId }) {
         </h2>
         <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
           {isOwnerOrCoach &&
-            <div className='w-32'>
+            <div className='w-20'>
               <MainModal title={'Nuevo post'} OpenComponent={SquareAdd}>
                 <FormPost team={team} />
               </MainModal>
             </div>
           }
 
-          {teamPosts.sort(sortByUpdatedAt).map(post => (
+          {teamPosts.map(post => (
             <PostSquare key={post.id} post={post} isMemeber={isOwnerOrCoach || isMember} />
           ))}
           {/*  <Post isMemeber={isMember} />

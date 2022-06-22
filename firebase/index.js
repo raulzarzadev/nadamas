@@ -6,7 +6,7 @@ import {
   initializeAuth,
   onAuthStateChanged,
   signInWithPopup,
-  signOut
+  signOut,
 } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'

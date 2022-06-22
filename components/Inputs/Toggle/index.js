@@ -3,11 +3,11 @@ const Toggle = React.forwardRef(({ label = null, size = 'xs', ...rest }, ref) =>
   const sizing = {
     lg: 'toggle-lg',
     md: 'toggle-md',
-    sm: 'toggle-sm',
+    sm: 'toggle-sm ',
     xs: 'toggle-xs',
   }
   return (
-    <label className="label cursor-pointer w-full">
+    <label className="label cursor-pointer mx-auto ">
       {label && <span className="label-text mr-1 whitespace-nowrap">{label}</span>}
       <input
         ref={ref}

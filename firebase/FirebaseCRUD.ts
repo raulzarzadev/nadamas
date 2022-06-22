@@ -67,6 +67,7 @@ export class FirebaseCRUD {
     const q = query(
       collection(db, this.collectionName),
       ...filters
+      
     )
 
     onSnapshot(q, (querySnapshot) => {

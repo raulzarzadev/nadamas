@@ -11,20 +11,21 @@ const Modal = React.forwardRef(({
 
   return (
     <div
-      className={` top-0 bottom-0 left-0 right-0 flex justify-center items-center bg-black bg-opacity-50 z-10 ${open ? 'fixed' : 'hidden'} `}
+      className={` top-0 bottom-0 left-0 right-0 flex justify-center items-center bg-black bg-opacity-50 z-20 ${open ? 'fixed' : 'hidden'} `}
       id={modalId}
       onClick={(e) => {
-         // e.preventDefault()
-         /**
-         *!TODO: if e.preventDefault() is called, the modal will make fails the form inside
-         *
-         */
+        // e.preventDefault()
+        /**
+        *!TODO: if e.preventDefault() is called, the modal will make fails the form inside
+        *
+        */
         e.stopPropagation()
         e.target.id === modalId && handleOpen()
       }}
     >
-      <div className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  '>
-        <header className={'flex justify-between sticky top-0 bg-base-100 z-10 px-3 py-1'}>
+      <div className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  z-20 '>
+
+        <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 '}>
           <div className={''}>
             <h5 className='font-bold'>{title}</h5>
           </div>
@@ -38,7 +39,8 @@ const Modal = React.forwardRef(({
             <Icon name='cross' />
           </button>
         </header>
-        <main className={'pt-5 p-5'}>{children}</main>
+        <div className='p-5 pt-0'>{children}</div>
+
       </div>
 
     </div>
