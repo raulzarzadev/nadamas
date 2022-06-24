@@ -71,7 +71,6 @@ export default function TeamDetails({ teamId }) {
   const isMember = members?.includes(user?.id)
 
 
-
   return (
     <div className="">
       <div className="grid mt-2 text-base-content">
@@ -117,19 +116,6 @@ export default function TeamDetails({ teamId }) {
         </div>}
 
 
-
-      {/* {!userIsMember && (
-        <>
-          <div className="text-center my-2 ">
-            <p>No eres miembro.</p>
-            <p> Únete a este equipo para ver mas detalles</p>
-          </div>
-        </>
-      )} */}
-
-
-
-
       <div>
         <h2 className='font-bold text-lg text-left'>
           Publicaciones
@@ -146,11 +132,7 @@ export default function TeamDetails({ teamId }) {
           {teamPosts.map(post => (
             <PostSquare key={post.id} post={post} isMemeber={isOwnerOrCoach || isMember} />
           ))}
-          {/*  <Post isMemeber={isMember} />
-          <Post isMemeber={isMember} />
-          <Post isMemeber={false} />
-          <Post isMemeber={isMember} />
-          <Post isMemeber={false} /> */}
+         
         </div>
       </div>
 
@@ -177,7 +159,7 @@ export default function TeamDetails({ teamId }) {
                 <div key={memberId}>
                   <TeamMember isTeamRow memberId={memberId} team={team} />
                 </div>
-              ))}
+              ))}  
             </div>
           </Section>
         </>

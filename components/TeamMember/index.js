@@ -19,6 +19,7 @@ export default function TeamMember({
 }) {
   const { user } = useUser()
   const [member, setMember] = useState()
+  // console.log(memberId)
   useEffect(() => {
     getTeamMember(memberId).then(setMember)
   }, [])
@@ -100,7 +101,7 @@ export default function TeamMember({
             </div>
             <div className="ml-1">
               <h4 className="">
-                {name?.split(' ')?.[0]} {name?.split(' ')?.[2] || name?.split(' ')?.[1]}
+                {name?.split(' ')?.[0]} {name?.split(' ')?.[2] || name?.split(' ')?.[1]} <span className='font-thin'>{alias}</span>
                 <span className="text-xs font-thin ">{ITS_ME && ' (Tú)'}</span>
               </h4>
               <p className="font-thin text-sm hidden sm:block">{email}</p>

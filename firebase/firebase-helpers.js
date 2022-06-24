@@ -1,6 +1,7 @@
 import { dateFormat } from '@/utils/dates'
+import { Dates } from 'firebase-dates-util'
 import { Timestamp } from 'firebase/firestore'
-import { deepFormatFirebaseDates } from './deepFormatFirebaseDates.js'
+// import { deepFormatFirebaseDates } from './deepFormatFirebaseDates.js'
 
 
 export const formatResponse = (ok, type, res) => {
@@ -13,8 +14,7 @@ export const normalizeDoc = (doc) => {
   const data = doc.data()
   const id = doc.id
 
-  const res = deepFormatFirebaseDates(data, 'milliseconds')
-
+  const res = Dates.deepFormatObjectDates(data, 'number')
   return {
     id,
     ...res

@@ -17,6 +17,7 @@
     "date-fns-tz": "^1.1.4",
     "firebase": "^9.6.9",
     "firebase-admin": "^9.9.0",
+    "firebase-dates-util": "^0.3.11",
     "next": "12",
     "next-pwa": "^5.5.2",
     "nookies": "^2.5.2",

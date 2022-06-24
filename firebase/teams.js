@@ -17,11 +17,11 @@ import {
 import { db } from '.'
 import { deepFormatFirebaseDates } from './deepFormatFirebaseDates'
 import {
- 
+
   formatResponse,
-  normalizeDoc,
-  normalizeDocs
 } from './firebase-helpers'
+import { Dates } from 'firebase-dates-util'
+import { FirebaseCRUD } from './FirebaseCRUD'
 
 const createTeam = async (team, user) => {
   return await addDoc(collection(db, 'teams'), {
@@ -46,12 +46,12 @@ const updateTeam = async (team) => {
 }
 const getUserTeams = async (userId) => {
   const res = []
-  const q = query(collection(db, 'teams'), where('userId', '==', userId), orderBy('updatedAt','desc'))
+  const q = query(collection(db, 'teams'), where('userId', '==', userId), orderBy('updatedAt', 'desc'))
 
   const querySnapshot = await getDocs(q)
 
   querySnapshot.forEach((doc) => {
-    res.push({ ...normalizeDoc(doc) })
+    res.push({ ...FirebaseCRUD.normalizeDoc(doc) })
   })
   return res
 }
@@ -66,7 +66,7 @@ const listenPublicTeams = async (cb) => {
   onSnapshot(q, (querySnapshot) => {
     const res = []
     querySnapshot.forEach((doc) => {
-      res.push(normalizeDoc(doc))
+      res.push(FirebaseCRUD.normalizeDoc(doc))
     })
     cb(res)
   })
@@ -80,19 +80,19 @@ const getPublicTeams = async () => {
 
   querySnapshot.forEach((doc) => {
     console.log(doc.id, '=>', doc.data())
-    res.push({ ...normalizeDoc(doc) })
+    res.push({ ...FirebaseCRUD.normalizeDoc(doc) })
   })
   return res
 }
 const listenTeam = (teamId, cb) => {
   onSnapshot(doc(db, 'teams', teamId), (doc) => {
-    cb(normalizeDoc(doc))
+    cb(FirebaseCRUD.normalizeDoc(doc))
   })
 }
 const getTeam = async (teamId) => {
   const ref = doc(db, 'teams', teamId)
   const docSnap = await getDoc(ref)
-  return normalizeDoc(docSnap)
+  return FirebaseCRUD.normalizeDoc(docSnap)
 }
 const deleteTeam = async (teamId) => {
   try {
@@ -152,7 +152,7 @@ const listenAthleteTeams = (athelteId, cb) => {
   onSnapshot(q, (querySnapshot) => {
     const res = []
     querySnapshot.forEach((doc) => {
-      res.push(normalizeDoc(doc))
+      res.push(FirebaseCRUD.normalizeDoc(doc))
     })
     cb(res)
   })

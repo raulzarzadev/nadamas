@@ -8,13 +8,16 @@ import {
 
   normalizeDoc
 } from './firebase-helpers'
+import { FirebaseCRUD } from './FirebaseCRUD'
 
 export const getUser = async (userId) => {
   // TODO transform to listenUser
   if (!userId) throw new Error('No userId provided')
   const docRef = doc(db, 'users', userId)
   const docSnap = await getDoc(docRef)
-  return normalizeDoc(docSnap)
+  // console.log(FirebaseCRUD.normalizeDoc(docSnap))
+
+ return FirebaseCRUD.normalizeDoc(docSnap)
 }
 
 export const getTeamMember = async (userId) => {
