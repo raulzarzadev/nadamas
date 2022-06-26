@@ -38,7 +38,6 @@ const Post = ({ post, isMemeber = false }) => {
           <div>
             <ModalDelete handleDelete={() => handleDelete(id)} />
             <MainModal title='Editar post' buttonLabel="Editar" OpenComponentType='info'>
-
               <FormPost post={post} />
             </MainModal>
           </div>

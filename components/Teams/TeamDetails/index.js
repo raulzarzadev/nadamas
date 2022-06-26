@@ -17,6 +17,7 @@ import { listenTeamPosts } from '@/firebase/posts/main'
 import PostSquare from '../Posts/postSquare'
 import { SquareAdd } from '../../SquareAdd'
 import PreviewImage from '../../PreviewImage'
+import TeamPosts from './TeamPosts'
 
 export default function TeamDetails({ teamId }) {
   const router = useRouter()
@@ -116,25 +117,7 @@ export default function TeamDetails({ teamId }) {
         </div>}
 
 
-      <div>
-        <h2 className='font-bold text-lg text-left'>
-          Publicaciones
-        </h2>
-        <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
-          {isOwnerOrCoach &&
-            <div className='w-20'>
-              <MainModal title={'Nuevo post'} OpenComponent={SquareAdd}>
-                <FormPost team={team} />
-              </MainModal>
-            </div>
-          }
-
-          {teamPosts.map(post => (
-            <PostSquare key={post.id} post={post} isMemeber={isOwnerOrCoach || isMember} />
-          ))}
-         
-        </div>
-      </div>
+      <TeamPosts team={team} isOwnerOrCoach={isOwnerOrCoach} isMember={isMember} />
 
       {isMember && (
         <div>
@@ -159,7 +142,7 @@ export default function TeamDetails({ teamId }) {
                 <div key={memberId}>
                   <TeamMember isTeamRow memberId={memberId} team={team} />
                 </div>
-              ))}  
+              ))}
             </div>
           </Section>
         </>
