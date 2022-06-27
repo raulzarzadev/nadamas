@@ -1,5 +1,5 @@
 import { getAuth } from "firebase/auth";
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, Timestamp, updateDoc, where } from "firebase/firestore";
 // import { deepFormatFirebaseDates } from "./deepFormatFirebaseDates";
 import { Dates } from 'firebase-dates-util'
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
@@ -7,38 +7,50 @@ import { v4 as uidGenerator } from 'uuid';
 import { db, storage } from ".";
 
 
+interface FirebaseResponse {
+  id: string,
+  message?: string,
+  info?: any
+}
 
 export class FirebaseCRUD {
   constructor(
     private collectionName: string = '',
 
   ) { }
-  
+
   async create(item: object) {
     const currentUser = getAuth().currentUser
     // if (!this.currentUser) return console.error('No user logged')
-    return await addDoc(collection(db, this.collectionName), {
+    const newItem = {
       ...Dates.deepFormatObjectDates({
         createdAt: new Date(),
         userId: currentUser?.uid,
         ...item
-      }, 'timestamp')
-    })
-      .then((res) => FirebaseCRUD.formatResponse(true, `${this.collectionName}_CREATED`, res))
+      }, 'number')
+    }
+
+    return await addDoc(collection(db, this.collectionName), newItem)
+      .then((res) => this.CRUDResponse(true, `CREATED`, res))
       .catch((err) => console.error(err))
   }
 
   async update(itemId: string, item: object) {
-    return await updateDoc(doc(db, this.collectionName, itemId), {
-      ...Dates.deepFormatObjectDates({ ...item, updatedAt: new Date() }, 'timestamp')
-    })
-      .then(res => FirebaseCRUD.formatResponse(true, `${this.collectionName}_UPDATED`, res))
+    const newItem = {
+      ...Dates.deepFormatObjectDates({
+        updatedAt: Timestamp.now(),
+        ...item
+      }, 'number')
+    }
+    console.log(newItem)
+    return await updateDoc(doc(db, this.collectionName, itemId), newItem)
+      .then(res => this.CRUDResponse(true, `UPDATED`, { id: itemId }))
       .catch(err => console.error(err))
   }
 
   async delete(itemId: string) {
     return await deleteDoc(doc(db, this.collectionName, itemId))
-      .then(res => FirebaseCRUD.formatResponse(true, `${this.collectionName}_DELETED`, res))
+      .then(res => this.CRUDResponse(true, `DELETED`, { id: itemId }))
       .catch(err => console.error(err))
   }
 
@@ -62,7 +74,17 @@ export class FirebaseCRUD {
     return { type: formatedType, ok, res }
   }
 
+  CRUDResponse(ok: boolean, type: string, res: FirebaseResponse) {
+    const formatType = `${!ok ? `ERROR_` : ''}${this.collectionName.slice(0, -1)}_${type}`.toUpperCase()
+    return {
+      ok,
+      type: formatType,
+      res
+    }
+  }
+
   static normalizeDoc(doc) {
+
     if (!doc?.exists()) return null
     const data = doc.data()
     const id = doc.id

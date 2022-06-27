@@ -5,19 +5,19 @@ import ModalDelete from "../../Modal/ModalDelete"
 import FormPost from "./formPost"
 import { deletePost } from '@/firebase/posts/main'
 import { useUser } from "../../../context/UserContext"
-import { Dates } from '@utils/Dates.utils'
+// import { Dates } from '@utils/Dates.utils'
 import ButtonIcon from "../../Inputs/Button/ButtonIcon"
 import Icon from "../../Icon"
+import {Dates}from 'firebase-dates-util'
 
 const PostSquare = ({ post, isMemeber = false }) => {
   const [openModal, setOpenModal] = useState(false)
   const handleOpenModal = () => {
     setOpenModal(!openModal)
   }
-
   const { title, content, isPublic, updatedAt, createdAt, image, images, id, userId } = post
   const visibility = isPublic || isMemeber
-
+  console.log(updatedAt)
   const handleDelete = (id) => {
     deletePost(id)
       .then(res => console.log(res))

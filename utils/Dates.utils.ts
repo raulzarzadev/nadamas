@@ -19,7 +19,7 @@ export class Dates {
     if (isValidDate(objectDate)) {
       return fnsFormat(new Date(objectDate.setMinutes(objectDate.getMinutes() + objectDate.getTimezoneOffset())), stringFormat, { locale: es })
     } else {
-      console.error('date is not valid date')
+      console.error('date is not a valid date')
       return 'NaD'
     }
 
@@ -38,7 +38,7 @@ export class Dates {
         addSuffix: true,
       })
     } else {
-      console.error('date is not valid date')
+      console.error('date is s not valid date')
       return 'NaD'
     }
   }

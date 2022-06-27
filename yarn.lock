@@ -2870,10 +2870,10 @@ firebase-admin@^9.9.0:
     "@google-cloud/firestore" "^4.5.0"
     "@google-cloud/storage" "^5.3.0"
 
-firebase-dates-util@^0.4.4:
-  version "0.4.4"
-  resolved "https://registry.yarnpkg.com/firebase-dates-util/-/firebase-dates-util-0.4.4.tgz#71db6685513e93e5c22f5df1e48e5225bb4c7f09"
-  integrity sha512-jbCycvJdTpiHwODQfMEJ5YMagfaxycAQWOHDytaxM4zCFXMPazwmrgwcJQJJvPU1j9wkP0g1h/kSlJqOehJXag==
+firebase-dates-util@^0.4.7:
+  version "0.4.7"
+  resolved "https://registry.yarnpkg.com/firebase-dates-util/-/firebase-dates-util-0.4.7.tgz#669c4feb1104854dc8651ae60388665bdaf37919"
+  integrity sha512-fnRmbxF3QkbgavixKMviI41VhNfrrEvEBMF0p/XTcTb1hogWpoAFlfX7+yGXiTpJ/t3TjP5Jr5HwMXTywr1wWQ==
   dependencies:
     date-fns "^2.28.0"
     dotenv "^16.0.1"
