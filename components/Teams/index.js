@@ -29,8 +29,6 @@ export default function Teams() {
 
   const [searchResult, setSearchResult]=useState()
   
-console.log(teams)
-
   return (
     <div className="">
       {user &&
