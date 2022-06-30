@@ -105,7 +105,7 @@ export default function Navbar() {
           </div>
         ) : (
           <li>
-            <Link href="/login">
+            <Link href="/login" id='login-button'>
               <div className="mx-2 ">Ingresar</div>
             </Link>
           </li>

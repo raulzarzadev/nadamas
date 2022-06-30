@@ -70,7 +70,7 @@ export default function AuthCard() {
               onChange={handleChange}
               name="privacity"
             />
-            Acepar y continar
+            Acepar y continuar
           </label>
         </div>
         <span className="w-1/5 border-b dark:border-light lg:w-1/5"></span>
