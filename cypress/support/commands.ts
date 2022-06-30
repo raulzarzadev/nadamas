@@ -35,3 +35,13 @@
 //     }
 //   }
 // }
+
+import firebase from 'firebase/compat/app'
+import 'firebase/compat/auth'
+import 'firebase/compat/database'
+import 'firebase/compat/firestore'
+import { attachCustomCommands } from 'cypress-firebase'
+
+const firebaseConfig = { "apiKey": "AIzaSyCrpUg0OtzgJ9p9UXmy-BkAqVqMjP3AbaE", "authDomain": "nadamas-b1ecf.firebaseapp.com", "projectId": "nadamas-b1ecf", "storageBucket": "nadamas-b1ecf.appspot.com", "messagingSenderId": "743973332557", "appId": "1:743973332557:web:210a610c402d41217b9e04" }
+firebase.initializeApp(firebaseConfig)
+attachCustomCommands({ Cypress, cy, firebase })

@@ -50,11 +50,11 @@ export default function TeamForm({ team }) {
   const [imageProgress, setImageProgress] = useState(null)
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form id='team-form' onSubmit={handleSubmit(onSubmit)}>
       <div className="grid justify-center  relative">
         <div className="flex justify-between my-4 sticky top-8 w-full bg-base-100">
           <Toggle {...register('isPublic')} label="Equipo público" />
-          <ButtonSave loading={isSubmitting} saved={isSubmitSuccessful} />
+          <ButtonSave id='submit-team' loading={isSubmitting} saved={isSubmitSuccessful} />
         </div>
         <TextInput {...register('name')} label="Nombre del equipo" />
         <TextArea  {...register('description')} label="descripción" />

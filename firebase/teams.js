@@ -46,7 +46,7 @@ const updateTeam = async (team) => {
 }
 const getUserTeams = async (userId) => {
   const res = []
-  const q = query(collection(db, 'teams'), where('userId', '==', userId), orderBy('updatedAt', 'desc'))
+  const q = query(collection(db, 'teams'), where('userId', '==', userId))
 
   const querySnapshot = await getDocs(q)
 

@@ -3,5 +3,5 @@ import { Dates } from "firebase-dates-util"
 
 export const deepFormatFirebaseDates = (
   object,
-  target = 'firebase',
+  target = 'number',
 ) => Dates.deepFormatObjectDates(object, target)

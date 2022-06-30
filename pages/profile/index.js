@@ -9,14 +9,16 @@ import SectionUserInfo from '@comps/Profile/SectionUserInfo'
 
 function profile() {
   const {
-    user: { name, displayName, id }
+    user
   } = useUser()
+
+  console.log(user)
 
   return (
     <>
-      <Head title={name || displayName} />
+      <Head title={user?.name || user?.displayName} />
       <>
-        <SectionUserInfo userId={id} />
+        <SectionUserInfo userId={user?.id} />
       </>
     </>
   )

@@ -172,6 +172,7 @@ const NavbarSubMenu = ({
 
         {/*  <!-- Dropdown menu --> */}
         <ul
+      id='dropdown-menu'
           className={`absolute ${showMenu ? 'block' : 'hidden'
             } -right-1 z-20 w-48 py-2 mt-0  bg-base-100 rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
         >

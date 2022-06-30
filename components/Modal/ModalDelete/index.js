@@ -5,7 +5,7 @@ import Button from '@comps/Inputs/Button'
 
 export default function ModalDelete({
   handleDelete = null,
-  deleteSuccessful = () => {},
+  deleteSuccessful = () => { },
   labelDelete,
   itemId = '',
   buttonVariant = 'circle', // btn | outline | circle
@@ -56,6 +56,7 @@ export default function ModalDelete({
   return (
     <div>
       <ButtonIcon
+        id='delete-modal'
         iconName={'trash'}
         onClick={handleOpen}
         size={buttonSize}
@@ -77,6 +78,7 @@ export default function ModalDelete({
               Cancelar
             </Button>
             <Button
+            id='handle-delete-modal-button'
               className={'btn-error m-1 '}
               onClick={(e) => {
                 e.preventDefault()

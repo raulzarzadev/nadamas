@@ -35,7 +35,7 @@ export default function CoachSection({ user }) {
         <h3 className='text-lg font-bold'>Mis equipos</h3>
         <div className="grid grid-flow-col overflow-auto gap-4 p-2">
           <div className='w-28'>
-            <MainModal title={'Nuevo equipo'} OpenComponent={SquareAdd}>
+            <MainModal title={'Nuevo equipo'} OpenComponent={SquareAdd} OpenComponentProps={{id:'new-team'}}>
               <TeamForm />
             </MainModal>
           </div>
