@@ -9,6 +9,7 @@ describe('Login with google ', () => {
       .should('include','/login')
 
       cy.contains('Acepar y continuar').click()
-    // cy.contains()
+      // * TODO firebase bypasss  https://youtu.be/JqEzA44Lsts?t=265
+      cy.contains('Ingresar con Google').click()
   })
 })
