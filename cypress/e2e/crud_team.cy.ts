@@ -25,10 +25,12 @@ describe('Team CRUD', () => {
 
     cy.get('#submit-team').click()
 
+    // cy.contains('Guardado', { matchCase: false })
     cy.url()
       .should('include', '/teams/')
 
     cy.contains('Opciones')
+
 
   })
 
@@ -62,7 +64,7 @@ describe('Team CRUD', () => {
 
     // Save and wait for de answer
 
-    cy.contains('Guardado')
+    cy.contains('Guardado', { matchCase: false })
 
     // Close modal
 

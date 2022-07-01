@@ -26,19 +26,27 @@ export default function TeamForm({ team }) {
   } = useForm({
     defaultValues: team
   })
+  const [saved, setSaved] = useState(false)
   const onSubmit = (form) => {
     team?.id
-      ? updateTeam(form).then((res) => {
-        console.log(res)
-        // reset({ keepValues: true, keepIsSubmitted: true })
+      ? updateTeam(form).then(({ok, res}) => {
+        if (ok) {
+          setSaved(true)
+        }
       })
-      : createTeam(form, user).then(({ ok, res }) => {
-        reset({ keepValues: true, keepIsSubmitted: true })
-        ok && router.push(`/teams/${res.id}`)
-      })
+      : createTeam(form, user)
+        .then(({ ok, res }) => {
+          reset({ keepValues: true, keepIsSubmitted: true })
+          if (ok) {
+            setSaved(true)
+            setTimeout(() => {
+              router.push(`/teams/${res.id}`)
+            }, 400)
+          }
+        })
 
-    // console.log(form)
   }
+
 
   const handleUploadFile = ({ fileName, file }) => {
     FirebaseCRUD.uploadFile({ fileName, file }, (progress, downloadURL) => {
@@ -54,7 +62,7 @@ export default function TeamForm({ team }) {
       <div className="grid justify-center  relative">
         <div className="flex justify-between my-4 sticky top-8 w-full bg-base-100">
           <div></div>
-          <ButtonSave id='submit-team' loading={isSubmitting} saved={isSubmitSuccessful} />
+          <ButtonSave id='submit-team' loading={isSubmitting} saved={saved} />
         </div>
         <TextInput {...register('name', { required: true })} label="Nombre del equipo" />
         <TextArea  {...register('description')} label="descripción" />
@@ -63,7 +71,7 @@ export default function TeamForm({ team }) {
 
         <div>
           <h4>Compartir</h4>
-          <div className='flex'> 
+          <div className='flex'>
             <TextInput {...register('QRCodes.0.label')} label="Label " placeholder='Visita example' />
             <TextInput {...register('QRCodes.0.value')} label="Link " placeholder='https://ws.link.io' />
           </div>
