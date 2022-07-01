@@ -1,7 +1,7 @@
-import { Team } from "./team.model";
+import { TypeTeam } from "./team.model";
 
 
-export interface CreateAthleteDto extends Pick<Team, 'name' | 'id' > {
+export interface CreateAthleteDto extends Pick<TypeTeam, 'name' | 'id' > {
 
 
 }

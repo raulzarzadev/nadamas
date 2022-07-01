@@ -20,7 +20,5 @@ export class Athlete {
     return AthleteCRUD.listen(itemId, cb)
   }
 
-  get
-
 
 }
