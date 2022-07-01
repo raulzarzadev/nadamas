@@ -18,6 +18,8 @@ import PostSquare from '../Posts/postSquare'
 import { SquareAdd } from '../../SquareAdd'
 import PreviewImage from '../../PreviewImage'
 import TeamPosts from './TeamPosts'
+import QRCodes from './QRCodes'
+import PROJECT_INFO from '../../../CONSTANTS/PROJECT_INFO'
 
 export default function TeamDetails({ teamId }) {
   const router = useRouter()
@@ -76,10 +78,12 @@ export default function TeamDetails({ teamId }) {
     <div className="">
       <div className="grid mt-2 text-base-content">
         <div className='h-32'>
+
           {team?.image &&
             <PreviewImage image={team.image} previewSize='full-w' />
           }
         </div>
+
         <div className="flex justify-end text-sm font-thin ">
           {isOwnerOrCoach && <p className="mx-1">tuyo</p>}
           <p className="mx-1">{isPublic ? 'publico' : 'privado'}</p>
@@ -95,6 +99,16 @@ export default function TeamDetails({ teamId }) {
           <p>{description}</p>
         </div>
       </div>
+
+      {team?.showQRs &&
+        <QRCodes codes={[
+          {
+            label: 'Equipo en nadamas',
+            value: `${PROJECT_INFO.url}${router.asPath}`
+          },
+          ...team?.QRCodes
+        ]} />
+      }
 
 
 
