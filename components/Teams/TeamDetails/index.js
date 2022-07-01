@@ -162,11 +162,12 @@ export default function TeamDetails({ teamId }) {
           <Section title={`Opciones `}>
             <div className="flex justify-evenly">
               <ButtonIcon
+                id='open-modal-edit'
                 label="Editar"
                 iconName="edit"
                 onClick={handleOpenTeamForm}
               />
-              <Modal title='Editar equipo' open={openTeamForm} handleOpen={handleOpenTeamForm}>
+              <Modal title='Editar' open={openTeamForm} handleOpen={handleOpenTeamForm}>
                 <TeamForm team={team} />
               </Modal>
               <ModalDelete

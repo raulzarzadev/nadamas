@@ -33,9 +33,14 @@ describe('Team CRUD', () => {
   })
 
   it('Find team and edit it', () => {
+
+    // Login
+
     cy.login()
 
     cy.visit('http://localhost:3000/profile')
+
+    // Find a the team created beafore
 
     cy.contains('Mis equipos')
 
@@ -43,8 +48,31 @@ describe('Team CRUD', () => {
 
     cy.contains('Opciones').click()
 
-    cy.get('button[id=edit-modal]').click()
+    // Open the molda with edit form 
 
+    cy.get('button[id=open-modal-edit]').click()
+
+    cy.get('#team-form')
+
+    // Edit description
+
+    cy.get('textarea[name=description]').type(' Team description editaded ')
+
+    cy.get('#submit-team').click()
+
+    // Save and wait for de answer
+
+    cy.contains('Guardado')
+
+    // Close modal
+
+    cy.get('#close-modal-Editar').click()
+
+    // Verify if teams are edited
+
+    cy.get('#team-form').should('not.be.visible')
+
+    cy.contains('Team description editaded ')
 
   })
 

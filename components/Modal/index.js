@@ -30,6 +30,7 @@ const Modal = React.forwardRef(({
             <h5 className='font-bold'>{title}</h5>
           </div>
           <button
+            id={`close-modal-${title}`}
             className={''}
             onClick={(e) => {
               e.preventDefault()
