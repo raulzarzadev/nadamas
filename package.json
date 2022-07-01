@@ -8,7 +8,7 @@
     "start": "next start",
     "cy:open": "cypress open",
     "commit":"git add . && git commit -m ",
-    "publish":"yarn build && git push origin main"
+    "push-main":"yarn build && git push origin main"
   },
   "dependencies": {
     "@hookform/resolvers": "^2.8.3",
