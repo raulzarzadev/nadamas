@@ -7,7 +7,8 @@ export default function MainModal({
   buttonLabel = 'open modal',
   OpenComponent = null,
   OpenComponentProps = null,
-  OpenComponentType = null
+  OpenComponentType = null,
+  id='main-modal'
 }) {
 
   const OPEN_COMPONENT_STYLE = {
@@ -31,7 +32,7 @@ export default function MainModal({
         {buttonLabel}
       </button>
     }
-    <Modal ref={modalRef} title={title} open={openModal} handleOpen={handleOpenModal} >
+    <Modal ref={modalRef} title={title} id={id} open={openModal} handleOpen={handleOpenModal} >
       {children}
     </Modal>
   </>

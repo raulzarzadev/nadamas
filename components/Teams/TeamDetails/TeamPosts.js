@@ -18,7 +18,7 @@ const TeamPosts = ({ team, isOwnerOrCoach, isMember }) => {
       <div className='grid grid-flow-col overflow-auto gap-4 p-2'>
         {isOwnerOrCoach &&
           <div className='w-20'>
-            <MainModal title={'Nuevo post'} OpenComponent={SquareAdd}>
+            <MainModal title={'Nuevo post'} OpenComponent={SquareAdd} OpenComponentProps={{id:'square-add-post'}} >
               <FormPost team={team} />
             </MainModal>
           </div>
