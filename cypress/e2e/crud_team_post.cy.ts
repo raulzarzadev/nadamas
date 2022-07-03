@@ -17,7 +17,9 @@ describe('Team Posts CRUD', () => {
 
     cy.get('#square-add-post').click()
 
-    cy.get('[id^=modal-nuevo-post]').get('form input[name=title]').type('(post de prueba) <-no brrar Publicación')
+    cy.get('[id^=modal-nuevo-post]').within(() => {
+      cy.get('form input[name=title]').type('post de prueba <-no brrar Publicación')
+    })
 
     cy.get('#submit-new-post').click()
 
@@ -25,14 +27,14 @@ describe('Team Posts CRUD', () => {
 
     cy.get('[id^=close-modal-nuevo-post]').click()
 
-    cy.contains('(post de prueba)')
+    cy.contains('post de prueba')
   })
 
 
-  it('edit (post de prueba)',()=>{
-    cy.get('[id^=square-post-\\(post-de-prueba\\)]').click().within(() => {
+  it('edit "post de prueba"', () => {
+    cy.get('[id^=square-post-post-de-prueba]').click().within(() => {
       // Open modal post details
-     cy.get('#button-edit')
+      cy.get('#button-edit')
     })
   })
 
@@ -40,9 +42,9 @@ describe('Team Posts CRUD', () => {
 
   it('delete (post de prueba) ', () => {
 
-    
+
     // post de prueba exist
-    cy.get('[id^=square-post-\\(post-de-prueba\\)]').click().within(() => {
+    cy.get('[id^=square-post-post-de-prueba]').click().within(() => {
       // Open modal post details
       cy.get('#delete-modal').click()
       cy.get('#handle-delete-modal-button').click()
