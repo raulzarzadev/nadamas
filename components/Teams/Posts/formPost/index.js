@@ -10,10 +10,12 @@ import ButtonSave from "../../../Inputs/Button/ButtonSave"
 import RadioInput from "../../../Inputs/Radio"
 import Icon from "../../../Icon"
 import Tooltip from "../../../Tooltip"
+
 const FormPost = ({ team, post }) => {
   const { register, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: post
   })
+
   const onSubmit = (data) => {
     post?.id
       ?
@@ -28,14 +30,21 @@ const FormPost = ({ team, post }) => {
         ...data,
         teamId: team.id,
       })
-        .then((res) => {
+        .then(({ ok, res }) => {
           console.log(res)
-          reset()
+
+          if (ok) {
+            setSaved(true)
+            // reset()
+          }
         }).catch(err => {
           console.log(err)
         })
 
   }
+
+  const [saved, setSaved] = useState(false)
+
   const [imageProgress, setImageProgress] = useState(null)
   const handleUpdateImage = ({ fileName, file }) => {
     FirebaseCRUD.uploadFile({ fileName, file }, (progress, url) => {
@@ -45,16 +54,16 @@ const FormPost = ({ team, post }) => {
   }
   return (
     <div >
-      <form onSubmit={handleSubmit(onSubmit)} className='' >
+      <form id='form-new-post' onSubmit={handleSubmit(onSubmit)} className='' >
         <div className="flex justify-between items-center my-4 sticky top-8 left-0 right-0 bg-base-100 py-1">
-          <Toggle  {...register('isPublic')} label="Publico" size='lg'  />
-          <ButtonSave size='md' className='btn-primary' />
+          <Toggle  {...register('isPublic')} label="Publico" size='lg' />
+          <ButtonSave id='submit-new-post' size='md' saved={saved} />
         </div>
         <h4>Tipo de post:</h4>
         <div className="flex justify-around">
           <RadioInput
             value='info'
-            
+
             label={<Tooltip element={<Icon name='info' />} label='Información' />}
             {...register('type')} {...register('type')}
           />

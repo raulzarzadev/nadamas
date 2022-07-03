@@ -42,7 +42,7 @@ export class FirebaseCRUD {
         ...item
       }, 'number')
     }
-    console.log(newItem)
+    // console.log(newItem)
     return await updateDoc(doc(db, this.collectionName, itemId), newItem)
       .then(res => this.CRUDResponse(true, `UPDATED`, { id: itemId }))
       .catch(err => console.error(err))
@@ -65,7 +65,6 @@ export class FirebaseCRUD {
     onSnapshot(q, (doc) => {
       cb(FirebaseCRUD.normalizeDoc(doc))
     })
-
   }
 
   static formatResponse = (ok: boolean, type: string, res: any) => {
@@ -93,6 +92,17 @@ export class FirebaseCRUD {
       id,
       ...res
     }
+  }
+
+
+  async listenUserDocs(cb: CallableFunction) {
+    const currentUser = getAuth().currentUser
+    this.listenMany([where('userId', '==', currentUser.uid)], cb)
+  }
+
+
+  async listenMany(filters: any[], cb: CallableFunction) {
+    this.listenDocs(filters, cb)
   }
 
 

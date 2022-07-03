@@ -21,7 +21,6 @@ describe('Team CRUD', () => {
 
     cy.get('textarea[name=description]').type('Description cypress team test')
 
-    // cy.get('input[name=isPublic]').click()
 
     cy.get('#submit-team').click()
 
@@ -29,6 +28,7 @@ describe('Team CRUD', () => {
       .should('include', '/teams/')
 
     cy.contains('Opciones')
+
 
   })
 
@@ -62,11 +62,11 @@ describe('Team CRUD', () => {
 
     // Save and wait for de answer
 
-    cy.contains('Guardado')
+    cy.contains('Guardado', { matchCase: false })
 
     // Close modal
 
-    cy.get('#close-modal-Editar').click()
+    cy.get('[id^=close-modal-editar]').click()
 
     // Verify if teams are edited
 

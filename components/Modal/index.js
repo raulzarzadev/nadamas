@@ -5,14 +5,14 @@ const Modal = React.forwardRef(({
   title = 'Modal title',
   open,
   handleOpen = () => { },
-  children
+  children,
 }, ref) => {
-  const modalId = `modal-${new Date().getTime()}-${Math.random()}`
+  const modalId = `${title.split(' ').join('-').toLowerCase()}-${new Date().getTime()}-${Math.random()}`
 
   return (
     <div
       className={` top-0 bottom-0 left-0 right-0 flex justify-center items-center bg-black bg-opacity-50 z-20 ${open ? 'fixed' : 'hidden'} `}
-      id={modalId}
+      id={`container-${modalId}`}
       onClick={(e) => {
         // e.preventDefault()
         /**
@@ -20,17 +20,17 @@ const Modal = React.forwardRef(({
         *
         */
         e.stopPropagation()
-        e.target.id === modalId && handleOpen()
+        e.target.id === `container-${modalId}` && handleOpen()
       }}
     >
-      <div className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  z-20 '>
+      <div id={`modal-${modalId}`} className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  z-20 '>
 
         <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 '}>
           <div className={''}>
             <h5 className='font-bold'>{title}</h5>
           </div>
           <button
-            id={`close-modal-${title}`}
+            id={`close-modal-${modalId}`}
             className={''}
             onClick={(e) => {
               e.preventDefault()

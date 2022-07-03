@@ -32,7 +32,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx"
-  ],
+, "firebase/BaseCRUD.TS"  ],
   "exclude": [
     "node_modules"
   ]

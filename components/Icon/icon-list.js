@@ -46,6 +46,7 @@ import { FcGoogle } from 'react-icons/fc'
 
 import { FaSignInAlt } from 'react-icons/fa'
 
+import { RiFileCopyLine, RiFileCopyFill } from 'react-icons/ri'
 // ALL ICONS SHOULD BE OUTLINE
 
 const ICON_LIST = {
@@ -85,5 +86,7 @@ const ICON_LIST = {
   dots: MdOutlineMoreVert,
   workout: CgGym,
   event: MdOutlineEvent,
+  copy: RiFileCopyLine,
+  copyFill: RiFileCopyFill
 }
 export default ICON_LIST
