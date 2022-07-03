@@ -6,11 +6,23 @@ import PickerTest from '@comps/Inputs/PickerTest'
 import TextInput from '@comps/Inputs/TextInput'
 import ModalDelete from '@comps/Modal/ModalDelete'
 import { format } from 'date-fns'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
 export default function FormRecord({ record, setRecord = () => { } }) {
+  const router = useRouter()
+  console.log(router)
+
   // const initialDate = record?.date ? dateFormat(record?.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
-  const initalFormState = { date: record?.date }
+  const athleteId = router?.query?.memberId || null
+
+  const initalFormState = {
+    date: record?.date,
+    athleteId
+  }
+
+
+
 
   const [form, setForm] = useState(initalFormState)
 
@@ -42,10 +54,21 @@ export default function FormRecord({ record, setRecord = () => { } }) {
     setForm(initalFormState)
   }
 
+  console.log(athleteId)
+
 
 
   return (
     <div className="max-w-sm mx-auto pt-3 p-1">
+      {athleteId &&
+        <TextInput
+          onChange={handleChange}
+          name="date"
+          type="date"
+          value={dateFormat(form?.date, 'yyyy-MM-dd')}
+          label="Usuario seleccioando"
+        />
+      }
       <div className="my-2 flex justify-center">
         <TextInput
           onChange={handleChange}
@@ -54,6 +77,9 @@ export default function FormRecord({ record, setRecord = () => { } }) {
           value={dateFormat(form?.date, 'yyyy-MM-dd')}
           label="Fecha"
         />
+
+        {/* TODO * Add  user input// if user is selected, omit it. */}
+
       </div>
       <PickerTest setTest={handleSetFormValue} test={form?.test} />
       <div className="flex flex-col text-center w-full justify-evenly py-2 px-1 items-center">
