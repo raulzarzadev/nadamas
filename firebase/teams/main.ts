@@ -1,7 +1,8 @@
+import { where } from "firebase/firestore";
 import { FirebaseCRUD } from "../FirebaseCRUD";
 import { TypeTeam } from "./team.model";
 
-const TeamCRUD_V2 = new FirebaseCRUD('teamsV2')
+const TeamCRUD_V2 = new FirebaseCRUD('teams')
 
 export class Team {
 
@@ -21,11 +22,15 @@ export class Team {
     return TeamCRUD_V2.listen(itemId, cb)
   }
 
-  members(itemId: TypeTeam['id']) {
-    return TeamCRUD_V2.listen(itemId, (data: any) => data.members)
+  listenUserTeams(cb: CallableFunction) {
+    TeamCRUD_V2.listenUserDocs(cb)
   }
 
 
-
-
+  members(itemId: TypeTeam['id']) {
+    return TeamCRUD_V2.listen(itemId, (data: any) => data.members)
+  }
 }
+
+
+export const TeamCRUD = new Team()
