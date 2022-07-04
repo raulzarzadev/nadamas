@@ -5,13 +5,14 @@ import PickerRecord from '@comps/Inputs/PickerRecord'
 import PickerTest from '@comps/Inputs/PickerTest'
 import TextInput from '@comps/Inputs/TextInput'
 import ModalDelete from '@comps/Modal/ModalDelete'
-import { format } from 'date-fns'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import SearchAthletes from './SearchAthletes'
 
-export default function FormRecord({ record, setRecord = () => { } }) {
+export default function FormRecord({ record, setRecord = () => { }, searchAthletes = false }) {
   const router = useRouter()
-  console.log(router)
+  
+  // console.log(router)
 
   // const initialDate = record?.date ? dateFormat(record?.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
   const athleteId = router?.query?.memberId || null
@@ -54,21 +55,14 @@ export default function FormRecord({ record, setRecord = () => { } }) {
     setForm(initalFormState)
   }
 
-  console.log(athleteId)
+  //console.log(athleteId)
 
 
 
   return (
     <div className="max-w-sm mx-auto pt-3 p-1">
-      {athleteId &&
-        <TextInput
-          onChange={handleChange}
-          name="date"
-          type="date"
-          value={dateFormat(form?.date, 'yyyy-MM-dd')}
-          label="Usuario seleccioando"
-        />
-      }
+     
+
       <div className="my-2 flex justify-center">
         <TextInput
           onChange={handleChange}
@@ -106,6 +100,6 @@ export default function FormRecord({ record, setRecord = () => { } }) {
           handleDelete={() => handleDeleteRecord(form?.id)}
         />
       </div>
-    </div>
+    </div >
   )
 }

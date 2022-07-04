@@ -12,8 +12,9 @@ export default function Teams() {
   useEffect(() => {
     listenPublicTeams(setTeams)
   }, [])
-
+  
   const [searchValue, setSearchValue] = useState('')
+  const [searchResult, setSearchResult]=useState()
 
   useEffect(() => {
     if (searchValue.length > 0) {
@@ -27,7 +28,6 @@ export default function Teams() {
     }
   }, [searchValue])
 
-  const [searchResult, setSearchResult]=useState()
   
   return (
     <div className="">
