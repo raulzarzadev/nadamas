@@ -2,7 +2,7 @@ import { where } from "firebase/firestore";
 import { FirebaseCRUD } from "../FirebaseCRUD";
 import { RecordType } from "./records.model";
 
-const RecordFirebaseCRUD = new FirebaseCRUD('records')
+const RecordFirebaseCRUD = new FirebaseCRUD('records_V2')
 
 class Record {
   create(newItem: RecordType) {

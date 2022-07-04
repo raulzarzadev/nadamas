@@ -77,7 +77,7 @@ export default function MemberDetails({ memberId, teamId }) {
                 <p>Alergias: {medicInformation?.considerations}</p>
             )}
         </div>
-        <RecordsSection userId={member.id} canCreateNewRecord={isOwner} />
+        <RecordsSection athleteId={member.id} canCreateNewRecord={isOwner} />
         {/*  <AthleteSection userId={member.id} canCreateNewRecord={isOwner} /> */}
         <Section title={'Opciones'}>
             <ModalDelete

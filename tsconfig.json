@@ -3,11 +3,24 @@
     // "jsx": "react",
     "baseUrl": ".",
     "paths": {
-      "@comps/*": ["components/*"],
-      "@legasy/*": [".legasy/src/components/*"],
-      "@/*": ["./*"],
-      "@context":["context/*"],
-      "@utils/*": ["utils/*"],
+      "@comps/*": [
+        "components/*"
+      ],
+      "@legasy/*": [
+        ".legasy/src/components/*"
+      ],
+      "@/*": [
+        "./*"
+      ],
+      "@context": [
+        "context/*"
+      ],
+      "@utils/*": [
+        "utils/*"
+      ],
+      "@firebase/*": [
+        "firebase/*"
+      ]
     },
     "target": "es5",
     "lib": [
@@ -31,8 +44,9 @@
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx"
-, "firebase/BaseCRUD.TS"  ],
+    "**/*.tsx",
+    "firebase/BaseCRUD.TS"
+  ],
   "exclude": [
     "node_modules"
   ]

@@ -1,6 +1,10 @@
 import { Base } from "../base.modal";
+import { Reward } from "../reward/Reward.model";
 
 export interface RecordType extends Base {
+  awards: Reward[]
+  athleteId: string
+  date: any
 
   event: {
     id: any
@@ -20,9 +24,10 @@ export interface RecordType extends Base {
     date: any
   }
 
-  place: {
-    type: string
-    distance: number
+
+  location: {
+    fieldType: string
+    fieldSize: string
     name: string
   }
 

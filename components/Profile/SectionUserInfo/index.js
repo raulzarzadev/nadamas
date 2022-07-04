@@ -23,7 +23,7 @@ export default function SectionUserInfo({ userId }) {
       {!isCoach && (
         <>
           <AthleteTeamsSection userId={userId} openSection={true} />
-          <AthleteSection userId={userId} />
+          <AthleteSection athleteId={userId} />
         </>
       )}
       <UserSection user={user} />

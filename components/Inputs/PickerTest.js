@@ -3,17 +3,18 @@ import { useEffect, useState } from 'react'
 
 export default function PickerTest({
   test = undefined,
-  setTest = (fieldName, fieldValue) => console.log(`test`, test)
+  setTest = (fieldName, fieldValue) => console.log(`test`, test),
+  fieldName = 'tests'
 }) {
- 
+
 
   const handleChangeDistance = ({ target }) => {
-    const newValue = { ...test, distance: target.name }
-    setTest('test', newValue)
+    const newValue = { ...test, distance: parseInt(target.name) }
+    setTest(fieldName, newValue)
   }
   const handleChangeStyle = ({ target }) => {
     const newValue = { ...test, style: target.name }
-    setTest('test', newValue)
+    setTest(fieldName, newValue)
   }
   return (
     <div className="">
@@ -41,7 +42,7 @@ export default function PickerTest({
                 label={label}
                 name={id}
                 onChange={handleChangeDistance}
-                checked={test?.distance === id}
+                checked={test?.distance == id}
               />
             </div>
           ))}

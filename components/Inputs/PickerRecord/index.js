@@ -1,66 +1,38 @@
 
 import React, { useEffect, useRef, useState } from 'react'
+import formatNumberInput from './formatNumberInput'
+import formatRecord from './formatRecord'
+import transformRecord from './transformRecord'
 
-const formatNumberInput = (value) => {
-  const num = parseInt(value)
-  if (!num) return ''
-  return value < 1 ? '00' : value < 10 ? `0${value}` : `${value}`
-}
+
 
 export default function PickerRecord({
   value = null,
   setValue = (fieldName = '', value) => { },
   name = 'record',
-  size = 'md'
+  size = 'md',
+  includeHours = false,
+  inMilliseconds = true
 }) {
-  const formatValue = (value) => {
-    if (!value) return { minutes: '00', seconds: '00', ms: '00' }
-
-    if (typeof value === 'string') {
-      const auxArr = value.split(/[:\.]/g)
-      const minutes = auxArr[0]
-      const seconds = auxArr[1]
-      const ms = auxArr[2]
-
-      return {
-        minutes: parseInt(minutes),
-        seconds: parseInt(seconds),
-        ms: parseInt(ms)
-      }
-    }
-  }
-
-  const [form, setForm] = useState(formatValue(value))
+  
+  const [form, setForm] = useState(formatRecord(value))
 
   const _handleChange = ({ target: { name, value } }) => {
     setForm({ ...form, [name]: value })
   }
 
-  const transformRecord = ({ minutes = 0, seconds = 0, ms = 0 }) => {
-    const secs = formatNumberInput(seconds)
-    const mins = formatNumberInput(minutes)
-    const mili = formatNumberInput(ms)
-    const res = `${mins || '00'}:${secs || '00'}.${mili || '00'}`
-    return res
-  }
-
   useEffect(() => {
-    transformRecord({ ...form })
-    setValue(name, transformRecord({ ...form }))
+    setValue(name, transformRecord({ ...form }, { inMilliseconds }))
   }, [form])
 
- /*  useEffect(() => {
-    if (value) {
-      setForm(formatValue(value))
-    }
-  }, [value]) */
-
-  //console.log(`form`, form)
   const nextInput = (nextInputName) => {
-    if (nextInputName === 'minutes') return minutesRef.current.focus()
-    if (nextInputName === 'seconds') return secondsRef.current.focus()
-    if (nextInputName === 'ms') return msRef.current.focus()
+    if (nextInputName === 'hours') return hoursRef?.current?.focus()
+    if (nextInputName === 'minutes') return minutesRef?.current?.focus()
+    if (nextInputName === 'seconds') return secondsRef?.current?.focus()
+    if (nextInputName === 'ms') return msRef?.current?.focus()
   }
+  
+  const hoursRef = useRef(null)
   const minutesRef = useRef(null)
   const secondsRef = useRef(null)
   const msRef = useRef(null)
@@ -70,18 +42,28 @@ export default function PickerRecord({
     if (minutesRef?.current) minutesRef?.current?.focus()
   }, [minutesRef])
 
-  console.log(value);
-  console.log(form);
 
   return (
     <div className="  flex justify-center">
+      {includeHours &&
+        <InputNumber
+          ref={hoursRef}
+          name="hours"
+          label="Hrs"
+          onChange={_handleChange}
+          value={form.hours}
+          max={24}
+          size={size}
+          nextInput={() => nextInput('minutes')}
+        />
+      }
       <InputNumber
         ref={minutesRef}
         name="minutes"
         label="Mins"
         onChange={_handleChange}
         value={form.minutes}
-        max={99}
+        max={60}
         size={size}
         nextInput={() => nextInput('seconds')}
       />
@@ -103,7 +85,7 @@ export default function PickerRecord({
         value={form.ms}
         max={99}
         maxLength={3}
-        nextInput={() => nextInput('minutes')}
+        nextInput={() => nextInput(includeHours ? 'hours' : 'minutes')}
         size={'lg'}
       />
     </div>

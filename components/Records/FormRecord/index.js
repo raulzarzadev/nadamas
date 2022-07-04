@@ -7,23 +7,22 @@ import TextInput from '@comps/Inputs/TextInput'
 import ModalDelete from '@comps/Modal/ModalDelete'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import SearchAthletes from './SearchAthletes'
+import ButtonSave from '../../Inputs/Button/ButtonSave'
+//import SearchAthletes from './SearchAthletes'
 
 export default function FormRecord({ record, setRecord = () => { }, searchAthletes = false }) {
   const router = useRouter()
-  
+
   // console.log(router)
 
   // const initialDate = record?.date ? dateFormat(record?.date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
   const athleteId = router?.query?.memberId || null
 
   const initalFormState = {
-    date: record?.date,
-    athleteId
+    date: record?.date || dateFormat(new Date(), 'yyyy-MM-dd'),
+    athleteId,
+    record: 0
   }
-
-
-
 
   const [form, setForm] = useState(initalFormState)
 
@@ -50,18 +49,25 @@ export default function FormRecord({ record, setRecord = () => { }, searchAthlet
   }
 
   const handleSaveRecord = () => {
-    setRecord({ ...form, test: { ...form.test, record: form.record } })
+    setRecord({
+      ...form,
+      race:
+        { ...form?.race, record: form?.record, date: form?.date },
+      athlete: {
+        id: athleteId
+      }
+    })
     setAlreadySent(true)
     setForm(initalFormState)
   }
 
-  //console.log(athleteId)
-
-
+  const validForm = !!form?.record && !!form?.race?.style && !!form?.race?.distance
+  
+ 
 
   return (
     <div className="max-w-sm mx-auto pt-3 p-1">
-     
+
 
       <div className="my-2 flex justify-center">
         <TextInput
@@ -72,27 +78,26 @@ export default function FormRecord({ record, setRecord = () => { }, searchAthlet
           label="Fecha"
         />
 
-        {/* TODO * Add  user input// if user is selected, omit it. */}
+        {/**  TODO * Add  user input// if user is selected, omit it. */}
 
       </div>
-      <PickerTest setTest={handleSetFormValue} test={form?.test} />
+      <PickerTest setTest={handleSetFormValue} test={form?.race} fieldName='race'/>
       <div className="flex flex-col text-center w-full justify-evenly py-2 px-1 items-center">
         <div className="my-2">
           Tiempo
-          <PickerRecord setValue={handleSetFormValue} value={form?.record} />
+          <PickerRecord setValue={handleSetFormValue} value={form?.record} inMilliseconds />
         </div>
         <div className="grid gap-2 place-items-center sm:flex">
-          <Button
-            disabled={alreadySent}
-            variant="primary"
+
+          <ButtonSave
+            saved={alreadySent}
+            disabled={!validForm}
             onClick={(e) => {
               e.preventDefault()
               handleSaveRecord()
             }}
-          >
-            {alreadySent ? 'Guardado' : 'Guardar'}
-            <Icon name="save" />
-          </Button>
+          />
+
         </div>
         <ModalDelete
           title="Eliminar"
