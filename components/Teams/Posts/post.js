@@ -22,6 +22,7 @@ const Post = ({ post, isMemeber = false }) => {
   }
   const { user } = useUser()
   const isOwner = userId === user.id
+  
   return (
     <div className="w-44 border-2 border-transparent hover:border-base-100 rounded" onClick={handleOpenModal}>
       <p className="text-right text-xs">{isPublic ? 'Público' : 'Privado'}</p>

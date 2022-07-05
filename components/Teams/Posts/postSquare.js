@@ -9,6 +9,7 @@ import { useUser } from "../../../context/UserContext"
 import ButtonIcon from "../../Inputs/Button/ButtonIcon"
 import Icon from "../../Icon"
 import { Dates } from 'firebase-dates-util'
+import PreviewImage from "../../PreviewImage"
 
 const PostSquare = ({ post, isMemeber = false }) => {
   const [openModal, setOpenModal] = useState(false)
@@ -34,11 +35,17 @@ const PostSquare = ({ post, isMemeber = false }) => {
   }
   return (
     <div id={`square-post-${title.split(' ').join('-').toLowerCase()}`} className="square-add w-44 border-2  hover:border-base-200 shadow-md border-base-100 rounded relative p-0.5" onClick={handleOpenModal}>
-      {POST_TYPE[post?.type || 'info']}
-      <p className="text-right text-xs">{isPublic ? 'Público' : 'Privado'}</p>
-      <p className="font-thin text-2xs">
-        Editado: {Dates.fromNow(updatedAt || createdAt)}
-      </p>
+      <div className="relative bg-no-repeat bg-cover bg-center " style={{ backgroundImage: `url(${image})` }}>
+        <div className="text-white bg-base-200 font-bold bg-opacity-70 hover:bg-opacity-0">
+          <span className="">
+            {POST_TYPE[post?.type || 'info']}
+          </span>
+          <p className="text-right text-xs" >{isPublic ? 'Público' : 'Privado'}</p>
+          <p className=" text-xs">
+            Editado: {Dates.fromNow(updatedAt || createdAt)}
+          </p>
+        </div>
+      </div>
       <h3 className=" font-bold">{title}</h3>
 
       <p className="max-h-32 overflow-y-auto">
@@ -50,11 +57,12 @@ const PostSquare = ({ post, isMemeber = false }) => {
           {isOwner &&
             <div className="flex justify-around sticky top-8 w-full pb-2 bg-base-100">
               <ModalDelete handleDelete={() => handleDelete(id)} buttonVariant='btn' buttonLabel='Eliminar' buttonSize="sm" />
-              <MainModal title='Editar post' OpenComponent={ButtonIcon} OpenComponentProps={{ iconName: 'edit', label: 'editar',id:'button-edit' }}>
+              <MainModal title='Editar post' OpenComponent={ButtonIcon} OpenComponentProps={{ iconName: 'edit', label: 'editar', id: 'button-edit' }}>
                 <FormPost post={post} />
               </MainModal>
             </div>
           }
+          <PreviewImage image={image} />
           <p className="text-right">{isPublic ? 'Público' : 'Privado'}</p>
           <h1 className=" font-bold">{title}</h1>
           <p className="font-thin text-sm"> Editado: {Dates.fromNow(updatedAt || createdAt)}</p>
