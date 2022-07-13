@@ -96,7 +96,15 @@ export default function TeamDetails({ teamId }) {
         </div>
       </div>
 
-     
+      {team?.showQRs &&
+        <QRCodes codes={[
+          {
+            label: 'Equipo en nadamas',
+            value: `${PROJECT_INFO.url}${router.asPath}`
+          },
+          ...team?.QRCodes
+        ]} />
+      }
 
 
 
@@ -185,14 +193,19 @@ export default function TeamDetails({ teamId }) {
                   }}
                 />
               </div>
-              <h2>Compartir </h2>
-              <QRCodes codes={[
-                {
-                  label: 'Equipo en nadamas',
-                  value: `${PROJECT_INFO.url}${router.asPath}`
-                },
-                ...team?.QRCodes
-              ]} />
+              {team?.showQRs &&
+                <div>
+                  <h2>Compartir </h2>
+                  <QRCodes codes={[
+                    {
+                      label: 'Equipo en nadamas',
+                      value: `${PROJECT_INFO.url}${router.asPath}`
+                    },
+                    ...team?.QRCodes
+                  ]} />
+                </div>
+              }
+
             </div>
           </Section>
         </>
