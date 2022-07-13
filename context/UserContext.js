@@ -41,8 +41,7 @@ export function UserProvider({ children }) {
   }
 
   useEffect(() => {
-    if (user) router.push('/profile')
-    console.log('hola')
+    if (user && router.pathname==='/') router.push('/profile')
   }, [user])
 
   if (user === undefined) return <Loading />
