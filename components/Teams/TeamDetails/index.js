@@ -10,12 +10,8 @@ import Section from '@comps/Section'
 import TeamMember from '@comps/TeamMember'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import MainModal from '../../Modal/MainModal'
-import FormPost from '../Posts/formPost'
 import TeamForm from '../TeamForm'
 import { listenTeamPosts } from '@/firebase/posts/main'
-import PostSquare from '../Posts/postSquare'
-import { SquareAdd } from '../../SquareAdd'
 import PreviewImage from '../../PreviewImage'
 import TeamPosts from './TeamPosts'
 import QRCodes from './QRCodes'
@@ -30,9 +26,12 @@ export default function TeamDetails({ teamId }) {
   }, [])
 
   const [teamPosts, setTeamPosts] = useState([])
+  
   useEffect(() => {
     listenTeamPosts(teamId, (teams) => setTeamPosts(teams))
   }, [])
+
+  
 
 
   const [openTeamForm, setOpenTeamForm] = useState()

@@ -5,11 +5,9 @@ import Phone from '@comps/Inputs/Phone'
 import TextInput from '@comps/Inputs/TextInput'
 import Toggle from '@comps/Inputs/Toggle'
 import Section from '@comps/Section'
-import { format } from 'date-fns'
 import { useForm } from 'react-hook-form'
 
 export default function UserForm({ user }) {
-  console.log(user);
   const {
     register,
     handleSubmit,

@@ -18,7 +18,6 @@ const PostSquare = ({ post, isMemeber = false }) => {
   }
   const { title = '', content, isPublic, updatedAt, createdAt, image, images, id, userId } = post
   const visibility = isPublic || isMemeber
-  console.log(updatedAt)
   const handleDelete = (id) => {
     deletePost(id)
       .then(res => console.log(res))

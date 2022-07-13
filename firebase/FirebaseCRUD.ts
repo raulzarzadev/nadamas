@@ -1,5 +1,5 @@
 import { getAuth } from "firebase/auth";
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, Timestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, Timestamp, updateDoc, where } from "firebase/firestore";
 // import { deepFormatFirebaseDates } from "./deepFormatFirebaseDates";
 import { Dates } from 'firebase-dates-util'
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
@@ -83,7 +83,6 @@ export class FirebaseCRUD {
   }
 
   static normalizeDoc(doc) {
-
     if (!doc?.exists()) return null
     const data = doc.data()
     const id = doc.id
@@ -97,7 +96,7 @@ export class FirebaseCRUD {
 
   async listenUserDocs(cb: CallableFunction) {
     const currentUser = getAuth().currentUser
-    this.listenMany([where('userId', '==', currentUser.uid)], cb)
+    this.listenMany([where('userId', '==', currentUser.uid), orderBy()], cb)
   }
 
 

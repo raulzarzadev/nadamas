@@ -12,8 +12,7 @@ const Modal = React.forwardRef(({
   return (
     <div
       className={`
-      ${open ? 'block' : 'hidden'} 
-      fixed
+      ${open ? 'fixed' : 'hidden'} 
        top-0 
        bottom-0 
        left-0 
@@ -21,8 +20,7 @@ const Modal = React.forwardRef(({
        flex 
        justify-center
       items-center
-      bg-black 
-      bg-opacity-50 
+      bg-black bg-opacity-50 
        z-20 
        `}
       id={`container-${modalId}`}

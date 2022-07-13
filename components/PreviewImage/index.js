@@ -20,16 +20,27 @@ const PreviewImage = ({ label = null, image = null, canOpenModal = true, preview
         <>
           {label && <span className="">{label}</span>}
           <div
-            className={` ${previewSizing[previewSize]} ${PreviewClassName}  relative mx-auto opacity-60 hover:opacity-100 shadow-lg m-1`}
+            className={` ${previewSizing[previewSize]} ${PreviewClassName}    relative  mx-auto opacity-60 hover:opacity-100 shadow-lg m-1 `}
             onClick={(e) => {
               canOpenModal && handleOpenModal()
             }}
           >
-            <Image src={image} layout='fill' objectFit="cover" />
+            <Image
+              src={image}
+              layout='fill'
+              objectFit="cover"
+              placeholder="blur"
+              blurDataURL={`/images/defaultBlurImage-small.jpg`}
+            />
           </div>
           <Modal title='Image' open={openModal} handleOpen={handleOpenModal}>
             <div className="relative w-full aspect-video mx-auto" >
-              <Image src={image} layout='fill' objectFit="contain" />
+              <Image
+                layout='fill'
+                objectFit="contain"
+                blurDataURL={`/images/defaultBlurImage-small.jpg`}
+                src={image}
+              />
             </div>
           </Modal>
         </>
