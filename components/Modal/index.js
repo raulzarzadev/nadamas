@@ -5,6 +5,7 @@ const Modal = React.forwardRef(({
   title = 'Modal title',
   open,
   handleOpen = () => { },
+  headerComponent,
   children,
 }, ref) => {
   const modalId = `${title.split(' ').join('-').toLowerCase()}-${new Date().getTime()}-${Math.random()}`
@@ -38,10 +39,10 @@ const Modal = React.forwardRef(({
     >
       <div
         id={`modal-${modalId}`}
-        className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  z-20 
+        className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  z-20 relative
       '>
 
-        <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 '}>
+        <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 z-20  h-8'}>
           <div className={''}>
             <h5 className='font-bold'>{title}</h5>
           </div>
@@ -55,8 +56,15 @@ const Modal = React.forwardRef(({
           >
             <Icon name='cross' />
           </button>
+
         </header>
-        <div className='p-5 pt-0'>{children}</div>
+        {headerComponent &&
+          <div className='sticky top-8 z-20'>
+            {headerComponent}
+          </div>
+        }
+
+        <div className='p-5 pt-0 relative'>{children}</div>
 
       </div>
 

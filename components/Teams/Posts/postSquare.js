@@ -51,22 +51,31 @@ const PostSquare = ({ post, isMemeber = false }) => {
 
         <span className=" text-sm whitespace-pre-line ">{visibility ? content?.slice(0, 100) : 'Post privado.'}</span>
       </p>
-      <Modal open={openModal} handleOpen={handleOpenModal} title={title} >
+      <Modal
+        open={openModal}
+        handleOpen={handleOpenModal}
+        title={title}
+        headerComponent={
+          <div>
+            {isOwner &&
+              <div className="flex justify-around pb-2 bg-base-100 ">
+                <ModalDelete handleDelete={() => handleDelete(id)} buttonVariant='btn' buttonLabel='Eliminar' buttonSize="sm" />
+                <MainModal title='Editar post' OpenComponent={ButtonIcon} OpenComponentProps={{ iconName: 'edit', label: 'editar', id: 'button-edit' }}>
+                  <FormPost post={post} />
+                </MainModal>
+              </div>
+            }
+
+          </div>
+        }
+      >
+
         <div className="relative">
-          {isOwner &&
-            <div className="flex justify-around sticky top-8 w-full pb-2 bg-base-100">
-              <ModalDelete handleDelete={() => handleDelete(id)} buttonVariant='btn' buttonLabel='Eliminar' buttonSize="sm" />
-              <MainModal title='Editar post' OpenComponent={ButtonIcon} OpenComponentProps={{ iconName: 'edit', label: 'editar', id: 'button-edit' }}>
-                <FormPost post={post} />
-              </MainModal>
-            </div>
-          }
           <PreviewImage image={image} />
           <p className="text-right">{isPublic ? 'Público' : 'Privado'}</p>
           <h1 className=" font-bold">{title}</h1>
           <p className="font-thin text-sm"> Editado: {Dates.fromNow(updatedAt || createdAt)}</p>
           <span className=" text-sm whitespace-pre-line">{visibility && visibility ? content : 'Post privado.'}</span>
-
         </div>
       </Modal>
     </div>

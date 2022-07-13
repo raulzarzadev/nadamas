@@ -15,15 +15,26 @@ const PreviewImage = ({ label = null, image = null, canOpenModal = true, preview
   }
 
   return (
-    <>
+    <div className="">
       {image ?
-        <>
+        <div className="" >
           {label && <span className="">{label}</span>}
           <div
-            className={` ${previewSizing[previewSize]} ${PreviewClassName}    relative  mx-auto opacity-60 hover:opacity-100 shadow-lg m-1 `}
+            className={`
+             ${previewSizing[previewSize]}
+             ${PreviewClassName} 
+            relative  
+            mx-auto 
+            opacity-60 
+            hover:opacity-100 
+            shadow-lg 
+            m-1 
+            `}
+
             onClick={(e) => {
               canOpenModal && handleOpenModal()
             }}
+
           >
             <Image
               src={image}
@@ -43,11 +54,11 @@ const PreviewImage = ({ label = null, image = null, canOpenModal = true, preview
               />
             </div>
           </Modal>
-        </>
+        </div>
         :
         <span className="italic">No image</span>
       }
-    </>
+    </div>
   )
 
 }

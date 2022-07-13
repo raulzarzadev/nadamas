@@ -55,7 +55,7 @@ const FormPost = ({ team, post }) => {
   return (
     <div >
       <form id='form-new-post' onSubmit={handleSubmit(onSubmit)} className='' >
-        <div className="flex justify-between items-center my-4 sticky top-8 left-0 right-0 bg-base-100 py-1">
+        <div className="flex justify-between items-center my-4 sticky top-8 left-0 right-0 bg-base-100 py-1 z-20">
           <Toggle  {...register('isPublic')} label="Publico" size='lg' />
           <ButtonSave id='submit-new-post' size='md' saved={saved} />
         </div>

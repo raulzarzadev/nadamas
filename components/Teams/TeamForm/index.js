@@ -60,8 +60,7 @@ export default function TeamForm({ team }) {
   return (
     <form id='team-form' onSubmit={handleSubmit(onSubmit)}>
       <div className="grid justify-center  relative">
-        <div className="flex justify-between my-4 sticky top-8 w-full bg-base-100">
-          <div></div>
+        <div className="flex justify-end my-4 py-1 z-20 sticky top-8 w-full bg-base-100">
           <ButtonSave id='submit-team' loading={isSubmitting} saved={saved} />
         </div>
         <TextInput {...register('name', { required: true })} label="Nombre del equipo" />
