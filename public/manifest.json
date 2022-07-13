@@ -1,12 +1,12 @@
 {
   "name": "nadamas Progressive Web App",
   "short_name": "nadamas",
-  "theme_color": "#317EFB",
+  "theme_color": "#004740",
   "background_color": "#004740",
   "display": "fullscreen",
   "orientation": "portrait",
   "scope": "/",
-  "start_url": "/profile",
+  "start_url": "./profile",
   "prefer_related_applications": false,
   "icons": [
     {

@@ -96,18 +96,6 @@ export default function TeamDetails({ teamId }) {
         </div>
       </div>
 
-      {team?.showQRs &&
-        <QRCodes codes={[
-          {
-            label: 'Equipo en nadamas',
-            value: `${PROJECT_INFO.url}${router.asPath}`
-          },
-          ...team?.QRCodes
-        ]} />
-      }
-
-
-
       {!isOwnerOrCoach &&
         <div>
           {!isMember && (
