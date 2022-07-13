@@ -26,13 +26,10 @@ export default function TeamDetails({ teamId }) {
   }, [])
 
   const [teamPosts, setTeamPosts] = useState([])
-  
+
   useEffect(() => {
     listenTeamPosts(teamId, (teams) => setTeamPosts(teams))
   }, [])
-
-  
-
 
   const [openTeamForm, setOpenTeamForm] = useState()
   const handleOpenTeamForm = () => {
@@ -99,15 +96,7 @@ export default function TeamDetails({ teamId }) {
         </div>
       </div>
 
-      {team?.showQRs &&
-        <QRCodes codes={[
-          {
-            label: 'Equipo en nadamas',
-            value: `${PROJECT_INFO.url}${router.asPath}`
-          },
-          ...team?.QRCodes
-        ]} />
-      }
+     
 
 
 
@@ -173,26 +162,37 @@ export default function TeamDetails({ teamId }) {
             ))}
           </Section>
           <Section title={`Opciones `}>
-            <div className="flex justify-evenly">
-              <ButtonIcon
-                id='open-modal-edit'
-                label="Editar"
-                iconName="edit"
-                onClick={handleOpenTeamForm}
-              />
-              <Modal title='Editar' open={openTeamForm} handleOpen={handleOpenTeamForm}>
-                <TeamForm team={team} />
-              </Modal>
-              <ModalDelete
-                buttonLabel={'Borrar equipo'}
-                labelDelete="equipo"
-                buttonSize="sm"
-                buttonVariant="error"
-                deleteSuccessful={() => router.back()}
-                handleDelete={() => {
-                  deleteTeam(teamId)
-                }}
-              />
+            <div>
+
+              <div className="flex justify-evenly">
+                <ButtonIcon
+                  id='open-modal-edit'
+                  label="Editar"
+                  iconName="edit"
+                  onClick={handleOpenTeamForm}
+                />
+                <Modal title='Editar' open={openTeamForm} handleOpen={handleOpenTeamForm}>
+                  <TeamForm team={team} />
+                </Modal>
+                <ModalDelete
+                  buttonLabel={'Borrar equipo'}
+                  labelDelete="equipo"
+                  buttonSize="sm"
+                  buttonVariant="error"
+                  deleteSuccessful={() => router.back()}
+                  handleDelete={() => {
+                    deleteTeam(teamId)
+                  }}
+                />
+              </div>
+              <h2>Compartir </h2>
+              <QRCodes codes={[
+                {
+                  label: 'Equipo en nadamas',
+                  value: `${PROJECT_INFO.url}${router.asPath}`
+                },
+                ...team?.QRCodes
+              ]} />
             </div>
           </Section>
         </>

@@ -38,5 +38,39 @@ const QRCodes = ({ codes = [] }) => {
     </div>
   )
 }
+const QRCodes_2 = ({ codes = [] }) => {
 
-export default QRCodes
+
+  return (
+    <div className="">
+      {codes.map(({ label, value }) =>
+        <div key={label} >
+
+          <div className="relative ">
+            <span className="text-xs">
+              <div className="x">
+
+              </div>
+              {label}
+            </span>
+
+
+            <Link href={value} >
+              <a target='__blank'>
+                <QRCodeSVG value={value} size={120} className='mx-auto rounded-2xl p-1 bg-white border-4 border-transparent hover:border-primary cursor-pointer' />
+              </a>
+            </Link>
+          </div>
+          <div className="  text-2xs text-center flex items-center justify-center">
+            <span className="">
+              Copiar link
+            </span>
+            <CopyButton value={value} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default QRCodes_2
