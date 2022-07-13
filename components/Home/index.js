@@ -65,7 +65,7 @@ const HomeRow = ({
         <p className="md:w-2/3 text-center md:text-left">{text}</p>
       )}
       <div className={`relative h-56 w-56 shadow-lg `}>
-        <Image src={image} layout="fill" objectFit="cover" priority />
+        <Image  blurDataURL={'/images/defaultBlurImage-small.jpg'} placeholder='blur'  src={image} layout="fill" objectFit="cover" priority />
       </div>
       {imageSide === 'right' && (
         <p className="md:w-2/3 text-center md:text-right">{text}</p>

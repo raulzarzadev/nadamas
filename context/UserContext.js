@@ -10,6 +10,7 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(undefined)
   const router = useRouter()
   const { redirectTo } = router?.query
+
   useEffect(() => {
     authStateChanged((res) => {
       res ? setUser(res) : setUser(null)
@@ -39,7 +40,14 @@ export function UserProvider({ children }) {
         .catch((err) => console.log(`err`, err))
   }
 
+  useEffect(() => {
+    if (user) router.push('/profile')
+    console.log('hola')
+  }, [user])
+
   if (user === undefined) return <Loading />
+
+
 
   return (
     <UserContext.Provider value={{ user, login, logout }}>

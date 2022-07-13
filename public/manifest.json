@@ -1,6 +1,7 @@
 {
   "name": "nadamas Progressive Web App",
   "short_name": "nadamas",
+  "description": "An application to help athletes and coaches to impruve their results",
   "theme_color": "#004740",
   "background_color": "#004740",
   "display": "fullscreen",
@@ -44,7 +45,6 @@
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "maskable"
-      
     },
     {
       "src": "icons/maskable_icon_x512.png",
@@ -58,6 +58,5 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ],
-  "splash_pages": null
+  ]
 }

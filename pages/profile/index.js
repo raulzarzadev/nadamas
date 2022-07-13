@@ -12,8 +12,6 @@ function profile() {
     user
   } = useUser()
 
-  console.log(user)
-
   return (
     <>
       <Head title={user?.name || user?.displayName} />
