@@ -1,11 +1,10 @@
 /* -------------------- */
 /* ---------USERS------ */
 /* -------------------- */
+import { Dates } from 'firebase-dates-util'
 import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from '.'
-import { deepFormatFirebaseDates } from './deepFormatFirebaseDates'
 import {
-
   normalizeDoc
 } from './firebase-helpers'
 import { FirebaseCRUD } from './FirebaseCRUD'
@@ -55,7 +54,7 @@ export const createNewUser = async (user) => {
 }
 
 export const updateUser = async (user) => {
-  const userFormat = deepFormatFirebaseDates(user, 'firebase')
+  const userFormat = Dates.deepFormatObjectDates(user,'number')
   return updateDoc(doc(db, 'users', user.id), userFormat)
     .catch((err) => console.log(`err`, err))
 }
