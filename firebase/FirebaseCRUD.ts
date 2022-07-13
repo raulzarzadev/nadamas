@@ -96,7 +96,7 @@ export class FirebaseCRUD {
 
   async listenUserDocs(cb: CallableFunction) {
     const currentUser = getAuth().currentUser
-    this.listenMany([where('userId', '==', currentUser.uid), orderBy()], cb)
+    this.listenMany([where('userId', '==', currentUser.uid)], cb)
   }
 
 
