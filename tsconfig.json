@@ -20,6 +20,9 @@
       ],
       "@firebase/*": [
         "firebase/*"
+      ],
+      "Inputs/*":[
+        "components/Inputs/*"
       ]
     },
     "target": "es5",

@@ -11,6 +11,7 @@ import { Dates } from 'firebase-dates-util'
 import PreviewImage from "../../PreviewImage"
 import { ICONS } from "../../Icon/icon-list"
 
+
 const PostSquare = ({ post, isMemeber = false }) => {
   const [openModal, setOpenModal] = useState(false)
   const handleOpenModal = () => {
