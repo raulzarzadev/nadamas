@@ -12,37 +12,32 @@ const Modal = React.forwardRef(({
 
   return (
     <div
+      style={{ position: 'fixed' }}
       className={`
       ${open ? 'block' : 'hidden'} 
-      fixed
-       top-0 
-       bottom-0 
-       left-0 
-       right-0 
-       flex 
-       justify-center
-      items-center
       bg-black 
+      fixed
+      top-0 
+      bottom-0 
+      left-0 
+      right-0 
+      flex 
+      justify-center
+      items-center
       bg-opacity-50 
-       z-20 
+      z-20 
        `}
       id={`container-${modalId}`}
       onClick={(e) => {
-        // e.preventDefault()
-        /**
-        *!TODO: if e.preventDefault() is called, the modal will make fails the form inside
-        *
-        */
         e.stopPropagation()
         e.target.id === `container-${modalId}` && handleOpen()
       }}
     >
       <div
         id={`modal-${modalId}`}
-        className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  z-20 relative
+        className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  z-20 
       '>
-
-        <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 z-20  h-8'}>
+        <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 z-20  h-8 '}>
           <div className={''}>
             <h5 className='font-bold'>{title}</h5>
           </div>
@@ -64,7 +59,7 @@ const Modal = React.forwardRef(({
           </div>
         }
 
-        <div className='p-5 pt-0 relative'>{children}</div>
+        <div className='p-5 pt-0 '>{children}</div>
 
       </div>
 

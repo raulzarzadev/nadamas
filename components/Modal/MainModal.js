@@ -8,13 +8,13 @@ export default function MainModal({
   OpenComponent = null,
   OpenComponentProps = null,
   OpenComponentType = null,
-  id='main-modal'
+  id = 'main-modal'
 }) {
 
   const OPEN_COMPONENT_STYLE = {
     delete: `btn btn-error `,
     primary: `btn btn-primary `,
-    info:`btn btn-info `,
+    info: `btn btn-info `,
   }
   const [openModal, setOpenModal] = useState(false)
   const modalRef = useRef(null)
@@ -32,8 +32,10 @@ export default function MainModal({
         {buttonLabel}
       </button>
     }
-    <Modal ref={modalRef} title={title} id={id} open={openModal} handleOpen={handleOpenModal} >
-      {children}
-    </Modal>
+    <>
+      <Modal ref={modalRef} title={title} id={id} open={openModal} handleOpen={handleOpenModal} >
+        {children}
+      </Modal>
+    </>
   </>
 }

@@ -32,7 +32,6 @@ const PostSquare = ({ post, isMemeber = false }) => {
     event: <Icon name="event" />,
     info: <Icon name="info" />,
   }
-
   const [openEditModal, setOpenEditModal] = useState(false)
   const handleOpenEditModal = () => {
     setOpenEditModal(!openEditModal)
@@ -65,9 +64,8 @@ const PostSquare = ({ post, isMemeber = false }) => {
             {isOwner &&
               <div className="flex justify-around pb-2 bg-base-100 ">
                 <ModalDelete handleDelete={() => handleDelete(id)} buttonVariant='btn' buttonLabel='Eliminar' buttonSize="sm" />
-                <button onClick={() => handleOpenEditModal()}>
-                  Editar
-                </button>
+                <ButtonIcon iconName={'edit'} label='Editar' onClick={() => handleOpenEditModal()}>
+                </ButtonIcon>
               </div>
             }
 
@@ -83,7 +81,7 @@ const PostSquare = ({ post, isMemeber = false }) => {
           <span className=" text-sm whitespace-pre-line">{visibility && visibility ? content : 'Post privado.'}</span>
         </div>
       </Modal>
-      <Modal open={openEditModal} handleOpen={handleOpenEditModal}>
+      <Modal open={openEditModal} handleOpen={handleOpenEditModal} title='Editar' >
         <FormPost post={post} />
       </Modal>
     </div>
