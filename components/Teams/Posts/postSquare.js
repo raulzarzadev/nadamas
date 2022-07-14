@@ -32,6 +32,11 @@ const PostSquare = ({ post, isMemeber = false }) => {
     event: <Icon name="event" />,
     info: <Icon name="info" />,
   }
+
+  const [openEditModal, setOpenEditModal] = useState(false)
+  const handleOpenEditModal = () => {
+    setOpenEditModal(!openEditModal)
+  }
   return (
     <div id={`square-post-${title.split(' ').join('-').toLowerCase()}`} className="square-add w-44 border-2  hover:border-base-200 shadow-md border-base-100 rounded relative p-0.5" onClick={handleOpenModal}>
       <div className="relative bg-no-repeat bg-cover bg-center " style={{ backgroundImage: `url(${image})` }}>
@@ -60,9 +65,9 @@ const PostSquare = ({ post, isMemeber = false }) => {
             {isOwner &&
               <div className="flex justify-around pb-2 bg-base-100 ">
                 <ModalDelete handleDelete={() => handleDelete(id)} buttonVariant='btn' buttonLabel='Eliminar' buttonSize="sm" />
-                <MainModal title='Editar post' OpenComponent={ButtonIcon} OpenComponentProps={{ iconName: 'edit', label: 'editar', id: 'button-edit' }}>
-                  <FormPost post={post} />
-                </MainModal>
+                <button onClick={() => handleOpenEditModal()}>
+                  Editar
+                </button>
               </div>
             }
 
@@ -77,6 +82,9 @@ const PostSquare = ({ post, isMemeber = false }) => {
           <p className="font-thin text-sm"> Editado: {Dates.fromNow(updatedAt || createdAt)}</p>
           <span className=" text-sm whitespace-pre-line">{visibility && visibility ? content : 'Post privado.'}</span>
         </div>
+      </Modal>
+      <Modal open={openEditModal} handleOpen={handleOpenEditModal}>
+        <FormPost post={post} />
       </Modal>
     </div>
   )
