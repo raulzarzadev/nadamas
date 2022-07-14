@@ -1,6 +1,5 @@
 import { useState } from "react"
 import Modal from "../../Modal"
-import MainModal from "../../Modal/MainModal"
 import ModalDelete from "../../Modal/ModalDelete"
 import FormPost from "./formPost"
 import { deletePost } from '@/firebase/posts/main'
@@ -10,6 +9,7 @@ import ButtonIcon from "../../Inputs/Button/ButtonIcon"
 import Icon from "../../Icon"
 import { Dates } from 'firebase-dates-util'
 import PreviewImage from "../../PreviewImage"
+import { ICONS } from "../../Icon/icon-list"
 
 const PostSquare = ({ post, isMemeber = false }) => {
   const [openModal, setOpenModal] = useState(false)
@@ -28,9 +28,9 @@ const PostSquare = ({ post, isMemeber = false }) => {
   const isOwner = userId === user?.id
 
   const POST_TYPE = {
-    workout: <Icon name="workout" />,
-    event: <Icon name="event" />,
-    info: <Icon name="info" />,
+    workout: <Icon name={ICONS.workout} />,
+    event: <Icon name={ICONS.event} />,
+    info: <Icon name={ICONS.info} />,
   }
   const [openEditModal, setOpenEditModal] = useState(false)
   const handleOpenEditModal = () => {
@@ -64,7 +64,7 @@ const PostSquare = ({ post, isMemeber = false }) => {
             {isOwner &&
               <div className="flex justify-around pb-2 bg-base-100 ">
                 <ModalDelete handleDelete={() => handleDelete(id)} buttonVariant='btn' buttonLabel='Eliminar' buttonSize="sm" />
-                <ButtonIcon iconName={'edit'} label='Editar' onClick={() => handleOpenEditModal()}>
+                <ButtonIcon iconName={ICONS.edit} label='Editar' onClick={() => handleOpenEditModal()}>
                 </ButtonIcon>
               </div>
             }

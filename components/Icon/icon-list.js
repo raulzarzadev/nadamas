@@ -49,6 +49,16 @@ import { FaSignInAlt } from 'react-icons/fa'
 import { RiFileCopyLine, RiFileCopyFill } from 'react-icons/ri'
 // ALL ICONS SHOULD BE OUTLINE
 
+const get_Enum_Icons = (list) => {
+  let res = {}
+  Object.keys(list).forEach(key => {
+    res[key] = `${key}`
+  })
+  return res
+}
+
+
+
 const ICON_LIST = {
   signin: FaSignInAlt,
   'color-google': FcGoogle,
@@ -89,4 +99,45 @@ const ICON_LIST = {
   copy: RiFileCopyLine,
   copyFill: RiFileCopyFill
 }
+export const ICONS = {
+  signin: "signin",
+  'color-google': "color-google",
+  emergency: "emergency",
+  email: "email",
+  whatsapp: "whatsapp",
+  save: "save",
+  'rigth-arrow': "rigth-arrow",
+  'left-arrow': "left-arrow",
+  document: "document",
+  gear: "gear",
+  phone: "phone",
+  cross: "cross",
+  plus: "plus",
+  minus: "minus",
+  info: "info",
+  filter: "filter",
+  edit: "edit",
+  trash: "trash",
+  delete: "delete",
+  down: "down",
+  up: "up",
+  back: "back",
+  forward: "forward",
+  home: "home",
+  group: "group",
+  user: "user",
+  wifi: "wifi",
+  done: "done",
+  addUser: "addUser",
+  removeUser: "removeUser",
+  search: "search",
+  right: "right",
+  left: "left",
+  dots: "dots",
+  workout: "workout",
+  event: "event",
+  copy: "copy",
+  copyFill: "copyFill",
+}
+
 export default ICON_LIST
