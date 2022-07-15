@@ -16,7 +16,13 @@ const uploadImageCallBack = async (file) => {
 
 }
 
-const TextEditor = ({ JSONContentState, JSONEditorState, setJSONEditorState = () => { }, editable = true/* editorState, setEditorState = () => { }, contentState,  */ }) => {
+const TextEditor = ({
+  JSONContentState,
+  JSONEditorState,
+  setJSONEditorState = () => { },
+  disabled = false,/* editorState, setEditorState = () => { }, contentState,  */
+  editorMaxHeight = 9999
+}) => {
 
   const [_editorState, _setEditorState] = useState(EditorState.createEmpty())
   const [_contentState, _setContentState] = useState(ContentState.createFromText(''))
@@ -50,18 +56,19 @@ const TextEditor = ({ JSONContentState, JSONEditorState, setJSONEditorState = ()
       // * Tailwind styles 
       return 'leading-6	';
     }
-    
+
   }
   return <DynamicEditor
     /**
      * *Display blog as was writtered 
     */
-    toolbarHidden={!editable}
-    readOnly={!editable}
+    toolbarHidden={disabled}
+    readOnly={disabled}
     editorState={_editorState}
     onEditorStateChange={_setEditorState}
     wrapperClassName="my-2 "
-    editorClassName="bg-base-100 text-base-content p-2"
+    editorClassName={`bg-base-100 text-base-content p-2 max-h-[${editorMaxHeight}rem]`}
+
 
     blockStyleFn={myBlockStyleFn}
 

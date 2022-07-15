@@ -49,6 +49,11 @@ import { FaSignInAlt } from 'react-icons/fa'
 import { RiFileCopyLine, RiFileCopyFill } from 'react-icons/ri'
 // ALL ICONS SHOULD BE OUTLINE
 
+import {
+  BsFillEyeFill,
+  BsFillEyeSlashFill
+} from "react-icons/bs";
+
 const get_Enum_Icons = (list) => {
   let res = {}
   Object.keys(list).forEach(key => {
@@ -97,9 +102,13 @@ const ICON_LIST = {
   workout: CgGym,
   event: MdOutlineEvent,
   copy: RiFileCopyLine,
-  copyFill: RiFileCopyFill
+  copyFill: RiFileCopyFill,
+  openEye: BsFillEyeFill,
+  closeEye: BsFillEyeSlashFill
 }
 export const ICONS = {
+  openEye: 'openEye',
+  closeEye: 'closeEye',
   signin: "signin",
   'color-google': "color-google",
   emergency: "emergency",

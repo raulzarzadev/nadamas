@@ -18,14 +18,15 @@ const BlogEntry = ({ entry }) => {
   const isOwner = user.id === entry.userId
 
   return (
-    <div className='my-4 bg-base-200 text-base-content'>
-      <div className='flex justify-between'>
-        <h1 className='font-bold'>{entry?.title}</h1>
+    <div className='my-4 bg-base-100 text-base-content'>
+      <div className='flex justify-end bg-base-300'>
         {isOwner &&
           <ButtonIcon iconName={ICONS.edit} onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}/edit`)} />
         }
+        <ButtonIcon iconName={ICONS.openEye} onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)} />
       </div>
-      <TextEditor JSONContentState={entry.content} editable={false} />
+      <h1 className='font-bold text-center -mb-4 min-h-6'>{entry?.title || ''}</h1>
+      <TextEditor JSONContentState={entry.content}  editorMaxHeight='10' disabled />
 
     </div>
   )
