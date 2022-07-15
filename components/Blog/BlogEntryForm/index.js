@@ -1,89 +1,47 @@
 import { useForm } from "react-hook-form"
-import { editPost,createPost } from "@firebase/posts/main"
-import { useState } from "react"
-import Toggle from "Inputs/Toggle"
-import ButtonSave from "Inputs/Button/ButtonSave"
-import RadioInput from "Inputs/Radio"
-import TextInput from "Inputs/TextInput"
-import TextArea from "Inputs/TextArea"
-import InputFile from "Inputs/InutFile"
-import Tooltip from "@comps/Tooltip"
-import Icon from "@comps/Icon"
+import TextEditor from "../TextEditor"
+import { createEntry, editEntry } from '@firebase/entries/main'
+import TextInput from "../../Inputs/TextInput"
+import { useUser } from "../../../context/UserContext"
 
-const BlogEntryForm = ({ team, post }) => {
+const BlogEntryForm = ({ entry }) => {
+  const { user } = useUser()
   const { register, handleSubmit, watch, setValue, reset } = useForm({
-    defaultValues: post
+    defaultValues: entry
   })
 
   const onSubmit = (data) => {
-    post?.id
-      ?
-      editPost(post?.id, data)
-        .then((res) => {
-          console.log(res)
-        }).catch(err => {
-          console.log(err)
-        })
-      :
-      createPost({
-        ...data,
-        teamId: team.id,
-      })
-        .then(({ ok, res }) => {
-          console.log(res)
-
-          if (ok) {
-            setSaved(true)
-            // reset()
-          }
-        }).catch(err => {
-          console.log(err)
-        })
-
+    if (entry.id) {
+      console.log(entry)
+      editEntry(entry.id, data).then(res => console.log(res))
+    } else {
+      createEntry(data).then(res => console.log(res))
+    }
   }
 
-  const [saved, setSaved] = useState(false)
-
-  const [imageProgress, setImageProgress] = useState(null)
-  const handleUpdateImage = ({ fileName, file }) => {
-    FirebaseCRUD.uploadFile({ fileName, file }, (progress, url) => {
-      setImageProgress(progress)
-      setValue('image', url)
-    })
+  const handleSetEditorState = (state) => {
+    setValue('content', state || '')
   }
+
+  const isOwner = user?.id === entry?.userId
+  
 
   return (
     <div >
       <form id='form-new-post' onSubmit={handleSubmit(onSubmit)} className='' >
-        <div className="">
-          <Toggle  {...register('isPublic')} label="Publico" size='lg' />
-          <ButtonSave id='submit-new-post' size='md' saved={saved} />
-        </div>
-        <h4>Tipo de post:</h4>
-        <div className="flex justify-around">
-          <RadioInput
-            value='info'
-
-            label={<Tooltip element={<Icon name='info' />} label='Información' />}
-            {...register('type')} {...register('type')}
+        <label className="flex flex-col ">
+          <span className="text-2xl">
+            Titulo:
+          </span>
+          <input
+            placeholder="...inicia con un titulo genial"
+            className="input input-lg"
+            {...register('title')}
+            disabled={!isOwner}
           />
-          <RadioInput
-            value='workout'
-
-            label={<Tooltip element={<Icon name='workout' />} label='Entreno' />}
-
-            {...register('type')}
-          />
-          <RadioInput
-            value='event'
-            label={<Tooltip element={<Icon name='event' />} label='Evento' />}
-
-            {...register('type')} {...register('type')}
-          />
-        </div>
-        <TextInput label='Titulo' {...register('title')} />
-        <TextArea label='Contenido' {...register('content')} />
-        <InputFile label='Imagen' onUpload={handleUpdateImage} progress={imageProgress} preview={watch('image')} />
+        </label>
+        <TextEditor setJSONEditorState={handleSetEditorState} JSONContentState={entry?.content} editable={isOwner} />
+        <button className="btn btn-primary">Save</button>
       </form>
     </div>
   )
