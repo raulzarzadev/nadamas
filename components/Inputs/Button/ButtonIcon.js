@@ -17,8 +17,10 @@ export default function ButtonIcon({
     <Button
       size={size}
       className={` 
-      ${fullwidth ? ' w-full ' : ' w-max '} 
+      
       ${className} 
+
+      ${fullwidth ? ' w-full ' : ' w-max '} 
       ${iconOnly ? ' btn-circle btn-sm  ' : ''}
       `}
       {...rest}

@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form"
 import TextEditor from "../TextEditor"
-import { createEntry, editEntry } from '@firebase/entries/main'
+import { createEntry, editEntry, deleteEntry } from '@firebase/entries/main'
 import TextInput from "../../Inputs/TextInput"
 import { useUser } from "../../../context/UserContext"
 import ButtonIcon from "../../Inputs/Button/ButtonIcon"
@@ -8,13 +8,14 @@ import { ICONS } from "../../Icon/icon-list"
 import { useEffect, useState } from "react"
 import { ROUTES } from "../../../CONSTANTS/ROUTES"
 import { useRouter } from "next/router"
+import ModalDelete from "../../Modal/ModalDelete"
 
 const BlogEntryForm = ({ entry }) => {
   const router = useRouter()
   const { user } = useUser()
 
   const { register, handleSubmit, watch, setValue, reset } = useForm({
-    defaultValues: entry
+    defaultValues: { title: '', ...entry }
   })
 
   const onSubmit = (data) => {
@@ -28,6 +29,13 @@ const BlogEntryForm = ({ entry }) => {
 
   const handleSetEditorState = (state) => {
     setValue('content', state || '')
+  }
+
+  const handleDeleteEntry = (id) => {
+    deleteEntry(id).then(res => {
+      router.replace(ROUTES.BLOG.href)
+      console.log(res)
+    })
   }
 
   const isOwner = user?.id === entry?.userId
@@ -47,7 +55,8 @@ const BlogEntryForm = ({ entry }) => {
       ...formStatus,
       inptusDisabled: !inEditPage,
       showEditButton: !inEditPage && isOwner,
-      showSaveButton: inEditPage && isOwner
+      showSaveButton: inEditPage && isOwner,
+      showDeleteButton: inEditPage && isOwner,
     })
   }, [])
 
@@ -56,6 +65,7 @@ const BlogEntryForm = ({ entry }) => {
     inptusDisabled,
     showEditButton,
     showSaveButton,
+    showDeleteButton,
   } = formStatus
 
   console.log(formStatus)
@@ -64,11 +74,15 @@ const BlogEntryForm = ({ entry }) => {
     <div >
       <form id='form-new-post' onSubmit={handleSubmit(onSubmit)} className='' >
 
-        {showSaveButton &&
-          <div className="p-2 my-2 flex justify-end">
+        <div className="p-2 my-2 flex justify-end">
+          {showSaveButton &&
             <ButtonIcon iconName={ICONS.save} label='Guardar' />
-          </div>
-        }
+          }
+
+          {showDeleteButton &&
+            <ModalDelete handleDelete={() => handleDeleteEntry(entry?.id)} />
+          }
+        </div>
 
         {showEditButton &&
           <ButtonIcon

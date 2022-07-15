@@ -58,7 +58,10 @@ export default function ModalDelete({
       <ButtonIcon
         id='delete-modal'
         iconName={'trash'}
-        onClick={handleOpen}
+        onClick={(e) => {
+          e.preventDefault()
+          handleOpen()
+        }}
         size={buttonSize}
         label={buttonLabel}
         variant={buttonVariant}
@@ -78,7 +81,7 @@ export default function ModalDelete({
               Cancelar
             </Button>
             <Button
-            id='handle-delete-modal-button'
+              id='handle-delete-modal-button'
               className={'btn-error m-1 '}
               onClick={(e) => {
                 e.preventDefault()
