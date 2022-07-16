@@ -58,6 +58,9 @@ const TextEditor = ({
     }
 
   }
+
+  const maxHeight = `max-h-[${editorMaxHeight}rem]`
+
   return <DynamicEditor
     /**
      * *Display blog as was writtered 
@@ -67,7 +70,7 @@ const TextEditor = ({
     editorState={_editorState}
     onEditorStateChange={_setEditorState}
     wrapperClassName="my-2 "
-    editorClassName={`bg-base-100 text-base-content p-2 max-h-[${editorMaxHeight}rem]`}
+    editorClassName={`bg-base-100 text-base-content p-2 ${maxHeight}`}
 
 
     blockStyleFn={myBlockStyleFn}

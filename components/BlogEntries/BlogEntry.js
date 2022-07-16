@@ -26,7 +26,7 @@ const BlogEntry = ({ entry }) => {
         <ButtonIcon iconName={ICONS.openEye} onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)} />
       </div>
       <h1 className='font-bold text-center mt-2 text-lg min-h-6 '>{entry?.title || ''}</h1>
-      <TextEditor JSONContentState={entry.content}  editorMaxHeight='10' disabled />
+      <TextEditor JSONContentState={entry.content}  editorMaxHeight={'10'} disabled />
 
     </div>
   )
