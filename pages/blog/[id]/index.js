@@ -4,6 +4,7 @@ import { useRouter } from "next/router"
 import Head from "next/head"
 import BlogEntryForm from "../../../components/Blog/BlogEntryForm"
 import Loading from '@comps/Loading'
+import BlogEntry from "../../../components/BlogEntries/BlogEntry"
 const Entry = () => {
   const { query: { id: entryId } } = useRouter()
   useEffect(() => {
@@ -18,7 +19,8 @@ const Entry = () => {
           Editar | {entry.title || 'Entrada'}
         </title>
       </Head>
-      <BlogEntryForm entry={entry}  />
+      <BlogEntry entry={entry} />
+{/*       <BlogEntryForm entry={entry}  /> */}
     </div>
   )
 }

@@ -70,7 +70,7 @@ const TextEditor = ({
     editorState={_editorState}
     onEditorStateChange={_setEditorState}
     wrapperClassName="my-2 "
-    editorClassName={`bg-base-100 text-base-content p-2 ${maxHeight}`}
+    editorClassName={`bg-base-100 text-base-content p-2  ${maxHeight}`}
 
 
     blockStyleFn={myBlockStyleFn}

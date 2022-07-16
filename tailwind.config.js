@@ -37,7 +37,12 @@ module.exports = {
       translate: ['active', 'checked-sibiling']
     }
   },
-  plugins: [checkedSiblingPlugin, require('daisyui'), capitalizeFirst]
+  plugins: [
+    checkedSiblingPlugin,
+    require('daisyui'),
+    capitalizeFirst,
+    require('@tailwindcss/typography')
+  ]
 }
 
 const theme = {
