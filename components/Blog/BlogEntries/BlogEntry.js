@@ -8,6 +8,8 @@ import ButtonIcon from '../../Inputs/Button/ButtonIcon';
 import { draftToMarkdown } from 'markdown-draft-js';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown'
+import { Dates } from 'firebase-dates-util';
+import Icon from '../../Icon';
 
 const BlogEntry = ({ entry, size }) => {
 
@@ -17,6 +19,7 @@ const BlogEntry = ({ entry, size }) => {
 
   const isOwner = user?.id === entry?.userId
 
+  const { options: { isPublic, publishedAt } } = entry
   return (
     <div className='my-4 bg-base-100 text-base-content'>
       <div className='flex justify-end bg-base-300'>
@@ -26,7 +29,22 @@ const BlogEntry = ({ entry, size }) => {
         <ButtonIcon iconName={ICONS.openEye} onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)} />
       </div>
       <h1 className='font-bold text-center mt-2 text-lg min-h-6 '>{entry?.title || ''}</h1>
-      <MarkdownEntry content={entry?.content} size={size} />
+      <div className='text-center'>
+        <span className='text-sm font-thin '>
+          Publicado : {`${Dates.fromNow(publishedAt)}`}
+        </span>
+      </div>
+      <div className='flex items-center'>
+        <div className='w-20 sm:w-32 h-full flex flex-col justify-center items-center sticky top-16 bottom-16 '>
+          <button className='my-2' >
+            <Icon name={ICONS.heart} size='xs' />
+          </button>
+          <button className='my-2' >
+            <Icon name={ICONS.coments} size='xs' />
+          </button>
+        </div>
+        <MarkdownEntry content={entry?.content} size={size} />
+      </div>
       {/*  <TextEditor JSONContentState={entry.content}  editorMaxHeight={10} disabled /> */}
 
     </div>

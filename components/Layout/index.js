@@ -15,7 +15,7 @@ export default function Layout({ children }) {
           <Navbar /* links={NAV_LINKS.map((link) => ROUTES[link.toUpperCase()])} */ />
         </header>
         <main className=" min-h-screen pb-10">
-          <div className="max-w-lg mx-auto ">{children}</div>
+          <div className="max-w-lg md:max-w-2xl mx-auto ">{children}</div>
         </main>
         <footer className="sm:hidden sticky bottom-0 z-10">
           <BottomNav

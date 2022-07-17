@@ -44,14 +44,15 @@ import { MdOutlineEmergency, MdOutlineEvent, MdOutlineMoreVert, MdOutlinePhoneFo
 //react-icons.github.io/react-icons/icons?name=fc
 import { FcGoogle } from 'react-icons/fc'
 
-import { FaSignInAlt } from 'react-icons/fa'
+import { FaComments, FaRegComment, FaSignInAlt ,FaRegHeart} from 'react-icons/fa'
 
 import { RiFileCopyLine, RiFileCopyFill } from 'react-icons/ri'
 // ALL ICONS SHOULD BE OUTLINE
 
 import {
   BsFillEyeFill,
-  BsFillEyeSlashFill
+  BsFillEyeSlashFill,
+  BsHeart
 } from "react-icons/bs";
 
 const get_Enum_Icons = (list) => {
@@ -104,9 +105,13 @@ const ICON_LIST = {
   copy: RiFileCopyLine,
   copyFill: RiFileCopyFill,
   openEye: BsFillEyeFill,
-  closeEye: BsFillEyeSlashFill
+  closeEye: BsFillEyeSlashFill,
+  heart:FaRegHeart,
+  coments:FaRegComment
 }
 export const ICONS = {
+  heart:'heart',
+  coments:'coments',
   openEye: 'openEye',
   closeEye: 'closeEye',
   signin: "signin",
