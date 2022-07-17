@@ -40,7 +40,14 @@ export default function Navbar() {
             <Link href="/teams">
               <div className="relative ">
                 Equipos
-                <div className="absolute -top-0 -right-1 bg-warning h-1 w-1 rounded-full animate-bounce"></div>
+              </div>
+            </Link>
+          </li>
+          <li className="mx-2">
+            <Link href="/blog">
+              <div className="relative ">
+                Blog
+                <div className="absolute -txp-0 -right-1 bg-warning h-1 w-1 rounded-full animate-bounce"></div>
               </div>
             </Link>
           </li>
@@ -172,7 +179,7 @@ const NavbarSubMenu = ({
 
         {/*  <!-- Dropdown menu --> */}
         <ul
-      id='dropdown-menu'
+          id='dropdown-menu'
           className={`absolute ${showMenu ? 'block' : 'hidden'
             } -right-1 z-20 w-48 py-2 mt-0  bg-base-100 rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
         >

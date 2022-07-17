@@ -6,6 +6,7 @@ import { useTheme } from '@/context/ThemeContext'
 export default function Layout({ children }) {
  
   const [theme] = useTheme()
+  
   return (
     <>
       <Head title={'nadamas'}></Head>

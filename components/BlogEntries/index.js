@@ -2,10 +2,13 @@ import { useEffect, useState } from "react"
 import { listenAllEntries } from "@firebase/entries/main"
 import BlogEntry from "./BlogEntry"
 const BlogEntries = () => {
+  
   const [entries, setEntries] = useState([])
+  
   useEffect(() => {
     listenAllEntries(setEntries)
   }, [])
+  
   return (
     <div>
       <h1 className="font-bold text-center">

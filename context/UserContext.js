@@ -44,8 +44,9 @@ export function UserProvider({ children }) {
     if (user && router.pathname==='/') router.push('/profile')
   }, [user])
 
+  
   if (user === undefined) return <Loading />
-
+  
 
 
   return (

@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form"
 import TextEditor from "../TextEditor"
 import { createEntry, editEntry, deleteEntry } from '@firebase/entries/main'
-import TextInput from "../../Inputs/TextInput"
 import { useUser } from "../../../context/UserContext"
 import ButtonIcon from "../../Inputs/Button/ButtonIcon"
 import { ICONS } from "../../Icon/icon-list"
@@ -20,7 +19,6 @@ const BlogEntryForm = ({ entry }) => {
 
   const onSubmit = (data) => {
     if (entry.id) {
-      console.log(entry)
       editEntry(entry.id, data).then(res => console.log(res))
     } else {
       createEntry(data).then(res => console.log(res))
@@ -38,7 +36,6 @@ const BlogEntryForm = ({ entry }) => {
     })
   }
 
-  const isOwner = user?.id === entry?.userId
 
   const [formStatus, setFormStatus] = useState(
     {
@@ -50,15 +47,17 @@ const BlogEntryForm = ({ entry }) => {
 
 
   useEffect(() => {
+    const isOwner = user?.id === entry?.userId
     const inEditPage = router.pathname.includes('/edit')
+    const inNewPage = router.pathname.includes('/new')
     setFormStatus({
       ...formStatus,
-      inptusDisabled: !inEditPage,
+      inptusDisabled: !inEditPage && !inNewPage,
       showEditButton: !inEditPage && isOwner,
-      showSaveButton: inEditPage && isOwner,
+      showSaveButton: (inEditPage && isOwner) || inNewPage ,
       showDeleteButton: inEditPage && isOwner,
     })
-  }, [])
+  }, [user])
 
 
   const {

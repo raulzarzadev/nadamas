@@ -78,8 +78,17 @@ const TextEditor = ({
 
     toolbar={{
 
-      options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'list', 'textAlign', 'colorPicker', 'link', 'embedded', 'emoji', 'image', 'history'],
-      //inline: { inDropdown: true },
+      // options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'list', 'textAlign', 'colorPicker', 'link', 'embedded', 'emoji', 'image', 'history'],
+      options: ['inline', 'blockType', 'list', 'link', 'embedded', 'emoji', 'image'],
+
+      inline: {
+        inDropdown: true,
+        options: ['bold', 'italic', 'underline', 'strikethrough', 'superscript', 'subscript'],
+      },
+      blockType: {
+
+        options: ['Normal', 'H1', 'H2', 'H3', 'Blockquote']
+      },
       list: { inDropdown: true },
       textAlign: { inDropdown: true },
       link: { inDropdown: true },

@@ -3,7 +3,9 @@ import { useEffect, useState } from "react"
 import BlogEntryForm from "../../../../components/Blog/BlogEntryForm"
 import Loading from '@comps/Loading'
 import { getEntry } from '@firebase/entries/main'
+import authRoute from '@comps/HOC/authRoute'
 import Head from "next/head"
+
 const EditEntry = () => {
   const { query: { id: entryId } } = useRouter()
   useEffect(() => {
@@ -23,4 +25,4 @@ const EditEntry = () => {
   )
 }
 
-export default EditEntry
+export default authRoute(EditEntry)

@@ -10,10 +10,15 @@ const Blog = () => {
     <div>
       <div className=" flex w-full justify-center my-2">
         <h1 className="text-2xl text-center">Blog</h1>
-        <span className="mx-4"><ButtonIcon onClick={() => router.push(`${ROUTES.BLOG.href}/new`)} iconName={ICONS.plus} /></span>
+        <span className="mx-4">
+          <ButtonIcon
+            iconName={ICONS.plus}
+            onClick={() => router.push(`${ROUTES.BLOG.href}/new`)}
+          />
+        </span>
       </div>
       <div>
-        <BlogEntries/>
+        <BlogEntries />
       </div>
     </div>
   )
