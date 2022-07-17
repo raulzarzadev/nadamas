@@ -47,7 +47,7 @@ export default function Navbar() {
             <Link href="/blog">
               <div className="relative ">
                 Blog
-                <div className="absolute -txp-0 -right-1 bg-warning h-1 w-1 rounded-full animate-bounce"></div>
+                <div className="absolute -top-0 -right-1 bg-warning h-1 w-1 rounded-full animate-bounce"></div>
               </div>
             </Link>
           </li>
