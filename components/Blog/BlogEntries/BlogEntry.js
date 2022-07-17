@@ -1,15 +1,15 @@
 
 import { useRouter } from 'next/router';
-import { ROUTES } from '../../CONSTANTS/ROUTES';
-import { useUser } from '../../context/UserContext';
-import TextEditor from '../Blog/TextEditor';
-import { ICONS } from '../Icon/icon-list';
-import ButtonIcon from '../Inputs/Button/ButtonIcon';
+import { ROUTES } from '../../../CONSTANTS/ROUTES';
+import { useUser } from '../../../context/UserContext';
+import TextEditor from '../TextEditor';
+import { ICONS } from '../../Icon/icon-list';
+import ButtonIcon from '../../Inputs/Button/ButtonIcon';
 import { draftToMarkdown } from 'markdown-draft-js';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown'
 
-const BlogEntry = ({ entry, maxHeight=999 }) => {
+const BlogEntry = ({ entry, size }) => {
 
   const router = useRouter()
 
@@ -26,15 +26,14 @@ const BlogEntry = ({ entry, maxHeight=999 }) => {
         <ButtonIcon iconName={ICONS.openEye} onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)} />
       </div>
       <h1 className='font-bold text-center mt-2 text-lg min-h-6 '>{entry?.title || ''}</h1>
-      <MarkdownEntry content={entry?.content} maxHeight={maxHeight} />
+      <MarkdownEntry content={entry?.content} size={size} />
       {/*  <TextEditor JSONContentState={entry.content}  editorMaxHeight={10} disabled /> */}
 
     </div>
   )
 }
 
-const MarkdownEntry = ({ content, maxHeight }) => {
-  console.log(maxHeight)
+const MarkdownEntry = ({ content, size = 'full' }) => {
   const [markdown, setMarkdown] = useState()
   useEffect(() => {
     if (window) {
@@ -42,9 +41,15 @@ const MarkdownEntry = ({ content, maxHeight }) => {
       setMarkdown(markdownString)
     }
   }, [])
+
+  const viewSizes = {
+    sm: 'max-h-[10rem]',
+    full: ''
+  }
+
   return <div>
     <article className='prose lg:prose-xl'>
-      <ReactMarkdown children={markdown} className={`max-h-[${maxHeight}rem] overflow-y-auto`} />
+      <ReactMarkdown children={markdown} className={`${viewSizes[size]} overflow-y-auto`} />
     </article>
   </div>
 }

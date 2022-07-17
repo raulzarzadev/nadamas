@@ -1,5 +1,5 @@
 import { useRouter } from "next/router"
-import BlogEntries from "../../components/BlogEntries"
+import BlogEntries from "../../components/Blog/BlogEntries"
 import { ICONS } from "../../components/Icon/icon-list"
 import ButtonIcon from "../../components/Inputs/Button/ButtonIcon"
 import { ROUTES } from "../../CONSTANTS/ROUTES"

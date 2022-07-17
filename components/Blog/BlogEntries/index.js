@@ -15,7 +15,7 @@ const BlogEntries = () => {
         Entradas
       </h1>
 
-      {entries.map(entry => <BlogEntry key={entry.id} entry={entry} maxHeight={10} />)}
+      {entries.map(entry => <BlogEntry key={entry.id} entry={entry} size='sm' />)}
     </div>
   )
 }

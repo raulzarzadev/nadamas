@@ -2,9 +2,8 @@ import { useEffect, useState } from "react"
 import { getEntry } from '@firebase/entries/main'
 import { useRouter } from "next/router"
 import Head from "next/head"
-import BlogEntryForm from "../../../components/Blog/BlogEntryForm"
 import Loading from '@comps/Loading'
-import BlogEntry from "../../../components/BlogEntries/BlogEntry"
+import BlogEntry from "../../../components/Blog/BlogEntries/BlogEntry"
 const Entry = () => {
   const { query: { id: entryId } } = useRouter()
   useEffect(() => {
