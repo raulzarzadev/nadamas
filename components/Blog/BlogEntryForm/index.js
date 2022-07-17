@@ -8,6 +8,10 @@ import { useEffect, useState } from "react"
 import { ROUTES } from "../../../CONSTANTS/ROUTES"
 import { useRouter } from "next/router"
 import ModalDelete from "../../Modal/ModalDelete"
+import Modal from "../../Modal"
+import Toggle from "../../Inputs/Toggle"
+import ButtonSave from "../../Inputs/Button/ButtonSave"
+import Icon from "../../Icon"
 
 const BlogEntryForm = ({ entry }) => {
   const router = useRouter()
@@ -17,11 +21,26 @@ const BlogEntryForm = ({ entry }) => {
     defaultValues: { title: '', ...entry }
   })
 
+
+
   const onSubmit = (data) => {
-    if (entry.id) {
-      editEntry(entry.id, data).then(res => console.log(res))
+    setSaving(true)
+    if (entry?.id) {
+      editEntry(entry.id, data).then(res => {
+        console.log(res)
+        if (res.ok) {
+          setSaved(true)
+        }
+        setSaving(false)
+      })
     } else {
-      createEntry(data).then(res => console.log(res))
+      createEntry(data).then(res => {
+        console.log(res)
+        if (res.ok) {
+          setSaved(true)
+        }
+        setSaving(false)
+      })
     }
   }
 
@@ -54,7 +73,7 @@ const BlogEntryForm = ({ entry }) => {
       ...formStatus,
       inptusDisabled: !inEditPage && !inNewPage,
       showEditButton: !inEditPage && isOwner,
-      showSaveButton: (inEditPage && isOwner) || inNewPage ,
+      showSaveButton: (inEditPage && isOwner) || inNewPage,
       showDeleteButton: inEditPage && isOwner,
     })
   }, [user])
@@ -67,19 +86,81 @@ const BlogEntryForm = ({ entry }) => {
     showDeleteButton,
   } = formStatus
 
-  console.log(formStatus)
+  const [openSaveModal, setOpenSaveModal] = useState(false)
+  const handleOpenSaveModal = () => {
+    setOpenSaveModal(!openSaveModal)
+  }
+
+
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+
+  const handleTogglePulish = () => {
+    const isPublic = watch('options.isPublic')
+    if (isPublic) {
+      setValue('options.isPublic', false)
+      setValue('options.unpublishedAt', new Date())
+    } else {
+      setValue('options.isPublic', true)
+      setValue('options.publishedAt', new Date())
+    }
+  }
+
+  const isPublic = watch('options.isPublic')
+
+  useEffect(() => {
+    const subscription = watch(() => {
+      setSaved(false)
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
 
   return (
     <div >
       <form id='form-new-post' onSubmit={handleSubmit(onSubmit)} className='' >
 
-        <div className="p-2 my-2 flex justify-end">
-          {showSaveButton &&
-            <ButtonIcon iconName={ICONS.save} label='Guardar' />
-          }
+        <div className="p-2 my-2 flex justify-between">
+
 
           {showDeleteButton &&
-            <ModalDelete handleDelete={() => handleDeleteEntry(entry?.id)} />
+            <ModalDelete buttonLabel={'Eliminar'} buttonSize='sm' buttonVariant="btn" handleDelete={() => handleDeleteEntry(entry?.id)} />
+          }
+          {showSaveButton &&
+            <>
+              <ButtonIcon
+                iconName={ICONS.save}
+                label='Guardar'
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleOpenSaveModal()
+                }}
+              />
+              <Modal open={openSaveModal} handleOpen={handleOpenSaveModal} title='Guardar entrada'>
+                <div>
+                  <h4 className="text-center text-xl my-4 relative w-min whitespace-nowrap mx-auto">
+                    Configura tu publicación
+                    <span className="absolute -top-2 -right-4">
+                      <Icon name={ICONS.info} />
+                    </span>
+                  </h4>
+                  <div className="max-w-[10rem] mx-auto">
+                    <button
+                      className={`btn btn-sm mx-auto w-full ${isPublic ? 'btn-error' : 'btn-success'} `}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleTogglePulish()
+                      }}>
+                      {isPublic ? 'Ocultar' : 'Publicar'}
+                    </button>
+                    {/*    <Toggle label='Público'  {...register('options.isPublic', { value: true })} /> */}
+                    <div className="flex justify-center my-2">
+                      <ButtonSave className='btn-primary ' fullwidth iconName={ICONS.save} saved={saved} loading={saving} />
+                    </div>
+                  </div>
+                </div>
+              </Modal>
+            </>
           }
         </div>
 

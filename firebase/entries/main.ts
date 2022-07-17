@@ -10,5 +10,6 @@ export const editEntry = (itemId: string, item: Entry) => EntryCRUD.update(itemI
 export const deleteEntry = (itemId: string) => EntryCRUD.delete(itemId)
 export const getEntry = (itemId: string) => EntryCRUD.get(itemId)
 export const listenEntry = (itemId: string, cb: CallableFunction) => EntryCRUD.listen(itemId, cb)
-export const listenUserEntries = (userId: string, cb: CallableFunction) => EntryCRUD.listenDocs([where('userId', '==', userId || null)], cb)
+export const listenUserEntries = (cb: CallableFunction) => EntryCRUD.listenUserDocs(cb)
 export const listenAllEntries = (cb: CallableFunction) => EntryCRUD.listenAll(cb)
+export const listenPublicEntries = (cb: CallableFunction) => EntryCRUD.listenMany([where('options.isPublic', '==', true)], cb)

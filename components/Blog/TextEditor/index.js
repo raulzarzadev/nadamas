@@ -66,20 +66,21 @@ const TextEditor = ({
      * *Display blog as was writtered 
     */
     toolbarHidden={disabled}
+
     readOnly={disabled}
     editorState={_editorState}
     onEditorStateChange={_setEditorState}
     wrapperClassName="my-2 "
     editorClassName={`bg-base-100 text-base-content p-2  ${maxHeight}`}
-
-
+    toolbarClassName="!bg-base-300 sticky top-0 z-10 !border-base-200"
     blockStyleFn={myBlockStyleFn}
 
+    
 
     toolbar={{
 
       // options: ['inline', 'blockType', 'fontSize', 'fontFamily', 'list', 'textAlign', 'colorPicker', 'link', 'embedded', 'emoji', 'image', 'history'],
-      options: ['inline', 'blockType', 'list', 'link', 'embedded', 'emoji', 'image'],
+      options: ['inline', 'blockType', 'link', 'image', 'embedded', 'emoji', 'list',],
 
       inline: {
         inDropdown: true,
@@ -89,7 +90,7 @@ const TextEditor = ({
 
         options: ['Normal', 'H1', 'H2', 'H3', 'Blockquote']
       },
-      list: { inDropdown: true },
+      list: { inDropdown: false, },
       textAlign: { inDropdown: true },
       link: { inDropdown: true },
       history: { inDropdown: false },

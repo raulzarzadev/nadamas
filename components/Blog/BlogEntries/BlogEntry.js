@@ -15,7 +15,7 @@ const BlogEntry = ({ entry, size }) => {
 
   const { user } = useUser()
 
-  const isOwner = user.id === entry.userId
+  const isOwner = user?.id === entry?.userId
 
   return (
     <div className='my-4 bg-base-100 text-base-content'>

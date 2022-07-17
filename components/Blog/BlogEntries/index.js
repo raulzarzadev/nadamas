@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
-import { listenAllEntries } from "@firebase/entries/main"
+import { listenPublicEntries } from "@firebase/entries/main"
 import BlogEntry from "./BlogEntry"
 const BlogEntries = () => {
   
   const [entries, setEntries] = useState([])
   
   useEffect(() => {
-    listenAllEntries(setEntries)
+    listenPublicEntries(setEntries)
   }, [])
   
   return (
@@ -14,7 +14,6 @@ const BlogEntries = () => {
       <h1 className="font-bold text-center">
         Entradas
       </h1>
-
       {entries.map(entry => <BlogEntry key={entry.id} entry={entry} size='sm' />)}
     </div>
   )
