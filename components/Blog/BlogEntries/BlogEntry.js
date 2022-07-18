@@ -13,19 +13,17 @@ import Icon from '../../Icon';
 const BlogEntry = ({ entry, blocked = true }) => {
 
   const router = useRouter()
-
   const { user } = useUser()
 
-  const isOwner = user?.id === entry?.userId
-  const alreadyInArticle = router.pathname === '/blog/[id]'
+
 
   const { title, options: { isPublic, publishedAt } } = entry
 
   return (
-    <div className=' bg-base-100 text-base-content relative'>
+    <div className=' bg-base-100 text-base-content '>
 
       <div className=''>
-        <h1 className='font-bold text-center mt-2 text-lg min-h-6 '>{title || ''}</h1>
+        <h1 className='font-bold text-center mt-2 text-lg min-h-6 sticky top-0 w-full bg-base-100'>{title || ''}</h1>
         <div className='text-center'>
           <span className='text-sm font-thin '>
             Publicado : {`${Dates.fromNow(publishedAt)}`}
@@ -39,36 +37,9 @@ const BlogEntry = ({ entry, blocked = true }) => {
             <button onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)}>Click para ver articulo</button>
           </div>
         }
-        <div className='w-20 sm:w-32 h-full flex flex-col justify-center items-center sticky top-16 bottom-16 '>
-          <button className='my-2' >
-            <Icon name={ICONS.heart} size='xs' />
-          </button>
-          <button className='my-2' >
-            <Icon name={ICONS.coments} size='xs' />
-          </button>
-          {!alreadyInArticle &&
-            <button
-              onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)}
-              className='my-2'
-            >
-              <Icon name={ICONS.openEye} size='xs' />
-            </button>
-          }
-          <button
-            className='my-2'
-            onClick={() => router.push(`${ROUTES.BLOG.href}/new`)}
-          >
-            <Icon name={ICONS.plus} />
-          </button>
-          {isOwner &&
-            <button
-              className='my-2'
-              onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}/edit`)}
-            >
-              <Icon name={ICONS.edit} size='md' />
-            </button>
-          }
-        </div>
+
+        <SideButtons entryId={entry.id} userOwner={user.userId} />
+
 
         <div className={`max-h-screen ${!blocked && 'overflow-auto'}`}>
           <MarkdownEntry content={entry?.content} />
@@ -76,6 +47,44 @@ const BlogEntry = ({ entry, blocked = true }) => {
       </div>
     </div>
   )
+}
+
+const SideButtons = ({ entryId, userOwner }) => {
+  const { user } = useUser()
+  const router = useRouter()
+  const isOwner = user?.id === userOwner
+  const alreadyInArticle = router.pathname === '/blog/[id]'
+
+  return <div className='w-20 sm:w-32 h-full flex flex-col justify-center items-center sticky top-16 bottom-16 '>
+    <button className='my-2' >
+      <Icon name={ICONS.heart} size='xs' />
+    </button>
+    <button className='my-2' >
+      <Icon name={ICONS.coments} size='xs' />
+    </button>
+    {!alreadyInArticle &&
+      <button
+        onClick={() => router.push(`${ROUTES.BLOG.href}/${entryId}`)}
+        className='my-2'
+      >
+        <Icon name={ICONS.openEye} size='xs' />
+      </button>
+    }
+    <button
+      className='my-2'
+      onClick={() => router.push(`${ROUTES.BLOG.href}/new`)}
+    >
+      <Icon name={ICONS.plus} />
+    </button>
+    {isOwner &&
+      <button
+        className='my-2'
+        onClick={() => router.push(`${ROUTES.BLOG.href}/${entryId}/edit`)}
+      >
+        <Icon name={ICONS.edit} size='md' />
+      </button>
+    }
+  </div>
 }
 
 const MarkdownEntry = ({ content }) => {

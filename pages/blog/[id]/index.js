@@ -12,7 +12,7 @@ const Entry = () => {
   const [entry, setEntry] = useState()
   if (!entry) return <Loading />
   return (
-    <div>
+    <div className="">
       <Head>
         <title>
           Editar | {entry.title || 'Entrada'}
