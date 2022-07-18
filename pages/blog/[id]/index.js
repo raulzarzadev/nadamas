@@ -18,8 +18,8 @@ const Entry = () => {
           Editar | {entry.title || 'Entrada'}
         </title>
       </Head>
-      <BlogEntry entry={entry} />
-{/*       <BlogEntryForm entry={entry}  /> */}
+      <BlogEntry entry={entry} blocked={false} />
+   
     </div>
   )
 }
