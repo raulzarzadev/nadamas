@@ -11,6 +11,7 @@ import ModalDelete from "../../Modal/ModalDelete"
 import Modal from "../../Modal"
 import ButtonSave from "../../Inputs/Button/ButtonSave"
 import Icon from "../../Icon"
+import Toggle from "../../Inputs/Toggle"
 
 const BlogEntryForm = ({ entry }) => {
 
@@ -18,22 +19,27 @@ const BlogEntryForm = ({ entry }) => {
   const { user } = useUser()
 
   const { register, handleSubmit, watch, setValue, reset } = useForm({
-    defaultValues: { title: '', ...entry }
+    defaultValues: {
+      title: '', ...entry, userInfo: {
+        id: user?.id,
+        alias: user?.alias || ''
+      }
+    }
   })
 
   const onSubmit = (data) => {
-    setSaving(true)
     if (entry?.id) {
       editEntry(entry.id, data).then(res => {
-        console.log(res)
         if (res.ok) {
           setSaved(true)
         }
         setSaving(false)
       })
     } else {
-      createEntry(data).then(res => {
-        console.log(res)
+      createEntry({
+        ...data,
+
+      }).then(res => {
         if (res.ok) {
           setSaved(true)
         }
@@ -49,7 +55,6 @@ const BlogEntryForm = ({ entry }) => {
   const handleDeleteEntry = (id) => {
     deleteEntry(id).then(res => {
       router.replace(ROUTES.BLOG.href)
-      console.log(res)
     })
   }
 
@@ -131,26 +136,26 @@ const BlogEntryForm = ({ entry }) => {
   }, [watch]);
 
 
-/**
-  TODO save the edited form in localstorage and get it 
-
-  useEffect(() => {
-    const form = watch()
-    console.log(form)
-    localStorage.setItem('text-editor', JSON.stringify(form))
-  }, [watch()])
-
-  useEffect(() => {
-    const formEdited = localStorage.getItem('text-editor')
-    console.log(formEdited)
-    if (formEdited) {
-      const alfa = JSON.parse(formEdited)
-      Object.keys(alfa).forEach((key) => {
-        setValue(key, alfa[key])
-      })
-    }
-  }, [])
- */
+  /**
+    TODO save the edited form in localstorage and get it 
+  
+    useEffect(() => {
+      const form = watch()
+      console.log(form)
+      localStorage.setItem('text-editor', JSON.stringify(form))
+    }, [watch()])
+  
+    useEffect(() => {
+      const formEdited = localStorage.getItem('text-editor')
+      console.log(formEdited)
+      if (formEdited) {
+        const alfa = JSON.parse(formEdited)
+        Object.keys(alfa).forEach((key) => {
+          setValue(key, alfa[key])
+        })
+      }
+    }, [])
+   */
 
 
   return (
@@ -182,6 +187,7 @@ const BlogEntryForm = ({ entry }) => {
                     </span>
                   </h4>
                   <div className="max-w-[10rem] mx-auto">
+                    <Toggle label='Publicar anonimo' {...register('options.publishedAsAnonymous')} />
                     <button
                       className={`btn btn-sm mx-auto w-full ${isPublic ? 'btn-error' : 'btn-success'} `}
                       onClick={(e) => {

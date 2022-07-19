@@ -44,7 +44,7 @@ import { MdOutlineEmergency, MdOutlineEvent, MdOutlineMoreVert, MdOutlinePhoneFo
 //react-icons.github.io/react-icons/icons?name=fc
 import { FcGoogle } from 'react-icons/fc'
 
-import { FaComments, FaRegComment, FaSignInAlt ,FaRegHeart} from 'react-icons/fa'
+import { FaComments, FaRegComment, FaSignInAlt ,FaRegHeart, FaHeart} from 'react-icons/fa'
 
 import { RiFileCopyLine, RiFileCopyFill } from 'react-icons/ri'
 // ALL ICONS SHOULD BE OUTLINE
@@ -107,10 +107,12 @@ const ICON_LIST = {
   openEye: BsFillEyeFill,
   closeEye: BsFillEyeSlashFill,
   heart:FaRegHeart,
-  coments:FaRegComment
+  coments:FaRegComment,
+  heartFill:FaHeart,
 }
 export const ICONS = {
   heart:'heart',
+  heartFill:'heartFill',
   coments:'coments',
   openEye: 'openEye',
   closeEye: 'closeEye',

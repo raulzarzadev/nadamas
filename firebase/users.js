@@ -17,6 +17,8 @@ export const getUser = async (userId) => {
   return FirebaseCRUD.normalizeDoc(docSnap)
 }
 
+
+
 export const getTeamMember = async (userId) => {
   const docRef = doc(db, 'users', userId)
   const docSnap = await getDoc(docRef)

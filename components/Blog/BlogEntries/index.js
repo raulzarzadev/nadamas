@@ -17,7 +17,6 @@ const BlogEntries = () => {
         <button disabled className="border disabled:opacity-40 rounded-full flex items-center justify-center px-2 py-0.5">Entrenadores</button>
       </div>
       <div className=" ">
-
         {entries.map(entry => (
           <div key={entry.id} className='relative overflow-hidden my-2 ' >
             <BlogEntry entry={entry} />

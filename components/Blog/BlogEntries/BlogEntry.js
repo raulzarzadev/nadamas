@@ -9,22 +9,35 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown'
 import { Dates } from 'firebase-dates-util';
 import Icon from '../../Icon';
-
+import { lovedEntryBy, unlovedEntryBy } from '@/firebase/entries/main'
+import { getUser } from '@/firebase/users'
 const BlogEntry = ({ entry, blocked = true }) => {
 
   const router = useRouter()
   const { user } = useUser()
 
 
+  const { title, updatedAt, createdAt, options } = entry
 
-  const { title, updatedAt, createdAt, options: { isPublic, publishedAt } = { isPublic: false, publishedAt: false } } = entry
+  const hanldeLoveEntry = (boolean) => {
+    if (boolean) {
+      lovedEntryBy(entry.id, user.id)
+    } else {
+      unlovedEntryBy(entry.id, user.id)
+    }
+  }
+
+
+
+  const publishedBy = entry?.userInfo
+  const { publishedAsAnonymous, publishedAt } = options
 
   return (
     <div className=' bg-base-100 text-base-content pt-4 '>
       <div className=''>
         <h1 className='font-bold text-center text-xl min-h-6  bg-base-100  '>{title || ''}</h1>
         <div className='text-center flex flex-col justify-center items-center'>
-          {createdAt &&
+          {/* {createdAt &&
             <span className='text-sm font-thin '>
               Creado : {`${Dates.fromNow(createdAt)}`}
             </span>
@@ -33,12 +46,16 @@ const BlogEntry = ({ entry, blocked = true }) => {
             <span className='text-sm font-thin '>
               Editado : {`${Dates.fromNow(updatedAt)}`}
             </span>
-          }
+          } */}
           {publishedAt &&
             <span className='text-sm font-thin '>
               Publicado : {`${Dates.fromNow(publishedAt)}`}
             </span>
           }
+
+          <span className='text-sm font-thin '>
+            Por : {!publishedAsAnonymous && publishedBy ? publishedBy?.alias : 'anonimo'}
+          </span>
         </div>
       </div>
 
@@ -49,7 +66,12 @@ const BlogEntry = ({ entry, blocked = true }) => {
           </div>
         }
 
-        <SideButtons entryId={entry.id} entryOwner={entry?.userId} />
+        <SideButtons
+          entryId={entry.id}
+          entryOwner={entry?.userId}
+          lovedBy={entry?.lovedBy}
+          onLoveEntry={hanldeLoveEntry}
+        />
 
 
         <div className={`max-h-screen ${!blocked && 'overflow-auto'}`}>
@@ -60,19 +82,42 @@ const BlogEntry = ({ entry, blocked = true }) => {
   )
 }
 
-const SideButtons = ({ entryId, entryOwner }) => {
+const SideButtons = ({ entryId, entryOwner, lovedBy = [], onLoveEntry }) => {
   const { user } = useUser()
   const router = useRouter()
   const isOwner = user?.id === entryOwner
   const alreadyInArticle = router.pathname === '/blog/[id]'
-
+  const loved = lovedBy.includes(user?.id)
   return <div className='w-20 sm:w-32 h-full flex flex-col justify-center items-center sticky top-16 bottom-16 '>
-    <button className='my-2' >
-      <Icon name={ICONS.heart} size='xs' />
-    </button>
-    <button className='my-2' >
+
+    <div className='my-2'>
+      {loved ?
+        <button
+          onClick={() => onLoveEntry(false)}
+        >
+          <Icon
+            name={ICONS.heartFill}
+          />
+        </button>
+        :
+        <button
+          onClick={() => onLoveEntry(true)}
+        >
+          <Icon
+            name={ICONS.heart}
+          />
+        </button>
+      }
+      <div className='text-center -mt-2 font-bold'>
+        <span>{lovedBy?.length}</span>
+      </div>
+    </div>
+    {/*   <button className='my-2' onClick={(e) => {
+      e.preventDefault()
+      handleOpenComentsModal()
+    }} >
       <Icon name={ICONS.coments} size='xs' />
-    </button>
+    </button> */}
     {!alreadyInArticle &&
       <button
         onClick={() => router.push(`${ROUTES.BLOG.href}/${entryId}`)}
@@ -95,6 +140,9 @@ const SideButtons = ({ entryId, entryOwner }) => {
         <Icon name={ICONS.edit} size='md' />
       </button>
     }
+    <div>
+
+    </div>
   </div>
 }
 
