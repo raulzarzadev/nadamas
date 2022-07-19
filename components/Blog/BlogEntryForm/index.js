@@ -9,19 +9,17 @@ import { ROUTES } from "../../../CONSTANTS/ROUTES"
 import { useRouter } from "next/router"
 import ModalDelete from "../../Modal/ModalDelete"
 import Modal from "../../Modal"
-import Toggle from "../../Inputs/Toggle"
 import ButtonSave from "../../Inputs/Button/ButtonSave"
 import Icon from "../../Icon"
 
 const BlogEntryForm = ({ entry }) => {
+
   const router = useRouter()
   const { user } = useUser()
 
   const { register, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: { title: '', ...entry }
   })
-
-
 
   const onSubmit = (data) => {
     setSaving(true)
@@ -55,7 +53,6 @@ const BlogEntryForm = ({ entry }) => {
     })
   }
 
-
   const [formStatus, setFormStatus] = useState(
     {
       inptusDisabled: true,
@@ -63,6 +60,22 @@ const BlogEntryForm = ({ entry }) => {
       showSaveButton: true,
     }
   )
+  /* 
+    useEffect(() => {
+      const form = watch()
+      localStorage.setItem('text-editor', JSON.stringify(form))
+    }, [watch()])
+  
+    useEffect(() => {
+      const formEdited = localStorage.getItem('text-editor')
+      if (formEdited) {
+        const alfa = JSON.parse(formEdited)
+        Object.keys(alfa).forEach((key) => {
+          setValue(key, alfa[key])
+        })
+      }
+    }, []) */
+
 
 
   useEffect(() => {
@@ -78,7 +91,6 @@ const BlogEntryForm = ({ entry }) => {
     })
   }, [user])
 
-
   const {
     inptusDisabled,
     showEditButton,
@@ -87,14 +99,13 @@ const BlogEntryForm = ({ entry }) => {
   } = formStatus
 
   const [openSaveModal, setOpenSaveModal] = useState(false)
+
   const handleOpenSaveModal = () => {
     setOpenSaveModal(!openSaveModal)
   }
 
-
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
-
 
   const handleTogglePulish = () => {
     const isPublic = watch('options.isPublic')
@@ -110,11 +121,37 @@ const BlogEntryForm = ({ entry }) => {
   const isPublic = watch('options.isPublic')
 
   useEffect(() => {
+
     const subscription = watch(() => {
       setSaved(false)
     });
+
     return () => subscription.unsubscribe();
+
   }, [watch]);
+
+
+/**
+  TODO save the edited form in localstorage and get it 
+
+  useEffect(() => {
+    const form = watch()
+    console.log(form)
+    localStorage.setItem('text-editor', JSON.stringify(form))
+  }, [watch()])
+
+  useEffect(() => {
+    const formEdited = localStorage.getItem('text-editor')
+    console.log(formEdited)
+    if (formEdited) {
+      const alfa = JSON.parse(formEdited)
+      Object.keys(alfa).forEach((key) => {
+        setValue(key, alfa[key])
+      })
+    }
+  }, [])
+ */
+
 
   return (
     <div >
@@ -122,10 +159,10 @@ const BlogEntryForm = ({ entry }) => {
 
         <div className="p-2 my-2 flex justify-between">
 
-
           {showDeleteButton &&
             <ModalDelete buttonLabel={'Eliminar'} buttonSize='sm' buttonVariant="btn" handleDelete={() => handleDeleteEntry(entry?.id)} />
           }
+
           {showSaveButton &&
             <>
               <ButtonIcon

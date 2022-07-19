@@ -116,7 +116,6 @@ const MarkdownEntry = ({ content }) => {
     <article className='prose lg:prose-xl '>
       <div className='  '>
         <ReactMarkdown children={markdown} className={''} />
-
       </div>
     </article>
   )

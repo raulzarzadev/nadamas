@@ -78,7 +78,7 @@ const TextEditor = ({
       separator: ' ',
       trigger: '#',
     }}
-
+    
 
     toolbar={{
 
