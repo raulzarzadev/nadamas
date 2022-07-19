@@ -17,17 +17,28 @@ const BlogEntry = ({ entry, blocked = true }) => {
 
 
 
-  const { title, options: { isPublic, publishedAt } } = entry
+  const { title, updatedAt, createdAt, options: { isPublic, publishedAt } = { isPublic: false, publishedAt: false } } = entry
 
   return (
-    <div className=' bg-base-100 text-base-content '>
-
+    <div className=' bg-base-100 text-base-content pt-4 '>
       <div className=''>
-        <h1 className='font-bold text-center mt-2 text-lg min-h-6 sticky top-0 w-full bg-base-100'>{title || ''}</h1>
-        <div className='text-center'>
-          <span className='text-sm font-thin '>
-            Publicado : {`${Dates.fromNow(publishedAt)}`}
-          </span>
+        <h1 className='font-bold text-center text-xl min-h-6  bg-base-100  '>{title || ''}</h1>
+        <div className='text-center flex flex-col justify-center items-center'>
+          {createdAt &&
+            <span className='text-sm font-thin '>
+              Creado : {`${Dates.fromNow(createdAt)}`}
+            </span>
+          }
+          {updatedAt &&
+            <span className='text-sm font-thin '>
+              Editado : {`${Dates.fromNow(updatedAt)}`}
+            </span>
+          }
+          {publishedAt &&
+            <span className='text-sm font-thin '>
+              Publicado : {`${Dates.fromNow(publishedAt)}`}
+            </span>
+          }
         </div>
       </div>
 
@@ -38,7 +49,7 @@ const BlogEntry = ({ entry, blocked = true }) => {
           </div>
         }
 
-        <SideButtons entryId={entry.id} userOwner={user.userId} />
+        <SideButtons entryId={entry.id} entryOwner={entry?.userId} />
 
 
         <div className={`max-h-screen ${!blocked && 'overflow-auto'}`}>
@@ -49,10 +60,10 @@ const BlogEntry = ({ entry, blocked = true }) => {
   )
 }
 
-const SideButtons = ({ entryId, userOwner }) => {
+const SideButtons = ({ entryId, entryOwner }) => {
   const { user } = useUser()
   const router = useRouter()
-  const isOwner = user?.id === userOwner
+  const isOwner = user?.id === entryOwner
   const alreadyInArticle = router.pathname === '/blog/[id]'
 
   return <div className='w-20 sm:w-32 h-full flex flex-col justify-center items-center sticky top-16 bottom-16 '>

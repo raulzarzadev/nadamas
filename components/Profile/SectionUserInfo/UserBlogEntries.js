@@ -15,22 +15,28 @@ const UserBlogEntries = () => {
     <div>
       <div className="grid grid-flow-col gap-2 overflow-auto">
         <div className="grid grid-flow-col overflow-auto gap-4 p-2">
-          <div className='w-28'>
+          <div className='w-12'>
             <SquareAdd onClick={() => router.push(`${ROUTES.BLOG.href}/new`)} />
           </div>
-          {entries?.map(({ id, title, options: { isPublic, publishedAt } }) => (
+          {entries?.map(({ id, title, createdAt, updatedAt, options: { isPublic, publishedAt } = { isPublic: false, publishedAt: false } }) => (
             <Link key={id} href={`/blog/${id}`}>
               <a className="border-base-100 border-2  hover:border-base-content rounded">
 
                 {/* <div className={`h-10 bg-center bg-cover rounded-t`} style={{ backgroundImage: `url(${image})` }} /> */}
                 {/* <PreviewImage image={image} /> */}
-                <div className=" h-32 w-28  flex flex-col justify-between  p-0.5" >
+                <div className=" h-32 w-32  flex flex-col justify-between  p-0.5" >
                   <div>
-                    <p className=" text-2xs font-thin text-right">{isPublic ? `Públicado ${Dates.fromNow(publishedAt)}` : 'Privado'}</p>
-                    <h3 className="font-bold text-sm whitespace-nowrap  truncate">{title}</h3>
+                    { }
+                    <h3 className="font-bold text-xs ">{title}</h3>
                     <p className="text-xs max-h-20 overflow-auto">
                       {/*  {description} */}
                     </p>
+                    <div className="text-2xs">
+                      {updatedAt ? <div>Actualizado: <br />{Dates.fromNow(updatedAt)}</div> : <div>Creado: {Dates.fromNow(createdAt)}</div>}
+                      {publishedAt &&
+                        <p className=" ">Públicado: <br />{isPublic ? ` ${Dates.fromNow(publishedAt)}` : ''}</p>
+                      }
+                    </div>
                   </div>
 
                 </div>

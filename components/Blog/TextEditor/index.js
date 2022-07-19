@@ -66,7 +66,7 @@ const TextEditor = ({
      * *Display blog as was writtered 
     */
     toolbarHidden={disabled}
-
+    spellCheck={true}
     readOnly={disabled}
     editorState={_editorState}
     onEditorStateChange={_setEditorState}
@@ -74,8 +74,11 @@ const TextEditor = ({
     editorClassName={`bg-base-100 text-base-content p-2  ${maxHeight}`}
     toolbarClassName="!bg-base-300 sticky top-0 z-10 !border-base-200"
     blockStyleFn={myBlockStyleFn}
+    hashtag={{
+      separator: ' ',
+      trigger: '#',
+    }}
 
-    
 
     toolbar={{
 
