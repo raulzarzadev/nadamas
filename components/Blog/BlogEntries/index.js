@@ -12,6 +12,9 @@ const BlogEntries = () => {
 
   useEffect(() => {
     listenPublicEntries(setEntries)
+    return () => {
+      setEntries([])
+    }
   }, [])
 
   const router = useRouter()

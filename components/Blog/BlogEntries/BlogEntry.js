@@ -34,9 +34,9 @@ const BlogEntry = ({ entry, blocked = true }) => {
   const { publishedAsAnonymous, publishedAt } = options
 
   return (
-    <div className=' bg-base-100 text-base-content pt-4 '>
-      <div className=''>
-        <h1 className='font-bold text-center text-xl min-h-6  bg-base-100  '>{title || ''}</h1>
+    <div className=' bg-base-100 text-base-content pt-4 my-4'>
+      <div className='sticky top-0 w-full bg-base-100'>
+        <h1 className='font-bold text-center text-xl min-h-6    '>{title || ''}</h1>
         <div className='text-center flex flex-col justify-center items-center'>
           {/* {createdAt &&
             <span className='text-sm font-thin '>
