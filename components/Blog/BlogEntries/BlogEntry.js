@@ -11,6 +11,7 @@ import { Dates } from 'firebase-dates-util';
 import Icon from '../../Icon';
 import { lovedEntryBy, unlovedEntryBy } from '@/firebase/entries/main'
 import { getUser } from '@/firebase/users'
+import Tooltip from '../../Tooltip';
 const BlogEntry = ({ entry, blocked = true }) => {
 
   const router = useRouter()
@@ -62,7 +63,7 @@ const BlogEntry = ({ entry, blocked = true }) => {
       <div className='flex items-center  '>
         {blocked &&
           <div className="absolute h-60 w-full bottom-0  bg-gradient-to-t from-black to-transparent flex justify-center items-end pb-6 " >
-            <button onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)}>Click para ver articulo</button>
+            <button className='text-white' onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)}>Click para ver articulo</button>
           </div>
         }
 
@@ -74,7 +75,7 @@ const BlogEntry = ({ entry, blocked = true }) => {
         />
 
 
-        <div className={`max-h-screen ${!blocked && 'overflow-auto'}`}>
+        <div className={`${blocked ? 'max-h-[40vh]' : ''}`}>
           <MarkdownEntry content={entry?.content} />
         </div>
       </div>
@@ -91,6 +92,7 @@ const SideButtons = ({ entryId, entryOwner, lovedBy = [], onLoveEntry }) => {
   return <div className='w-20 sm:w-32 h-full flex flex-col justify-center items-center sticky top-16 bottom-16 '>
 
     <div className='my-2'>
+
       {loved ?
         <button
           onClick={() => onLoveEntry(false)}
@@ -119,19 +121,16 @@ const SideButtons = ({ entryId, entryOwner, lovedBy = [], onLoveEntry }) => {
       <Icon name={ICONS.coments} size='xs' />
     </button> */}
     {!alreadyInArticle &&
-      <button
-        onClick={() => router.push(`${ROUTES.BLOG.href}/${entryId}`)}
-        className='my-2'
-      >
-        <Icon name={ICONS.openEye} size='xs' />
-      </button>
+      <Tooltip label='Leer' side='right'>
+        <button
+          onClick={() => router.push(`${ROUTES.BLOG.href}/${entryId}`)}
+          className='my-2'
+        >
+          <Icon name={ICONS.openEye} size='lg' />
+        </button>
+      </Tooltip>
     }
-    <button
-      className='my-2'
-      onClick={() => router.push(`${ROUTES.BLOG.href}/new`)}
-    >
-      <Icon name={ICONS.plus} />
-    </button>
+
     {isOwner &&
       <button
         className='my-2'
