@@ -7,8 +7,17 @@ const Modal = React.forwardRef(({
   handleOpen = () => { },
   headerComponent,
   children,
+  modalSize = 'sm'
 }, ref) => {
   const modalId = `${title.split(' ').join('-').toLowerCase()}-${new Date().getTime()}-${Math.random()}`
+
+  const modalSizing = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    full: 'max-w-full',
+  }
 
   return (
     <div
@@ -35,8 +44,11 @@ const Modal = React.forwardRef(({
     >
       <div
         id={`modal-${modalId}`}
-        className='bg-base-100 overflow-auto max-h-full rounded-lg w-full max-w-sm  z-20 
-      '>
+        className={`
+        ${modalSizing[modalSize]}
+        bg-base-100 overflow-auto max-h-full rounded-lg w-full    z-20 
+        `}
+      >
         <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 z-20  h-8 '}>
           <div className={''}>
             <h5 className='font-bold'>{title}</h5>

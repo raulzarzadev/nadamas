@@ -12,6 +12,8 @@ import Icon from '../../Icon';
 import { lovedEntryBy, unlovedEntryBy } from '@/firebase/entries/main'
 import { getUser } from '@/firebase/users'
 import Tooltip from '../../Tooltip';
+import Image from 'next/image';
+import PreviewImage from '../../PreviewImage';
 const BlogEntry = ({ entry, blocked = true }) => {
 
   const router = useRouter()
@@ -150,15 +152,15 @@ const MarkdownEntry = ({ content }) => {
   const [markdown, setMarkdown] = useState()
   useEffect(() => {
     if (window) {
-      const markdownString = draftToMarkdown(content,{
-        escapeMarkdownCharacters:true,
+      const markdownString = draftToMarkdown(content, {
+        escapeMarkdownCharacters: true,
         entityItems: {
           IMAGE: {
             open: function (entity, block) {
               return ``;
             },
             close: function (entity) {
-              return `![alt text](${entity.data.src})`;
+              return `![alt text](${entity.data.src}) `;
             }
           }
         }
@@ -172,13 +174,25 @@ const MarkdownEntry = ({ content }) => {
     full: 'h-full'
   } */
 
+  const components = {
+    //This custom renderer changes how images are rendered
+    //we use it to constrain the max width of an image to its container
+    img: ({
+      alt,
+      src,
+      title,
+    }) => (
+      <PreviewImage image={src} modalImageSize='full' />
+    ),
+  };
+
   return (
     <article className='prose lg:prose-xl '>
       <div className='  '>
-        <ReactMarkdown 
-        children={markdown} 
-        className={''} 
-       /* skipHtml={true} */ 
+        <ReactMarkdown
+          children={markdown}
+          className={''}
+          components={components}
         />
       </div>
     </article>

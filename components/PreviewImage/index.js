@@ -2,7 +2,7 @@ import Image from "next/image"
 import { useState } from "react"
 import Modal from "../Modal"
 
-const PreviewImage = ({ label = null, image = null, canOpenModal = true, previewSize = 'md', PreviewClassName }) => {
+const PreviewImage = ({ label = null, image = null, canOpenModal = true, previewSize = 'md', PreviewClassName, modalImageSize = 'lg' }) => {
   const [openModal, setOpenModal] = useState(false)
   const handleOpenModal = () => setOpenModal(!openModal)
 
@@ -44,7 +44,7 @@ const PreviewImage = ({ label = null, image = null, canOpenModal = true, preview
               blurDataURL={`/images/defaultBlurImage-small.jpg`}
             />
           </div>
-          <Modal title='Image' open={openModal} handleOpen={handleOpenModal}>
+          <Modal modalSize={modalImageSize} title='Image' open={openModal} handleOpen={handleOpenModal}>
             <div className="relative w-full aspect-video mx-auto" >
               <Image
                 layout='fill'

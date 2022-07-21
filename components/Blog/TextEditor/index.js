@@ -28,7 +28,7 @@ const TextEditor = ({
         const [progress, src] = props
         if (progress === 100) {
           // CREATE <img /> block
-          const entityKey = _editorState // from STATE
+         /*  const entityKey = _editorState // from STATE
           .getCurrentContent()
             .createEntity('IMAGE', 'MUTABLE', {
               src: src,
@@ -41,7 +41,7 @@ const TextEditor = ({
             entityKey,
             ' '
             );
-            _setEditorState(newEditorState) 
+            _setEditorState(newEditorState)  */
           res({ data: { link: src  } })
         }
       })

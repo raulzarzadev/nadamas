@@ -60,7 +60,7 @@ const Event = ({ event }) => {
             objectFit="cover"
             className="opacity-20"
           />
-        <header className="relative " className="p-0.5">
+        <header className="relative p-0.5" >
           <h5 className="font-bold  text-base ">{event?.title}</h5>
           <div className="font-bold text-xs">
             {formatInputDate(event?.date, 'dd MMM yy')}
