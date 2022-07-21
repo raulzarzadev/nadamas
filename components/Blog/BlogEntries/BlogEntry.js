@@ -64,6 +64,7 @@ const BlogEntry = ({ entry, blocked = true }) => {
       </div>
 
       <div className='flex items-center  '>
+        
         {blocked &&
           <div className="absolute h-60 w-full bottom-0  bg-gradient-to-t from-black to-transparent flex justify-center items-end pb-6 " >
             <button className='text-white' onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)}>Click para ver articulo</button>

@@ -41,12 +41,21 @@ export function UserProvider({ children }) {
   }
 
   useEffect(() => {
-    if (user && router.pathname==='/') router.push('/profile')
+    /**
+    * Redirect user if is comming from other page then after login turn it back
+    * if user is logged redirect to profile
+    */
+    if (user && router?.query?.redirectTo) {
+      router.push(router?.query?.redirectTo)
+    }
+    else if (user && router.pathname === '/') {
+      router.push('/profile')
+    }
   }, [user])
 
-  
+
   if (user === undefined) return <Loading />
-  
+
 
 
   return (
