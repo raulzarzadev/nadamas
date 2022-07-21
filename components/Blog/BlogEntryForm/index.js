@@ -28,6 +28,7 @@ const BlogEntryForm = ({ entry }) => {
   })
 
   const onSubmit = (data) => {
+    setSaving(true)
     if (entry?.id) {
       editEntry(entry.id, data).then(res => {
         if (res.ok) {
