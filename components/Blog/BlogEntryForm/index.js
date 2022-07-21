@@ -216,13 +216,13 @@ const BlogEntryForm = ({ entry }) => {
             }} />
         }
 
-        <label className="flex flex-col ">
+        <label className="flex flex-col  ">
           <span className="text-2xl">
             Titulo:
           </span>
           <input
-            placeholder="... inicia con un titulo genial"
-            className="input input-lg"
+            placeholder="... inicia con un titulo genial "
+            className="input input-lg "
             {...register('title')}
             disabled={inptusDisabled}
           />

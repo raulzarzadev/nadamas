@@ -1,3 +1,5 @@
+/** @type {import('tailwindcss').Config} */
+
 const plugin = require('tailwindcss/plugin')
 
 // Let's create a plugin that adds utilities!

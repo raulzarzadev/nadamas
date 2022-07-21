@@ -146,10 +146,23 @@ const SideButtons = ({ entryId, entryOwner, lovedBy = [], onLoveEntry }) => {
 }
 
 const MarkdownEntry = ({ content }) => {
+  // console.log(content)
   const [markdown, setMarkdown] = useState()
   useEffect(() => {
     if (window) {
-      const markdownString = draftToMarkdown(content);
+      const markdownString = draftToMarkdown(content,{
+        escapeMarkdownCharacters:true,
+        entityItems: {
+          IMAGE: {
+            open: function (entity, block) {
+              return ``;
+            },
+            close: function (entity) {
+              return `![alt text](${entity.data.src})`;
+            }
+          }
+        }
+      });
       setMarkdown(markdownString)
     }
   }, [])
@@ -162,7 +175,11 @@ const MarkdownEntry = ({ content }) => {
   return (
     <article className='prose lg:prose-xl '>
       <div className='  '>
-        <ReactMarkdown children={markdown} className={''} />
+        <ReactMarkdown 
+        children={markdown} 
+        className={''} 
+       /* skipHtml={true} */ 
+        />
       </div>
     </article>
   )
