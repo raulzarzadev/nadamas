@@ -14,6 +14,7 @@ import { getUser } from '@/firebase/users'
 import Tooltip from '../../Tooltip';
 import Image from 'next/image';
 import PreviewImage from '../../PreviewImage';
+import ButtonAdd from '../../Inputs/Button/ButtonAdd';
 const BlogEntry = ({ entry, blocked = true }) => {
 
   const router = useRouter()
@@ -37,7 +38,7 @@ const BlogEntry = ({ entry, blocked = true }) => {
 
   return (
     <div className=' bg-base-100 text-base-content pt-4 my-4'>
-      <div className='sticky top-0 w-full bg-base-100'>
+      <div className='sticky top-0 w-full bg-base-100 z-10'>
         <h1 className='font-bold text-center text-xl min-h-6    '>{title || ''}</h1>
         <div className='text-center flex flex-col justify-center items-center'>
           {/* {createdAt &&
@@ -81,6 +82,9 @@ const BlogEntry = ({ entry, blocked = true }) => {
           <MarkdownEntry content={entry?.content} />
         </div>
       </div>
+      <ButtonAdd
+        onClick={() => router.push(`${ROUTES.BLOG.href}/new`)}
+      />
     </div>
   )
 }
@@ -182,7 +186,7 @@ const MarkdownEntry = ({ content }) => {
       src,
       title,
     }) => (
-      <PreviewImage image={src} modalImageSize='full' />
+      <PreviewImage  image={src} modalImageSize='full' />
     ),
   };
 
