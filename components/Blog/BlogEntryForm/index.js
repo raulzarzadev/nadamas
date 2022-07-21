@@ -216,7 +216,7 @@ const BlogEntryForm = ({ entry }) => {
             }} />
         }
 
-        <label className="flex flex-col translate-x-1/2 ">
+        <label className="flex flex-col  ">
           <span className="text-2xl">
             Titulo:
           </span>
