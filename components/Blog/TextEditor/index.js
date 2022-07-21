@@ -141,7 +141,7 @@ const TextEditor = ({
         popupClassName: 'toolbar-popup !fixed',
         defaultSize: {
           height: '120px',
-          width: '120px',
+          width: 'auto',
         },
       },
 

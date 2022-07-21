@@ -2,7 +2,7 @@ import Image from "next/image"
 import { useState } from "react"
 import Modal from "../Modal"
 
-const PreviewImage = ({ label = null, image = null, canOpenModal = true, previewSize = 'md', PreviewClassName, modalImageSize = 'lg' }) => {
+const PreviewImage = ({ label = null, image = null, canOpenModal = true, previewSize = 'md', previewClassName, modalImageSize = 'lg' }) => {
   const [openModal, setOpenModal] = useState(false)
   const handleOpenModal = () => setOpenModal(!openModal)
 
@@ -22,7 +22,7 @@ const PreviewImage = ({ label = null, image = null, canOpenModal = true, preview
           <div
             className={`
              ${previewSizing[previewSize]}
-             ${PreviewClassName} 
+             ${previewClassName} 
             relative  
             mx-auto 
             opacity-60 
