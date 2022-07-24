@@ -24,7 +24,7 @@ const BlogEntry = ({ entry, blocked = true }) => {
   const { user } = useUser()
 
 
-  const { title, updatedAt, createdAt, options } = entry
+  const { title, updatedAt, createdAt, options = { publishedAsAnonymous: false } } = entry
 
   const hanldeLoveEntry = (boolean) => {
     if (boolean) {
@@ -67,15 +67,12 @@ const BlogEntry = ({ entry, blocked = true }) => {
       </div>
 
       <div className='flex items-center  '>
-
-
         <SideButtons
           entryId={entry.id}
           entryOwner={entry?.userId}
           lovedBy={entry?.lovedBy}
           onLoveEntry={hanldeLoveEntry}
         />
-
 
         <div className={`${blocked ? 'max-h-[40vh]' : ''}`}>
           <MarkdownEntry content={entry?.content} />
@@ -99,7 +96,7 @@ const SideButtons = ({ entryId, entryOwner, lovedBy = [], onLoveEntry }) => {
   const isOwner = user?.id === entryOwner
   const alreadyInArticle = router.pathname === '/blog/[id]'
   const loved = lovedBy.includes(user?.id)
-  return <div className='w-20 sm:w-32 h-full flex flex-col justify-center items-center sticky top-16 bottom-16 '>
+  return <div className='w-20 sm:w-32 h-full z-10 flex flex-col justify-center items-center sticky top-16 bottom-16 '>
 
     <div className='my-2'>
 
@@ -206,15 +203,15 @@ const MarkdownEntry = ({ content }) => {
   return (
     <article className='prose lg:prose-xl w-full '>
       <div
-className='w-full'
-        // className='[&>p>img]:w-1/2 [&>p>img]:mx-auto   '
-        // dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
+        className='w-full'
+      // className='[&>p>img]:w-1/2 [&>p>img]:mx-auto   '
+      // dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
       >
-         <ReactMarkdown
+        <ReactMarkdown
           children={markdown}
           className={''}
           components={components}
-        />  
+        />
       </div>
     </article>
   )
