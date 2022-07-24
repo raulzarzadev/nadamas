@@ -204,13 +204,17 @@ const MarkdownEntry = ({ content }) => {
   };
 
   return (
-    <article className='prose lg:prose-xl '>
-      <div className='[&>p>img]:w-1/2 [&>p>img]:mx-auto   ' dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}>
-        {/* <ReactMarkdown
+    <article className='prose lg:prose-xl w-full '>
+      <div
+className='w-full'
+        // className='[&>p>img]:w-1/2 [&>p>img]:mx-auto   '
+        // dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
+      >
+         <ReactMarkdown
           children={markdown}
           className={''}
           components={components}
-        />  */}
+        />  
       </div>
     </article>
   )
