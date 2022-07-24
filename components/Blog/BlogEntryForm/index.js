@@ -28,25 +28,26 @@ const BlogEntryForm = ({ entry }) => {
   })
 
   const onSubmit = (data) => {
+    console.log(data)
     setSaving(true)
-    if (entry?.id) {
-      editEntry(entry.id, data).then(res => {
-        if (res.ok) {
-          setSaved(true)
-        }
-        setSaving(false)
-      })
-    } else {
-      createEntry({
-        ...data,
-
-      }).then(res => {
-        if (res.ok) {
-          setSaved(true)
-        }
-        setSaving(false)
-      })
-    }
+     if (entry?.id) {
+       editEntry(entry.id, data).then(res => {
+         if (res.ok) {
+           setSaved(true)
+         }
+         setSaving(false)
+       })
+     } else {
+       createEntry({
+         ...data,
+ 
+       }).then(res => {
+         if (res.ok) {
+           setSaved(true)
+         }
+         setSaving(false)
+       })
+     } 
   }
 
   const handleSetEditorState = (state) => {
@@ -228,7 +229,7 @@ const BlogEntryForm = ({ entry }) => {
             disabled={inptusDisabled}
           />
         </label>
-        <TextEditor setJSONEditorState={handleSetEditorState} JSONContentState={entry?.content} disabled={inptusDisabled} />
+        <TextEditor setContent={handleSetEditorState} content={entry?.content} disabled={inptusDisabled} />
       </form>
     </div>
   )

@@ -15,6 +15,9 @@ import Tooltip from '../../Tooltip';
 import Image from 'next/image';
 import PreviewImage from '../../PreviewImage';
 import ButtonAdd from '../../Inputs/Button/ButtonAdd';
+import TurndownService from 'turndown'
+import DOMPurify from 'dompurify';
+
 const BlogEntry = ({ entry, blocked = true }) => {
 
   const router = useRouter()
@@ -64,7 +67,7 @@ const BlogEntry = ({ entry, blocked = true }) => {
       </div>
 
       <div className='flex items-center  '>
-        
+
 
         <SideButtons
           entryId={entry.id}
@@ -78,11 +81,11 @@ const BlogEntry = ({ entry, blocked = true }) => {
           <MarkdownEntry content={entry?.content} />
         </div>
       </div>
-        {blocked &&
-          <div className="absolute h-60 w-full bottom-0  bg-gradient-to-t from-black to-transparent flex justify-center items-end pb-6 " >
-            <button className='text-white' onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)}>Click para ver articulo</button>
-          </div>
-        }
+      {blocked &&
+        <div className="absolute h-60 w-full bottom-0  bg-gradient-to-t from-black to-transparent flex justify-center items-end pb-6 " >
+          <button className='text-white' onClick={() => router.push(`${ROUTES.BLOG.href}/${entry.id}`)}>Click para ver articulo</button>
+        </div>
+      }
       <ButtonAdd
         onClick={() => router.push(`${ROUTES.BLOG.href}/new`)}
       />
@@ -153,10 +156,14 @@ const SideButtons = ({ entryId, entryOwner, lovedBy = [], onLoveEntry }) => {
 }
 
 const MarkdownEntry = ({ content }) => {
+  const turndownService = new TurndownService()
   // console.log(content)
   const [markdown, setMarkdown] = useState()
   useEffect(() => {
-    if (window) {
+    /**
+    *  * if blog entry is from the old text editor version  draftjs
+    */
+    if (window && content.blocks) {
       const markdownString = draftToMarkdown(content, {
         escapeMarkdownCharacters: true,
         entityItems: {
@@ -171,13 +178,18 @@ const MarkdownEntry = ({ content }) => {
         }
       });
       setMarkdown(markdownString)
+    } else {
+      /**
+ *  * if blog entry is an html entry from the quill
+ */
+      const mark = turndownService.turndown(content)
+      console.log(mark)
+      setMarkdown(
+        mark
+      )
     }
-  }, [])
 
-  /* const viewSizes = {
-    sm: 'max-h-[10rem]',
-    full: 'h-full'
-  } */
+  }, [])
 
   const components = {
     //This custom renderer changes how images are rendered
@@ -187,18 +199,18 @@ const MarkdownEntry = ({ content }) => {
       src,
       title,
     }) => (
-      <PreviewImage  image={src} modalImageSize='full' />
+      <PreviewImage image={src} modalImageSize='full' />
     ),
   };
 
   return (
     <article className='prose lg:prose-xl '>
-      <div className='  '>
-        <ReactMarkdown
+      <div className='[&>p>img]:w-1/2 [&>p>img]:mx-auto   ' dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}>
+        {/* <ReactMarkdown
           children={markdown}
           className={''}
           components={components}
-        />
+        />  */}
       </div>
     </article>
   )
