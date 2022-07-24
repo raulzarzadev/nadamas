@@ -21,6 +21,9 @@
       "@firebase/*": [
         "firebase/*"
       ],
+      "fb/*": [
+        "firebase/*"
+      ],
       "Inputs/*":[
         "components/Inputs/*"
       ]

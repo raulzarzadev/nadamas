@@ -11,6 +11,7 @@
     "push-main": "yarn build && git push origin main"
   },
   "dependencies": {
+    "@algolia/autocomplete-core": "^1.7.1",
     "@hookform/resolvers": "^2.8.3",
     "@react-icons/all-files": "^4.1.0",
     "autoprefixer": "^10.3.1",

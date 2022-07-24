@@ -12,6 +12,7 @@ import Modal from "../../Modal"
 import ButtonSave from "../../Inputs/Button/ButtonSave"
 import Icon from "../../Icon"
 import Toggle from "../../Inputs/Toggle"
+import InputChips from "../../Inputs/InputChips"
 
 const BlogEntryForm = ({ entry }) => {
 
@@ -30,24 +31,24 @@ const BlogEntryForm = ({ entry }) => {
   const onSubmit = (data) => {
     console.log(data)
     setSaving(true)
-     if (entry?.id) {
-       editEntry(entry.id, data).then(res => {
-         if (res.ok) {
-           setSaved(true)
-         }
-         setSaving(false)
-       })
-     } else {
-       createEntry({
-         ...data,
- 
-       }).then(res => {
-         if (res.ok) {
-           setSaved(true)
-         }
-         setSaving(false)
-       })
-     } 
+    if (entry?.id) {
+      editEntry(entry.id, data).then(res => {
+        if (res.ok) {
+          setSaved(true)
+        }
+        setSaving(false)
+      })
+    } else {
+      createEntry({
+        ...data,
+
+      }).then(res => {
+        if (res.ok) {
+          setSaved(true)
+        }
+        setSaving(false)
+      })
+    }
   }
 
   const handleSetEditorState = (state) => {
@@ -198,6 +199,7 @@ const BlogEntryForm = ({ entry }) => {
                       }}>
                       {isPublic ? 'Ocultar' : 'Publicar'}
                     </button>
+                    <InputChips />
                     {/*    <Toggle label='Público'  {...register('options.isPublic', { value: true })} /> */}
                     <div className="flex justify-center my-2">
                       <ButtonSave className='btn-primary ' fullwidth iconName={ICONS.save} saved={saved} loading={saving} />

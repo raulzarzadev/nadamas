@@ -1,5 +1,5 @@
 import { getAuth } from "firebase/auth";
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, Timestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, Timestamp, updateDoc, where } from "firebase/firestore";
 // import { deepFormatFirebaseDates } from "./deepFormatFirebaseDates";
 import { Dates } from 'firebase-dates-util'
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
@@ -58,6 +58,16 @@ export class FirebaseCRUD {
     const ref = doc(db, this.collectionName, itemId)
     const docSnap = await getDoc(ref)
     return FirebaseCRUD.normalizeDoc(docSnap)
+  }
+  async getAll() {
+    let docs = []
+    const querySnapshot = await getDocs(collection(db, this.collectionName))
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      //console.log(doc.id, " => ", doc.data());
+      docs.push(FirebaseCRUD.normalizeDoc(doc.data()))
+    });
+    return docs
   }
 
   async listen(itemId: string, cb: CallableFunction) {
