@@ -30,10 +30,7 @@ const MarkdownEntry = ({ content = '' }) => {
       /**
  *  * if blog entry is an html entry from the quill
  */
-      console.log(turndownService)
       const mark = turndownService.turndown(content)
-      console.log(mark)
-
       setMarkdown(mark)
     }
 

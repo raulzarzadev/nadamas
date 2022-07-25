@@ -14,11 +14,11 @@ const ReactQuill = dynamic(
 );
 
 const TextEditor = ({
-  content,
+  content = '',
   setContent,
   disabled,
 }) => {
-  const [value, setValue] = useState()
+  const [value, setValue] = useState('')
   const quillRef = useRef()
 
   useEffect(() => {

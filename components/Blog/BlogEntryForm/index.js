@@ -28,28 +28,27 @@ const BlogEntryForm = ({ entry }) => {
     }
   })
 
-  const onSubmit = (data) => {
-    console.log(data)
-    setSaving(true)
-    if (entry?.id) {
-      editEntry(entry.id, data).then(res => {
-        console.log(res)
-        if (res.ok) {
-          setSaved(true)
-        }
-        setSaving(false)
-      })
-    } else {
-      createEntry({
-        ...data,
+  console.log(entry)
 
-      }).then(res => {
-        if (res.ok) {
-          setSaved(true)
-        }
-        setSaving(false)
-      })
+  const onSubmit = async (data) => {
+    // console.log(data)
+    setSaving(true)
+    let res
+    try {
+      if (entry?.id) {
+        res = await editEntry(entry.id, data)
+      } else {
+        res = await createEntry(data)
+      }
+      setSaving(false)
+      setSaved(true)
+      console.log(res)
+    } catch (error) {
+      setSaving(false)
+      setSaved(false)
+      console.log(error)
     }
+
   }
 
   const handleSetEditorState = (state) => {

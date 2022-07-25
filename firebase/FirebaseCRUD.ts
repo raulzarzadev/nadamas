@@ -38,7 +38,7 @@ export class FirebaseCRUD {
     }
 
     return await addDoc(collection(db, this.collectionName), newItem)
-      .then((res) => this.CRUDResponse(true, `CREATED`, res, { item: { ...newItem, id: res.id } }))
+      .then((res) => this.CRUDResponse(true, `CREATED`, { id: res.id, item: { ...newItem, id: res.id } }))
       .catch((err) => console.error(err))
   }
 
@@ -90,12 +90,12 @@ export class FirebaseCRUD {
     return { type: formatedType, ok, res }
   }
 
-  CRUDResponse(ok: boolean, type: string, res: FirebaseResponse, options?: { item: null | object }): CRUDResponseType {
+  CRUDResponse(ok: boolean, type: string, res: FirebaseResponse): CRUDResponseType {
     const formatType = `${!ok ? `ERROR_` : ''}${this.collectionName.slice(0, -1)}_${type}`.toUpperCase()
     return {
       ok,
       type: formatType,
-      res: { ...res, item: options.item }
+      res: { ...res }
     }
   }
 
