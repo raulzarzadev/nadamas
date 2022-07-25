@@ -33,6 +33,7 @@ const BlogEntryForm = ({ entry }) => {
     setSaving(true)
     if (entry?.id) {
       editEntry(entry.id, data).then(res => {
+        console.log(res)
         if (res.ok) {
           setSaved(true)
         }

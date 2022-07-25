@@ -10,7 +10,14 @@ import { db, storage } from ".";
 interface FirebaseResponse {
   id: string,
   message?: string,
-  info?: any
+  info?: any,
+  item?: any
+}
+
+interface CRUDResponseType {
+  ok: boolean,
+  type: string,
+  res: FirebaseResponse
 }
 
 export class FirebaseCRUD {
@@ -31,7 +38,7 @@ export class FirebaseCRUD {
     }
 
     return await addDoc(collection(db, this.collectionName), newItem)
-      .then((res) => this.CRUDResponse(true, `CREATED`, res))
+      .then((res) => this.CRUDResponse(true, `CREATED`, res, { item: { ...newItem, id: res.id } }))
       .catch((err) => console.error(err))
   }
 
@@ -65,7 +72,7 @@ export class FirebaseCRUD {
     querySnapshot.forEach((doc) => {
       // doc.data() is never undefined for query doc snapshots
       //console.log(doc.id, " => ", doc.data());
-      docs.push(FirebaseCRUD.normalizeDoc(doc.data()))
+      docs.push(FirebaseCRUD.normalizeDoc(doc))
     });
     return docs
   }
@@ -83,12 +90,12 @@ export class FirebaseCRUD {
     return { type: formatedType, ok, res }
   }
 
-  CRUDResponse(ok: boolean, type: string, res: FirebaseResponse) {
+  CRUDResponse(ok: boolean, type: string, res: FirebaseResponse, options?: { item: null | object }): CRUDResponseType {
     const formatType = `${!ok ? `ERROR_` : ''}${this.collectionName.slice(0, -1)}_${type}`.toUpperCase()
     return {
       ok,
       type: formatType,
-      res
+      res: { ...res, item: options.item }
     }
   }
 

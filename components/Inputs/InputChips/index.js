@@ -1,59 +1,56 @@
-import { useMemo, useRef, useState } from "react"
-import { createAutocomplete } from '@algolia/autocomplete-core';
-import { getTags } from 'fb/tags/main'
-const TEST_DATA = [
-  { id: 1, label: 'foo' },
-  { id: 2, label: 'doe' },
-  { id: 3, label: 'main' },
-]
-const InputChips = ({ defaultTags = [TEST_DATA[0]], availablesTags = TEST_DATA }) => {
-  const [autocompleteState, setAutoCompleteState] = useState({
-    collections: [],
-    isOpen: false
-  })
+import { useEffect, useMemo, useRef, useState } from "react"
 
-  const autocomplete = useMemo(() => createAutocomplete({
-    onStateChange: ({ state }) => setAutoCompleteState(state),
-    getSources() {
-      return [
-        {
-          sourceId: 'nadamas_chips_tags',
-          // getItemInputValue: ({ item }) => item.query,
-          getItems({ query }) {
-            console.log(query)
-            let tags = []
-            return getTags().then(res => res)
-            console.log(tags)
-            return tags
-          }
-        }
-      ]
-    }
-  }), [])
-  const MAXIMUN_TAGS = 3
+import { getTags, createTag, callTag, uncallTag } from 'fb/tags/main'
+
+const InputChips = ({ defaultTags = null, availablesTags = [] }) => {
+
+
+
+  const MAXIMUN_TAGS = 5
+  const MINIMUM_TAG_LENGTH = 5
 
   const [tagText, setTagText] = useState('')
   const [tagsList, setTagsList] = useState(defaultTags || [])
+  const [tags, setTags] = useState([])
 
-  const onPrintTag = () => {
-    setTagsList([...tagsList, tagText])
+  useEffect(() => {
+    getTags().then(setTags)
+  }, [])
+
+
+  const onPrintTag = async () => {
+    const formatText = tagText.replace(' ', '')
+    const tag = tags.find(({ label }) => label === formatText)
+    if (tag) {
+      setTagsList([...tagsList, tag])
+      callTag(tag.id)
+    } else {
+      const newTag = await createTag({ label: formatText }).then(({ res }) => res?.item)
+      // callTag(newTag.id)
+      setTagsList([...tagsList, newTag])
+    }
     clearInput()
   }
 
   const clearInput = () => {
     setTagText('')
   }
-  const handleRemoveTag = (text) => {
-    const newList = tagsList.filter(({ label }) => label !== text)
+  const handleRemoveTag = (tagId) => {
+    const newList = tagsList.filter(({ id }) => id !== tagId)
     setTagsList(newList)
+    uncallTag(tagId)
   }
 
-  const inputRef = useRef(null)
-  const panelRef = useRef(null)
+  const handleSelectTag = (tagId) => {
+    const tag = tags.find(({ id }) => id === tagId)
+    setTagsList([...tagsList, tag])
+    callTag(tagId)
+    setTagText('')
+  }
 
-  const inputProps = autocomplete.getInputProps({
-    inputElement: inputRef.current
-  })
+
+  const inputRef = useRef()
+
 
   return (
     <div>
@@ -62,47 +59,53 @@ const InputChips = ({ defaultTags = [TEST_DATA[0]], availablesTags = TEST_DATA }
       </div>
       <input
         className='input w-full input-bordered my-4 '
-        /* ref={inputRef}
+        ref={inputRef}
         disabled={tagsList.length >= MAXIMUN_TAGS}
         value={tagText}
-        onChange={({ target }) => setTagText(target.value)} */
+        onChange={({ target }) => setTagText(target.value)}
         onKeyDown={({ code }) => {
-          console.log(code)
-          if (code === 'Space' || code === 'Enter') {
-            {...inputProps}
+          if ((code === 'Space' || code === 'Enter') && tagText.length >= MINIMUM_TAG_LENGTH) {
             onPrintTag()
           }
         }}
       />
-      {autocompleteState?.isOpen && (
-        <div>
-          <div ref={panelRef} {...autocomplete.getPanelProps()}>
-            {autocompleteState.collections.map((collection) => {
-              const { items } = collection
-              return <div>
-                {items.length > 0 && (
-                  <ul {...autocomplete.getListProps()}>
-                    {items.map(item => <AutocompleteItem key={item.id} {...item} />)}
-                  </ul>
-                )}
-              </div>
-            }
-            )}
-          </div>
-        </div>
-      )
-      }
+      <div>
+        <AutocomleteTags tags={tags} search={tagText} onSelectTag={handleSelectTag} />
+      </div>
+
     </div >
   )
 }
-const AutocompleteItem = ({ id, label }) => {
-  return <div>
-    {label}
-  </div>
+const AutocomleteTags = ({ tags = [], search, onSelectTag = (tagId) => { } }) => {
+
+  const [searchResult, setSearchResult] = useState([])
+  useEffect(() => {
+    if (search.length > 2) {
+      setSearchResult(tags.filter(({ label }) => label?.includes(search)))
+    } else {
+      setSearchResult([])
+    }
+  }, [search])
+
+  return (
+    <div>
+      <ul>
+        {searchResult.map((result, i) =>
+          <li >
+            <button onClick={() => onSelectTag(result.id)}>
+              {result.label}
+            </button>
+          </li>
+        )}
+      </ul>
+    </div >
+  )
 }
 
-const Tag = ({ tag, onClose = () => { }, ...props }) => {
-  const { label } = tag
+
+const Tag = ({ tag, onClose = (tagId) => { }, ...props }) => {
+  console.log(tag)
+  const { label, id } = tag
   return (
     <div>
       <span
@@ -110,7 +113,7 @@ const Tag = ({ tag, onClose = () => { }, ...props }) => {
         {label}
         <button class="bg-transparent hover focus:outline-none" onClick={(e) => {
           e.preventDefault()
-          onClose(label)
+          onClose(id)
         }}>
           <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times"
             class="w-3 ml-3" role="img" xmlns="http://www.w3.org/2000/svg"
