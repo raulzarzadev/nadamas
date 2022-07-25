@@ -1,4 +1,5 @@
 import { Base } from "../base.modal"
+import { Tag } from "../tags/tag.model"
 
 export interface Entry extends Base {
   content: JSON
@@ -11,5 +12,6 @@ export interface Entry extends Base {
     alias?: string
   }
   userId: string
-  lovedBy: string[]
+  lovedBy: string[],
+  tags: Tag['id'][]
 }

@@ -21,14 +21,14 @@ const BlogEntryForm = ({ entry }) => {
 
   const { register, handleSubmit, watch, setValue, reset } = useForm({
     defaultValues: {
-      title: '', ...entry, userInfo: {
+      title: '',
+      userInfo: {
         id: user?.id,
         alias: user?.alias || ''
-      }
+      },
+      ...entry,
     }
   })
-
-  console.log(entry)
 
   const onSubmit = async (data) => {
     // console.log(data)
@@ -126,6 +126,7 @@ const BlogEntryForm = ({ entry }) => {
     }
   }
 
+
   const isPublic = watch('options.isPublic')
 
   useEffect(() => {
@@ -160,7 +161,6 @@ const BlogEntryForm = ({ entry }) => {
     }, [])
    */
 
-
   return (
     <div >
       <form id='form-new-post' onSubmit={handleSubmit(onSubmit)} className='' >
@@ -189,7 +189,7 @@ const BlogEntryForm = ({ entry }) => {
                       <Icon name={ICONS.info} />
                     </span>
                   </h4>
-                  <div className="max-w-[10rem] mx-auto">
+                  <div className=" mx-auto">
                     <Toggle label='Publicar anonimo' {...register('options.publishedAsAnonymous')} />
                     <button
                       className={`btn btn-sm mx-auto w-full ${isPublic ? 'btn-error' : 'btn-success'} `}
@@ -199,7 +199,7 @@ const BlogEntryForm = ({ entry }) => {
                       }}>
                       {isPublic ? 'Ocultar' : 'Publicar'}
                     </button>
-                    <InputChips />
+
                     {/*    <Toggle label='Público'  {...register('options.isPublic', { value: true })} /> */}
                     <div className="flex justify-center my-2">
                       <ButtonSave className='btn-primary ' fullwidth iconName={ICONS.save} saved={saved} loading={saving} />
@@ -230,7 +230,9 @@ const BlogEntryForm = ({ entry }) => {
             {...register('title')}
             disabled={inptusDisabled}
           />
+
         </label>
+        <InputChips tags={watch('tags')} setTags={tags => setValue('tags', tags)} />
         <TextEditor setContent={handleSetEditorState} content={entry?.content} disabled={inptusDisabled} />
       </form>
     </div>
