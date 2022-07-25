@@ -4,15 +4,14 @@ import ReactMarkdown from 'react-markdown'
 import PreviewImage from '../../PreviewImage';
 import TurndownService from 'turndown'
 
-const MarkdownEntry = ({ content }) => {
+const MarkdownEntry = ({ content = '' }) => {
   const turndownService = new TurndownService()
-  // console.log(content)
   const [markdown, setMarkdown] = useState()
   useEffect(() => {
     /**
     *  * if blog entry is from the old text editor version  draftjs
     */
-    if (window && content.blocks) {
+    if (window && content?.blocks) {
       const markdownString = draftToMarkdown(content, {
         escapeMarkdownCharacters: true,
         entityItems: {
@@ -31,8 +30,10 @@ const MarkdownEntry = ({ content }) => {
       /**
  *  * if blog entry is an html entry from the quill
  */
+      console.log(turndownService)
       const mark = turndownService.turndown(content)
       console.log(mark)
+
       setMarkdown(mark)
     }
 
