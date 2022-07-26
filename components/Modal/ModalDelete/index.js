@@ -87,7 +87,9 @@ export default function ModalDelete({
           <div className="w-full justify-center flex my-4 ">
             <Button
               className={'btn-outline m-1'}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
                 handleOpen()
               }}
             >

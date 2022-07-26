@@ -104,9 +104,7 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
     setTagsList(auxList)
   }
 
-  const [showPane, setSowPanel] = useState(true)
-
-  console.log(showPane)
+  const [showPanel, setSowPanel] = useState(true)
 
   return (
     <div>
@@ -151,7 +149,7 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
 
               }}
             />
-            {showPane &&
+            {showPanel &&
               <AutocomleteTags tags={_tags} tagsList={tagsList} search={tagText} onSelectTag={handleSelectTag} />
             }
           </label>
