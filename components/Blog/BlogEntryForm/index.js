@@ -167,48 +167,9 @@ const BlogEntryForm = ({ entry }) => {
 
         <div className="p-2 my-2 flex justify-between">
 
-          {showDeleteButton &&
-            <ModalDelete buttonLabel={'Eliminar'} buttonSize='sm' buttonVariant="btn" handleDelete={() => handleDeleteEntry(entry?.id)} />
-          }
 
-          {showSaveButton &&
-            <>
-              <ButtonIcon
-                iconName={ICONS.save}
-                label='Guardar'
-                onClick={(e) => {
-                  e.preventDefault()
-                  handleOpenSaveModal()
-                }}
-              />
-              <Modal open={openSaveModal} handleOpen={handleOpenSaveModal} title='Guardar entrada'>
-                <div>
-                  <h4 className="text-center text-xl my-4 relative w-min whitespace-nowrap mx-auto">
-                    Configura tu publicación
-                    <span className="absolute -top-2 -right-4">
-                      <Icon name={ICONS.info} />
-                    </span>
-                  </h4>
-                  <div className=" mx-auto">
-                    <Toggle label='Publicar anonimo' {...register('options.publishedAsAnonymous')} />
-                    <button
-                      className={`btn btn-sm mx-auto w-full ${isPublic ? 'btn-error' : 'btn-success'} `}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        handleTogglePulish()
-                      }}>
-                      {isPublic ? 'Ocultar' : 'Publicar'}
-                    </button>
 
-                    {/*    <Toggle label='Público'  {...register('options.isPublic', { value: true })} /> */}
-                    <div className="flex justify-center my-2">
-                      <ButtonSave className='btn-primary ' fullwidth iconName={ICONS.save} saved={saved} loading={saving} />
-                    </div>
-                  </div>
-                </div>
-              </Modal>
-            </>
-          }
+
         </div>
 
         {showEditButton &&
@@ -234,6 +195,64 @@ const BlogEntryForm = ({ entry }) => {
         </label>
         <InputChips tags={watch('tags')} setTags={tags => setValue('tags', tags)} />
         <TextEditor setContent={handleSetEditorState} content={entry?.content} disabled={inptusDisabled} />
+
+        <div className="flex items-center  my-2 [&>*]:mr-2">
+
+          {showSaveButton &&
+            <>
+              <ButtonIcon
+                iconName={ICONS.save}
+                label='Publicar'
+                className="btn-success"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleOpenSaveModal()
+                }}
+              />
+              <Modal open={openSaveModal} handleOpen={handleOpenSaveModal} title='Guardar entrada'>
+                <div>
+                  <h4 className="text-center text-xl my-4 relative w-min whitespace-nowrap mx-auto">
+                    Configura tu publicación
+                    <span className="absolute -top-2 -right-4">
+                      <Icon name={ICONS.info} />
+                    </span>
+                  </h4>
+                  <div className=" mx-auto">
+                    <Toggle label='Publicar anonimo' {...register('options.publishedAsAnonymous')} />
+                    <button
+                      className={`btn btn-sm mx-auto w-full ${isPublic ? 'btn-error' : 'btn-success'} `}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        // handleTogglePulish()
+
+                      }}
+                      type='submit'
+                    >
+                      {isPublic ? 'Ocultar' : 'Publicar'}
+                    </button>
+
+                    {/*    <Toggle label='Público'  {...register('options.isPublic', { value: true })} /> */}
+
+                  </div>
+                </div>
+              </Modal>
+
+              <ButtonSave type='submit' className='btn-primary ' iconName={ICONS.save} saved={saved} loading={saving} />
+
+
+              {showDeleteButton &&
+                <ModalDelete
+                  OpenComponent={ButtonIcon}
+                  iconName={ICONS.trash}
+                  iconOnly
+                  className='bg-transparent border-transparent'
+                  handleDelete={() => handleDeleteEntry(entry?.id)}
+                />
+              }
+
+            </>
+          }
+        </div>
       </form>
     </div>
   )

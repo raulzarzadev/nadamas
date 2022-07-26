@@ -24,8 +24,8 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
 
   useEffect(() => {
     if (tags.length > 0) {
-      const rebuildTagsList = tags.map(tag => _tags.find(({ id }) => tag === id) || { id: tag, notFound: true })
-      setTagsList(rebuildTagsList)
+      const rebuildedTagsList = tags.map(tag => _tags.find(({ id }) => tag === id) || { id: tag, notFound: true })
+      setTagsList(rebuildedTagsList)
     }
   }, [_tags])
 
@@ -46,24 +46,32 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
   const clearInput = () => {
     setTagText('')
   }
+
   const handleRemoveTag = (tagId) => {
     const newList = tagsList.filter(({ id }) => id !== tagId)
     setTagsList(newList)
     uncallTag(tagId)
   }
 
+
+
+  const inputRef = useRef()
+
   const handleSelectTag = (tagId) => {
+    /**
+    * !FIX lost onfocus and you need to do a focus again in the intpu
+    *
+    */
     const tag = _tags.find(({ id }) => id === tagId)
     if (tags.length < MAXIMUN_TAGS) {
-
       setTagsList([...tagsList, tag])
       callTag(tagId)
       setTagText('')
+    } else {
     }
   }
 
 
-  const inputRef = useRef()
 
   const PLACEHOLDERS = {
     0: `Agrega al menos ${MINIMUM_TAGS} etiquetas`,
@@ -76,6 +84,7 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
   useEffect(() => {
     const tagsQuantity = tagsList.length
     let label
+
     if (tagsQuantity <= 0) {
       label = PLACEHOLDERS[0]
     } else if (0 < tagsQuantity && tagsQuantity < MAXIMUN_TAGS) {
@@ -88,10 +97,16 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
 
 
   }, [tagsList.length])
+  
+  const handleRemoveLastTag = () => {
+    const auxList = [...tagsList]
+    auxList.pop()
+    setTagsList(auxList)
+  }
 
   const [showPane, setSowPanel] = useState(true)
-  
 
+  console.log(showPane)
 
   return (
     <div>
@@ -101,17 +116,39 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
           <label className="">
             <input
               onFocus={() => setSowPanel(true)}
-              onBlur={(e) => setSowPanel(false)}
+              onBlur={(e) => {
+                // Allow panel be selectable before disappearing
+                setTimeout(() => {
+                  setSowPanel(false)
+                }, 200)
+              }}
               placeholder={placeholder}
               className='input  input-sm p-0 pl-1 h-10 bg-transparent  focus:outline-none  '
               ref={inputRef}
               // disabled={tagsList.length >= MAXIMUN_TAGS}
               value={tagText}
-              onChange={({ target }) => setTagText(target.value)}
+              onChange={({ target }) => {
+                setTagText(target.value)
+              }}
               onKeyDown={({ code }) => {
-                if ((code === 'Space' || code === 'Enter') && tagText.length >= MINIMUM_TAG_LENGTH && tags.length < MAXIMUN_TAGS) {
+
+                const labelLength = tagText.replace(' ', '').length
+                const tagsLength = tags?.length
+
+                console.log(code)
+                if (['Backspace'].includes(code)) {
+                  handleRemoveLastTag()
+                }
+                if (
+                  ['Space', 'Enter'].includes(code)
+                  &&
+                  labelLength >= MINIMUM_TAG_LENGTH
+                  &&
+                  tagsLength < MAXIMUN_TAGS
+                ) {
                   onPrintTag()
                 }
+
               }}
             />
             {showPane &&
@@ -145,7 +182,7 @@ const AutocomleteTags = ({ tags = [], tagsList, search, onSelectTag = (tagId) =>
         }
         {/* {tagsList.length >= MAXIMUN_TAGS && <ResultItem result={{ label: MAXIMUN_TAGS_LABLE }} isTitle />} */}
         {searchResult.map((result, i) =>
-          <ResultItem result={result} disabled={tagsList.length >= MAXIMUN_TAGS} onClick={onSelectTag} />
+          <ResultItem result={result} disabled={tagsList.length >= MAXIMUN_TAGS} onClick={() => onSelectTag(result.id)} />
         )}
       </ul>
     </div>
@@ -159,7 +196,8 @@ const ResultItem = ({ onClick = () => { }, disabled, result, isTitle }) => {
       ${disabled ? ' cursor-not-allowed ' : ' cursor-pointer hover:bg-base-200  '}
       ${isTitle ? 'text-center' : ''}
       `}
-      onClick={() => onClick(result.id)}
+
+      onClick={() => onClick()}
     >
       <span className={``}>
         <span>

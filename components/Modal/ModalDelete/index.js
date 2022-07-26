@@ -11,7 +11,10 @@ export default function ModalDelete({
   buttonVariant = 'circle', // btn | outline | circle
   buttonLabel = null,
   buttonSize = 'xs',
-  deleteParagraph = null
+  deleteParagraph = null,
+  OpenComponent = null,
+  onClick,
+  ...props
 }) {
   const [open, setOpen] = useState()
   const handleOpen = () => {
@@ -55,18 +58,28 @@ export default function ModalDelete({
   }
   return (
     <div>
-      <ButtonIcon
-        id='delete-modal'
-        iconName={'trash'}
-        onClick={(e) => {
-          e.preventDefault()
-          handleOpen()
-        }}
-        size={buttonSize}
-        label={buttonLabel}
-        variant={buttonVariant}
-        className="btn-error"
-      />
+      <div>
+        {OpenComponent
+          ?
+          <OpenComponent onClick={(e) => {
+            e.preventDefault()
+            handleOpen()
+          }} {...props} />
+          :
+          <ButtonIcon
+            id='delete-modal'
+            iconName={'trash'}
+            onClick={(e) => {
+              e.preventDefault()
+              handleOpen()
+            }}
+            size={buttonSize}
+            label={buttonLabel}
+            variant={buttonVariant}
+            className=""
+          />
+        }
+      </div>
       <Modal title="Eliminar" open={open} handleOpen={handleOpen}>
         <div>
           <p>{deleteParagraph || '¿Estás seguro de eliminar este elemento?'}</p>
