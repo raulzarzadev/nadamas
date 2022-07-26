@@ -8,10 +8,7 @@ import { useEffect, useState } from "react"
 import { ROUTES } from "../../../CONSTANTS/ROUTES"
 import { useRouter } from "next/router"
 import ModalDelete from "../../Modal/ModalDelete"
-import Modal from "../../Modal"
 import ButtonSave from "../../Inputs/Button/ButtonSave"
-import Icon from "../../Icon"
-import Toggle from "../../Inputs/Toggle"
 import InputChips from "../../Inputs/InputChips"
 
 const BlogEntryForm = ({ entry }) => {
@@ -108,11 +105,7 @@ const BlogEntryForm = ({ entry }) => {
     showDeleteButton,
   } = formStatus
 
-  const [openSaveModal, setOpenSaveModal] = useState(false)
 
-  const handleOpenSaveModal = () => {
-    setOpenSaveModal(!openSaveModal)
-  }
 
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -128,51 +121,27 @@ const BlogEntryForm = ({ entry }) => {
     }
   }
 
-
-  const isPublic = watch('options.isPublic')
-
   useEffect(() => {
-
     const subscription = watch(() => {
       setSaved(false)
     });
-
     return () => subscription.unsubscribe();
-
   }, [watch]);
 
-  const handleSetIsPublish = (isPublic = true) => {
-    setValue('options.isPublic', isPublic)
-    handleSubmit(onSubmit)
-  }
+
 
 
 
   /**
     TODO save the edited form in localstorage and get it 
-  
-    useEffect(() => {
-      const form = watch()
-      console.log(form)
-      localStorage.setItem('text-editor', JSON.stringify(form))
-    }, [watch()])
-  
-    useEffect(() => {
-      const formEdited = localStorage.getItem('text-editor')
-      console.log(formEdited)
-      if (formEdited) {
-        const alfa = JSON.parse(formEdited)
-        Object.keys(alfa).forEach((key) => {
-          setValue(key, alfa[key])
-        })
-      }
-    }, [])
+    TODO publis and save with the same click
    */
 
 
   return (
     <div >
       <form id='form-new-post' onSubmit={handleSubmit(onSubmit)} className='' >
+        
         {showEditButton &&
           <ButtonIcon
             iconName={ICONS.edit}
@@ -205,8 +174,8 @@ const BlogEntryForm = ({ entry }) => {
 
           {showSaveButton &&
             <>
-              {/* <PublishButton />*/}
-              
+              <PublishButton isPublic={watch('options.isPublic')} setIsPublic={handleTogglePulish} />
+
 
               <ButtonSave className='btn-primary ' iconName={ICONS.save} saved={saved} loading={saving} />
 
@@ -231,86 +200,18 @@ const BlogEntryForm = ({ entry }) => {
 
 
 
-const PublishButton = ({}) => {
-  return (
-    <div>
-      {isPublic ?
-        <ButtonSave
-          onClick={(e) => {
-            e.preventDefault()
-            handleOpenSaveModal()
-          }}
-          className='btn-error '
-          label='Ocultar'
-          savedLabel="Oculto"
-          iconName={ICONS.save}
-          saved={isPublic}
-          loading={saving}
-        />
-        :
-        <ButtonSave
-          onClick={(e) => {
-            e.preventDefault()
-            handleOpenSaveModal()
-          }}
-          className='btn-success '
-          label='Pulicar'
-          savedLabel="Publicado"
-          iconName={ICONS.save}
-          saved={isPublic}
-          loading={saving}
-        />
-      }
-      <Modal open={openSaveModal} handleOpen={handleOpenSaveModal} title='Guardar entrada'>
-        <div>
-          <h4 className="text-center text-xl my-4 relative w-min whitespace-nowrap mx-auto">
-            Configura tu publicación
-            <span className="absolute -top-2 -right-4">
-              <Icon name={ICONS.info} />
-            </span>
-          </h4>
-          <div className=" mx-auto">
-            <Toggle label='Publicar anonimo' {...register('options.publishedAsAnonymous')} />
-
-            {/*   <ButtonSave label='Publicar' className='btn-success' /> */}
-            {isPublic ?
-              <ButtonSave
-                onClick={() => handleSetIsPublish(false)}
-                className='btn-error '
-                label='Ocultar'
-                savedLabel="Oculto"
-                iconName={ICONS.save}
-                saved={isPublic}
-                loading={saving}
-              />
-              :
-              <ButtonSave
-                onClick={() => handleSetIsPublish(true)}
-                className='btn-success '
-                label='Pulicar'
-                savedLabel="Publicado"
-                iconName={ICONS.save}
-                saved={isPublic}
-                loading={saving}
-              />}
-            {/* <button
-                      className={`btn btn-sm mx-auto w-full ${isPublic ? 'btn-error' : 'btn-success'} `}
-                      onClick={(e) => {
-                        e.preventDefault()
-                        // handleTogglePulish()
-
-                      }}
-                    >
-                      {isPublic ? 'Ocultar' : 'Publicar'}
-                    </button>
- */}
-            {/*    <Toggle label='Público'  {...register('options.isPublic', { value: true })} /> */}
-
-          </div>
-        </div>
-      </Modal>
-    </div>
-  )
+const PublishButton = ({ isPublic = false, setIsPublic = () => { } }) => {
+  return <div>
+    <ButtonIcon
+      onClick={(e) => {
+        e.preventDefault()
+        setIsPublic(!isPublic)
+      }}
+      className={isPublic ? 'btn-error' : 'btn-success'}
+      label={isPublic ? 'Ocultar' : 'Publicar'}
+      iconName={ICONS.document}
+    />
+  </div>
 }
 
 export default BlogEntryForm
