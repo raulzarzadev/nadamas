@@ -97,7 +97,7 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
 
 
   }, [tagsList.length])
-  
+
   const handleRemoveLastTag = () => {
     const auxList = [...tagsList]
     auxList.pop()
@@ -133,10 +133,10 @@ const InputChips = ({ tags = [], setTags = (tags) => { } }) => {
                 const labelLength = tagText.replace(' ', '').length
                 const tagsLength = tags?.length
 
-                console.log(code)
-                if (['Backspace'].includes(code)) {
-                  handleRemoveLastTag()
-                }
+                /*    console.log(code)
+                   if (['Backspace'].includes(code)) {
+                     handleRemoveLastTag()
+                   } */
                 if (
                   ['Space', 'Enter'].includes(code)
                   &&
@@ -191,20 +191,23 @@ const ResultItem = ({ onClick = () => { }, disabled, result, isTitle }) => {
   return (
     <li
       className={`h-12   p-1 
-      ${disabled ? ' cursor-not-allowed ' : ' cursor-pointer hover:bg-base-200  '}
+      ${disabled ? ' cursor-not-allowed ' : ' cursor-pointer hover:bg-base-300  '}
       ${isTitle ? 'text-center' : ''}
       `}
 
       onClick={() => onClick()}
     >
-      <span className={``}>
-        <span>
-          {`${isTitle ? '' : '#'}`}{result?.label}
+      <button>
+
+        <span className={``}>
+          <span>
+            {`${isTitle ? '' : '#'}`}{result?.label}
+          </span>
+          <span className="mx-2 text-sm font-thin">
+            {!isTitle ? (result?.calls || 0) : ''}
+          </span>
         </span>
-        <span className="mx-2 text-sm font-thin">
-          {!isTitle ? (result?.calls || 0) : ''}
-        </span>
-      </span>
+      </button>
       {/* <Tag tag={result} onClick={onSelectTag} hiddeCloseButton /> */}
     </li>
   )
