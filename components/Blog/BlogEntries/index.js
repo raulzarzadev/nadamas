@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react"
 import { listenPublicEntries } from "@firebase/entries/main"
 import BlogEntry from "./BlogEntry"
-import Icon from '@comps/Icon'
-import { ICONS } from "../../Icon/icon-list"
 import { useRouter } from "next/router"
 import { ROUTES } from "../../../CONSTANTS/ROUTES"
 import ButtonAdd from "../../Inputs/Button/ButtonAdd"

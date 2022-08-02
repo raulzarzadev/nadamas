@@ -5,11 +5,13 @@ import { Dates } from 'firebase-dates-util';
 import ButtonAdd from '../../Inputs/Button/ButtonAdd';
 import MarkdownEntry from './MarkdownEntry';
 import SideButtons from './SideButtons';
+import useTags from '../../hooks/useTags';
+import Tag from '../../Tag';
 
 const BlogEntry = ({ entry, blocked = true }) => {
 
   const router = useRouter()
-  const { title, updatedAt, createdAt, options = { publishedAsAnonymous: false } } = entry
+  const { title, updatedAt, createdAt, tags, options = { publishedAsAnonymous: false } } = entry
 
   const publishedBy = entry?.userInfo
   const { publishedAsAnonymous, publishedAt } = options
@@ -32,6 +34,8 @@ const BlogEntry = ({ entry, blocked = true }) => {
         </div>
       </div>
 
+      <Tags tagsList={tags} />
+
       <div className='flex items-center  '>
         <SideButtons
           entryId={entry.id}
@@ -53,6 +57,15 @@ const BlogEntry = ({ entry, blocked = true }) => {
       />
     </div>
   )
+}
+
+const Tags = ({ tagsList = [] }) => {
+  const { tags } = useTags({ tagsIds: tagsList })
+  return <div className='w-full flex justify-center my-2'>
+    {tags?.map(tag => <div className='mx-1' key={tag.id}>
+      <Tag hiddeCloseButton tag={tag} disabled variant='dark' />
+    </div>)}
+  </div>
 }
 
 
