@@ -61,8 +61,8 @@ const BlogEntry = ({ entry, blocked = true }) => {
 
 const Tags = ({ tagsList = [] }) => {
   const { tags } = useTags({ tagsIds: tagsList })
-  return <div className='w-full flex justify-center my-2'>
-    {tags?.map(tag => <div className='mx-1' key={tag.id}>
+  return <div className='w-full flex justify-center my-2 flex-wrap'>
+    {tags?.map(tag => <div className='m-1' key={tag.id}>
       <Tag hiddeCloseButton tag={tag} disabled variant='dark' />
     </div>)}
   </div>
