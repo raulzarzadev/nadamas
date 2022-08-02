@@ -206,7 +206,10 @@ const ResultItem = ({ onClick = () => { }, disabled, result, isTitle }) => {
 
       onClick={() => onClick()}
     >
-      <button>
+      <button onClick={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+      }}>
 
         <span className={``}>
           <span>

@@ -11,6 +11,9 @@ const UserBlogEntries = () => {
   useEffect(() => {
     listenUserEntries(setEntries)
   }, [])
+  const sortByDate = (a, b) => {
+    return b?.createdAt - a?.createdAt
+  }
   return (
     <div>
       <div className="grid grid-flow-col gap-2 overflow-auto">
@@ -18,7 +21,7 @@ const UserBlogEntries = () => {
           <div className='w-12'>
             <SquareAdd onClick={() => router.push(`${ROUTES.BLOG.href}/new`)} />
           </div>
-          {entries?.map(({ id, title, createdAt, updatedAt, options: { isPublic, publishedAt } = { isPublic: false, publishedAt: false } }) => (
+          {entries?.sort(sortByDate).map(({ id, title, createdAt, updatedAt, options: { isPublic, publishedAt } = { isPublic: false, publishedAt: false } }) => (
             <Link key={id} href={`/blog/${id}`}>
               <a className="border-base-100 border-2  hover:border-base-content rounded">
 

@@ -55,7 +55,8 @@ const BlogEntryForm = ({ entry }) => {
 
   const handleDeleteEntry = (id) => {
     deleteEntry(id).then(res => {
-      router.replace(ROUTES.BLOG.href)
+      router.back()
+      //router.replace(ROUTES.BLOG.href)
     })
   }
 
@@ -141,7 +142,7 @@ const BlogEntryForm = ({ entry }) => {
   return (
     <div >
       <form id='form-new-post' onSubmit={handleSubmit(onSubmit)} className='' >
-        
+
         {showEditButton &&
           <ButtonIcon
             iconName={ICONS.edit}
