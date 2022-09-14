@@ -18,7 +18,7 @@ const Entry = () => {
     <div className="">
       <Head>
         <title>
-          Editar | {entry.title || 'Entrada'}
+          Post | {entry.title || 'Entrada'}
         </title>
       </Head>
       <BlogEntry entry={entry} blocked={false} />

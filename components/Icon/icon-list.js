@@ -44,7 +44,7 @@ import { MdOutlineEmergency, MdOutlineEvent, MdOutlineMoreVert, MdOutlinePhoneFo
 //react-icons.github.io/react-icons/icons?name=fc
 import { FcGoogle } from 'react-icons/fc'
 
-import { FaComments, FaRegComment, FaSignInAlt ,FaRegHeart, FaHeart} from 'react-icons/fa'
+import { FaComments, FaRegComment, FaSignInAlt, FaRegHeart, FaHeart } from 'react-icons/fa'
 
 import { RiFileCopyLine, RiFileCopyFill } from 'react-icons/ri'
 // ALL ICONS SHOULD BE OUTLINE
@@ -52,7 +52,8 @@ import { RiFileCopyLine, RiFileCopyFill } from 'react-icons/ri'
 import {
   BsFillEyeFill,
   BsFillEyeSlashFill,
-  BsHeart
+  BsHeart,
+  BsShareFill
 } from "react-icons/bs";
 
 const get_Enum_Icons = (list) => {
@@ -106,14 +107,15 @@ const ICON_LIST = {
   copyFill: RiFileCopyFill,
   openEye: BsFillEyeFill,
   closeEye: BsFillEyeSlashFill,
-  heart:FaRegHeart,
-  coments:FaRegComment,
-  heartFill:FaHeart,
+  heart: FaRegHeart,
+  coments: FaRegComment,
+  heartFill: FaHeart,
+  share: BsShareFill
 }
 export const ICONS = {
-  heart:'heart',
-  heartFill:'heartFill',
-  coments:'coments',
+  heart: 'heart',
+  heartFill: 'heartFill',
+  coments: 'coments',
   openEye: 'openEye',
   closeEye: 'closeEye',
   signin: "signin",
@@ -154,6 +156,7 @@ export const ICONS = {
   event: "event",
   copy: "copy",
   copyFill: "copyFill",
+  share: 'share'
 }
 
 export default ICON_LIST
