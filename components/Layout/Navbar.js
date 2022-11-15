@@ -38,9 +38,7 @@ export default function Navbar() {
         <ul className=" sm:flex items-center ">
           <li className="mx-2">
             <Link href="/teams">
-              <div className="relative ">
-                Equipos
-              </div>
+              <div className="relative ">Equipos</div>
             </Link>
           </li>
           <li className="mx-2">
@@ -49,6 +47,11 @@ export default function Navbar() {
                 Blog
                 <div className="absolute -top-0 -right-1 bg-warning h-1 w-1 rounded-full animate-bounce"></div>
               </div>
+            </Link>
+          </li>
+          <li className="mx-2">
+            <Link href="https://events.nadamas.app">
+              <div className="relative ">Eventos</div>
             </Link>
           </li>
           {/*  <li className="mx-2">
@@ -87,11 +90,9 @@ export default function Navbar() {
               listItems={links}
               /*  topMenu={<div className='text-center font-bold'>{user.isCoach ? 'Entrenador' : 'Nadador'}</div>} */
               topMenu={
-                <div className='text-right pr-1 text-xs'>
+                <div className="text-right pr-1 text-xs">
                   {user?.email}
-                  <div>
-                    {user.isCoach ? 'Entrenador' : 'Nadador'}
-                  </div>
+                  <div>{user.isCoach ? 'Entrenador' : 'Nadador'}</div>
                 </div>
               }
               listComponent={
@@ -112,7 +113,7 @@ export default function Navbar() {
           </div>
         ) : (
           <li>
-            <Link href="/login" id='login-button'>
+            <Link href="/login" id="login-button">
               <div className="mx-2 ">Ingresar</div>
             </Link>
           </li>
@@ -179,9 +180,10 @@ const NavbarSubMenu = ({
 
         {/*  <!-- Dropdown menu --> */}
         <ul
-          id='dropdown-menu'
-          className={`absolute ${showMenu ? 'block' : 'hidden'
-            } -right-1 z-20 w-48 py-2 mt-0  bg-base-100 rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
+          id="dropdown-menu"
+          className={`absolute ${
+            showMenu ? 'block' : 'hidden'
+          } -right-1 z-20 w-48 py-2 mt-0  bg-base-100 rounded-sm rounded-t-none shadow-xl dark:bg-secondary-dark`}
         >
           <li>{topMenu}</li>
           {/* {user?.admin && (
