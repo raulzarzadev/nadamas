@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 
 import Loading from '@/components/Loading'
-import { authStateChanged, googleLogin, logOut } from '@/firebase'
+import { authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { loginUser } from '@/firebase/users'
 const UserContext = createContext()
