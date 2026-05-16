@@ -21,7 +21,7 @@ const InputFile = React.forwardRef(({
       </label>
       {preview &&
         <figure className="relative h-36">
-          <Image src={preview} objectFit='contain' layout="fill" blurDataURL="/images/logo-3.png" placeholder="blur" />
+          <Image src={preview} fill style={{ objectFit: 'contain' }} blurDataURL="/images/logo-3.png" placeholder="blur" alt={label || ''} />
         </figure>}
       <input
         ref={ref}

@@ -1,3 +1,4 @@
+'use client'
 import { useUser } from '@/context/UserContext'
 import Icon from '@comps/Icon'
 import Button from '@comps/Inputs/Button'

@@ -1,34 +1,29 @@
 {
   "compilerOptions": {
-    // "jsx": "react",
-    "baseUrl": ".",
     "paths": {
       "@comps/*": [
-        "components/*"
-      ],
-      "@legasy/*": [
-        ".legasy/src/components/*"
+        "./components/*"
       ],
       "@/*": [
         "./*"
       ],
       "@context": [
-        "context/*"
+        "./context/*"
       ],
       "@utils/*": [
-        "utils/*"
+        "./utils/*"
       ],
       "@firebase/*": [
-        "firebase/*"
+        "./firebase/*"
       ],
       "fb/*": [
-        "firebase/*"
+        "./firebase/*"
       ],
-      "Inputs/*":[
-        "components/Inputs/*"
+      "Inputs/*": [
+        "./components/Inputs/*"
       ]
     },
-    "target": "es5",
+    "target": "ES2022",
     "lib": [
       "dom",
       "dom.iterable",
@@ -36,24 +31,34 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
     "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "app/**/*.ts",
+    "app/**/*.tsx",
     "**/*.ts",
     "**/*.tsx",
-    "firebase/BaseCRUD.TS"
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    "e2e"
   ]
 }

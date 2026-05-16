@@ -1,28 +1,28 @@
-/* import {
-  BackIcon,
-  HomeIcon,
-  SignInIcon
-} from '@/legasy/src/utils/Icons' */
-// import Link from '@/legasy/src/components/inputs/Link'
-import { useRouter } from 'next/router'
+'use client'
+import { useRouter, usePathname } from 'next/navigation'
 import { useUser } from '@/context/UserContext'
 import Icon from '@comps/Icon'
 import Link from '@comps/Link'
 import { BOTTOM_LINKS } from '@/CONSTANTS/ROUTES'
 
-export default function BottomNav({ }) {
+export default function BottomNav() {
   const links = BOTTOM_LINKS
   const router = useRouter()
+  const pathname = usePathname()
   const { user } = useUser()
-  const home = router.pathname === '/profile'
+  const home = pathname === '/profile'
   const handleBack = () => {
     router.back()
   }
-  
+
   const hiddeButtonNavIn = ['/profle', '/blog', '/blog/[id]', '/blog/[id]/edit']
-  
+
   return (
-    <div className={`fixed -bottom-1 w-full ${hiddeButtonNavIn.includes(router.pathname) && 'hidden'}`}>
+    <div
+      className={`fixed -bottom-1 w-full ${
+        hiddeButtonNavIn.includes(pathname) && 'hidden'
+      }`}
+    >
       <div className=" relative bg-base-100  border-t border-base-300 pb-2 ">
         <div className="flex justify-evenly p-1 pb-0 ">
           {user ? (
@@ -46,7 +46,6 @@ export default function BottomNav({ }) {
               <ButtonIcon iconName={'home'} />
             </Link>
           )}
-          {/*   {user && <div>{user.name}</div>} */}
         </div>
       </div>
     </div>

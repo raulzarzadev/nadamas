@@ -1,7 +1,31 @@
+'use client'
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import { getTags, createTag, callTag, uncallTag } from 'fb/tags/main'
-import Tag from "../../Tag"
+
+const Tag = ({ tag, onClose = () => {}, hiddeCloseButton }) => {
+  const { label, id } = tag || {}
+  return (
+    <div>
+      <span className="bg-base-100 px-4 py-2 rounded-full text-base-content font-semibold text-sm flex items-center w-max cursor-pointer transition duration-300 ease">
+        {label || 'not found'}
+        {!hiddeCloseButton && (
+          <button
+            type="button"
+            className="bg-transparent focus:outline-none ml-3"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onClose(id)
+            }}
+          >
+            ×
+          </button>
+        )}
+      </span>
+    </div>
+  )
+}
 
 const MAXIMUN_TAGS = 5
 const MINIMUM_TAGS = 2

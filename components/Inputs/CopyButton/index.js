@@ -1,3 +1,4 @@
+'use client'
 import useCopyToClipboard from "../../hooks/useCopyToClipboard"
 import Icon from "../../Icon"
 

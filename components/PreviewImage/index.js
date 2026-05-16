@@ -1,3 +1,4 @@
+'use client'
 import Image from "next/image";
 import { useState } from "react";
 import Modal from "../Modal";
@@ -43,10 +44,11 @@ const PreviewImage = ({
           >
             <Image
               src={image}
-              layout="fill"
-              objectFit="cover"
+              fill
+              style={{ objectFit: "cover" }}
               placeholder="blur"
               blurDataURL={`/images/defaultBlurImage-small.jpg`}
+              alt={label || ""}
             />
           </div>
           <Modal
@@ -57,10 +59,12 @@ const PreviewImage = ({
           >
             <div className="relative w-full aspect-video mx-auto">
               <Image
-                layout="fill"
-                objectFit="contain"
+                fill
+                style={{ objectFit: "contain" }}
+                placeholder="blur"
                 blurDataURL={`/images/defaultBlurImage-small.jpg`}
                 src={image}
+                alt={label || ""}
               />
             </div>
           </Modal>

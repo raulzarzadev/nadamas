@@ -1,3 +1,4 @@
+'use client'
 import ButtonIcon from '@comps/Inputs/Button/ButtonIcon'
 import Modal from '..'
 import { useState } from 'react'

@@ -1,17 +1,17 @@
-import { AiOutlineSave } from '@react-icons/all-files/ai/AiOutlineSave'
-import { AiOutlineRight } from '@react-icons/all-files/ai/AiOutlineRight'
-import { AiOutlineLeft } from '@react-icons/all-files/ai/AiOutlineLeft'
+import { AiOutlineSave, AiOutlineRight, AiOutlineLeft } from 'react-icons/ai'
 
-import { TiDocumentText } from '@react-icons/all-files/ti/TiDocumentText'
-import { TiCogOutline } from '@react-icons/all-files/ti/TiCogOutline'
-import { TiPhoneOutline } from '@react-icons/all-files/ti/TiPhoneOutline'
-import { TiTimes } from '@react-icons/all-files/ti/TiTimes'
-import { TiPlusOutline } from '@react-icons/all-files/ti/TiPlusOutline'
-import { TiMinusOutline } from '@react-icons/all-files/ti/TiMinusOutline'
-import { TiInfoLarge } from '@react-icons/all-files/ti/TiInfoLarge'
-import { TiFilter } from '@react-icons/all-files/ti/TiFilter'
-import { TiEdit } from '@react-icons/all-files/ti/TiEdit'
-import { TiTrash } from '@react-icons/all-files/ti/TiTrash'
+import {
+  TiDocumentText,
+  TiCogOutline,
+  TiPhoneOutline,
+  TiTimes,
+  TiPlusOutline,
+  TiMinusOutline,
+  TiInfoLarge,
+  TiFilter,
+  TiEdit,
+  TiTrash
+} from 'react-icons/ti'
 
 //https://react-icons.github.io/react-icons/icons?name=cg
 import { CgGym } from "react-icons/cg";

@@ -1,4 +1,5 @@
-import { useRouter } from "next/router";
+'use client'
+import { usePathname } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
 import PROJECT_INFO from "../../CONSTANTS/PROJECT_INFO";
@@ -12,9 +13,9 @@ const ShareButton = () => {
   const handleOpenModal = () => {
     setOpenModal(!openModal);
   };
-  const { asPath } = useRouter();
+  const pathname = usePathname();
 
-  const fullPath = `https://${PROJECT_INFO.domain}${asPath}`;
+  const fullPath = `https://${PROJECT_INFO.domain}${pathname || ""}`;
 
   return (
     <div>

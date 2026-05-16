@@ -1,3 +1,4 @@
+'use client'
 import { useUser } from '@/context/UserContext'
 import Link from '@comps/Link'
 import Image from 'next/image'
@@ -11,17 +12,11 @@ export default function Home() {
         La <span className="font-bold">aplicación web</span> para atletas y
         entrenadores
       </p>
-      {/*  <p className="text-center italic font-thin my-2">
-        Sin instalar, sin publicidad, donde sea, cuando sea.
-      </p> */}
       {!user && (
         <div className="flex justify-center m-4">
           <Link href={'/login'}>Ingresar</Link>
         </div>
       )}
-      {/* <div className="mt-6">
-        <PublicEvents showNew={true} />
-      </div> */}
 
       <div className="flex flex-col justify-center md:max-w-screen-md mx-auto text-2xl">
         <HomeRow
@@ -51,7 +46,7 @@ export default function Home() {
 
 const HomeRow = ({
   image = '',
-  imageSide = 'left' || 'right',
+  imageSide = 'left',
   text = 'Text'
 }) => {
   const imageIsInleftSide = imageSide === 'left'
@@ -65,7 +60,15 @@ const HomeRow = ({
         <p className="md:w-2/3 text-center md:text-left">{text}</p>
       )}
       <div className={`relative h-56 w-56 shadow-lg `}>
-        <Image  blurDataURL={'/images/defaultBlurImage-small.jpg'} placeholder='blur'  src={image} layout="fill" objectFit="cover" priority />
+        <Image
+          blurDataURL={'/images/defaultBlurImage-small.jpg'}
+          placeholder="blur"
+          src={image}
+          fill
+          style={{ objectFit: 'cover' }}
+          priority
+          alt={text}
+        />
       </div>
       {imageSide === 'right' && (
         <p className="md:w-2/3 text-center md:text-right">{text}</p>

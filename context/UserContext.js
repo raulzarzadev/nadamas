@@ -1,15 +1,18 @@
+'use client'
 import { createContext, useContext, useEffect, useState } from 'react'
 
 import Loading from '@/components/Loading'
 import { authStateChanged, googleLogin, logOut } from '@/firebase'
-import { useRouter } from 'next/router'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { loginUser } from '@/firebase/users'
 const UserContext = createContext()
 
 export function UserProvider({ children }) {
   const [user, setUser] = useState(undefined)
   const router = useRouter()
-  const { redirectTo } = router?.query
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams?.get('redirectTo')
 
   useEffect(() => {
     authStateChanged((res) => {
@@ -29,7 +32,6 @@ export function UserProvider({ children }) {
           loginUser(user)
             .then((res) => {
               setUser(res)
-              // console.log('login', res)
               redirectTo ? router.push(redirectTo) : router.push('/profile')
 
             })
@@ -45,10 +47,10 @@ export function UserProvider({ children }) {
     * Redirect user if is comming from other page then after login turn it back
     * if user is logged redirect to profile
     */
-    if (user && router?.query?.redirectTo) {
-      router.push(router?.query?.redirectTo)
+    if (user && redirectTo) {
+      router.push(redirectTo)
     }
-    else if (user && router.pathname === '/') {
+    else if (user && pathname === '/') {
       router.push('/profile')
     }
   }, [user])

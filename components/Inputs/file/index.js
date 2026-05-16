@@ -6,7 +6,7 @@ const File = React.forwardRef(({ label, preview = null, ...rest }, ref) => {
     <div className="form-control w-full max-w-sm">
       {preview &&
         <figure className="relative h-36">
-          <Image src={preview} objectFit='contain' layout="fill" blurDataURL="/images/overlander.jpg" placeholder="blur" />
+          <Image src={preview} fill style={{ objectFit: 'contain' }} blurDataURL="/images/overlander.jpg" placeholder="blur" alt={label || ''} />
         </figure>}
       <label htmlFor="formFileMultiple" className="form-label inline-block  text-left">{label}</label>
       <input
