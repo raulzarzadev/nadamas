@@ -6,9 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "cy:open": "cypress open",
-    "commit": "git add . && git commit -m ",
-    "push-main": "yarn build && git push origin main"
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "echo \"e2e not configured yet (Playwright lands in Phase 1h)\" && exit 0",
+    "cy:open": "cypress open"
   },
   "dependencies": {
     "@hookform/resolvers": "^2.8.3",
