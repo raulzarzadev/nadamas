@@ -1,0 +1,55 @@
+rules_version = '2';
+
+// nadamas Firestore security rules
+// Model: FirebaseCRUD.create() stamps `userId` = creator uid + `createdAt`.
+// Baseline: app is auth-gated; owner-only writes; public-flagged content
+// readable without auth (public events / entries pages).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // resource for read/update/delete = existing doc; for create = request.resource
+    function isOwner(rsc) {
+      return signedIn() && rsc.data.userId == request.auth.uid;
+    }
+
+    // User profiles: any signed-in user can read (profiles shown in app);
+    // each user writes only their own doc (doc id == uid).
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Public-flagged content: readable by anyone when isPublic == true,
+    // otherwise signed-in only. Writes owner-only.
+    match /events/{id} {
+      allow read: if signedIn() || resource.data.isPublic == true;
+      allow create: if isOwner(request.resource);
+      allow update, delete: if isOwner(resource);
+    }
+    match /entries/{id} {
+      allow read: if signedIn() || resource.data.isPublic == true;
+      allow create: if isOwner(request.resource);
+      allow update, delete: if isOwner(resource);
+    }
+
+    // Owner-scoped domain collections (athletes, atheltes [sic], teams,
+    // records, records_V2, results, tests, questions, ...).
+    // Any signed-in user may read (coaches view athletes/teams);
+    // only the document owner may mutate.
+    match /{collection}/{id} {
+      allow read: if signedIn();
+      allow create: if isOwner(request.resource);
+      allow update, delete: if isOwner(resource);
+    }
+
+    // NOTE: single-segment wildcard does NOT cover subcollections
+    // (e.g. teams/{id}/posts). Those are denied by default until an
+    // explicit rule is added. Verify whether any subcollections exist
+    // in production before deploying.
+  }
+}
