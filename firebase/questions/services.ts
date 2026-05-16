@@ -3,9 +3,9 @@ import { Question } from "./model";
 
 export class QuestionSerivices implements Question {
 
-  text: string;
-  options: Option[];
-  key: string;
+  text!: string;
+  options!: Option[];
+  key!: string;
 
   edit(newData: Question) {
     const { text, options, key } = newData
@@ -13,7 +13,7 @@ export class QuestionSerivices implements Question {
     this.options = options
     this.key = key
   }
-  remove(questionId){
+  remove(questionId: string){
     console.log('remove question ', questionId)
   }
 

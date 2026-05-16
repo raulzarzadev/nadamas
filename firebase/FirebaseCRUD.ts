@@ -67,7 +67,7 @@ export class FirebaseCRUD {
     return FirebaseCRUD.normalizeDoc(docSnap)
   }
   async getAll() {
-    let docs = []
+    let docs: any[] = []
     const querySnapshot = await getDocs(collection(db, this.collectionName))
     querySnapshot.forEach((doc) => {
       // doc.data() is never undefined for query doc snapshots
@@ -99,7 +99,7 @@ export class FirebaseCRUD {
     }
   }
 
-  static normalizeDoc(doc) {
+  static normalizeDoc(doc: any) {
     if (!doc?.exists()) return null
     const data = doc.data()
     const id = doc.id
@@ -113,7 +113,7 @@ export class FirebaseCRUD {
 
   async listenUserDocs(cb: CallableFunction) {
     const currentUser = getAuth().currentUser
-    this.listenMany([where('userId', '==', currentUser.uid)], cb)
+    this.listenMany([where('userId', '==', currentUser?.uid)], cb)
   }
 
 
@@ -135,7 +135,7 @@ export class FirebaseCRUD {
     )
 
     onSnapshot(q, (querySnapshot) => {
-      const res = []
+      const res: any[] = []
       querySnapshot.forEach((doc) => {
         res.push(FirebaseCRUD.normalizeDoc(doc))
       })
@@ -150,7 +150,7 @@ export class FirebaseCRUD {
     )
 
     onSnapshot(q, (querySnapshot) => {
-      const res = []
+      const res: any[] = []
       querySnapshot.forEach((doc) => {
         res.push(FirebaseCRUD.normalizeDoc(doc))
       })

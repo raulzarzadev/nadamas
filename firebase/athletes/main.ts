@@ -13,7 +13,7 @@ export class Athlete {
   delete(itemId: string): Promise<void | { ok: boolean; type: string; res: any; }> {
     return AthleteCRUD.delete(itemId)
   }
-  get(itemId: string): Promise<{ id: any; }> {
+  get(itemId: string): Promise<{ id: any; } | null> {
     return AthleteCRUD.get(itemId)
   }
   listen(itemId: string, cb: CallableFunction): Promise<void> {

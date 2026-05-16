@@ -13,10 +13,10 @@ export const listenEntry = (itemId: string, cb: CallableFunction) => EntryCRUD.l
 export const listenUserEntries = (cb: CallableFunction) => EntryCRUD.listenUserDocs(cb)
 export const listenAllEntries = (cb: CallableFunction) => EntryCRUD.listenAll(cb)
 export const listenPublicEntries = (cb: CallableFunction) => EntryCRUD.listenMany([where('options.isPublic', '==', true)], cb)
-export const lovedEntryBy = (itemId, userId) => EntryCRUD.update(itemId, {
+export const lovedEntryBy = (itemId: string, userId: string) => EntryCRUD.update(itemId, {
   lovedBy: arrayUnion(userId)
 })
-export const unlovedEntryBy = (itemId, userId) => {
+export const unlovedEntryBy = (itemId: string, userId: string) => {
   EntryCRUD.update(itemId, {
     lovedBy: arrayRemove(userId)
   })

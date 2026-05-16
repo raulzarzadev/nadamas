@@ -15,7 +15,7 @@ export class Team {
   delete(itemId: string): Promise<void | { ok: boolean; type: string; res: any; }> {
     return TeamCRUD_V2.delete(itemId)
   }
-  get(itemId: string): Promise<{ id: any; }> {
+  get(itemId: string): Promise<{ id: any; } | null> {
     return TeamCRUD_V2.get(itemId)
   }
   listen(itemId: string, cb: CallableFunction): Promise<void> {
