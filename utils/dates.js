@@ -1,6 +1,5 @@
 //@ts-check
 import { addMinutes, format as fnsFormat, formatDistance, subMinutes } from 'date-fns'
-import { getTimezoneOffset, utcToZonedTime } from 'date-fns-tz'
 
 import { es } from 'date-fns/locale'
 import { Timestamp } from 'firebase/firestore'
@@ -21,8 +20,13 @@ import { Timestamp } from 'firebase/firestore'
 } */
 
 
+/**
+ * @param {any} date
+ * @param {string} [stringFormat]
+ */
 export const format = (date, stringFormat = 'dd/MM/yy') => {
   const objectDate = new Date(date)
+  /** @param {any} d */
   function isValidDate(d) {
     // @ts-ignore
     return d instanceof Date && !isNaN(d)
@@ -38,6 +42,10 @@ export const format = (date, stringFormat = 'dd/MM/yy') => {
 
 
 
+/**
+ * @param {any} date
+ * @param {string} [output]
+ */
 export const dateFormat = (date, output = 'yyyy-MM-dd') => {
  //  console.log(date);
   // @ts-ignore
