@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { FiMapPin, FiPlus, FiTrash2 } from 'react-icons/fi'
-import ImageUploadField from '@comps/Inputs/ImageUploadField'
+import ImageInput from '@comps/Inputs/ImageInput'
 import ProfileSection from './ProfileSection'
+import { optimizeImageForUpload } from '@/lib/image-optimizer'
 import type {
   CoachGalleryPhoto,
   CoachTeachingLocation,
@@ -43,17 +44,34 @@ export default function LocationsCard({
     value.galleryPhotos || []
   )
   const [busyLocationId, setBusyLocationId] = useState<string | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => setLocations(value.teachingLocations || []), [value.teachingLocations])
   useEffect(() => setGalleryPhotos(value.galleryPhotos || []), [value.galleryPhotos])
 
-  const uploadLocationImage = (locationId: string, file: File) => {
+  const uploadLocationImage = async (locationId: string, file: File) => {
     setError(null)
     setBusyLocationId(locationId)
     let finished = false
 
-    CoachCRUD.uploadAsset({ file, uid, scope: 'public' }, (_, url) => {
+    let uploadFile = file
+    try {
+      uploadFile = (await optimizeImageForUpload(file)).file
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : 'No se pudo preparar la imagen.'
+      )
+      setBusyLocationId(null)
+      return
+    }
+
+    CoachCRUD.uploadAsset({ file: uploadFile, uid, scope: 'public' }, (progress, url) => {
+      if (typeof progress === 'number') {
+        setUploadProgress((current) => ({ ...current, [locationId]: progress }))
+      }
       if (!url || finished) return
       finished = true
       setLocations((current) =>
@@ -65,6 +83,11 @@ export default function LocationsCard({
         ...current,
         { url, label: 'Lugares de trabajo' },
       ])
+      setUploadProgress((current) => {
+        const next = { ...current }
+        delete next[locationId]
+        return next
+      })
       setBusyLocationId(null)
     })
 
@@ -72,6 +95,11 @@ export default function LocationsCard({
       if (finished) return
       finished = true
       setError('No se pudo subir la imagen del lugar.')
+      setUploadProgress((current) => {
+        const next = { ...current }
+        delete next[locationId]
+        return next
+      })
       setBusyLocationId(null)
     }, 30000)
   }
@@ -285,11 +313,12 @@ export default function LocationsCard({
               </button>
             </div>
 
-            <ImageUploadField
+            <ImageInput
               label="Imagen del lugar"
               imageUrl={location.imageUrl}
               imageAlt={location.name || 'Lugar de clases'}
               busy={busyLocationId === location.id}
+              progress={uploadProgress[location.id]}
               helperText="También se agrega a tu galería como “Lugares de trabajo”."
               onFileSelected={(file) => uploadLocationImage(location.id, file)}
             />

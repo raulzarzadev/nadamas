@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import PhotoGalleryInput from '@comps/Inputs/PhotoGalleryInput'
 import ProfileSection from './ProfileSection'
 import { CoachCRUD } from '@/firebase/coaches/main'
+import { optimizeImageForUpload } from '@/lib/image-optimizer'
 import type {
   CoachGalleryPhoto,
   CoachPhoto,
@@ -82,9 +83,24 @@ export default function MediaCard({
     setError(null)
     setPendingUploads((count) => count + allowedFiles.length)
 
-    allowedFiles.forEach((file) => {
+    allowedFiles.forEach(async (file) => {
       let finished = false
-      CoachCRUD.uploadAsset({ file, uid, scope: 'public' }, (_, url) => {
+      let uploadFile = file
+
+      try {
+        uploadFile = (await optimizeImageForUpload(file)).file
+      } catch (uploadError) {
+        finished = true
+        setError(
+          uploadError instanceof Error
+            ? uploadError.message
+            : 'No se pudo preparar una imagen.'
+        )
+        setPendingUploads((count) => Math.max(count - 1, 0))
+        return
+      }
+
+      CoachCRUD.uploadAsset({ file: uploadFile, uid, scope: 'public' }, (_, url) => {
         if (!url || finished) return
         finished = true
         setGalleryPhotos((photos) => [
