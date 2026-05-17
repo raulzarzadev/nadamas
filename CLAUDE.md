@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`nadamas` — PWA for swim trainers/coaches tracking athlete performance. Next.js 12 (Pages Router), React 17, Firebase 9 (Firestore + Auth + Storage), TypeScript (loose: `strict: false`, `target: es5`), Tailwind + daisyUI. Yarn.
+`nadamas` — PWA for swim trainers/coaches tracking athlete performance. Next.js 16 (**App Router**), React 19, Firebase 12 (Firestore + Auth + Storage), TypeScript (`strict: true`, `target: ES2022`), Tailwind v4 + daisyUI v5, PostHog analytics. Yarn.
 
 ## Commands
 
@@ -12,18 +12,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 yarn dev          # next dev
 yarn build        # next build
 yarn start        # next start (prod, after build)
-yarn cy:open      # open Cypress runner (e2e only — no unit test framework)
-yarn push-main    # build then push origin main
+yarn lint         # eslint .
+yarn typecheck    # tsc --noEmit
+yarn test:e2e     # playwright test
 ```
 
-- No lint script and no unit test runner. Tests are Cypress e2e in `cypress/e2e/*.cy.ts` (run via `yarn cy:open`); they use `cypress-firebase` against real Firebase.
+- No unit test runner. Tests are Playwright e2e in `e2e/*.spec.ts` (run via `yarn test:e2e`).
 - Requires env var `NEXT_PUBLIC_FIREBASE_CONFIG` — a JSON string parsed in `firebase/index.js`. App fails at import without it.
+- Optional analytics env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (US cloud default). Empty key = PostHog no-ops, no errors.
 
 ## Conventions (from README)
 
-- All route paths and all code in English. UI copy/labels are Spanish (see `CONSTANTS/ROUTES.js` `label` fields).
+- All route paths and all code in English. UI copy/labels are Spanish (see `CONSTANTS/ROUTES.js` `label` fields). Marketing route slugs are Spanish (`como-verificamos`, `contacto`, `privacidad`, `terminos`).
 
 ## Architecture
+
+### App Router structure
+
+- `app/layout.tsx` — root layout: `<html lang="es">` / `<body>`, wraps everything in `PHProvider` (PostHog). Server component.
+- Two route groups:
+  - `app/(app)/` — the product app (`dashboard`, `login`, `logout`, `auth-gate`). `app/(app)/layout.tsx` wraps children in `Providers`.
+  - `app/(marketing)/` — public Spanish-slug pages + landing (`page.tsx`). `app/(marketing)/layout.tsx` renders `SiteNav` / `SiteFooter`, **no `Providers`** (no auth/theme context there).
+- `app/providers.tsx` (client) = `Suspense` → `UserProvider` → `ThemeProvider`. Only the `(app)` group mounts it.
+
+### Auth & routing
+
+- `context/UserContext.js` is the auth hub. `authStateChanged` (Google popup auth) drives `user` state: `undefined` = loading, `null` = logged out, object = logged in. Exposes `useUser()` → `{ user, login, logout }`. Post-login redirect via `?redirectTo=` query param, else `/dashboard`.
+- `app/(app)/auth-gate.tsx` (`AuthGate`) is the client gate: while `user === undefined` it renders `<Loading />`. Wrap protected sections in it (replaces the old `components/HOC` pattern, which no longer exists).
+
+### Analytics (PostHog)
+
+- `instrumentation-client.ts` (root, Next 16 auto-loads) initializes `posthog-js` when `NEXT_PUBLIC_POSTHOG_KEY` is set. Uses `defaults: '2025-05-24'` → automatic SPA pageview + pageleave for App Router; `capture_exceptions: true`.
+- `app/posthog-provider.tsx` exports `PHProvider` (client, `PostHogProvider`), mounted in root layout so both `(app)` and `(marketing)` are tracked.
+- `context/UserContext.js` calls `posthog.identify(uid, { email, name })` on login and `posthog.reset()` on logout, via `usePostHog()`.
 
 ### Firebase data layer — the central pattern
 
@@ -41,19 +62,11 @@ Older non-class helpers still exist as loose JS in `firebase/*.js` (`teams.js`, 
 
 Known gotcha: `firebase/athletes/main.ts` instantiates the collection as `'atheltes'` (misspelled). Match existing data before "fixing" it.
 
-### Auth & routing
-
-- `pages/_app.js` wraps everything in `UserProvider` → `ThemeProvider` → `Layout`.
-- `context/UserContext.js` is the auth hub. `authStateChanged` (Google popup auth) drives `user` state: `undefined` = loading (renders global `<Loading />`, blocking the whole app), `null` = logged out, object = logged in. Exposes `useUser()` → `{ user, login, logout }`. Handles post-login redirect via `?redirectTo=` query param; logged-in users on `/` are pushed to `/profile`.
-- Protect a page by wrapping its default export in `components/HOC/authRoute.js` — redirects to `/login?redirectTo=<path>` when no user. `components/HOC/RouteAccess.js` does role gating (`isAdmin` / `user`) for in-page sections.
-
 ### Path aliases (tsconfig.json)
 
-`@comps/* → components/*`, `@/* → ./*`, `@utils/* → utils/*`, `@firebase/*` & `fb/* → firebase/*`, `Inputs/* → components/Inputs/*`, `@legasy/* → .legasy/src/components/*`, `@context → context/*`.
+`@comps/* → components/*`, `@/* → ./*`, `@utils/* → utils/*`, `@firebase/*` & `fb/* → firebase/*`, `Inputs/* → components/Inputs/*`, `@context → context/*`.
 
 ### Other
 
-- PWA via `next-pwa` (config in `next.config.js` — note the file currently does `module.exports` twice; the second assignment with `images.domains` wins, so PWA wrapper config is effectively overwritten — be careful editing this).
-- `next/image` remote domains are whitelisted in `next.config.js` (`firebasestorage.googleapis.com`, `lh3.googleusercontent.com`, etc.).
+- `next.config.mjs`: `next/image` `remotePatterns` (firebasestorage, lh3.googleusercontent, images.unsplash, img.icons8); security headers (CSP-adjacent: X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, HSTS); long-lived cache headers for static assets. **No `next-pwa`** — PWA manifest is the static `public/manifest.json`.
 - App-wide constants in `CONSTANTS/` (`ROUTES.js` drives nav, `SWIMMING_TESTS.js`, `AWARDS.js`, `STATUS_EVENT.js`).
-- `.legasy/` is archived old code reachable via the `@legasy/*` alias — legacy reference, not active.

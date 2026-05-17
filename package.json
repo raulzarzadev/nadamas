@@ -21,6 +21,7 @@
     "firebase-dates-util": "^0.5.0",
     "next": "^16.2.6",
     "postcss": "^8.3.6",
+    "posthog-js": "^1.373.5",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.6",
     "react-currency-input-field": "^4.0.5",

@@ -1,4 +1,5 @@
 import '../styles/globals.css'
+import { PHProvider } from './posthog-provider'
 
 export const metadata = {
   title: 'nadamas',
@@ -12,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <PHProvider>{children}</PHProvider>
+      </body>
     </html>
   )
 }
