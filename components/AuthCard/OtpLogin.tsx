@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { signInWithCustomToken } from 'firebase/auth'
-import { auth } from '@/firebase'
+import { auth } from '@/firebase/index'
 import {
   GENERIC_USER_ERROR,
   reportInternalError,
