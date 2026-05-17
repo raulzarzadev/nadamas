@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import CoachMetricsForm from './CoachMetricsForm'
+import { CoachStyleMapPreview } from './CoachRadarChart'
 import ProfileSection from './ProfileSection'
 import {
-  COACH_METRICS,
   normalizeCoachMetrics,
   type CoachMetrics,
 } from '@/lib/coach-metrics'
@@ -18,15 +18,6 @@ export default function SkillsCard({
   onSave: (metrics: CoachMetrics) => void
 }) {
   const [draft, setDraft] = useState<CoachMetrics>(normalizeCoachMetrics(value))
-  const average = useMemo(
-    () =>
-      Math.round(
-        (Object.values(draft).reduce((sum, value) => sum + value, 0) /
-          COACH_METRICS.length) *
-          10
-      ) / 10,
-    [draft]
-  )
 
   useEffect(() => {
     setDraft(normalizeCoachMetrics(value))
@@ -36,7 +27,13 @@ export default function SkillsCard({
     <ProfileSection
       title="Carta de gustos y habilidades"
       description="Ajusta tu estilo de entrenamiento para que los alumnos entiendan de un vistazo cómo acompañas, corriges y exiges."
-      summary={`8 métricas · estilo promedio ${average}/5`}
+      summary="8 métricas · mapa de estilo"
+      headerAside={
+        <div className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 sm:right-12">
+          <CoachStyleMapPreview metrics={draft} />
+        </div>
+      }
+      allowOverflow
     >
       <CoachMetricsForm value={draft} onChange={setDraft} />
 

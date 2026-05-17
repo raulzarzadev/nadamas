@@ -6,20 +6,24 @@ export default function ProfileSection({
   title,
   description,
   summary,
+  headerAside,
   children,
   surface = 'white',
+  allowOverflow = false,
 }: {
   title: string
   description: string
-  summary: string
+  summary: React.ReactNode
+  headerAside?: React.ReactNode
   children: React.ReactNode
   surface?: 'white' | 'tinted'
+  allowOverflow?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
     <section
-      className={`overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] shadow-[var(--shadow-sm)] ${
+      className={`${allowOverflow ? 'overflow-visible' : 'overflow-hidden'} rounded-[var(--r-md)] border border-[var(--c-border)] shadow-[var(--shadow-sm)] ${
         surface === 'tinted' ? 'bg-[var(--c-surface)]' : 'bg-white'
       }`}
     >
@@ -27,13 +31,17 @@ export default function ProfileSection({
         type="button"
         aria-expanded={isOpen}
         onClick={() => setIsOpen((current) => !current)}
-        className={`flex w-full items-start justify-between gap-3 border-b border-[var(--c-border)] p-4 text-left sm:p-6 ${
+        className={`relative flex w-full items-start justify-between gap-3 p-4 text-left transition-colors sm:p-6 ${
+          isOpen ? 'border-b border-[var(--c-border)]' : ''
+        } ${
           surface === 'white'
             ? 'bg-[linear-gradient(135deg,rgba(0,119,182,0.1),rgba(144,224,239,0.18))]'
             : ''
+        } rounded-[calc(var(--r-md)-1px)] ${
+          isOpen ? 'rounded-b-none' : ''
         }`}
       >
-        <div>
+        <div className={headerAside ? 'pr-28 sm:pr-40' : ''}>
           <h2 className="text-lg font-bold text-[var(--c-ocean-mid)] sm:text-xl">
             {title}
           </h2>
@@ -45,6 +53,7 @@ export default function ProfileSection({
             <p className="mt-1 text-sm text-[var(--c-text-2)]">{summary}</p>
           )}
         </div>
+        {headerAside}
         <FiChevronDown
           aria-hidden="true"
           className={`mt-1 shrink-0 text-[var(--c-ocean-mid)] transition-transform ${
