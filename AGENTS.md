@@ -20,6 +20,7 @@ pnpm test:e2e     # playwright test
 - No unit test runner. Tests are Playwright e2e in `e2e/*.spec.ts` (run via `pnpm test:e2e`).
 - Requires env var `NEXT_PUBLIC_FIREBASE_CONFIG` — a JSON string parsed in `firebase/index.js`. App fails at import without it.
 - Optional analytics env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (US cloud default). Empty key = PostHog no-ops, no errors.
+- OTP/email env: `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, optional `BREVO_SENDER_NAME`, `OTP_SECRET`, and `FIREBASE_SERVICE_ACCOUNT` (JSON string for server-side Firebase Admin on Vercel).
 
 ## Conventions (from README)
 

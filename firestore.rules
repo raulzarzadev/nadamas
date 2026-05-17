@@ -33,6 +33,12 @@ service cloud.firestore {
       allow update: if (signedIn() && request.auth.uid == uid) || isAdmin();
     }
 
+    // OTP codes are server-only. API routes use Firebase Admin SDK, which
+    // bypasses client rules; app clients should never read or write them.
+    match /otpLoginCodes/{id} {
+      allow read, write: if false;
+    }
+
     // Public-flagged content: readable by anyone when isPublic == true,
     // otherwise signed-in only. Writes owner-only.
     match /events/{id} {

@@ -67,6 +67,13 @@ export default function SiteNav() {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <Link
+            href="/login"
+            className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
+            style={{ color: 'var(--c-ocean)' }}
+          >
+            Ingresar
+          </Link>
           <a
             href="#para-coaches"
             className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
@@ -154,6 +161,17 @@ export default function SiteNav() {
             </li>
           ))}
           <li className="mt-2">
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
+              style={{
+                color: 'var(--c-ocean)',
+                border: '1px solid var(--c-border)',
+              }}
+            >
+              Ingresar
+            </Link>
             <a
               href="#coaches"
               onClick={() => setOpen(false)}

@@ -1,6 +1,7 @@
 'use client'
 import SocialMediaLogin from './SocialMediaLogin'
 import { useState } from 'react'
+import OtpLogin from './OtpLogin'
 export default function AuthCard() {
   const [form, setForm] = useState({ emailing: true })
 
@@ -78,6 +79,7 @@ export default function AuthCard() {
       </div>
 
       <SocialMediaLogin disabled={!isValid} />
+      <OtpLogin disabled={!isValid} />
 
       {/* <p className="mt-8 text-xs font-light text-center text-gray-400">
         ¿Aun no tienes cuenta?

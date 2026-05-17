@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 
 const FACES = [
   'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=facearea&facepad=3&w=96&h=96&q=70',
@@ -84,6 +85,17 @@ export default function Hero() {
               Publicar mi perfil
             </a>
           </div>
+
+          <p className="mt-4 text-sm" style={{ color: 'var(--c-text-2)' }}>
+            ¿Ya tienes cuenta?{' '}
+            <Link
+              href="/login"
+              className="font-semibold"
+              style={{ color: 'var(--c-ocean-mid)' }}
+            >
+              Inicia sesión
+            </Link>
+          </p>
 
           <div className="mt-9 flex items-center gap-4">
             <div className="flex -space-x-3">

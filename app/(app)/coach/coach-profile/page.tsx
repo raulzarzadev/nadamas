@@ -16,6 +16,7 @@ import LocationsCard from "@comps/coach/LocationsCard";
 import PricingCard from "@comps/coach/PricingCard";
 import ScoreCard from "@comps/coach/ScoreCard";
 import Loading from "@comps/Loading";
+import { postAuthed } from "@/lib/client/authed-api";
 
 export default function CoachProfilePage() {
 	const { user } = useUser() as { user: any };
@@ -89,6 +90,12 @@ export default function CoachProfilePage() {
 			const verification = recomputeScore(pubVal, mergedPriv);
 			await CoachCRUD.upsertPrivate(uid, partial);
 			await CoachCRUD.upsertPublic(uid, { verification });
+			if (
+				partial.identityVerification?.status === "pending" &&
+				privVal.identityVerification?.status !== "pending"
+			) {
+				await postAuthed("/api/notifications/verification-requested");
+			}
 		} finally {
 			setSavingSection(null);
 		}

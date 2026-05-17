@@ -6,7 +6,7 @@ import { useUser } from '@/context/UserContext'
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user } = useUser() as { user: any }
+  const { user, logout } = useUser() as { user: any; logout: () => void }
 
   useEffect(() => {
     if (user === null) router.push('/login')
@@ -15,19 +15,33 @@ export default function ProfilePage() {
   if (!user) return null
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      {user.photoURL && (
-        <div className="relative w-24 h-24 rounded-full overflow-hidden border border-[var(--c-border)]">
-          <Image
-            src={user.photoURL}
-            fill
-            style={{ objectFit: 'cover' }}
-            alt={user.displayName || user.email || 'avatar'}
-          />
+    <div className="mx-auto flex max-w-md flex-col gap-4 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)] sm:p-6">
+      <div className="flex items-center gap-4">
+        {user.photoURL && (
+          <div className="relative h-16 w-16 overflow-hidden rounded-full border border-[var(--c-border)]">
+            <Image
+              src={user.photoURL}
+              fill
+              style={{ objectFit: 'cover' }}
+              alt={user.displayName || user.email || 'avatar'}
+            />
+          </div>
+        )}
+        <div className="min-w-0">
+          <h1 className="truncate text-2xl font-extrabold">
+            {user.displayName || 'Mi cuenta'}
+          </h1>
+          <p className="truncate text-[var(--c-text-2)]">{user.email}</p>
         </div>
-      )}
-      <h1 className="text-2xl font-extrabold">{user.displayName || 'Perfil'}</h1>
-      <p className="text-[var(--c-text-2)]">{user.email}</p>
+      </div>
+
+      <button
+        type="button"
+        onClick={logout}
+        className="btn btn-outline w-full"
+      >
+        Cerrar sesión
+      </button>
     </div>
   )
 }

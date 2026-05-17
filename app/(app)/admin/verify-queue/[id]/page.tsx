@@ -12,6 +12,7 @@ import type {
 } from '@/firebase/coaches/coach.model'
 import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 import Loading from '@comps/Loading'
+import { postAuthed } from '@/lib/client/authed-api'
 
 export default function VerifyCoachPage({
   params,
@@ -39,6 +40,10 @@ export default function VerifyCoachPage({
         status === 'verified'
           ? 'Identidad validada por administración.'
           : 'Documento rechazado por administración.',
+    })
+    await postAuthed('/api/notifications/verification-reviewed', {
+      coachId: id,
+      status,
     })
     setBusy(false)
   }

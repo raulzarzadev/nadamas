@@ -83,11 +83,12 @@ export default function RoleSwitcher() {
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="rounded-full px-4 py-2 text-sm font-semibold bg-[var(--c-surface)] text-[var(--c-ocean-mid)] border border-[var(--c-border)] hover:opacity-80 transition-opacity cursor-pointer"
+        className="rounded-full border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-2 text-sm font-semibold text-[var(--c-ocean-mid)] transition-opacity hover:opacity-80 cursor-pointer"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        Actuando como: {ROLE_LABEL[activeRole]}{' '}
+        <span className="hidden xl:inline">Actuando como: </span>
+        {ROLE_LABEL[activeRole]}{' '}
         <span aria-hidden="true">▾</span>
       </button>
       {open && (

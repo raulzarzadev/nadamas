@@ -7,6 +7,7 @@ import { FiCheck, FiExternalLink, FiX } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import type { CoachPrivate } from '@/firebase/coaches/coach.model'
+import { postAuthed } from '@/lib/client/authed-api'
 
 type PendingReview = CoachPrivate & { coachId: string }
 
@@ -27,6 +28,10 @@ export default function VerifyQueue() {
         status === 'verified'
           ? 'Identidad validada por administración.'
           : 'Documento rechazado por administración.',
+    })
+    await postAuthed('/api/notifications/verification-reviewed', {
+      coachId,
+      status,
     })
     setBusyId(null)
   }
