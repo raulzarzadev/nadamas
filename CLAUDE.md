@@ -4,20 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`nadamas` — PWA for swim trainers/coaches tracking athlete performance. Next.js 16 (**App Router**), React 19, Firebase 12 (Firestore + Auth + Storage), TypeScript (`strict: true`, `target: ES2022`), Tailwind v4 + daisyUI v5, PostHog analytics. Yarn.
+`nadamas` — PWA for swim trainers/coaches tracking athlete performance. Next.js 16 (**App Router**), React 19, Firebase 12 (Firestore + Auth + Storage), TypeScript (`strict: true`, `target: ES2022`), Tailwind v4 + daisyUI v5, PostHog analytics. pnpm.
 
 ## Commands
 
 ```bash
-yarn dev          # next dev
-yarn build        # next build
-yarn start        # next start (prod, after build)
-yarn lint         # eslint .
-yarn typecheck    # tsc --noEmit
-yarn test:e2e     # playwright test
+pnpm dev          # next dev
+pnpm build        # next build
+pnpm start        # next start (prod, after build)
+pnpm lint         # eslint .
+pnpm typecheck    # tsc --noEmit
+pnpm test:e2e     # playwright test
 ```
 
-- No unit test runner. Tests are Playwright e2e in `e2e/*.spec.ts` (run via `yarn test:e2e`).
+- No unit test runner. Tests are Playwright e2e in `e2e/*.spec.ts` (run via `pnpm test:e2e`).
 - Requires env var `NEXT_PUBLIC_FIREBASE_CONFIG` — a JSON string parsed in `firebase/index.js`. App fails at import without it.
 - Optional analytics env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (US cloud default). Empty key = PostHog no-ops, no errors.
 
