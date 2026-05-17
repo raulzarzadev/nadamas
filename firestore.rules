@@ -29,7 +29,8 @@ service cloud.firestore {
     // each user writes only their own doc (doc id == uid).
     match /users/{uid} {
       allow read: if signedIn();
-      allow create, update, delete: if signedIn() && request.auth.uid == uid;
+      allow create, delete: if signedIn() && request.auth.uid == uid;
+      allow update: if (signedIn() && request.auth.uid == uid) || isAdmin();
     }
 
     // Public-flagged content: readable by anyone when isPublic == true,
@@ -60,7 +61,8 @@ service cloud.firestore {
       // required, else it is denied by default (this was the bug).
       match /private/{docId} {
         allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
-        allow create, update, delete: if signedIn() && request.auth.uid == uid;
+        allow create, delete: if signedIn() && request.auth.uid == uid;
+        allow update: if (signedIn() && request.auth.uid == uid) || isAdmin();
       }
     }
 

@@ -1,4 +1,10 @@
-import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  getDoc,
+  onSnapshot,
+  setDoc,
+} from 'firebase/firestore'
 import { Dates } from 'firebase-dates-util'
 import { db } from '@/firebase/index'
 import { FirebaseCRUD } from '@/firebase/FirebaseCRUD'
@@ -45,6 +51,53 @@ export class Coach {
     )
   }
 
+  listenPendingIdentityReviews(
+    cb: (docs: Array<CoachPrivate & { coachId: string }>) => void
+  ) {
+    const privateDocs = new Map<string, CoachPrivate | null>()
+    const privateUnsubs = new Map<string, () => void>()
+
+    function emitPending() {
+      cb(
+        [...privateDocs.entries()]
+          .filter(
+            (
+              entry
+            ): entry is [string, CoachPrivate] =>
+              entry[1]?.identityVerification?.status === 'pending'
+          )
+          .map(([coachId, doc]) => ({ ...doc, coachId }))
+      )
+    }
+
+    const coachesUnsub = onSnapshot(collection(db, 'coaches'), (snapshot) => {
+      const coachIds = new Set(snapshot.docs.map((snap) => snap.id))
+
+      for (const coachId of coachIds) {
+        if (privateUnsubs.has(coachId)) continue
+        const unsub = this.listenPrivate(coachId, (doc) => {
+          privateDocs.set(coachId, doc)
+          emitPending()
+        })
+        privateUnsubs.set(coachId, unsub)
+      }
+
+      for (const [coachId, unsub] of privateUnsubs) {
+        if (coachIds.has(coachId)) continue
+        unsub()
+        privateUnsubs.delete(coachId)
+        privateDocs.delete(coachId)
+      }
+
+      emitPending()
+    })
+
+    return () => {
+      coachesUnsub()
+      privateUnsubs.forEach((unsub) => unsub())
+    }
+  }
+
   async upsertPrivate(uid: string, partial: UpsertCoachPrivateDto) {
     const payload = Dates.deepFormatObjectDates(
       { ...partial, updatedAt: new Date() },
@@ -60,8 +113,16 @@ export class Coach {
       'status' | 'reviewedAt' | 'reviewedBy' | 'adminNote'
     >
   ) {
+    const current = await getDoc(privateRef(uid))
+    const currentProfile = FirebaseCRUD.normalizeDoc(current) as CoachPrivate | null
+
     return this.upsertPrivate(uid, {
-      identityVerification: review,
+      identityVerification: {
+        ...(currentProfile?.identityVerification || {
+          status: 'not_submitted' as const,
+        }),
+        ...review,
+      },
     })
   }
 
