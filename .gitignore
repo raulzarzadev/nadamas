@@ -35,6 +35,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# skill install payload (regenerable via `npx skills add`; skills-lock.json stays tracked)
+.agents/skills/
+
 
 #  Cypress
 

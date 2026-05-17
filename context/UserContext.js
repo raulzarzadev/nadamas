@@ -3,14 +3,13 @@ import { createContext, useContext, useEffect, useState } from 'react'
 
 import Loading from '@/components/Loading'
 import { authStateChanged, googleLogin, logOut } from '@/firebase/index'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { loginUser } from '@/firebase/users'
 const UserContext = createContext()
 
 export function UserProvider({ children }) {
   const [user, setUser] = useState(undefined)
   const router = useRouter()
-  const pathname = usePathname()
   const searchParams = useSearchParams()
   const redirectTo = searchParams?.get('redirectTo')
 
