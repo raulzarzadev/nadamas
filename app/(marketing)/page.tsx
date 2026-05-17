@@ -48,12 +48,30 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: 'nadamas.app',
-  url: 'https://nadamas.app',
-  description:
-    'Marketplace premium para encontrar y reservar coaches de natación.',
-  inLanguage: 'es',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://nadamas.app/#website',
+      name: 'nadamas.app',
+      url: 'https://nadamas.app',
+      description:
+        'Marketplace premium para encontrar y reservar coaches de natación.',
+      inLanguage: 'es',
+      publisher: { '@id': 'https://nadamas.app/#org' },
+    },
+    {
+      '@type': 'Organization',
+      '@id': 'https://nadamas.app/#org',
+      name: 'nadamas.app',
+      url: 'https://nadamas.app',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://nadamas.app/icons/icon_x512.png',
+        width: 512,
+        height: 512,
+      },
+    },
+  ],
 }
 
 export default function LandingPage() {
