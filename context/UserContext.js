@@ -32,7 +32,7 @@ export function UserProvider({ children }) {
           loginUser(user)
             .then((res) => {
               setUser(res)
-              redirectTo ? router.push(redirectTo) : router.push('/profile')
+              redirectTo ? router.push(redirectTo) : router.push('/dashboard')
 
             })
             .catch((err) => {
@@ -49,9 +49,6 @@ export function UserProvider({ children }) {
     */
     if (user && redirectTo) {
       router.push(redirectTo)
-    }
-    else if (user && pathname === '/') {
-      router.push('/profile')
     }
   }, [user])
 

@@ -9,7 +9,7 @@ export default function LoginPage() {
   const { user } = useUser()
 
   useEffect(() => {
-    if (user) router.push('/')
+    if (user) router.push('/dashboard')
   }, [user, router])
 
   return (
