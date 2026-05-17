@@ -9,6 +9,14 @@ const nextConfig = {
       { protocol: 'https', hostname: 'img.icons8.com' },
     ],
   },
+  async redirects() {
+    return [
+      { source: '/dashboard', destination: '/athlete/home', permanent: false },
+      { source: '/dashboard/profile', destination: '/profile', permanent: false },
+      { source: '/dashboard/events', destination: '/athlete/progress', permanent: false },
+      { source: '/dashboard/events/:path*', destination: '/athlete/progress/:path*', permanent: false },
+    ]
+  },
   async headers() {
     return [
       {

@@ -5,19 +5,19 @@ export const ROUTES = {
     name: 'PROFILE',
     label: 'Perfil',
     icon: 'user',
-    href: '/dashboard/profile'
+    href: '/profile'
   },
   EVENTS: {
     name: 'EVENTS',
     label: 'Eventos',
     icon: 'events',
-    href: '/dashboard/events'
+    href: '/athlete/progress'
   },
   TEAMS: {
     name: 'TEAMS',
     label: 'Equipos',
     icon: 'group',
-    href: '/teams'
+    href: '/coach/students'
   },
   LOGOUT: {
     name: 'LOGOUT',

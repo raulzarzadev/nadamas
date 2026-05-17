@@ -34,7 +34,7 @@ export function UserProvider({ children }) {
             .then((res) => {
               setUser(res)
               posthog?.capture('login_success', { provider })
-              redirectTo ? router.push(redirectTo) : router.push('/dashboard')
+              redirectTo ? router.push(redirectTo) : router.push('/athlete/home')
 
             })
             .catch((err) => {
