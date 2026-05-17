@@ -13,7 +13,7 @@ export default function LoginPage() {
   }, [user, router])
 
   return (
-    <div className="py-6">
+    <div className="min-h-[calc(100vh-2rem)] px-3 py-6 sm:grid sm:place-items-center sm:py-10">
       <AuthCard />
     </div>
   )

@@ -1,92 +1,58 @@
 'use client'
-import SocialMediaLogin from './SocialMediaLogin'
+
+import Image from 'next/image'
+import Link from 'next/link'
 import { useState } from 'react'
+import SocialMediaLogin from './SocialMediaLogin'
 import OtpLogin from './OtpLogin'
+
 export default function AuthCard() {
-  const [form, setForm] = useState({ emailing: true })
-
-  const handleChange = ({ target }) => {
-    setForm({ ...form, [target.name]: target.checked })
-  }
-
-  const isValid = !!form?.privacity
+  const [accepted, setAccepted] = useState(false)
 
   return (
-    <div className="w-full max-w-sm p-6 m-auto rounded-md shadow-md ">
-      <h1 className="text-3xl font-semibold text-center  ">
-        Ingresa
-      </h1>
-
-      <div className="flex items-center flex-col justify-between mt-4">
-        <span className="w-1/5 border-b border-[var(--c-border)] lg:w-1/5"></span>
-
-        <div className="text-xs text-center uppercase hover:underline">
-          Registro a la version beta completamente gratis
+    <div className="mx-auto w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--c-border)] bg-white shadow-[var(--shadow-md)]">
+      <div className="bg-[var(--c-surface)] px-5 py-6 sm:px-7">
+        <div className="flex justify-center">
+          <Image
+            src="/logo-nadamas.webp"
+            alt="Nadamas"
+            width={220}
+            height={75}
+            className="h-11 w-auto"
+            priority
+          />
         </div>
-
-        <div className="flex items-center my-4 rounded-lg shadow-lg">
-          <div className=" text-sm ">
-            {/*   <p className="m-2">
-              Marca la casilla si estás de acuerdo con el manejo de tu
-              información
-            </p> */}
-            <p className="m-2">
-              Tus datos personales y los de tus atletas son y siempre serán
-              privados.
-            </p>
-            <p className="m-2">
-              Por tratarse de una versión BETA es probable que futuras
-              actualizaciones invaliden algunos datos.
-            </p>
-            <p className="m-2">
-              Siempre puedes pedir una copia de la información generada en tu
-              cuenta o pedir que sea eliminada.
-            </p>
-            <p className="m-2 ">
-              Para agilizar el registro usamos una cuenta de Google.
-            </p>
-            <ul className="list-disc m-2 pl-8">
-              <li>Nombre de usuario</li>
-              <li>Imagen de usuario</li>
-              <li>Email</li>
-            </ul>
-          </div>
-        </div>
-        {/* <div className="flex items-center my-4 bg-gray-100 rounded-lg shadow-lg">
-          <div className="w-20">
-            <input  defaultChecked={form?.emailing} type="checkbox" onChange={handleChange} name="emailing" />
-          </div>
-          <div className="text-black text-sm ">
-            <p>
-              Marca esta casilla para recibir información sobre el estado actual
-              de la applicación, nuevas actualizaciones y saber sobre el futuro
-              de nadamas
-            </p>
-          </div>
-        </div> */}
-        <div className="">
-          <label className="">
-            <input
-              className="mr-2"
-              type="checkbox"
-              onChange={handleChange}
-              name="privacity"
-            />
-            Acepar y continuar
-          </label>
-        </div>
-        <span className="w-1/5 border-b lg:w-1/5"></span>
+        <h1 className="mt-2 text-3xl font-extrabold text-[var(--c-ocean)]">
+          Entra a tu cuenta
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--c-text-2)]">
+          Reserva clases, lleva tu progreso o administra tu perfil de coach.
+        </p>
       </div>
 
-      <SocialMediaLogin disabled={!isValid} />
-      <OtpLogin disabled={!isValid} />
+      <div className="flex flex-col gap-5 px-5 py-6 sm:px-7">
+        <label className="flex items-start gap-3 rounded-2xl border border-[var(--c-border)] bg-white p-4 text-sm leading-relaxed text-[var(--c-text-2)]">
+          <input
+            type="checkbox"
+            checked={accepted}
+            onChange={(event) => setAccepted(event.target.checked)}
+            className="checkbox checkbox-sm mt-0.5"
+          />
+          <span>
+            Acepto la{' '}
+            <Link
+              href="/privacidad"
+              className="font-semibold text-[var(--c-ocean-mid)]"
+            >
+              política de privacidad
+            </Link>{' '}
+            y el uso de mis datos para operar mi cuenta.
+          </span>
+        </label>
 
-      {/* <p className="mt-8 text-xs font-light text-center text-gray-400">
-        ¿Aun no tienes cuenta?
-        <Link href="/signin" variant="bold">
-          Regristrate
-        </Link>
-      </p> */}
+        <OtpLogin disabled={!accepted} />
+        <SocialMediaLogin disabled={!accepted} />
+      </div>
     </div>
   )
 }

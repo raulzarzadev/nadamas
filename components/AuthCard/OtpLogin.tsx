@@ -10,90 +10,137 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
   const [step, setStep] = useState<'email' | 'code'>('email')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [hasError, setHasError] = useState(false)
 
   async function requestCode(event: FormEvent) {
     event.preventDefault()
     setBusy(true)
+    setHasError(false)
     setMessage(null)
-    const response = await fetch('/api/auth/otp/request', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email }),
-    })
-    setBusy(false)
-    if (!response.ok) {
-      setMessage('No pudimos enviar el código.')
-      return
+    try {
+      const response = await fetch('/api/auth/otp/request', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (!response.ok) throw new Error('request_failed')
+      setStep('code')
+      setMessage('Te enviamos un código de 6 dígitos.')
+    } catch {
+      setHasError(true)
+      setMessage('No pudimos enviar el código. Intenta de nuevo.')
+    } finally {
+      setBusy(false)
     }
-    setStep('code')
-    setMessage('Te enviamos un código de 6 dígitos.')
   }
 
   async function verifyCode(event: FormEvent) {
     event.preventDefault()
     setBusy(true)
+    setHasError(false)
     setMessage(null)
-    const response = await fetch('/api/auth/otp/verify', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ email, code }),
-    })
-    const payload = (await response.json()) as {
-      customToken?: string
-      error?: string
-    }
-    if (!response.ok || !payload.customToken) {
+    try {
+      const response = await fetch('/api/auth/otp/verify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      })
+      const payload = (await response.json()) as {
+        customToken?: string
+        error?: string
+      }
+      if (!response.ok || !payload.customToken) {
+        throw new Error(payload.error || 'Código inválido.')
+      }
+      await signInWithCustomToken(auth, payload.customToken)
+    } catch (error) {
+      setHasError(true)
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'No pudimos iniciar sesión. Intenta de nuevo.'
+      )
+    } finally {
       setBusy(false)
-      setMessage(payload.error || 'Código inválido.')
-      return
     }
-    await signInWithCustomToken(auth, payload.customToken)
-    setBusy(false)
   }
 
   return (
-    <div className="mt-5 border-t border-[var(--c-border)] pt-5">
-      <p className="mb-3 text-sm font-semibold text-[var(--c-text-2)]">
-        O entra con tu correo
-      </p>
+    <div>
       {step === 'email' ? (
         <form onSubmit={requestCode} className="flex flex-col gap-3">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="tu@correo.com"
-            className="input input-bordered w-full"
-          />
-          <button disabled={disabled || busy} className="btn btn-outline">
-            {busy ? 'Enviando…' : 'Enviar código'}
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold text-[var(--c-ocean)]">
+              Correo
+            </span>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="tu@correo.com"
+              className="input input-bordered h-12 w-full rounded-2xl bg-white"
+            />
+          </label>
+          <button
+            disabled={disabled || busy}
+            className="btn h-12 rounded-2xl border-[var(--c-border)] bg-white"
+          >
+            {busy ? 'Enviando…' : 'Recibir código'}
           </button>
         </form>
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-3">
-          <input
-            inputMode="numeric"
-            required
-            value={code}
-            onChange={(event) => setCode(event.target.value)}
-            placeholder="123456"
-            maxLength={6}
-            className="input input-bordered w-full tracking-[0.35em]"
-          />
-          <button disabled={busy} className="btn btn-primary">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-sm font-semibold text-[var(--c-ocean)]">
+              Código enviado a {email}
+            </span>
+            <input
+              inputMode="numeric"
+              required
+              value={code}
+              onChange={(event) =>
+                setCode(event.target.value.replace(/\D/g, '').slice(0, 6))
+              }
+              placeholder="000000"
+              maxLength={6}
+              autoComplete="one-time-code"
+              className="input input-bordered h-12 w-full rounded-2xl bg-white text-center text-lg tracking-[0.45em]"
+            />
+          </label>
+          <button
+            disabled={busy || code.length !== 6}
+            className="btn btn-primary h-12 rounded-2xl"
+          >
             {busy ? 'Entrando…' : 'Entrar'}
           </button>
           <button
             type="button"
-            onClick={() => setStep('email')}
+            disabled={busy}
+            onClick={() => {
+              setStep('email')
+              setCode('')
+              setMessage(null)
+              setHasError(false)
+            }}
             className="text-sm font-semibold text-[var(--c-ocean-mid)]"
           >
             Cambiar correo
           </button>
         </form>
       )}
-      {message && <p className="mt-3 text-sm text-[var(--c-text-2)]">{message}</p>}
+
+      {message && (
+        <p
+          className={`mt-3 rounded-2xl px-3 py-2 text-sm ${
+            hasError
+              ? 'bg-red-50 text-red-700'
+              : 'bg-[var(--c-surface)] text-[var(--c-text-2)]'
+          }`}
+        >
+          {message}
+        </p>
+      )}
     </div>
   )
 }

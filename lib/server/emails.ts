@@ -6,11 +6,24 @@ export function sendOtpEmail(email: string, code: string) {
     subject: 'Tu código para entrar a Nadamas',
     textContent: `Tu código para entrar a Nadamas es ${code}. Expira en 10 minutos.`,
     htmlContent: `
-      <div style="font-family:Arial,sans-serif;color:#102a43">
-        <h1 style="margin-bottom:8px">Tu código de acceso</h1>
-        <p>Usa este código para entrar a Nadamas:</p>
-        <p style="font-size:32px;font-weight:700;letter-spacing:6px">${code}</p>
-        <p>Expira en 10 minutos.</p>
+      <div style="margin:0;background:#f5fbfd;padding:28px 12px;font-family:Arial,sans-serif;color:#102a43">
+        <div style="margin:0 auto;max-width:520px;overflow:hidden;border:1px solid #d8edf4;border-radius:28px;background:#ffffff">
+          <div style="padding:24px 28px;background:#eef9fc">
+            <p style="margin:0;color:#0877ad;font-size:14px;font-weight:700">nadamas.app</p>
+            <h1 style="margin:10px 0 0;font-size:28px;line-height:1.15">Tu código de acceso</h1>
+          </div>
+          <div style="padding:28px">
+            <p style="margin:0 0 18px;color:#52606d;font-size:16px;line-height:1.5">
+              Usa este código para entrar a Nadamas:
+            </p>
+            <div style="margin:0 0 20px;border-radius:20px;background:#102a43;color:#ffffff;padding:18px 20px;text-align:center;font-size:34px;font-weight:700;letter-spacing:10px">
+              ${code}
+            </div>
+            <p style="margin:0;color:#52606d;font-size:14px;line-height:1.5">
+              Expira en 10 minutos. Si tú no pediste este acceso, puedes ignorar este correo.
+            </p>
+          </div>
+        </div>
       </div>
     `,
   })
