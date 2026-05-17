@@ -17,7 +17,7 @@ export default function AuthCard() {
       </h1>
 
       <div className="flex items-center flex-col justify-between mt-4">
-        <span className="w-1/5 border-b border-dark lg:w-1/5"></span>
+        <span className="w-1/5 border-b border-[var(--c-border)] lg:w-1/5"></span>
 
         <div className="text-xs text-center uppercase hover:underline">
           Registro a la version beta completamente gratis
