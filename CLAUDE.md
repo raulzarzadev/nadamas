@@ -39,6 +39,7 @@ yarn test:e2e     # playwright test
 
 - `context/UserContext.js` is the auth hub. `authStateChanged` (Google popup auth) drives `user` state: `undefined` = loading, `null` = logged out, object = logged in. Exposes `useUser()` → `{ user, login, logout }`. Post-login redirect via `?redirectTo=` query param, else `/dashboard`.
 - `app/(app)/auth-gate.tsx` (`AuthGate`) is the client gate: while `user === undefined` it renders `<Loading />`. Wrap protected sections in it (replaces the old `components/HOC` pattern, which no longer exists).
+- Multi-role: `users` doc has `roles: { athlete:true, coach:boolean, admin:boolean }`. `lib/roles.ts` normalizes (legacy `isCoach` ⇒ coach when `roles` absent). `context/RoleContext.tsx` exposes `useRole()` → `{ roles, activeRole, isAdmin, setActiveRole, enableCoach }`; `activeRole` persisted in localStorage. App is split into `app/(app)/{athlete,coach,admin}/` segments behind `AuthGate` + `AppChrome`; `coach`/`admin` add `RoleGuard`. **Admin is granted only by manually setting `roles.admin: true` on the Firestore user doc — there is no UI for it.**
 
 ### Analytics (PostHog)
 
