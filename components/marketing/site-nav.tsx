@@ -43,10 +43,10 @@ export default function SiteNav() {
           onClick={() => setOpen(false)}
         >
           <Image
-            src="/logo-nadamas.png"
+            src="/logo-nadamas.webp"
             alt=""
-            width={156}
-            height={104}
+            width={293}
+            height={100}
             priority
             className="h-9 w-auto"
           />

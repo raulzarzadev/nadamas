@@ -28,10 +28,10 @@ export default function SiteFooter() {
         <div className="grid gap-12 lg:grid-cols-[1.6fr_1fr_1fr]">
           <div className="max-w-[34ch]">
             <Image
-              src="/logo-nadamas.png"
+              src="/logo-nadamas.webp"
               alt="nadamas.app"
-              width={170}
-              height={114}
+              width={293}
+              height={100}
               className="h-10 w-auto"
             />
             <p className="mt-5 text-[0.97rem] leading-relaxed" style={{ color: 'var(--c-text-2)' }}>

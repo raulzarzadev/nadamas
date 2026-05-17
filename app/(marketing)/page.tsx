@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     siteName: 'nadamas.app',
     locale: 'es_ES',
     images: [
-      { url: '/logo-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' },
+      { url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' },
     ],
     type: 'website',
   },
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     description:
       'Coaches verificados, reserva en minutos, paga en la app.',
     images: [
-      { url: '/logo-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' },
+      { url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' },
     ],
   },
   alternates: { canonical: 'https://nadamas.app/' },
