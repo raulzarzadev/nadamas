@@ -25,7 +25,7 @@ export default function EventsPage() {
   return (
     <div className="py-6 max-w-md mx-auto flex flex-col gap-4 text-base-content">
       <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Eventos</h1>
+        <h1 className="text-2xl font-bold">Mi progreso</h1>
         <Link className="btn btn-primary btn-sm" href="/athlete/progress/new">
           Nuevo
         </Link>
