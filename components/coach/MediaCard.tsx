@@ -63,6 +63,7 @@ export default function MediaCard({
         <input
           type="file"
           accept="image/*"
+          disabled={busy === 'face'}
           className="file-input file-input-bordered"
           onChange={(e) => {
             const f = e.target.files?.[0]
@@ -164,7 +165,7 @@ function MultiPhoto({
             />
             <button
               type="button"
-              aria-label="Quitar"
+              aria-label={`Quitar ${label} ${i + 1}`}
               onClick={() => onRemove(i)}
               className="absolute -top-2 -right-2 bg-[var(--c-ocean)] text-white rounded-full w-5 h-5 text-xs"
             >
