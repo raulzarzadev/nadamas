@@ -3,6 +3,8 @@ export const GENERIC_USER_ERROR =
 
 export function reportInternalError(scope: string, error: unknown) {
   const code = `${scope}-${Date.now().toString(36).toUpperCase()}`
-  console.error(`[${code}]`, error)
+  // Keep browser-visible logs safe. Detailed diagnostics should go to private
+  // observability, not to user-facing UI or public client consoles.
+  console.error(`[${code}]`)
   return code
 }

@@ -1,4 +1,4 @@
-import { auth } from '@/firebase'
+import { auth } from '@/firebase/index'
 
 export async function postAuthed(path: string, body?: unknown) {
   const token = await auth.currentUser?.getIdToken()
