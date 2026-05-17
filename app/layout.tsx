@@ -1,5 +1,4 @@
 import '../styles/globals.css'
-import Providers from './providers'
 
 export const metadata = {
   title: 'nadamas',
@@ -13,9 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body>
-        <Providers>{children}</Providers>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }
