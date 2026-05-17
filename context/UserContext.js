@@ -1,7 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useState } from 'react'
 
-import Loading from '@/components/Loading'
 import { authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { loginUser } from '@/firebase/users'
@@ -50,10 +49,6 @@ export function UserProvider({ children }) {
       router.push(redirectTo)
     }
   }, [user, router])
-
-
-  if (user === undefined) return <Loading />
-
 
 
   return (
