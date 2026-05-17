@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRole } from '@/context/RoleContext'
 import { ROLE_LABEL } from './nav-config'
 
@@ -7,6 +7,8 @@ export default function RoleSwitcher() {
   const { roles, activeRole, setActiveRole, enableCoach } = useRole()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLUListElement>(null)
 
   const handleEnableCoach = async () => {
     setBusy(true)
@@ -19,16 +21,74 @@ export default function RoleSwitcher() {
     }
   }
 
+  const getItems = () =>
+    menuRef.current
+      ? Array.from(
+          menuRef.current.querySelectorAll<HTMLButtonElement>(
+            '[role="menuitem"]:not([disabled])'
+          )
+        )
+      : []
+
+  const closeAndFocusTrigger = () => {
+    setOpen(false)
+    triggerRef.current?.focus()
+  }
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      closeAndFocusTrigger()
+      return
+    }
+    const items = getItems()
+    if (items.length === 0) return
+    const currentIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement
+    )
+    let nextIndex: number | null = null
+    if (e.key === 'ArrowDown') {
+      nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length
+    } else if (e.key === 'ArrowUp') {
+      nextIndex =
+        currentIndex < 0
+          ? items.length - 1
+          : (currentIndex - 1 + items.length) % items.length
+    } else if (e.key === 'Home') {
+      nextIndex = 0
+    } else if (e.key === 'End') {
+      nextIndex = items.length - 1
+    }
+    if (nextIndex !== null) {
+      e.preventDefault()
+      items[nextIndex]?.focus()
+    }
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const items = menuRef.current
+      ? Array.from(
+          menuRef.current.querySelectorAll<HTMLButtonElement>(
+            '[role="menuitem"]:not([disabled])'
+          )
+        )
+      : []
+    items[0]?.focus()
+  }, [open])
+
   return (
     <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="rounded-full px-4 py-2 text-sm font-semibold bg-[var(--c-surface)] text-[var(--c-ocean-mid)] border border-[var(--c-border)] hover:opacity-80 transition-opacity cursor-pointer"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        Actuando como: {ROLE_LABEL[activeRole]} ▾
+        Actuando como: {ROLE_LABEL[activeRole]}{' '}
+        <span aria-hidden="true">▾</span>
       </button>
       {open && (
         <>
@@ -38,7 +98,9 @@ export default function RoleSwitcher() {
             aria-hidden
           />
           <ul
+            ref={menuRef}
             role="menu"
+            onKeyDown={handleMenuKeyDown}
             className="absolute right-0 z-20 mt-2 w-60 rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] border border-[var(--c-border)] p-2"
           >
             <li role="none">
