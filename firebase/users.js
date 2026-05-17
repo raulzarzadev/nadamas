@@ -58,3 +58,16 @@ export const updateUser = async (user) => {
   return updateDoc(doc(db, 'users', user.id), userFormat)
     .catch((err) => console.log(`err`, err))
 }
+
+/**
+ * Self-enable the coach role for the given user id.
+ * Sets roles.coach = true (merging, athlete always true) + updatedAt.
+ */
+export const enableCoach = async (userId) => {
+  if (!userId) throw new Error('No userId provided')
+  const payload = Dates.deepFormatObjectDates(
+    { 'roles.athlete': true, 'roles.coach': true, updatedAt: new Date() },
+    'number'
+  )
+  return updateDoc(doc(db, 'users', userId), payload)
+}
