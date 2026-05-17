@@ -31,16 +31,20 @@ export default function AppChrome({
               fill
               priority
               style={{ objectFit: 'contain', objectPosition: 'left' }}
-              alt="nadamas"
+              alt="Nadamas logo"
             />
           </Link>
-          <nav className="hidden md:flex items-center gap-1">
+          <nav
+            aria-label="Navegación principal"
+            className="hidden md:flex items-center gap-1"
+          >
             {links.map((l) => {
               const active = pathname === l.href
               return (
                 <Link
                   key={l.href}
                   href={l.href}
+                  aria-current={active ? 'page' : undefined}
                   className={`px-3 py-2 rounded-full text-sm font-semibold transition-colors ${
                     active
                       ? 'bg-[var(--c-surface)] text-[var(--c-ocean-mid)]'
@@ -56,6 +60,7 @@ export default function AppChrome({
             {isAdmin && (
               <Link
                 href="/admin/home"
+                aria-label="Panel de administración"
                 className="rounded-full px-3 py-2 text-sm font-semibold bg-[var(--c-ocean)] text-white hover:opacity-90 transition-opacity"
               >
                 Admin
@@ -68,7 +73,10 @@ export default function AppChrome({
 
       <main className="max-w-5xl mx-auto px-4 pb-24 pt-6">{children}</main>
 
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-[var(--c-border)]">
+      <nav
+        aria-label="Navegación móvil"
+        className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-[var(--c-border)]"
+      >
         <ul className="flex justify-around">
           {links.slice(0, 5).map((l) => {
             const active = pathname === l.href
@@ -76,6 +84,7 @@ export default function AppChrome({
               <li key={l.href}>
                 <Link
                   href={l.href}
+                  aria-current={active ? 'page' : undefined}
                   className={`block px-3 py-3 text-xs font-semibold ${
                     active
                       ? 'text-[var(--c-ocean-mid)]'
