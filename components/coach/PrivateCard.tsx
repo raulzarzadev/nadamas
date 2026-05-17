@@ -1,15 +1,21 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CoachCRUD } from '@/firebase/coaches/main'
+import ProfileSection from './ProfileSection'
 import type {
-  CoachPrivateContact,
   CoachDocument,
+  CoachIdentityVerification,
 } from '@/firebase/coaches/coach.model'
 
 interface PrivateValue {
-  privateContacts?: CoachPrivateContact[]
-  idDocuments?: CoachDocument[]
-  certifications?: CoachDocument[]
+  identityVerification?: CoachIdentityVerification
+}
+
+const STATUS_COPY: Record<CoachIdentityVerification['status'], string> = {
+  not_submitted: 'Aún no has subido tu INE.',
+  pending: 'Tu INE está en revisión por un administrador.',
+  verified: 'Identidad validada por el equipo.',
+  rejected: 'La revisión fue rechazada. Sube una imagen más clara.',
 }
 
 export default function PrivateCard({
@@ -24,211 +30,111 @@ export default function PrivateCard({
   onSave: (v: PrivateValue) => void
 }) {
   const [draft, setDraft] = useState<PrivateValue>(value || {})
-  const [busy, setBusy] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const uploadDoc = (
-    file: File,
-    apply: (doc: CoachDocument) => void,
-    tag: string
-  ) => {
+  useEffect(() => setDraft(value || {}), [value])
+
+  const verification = draft.identityVerification || {
+    status: 'not_submitted' as const,
+  }
+
+  const uploadIne = (file: File) => {
     setError(null)
-    setBusy(tag)
-    CoachCRUD.uploadAsset({ file, uid, scope: 'private' }, (p, url) => {
-      if (url) {
-        apply({ url, name: file.name })
-        setBusy(null)
-      }
-    })
-    setTimeout(() => {
-      setBusy((b) => {
-        if (b === tag) setError('No se pudo subir el archivo. Intenta de nuevo.')
-        return b === tag ? null : b
+    setBusy(true)
+    let finished = false
+
+    CoachCRUD.uploadAsset({ file, uid, scope: 'private' }, (_, url) => {
+      if (!url || finished) return
+      finished = true
+      const document: CoachDocument = { url, name: file.name }
+      setDraft({
+        identityVerification: {
+          status: 'pending',
+          document,
+          submittedAt: Date.now(),
+        },
       })
+      setBusy(false)
+    })
+
+    setTimeout(() => {
+      if (finished) return
+      finished = true
+      setError('No se pudo subir la INE. Intenta de nuevo.')
+      setBusy(false)
     }, 30000)
   }
 
-  const contacts = draft.privateContacts || []
-
   return (
-    <section className="rounded-[var(--r-md)] bg-[var(--c-surface)] border border-[var(--c-border)] shadow-[var(--shadow-sm)] p-6 flex flex-col gap-4">
-      <div>
-        <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">
-          Verificación (privado)
-        </h2>
-        <p className="text-sm text-[var(--c-text-2)]">
-          Solo para verificación. No visible para atletas.
-        </p>
-      </div>
-      {error && <p className="text-[var(--c-error,#b91c1c)] text-sm">{error}</p>}
+    <ProfileSection
+      title="Mis documentos (verificación)"
+      description="Sube únicamente tu INE. Esta sección es privada y un administrador debe validar la identidad antes de marcarla como verificada."
+      summary={`INE · ${STATUS_COPY[verification.status]}`}
+      surface="tinted"
+    >
+        {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
 
-      <div className="flex flex-col gap-2">
-        <span className="label-text text-[var(--c-text-2)]">
-          Contactos privados
-        </span>
-        {contacts.map((c, i) => (
-          <div key={i} className="flex gap-2">
-            <input
-              className="input input-bordered w-1/3"
-              placeholder="Tipo (whatsapp…)"
-              value={c.type}
-              onChange={(e) =>
-                setDraft((d) => {
-                  const next = [...(d.privateContacts || [])]
-                  next[i] = { ...next[i], type: e.target.value }
-                  return { ...d, privateContacts: next }
-                })
-              }
-            />
-            <input
-              className="input input-bordered flex-1"
-              placeholder="Valor"
-              value={c.value}
-              onChange={(e) =>
-                setDraft((d) => {
-                  const next = [...(d.privateContacts || [])]
-                  next[i] = { ...next[i], value: e.target.value }
-                  return { ...d, privateContacts: next }
-                })
-              }
-            />
-            <button
-              type="button"
-              aria-label={`Quitar contacto ${i + 1}`}
-              className="btn btn-ghost"
-              onClick={() =>
-                setDraft((d) => ({
-                  ...d,
-                  privateContacts: (d.privateContacts || []).filter(
-                    (_, idx) => idx !== i
-                  ),
-                }))
-              }
-            >
-              ×
-            </button>
+        <div className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            {verification.document?.url ? (
+              <img
+                src={verification.document.url}
+                alt="INE subida"
+                className="h-28 w-full rounded-[var(--r-sm)] border border-[var(--c-border)] object-cover sm:w-44"
+              />
+            ) : (
+              <div className="flex h-28 w-full items-center justify-center rounded-[var(--r-sm)] border border-dashed border-[var(--c-border)] text-sm text-[var(--c-text-2)] sm:w-44">
+                Sin INE
+              </div>
+            )}
+
+            <div className="flex-1">
+              <p className="font-semibold text-[var(--c-ocean)]">INE</p>
+              <p className="mt-1 text-sm text-[var(--c-text-2)]">
+                {STATUS_COPY[verification.status]}
+              </p>
+              {verification.document?.name && (
+                <p className="mt-2 truncate text-sm text-[var(--c-ocean-mid)]">
+                  {verification.document.name}
+                </p>
+              )}
+            </div>
           </div>
-        ))}
-        <button
-          type="button"
-          className="btn btn-ghost self-start"
-          onClick={() =>
-            setDraft((d) => ({
-              ...d,
-              privateContacts: [
-                ...(d.privateContacts || []),
-                { type: '', value: '' },
-              ],
-            }))
-          }
-        >
-          + Agregar contacto
-        </button>
-      </div>
+        </div>
 
-      <DocList
-        label="Documentos de identificación"
-        docs={draft.idDocuments || []}
-        busy={busy === 'id'}
-        onAdd={(f) =>
-          uploadDoc(
-            f,
-            (doc) =>
-              setDraft((d) => ({
-                ...d,
-                idDocuments: [...(d.idDocuments || []), doc],
-              })),
-            'id'
-          )
-        }
-        onRemove={(i) =>
-          setDraft((d) => ({
-            ...d,
-            idDocuments: (d.idDocuments || []).filter((_, idx) => idx !== i),
-          }))
-        }
-      />
+        <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-[var(--r-md)] border border-dashed border-[var(--c-ocean-mid)] bg-white px-5 py-6 text-center">
+          <span className="font-semibold text-[var(--c-ocean)]">
+            {busy ? 'Subiendo INE…' : 'Subir o reemplazar INE'}
+          </span>
+          <span className="mt-1 text-sm text-[var(--c-text-2)]">
+            JPG, PNG o WEBP
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            disabled={busy}
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) uploadIne(file)
+            }}
+          />
+        </label>
 
-      <DocList
-        label="Certificaciones"
-        docs={draft.certifications || []}
-        busy={busy === 'cert'}
-        onAdd={(f) =>
-          uploadDoc(
-            f,
-            (doc) =>
-              setDraft((d) => ({
-                ...d,
-                certifications: [...(d.certifications || []), doc],
-              })),
-            'cert'
-          )
-        }
-        onRemove={(i) =>
-          setDraft((d) => ({
-            ...d,
-            certifications: (d.certifications || []).filter(
-              (_, idx) => idx !== i
-            ),
-          }))
-        }
-      />
-
-      <button
-        type="button"
-        disabled={saving || !!busy}
-        onClick={() => onSave(draft)}
-        className="btn btn-primary self-start disabled:opacity-50"
-      >
-        {saving ? 'Guardando…' : 'Guardar verificación'}
-      </button>
-    </section>
-  )
-}
-
-function DocList({
-  label,
-  docs,
-  busy,
-  onAdd,
-  onRemove,
-}: {
-  label: string
-  docs: CoachDocument[]
-  busy: boolean
-  onAdd: (f: File) => void
-  onRemove: (i: number) => void
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="label-text text-[var(--c-text-2)]">{label}</span>
-      <ul className="flex flex-col gap-1">
-        {docs.map((doc, i) => (
-          <li
-            key={doc.url + i}
-            className="flex items-center justify-between text-sm text-[var(--c-ocean)]"
+        <div className="flex flex-col gap-3 border-t border-[var(--c-border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-[var(--c-text-2)]">
+            Flujo admin: pendiente → verificada o rechazada.
+          </p>
+          <button
+            type="button"
+            disabled={saving || busy || !verification.document}
+            onClick={() => onSave({ identityVerification: verification })}
+            className="btn btn-primary min-w-36 self-start disabled:opacity-50 sm:self-auto"
           >
-            <span className="truncate">{doc.name}</span>
-            <button
-              type="button"
-              aria-label={`Quitar ${label} ${i + 1}`}
-              className="btn btn-ghost btn-xs"
-              onClick={() => onRemove(i)}
-            >
-              ×
-            </button>
-          </li>
-        ))}
-      </ul>
-      <input
-        type="file"
-        disabled={busy}
-        className="file-input file-input-bordered"
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) onAdd(f)
-        }}
-      />
-    </div>
+            {saving ? 'Guardando…' : 'Guardar documento'}
+          </button>
+        </div>
+    </ProfileSection>
   )
 }

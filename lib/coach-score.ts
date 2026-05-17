@@ -1,12 +1,18 @@
 import COACH_SCORE from '@/CONSTANTS/COACH_SCORE'
 import COACH_SKILLS from '@/CONSTANTS/COACH_SKILLS'
+import type { CoachMetrics } from '@/lib/coach-metrics'
 
 export interface ScorableProfile {
   skills?: Record<string, string> | null
+  metrics?: Partial<CoachMetrics> | null
   bio?: string | null
+  galleryPhotos?: { url: string; label?: string }[] | null
   facePhoto?: { url: string } | null
   workplacePhotos?: { url: string }[] | null
   achievementPhotos?: { url: string }[] | null
+  identityVerification?: {
+    document?: { url: string; name: string } | null
+  } | null
   idDocuments?: { url: string; name: string }[] | null
   certifications?: { url: string; name: string }[] | null
 }
@@ -24,24 +30,43 @@ export function computeAutoScore(
 ): number {
   let pts = 0
 
-  const validKeys = new Set(COACH_SKILLS.map((d) => d.key))
-  const skills = profile.skills ?? {}
-  for (const key of Object.keys(skills)) {
-    if (validKeys.has(key) && skills[key]) pts += weights.perFilledSkillDimension
+  if (profile.metrics && Object.keys(profile.metrics).length > 0) {
+    pts += Object.keys(profile.metrics).length * weights.perFilledSkillDimension
+  } else {
+    const validKeys = new Set(COACH_SKILLS.map((d) => d.key))
+    const skills = profile.skills ?? {}
+    for (const key of Object.keys(skills)) {
+      if (validKeys.has(key) && skills[key]) pts += weights.perFilledSkillDimension
+    }
   }
 
-  if (profile.bio && profile.bio.trim().length > 0) pts += weights.bio
-  if (profile.facePhoto?.url) pts += weights.facePhoto
+  const galleryPhotos = profile.galleryPhotos ?? []
+  const facePhoto =
+    profile.facePhoto ??
+    galleryPhotos.find((photo) => photo.label === 'Yo') ??
+    null
+  const workplacePhotos =
+    profile.workplacePhotos ??
+    galleryPhotos.filter((photo) => photo.label === 'Lugares de trabajo')
+  const achievementPhotos =
+    profile.achievementPhotos ??
+    galleryPhotos.filter((photo) => photo.label === 'Logros y eventos')
 
-  const wp = profile.workplacePhotos?.length ?? 0
+  if (profile.bio && profile.bio.trim().length > 0) pts += weights.bio
+  if (facePhoto?.url) pts += weights.facePhoto
+
+  const wp = workplacePhotos?.length ?? 0
   pts += Math.min(wp, weights.maxScoredWorkplacePhotos) * weights.perWorkplacePhoto
 
-  const ap = profile.achievementPhotos?.length ?? 0
+  const ap = achievementPhotos?.length ?? 0
   pts +=
     Math.min(ap, weights.maxScoredAchievementPhotos) *
     weights.perAchievementPhoto
 
-  const idn = profile.idDocuments?.length ?? 0
+  const idn =
+    profile.identityVerification?.document?.url
+      ? 1
+      : profile.idDocuments?.length ?? 0
   pts += Math.min(idn, weights.maxScoredIdDocuments) * weights.perIdDocument
 
   const cert = profile.certifications?.length ?? 0

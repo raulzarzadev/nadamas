@@ -2,9 +2,27 @@ export interface CoachPhoto {
   url: string
 }
 
+export interface CoachGalleryPhoto extends CoachPhoto {
+  label?: string
+}
+
 export interface CoachSocial {
   type: string
   url: string
+}
+
+export type CoachPublicLinkKind =
+  | 'whatsapp'
+  | 'youtube'
+  | 'facebook'
+  | 'instagram'
+  | 'tiktok'
+  | 'website'
+  | 'other'
+
+export interface CoachPublicLink {
+  kind: CoachPublicLinkKind
+  value: string
 }
 
 export interface CoachYoutubeLink {
@@ -22,6 +40,39 @@ export interface CoachDocument {
   name: string
 }
 
+export interface CoachIdentityVerification {
+  status: 'not_submitted' | 'pending' | 'verified' | 'rejected'
+  document?: CoachDocument
+  submittedAt?: number
+  reviewedAt?: number
+  reviewedBy?: string
+  adminNote?: string
+}
+
+export interface CoachAvailabilitySlot {
+  days: string[]
+  startTime: string
+  endTime: string
+}
+
+export interface CoachTeachingLocation {
+  id: string
+  name: string
+  locationUrl?: string
+  imageUrl?: string
+  availability: CoachAvailabilitySlot[]
+}
+
+export interface CoachPriceOption {
+  id: string
+  title: string
+  amount: number | null
+  currency: 'MXN'
+  unit: 'clase' | 'sesión' | 'mes' | 'paquete'
+  durationMinutes?: number | null
+  details?: string
+}
+
 export interface CoachVerification {
   status: 'pending' | 'verified'
   autoScore: number
@@ -29,14 +80,21 @@ export interface CoachVerification {
 }
 
 /** Public document: coaches/{uid} — readable by athletes. */
+import type { CoachMetrics } from '@/lib/coach-metrics'
+
 export interface CoachPublic {
   id?: string
   userId?: string
   skills?: Record<string, string>
+  metrics?: CoachMetrics
   bio?: string
+  galleryPhotos?: CoachGalleryPhoto[]
   facePhoto?: CoachPhoto
   workplacePhotos?: CoachPhoto[]
   achievementPhotos?: CoachPhoto[]
+  publicLinks?: CoachPublicLink[]
+  teachingLocations?: CoachTeachingLocation[]
+  priceOptions?: CoachPriceOption[]
   socials?: CoachSocial[]
   youtubeLinks?: CoachYoutubeLink[]
   // Reserved, no UI in this scope:
@@ -50,6 +108,7 @@ export interface CoachPublic {
 export interface CoachPrivate {
   id?: string
   privateContacts?: CoachPrivateContact[]
+  identityVerification?: CoachIdentityVerification
   idDocuments?: CoachDocument[]
   certifications?: CoachDocument[]
   adminNotes?: string

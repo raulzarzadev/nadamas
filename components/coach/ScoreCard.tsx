@@ -23,15 +23,22 @@ export default function ScoreCard({
           / 100
         </span>
       </p>
-      <span
-        className={`self-start rounded-full px-3 py-1 text-sm font-semibold ${
-          verified
-            ? 'bg-[var(--c-aqua-light)] text-[var(--c-ocean)]'
-            : 'bg-[var(--c-surface)] text-[var(--c-text-2)]'
-        }`}
-      >
-        {verified ? 'Verificado' : 'Pendiente de verificación'}
-      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span
+          className={`rounded-full px-3 py-1 text-sm font-semibold ${
+            verified
+              ? 'bg-[var(--c-aqua-light)] text-[var(--c-ocean)]'
+              : 'bg-[var(--c-surface)] text-[var(--c-text-2)]'
+          }`}
+        >
+          {verified ? 'Verificado' : 'Pendiente de verificación'}
+        </span>
+        {!verified && (
+          <button type="button" className="btn btn-outline btn-sm">
+            Solicitar verificación
+          </button>
+        )}
+      </div>
       <p className="text-sm text-[var(--c-text-2)]">
         Sube documentos y completa tu perfil para subir tu puntuación. La
         verificación final la realiza el equipo de nadamas.

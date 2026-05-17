@@ -1,54 +1,58 @@
 'use client'
-import { useState } from 'react'
-import COACH_SKILLS from '@/CONSTANTS/COACH_SKILLS'
+import { useEffect, useMemo, useState } from 'react'
+import CoachMetricsForm from './CoachMetricsForm'
+import ProfileSection from './ProfileSection'
+import {
+  COACH_METRICS,
+  normalizeCoachMetrics,
+  type CoachMetrics,
+} from '@/lib/coach-metrics'
 
 export default function SkillsCard({
   value,
   saving,
   onSave,
 }: {
-  value: Record<string, string>
+  value?: Partial<CoachMetrics>
   saving: boolean
-  onSave: (skills: Record<string, string>) => void
+  onSave: (metrics: CoachMetrics) => void
 }) {
-  const [draft, setDraft] = useState<Record<string, string>>(value || {})
+  const [draft, setDraft] = useState<CoachMetrics>(normalizeCoachMetrics(value))
+  const average = useMemo(
+    () =>
+      Math.round(
+        (Object.values(draft).reduce((sum, value) => sum + value, 0) /
+          COACH_METRICS.length) *
+          10
+      ) / 10,
+    [draft]
+  )
+
+  useEffect(() => {
+    setDraft(normalizeCoachMetrics(value))
+  }, [value])
 
   return (
-    <section className="rounded-[var(--r-md)] bg-white border border-[var(--c-border)] shadow-[var(--shadow-sm)] p-6 flex flex-col gap-4">
-      <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">
-        Carta de habilidades
-      </h2>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {COACH_SKILLS.map((dim) => (
-          <label key={dim.key} className="form-control">
-            <span className="label-text text-[var(--c-text-2)]">
-              {dim.label}
-            </span>
-            <select
-              className="select select-bordered"
-              value={draft[dim.key] || ''}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, [dim.key]: e.target.value }))
-              }
-            >
-              <option value="">—</option>
-              {dim.options.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
+    <ProfileSection
+      title="Carta de gustos y habilidades"
+      description="Ajusta tu estilo de entrenamiento para que los alumnos entiendan de un vistazo cómo acompañas, corriges y exiges."
+      summary={`8 métricas · estilo promedio ${average}/5`}
+    >
+      <CoachMetricsForm value={draft} onChange={setDraft} />
+
+      <div className="flex flex-col gap-3 border-t border-[var(--c-border)] pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-[var(--c-text-2)]">
+          No hay respuestas buenas o malas: la compatibilidad nace de mostrar tu estilo real.
+        </p>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => onSave(draft)}
+          className="btn btn-primary min-w-36 self-start disabled:opacity-50 sm:self-auto"
+        >
+          {saving ? 'Guardando…' : 'Guardar carta'}
+        </button>
       </div>
-      <button
-        type="button"
-        disabled={saving}
-        onClick={() => onSave(draft)}
-        className="btn btn-primary self-start disabled:opacity-50"
-      >
-        {saving ? 'Guardando…' : 'Guardar carta'}
-      </button>
-    </section>
+    </ProfileSection>
   )
 }

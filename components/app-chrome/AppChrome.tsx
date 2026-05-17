@@ -6,6 +6,15 @@ import { useRole } from '@/context/RoleContext'
 import RoleSwitcher from './RoleSwitcher'
 import { NAV_BY_ROLE } from './nav-config'
 import type { RoleName } from '@/lib/roles'
+import {
+  FiBarChart2,
+  FiCalendar,
+  FiHome,
+  FiSearch,
+  FiShield,
+  FiUser,
+  FiUsers,
+} from 'react-icons/fi'
 
 export default function AppChrome({
   role,
@@ -17,6 +26,15 @@ export default function AppChrome({
   const { isAdmin } = useRole()
   const pathname = usePathname()
   const links = NAV_BY_ROLE[role]
+  const navIcons = {
+    home: FiHome,
+    search: FiSearch,
+    chart: FiBarChart2,
+    calendar: FiCalendar,
+    users: FiUsers,
+    badge: FiShield,
+    user: FiUser,
+  }
 
   return (
     <div
@@ -24,10 +42,10 @@ export default function AppChrome({
       className="min-h-screen bg-[var(--c-bg)] text-[var(--c-ocean)]"
     >
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-[var(--c-border)]">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4 px-4 py-3">
-          <Link href={`/${role}/home`} className="relative w-32 h-7 block">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
+          <Link href={`/${role}/home`} className="relative block h-7 w-28 sm:w-32">
             <Image
-              src="/nadamas/logo-3.png"
+              src="/logo-nadamas.webp"
               fill
               priority
               style={{ objectFit: 'contain', objectPosition: 'left' }}
@@ -71,27 +89,29 @@ export default function AppChrome({
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 pb-24 pt-6">{children}</main>
+      <main className="max-w-5xl mx-auto px-2.5 pb-20 pt-4 sm:px-4 sm:pb-24 sm:pt-6">{children}</main>
 
       <nav
         aria-label="Navegación móvil"
-        className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-[var(--c-border)]"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--c-border)] bg-white/95 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-2 backdrop-blur md:hidden"
       >
-        <ul className="flex justify-around">
+        <ul className="mx-auto grid max-w-md grid-cols-5 px-2">
           {links.slice(0, 5).map((l) => {
             const active = pathname === l.href
+            const Icon = navIcons[l.icon]
             return (
               <li key={l.href}>
                 <Link
                   href={l.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`block px-3 py-3 text-xs font-semibold ${
+                  className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-1 text-[11px] font-semibold leading-none transition-colors ${
                     active
-                      ? 'text-[var(--c-ocean-mid)]'
+                      ? 'bg-[var(--c-surface)] text-[var(--c-ocean-mid)]'
                       : 'text-[var(--c-text-2)]'
                   }`}
                 >
-                  {l.label}
+                  <Icon aria-hidden="true" className="h-5 w-5" />
+                  <span className="whitespace-nowrap">{l.mobileLabel}</span>
                 </Link>
               </li>
             )

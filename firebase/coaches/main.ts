@@ -2,7 +2,11 @@ import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
 import { Dates } from 'firebase-dates-util'
 import { db } from '@/firebase/index'
 import { FirebaseCRUD } from '@/firebase/FirebaseCRUD'
-import type { CoachPublic, CoachPrivate } from './coach.model'
+import type {
+  CoachPublic,
+  CoachPrivate,
+  CoachIdentityVerification,
+} from './coach.model'
 import type {
   UpsertCoachPublicDto,
   UpsertCoachPrivateDto,
@@ -47,6 +51,18 @@ export class Coach {
       'number'
     )
     return setDoc(privateRef(uid), payload, { merge: true })
+  }
+
+  async reviewIdentity(
+    uid: string,
+    review: Pick<
+      CoachIdentityVerification,
+      'status' | 'reviewedAt' | 'reviewedBy' | 'adminNote'
+    >
+  ) {
+    return this.upsertPrivate(uid, {
+      identityVerification: review,
+    })
   }
 
   /**

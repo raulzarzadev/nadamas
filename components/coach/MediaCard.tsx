@@ -1,12 +1,49 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import PhotoGalleryInput from '@comps/Inputs/PhotoGalleryInput'
+import ProfileSection from './ProfileSection'
 import { CoachCRUD } from '@/firebase/coaches/main'
-import type { CoachPhoto } from '@/firebase/coaches/coach.model'
+import type {
+  CoachGalleryPhoto,
+  CoachPhoto,
+} from '@/firebase/coaches/coach.model'
+
+const MAX_GALLERY_PHOTOS = 20
+const PHOTO_TAGS = ['Yo', 'Lugares de trabajo', 'Logros y eventos', 'Mis clases']
 
 interface MediaValue {
+  galleryPhotos?: CoachGalleryPhoto[]
   facePhoto?: CoachPhoto
   workplacePhotos?: CoachPhoto[]
   achievementPhotos?: CoachPhoto[]
+}
+
+function toGallery(value: MediaValue): CoachGalleryPhoto[] {
+  if (value.galleryPhotos?.length) return value.galleryPhotos
+
+  return [
+    ...(value.facePhoto ? [{ ...value.facePhoto, label: 'Yo' }] : []),
+    ...(value.workplacePhotos || []).map((photo) => ({
+      ...photo,
+      label: 'Lugares de trabajo',
+    })),
+    ...(value.achievementPhotos || []).map((photo) => ({
+      ...photo,
+      label: 'Logros y eventos',
+    })),
+  ].slice(0, MAX_GALLERY_PHOTOS)
+}
+
+function toLegacyFields(galleryPhotos: CoachGalleryPhoto[]) {
+  return {
+    facePhoto: galleryPhotos.find((photo) => photo.label === 'Yo'),
+    workplacePhotos: galleryPhotos.filter(
+      (photo) => photo.label === 'Lugares de trabajo'
+    ),
+    achievementPhotos: galleryPhotos.filter(
+      (photo) => photo.label === 'Logros y eventos'
+    ),
+  }
 }
 
 export default function MediaCard({
@@ -20,170 +57,90 @@ export default function MediaCard({
   saving: boolean
   onSave: (v: MediaValue) => void
 }) {
-  const [draft, setDraft] = useState<MediaValue>(value || {})
-  const [busy, setBusy] = useState<string | null>(null)
+  const [galleryPhotos, setGalleryPhotos] = useState<CoachGalleryPhoto[]>(
+    toGallery(value || {})
+  )
+  const [pendingUploads, setPendingUploads] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  const upload = (file: File, apply: (url: string) => void, tag: string) => {
+  useEffect(() => {
+    setGalleryPhotos(toGallery(value || {}))
+  }, [
+    value.galleryPhotos,
+    value.facePhoto,
+    value.workplacePhotos,
+    value.achievementPhotos,
+  ])
+
+  const uploadFiles = (files: File[]) => {
+    const allowedFiles = files.slice(
+      0,
+      Math.max(MAX_GALLERY_PHOTOS - galleryPhotos.length, 0)
+    )
+    if (!allowedFiles.length) return
+
     setError(null)
-    setBusy(tag)
-    CoachCRUD.uploadAsset({ file, uid, scope: 'public' }, (p, url) => {
-      if (url) {
-        apply(url)
-        setBusy(null)
-      }
-    })
-    // Surface a hard failure if the upload never reports a URL.
-    setTimeout(() => {
-      setBusy((b) => {
-        if (b === tag) setError('No se pudo subir la imagen. Intenta de nuevo.')
-        return b === tag ? null : b
+    setPendingUploads((count) => count + allowedFiles.length)
+
+    allowedFiles.forEach((file) => {
+      let finished = false
+      CoachCRUD.uploadAsset({ file, uid, scope: 'public' }, (_, url) => {
+        if (!url || finished) return
+        finished = true
+        setGalleryPhotos((photos) => [
+          ...photos,
+          { url, label: '' },
+        ].slice(0, MAX_GALLERY_PHOTOS))
+        setPendingUploads((count) => Math.max(count - 1, 0))
       })
-    }, 30000)
+
+      setTimeout(() => {
+        if (finished) return
+        finished = true
+        setError('No se pudo subir una imagen. Intenta de nuevo.')
+        setPendingUploads((count) => Math.max(count - 1, 0))
+      }, 30000)
+    })
   }
 
-  return (
-    <section className="rounded-[var(--r-md)] bg-white border border-[var(--c-border)] shadow-[var(--shadow-sm)] p-6 flex flex-col gap-4">
-      <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">
-        Fotos
-      </h2>
-      {error && <p className="text-[var(--c-error,#b91c1c)] text-sm">{error}</p>}
+  const unlabeledCount = galleryPhotos.filter((photo) => !photo.label).length
 
-      <div className="flex flex-col gap-2">
-        <span className="label-text text-[var(--c-text-2)]">
-          Foto de tu cara
-        </span>
-        {draft.facePhoto?.url && (
-          <img
-            src={draft.facePhoto.url}
-            alt="Foto de cara"
-            className="w-24 h-24 object-cover rounded-full border border-[var(--c-border)]"
-          />
-        )}
-        <input
-          type="file"
-          accept="image/*"
-          disabled={busy === 'face'}
-          className="file-input file-input-bordered"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f)
-              upload(
-                f,
-                (url) => setDraft((d) => ({ ...d, facePhoto: { url } })),
-                'face'
-              )
-          }}
+  return (
+    <ProfileSection
+      title="Galería"
+      description="Sube hasta 20 fotos y etiqueta cada una para contar mejor quién eres, dónde enseñas y qué has construido."
+      summary={`${galleryPhotos.length}/20 fotos · ${unlabeledCount ? `${unlabeledCount} sin etiqueta` : 'todo etiquetado'}`}
+    >
+        {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
+
+        <PhotoGalleryInput
+          photos={galleryPhotos}
+          maxPhotos={MAX_GALLERY_PHOTOS}
+          uploading={pendingUploads > 0}
+          disabled={saving}
+          tagOptions={PHOTO_TAGS}
+          onFilesSelected={uploadFiles}
+          onChange={setGalleryPhotos}
         />
-      </div>
 
-      <MultiPhoto
-        label="Lugares de trabajo"
-        photos={draft.workplacePhotos || []}
-        busy={busy === 'workplace'}
-        onAdd={(f) =>
-          upload(
-            f,
-            (url) =>
-              setDraft((d) => ({
-                ...d,
-                workplacePhotos: [...(d.workplacePhotos || []), { url }],
-              })),
-            'workplace'
-          )
-        }
-        onRemove={(i) =>
-          setDraft((d) => ({
-            ...d,
-            workplacePhotos: (d.workplacePhotos || []).filter(
-              (_, idx) => idx !== i
-            ),
-          }))
-        }
-      />
+        <div className="flex flex-col gap-3 border-t border-[var(--c-border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-[var(--c-text-2)]">
+            {unlabeledCount > 0
+              ? `Falta etiquetar ${unlabeledCount} ${unlabeledCount === 1 ? 'foto' : 'fotos'}.`
+              : 'Cada foto ya tiene contexto para mostrarse mejor en tu perfil.'}
+          </p>
 
-      <MultiPhoto
-        label="Logros"
-        photos={draft.achievementPhotos || []}
-        busy={busy === 'achievement'}
-        onAdd={(f) =>
-          upload(
-            f,
-            (url) =>
-              setDraft((d) => ({
-                ...d,
-                achievementPhotos: [...(d.achievementPhotos || []), { url }],
-              })),
-            'achievement'
-          )
-        }
-        onRemove={(i) =>
-          setDraft((d) => ({
-            ...d,
-            achievementPhotos: (d.achievementPhotos || []).filter(
-              (_, idx) => idx !== i
-            ),
-          }))
-        }
-      />
-
-      <button
-        type="button"
-        disabled={saving || !!busy}
-        onClick={() => onSave(draft)}
-        className="btn btn-primary self-start disabled:opacity-50"
-      >
-        {saving ? 'Guardando…' : 'Guardar fotos'}
-      </button>
-    </section>
-  )
-}
-
-function MultiPhoto({
-  label,
-  photos,
-  busy,
-  onAdd,
-  onRemove,
-}: {
-  label: string
-  photos: CoachPhoto[]
-  busy: boolean
-  onAdd: (f: File) => void
-  onRemove: (i: number) => void
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="label-text text-[var(--c-text-2)]">{label}</span>
-      <div className="flex flex-wrap gap-2">
-        {photos.map((p, i) => (
-          <div key={p.url + i} className="relative">
-            <img
-              src={p.url}
-              alt={label}
-              className="w-20 h-20 object-cover rounded-[var(--r-sm)] border border-[var(--c-border)]"
-            />
-            <button
-              type="button"
-              aria-label={`Quitar ${label} ${i + 1}`}
-              onClick={() => onRemove(i)}
-              className="absolute -top-2 -right-2 bg-[var(--c-ocean)] text-white rounded-full w-5 h-5 text-xs"
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
-      <input
-        type="file"
-        accept="image/*"
-        disabled={busy}
-        className="file-input file-input-bordered"
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) onAdd(f)
-        }}
-      />
-    </div>
+          <button
+            type="button"
+            disabled={saving || pendingUploads > 0 || unlabeledCount > 0}
+            onClick={() =>
+              onSave({ galleryPhotos, ...toLegacyFields(galleryPhotos) })
+            }
+            className="btn btn-primary min-w-36 self-start disabled:opacity-50 sm:self-auto"
+          >
+            {saving ? 'Guardando…' : 'Guardar galería'}
+          </button>
+        </div>
+    </ProfileSection>
   )
 }
