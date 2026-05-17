@@ -1,0 +1,125 @@
+/* nadamas.app — marketing surface design tokens (DESIGN.md, Committed strategy)
+   No #000 / #fff: brief neutrals are already brand-tinted. Light theme only. */
+
+.marketing {
+  /* palette */
+  --c-ocean: #0a2540;
+  --c-ocean-mid: #0077b6;
+  --c-aqua: #00b4d8;
+  --c-aqua-light: #90e0ef;
+  --c-bg: #f8fafc;
+  --c-surface: #eaf7fb;
+  --c-text-2: #4b5563;
+  --c-border: #d6eaf0;
+
+  /* identity gradient — backdrop / glow / frame / seam ONLY, never text */
+  --grad-brand: linear-gradient(135deg, #0a2540 0%, #0077b6 45%, #00b4d8 100%);
+  --grad-soft: linear-gradient(
+    160deg,
+    oklch(0.98 0.005 240) 0%,
+    oklch(0.96 0.015 220) 60%,
+    oklch(0.93 0.03 215) 100%
+  );
+
+  /* motion — ease-out-expo / quint, no bounce */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* soft, low, wide shadows — never hard */
+  --shadow-sm: 0 2px 12px -4px oklch(0.23 0.05 250 / 0.08);
+  --shadow-md: 0 18px 48px -24px oklch(0.23 0.05 250 / 0.18);
+  --shadow-lg: 0 40px 90px -40px oklch(0.23 0.05 250 / 0.28);
+  --shadow-aqua: 0 26px 70px -28px oklch(0.72 0.13 220 / 0.45);
+
+  /* generous rounded geometry */
+  --r-sm: 14px;
+  --r-md: 22px;
+  --r-lg: 34px;
+  --r-xl: 48px;
+
+  background: var(--c-bg);
+  color: var(--c-ocean);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* editorial type rhythm — display echoes the lowercase rounded wordmark */
+.marketing {
+  --font-display: ui-rounded, "SF Pro Rounded", "Geist", "Bricolage Grotesque",
+    "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-body: "Geist", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-body);
+}
+
+.marketing h1,
+.marketing h2,
+.marketing h3,
+.marketing .display {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
+  line-height: 1.04;
+  color: var(--c-ocean);
+}
+
+.marketing ::selection {
+  background: var(--c-aqua-light);
+  color: var(--c-ocean);
+}
+
+/* scroll-driven reveal — water-flow feel, transform/opacity only */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  animation: reveal-flow linear both;
+  animation-timeline: view();
+  animation-range: entry 0% cover 32%;
+}
+
+@keyframes reveal-flow {
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* drift used for the ribbon motif (decorative, slow, non-layout) */
+@keyframes ribbon-drift {
+  0% {
+    transform: translate3d(-2%, 0, 0) scaleY(1);
+  }
+  50% {
+    transform: translate3d(2%, -1.5%, 0) scaleY(1.04);
+  }
+  100% {
+    transform: translate3d(-2%, 0, 0) scaleY(1);
+  }
+}
+
+.ribbon-drift {
+  animation: ribbon-drift 22s var(--ease-quint) infinite;
+  will-change: transform;
+}
+
+/* fallback for engines without scroll-driven timelines:
+   reveal still ends visible (animation-fill-mode both already shows final
+   frame when timeline unsupported in modern engines; ensure no hidden FOUC) */
+@supports not (animation-timeline: view()) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketing *,
+  .marketing *::before,
+  .marketing *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .marketing .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
