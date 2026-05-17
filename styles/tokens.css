@@ -1,0 +1,28 @@
+/* nadamas — shared brand tokens (mirrors components/marketing/marketing-theme.css
+   palette). App-wide. Light theme only, no #000/#fff. */
+:root {
+  --c-ocean: #0a2540;
+  --c-ocean-mid: #0077b6;
+  --c-aqua: #00b4d8;
+  --c-aqua-strong: #0077a8;
+  --c-aqua-light: #90e0ef;
+  --c-bg: #f8fafc;
+  --c-surface: #eaf7fb;
+  --c-text-2: #4b5563;
+  --c-border: #d6eaf0;
+
+  --grad-brand: linear-gradient(135deg, #0a2540 0%, #0077b6 45%, #00b4d8 100%);
+
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --shadow-sm: 0 2px 12px -4px oklch(0.23 0.05 250 / 0.08);
+  --shadow-md: 0 18px 48px -24px oklch(0.23 0.05 250 / 0.18);
+  --shadow-lg: 0 40px 90px -40px oklch(0.23 0.05 250 / 0.28);
+  --shadow-aqua: 0 26px 70px -28px oklch(0.72 0.13 220 / 0.45);
+
+  --r-sm: 14px;
+  --r-md: 22px;
+  --r-lg: 34px;
+  --r-xl: 48px;
+}

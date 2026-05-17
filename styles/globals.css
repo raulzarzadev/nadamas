@@ -1,3 +1,31 @@
 @import "tailwindcss";
+@import "./tokens.css";
 @plugin "@tailwindcss/typography";
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: nadamas --default;
+}
+@plugin "daisyui/theme" {
+  name: "nadamas";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #eaf7fb;
+  --color-base-300: #d6eaf0;
+  --color-base-content: #0a2540;
+  --color-primary: #0077b6;
+  --color-primary-content: #ffffff;
+  --color-secondary: #0a2540;
+  --color-secondary-content: #ffffff;
+  --color-accent: #0077a8;
+  --color-accent-content: #ffffff;
+  --color-neutral: #4b5563;
+  --color-neutral-content: #ffffff;
+  --color-info: #0077b6;
+  --color-success: #0a7d4b;
+  --color-warning: #b45309;
+  --color-error: #b91c1c;
+  --radius-selector: 14px;
+  --radius-field: 14px;
+  --radius-box: 22px;
+}
