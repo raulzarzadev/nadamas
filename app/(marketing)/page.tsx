@@ -10,6 +10,7 @@ import Faq from '@comps/marketing/faq'
 import FinalCta from '@comps/marketing/final-cta'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://nadamas.app'),
   title: 'nadamas.app · Encuentra y reserva tu coach de natación',
   description:
     'Descubre coaches de natación verificados, reserva en minutos y mejora tu técnica. Aguas abiertas, triatlón, principiantes y más.',

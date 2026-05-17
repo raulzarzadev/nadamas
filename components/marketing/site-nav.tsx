@@ -135,9 +135,7 @@ export default function SiteNav() {
           maxHeight: open ? '420px' : '0',
           opacity: open ? 1 : 0,
           transition: 'max-height 460ms var(--ease-expo), opacity 320ms var(--ease-expo)',
-          background: 'color-mix(in oklch, var(--c-bg) 94%, transparent)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
+          background: 'var(--c-bg)',
           borderBottom: open ? '1px solid var(--c-border)' : '1px solid transparent',
         }}
       >
