@@ -17,7 +17,7 @@ export default function EventView({ event }: { event: EventDoc & { userId?: stri
   const onDelete = async () => {
     if (!confirm('¿Eliminar este evento?')) return
     await deleteEvent(event.id)
-    router.push('/dashboard/events')
+    router.push('/athlete/progress')
   }
 
   return (
@@ -49,7 +49,7 @@ export default function EventView({ event }: { event: EventDoc & { userId?: stri
         <div className="flex gap-2 pt-2">
           <Link
             className="btn btn-sm"
-            href={`/dashboard/events/${event.id}/edit`}
+            href={`/athlete/progress/${event.id}/edit`}
           >
             Editar
           </Link>

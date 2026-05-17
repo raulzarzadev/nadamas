@@ -46,7 +46,7 @@ export default function EventForm({ event }: { event?: EventDoc }) {
     })
     setSaving(false)
     if (res?.ok) {
-      router.push('/dashboard/events')
+      router.push('/athlete/progress')
     } else {
       setError('No se pudo guardar el evento')
     }
