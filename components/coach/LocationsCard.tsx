@@ -5,6 +5,10 @@ import { FiMapPin, FiPlus, FiTrash2 } from 'react-icons/fi'
 import ImageInput from '@comps/Inputs/ImageInput'
 import ProfileSection from './ProfileSection'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
+import {
+  GENERIC_USER_ERROR,
+  reportInternalError,
+} from '@/lib/user-facing-error'
 import type {
   CoachGalleryPhoto,
   CoachTeachingLocation,
@@ -59,11 +63,8 @@ export default function LocationsCard({
     try {
       uploadFile = (await optimizeImageForUpload(file)).file
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : 'No se pudo preparar la imagen.'
-      )
+      reportInternalError('LOCATION_IMAGE_PREPARE', uploadError)
+      setError(GENERIC_USER_ERROR)
       setBusyLocationId(null)
       return
     }

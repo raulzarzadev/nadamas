@@ -4,6 +4,10 @@ import PhotoGalleryInput from '@comps/Inputs/PhotoGalleryInput'
 import ProfileSection from './ProfileSection'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
+import {
+  GENERIC_USER_ERROR,
+  reportInternalError,
+} from '@/lib/user-facing-error'
 import type {
   CoachGalleryPhoto,
   CoachPhoto,
@@ -91,11 +95,8 @@ export default function MediaCard({
         uploadFile = (await optimizeImageForUpload(file)).file
       } catch (uploadError) {
         finished = true
-        setError(
-          uploadError instanceof Error
-            ? uploadError.message
-            : 'No se pudo preparar una imagen.'
-        )
+        reportInternalError('GALLERY_PREPARE', uploadError)
+        setError(GENERIC_USER_ERROR)
         setPendingUploads((count) => Math.max(count - 1, 0))
         return
       }

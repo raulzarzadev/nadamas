@@ -4,6 +4,10 @@ import { CoachCRUD } from '@/firebase/coaches/main'
 import ImageInput from '@comps/Inputs/ImageInput'
 import ProfileSection from './ProfileSection'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
+import {
+  GENERIC_USER_ERROR,
+  reportInternalError,
+} from '@/lib/user-facing-error'
 import type {
   CoachDocument,
   CoachIdentityVerification,
@@ -51,11 +55,8 @@ export default function PrivateCard({
     try {
       uploadFile = (await optimizeImageForUpload(file)).file
     } catch (uploadError) {
-      setError(
-        uploadError instanceof Error
-          ? uploadError.message
-          : 'No se pudo preparar la imagen.'
-      )
+      reportInternalError('INE_PREPARE', uploadError)
+      setError(GENERIC_USER_ERROR)
       setBusy(false)
       return
     }

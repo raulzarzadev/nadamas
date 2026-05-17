@@ -3,6 +3,10 @@
 import { FormEvent, useState } from 'react'
 import { signInWithCustomToken } from 'firebase/auth'
 import { auth } from '@/firebase'
+import {
+  GENERIC_USER_ERROR,
+  reportInternalError,
+} from '@/lib/user-facing-error'
 
 export default function OtpLogin({ disabled }: { disabled: boolean }) {
   const [email, setEmail] = useState('')
@@ -54,12 +58,9 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
       }
       await signInWithCustomToken(auth, payload.customToken)
     } catch (error) {
+      reportInternalError('OTP_LOGIN', error)
       setHasError(true)
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : 'No pudimos iniciar sesión. Intenta de nuevo.'
-      )
+      setMessage(GENERIC_USER_ERROR)
     } finally {
       setBusy(false)
     }

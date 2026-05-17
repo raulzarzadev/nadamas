@@ -24,6 +24,7 @@ pnpm test:e2e     # playwright test
 - Optional analytics env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (US cloud default). Empty key = PostHog no-ops, no errors.
 - OTP/email env: `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, optional `BREVO_SENDER_NAME`, `OTP_SECRET`, and `FIREBASE_SERVICE_ACCOUNT` (JSON string for server-side Firebase Admin on Vercel).
 - Formatting + linting standard: use **Biome** only. Do not add ESLint or Prettier back unless the user explicitly asks.
+- User-facing error standard: never expose raw technical errors, provider messages, stack traces, or `error.message` directly in UI. Show a calm Spanish message such as `Ups, algo salió mal. Inténtalo de nuevo más tarde.` and log the real error internally with a short traceable code (use `lib/user-facing-error.ts` when possible).
 
 ## Conventions (from README)
 

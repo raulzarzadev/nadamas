@@ -23,6 +23,7 @@ pnpm test:e2e     # playwright test
 - Requires env var `NEXT_PUBLIC_FIREBASE_CONFIG` — a JSON string parsed in `firebase/index.js`. App fails at import without it.
 - Optional analytics env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (US cloud default). Empty key = PostHog no-ops, no errors.
 - Formatting + linting standard: use **Biome** only. Do not add ESLint or Prettier back unless the user explicitly asks.
+- User-facing error standard: never expose raw technical errors, provider messages, stack traces, or `error.message` directly in UI. Show a calm Spanish message such as `Ups, algo salió mal. Inténtalo de nuevo más tarde.` and log the real error internally with a short traceable code (use `lib/user-facing-error.ts` when possible).
 
 ## Conventions (from README)
 
