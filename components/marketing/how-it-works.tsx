@@ -81,7 +81,7 @@ function Track({
                   background: isCoach
                     ? 'color-mix(in oklch, var(--c-aqua) 18%, transparent)'
                     : 'var(--c-bg)',
-                  color: isCoach ? 'var(--c-aqua-light)' : 'var(--c-aqua)',
+                  color: 'var(--c-aqua-strong)',
                 }}
               >
                 {s.n}

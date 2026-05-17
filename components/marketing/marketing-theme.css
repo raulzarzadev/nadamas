@@ -6,6 +6,9 @@
   --c-ocean: #0a2540;
   --c-ocean-mid: #0077b6;
   --c-aqua: #00b4d8;
+  /* AA-safe aqua: white text on this is >=4.5:1. Use for CTA backgrounds
+     and any aqua-colored TEXT. Bright --c-aqua is decorative/non-text only. */
+  --c-aqua-strong: #0077a8;
   --c-aqua-light: #90e0ef;
   --c-bg: #f8fafc;
   --c-surface: #eaf7fb;
@@ -66,13 +69,22 @@
   color: var(--c-ocean);
 }
 
-/* scroll-driven reveal — water-flow feel, transform/opacity only */
+/* scroll-driven reveal — water-flow feel, transform/opacity only.
+   Opt-IN: default is fully visible so crawlers, social-preview bots,
+   no-JS, pre-scroll, and engines without scroll-timeline never see a
+   blank section. Hidden + animated ONLY where view() timelines work. */
 .reveal {
-  opacity: 0;
-  transform: translate3d(0, 28px, 0);
-  animation: reveal-flow linear both;
-  animation-timeline: view();
-  animation-range: entry 0% cover 32%;
+  opacity: 1;
+}
+
+@supports (animation-timeline: view()) {
+  .reveal {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+    animation: reveal-flow linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 32%;
+  }
 }
 
 @keyframes reveal-flow {
@@ -98,17 +110,6 @@
 .ribbon-drift {
   animation: ribbon-drift 22s var(--ease-quint) infinite;
   will-change: transform;
-}
-
-/* fallback for engines without scroll-driven timelines:
-   reveal still ends visible (animation-fill-mode both already shows final
-   frame when timeline unsupported in modern engines; ensure no hidden FOUC) */
-@supports not (animation-timeline: view()) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    animation: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

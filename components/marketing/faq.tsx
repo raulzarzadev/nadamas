@@ -50,7 +50,7 @@ export default function Faq() {
                 <span
                   aria-hidden
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform duration-300 group-open:rotate-45"
-                  style={{ background: 'var(--c-surface)', color: 'var(--c-aqua)' }}
+                  style={{ background: 'var(--c-surface)', color: 'var(--c-aqua-strong)' }}
                 >
                   <svg
                     viewBox="0 0 20 20"

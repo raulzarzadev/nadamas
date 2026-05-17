@@ -13,7 +13,15 @@ const COLUMNS = [
     title: 'Coaches',
     links: [
       { label: 'Publicar mi perfil', href: '#para-coaches' },
-      { label: 'Por qué nadamas', href: '#para-coaches' },
+      { label: 'Cómo verificamos', href: '/como-verificamos' },
+    ],
+  },
+  {
+    title: 'Legal',
+    links: [
+      { label: 'Privacidad', href: '/privacidad' },
+      { label: 'Términos', href: '/terminos' },
+      { label: 'Contacto', href: '/contacto' },
     ],
   },
 ]
@@ -25,7 +33,7 @@ export default function SiteFooter() {
       style={{ borderTop: '1px solid var(--c-border)', background: 'var(--c-surface)' }}
     >
       <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1.6fr_1fr_1fr]">
+        <div className="grid gap-12 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
           <div className="max-w-[34ch]">
             <Image
               src="/logo-nadamas.webp"

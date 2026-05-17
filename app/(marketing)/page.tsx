@@ -64,12 +64,67 @@ const jsonLd = {
       '@id': 'https://nadamas.app/#org',
       name: 'nadamas.app',
       url: 'https://nadamas.app',
+      description:
+        'Marketplace para encontrar y reservar coaches de natación verificados: clases privadas o de grupo, en piscina o aguas abiertas.',
       logo: {
         '@type': 'ImageObject',
         url: 'https://nadamas.app/icons/icon_x512.png',
         width: 512,
         height: 512,
       },
+    },
+    {
+      '@type': ['WebPage', 'FAQPage'],
+      '@id': 'https://nadamas.app/#webpage',
+      url: 'https://nadamas.app/',
+      name: 'nadamas.app · Encuentra y reserva tu coach de natación',
+      description:
+        'Descubre coaches de natación verificados, reserva en minutos y mejora tu técnica.',
+      inLanguage: 'es',
+      isPartOf: { '@id': 'https://nadamas.app/#website' },
+      about: { '@id': 'https://nadamas.app/#org' },
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: '¿Cómo pago una clase?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Pagas dentro de la app al confirmar tu reserva. El cobro se libera al coach cuando la clase queda confirmada, así no hay transferencias sueltas ni cobros pendientes.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Puedo cancelar una reserva?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Sí. Cada coach define su ventana de cancelación y la verás antes de reservar. Si cancelas dentro de ese plazo, se gestiona la devolución automáticamente.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Cómo me hago coach?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Creas tu perfil, añades especialidades, horarios y precios, y nuestro equipo lo revisa a mano antes de publicarlo. Cuando está aprobado, los nadadores ya pueden reservarte.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Qué tipos de clase hay?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Clases privadas uno a uno y clases de grupo reducido. Cada coach decide qué ofrece, en piscina o aguas abiertas, y con qué enfoque: técnica, triatlón, principiantes o niños.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Las clases son privadas?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Pueden serlo. Filtras por clases privadas si quieres atención individual, o eliges grupos pequeños si prefieres entrenar acompañado y a mejor precio.',
+          },
+        },
+      ],
     },
   ],
 }

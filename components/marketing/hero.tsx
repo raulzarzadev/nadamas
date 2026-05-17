@@ -65,7 +65,7 @@ export default function Hero() {
               href="#coaches"
               className="inline-flex items-center justify-center rounded-full px-7 py-4 text-base font-semibold text-white"
               style={{
-                background: 'var(--c-aqua)',
+                background: 'var(--c-aqua-strong)',
                 boxShadow: 'var(--shadow-aqua)',
                 transition: 'transform 300ms var(--ease-expo)',
               }}

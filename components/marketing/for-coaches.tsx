@@ -39,7 +39,7 @@ export default function ForCoaches() {
             <a
               href="/login"
               className="mt-8 inline-flex items-center justify-center rounded-full px-7 py-4 text-base font-semibold text-white"
-              style={{ background: 'var(--c-aqua)', boxShadow: 'var(--shadow-aqua)' }}
+              style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
             >
               Publicar mi perfil
             </a>

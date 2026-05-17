@@ -78,7 +78,7 @@ export default function SiteNav() {
             href="#coaches"
             className="rounded-full px-5 py-2.5 text-[0.92rem] font-semibold text-white"
             style={{
-              background: 'var(--c-aqua)',
+              background: 'var(--c-aqua-strong)',
               boxShadow: 'var(--shadow-aqua)',
               transition: 'transform 280ms var(--ease-expo), filter 280ms var(--ease-expo)',
             }}
@@ -158,7 +158,7 @@ export default function SiteNav() {
               href="#coaches"
               onClick={() => setOpen(false)}
               className="block rounded-full px-5 py-3 text-center text-base font-semibold text-white"
-              style={{ background: 'var(--c-aqua)', boxShadow: 'var(--shadow-aqua)' }}
+              style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
             >
               Encontrar coach
             </a>
