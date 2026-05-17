@@ -62,6 +62,7 @@ Each domain wraps a private `FirebaseCRUD` instance in a thin class exported as 
 Older non-class helpers still exist as loose JS in `firebase/*.js` (`teams.js`, `events.js`, `users.js`, `results.js`, etc.) and `base.crud.ts`/`base.modal.ts` interfaces — these predate the `FirebaseCRUD` class. Prefer the class-based `firebase/<domain>/main.ts` pattern for new work.
 
 Known gotcha: `firebase/athletes/main.ts` instantiates the collection as `'atheltes'` (misspelled). Match existing data before "fixing" it.
+- Coach profiles: `coaches/{uid}` (public, athlete-readable) + `coaches/{uid}/private/profile` subdoc (admin/owner only — IDs, certifications, private contacts). `firebase/coaches/main.ts` exports `CoachCRUD` (setDoc-merge by uid, not addDoc). Skills schema = `CONSTANTS/COACH_SKILLS.js`; score weights = `CONSTANTS/COACH_SCORE.js`; `lib/coach-score.ts` computes `autoScore` (recomputed client-side on every save, stored on the public doc). `effectiveScore = verification.adminScoreOverride ?? verification.autoScore`. **`verification.status` and `verification.adminScoreOverride` are set manually in Firestore — no admin UI (same convention as the manual admin-role grant).** True private-data enforcement requires Firestore/Storage security rules configured in the Firebase console (out of repo).
 
 ### Path aliases (tsconfig.json)
 
