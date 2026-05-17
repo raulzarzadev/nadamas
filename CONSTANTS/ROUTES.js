@@ -5,13 +5,13 @@ export const ROUTES = {
     name: 'PROFILE',
     label: 'Perfil',
     icon: 'user',
-    href: '/profile'
+    href: '/dashboard/profile'
   },
   EVENTS: {
     name: 'EVENTS',
     label: 'Eventos',
     icon: 'events',
-    href: '/events'
+    href: '/dashboard/events'
   },
   TEAMS: {
     name: 'TEAMS',

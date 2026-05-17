@@ -46,7 +46,7 @@ export default function EventForm({ event }: { event?: EventDoc }) {
     })
     setSaving(false)
     if (res?.ok) {
-      router.push('/events')
+      router.push('/dashboard/events')
     } else {
       setError('No se pudo guardar el evento')
     }

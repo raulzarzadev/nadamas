@@ -10,7 +10,7 @@ export default function BottomNav() {
   const router = useRouter()
   const pathname = usePathname()
   const { user } = useUser()
-  const home = pathname === '/profile'
+  const home = pathname === '/dashboard/profile'
   const handleBack = () => {
     router.back()
   }
@@ -42,7 +42,7 @@ export default function BottomNav() {
             </Link>
           )}
           {!home && (
-            <Link href="/profile">
+            <Link href="/dashboard/profile">
               <ButtonIcon iconName={'home'} />
             </Link>
           )}
