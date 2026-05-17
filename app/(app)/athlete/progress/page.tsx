@@ -23,7 +23,7 @@ export default function EventsPage() {
   if (!user) return null
 
   return (
-    <div className="py-6 max-w-md mx-auto flex flex-col gap-4 text-base-content">
+    <div className="py-6 max-w-md mx-auto flex flex-col gap-4 text-[var(--c-ocean)]">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Mi progreso</h1>
         <Link className="btn btn-primary btn-sm" href="/athlete/progress/new">
@@ -31,9 +31,9 @@ export default function EventsPage() {
         </Link>
       </header>
 
-      {events === null && <p className="opacity-60">Cargando…</p>}
+      {events === null && <p className="text-[var(--c-text-2)]">Cargando…</p>}
       {events?.length === 0 && (
-        <p className="opacity-60">Aún no tienes eventos.</p>
+        <p className="text-[var(--c-text-2)]">Aún no tienes eventos.</p>
       )}
 
       <ul className="flex flex-col gap-2">
@@ -41,11 +41,11 @@ export default function EventsPage() {
           <li key={ev.id}>
             <Link
               href={`/athlete/progress/${ev.id}`}
-              className="card bg-base-200 p-4 block hover:bg-base-300 transition-colors"
+              className="rounded-[var(--r-md)] bg-white border border-[var(--c-border)] p-4 block hover:shadow-[var(--shadow-sm)] transition-shadow"
             >
               <span className="font-semibold">{ev.title}</span>
               {ev.date && (
-                <span className="block text-sm opacity-70">
+                <span className="block text-sm text-[var(--c-text-2)]">
                   {new Date(ev.date).toLocaleDateString('es-MX')}
                 </span>
               )}

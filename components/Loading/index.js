@@ -7,7 +7,7 @@ export default function Loading({ size = 'sm' }) {
   return (
     <div className="flex justify-center items-center">
       <div
-        className={`${sizing[size]}  rounded-full border-t-0 border-b-0  border-r-0 animate-spin`}
+        className={`${sizing[size]} rounded-full border-[var(--c-aqua-strong)] border-t-0 border-b-0 border-r-0 animate-spin`}
       ></div>
     </div>
   )

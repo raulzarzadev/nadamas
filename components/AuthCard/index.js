@@ -11,19 +11,19 @@ export default function AuthCard() {
   const isValid = !!form?.privacity
 
   return (
-    <div className="w-full max-w-sm p-6 m-auto    dark:bg-secondary-dark text-dark dark:text-light rounded-md shadow-md ">
+    <div className="w-full max-w-sm p-6 m-auto rounded-md shadow-md ">
       <h1 className="text-3xl font-semibold text-center  ">
         Ingresa
       </h1>
 
       <div className="flex items-center flex-col justify-between mt-4">
-        <span className="w-1/5 border-b border-dark dark:border-dark lg:w-1/5"></span>
+        <span className="w-1/5 border-b border-dark lg:w-1/5"></span>
 
         <div className="text-xs text-center uppercase hover:underline">
           Registro a la version beta completamente gratis
         </div>
 
-        <div className="flex items-center my-4  dark:bg-secondary-dark rounded-lg shadow-lg">
+        <div className="flex items-center my-4 rounded-lg shadow-lg">
           <div className=" text-sm ">
             {/*   <p className="m-2">
               Marca la casilla si estás de acuerdo con el manejo de tu
@@ -74,7 +74,7 @@ export default function AuthCard() {
             Acepar y continuar
           </label>
         </div>
-        <span className="w-1/5 border-b dark:border-light lg:w-1/5"></span>
+        <span className="w-1/5 border-b lg:w-1/5"></span>
       </div>
 
       <SocialMediaLogin disabled={!isValid} />

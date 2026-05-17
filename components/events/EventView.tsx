@@ -21,7 +21,7 @@ export default function EventView({ event }: { event: EventDoc & { userId?: stri
   }
 
   return (
-    <article className="max-w-md mx-auto flex flex-col gap-3 text-base-content">
+    <article className="max-w-md mx-auto flex flex-col gap-3 text-[var(--c-ocean)]">
       <header className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">{event.title}</h1>
         {status && (
@@ -30,7 +30,7 @@ export default function EventView({ event }: { event: EventDoc & { userId?: stri
       </header>
 
       {event.date && (
-        <p className="opacity-80">
+        <p className="text-[var(--c-text-2)]">
           {new Date(event.date).toLocaleDateString('es-MX', {
             dateStyle: 'long',
           })}
@@ -42,7 +42,7 @@ export default function EventView({ event }: { event: EventDoc & { userId?: stri
       )}
 
       {!event.publicEvent && (
-        <span className="text-xs opacity-60">Privado</span>
+        <span className="text-xs text-[var(--c-text-2)]">Privado</span>
       )}
 
       {isOwner && (
