@@ -12,7 +12,7 @@ const SWIMMER = [
   {
     n: '03',
     title: 'Entrena y mejora',
-    body: 'Llegas a tu clase, entrenas con un profesional y sigues tu progreso sesión a sesión.',
+    body: 'Entrenas con un profesional y tu progreso te sigue: si cambias de coach, no empiezas de cero.',
   },
 ]
 

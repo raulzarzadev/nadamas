@@ -82,7 +82,7 @@ function Meta({ c, light }: { c: Coach; light?: boolean }) {
           {c.specialty}
         </span>
         <span className="text-[0.78rem] font-medium" style={{ color: sub }}>
-          {c.rating} ({c.reviews})
+          Evaluado · {c.rating} ({c.reviews})
         </span>
       </div>
       <p className="mt-3 text-lg font-bold" style={{ color: main }}>
@@ -117,8 +117,9 @@ export default function MarketplacePreview() {
             Coaches para tu objetivo
           </h2>
           <p className="mt-4 text-lg" style={{ color: 'var(--c-text-2)' }}>
-            Una muestra de los perfiles que verás. Cada uno con especialidad,
-            reseñas y disponibilidad clara.
+            Una muestra de los perfiles que verás. Cada coach pasa una
+            evaluación práctica y teórica, describe sus habilidades y suma las
+            valoraciones de quienes ya entrenaron con él.
           </p>
         </div>
         <a

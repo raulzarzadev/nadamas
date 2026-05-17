@@ -78,11 +78,12 @@ export default function Features() {
             <Wave />
           </span>
           <h3 className="mt-5 text-xl font-bold" style={{ color: 'var(--c-ocean)' }}>
-            Coaches verificados
+            Coaches evaluados de verdad
           </h3>
           <p className="mt-3 text-[0.97rem] leading-relaxed" style={{ color: 'var(--c-text-2)' }}>
-            Cada perfil se revisa a mano antes de publicarse. Experiencia real,
-            reseñas reales.
+            Evaluación práctica y teórica antes de publicar. Cada perfil
+            describe sus habilidades y cualidades, y puedes leer las
+            valoraciones de otros nadadores.
           </p>
         </div>
 
@@ -114,8 +115,8 @@ export default function Features() {
               d: 'Cada clase suma a tu historial: distancias, tiempos, notas del coach.',
             },
             {
-              t: 'Historial siempre contigo',
-              d: 'Tus clases pasadas y próximas, ordenadas en un solo lugar.',
+              t: 'Tu progreso es tuyo',
+              d: 'Tu historial y preferencias viajan contigo. Tú decides qué compartir con cada coach, sin empezar de cero.',
             },
           ].map((f) => (
             <div

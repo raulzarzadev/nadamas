@@ -56,6 +56,21 @@ If it could be guessed as "swimming app → aqua + waves", it has failed.
 - The product shown is partly aspirational (marketplace). Acceptable: the
   landing validates demand. Keep claims honest, copy concrete.
 
+## Product pillars (core differentiators, must surface in copy)
+
+1. **Portable progress.** Your trainings, preferences, and full history
+   belong to you and travel with you. You decide whether to share them, and
+   exactly what, with your next coach. You never start from zero with a new
+   instructor. (Swimmer trust + retention angle. Surface in Features and the
+   swimmer narrative.)
+2. **Vetted, transparent coaches.** Coaches are evaluated both practically
+   and theoretically. Each profile shows a clear description of their skills
+   and qualities so you know what kind of professional you are booking. You
+   can also rate coaches and read other swimmers' evaluations of a coach.
+   (Trust/quality angle. Surface in Marketplace preview, Features, and the
+   trust/social-proof framing. Honest: "evaluados" = vetted, not fake
+   metrics.)
+
 ## Logo
 
 `/Users/zarza/Desktop/logo-nadamas.png` (to be moved into `public/`).

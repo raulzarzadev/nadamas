@@ -33,6 +33,8 @@ export default function ForCoaches() {
             >
               Si ya das clases, sabes lo que cuesta llenar la agenda y cobrar a
               tiempo. nadamas convierte ese caos en un perfil que trabaja por ti.
+              Y pasar la evaluación práctica y teórica te da una credibilidad
+              que un anuncio suelto no consigue.
             </p>
             <a
               href="/login"
