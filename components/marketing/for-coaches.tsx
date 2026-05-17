@@ -35,7 +35,7 @@ export default function ForCoaches() {
               tiempo. nadamas convierte ese caos en un perfil que trabaja por ti.
             </p>
             <a
-              href="#para-coaches"
+              href="/login"
               className="mt-8 inline-flex items-center justify-center rounded-full px-7 py-4 text-base font-semibold text-white"
               style={{ background: 'var(--c-aqua)', boxShadow: 'var(--shadow-aqua)' }}
             >

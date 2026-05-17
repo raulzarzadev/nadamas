@@ -28,9 +28,9 @@ export default function SocialProof() {
 
         <div className="flex items-center gap-4">
           <div className="flex -space-x-3.5">
-            {FACES.map((src, i) => (
+            {FACES.map((src) => (
               <span
-                key={i}
+                key={src}
                 className="relative inline-block h-12 w-12 overflow-hidden rounded-full"
                 style={{ border: '2.5px solid var(--c-bg)', boxShadow: 'var(--shadow-sm)' }}
               >

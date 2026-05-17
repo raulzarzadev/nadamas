@@ -29,7 +29,9 @@ export const metadata: Metadata = {
     url: 'https://nadamas.app/',
     siteName: 'nadamas.app',
     locale: 'es_ES',
-    images: ['/logo-nadamas.png'],
+    images: [
+      { url: '/logo-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' },
+    ],
     type: 'website',
   },
   twitter: {
@@ -37,7 +39,9 @@ export const metadata: Metadata = {
     title: 'nadamas.app · Tu próximo coach de natación, a un toque',
     description:
       'Coaches verificados, reserva en minutos, paga en la app.',
-    images: ['/logo-nadamas.png'],
+    images: [
+      { url: '/logo-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' },
+    ],
   },
   alternates: { canonical: 'https://nadamas.app/' },
 }
@@ -50,11 +54,6 @@ const jsonLd = {
   description:
     'Marketplace premium para encontrar y reservar coaches de natación.',
   inLanguage: 'es',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: 'https://nadamas.app/?q={search_term_string}',
-    'query-input': 'required name=search_term_string',
-  },
 }
 
 export default function LandingPage() {

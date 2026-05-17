@@ -16,13 +16,6 @@ const COLUMNS = [
       { label: 'Por qué nadamas', href: '#para-coaches' },
     ],
   },
-  {
-    title: 'Legal',
-    links: [
-      { label: 'Privacidad', href: '#' },
-      { label: 'Términos', href: '#' },
-    ],
-  },
 ]
 
 export default function SiteFooter() {
@@ -32,7 +25,7 @@ export default function SiteFooter() {
       style={{ borderTop: '1px solid var(--c-border)', background: 'var(--c-surface)' }}
     >
       <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-8">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        <div className="grid gap-12 lg:grid-cols-[1.6fr_1fr_1fr]">
           <div className="max-w-[34ch]">
             <Image
               src="/logo-nadamas.png"
@@ -76,7 +69,8 @@ export default function SiteFooter() {
           className="mt-14 flex flex-col gap-3 pt-8 text-sm sm:flex-row sm:items-center sm:justify-between"
           style={{ borderTop: '1px solid var(--c-border)', color: 'var(--c-text-2)' }}
         >
-          <p>© {new Date().getFullYear()} nadamas.app</p>
+          {/* update year on deploy */}
+          <p>© 2026 nadamas.app</p>
           <p className="lowercase">nadar + nada más</p>
         </div>
       </div>

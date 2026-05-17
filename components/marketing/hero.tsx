@@ -87,9 +87,9 @@ export default function Hero() {
 
           <div className="mt-9 flex items-center gap-4">
             <div className="flex -space-x-3">
-              {FACES.map((src, i) => (
+              {FACES.map((src) => (
                 <span
-                  key={i}
+                  key={src}
                   className="relative inline-block h-9 w-9 overflow-hidden rounded-full"
                   style={{ border: '2px solid var(--c-bg)' }}
                 >
@@ -110,10 +110,9 @@ export default function Hero() {
         </div>
 
         {/* app mockup framed by the brand gradient (gradient as frame, not text) */}
-        <div className="relative mx-auto w-full max-w-[420px]">
+        <div aria-hidden className="relative mx-auto w-full max-w-[420px]">
           <div
-            aria-hidden
-            className="absolute -inset-6 -z-10 rounded-[60px] opacity-90 blur-[36px]"
+            className="absolute -inset-6 -z-10 rounded-[60px] blur-[36px]"
             style={{ background: 'var(--grad-brand)', opacity: 0.28 }}
           />
           <div

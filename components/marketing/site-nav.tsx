@@ -50,7 +50,6 @@ export default function SiteNav() {
             priority
             className="h-9 w-auto"
           />
-          <span className="sr-only">nadamas.app</span>
         </Link>
 
         <ul className="hidden items-center gap-9 lg:flex">
@@ -131,6 +130,8 @@ export default function SiteNav() {
       <div
         id="mobile-menu"
         className="overflow-hidden lg:hidden"
+        aria-hidden={!open}
+        inert={!open || undefined}
         style={{
           maxHeight: open ? '420px' : '0',
           opacity: open ? 1 : 0,

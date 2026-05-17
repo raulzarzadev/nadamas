@@ -122,7 +122,7 @@ export default function MarketplacePreview() {
           </p>
         </div>
         <a
-          href="#coaches"
+          href="/login"
           className="inline-flex w-fit items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold"
           style={{ border: '1px solid var(--c-border)', color: 'var(--c-ocean)' }}
         >
