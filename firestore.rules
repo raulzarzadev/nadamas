@@ -17,6 +17,14 @@ service cloud.firestore {
       return signedIn() && rsc.data.userId == request.auth.uid;
     }
 
+    // Admin = roles.admin == true on the caller's own users doc.
+    // Tolerates missing `roles`/`admin` via map .get() defaults.
+    function isAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid))
+             .data.get('roles', {}).get('admin', false) == true;
+    }
+
     // User profiles: any signed-in user can read (profiles shown in app);
     // each user writes only their own doc (doc id == uid).
     match /users/{uid} {
@@ -35,6 +43,25 @@ service cloud.firestore {
       allow read: if signedIn() || resource.data.isPublic == true;
       allow create: if isOwner(request.resource);
       allow update, delete: if isOwner(resource);
+    }
+
+    // Coach profile. Public doc (coaches/{uid}, doc id == uid):
+    // any signed-in user may read (athletes browse coaches); only the
+    // owner may write. The catch-all below would also match this, but
+    // it is declared explicitly for clarity + to anchor the subcollection.
+    match /coaches/{uid} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn() && request.auth.uid == uid;
+
+      // Private verification subdoc (coaches/{uid}/private/profile):
+      // IDs, certifications, private contacts, admin notes.
+      // Owner has full access; admin may read (verification review).
+      // NOT covered by the single-segment catch-all -> explicit rule
+      // required, else it is denied by default (this was the bug).
+      match /private/{docId} {
+        allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
+        allow create, update, delete: if signedIn() && request.auth.uid == uid;
+      }
     }
 
     // Owner-scoped domain collections (athletes, atheltes [sic], teams,
