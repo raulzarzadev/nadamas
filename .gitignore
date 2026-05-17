@@ -43,3 +43,6 @@ yarn-error.log*
 
 cypress.env.json
 serviceAccount.json
+
+# seo audit screenshots (local artifacts)
+screenshots/
