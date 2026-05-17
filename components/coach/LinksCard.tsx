@@ -71,7 +71,7 @@ export default function LinksCard({
             />
             <button
               type="button"
-              aria-label="Quitar red"
+              aria-label={`Quitar red ${i + 1}`}
               className="btn btn-ghost"
               onClick={() =>
                 setDraft((d) => ({
@@ -130,7 +130,7 @@ export default function LinksCard({
             />
             <button
               type="button"
-              aria-label="Quitar video"
+              aria-label={`Quitar video ${i + 1}`}
               className="btn btn-ghost"
               onClick={() =>
                 setDraft((d) => ({
