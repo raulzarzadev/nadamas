@@ -1,7 +1,13 @@
 'use client'
 import { Suspense } from 'react'
 import { UserProvider } from '@/context/UserContext'
-import { ThemeProvider } from '@/context/ThemeContext'
+import { RoleProvider } from '@/context/RoleContext'
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return (<Suspense fallback={null}><UserProvider><ThemeProvider>{children}</ThemeProvider></UserProvider></Suspense>)
+  return (
+    <Suspense fallback={null}>
+      <UserProvider>
+        <RoleProvider>{children}</RoleProvider>
+      </UserProvider>
+    </Suspense>
+  )
 }
