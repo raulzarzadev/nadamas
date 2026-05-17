@@ -68,10 +68,13 @@ export default function CoachProfilePage() {
     partial: Partial<CoachPublic>
   ) => {
     setSavingSection(section)
-    const merged: CoachPublic = { ...pubVal, ...partial }
-    const verification = recomputeScore(merged, privVal)
-    await CoachCRUD.upsertPublic(uid, { ...partial, verification })
-    setSavingSection(null)
+    try {
+      const merged: CoachPublic = { ...pubVal, ...partial }
+      const verification = recomputeScore(merged, privVal)
+      await CoachCRUD.upsertPublic(uid, { ...partial, verification })
+    } finally {
+      setSavingSection(null)
+    }
   }
 
   const savePrivate = async (
@@ -79,11 +82,14 @@ export default function CoachProfilePage() {
     partial: Partial<CoachPrivate>
   ) => {
     setSavingSection(section)
-    const mergedPriv: CoachPrivate = { ...privVal, ...partial }
-    const verification = recomputeScore(pubVal, mergedPriv)
-    await CoachCRUD.upsertPrivate(uid, partial)
-    await CoachCRUD.upsertPublic(uid, { verification })
-    setSavingSection(null)
+    try {
+      const mergedPriv: CoachPrivate = { ...privVal, ...partial }
+      const verification = recomputeScore(pubVal, mergedPriv)
+      await CoachCRUD.upsertPrivate(uid, partial)
+      await CoachCRUD.upsertPublic(uid, { verification })
+    } finally {
+      setSavingSection(null)
+    }
   }
 
   return (
