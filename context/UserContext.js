@@ -49,7 +49,7 @@ export function UserProvider({ children }) {
     if (user && redirectTo) {
       router.push(redirectTo)
     }
-  }, [user])
+  }, [user, router])
 
 
   if (user === undefined) return <Loading />
