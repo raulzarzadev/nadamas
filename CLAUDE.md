@@ -12,7 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm dev          # next dev
 pnpm build        # next build
 pnpm start        # next start (prod, after build)
-pnpm lint         # eslint .
+pnpm lint         # biome lint .
+pnpm format       # biome format --write .
+pnpm check        # biome check .
 pnpm typecheck    # tsc --noEmit
 pnpm test:e2e     # playwright test
 ```
@@ -20,6 +22,7 @@ pnpm test:e2e     # playwright test
 - No unit test runner. Tests are Playwright e2e in `e2e/*.spec.ts` (run via `pnpm test:e2e`).
 - Requires env var `NEXT_PUBLIC_FIREBASE_CONFIG` — a JSON string parsed in `firebase/index.js`. App fails at import without it.
 - Optional analytics env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (US cloud default). Empty key = PostHog no-ops, no errors.
+- Formatting + linting standard: use **Biome** only. Do not add ESLint or Prettier back unless the user explicitly asks.
 
 ## Conventions (from README)
 

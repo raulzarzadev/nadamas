@@ -12,7 +12,9 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 pnpm dev          # next dev
 pnpm build        # next build
 pnpm start        # next start (prod, after build)
-pnpm lint         # eslint .
+pnpm lint         # biome lint .
+pnpm format       # biome format --write .
+pnpm check        # biome check .
 pnpm typecheck    # tsc --noEmit
 pnpm test:e2e     # playwright test
 ```
@@ -21,6 +23,7 @@ pnpm test:e2e     # playwright test
 - Requires env var `NEXT_PUBLIC_FIREBASE_CONFIG` — a JSON string parsed in `firebase/index.js`. App fails at import without it.
 - Optional analytics env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (US cloud default). Empty key = PostHog no-ops, no errors.
 - OTP/email env: `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, optional `BREVO_SENDER_NAME`, `OTP_SECRET`, and `FIREBASE_SERVICE_ACCOUNT` (JSON string for server-side Firebase Admin on Vercel).
+- Formatting + linting standard: use **Biome** only. Do not add ESLint or Prettier back unless the user explicitly asks.
 
 ## Conventions (from README)
 

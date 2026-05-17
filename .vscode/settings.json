@@ -1,12 +1,13 @@
 {
-    "emojisense.languages": {
-
-        "markdown": true,
-        "plaintext": {
-            "markupCompletionsEnabled": false,
-            "emojiDecoratorsEnabled": false
-        },
-        "scminput": true,
-        "git-commit": true
-    }
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "emojisense.languages": {
+    "markdown": true,
+    "plaintext": {
+      "markupCompletionsEnabled": false,
+      "emojiDecoratorsEnabled": false
+    },
+    "scminput": true,
+    "git-commit": true
+  }
 }
