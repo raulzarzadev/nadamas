@@ -31,7 +31,7 @@ export default function CoachMetricSlider({
         step={1}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="range range-primary range-lg mt-4 h-3 py-2 touch-pan-x"
+        className="range range-primary range-lg mt-4 w-full cursor-pointer touch-pan-x"
       />
 
       <div className="mt-2 flex items-center justify-between gap-3 text-sm text-[var(--c-text-2)]">
