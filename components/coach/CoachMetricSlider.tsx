@@ -1,5 +1,5 @@
 'use client'
-import type { CoachMetricDefinition } from '@/lib/coach-metrics'
+import { type CoachMetricDefinition, METRIC_MAX } from '@/lib/coach-metrics'
 
 export default function CoachMetricSlider({
   metric,
@@ -27,11 +27,11 @@ export default function CoachMetricSlider({
       <input
         type="range"
         min={1}
-        max={5}
+        max={METRIC_MAX}
         step={1}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="range range-primary mt-4 range-sm"
+        className="range range-primary range-lg mt-4 h-3 py-2 touch-pan-x"
       />
 
       <div className="mt-2 flex items-center justify-between gap-3 text-sm text-[var(--c-text-2)]">

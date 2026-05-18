@@ -1,5 +1,9 @@
 import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
-import { type CoachMetrics, RADAR_METRICS } from '@/lib/coach-metrics'
+import { type CoachMetrics, METRIC_MAX, RADAR_LEVELS, RADAR_METRICS } from '@/lib/coach-metrics'
+
+// Stored values use the 1..METRIC_MAX form scale; the radar keeps its
+// 5-ring scheme, so map every value down to that scheme.
+const toScheme = (value: number) => (value / METRIC_MAX) * RADAR_LEVELS
 
 function buildSoftPath(points: Array<{ x: number; y: number }>) {
   if (points.length === 0) return ''
@@ -32,7 +36,9 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
     }
   }
 
-  const stylePoints = RADAR_METRICS.map((metric, index) => point(index, metrics[metric.key]))
+  const stylePoints = RADAR_METRICS.map((metric, index) =>
+    point(index, toScheme(metrics[metric.key]))
+  )
 
   return (
     <div className="rounded-[var(--r-md)] border border-[rgba(0,119,182,0.12)] bg-[linear-gradient(180deg,#fff7fb_0%,#f4fbff_100%)] p-4 shadow-[var(--shadow-md)]">
@@ -85,7 +91,7 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
         />
 
         {RADAR_METRICS.map((metric, index) => {
-          const p = point(index, metrics[metric.key])
+          const p = point(index, toScheme(metrics[metric.key]))
           const label = point(index, 6.2)
           return (
             <g key={metric.key}>
@@ -122,7 +128,9 @@ export function CoachStyleMapPreview({ metrics }: { metrics: CoachMetrics }) {
     }
   }
 
-  const stylePoints = RADAR_METRICS.map((metric, index) => point(index, metrics[metric.key]))
+  const stylePoints = RADAR_METRICS.map((metric, index) =>
+    point(index, toScheme(metrics[metric.key]))
+  )
 
   return (
     <svg

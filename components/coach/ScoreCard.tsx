@@ -54,6 +54,24 @@ export default function ScoreCard({
             {visible ? 'Visible' : 'Oculto'}
           </button>
 
+          <IconInfo
+            type="info"
+            label="Qué significa visible u oculto"
+            content={
+              <>
+                <p>
+                  <span className="font-semibold text-[var(--c-ocean)]">Visible</span> significa que
+                  tu perfil aparece y es buscable en el marketplace. Lo activas o desactivas tú
+                  cuando quieras.
+                </p>
+                <p className="mt-2">
+                  <span className="font-semibold text-[var(--c-ocean)]">Oculto</span>: nadie te
+                  encuentra ni puede reservarte.
+                </p>
+              </>
+            }
+          />
+
           <span
             className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ${
               verified ? 'bg-[#1d4ed8] text-white' : 'bg-[var(--c-surface)] text-[var(--c-text-2)]'
@@ -64,18 +82,20 @@ export default function ScoreCard({
 
           <IconInfo
             type="info"
-            label="Diferencia entre visible y verificado"
+            label="Qué es la validación"
             content={
               <>
                 <p>
-                  <span className="font-semibold text-[var(--c-ocean)]">Visible</span> controla si
-                  tu perfil aparece y es buscable en el marketplace. Lo activas tú.
+                  La <span className="font-semibold text-[#1d4ed8]">validación</span> es un paso
+                  extra: el equipo revisa tu identidad y datos y añade una palomita azul de
+                  garantía. No es lo que te hace aparecer en el marketplace.
                 </p>
                 <p className="mt-2">
-                  <span className="font-semibold text-[#1d4ed8]">✓ Verificado</span> es un paso
-                  extra: el equipo revisa tu identidad y datos. Añade una palomita azul de garantía,
-                  pero no es lo que te hace aparecer. Subir el documento no envía la solicitud:
-                  debes pedirla con el botón “Solicitar verificación”.
+                  Subir tu documento no la envía:{' '}
+                  <span className="font-semibold text-[var(--c-ocean)]">
+                    solo se solicita con el botón “Solicitar verificación”
+                  </span>
+                  , que se activa al completar todos los requisitos.
                 </p>
               </>
             }
@@ -90,34 +110,18 @@ export default function ScoreCard({
           </p>
 
           {!verified && (
-            <div className="flex items-center gap-1 self-start sm:self-auto">
-              <button
-                type="button"
-                disabled={requesting || !completionDone}
-                onClick={onRequestVerification}
-                className="btn btn-outline btn-sm disabled:opacity-50"
-              >
-                {requesting
-                  ? 'Enviando…'
-                  : identityStatus === 'pending'
-                    ? 'Reenviar solicitud'
-                    : 'Solicitar verificación'}
-              </button>
-              <IconInfo
-                type="info"
-                label="Cómo solicitar verificación"
-                content={
-                  <p>
-                    La verificación es manual y{' '}
-                    <span className="font-semibold text-[var(--c-ocean)]">
-                      solo se solicita con este botón
-                    </span>
-                    . Subir tu documento de identidad no la envía. El botón se activa cuando
-                    completas todos los requisitos.
-                  </p>
-                }
-              />
-            </div>
+            <button
+              type="button"
+              disabled={requesting || !completionDone}
+              onClick={onRequestVerification}
+              className="btn btn-outline btn-sm self-start disabled:opacity-50 sm:self-auto"
+            >
+              {requesting
+                ? 'Enviando…'
+                : identityStatus === 'pending'
+                  ? 'Reenviar solicitud'
+                  : 'Solicitar verificación'}
+            </button>
           )}
         </div>
 
