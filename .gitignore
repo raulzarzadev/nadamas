@@ -46,3 +46,6 @@ serviceAccount.json
 
 # seo audit screenshots (local artifacts)
 screenshots/
+
+# brainstorm visual companion
+.superpowers/
