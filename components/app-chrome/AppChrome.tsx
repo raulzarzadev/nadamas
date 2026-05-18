@@ -47,6 +47,7 @@ export default function AppChrome({
             <Image
               src="/logo-nadamas.webp"
               fill
+              sizes="112px"
               priority
               style={{ objectFit: 'contain', objectPosition: 'left' }}
               alt="Nadamas logo"
@@ -87,7 +88,7 @@ export default function AppChrome({
                 Admin
               </Link>
             )}
-            <RoleSwitcher />
+            <RoleSwitcher currentRole={role} />
           </div>
         </div>
       </header>

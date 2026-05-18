@@ -94,6 +94,7 @@ export default function VerifyCoachPage({
                   src={document.url}
                   alt="INE por revisar"
                   fill
+                  sizes="352px"
                   className="object-cover"
                 />
               </a>

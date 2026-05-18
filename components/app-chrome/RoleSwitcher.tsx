@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useRole } from '@/context/RoleContext'
 import { ROLE_LABEL } from './nav-config'
 
-export default function RoleSwitcher() {
+export default function RoleSwitcher({ currentRole }: { currentRole?: 'athlete' | 'coach' | 'admin' }) {
   const { roles, activeRole, setActiveRole, enableCoach } = useRole()
+  const displayedRole = currentRole ?? activeRole
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -88,7 +89,7 @@ export default function RoleSwitcher() {
         aria-expanded={open}
       >
         <span className="hidden xl:inline">Actuando como: </span>
-        {ROLE_LABEL[activeRole]}{' '}
+        {ROLE_LABEL[displayedRole]}{' '}
         <span aria-hidden="true">▾</span>
       </button>
       {open && (

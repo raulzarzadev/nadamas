@@ -74,7 +74,7 @@ export default function Hero() {
               Encontrar coach
             </a>
             <a
-              href="#para-coaches"
+              href="/login?intent=coach"
               className="inline-flex items-center justify-center rounded-full px-7 py-4 text-base font-semibold"
               style={{
                 color: 'var(--c-ocean)',

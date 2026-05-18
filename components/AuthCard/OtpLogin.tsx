@@ -85,7 +85,7 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
           </label>
           <button
             disabled={disabled || busy}
-            className="btn h-12 rounded-2xl border-[var(--c-border)] bg-white"
+            className="btn btn-primary h-12 rounded-2xl disabled:border-[var(--c-border)] disabled:bg-[var(--c-surface)] disabled:text-[var(--c-text-2)]"
           >
             {busy ? 'Enviando…' : 'Recibir código'}
           </button>

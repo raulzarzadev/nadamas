@@ -88,6 +88,7 @@ export default function PrivateCard({
 
   return (
     <ProfileSection
+      id="coach-verification-documents"
       title="Mis documentos (verificación)"
       description="Sube únicamente tu INE. Esta sección es privada y un administrador debe validar la identidad antes de marcarla como verificada."
       summary={`INE · ${STATUS_COPY[verification.status]}`}

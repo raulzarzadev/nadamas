@@ -24,6 +24,7 @@ export default function CoachProfilePage() {
 	const [pub, setPub] = useState<CoachPublic | null | undefined>(undefined);
 	const [priv, setPriv] = useState<CoachPrivate | null | undefined>(undefined);
 	const [savingSection, setSavingSection] = useState<string | null>(null);
+	const [verificationRequestError, setVerificationRequestError] = useState<string | null>(null);
 
 	useEffect(() => {
 		if (!uid) return;
@@ -95,9 +96,68 @@ export default function CoachProfilePage() {
 				privVal.identityVerification?.status !== "pending"
 			) {
 				await postAuthed("/api/notifications/verification-requested");
+				await CoachCRUD.upsertPrivate(uid, {
+					identityVerification: {
+						...partial.identityVerification,
+						notificationSentAt: Date.now(),
+					},
+				});
 			}
 		} finally {
 			setSavingSection(null);
+		}
+	};
+
+	const identityVerification = privVal.identityVerification;
+	const gallery = pubVal.galleryPhotos || [];
+	const hasFacePhoto = !!(
+		pubVal.facePhoto?.url || gallery.find((photo) => photo.label === "Yo")?.url
+	);
+	const hasLocation = !!pubVal.teachingLocations?.length;
+	const hasBio = !!pubVal.bio?.trim();
+	const hasMetrics = !!pubVal.metrics && Object.keys(pubVal.metrics).length > 0;
+	const hasIne = !!identityVerification?.document?.url;
+	const missingItems = [
+		!hasMetrics && "Carta de estilo",
+		!hasBio && "Bio corta",
+		!hasFacePhoto && "Foto tuya",
+		!hasLocation && "Lugar y horarios",
+		!hasIne && "INE",
+	].filter(Boolean) as string[];
+
+	const requestVerification = async () => {
+		setVerificationRequestError(null);
+		if (!identityVerification?.document?.url) {
+			const section = document.getElementById("coach-verification-documents");
+			section?.scrollIntoView({ behavior: "smooth", block: "center" });
+			const toggle = section?.querySelector("button");
+			if (toggle?.getAttribute("aria-expanded") === "false") {
+				(toggle as HTMLButtonElement).click();
+			}
+			return;
+		}
+
+		try {
+			if (identityVerification.status === "pending") {
+				await postAuthed("/api/notifications/verification-requested");
+				await CoachCRUD.upsertPrivate(uid, {
+					identityVerification: {
+						...identityVerification,
+						notificationSentAt: Date.now(),
+					},
+				});
+				return;
+			}
+
+			await savePrivate("private", {
+				identityVerification: {
+					...identityVerification,
+					status: "pending",
+					submittedAt: identityVerification.submittedAt || Date.now(),
+				},
+			});
+		} catch {
+			setVerificationRequestError("No pudimos enviar la solicitud. Inténtalo de nuevo.");
 		}
 	};
 
@@ -107,7 +167,14 @@ export default function CoachProfilePage() {
 				Mi perfil de coach
 			</h1>
 
-			<ScoreCard verification={pubVal.verification} />
+			<ScoreCard
+				verification={pubVal.verification}
+				identityStatus={identityVerification?.status}
+				missingItems={missingItems}
+				onRequestVerification={requestVerification}
+				requesting={savingSection === "private"}
+				requestError={verificationRequestError}
+			/>
 
 			<SkillsCard
 				value={pubVal.metrics}

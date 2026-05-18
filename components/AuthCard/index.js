@@ -31,27 +31,38 @@ export default function AuthCard() {
       </div>
 
       <div className="flex flex-col gap-5 px-5 py-6 sm:px-7">
-        <label className="flex items-start gap-3 rounded-2xl border border-[var(--c-border)] bg-white p-4 text-sm leading-relaxed text-[var(--c-text-2)]">
-          <input
-            type="checkbox"
-            checked={accepted}
-            onChange={(event) => setAccepted(event.target.checked)}
-            className="checkbox checkbox-sm mt-0.5"
-          />
-          <span>
-            Acepto la{' '}
-            <Link
-              href="/privacidad"
-              className="font-semibold text-[var(--c-ocean-mid)]"
+        {!accepted ? (
+          <div className="flex flex-col gap-4 rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-4 text-sm leading-relaxed text-[var(--c-text-2)]">
+            <p>
+              Para continuar, acepta la{' '}
+              <Link
+                href="/privacidad"
+                className="font-semibold text-[var(--c-ocean-mid)]"
+              >
+                política de privacidad
+              </Link>{' '}
+              y el uso de tus datos para operar tu cuenta.
+            </p>
+            <button
+              type="button"
+              onClick={() => setAccepted(true)}
+              className="btn btn-primary h-12 rounded-2xl"
             >
-              política de privacidad
-            </Link>{' '}
-            y el uso de mis datos para operar mi cuenta.
-          </span>
-        </label>
-
-        <OtpLogin disabled={!accepted} />
-        <SocialMediaLogin disabled={!accepted} />
+              Aceptar política y continuar
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] px-4 py-3 text-sm text-[var(--c-text-2)]">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white font-bold text-[var(--c-ocean)]">
+                ✓
+              </span>
+              Política aceptada
+            </div>
+            <OtpLogin disabled={false} />
+            <SocialMediaLogin disabled={false} />
+          </>
+        )}
       </div>
     </div>
   )

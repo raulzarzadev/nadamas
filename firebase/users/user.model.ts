@@ -6,9 +6,14 @@ export interface AppUser {
   displayName?: string
   name?: string
   email?: string
+  phone?: string
+  profileCompletedAt?: number
   photoURL?: string
   roles?: Partial<Roles>
   isCoach?: boolean
   createdAt?: number
   updatedAt?: number
+  accountDisabled?: boolean
+  accountDisabledAt?: number | null
+  accountDisabledBy?: string | null
 }

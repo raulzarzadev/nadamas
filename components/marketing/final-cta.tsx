@@ -36,7 +36,7 @@ export default function FinalCta() {
 
         <div className="relative mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
-            href="/login"
+            href="#coaches"
             className="inline-flex items-center justify-center rounded-full px-8 py-4 text-base font-semibold"
             style={{
               background: '#f8fafc',
@@ -47,7 +47,7 @@ export default function FinalCta() {
             Encontrar coach
           </a>
           <a
-            href="/login"
+            href="/login?intent=coach"
             className="inline-flex items-center justify-center rounded-full px-8 py-4 text-base font-semibold"
             style={{
               color: '#f8fafc',

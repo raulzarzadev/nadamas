@@ -47,6 +47,8 @@ export interface CoachIdentityVerification {
   reviewedAt?: number
   reviewedBy?: string
   adminNote?: string
+  notificationSentAt?: number
+  reviewNotificationSentAt?: number
 }
 
 export interface CoachAvailabilitySlot {

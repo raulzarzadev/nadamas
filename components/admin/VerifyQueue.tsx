@@ -20,9 +20,10 @@ export default function VerifyQueue() {
 
   async function review(coachId: string, status: 'verified' | 'rejected') {
     setBusyId(coachId)
+    const reviewedAt = Date.now()
     await CoachCRUD.reviewIdentity(coachId, {
       status,
-      reviewedAt: Date.now(),
+      reviewedAt,
       reviewedBy: user?.uid || user?.id,
       adminNote:
         status === 'verified'
@@ -32,6 +33,16 @@ export default function VerifyQueue() {
     await postAuthed('/api/notifications/verification-reviewed', {
       coachId,
       status,
+    })
+    await CoachCRUD.reviewIdentity(coachId, {
+      status,
+      reviewedAt,
+      reviewedBy: user?.uid || user?.id,
+      adminNote:
+        status === 'verified'
+          ? 'Identidad validada por administración.'
+          : 'Documento rechazado por administración.',
+      reviewNotificationSentAt: Date.now(),
     })
     setBusyId(null)
   }
@@ -62,6 +73,7 @@ export default function VerifyQueue() {
                     src={document.url}
                     alt="INE por revisar"
                     fill
+                    sizes="96px"
                     className="object-cover"
                   />
                 </a>

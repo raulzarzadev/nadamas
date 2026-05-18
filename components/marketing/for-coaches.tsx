@@ -37,7 +37,7 @@ export default function ForCoaches() {
               que un anuncio suelto no consigue.
             </p>
             <a
-              href="/login"
+              href="/login?intent=coach"
               className="mt-8 inline-flex items-center justify-center rounded-full px-7 py-4 text-base font-semibold text-white"
               style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
             >

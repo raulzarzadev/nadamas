@@ -5,14 +5,8 @@ import { FiMapPin, FiPlus, FiTrash2 } from 'react-icons/fi'
 import ImageInput from '@comps/Inputs/ImageInput'
 import ProfileSection from './ProfileSection'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
-import {
-  GENERIC_USER_ERROR,
-  reportInternalError,
-} from '@/lib/user-facing-error'
-import type {
-  CoachGalleryPhoto,
-  CoachTeachingLocation,
-} from '@/firebase/coaches/coach.model'
+import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import type { CoachGalleryPhoto, CoachTeachingLocation } from '@/firebase/coaches/coach.model'
 
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
@@ -41,12 +35,8 @@ export default function LocationsCard({
   saving: boolean
   onSave: (v: LocationsValue) => void
 }) {
-  const [locations, setLocations] = useState<CoachTeachingLocation[]>(
-    value.teachingLocations || []
-  )
-  const [galleryPhotos, setGalleryPhotos] = useState<CoachGalleryPhoto[]>(
-    value.galleryPhotos || []
-  )
+  const [locations, setLocations] = useState<CoachTeachingLocation[]>(value.teachingLocations || [])
+  const [galleryPhotos, setGalleryPhotos] = useState<CoachGalleryPhoto[]>(value.galleryPhotos || [])
   const [busyLocationId, setBusyLocationId] = useState<string | null>(null)
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
@@ -80,10 +70,7 @@ export default function LocationsCard({
           location.id === locationId ? { ...location, imageUrl: url } : location
         )
       )
-      setGalleryPhotos((current) => [
-        ...current,
-        { url, label: 'Lugares de trabajo' },
-      ])
+      setGalleryPhotos((current) => [...current, { url, label: 'Lugares de trabajo' }])
       setUploadProgress((current) => {
         const next = { ...current }
         delete next[locationId]
@@ -111,101 +98,75 @@ export default function LocationsCard({
       description="Agrega dónde das clases, tu ubicación y los horarios disponibles en cada lugar."
       summary={`${locations.length} ${locations.length === 1 ? 'lugar' : 'lugares'} configurados`}
     >
-        {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
+      {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
 
-        {locations.map((location, index) => (
-          <article
-            key={location.id}
-            className="flex flex-col gap-4 rounded-[var(--r-md)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3 sm:p-4"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <input
-                  aria-label={`Nombre del lugar ${index + 1}`}
-                  className="input input-bordered w-full bg-white font-semibold"
-                  placeholder="Ej. Alberca AquaFit Centro"
-                  value={location.name}
-                  onChange={(event) =>
-                    setLocations((current) =>
-                      current.map((item) =>
-                        item.id === location.id
-                          ? { ...item, name: event.target.value }
-                          : item
-                      )
-                    )
-                  }
-                />
-              </div>
-              <button
-                type="button"
-                aria-label={`Quitar lugar ${index + 1}`}
-                className="btn btn-ghost text-[var(--c-error,#b91c1c)]"
-                onClick={() =>
+      {locations.map((location, index) => (
+        <article
+          key={location.id}
+          className="flex flex-col gap-4 rounded-[var(--r-md)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3 sm:p-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <input
+                aria-label={`Nombre del lugar ${index + 1}`}
+                className="input input-bordered w-full bg-white font-semibold"
+                placeholder="Ej. Alberca AquaFit Centro"
+                value={location.name}
+                onChange={(event) =>
                   setLocations((current) =>
-                    current.filter((item) => item.id !== location.id)
+                    current.map((item) =>
+                      item.id === location.id ? { ...item, name: event.target.value } : item
+                    )
                   )
                 }
-              >
-                <FiTrash2 />
-              </button>
+              />
             </div>
+            <button
+              type="button"
+              aria-label={`Quitar lugar ${index + 1}`}
+              className="btn btn-ghost text-[var(--c-error,#b91c1c)]"
+              onClick={() =>
+                setLocations((current) => current.filter((item) => item.id !== location.id))
+              }
+            >
+              <FiTrash2 />
+            </button>
+          </div>
 
-            <label className="relative">
-              <FiMapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--c-ocean-mid)]" />
-              <input
+          <label className="relative">
+            <FiMapPin className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--c-ocean-mid)]" />
+            <input
               className="input input-bordered w-full bg-white pl-10"
               placeholder="URL de ubicación (Google Maps)"
               value={location.locationUrl || ''}
               onChange={(event) =>
                 setLocations((current) =>
                   current.map((item) =>
-                    item.id === location.id
-                      ? { ...item, locationUrl: event.target.value }
-                      : item
+                    item.id === location.id ? { ...item, locationUrl: event.target.value } : item
                   )
                 )
               }
-              />
-            </label>
+            />
+          </label>
 
-            <div className="flex flex-col gap-3">
-              <div>
-                <p className="text-sm font-semibold text-[var(--c-ocean)]">Horarios</p>
-                <p className="text-sm text-[var(--c-text-2)]">
-                  Define los días y horas en que das clase aquí.
-                </p>
+          <div className="flex flex-col gap-3">
+            <div>
+              <p className="text-sm font-semibold text-[var(--c-ocean)]">Horarios</p>
+              <p className="text-sm text-[var(--c-text-2)]">
+                Define los días y horas en que das clase aquí.
+              </p>
+            </div>
+            {location.availability.length === 0 && (
+              <div className="rounded-[var(--r-sm)] border border-dashed border-[var(--c-border)] bg-white px-3 py-4 text-sm text-[var(--c-text-2)]">
+                Aún no agregas horarios para este lugar.
               </div>
-              {location.availability.length === 0 && (
-                <div className="rounded-[var(--r-sm)] border border-dashed border-[var(--c-border)] bg-white px-3 py-4 text-sm text-[var(--c-text-2)]">
-                  Aún no agregas horarios para este lugar.
-                </div>
-              )}
-              {location.availability.map((slot, slotIndex) => (
-                <div
-                  key={`${location.id}-${slotIndex}`}
-                  className="relative flex flex-col gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-3 pr-14"
-                >
-                  <button
-                    type="button"
-                    aria-label={`Eliminar horario ${slotIndex + 1}`}
-                    className="btn btn-ghost btn-sm absolute right-2 top-2 text-[var(--c-error,#b91c1c)]"
-                    onClick={() =>
-                      setLocations((current) =>
-                        current.map((item) =>
-                          item.id === location.id
-                            ? {
-                                ...item,
-                                availability: item.availability.filter(
-                                  (_, currentIndex) => currentIndex !== slotIndex
-                                ),
-                              }
-                            : item
-                        )
-                      )
-                    }
-                  >
-                    <FiTrash2 aria-hidden="true" className="h-5 w-5" />
-                  </button>
+            )}
+            {location.availability.map((slot, slotIndex) => (
+              <div
+                key={`${location.id}-${slotIndex}`}
+                className="flex flex-col gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-wrap gap-2">
                     {DAYS.map((day) => {
                       const selected = slot.days.includes(day)
@@ -225,15 +186,18 @@ export default function LocationsCard({
                                   ? item
                                   : {
                                       ...item,
-                                      availability: item.availability.map((currentSlot, currentIndex) =>
-                                        currentIndex !== slotIndex
-                                          ? currentSlot
-                                          : {
-                                              ...currentSlot,
-                                              days: selected
-                                                ? currentSlot.days.filter((itemDay) => itemDay !== day)
-                                                : [...currentSlot.days, day],
-                                            }
+                                      availability: item.availability.map(
+                                        (currentSlot, currentIndex) =>
+                                          currentIndex !== slotIndex
+                                            ? currentSlot
+                                            : {
+                                                ...currentSlot,
+                                                days: selected
+                                                  ? currentSlot.days.filter(
+                                                      (itemDay) => itemDay !== day
+                                                    )
+                                                  : [...currentSlot.days, day],
+                                              }
                                       ),
                                     }
                               )
@@ -245,10 +209,36 @@ export default function LocationsCard({
                       )
                     })}
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    aria-label={`Eliminar horario ${slotIndex + 1}`}
+                    className="btn btn-ghost btn-sm shrink-0 text-[var(--c-error,#b91c1c)]"
+                    onClick={() =>
+                      setLocations((current) =>
+                        current.map((item) =>
+                          item.id === location.id
+                            ? {
+                                ...item,
+                                availability: item.availability.filter(
+                                  (_, currentIndex) => currentIndex !== slotIndex
+                                ),
+                              }
+                            : item
+                        )
+                      )
+                    }
+                  >
+                    <FiTrash2 aria-hidden="true" className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="min-w-0">
+                    <span className="mb-1 block text-xs font-semibold text-[var(--c-text-2)]">
+                      Desde
+                    </span>
                     <input
                       type="time"
-                      className="input input-bordered bg-white"
+                      className="input input-bordered h-12 w-full min-w-0 bg-white"
                       value={slot.startTime}
                       onChange={(event) =>
                         setLocations((current) =>
@@ -257,19 +247,25 @@ export default function LocationsCard({
                               ? item
                               : {
                                   ...item,
-                                  availability: item.availability.map((currentSlot, currentIndex) =>
-                                    currentIndex === slotIndex
-                                      ? { ...currentSlot, startTime: event.target.value }
-                                      : currentSlot
+                                  availability: item.availability.map(
+                                    (currentSlot, currentIndex) =>
+                                      currentIndex === slotIndex
+                                        ? { ...currentSlot, startTime: event.target.value }
+                                        : currentSlot
                                   ),
                                 }
                           )
                         )
                       }
                     />
+                  </label>
+                  <label className="min-w-0">
+                    <span className="mb-1 block text-xs font-semibold text-[var(--c-text-2)]">
+                      Hasta
+                    </span>
                     <input
                       type="time"
-                      className="input input-bordered bg-white"
+                      className="input input-bordered h-12 w-full min-w-0 bg-white"
                       value={slot.endTime}
                       onChange={(event) =>
                         setLocations((current) =>
@@ -278,72 +274,74 @@ export default function LocationsCard({
                               ? item
                               : {
                                   ...item,
-                                  availability: item.availability.map((currentSlot, currentIndex) =>
-                                    currentIndex === slotIndex
-                                      ? { ...currentSlot, endTime: event.target.value }
-                                      : currentSlot
+                                  availability: item.availability.map(
+                                    (currentSlot, currentIndex) =>
+                                      currentIndex === slotIndex
+                                        ? { ...currentSlot, endTime: event.target.value }
+                                        : currentSlot
                                   ),
                                 }
                           )
                         )
                       }
                     />
-                  </div>
+                  </label>
                 </div>
-              ))}
-              <button
-                type="button"
-                className="btn btn-ghost self-start"
-                onClick={() =>
-                  setLocations((current) =>
-                    current.map((item) =>
-                      item.id === location.id
-                        ? {
-                            ...item,
-                            availability: [
-                              ...item.availability,
-                              { days: [], startTime: '', endTime: '' },
-                            ],
-                          }
-                        : item
-                    )
+              </div>
+            ))}
+            <button
+              type="button"
+              className="btn btn-ghost self-start"
+              onClick={() =>
+                setLocations((current) =>
+                  current.map((item) =>
+                    item.id === location.id
+                      ? {
+                          ...item,
+                          availability: [
+                            ...item.availability,
+                            { days: [], startTime: '', endTime: '' },
+                          ],
+                        }
+                      : item
                   )
-                }
-              >
-                <FiPlus /> Agregar horario
-              </button>
-            </div>
+                )
+              }
+            >
+              <FiPlus /> Agregar horario
+            </button>
+          </div>
 
-            <ImageInput
-              label="Imagen del lugar"
-              imageUrl={location.imageUrl}
-              imageAlt={location.name || 'Lugar de clases'}
-              busy={busyLocationId === location.id}
-              progress={uploadProgress[location.id]}
-              helperText="También se agrega a tu galería como “Lugares de trabajo”."
-              onFileSelected={(file) => uploadLocationImage(location.id, file)}
-            />
-          </article>
-        ))}
+          <ImageInput
+            label="Imagen del lugar"
+            imageUrl={location.imageUrl}
+            imageAlt={location.name || 'Lugar de clases'}
+            busy={busyLocationId === location.id}
+            progress={uploadProgress[location.id]}
+            helperText="También se agrega a tu galería como “Lugares de trabajo”."
+            onFileSelected={(file) => uploadLocationImage(location.id, file)}
+          />
+        </article>
+      ))}
 
+      <button
+        type="button"
+        className="btn btn-ghost self-start"
+        onClick={() => setLocations((current) => [...current, createLocation()])}
+      >
+        <FiPlus /> Agregar lugar
+      </button>
+
+      <div className="flex justify-end border-t border-[var(--c-border)] pt-5">
         <button
           type="button"
-          className="btn btn-ghost self-start"
-          onClick={() => setLocations((current) => [...current, createLocation()])}
+          disabled={saving || !!busyLocationId}
+          onClick={() => onSave({ teachingLocations: locations, galleryPhotos })}
+          className="btn btn-primary min-w-36 disabled:opacity-50"
         >
-          <FiPlus /> Agregar lugar
+          {saving ? 'Guardando…' : 'Guardar lugares'}
         </button>
-
-        <div className="flex justify-end border-t border-[var(--c-border)] pt-5">
-          <button
-            type="button"
-            disabled={saving || !!busyLocationId}
-            onClick={() => onSave({ teachingLocations: locations, galleryPhotos })}
-            className="btn btn-primary min-w-36 disabled:opacity-50"
-          >
-            {saving ? 'Guardando…' : 'Guardar lugares'}
-          </button>
-        </div>
+      </div>
     </ProfileSection>
   )
 }

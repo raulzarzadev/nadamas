@@ -23,8 +23,10 @@ const privateRef = (uid: string) => doc(db, 'coaches', uid, 'private', 'profile'
 
 export class Coach {
   listenPublic(uid: string, cb: (doc: CoachPublic | null) => void) {
-    return onSnapshot(publicRef(uid), (snap) =>
-      cb(FirebaseCRUD.normalizeDoc(snap) as CoachPublic | null)
+    return onSnapshot(
+      publicRef(uid),
+      (snap) => cb(FirebaseCRUD.normalizeDoc(snap) as CoachPublic | null),
+      () => cb(null)
     )
   }
 
@@ -110,7 +112,7 @@ export class Coach {
     uid: string,
     review: Pick<
       CoachIdentityVerification,
-      'status' | 'reviewedAt' | 'reviewedBy' | 'adminNote'
+      'status' | 'reviewedAt' | 'reviewedBy' | 'adminNote' | 'reviewNotificationSentAt'
     >
   ) {
     const current = await getDoc(privateRef(uid))

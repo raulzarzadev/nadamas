@@ -10,6 +10,7 @@ export default function ProfileSection({
   children,
   surface = 'white',
   allowOverflow = false,
+  id,
 }: {
   title: string
   description: string
@@ -18,11 +19,13 @@ export default function ProfileSection({
   children: React.ReactNode
   surface?: 'white' | 'tinted'
   allowOverflow?: boolean
+  id?: string
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
     <section
+      id={id}
       className={`${allowOverflow ? 'overflow-visible' : 'overflow-hidden'} rounded-[var(--r-md)] border border-[var(--c-border)] shadow-[var(--shadow-sm)] ${
         surface === 'tinted' ? 'bg-[var(--c-surface)]' : 'bg-white'
       }`}

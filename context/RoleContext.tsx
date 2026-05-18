@@ -29,7 +29,7 @@ interface RoleContextValue {
 const RoleContext = createContext<RoleContextValue | undefined>(undefined)
 
 export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useUser() as { user: any }
+  const { user, refreshUser } = useUser() as { user: any; refreshUser: () => Promise<any> }
   const router = useRouter()
   const roles = useMemo(() => normalizeRoles(user), [user])
 
@@ -59,7 +59,8 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     const id = user?.uid || user?.id
     if (!id) return
     await enableCoachFb(id)
-  }, [user])
+    await refreshUser()
+  }, [user, refreshUser])
 
   const value = useMemo(
     () => ({

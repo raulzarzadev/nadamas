@@ -37,7 +37,7 @@ export default function SiteNav() {
     >
       <nav className="mx-auto flex max-w-[1180px] items-center justify-between px-5 py-4 sm:px-8">
         <Link
-          href="#inicio"
+          href="/"
           className="flex items-center gap-2.5"
           aria-label="nadamas.app inicio"
           onClick={() => setOpen(false)}
@@ -75,7 +75,7 @@ export default function SiteNav() {
             Ingresar
           </Link>
           <a
-            href="#para-coaches"
+            href="/login?intent=coach"
             className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
             style={{ color: 'var(--c-ocean)' }}
           >
@@ -140,7 +140,7 @@ export default function SiteNav() {
         aria-hidden={!open}
         inert={!open || undefined}
         style={{
-          maxHeight: open ? '420px' : '0',
+          maxHeight: open ? '36rem' : '0',
           opacity: open ? 1 : 0,
           transition: 'max-height 460ms var(--ease-expo), opacity 320ms var(--ease-expo)',
           background: 'var(--c-bg)',
@@ -160,7 +160,7 @@ export default function SiteNav() {
               </a>
             </li>
           ))}
-          <li className="mt-2">
+          <li className="mt-2 pb-2">
             <Link
               href="/login"
               onClick={() => setOpen(false)}
@@ -172,6 +172,14 @@ export default function SiteNav() {
             >
               Ingresar
             </Link>
+            <a
+              href="/login?intent=coach"
+              onClick={() => setOpen(false)}
+              className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
+              style={{ color: 'var(--c-ocean)', border: '1px solid var(--c-border)' }}
+            >
+              Soy coach
+            </a>
             <a
               href="#coaches"
               onClick={() => setOpen(false)}

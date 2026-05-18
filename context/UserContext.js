@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { usePostHog } from 'posthog-js/react'
-import { loginUser } from '@/firebase/users'
+import { getUser, loginUser } from '@/firebase/users'
 const UserContext = createContext()
 
 export function UserProvider({ children }) {
@@ -24,6 +24,13 @@ export function UserProvider({ children }) {
     logOut()
   }
 
+  const refreshUser = async () => {
+    const id = user?.uid || user?.id
+    if (!id) return null
+    const freshUser = await getUser(id)
+    setUser(freshUser)
+    return freshUser
+  }
 
   const login = async (provider = 'google') => {
     if (provider === 'google') {
@@ -73,7 +80,7 @@ export function UserProvider({ children }) {
 
 
   return (
-    <UserContext.Provider value={{ user, login, logout }}>
+    <UserContext.Provider value={{ user, login, logout, refreshUser }}>
       {children}
     </UserContext.Provider>
   )

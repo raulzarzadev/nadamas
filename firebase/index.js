@@ -22,11 +22,27 @@ export const storage = getStorage(app);
 
 export const authStateChanged = (cb = () => {}) => {
   return onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const userData = await getUser(user.uid)
-      cb(userData)
-    } else {
+    if (!user) {
       cb(null)
+      return
+    }
+
+    // Minimal identity from the auth session. Used as a fallback so a failed
+    // or empty Firestore read never leaves the app hanging on a spinner.
+    const fallbackUser = {
+      id: user.uid,
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+    }
+
+    try {
+      const userData = await getUser(user.uid)
+      cb(userData || fallbackUser)
+    } catch (err) {
+      console.error('authStateChanged:getUser', err?.code || 'error')
+      cb(fallbackUser)
     }
   })
 }

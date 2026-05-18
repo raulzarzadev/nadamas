@@ -6,7 +6,9 @@ function getServiceAccount() {
   const raw = process.env.FIREBASE_SERVICE_ACCOUNT
   if (!raw) return undefined
 
-  const parsed = JSON.parse(raw)
+  const jsonStart = raw.indexOf('{')
+  const normalizedRaw = jsonStart > 0 ? raw.slice(jsonStart) : raw
+  const parsed = JSON.parse(normalizedRaw)
   return {
     ...parsed,
     private_key: parsed.private_key?.replace(/\\n/g, '\n'),
