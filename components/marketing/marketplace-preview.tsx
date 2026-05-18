@@ -1,11 +1,11 @@
 'use client'
 
 import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
+import IconInfo from '@comps/IconInfo'
 import { onAuthStateChanged } from 'firebase/auth'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { FiInfo } from 'react-icons/fi'
 import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
@@ -55,7 +55,6 @@ export default function MarketplacePreview() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [selectedSlots, setSelectedSlots] = useState<Record<string, string>>({})
-  const [styleInfoId, setStyleInfoId] = useState<string | null>(null)
   const [bookingState] = useState<
     Record<
       string,
@@ -198,36 +197,30 @@ export default function MarketplacePreview() {
 
                 <div className="flex shrink-0 flex-col items-center">
                   <CoachStyleMapPreview metrics={metrics} />
-                  <div className="mt-0.5 flex items-center gap-1">
+                  <div className="mt-0.5 flex items-center gap-0.5">
                     <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-[var(--c-text-2)]">
                       {CARD_PROPIERTIES_AND_STYLES_LABEL}
                     </span>
-                    <button
-                      type="button"
-                      aria-label={`Qué es la ${CARD_PROPIERTIES_AND_STYLES_LABEL}`}
-                      aria-expanded={styleInfoId === coach.id}
-                      onClick={() =>
-                        setStyleInfoId((current) => (current === coach.id ? null : coach.id))
+                    <IconInfo
+                      type="info"
+                      size={13}
+                      label={`Qué es la ${CARD_PROPIERTIES_AND_STYLES_LABEL}`}
+                      content={
+                        <>
+                          La{' '}
+                          <span className="font-semibold text-[var(--c-ocean)]">
+                            {CARD_PROPIERTIES_AND_STYLES_LABEL}
+                          </span>{' '}
+                          resume cómo entrena este coach en 8 dimensiones (técnica, paciencia,
+                          planeación, relación con el agua y más). Te ayuda a comparar la
+                          compatibilidad con tu forma de aprender antes de reservar, no solo el
+                          precio.
+                        </>
                       }
-                      className="grid h-4 w-4 place-items-center rounded-full text-[#1d4ed8] transition hover:bg-[#1d4ed8]/10"
-                    >
-                      <FiInfo aria-hidden="true" className="text-xs" />
-                    </button>
+                    />
                   </div>
                 </div>
               </div>
-
-              {styleInfoId === coach.id && (
-                <div className="mx-5 mb-1 rounded-2xl bg-[var(--c-surface)] p-4 text-sm leading-6 text-[var(--c-text-2)]">
-                  La{' '}
-                  <span className="font-semibold text-[var(--c-ocean)]">
-                    {CARD_PROPIERTIES_AND_STYLES_LABEL}
-                  </span>{' '}
-                  resume cómo entrena este coach en 8 dimensiones (técnica, paciencia, planeación,
-                  relación con el agua y más). Te ayuda a comparar la compatibilidad con tu forma de
-                  aprender antes de reservar, no solo el precio.
-                </div>
-              )}
 
               <div className="p-5">
                 <div className="flex items-center justify-between gap-3 text-sm text-[var(--c-text-2)]">

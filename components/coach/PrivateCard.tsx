@@ -60,11 +60,13 @@ export default function PrivateCard({
       if (!url || finished) return
       finished = true
       const document: CoachDocument = { url, name: uploadFile.name }
+      // Uploading only stores the document. Verification is requested
+      // explicitly from the "Solicitar verificación" button, never here.
       setDraft({
         identityVerification: {
-          status: 'pending',
+          ...verification,
+          status: verification.status === 'verified' ? 'verified' : 'not_submitted',
           document,
-          submittedAt: Date.now(),
         },
       })
       setBusy(false)

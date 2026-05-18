@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { FiEye, FiEyeOff, FiInfo } from 'react-icons/fi'
+import IconInfo from '@comps/IconInfo'
+import { FiEye, FiEyeOff } from 'react-icons/fi'
 import type { CoachIdentityVerification, CoachVerification } from '@/firebase/coaches/coach.model'
 
 export default function ScoreCard({
@@ -27,7 +27,6 @@ export default function ScoreCard({
 }) {
   const verified = verification?.status === 'verified'
   const completionDone = missingItems.length === 0
-  const [showInfo, setShowInfo] = useState(false)
 
   return (
     <div>
@@ -63,31 +62,25 @@ export default function ScoreCard({
             {verified ? '✓ Verificado' : 'Pendiente de verificación'}
           </span>
 
-          <button
-            type="button"
-            aria-label="Diferencia entre visible y verificado"
-            aria-expanded={showInfo}
-            onClick={() => setShowInfo((value) => !value)}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[var(--c-text-2)] transition hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]"
-          >
-            <FiInfo aria-hidden="true" />
-          </button>
+          <IconInfo
+            type="info"
+            label="Diferencia entre visible y verificado"
+            content={
+              <>
+                <p>
+                  <span className="font-semibold text-[var(--c-ocean)]">Visible</span> controla si
+                  tu perfil aparece y es buscable en el marketplace. Lo activas tú.
+                </p>
+                <p className="mt-2">
+                  <span className="font-semibold text-[#1d4ed8]">✓ Verificado</span> es un paso
+                  extra: el equipo revisa tu identidad y datos. Añade una palomita azul de garantía,
+                  pero no es lo que te hace aparecer. Subir el documento no envía la solicitud:
+                  debes pedirla con el botón “Solicitar verificación”.
+                </p>
+              </>
+            }
+          />
         </div>
-
-        {showInfo && (
-          <div className="rounded-2xl bg-[var(--c-surface)] p-4 text-sm leading-6 text-[var(--c-text-2)]">
-            <p>
-              <span className="font-semibold text-[var(--c-ocean)]">Visible</span> controla si tu
-              perfil aparece y es buscable en el marketplace. Lo activas tú.
-            </p>
-            <p className="mt-2">
-              <span className="font-semibold text-[#1d4ed8]">✓ Verificado</span> es un paso extra:
-              el equipo revisa tu identidad y datos. Añade una palomita azul de garantía, pero no es
-              lo que te hace aparecer. Un perfil visible sin verificar se busca, pero sin esa
-              garantía no aseguramos su posición.
-            </p>
-          </div>
-        )}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-[var(--c-text-2)]">
@@ -97,23 +90,34 @@ export default function ScoreCard({
           </p>
 
           {!verified && (
-            <button
-              type="button"
-              disabled={requesting || !completionDone}
-              onClick={onRequestVerification}
-              title={
-                completionDone
-                  ? undefined
-                  : 'Completa todos los requisitos para solicitar verificación'
-              }
-              className="btn btn-outline btn-sm self-start disabled:opacity-50 sm:self-auto"
-            >
-              {requesting
-                ? 'Enviando…'
-                : identityStatus === 'pending'
-                  ? 'Reenviar solicitud'
-                  : 'Solicitar verificación'}
-            </button>
+            <div className="flex items-center gap-1 self-start sm:self-auto">
+              <button
+                type="button"
+                disabled={requesting || !completionDone}
+                onClick={onRequestVerification}
+                className="btn btn-outline btn-sm disabled:opacity-50"
+              >
+                {requesting
+                  ? 'Enviando…'
+                  : identityStatus === 'pending'
+                    ? 'Reenviar solicitud'
+                    : 'Solicitar verificación'}
+              </button>
+              <IconInfo
+                type="info"
+                label="Cómo solicitar verificación"
+                content={
+                  <p>
+                    La verificación es manual y{' '}
+                    <span className="font-semibold text-[var(--c-ocean)]">
+                      solo se solicita con este botón
+                    </span>
+                    . Subir tu documento de identidad no la envía. El botón se activa cuando
+                    completas todos los requisitos.
+                  </p>
+                }
+              />
+            </div>
           )}
         </div>
 
