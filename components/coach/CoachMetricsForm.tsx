@@ -47,15 +47,15 @@ export default function CoachMetricsForm({
       </div>
 
       <div className="lg:sticky lg:top-24">
-        <div className="relative">
-          {/* diffuse wash blending both group colors behind the diagram */}
+        <div className="relative overflow-hidden rounded-[var(--r-md)]">
+          {/* diffuse wash, clipped to the diagram card so it never bleeds out */}
           <div
             aria-hidden
-            className="pointer-events-none absolute -inset-6 -z-10 rounded-[40px] blur-2xl"
+            className="pointer-events-none absolute inset-0 -z-10 blur-2xl"
             style={{
               background:
-                'radial-gradient(62% 62% at 24% 18%, #ec4899 0%, transparent 68%), radial-gradient(62% 62% at 82% 86%, #00b4d8 0%, transparent 68%)',
-              opacity: 0.72,
+                'radial-gradient(55% 55% at 22% 16%, #ec4899 0%, transparent 60%), radial-gradient(55% 55% at 84% 88%, #00b4d8 0%, transparent 60%)',
+              opacity: 0.5,
             }}
           />
           <CoachRadarChart metrics={metrics} />

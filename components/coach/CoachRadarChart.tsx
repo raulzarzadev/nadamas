@@ -41,7 +41,7 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
   )
 
   return (
-    <div className="rounded-[var(--r-md)] border border-[rgba(0,119,182,0.12)] bg-[linear-gradient(180deg,#fff7fb_0%,#f4fbff_100%)] p-4 shadow-[var(--shadow-md)]">
+    <div className="rounded-[var(--r-md)] border border-[rgba(0,119,182,0.12)] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(244,251,255,0.72)_100%)] p-4 shadow-[var(--shadow-md)]">
       <div className="mb-2">
         <p className="text-sm font-semibold text-[var(--c-text-2)]">Vista rápida</p>
         <h3 className="text-lg font-bold text-[var(--c-ocean)]">
