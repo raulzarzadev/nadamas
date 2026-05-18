@@ -9,22 +9,59 @@ export interface CoachMetrics {
   connection: number
 }
 
+export type MetricGroupId = 'personality' | 'method'
+
+export interface MetricGroup {
+  id: MetricGroupId
+  label: string
+  icon: string
+  /** Light background tint for the group block. */
+  bg: string
+  border: string
+}
+
+export const METRIC_GROUPS: MetricGroup[] = [
+  {
+    id: 'personality',
+    label: 'Personalidad',
+    icon: '🧠',
+    bg: 'rgba(249,168,212,0.10)',
+    border: 'rgba(249,168,212,0.45)',
+  },
+  {
+    id: 'method',
+    label: 'Metodología',
+    icon: '⚙️',
+    bg: 'rgba(144,224,239,0.14)',
+    border: 'rgba(0,180,216,0.35)',
+  },
+]
+
 export interface CoachMetricDefinition {
   key: keyof CoachMetrics
   label: string
   minLabel: string
   maxLabel: string
   icon: string
+  group: MetricGroupId
 }
 
 export const COACH_METRICS: CoachMetricDefinition[] = [
-  { key: 'intensity', label: 'Intensidad', minLabel: 'Relajado', maxLabel: 'Exigente', icon: '⚡' },
+  {
+    key: 'intensity',
+    label: 'Intensidad',
+    minLabel: 'Relajado',
+    maxLabel: 'Exigente',
+    icon: '⚡',
+    group: 'method',
+  },
   {
     key: 'methodology',
     label: 'Metodología',
     minLabel: 'Intuitiva',
     maxLabel: 'Estructurada',
     icon: '🧭',
+    group: 'method',
   },
   {
     key: 'communication',
@@ -32,14 +69,23 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
     minLabel: 'Motivacional',
     maxLabel: 'Técnico',
     icon: '💬',
+    group: 'personality',
   },
-  { key: 'patience', label: 'Paciencia', minLabel: 'Rápido', maxLabel: 'Paciente', icon: '🌊' },
+  {
+    key: 'patience',
+    label: 'Paciencia',
+    minLabel: 'Rápido',
+    maxLabel: 'Paciente',
+    icon: '🌊',
+    group: 'personality',
+  },
   {
     key: 'attention',
     label: 'Atención',
     minLabel: 'Grupal',
     maxLabel: 'Personalizada',
     icon: '🎯',
+    group: 'personality',
   },
   {
     key: 'training',
@@ -47,6 +93,7 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
     minLabel: 'Recreativo',
     maxLabel: 'Competitivo',
     icon: '🏊',
+    group: 'method',
   },
   {
     key: 'planning',
@@ -54,6 +101,7 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
     minLabel: 'Improvisado',
     maxLabel: 'Planeado',
     icon: '📋',
+    group: 'method',
   },
   {
     key: 'connection',
@@ -61,6 +109,7 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
     minLabel: 'Deportiva',
     maxLabel: 'Meditativa',
     icon: '🌿',
+    group: 'personality',
   },
 ]
 
