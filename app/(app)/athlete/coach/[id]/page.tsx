@@ -7,8 +7,13 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { use, useEffect, useMemo, useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
-import { postAuthed } from '@/lib/client/authed-api'
-import { formatSlotLabel, parseBookingSelection } from '@/lib/coach-booking'
+import { getAuthed, postAuthed } from '@/lib/client/authed-api'
+import {
+  type Booking,
+  bookingSelectionKey,
+  formatSlotLabel,
+  parseBookingSelection,
+} from '@/lib/coach-booking'
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
 
 interface CoachDetail {
@@ -60,6 +65,30 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
     setName((current) => current || user.displayName || user.name || '')
     setPhone((current) => current || user.phone || '')
   }, [user])
+
+  // Booking lives server-side with a deterministic id, so a reload must
+  // reflect an already-confirmed class instead of asking again.
+  useEffect(() => {
+    if (!user || !bookingSelection) return
+    let active = true
+    getAuthed('/api/bookings')
+      .then((res) => res.json())
+      .then((payload: { bookings?: Booking[] }) => {
+        if (!active) return
+        const key = bookingSelectionKey(bookingSelection)
+        const exists = (payload.bookings || []).some(
+          (booking) => bookingSelectionKey(booking) === key
+        )
+        if (exists) {
+          setBookingStatus('success')
+          setBookingMessage('Clase agendada')
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [user, bookingSelection])
 
   async function confirmBooking() {
     if (!bookingSelection) return
