@@ -1,9 +1,6 @@
 'use client'
 
-import type {
-  CoachIdentityVerification,
-  CoachVerification,
-} from '@/firebase/coaches/coach.model'
+import type { CoachIdentityVerification, CoachVerification } from '@/firebase/coaches/coach.model'
 import { effectiveScore } from '@/lib/coach-score'
 
 export default function ScoreCard({
@@ -28,9 +25,7 @@ export default function ScoreCard({
   return (
     <div className="grid gap-4 lg:grid-cols-[0.72fr_1.28fr]">
       <section className="flex flex-col gap-2 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)] sm:p-6">
-        <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">
-          Tu calificación
-        </h2>
+        <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">Tu calificación</h2>
         <p className="text-4xl font-extrabold text-[var(--c-ocean)]">
           {score}
           <span className="text-base font-medium text-[var(--c-text-2)]"> / 100</span>
@@ -42,9 +37,7 @@ export default function ScoreCard({
 
       <section className="flex flex-col gap-3 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)] sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="mr-auto text-xl font-bold text-[var(--c-ocean-mid)]">
-            Estado del perfil
-          </h2>
+          <h2 className="mr-auto text-xl font-bold text-[var(--c-ocean-mid)]">Estado del perfil</h2>
           <span
             className={`rounded-full px-3 py-1 text-sm font-semibold ${
               verified
@@ -60,15 +53,20 @@ export default function ScoreCard({
           <p className="text-sm text-[var(--c-text-2)]">
             {completionDone
               ? 'Tu perfil ya tiene lo esencial. Puedes enviarlo a revisión.'
-              : `Te ${missingItems.length === 1 ? 'falta' : 'faltan'} ${missingItems.length} ${missingItems.length === 1 ? 'cosa' : 'cosas'} por completar.`}
+              : `Completa estos ${missingItems.length} requisitos para poder solicitar verificación:`}
           </p>
 
           {!verified && (
             <button
               type="button"
-              disabled={requesting}
+              disabled={requesting || !completionDone}
               onClick={onRequestVerification}
-              className="btn btn-outline btn-sm self-start sm:self-auto"
+              title={
+                completionDone
+                  ? undefined
+                  : 'Completa todos los requisitos para solicitar verificación'
+              }
+              className="btn btn-outline btn-sm self-start disabled:opacity-50 sm:self-auto"
             >
               {requesting
                 ? 'Enviando…'
@@ -80,9 +78,7 @@ export default function ScoreCard({
         </div>
 
         {requestError && (
-          <p className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">
-            {requestError}
-          </p>
+          <p className="rounded-2xl bg-red-50 px-3 py-2 text-sm text-red-700">{requestError}</p>
         )}
 
         {!completionDone && (
