@@ -13,6 +13,7 @@ import { useUser } from '@/context/UserContext'
 import type { CoachPrivate, CoachPublic, CoachVerification } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { postAuthed } from '@/lib/client/authed-api'
+import { coachMissingItems } from '@/lib/coach-completeness'
 import { computeAutoScore } from '@/lib/coach-score'
 
 export default function CoachProfilePage() {
@@ -100,23 +101,12 @@ export default function CoachProfilePage() {
   }
 
   const identityVerification = privVal.identityVerification
-  const gallery = pubVal.galleryPhotos || []
-  const hasFacePhoto = !!(
-    pubVal.facePhoto?.url || gallery.find((photo) => photo.label === 'Yo')?.url
-  )
-  const hasLocation = !!pubVal.teachingLocations?.length
-  const hasBio = !!pubVal.bio?.trim()
-  const hasMetrics = !!pubVal.metrics && Object.keys(pubVal.metrics).length > 0
-  const hasIne = !!identityVerification?.document?.url
-  const hasLegalName = !!(user?.firstName?.trim() && user?.lastName?.trim())
-  const missingItems = [
-    !hasMetrics && 'Carta de estilo',
-    !hasBio && 'Bio corta',
-    !hasFacePhoto && 'Foto tuya',
-    !hasLocation && 'Lugar y horarios',
-    !hasLegalName && 'Nombre y apellidos',
-    !hasIne && 'Documento de identidad',
-  ].filter(Boolean) as string[]
+  const missingItems = coachMissingItems({
+    pub: pubVal,
+    priv: privVal,
+    firstName: user?.firstName,
+    lastName: user?.lastName,
+  })
 
   const requestVerification = async () => {
     setVerificationRequestError(null)
