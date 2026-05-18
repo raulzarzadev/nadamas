@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { FiInfo } from 'react-icons/fi'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
 import {
@@ -24,8 +25,8 @@ interface PublicCoachDirectoryItem extends CoachPublic {
 
 function coachPhoto(coach: PublicCoachDirectoryItem) {
   return (
-    coach.galleryPhotos?.find((photo) => photo.label === 'Yo')?.url ||
     coach.facePhoto?.url ||
+    coach.galleryPhotos?.find((photo) => photo.label === 'Yo')?.url ||
     coach.avatarUrl ||
     null
   )
@@ -53,6 +54,7 @@ export default function MarketplacePreview() {
   const [isLoading, setIsLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [selectedSlots, setSelectedSlots] = useState<Record<string, string>>({})
+  const [styleInfoId, setStyleInfoId] = useState<string | null>(null)
   const [bookingState] = useState<
     Record<
       string,
@@ -188,23 +190,40 @@ export default function MarketplacePreview() {
                       </span>
                     )}
                   </h3>
-                  <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-[var(--c-text-2)]">
+                  <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-[var(--c-text-2)]">
                     {coach.bio || 'Este coach todavía está afinando su presentación.'}
                   </p>
                 </div>
+
+                <div className="flex shrink-0 flex-col items-center gap-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[0.7rem] font-semibold uppercase tracking-wide text-[var(--c-text-2)]">
+                      Carta de estilo
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Qué es la carta de estilo"
+                      aria-expanded={styleInfoId === coach.id}
+                      onClick={() =>
+                        setStyleInfoId((current) => (current === coach.id ? null : coach.id))
+                      }
+                      className="grid h-5 w-5 place-items-center rounded-full text-[#1d4ed8] transition hover:bg-[#1d4ed8]/10"
+                    >
+                      <FiInfo aria-hidden="true" className="text-sm" />
+                    </button>
+                  </div>
+                  <CoachStyleMapPreview metrics={metrics} />
+                </div>
               </div>
 
-              <div className="flex items-center justify-between gap-3 border-y border-[var(--c-border)] bg-[linear-gradient(180deg,#fff7fb_0%,#f4fbff_100%)] px-5 py-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--c-text-2)]">
-                    Carta de estilo
-                  </p>
-                  <p className="text-sm font-semibold text-[var(--c-ocean)]">
-                    8 dimensiones para comparar compatibilidad
-                  </p>
+              {styleInfoId === coach.id && (
+                <div className="mx-5 mb-1 rounded-2xl bg-[var(--c-surface)] p-4 text-sm leading-6 text-[var(--c-text-2)]">
+                  La <span className="font-semibold text-[var(--c-ocean)]">carta de estilo</span>{' '}
+                  resume cómo entrena este coach en 8 dimensiones (técnica, paciencia, planeación,
+                  relación con el agua y más). Te ayuda a comparar la compatibilidad con tu forma de
+                  aprender antes de reservar, no solo el precio.
                 </div>
-                <CoachStyleMapPreview metrics={metrics} />
-              </div>
+              )}
 
               <div className="p-5">
                 <div className="flex items-center justify-between gap-3 text-sm text-[var(--c-text-2)]">
