@@ -71,7 +71,8 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
         </h3>
       </div>
 
-      <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto h-auto w-full max-w-[400px]">
+      <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto h-auto w-full max-w-[320px]">
+        <title>{CARD_PROPIERTIES_AND_STYLES_LABEL}</title>
         <defs>
           <linearGradient id="style-fill" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#f9a8d4" stopOpacity="0.56" />
@@ -79,11 +80,11 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
           </linearGradient>
         </defs>
 
-        {RADAR_METRICS.map((_, index) => {
+        {RADAR_METRICS.map((metric, index) => {
           const p = point(index, 5)
           return (
             <line
-              key={index}
+              key={metric.key}
               x1={center}
               y1={center}
               x2={p.x}
@@ -179,11 +180,11 @@ export function CoachStyleMapPreview({ metrics }: { metrics: CoachMetrics }) {
         />
       ))}
 
-      {RADAR_METRICS.map((_, index) => {
+      {RADAR_METRICS.map((metric, index) => {
         const p = point(index, 5)
         return (
           <line
-            key={index}
+            key={metric.key}
             x1={center}
             y1={center}
             x2={p.x}

@@ -1,5 +1,6 @@
 'use client'
 
+import CoachMetricsOverview from '@comps/coach/CoachMetricsOverview'
 import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
 import IconInfo from '@comps/IconInfo'
 import { onAuthStateChanged } from 'firebase/auth'
@@ -104,6 +105,7 @@ export default function MarketplacePreview({
   const [coaches, setCoaches] = useState<PublicCoachDirectoryItem[]>([])
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [styleCoach, setStyleCoach] = useState<PublicCoachDirectoryItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [selectedSlots, setSelectedSlots] = useState<Record<string, string[]>>({})
@@ -143,6 +145,24 @@ export default function MarketplacePreview({
       setCurrentUserId(user?.uid || null)
     })
   }, [])
+
+  useEffect(() => {
+    if (!styleCoach) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setStyleCoach(null)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [styleCoach])
 
   const visibleCoaches = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -266,8 +286,8 @@ export default function MarketplacePreview({
               key={coach.id}
               className="overflow-hidden rounded-[32px] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]"
             >
-              <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-                <div className="flex min-w-0 items-center gap-4 sm:flex-1">
+              <div className="flex  gap-4 p-5 flex-col sm:flex-row sm:items-center">
+                <div className="flex min-w-0 items-center gap-4 flex-1">
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-3xl bg-[var(--c-surface)]">
                     {photo ? (
                       <Image
@@ -302,8 +322,15 @@ export default function MarketplacePreview({
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:gap-0">
-                  <CoachStyleMapPreview metrics={metrics} />
+                <div className="flex shrink-0 items-center gap-3 flex-col sm:gap-0">
+                  <button
+                    type="button"
+                    onClick={() => setStyleCoach(coach)}
+                    aria-label={`Ver detalles de la ${CARD_PROPIERTIES_AND_STYLES_LABEL} de ${coach.name}`}
+                    className="rounded-[24px] transition hover:bg-[var(--c-surface)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                  >
+                    <CoachStyleMapPreview metrics={metrics} />
+                  </button>
                   <div className="mt-0.5 flex items-center gap-0.5">
                     <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-[var(--c-text-2)]">
                       {CARD_PROPIERTIES_AND_STYLES_LABEL}
@@ -525,6 +552,52 @@ export default function MarketplacePreview({
             background: 'linear-gradient(90deg, transparent, var(--c-surface), transparent)',
           }}
         />
+      )}
+
+      {styleCoach && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="coach-style-dialog-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,37,64,0.48)] p-4"
+        >
+          <button
+            type="button"
+            aria-label="Cerrar detalles de la carta de estilo"
+            className="absolute inset-0"
+            onClick={() => setStyleCoach(null)}
+          />
+          <div className="relative max-h-[min(52rem,calc(100vh-2rem))] w-full max-w-5xl overflow-y-auto rounded-[32px] bg-[var(--c-bg)] p-5 shadow-[var(--shadow-lg)] sm:p-7">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--c-text-2)]">
+                  {styleCoach.name}
+                </p>
+                <h2
+                  id="coach-style-dialog-title"
+                  className="mt-1 text-2xl font-extrabold text-[var(--c-ocean)] sm:text-3xl"
+                >
+                  {CARD_PROPIERTIES_AND_STYLES_LABEL}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStyleCoach(null)}
+                aria-label="Cerrar"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--c-border)] bg-white text-xl text-[var(--c-ocean)]"
+              >
+                ×
+              </button>
+            </div>
+
+            <p className="mb-6 max-w-3xl text-[var(--c-text-2)]">
+              Así entrena este coach en 8 dimensiones. El gráfico resume el estilo general y abajo
+              puedes ver cada rasgo con sus extremos.
+            </p>
+
+            <CoachMetricsOverview metrics={normalizeCoachMetrics(styleCoach.metrics)} />
+          </div>
+        </div>
       )}
     </section>
   )
