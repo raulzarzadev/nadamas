@@ -38,9 +38,9 @@ export default function Hero() {
         </svg>
       </div>
 
-      <div className="mx-auto grid max-w-[1180px] items-center gap-14 px-5 pb-24 pt-16 sm:px-8 lg:grid-cols-[1.06fr_0.94fr] lg:gap-10 lg:pb-32 lg:pt-24">
+      <div className="mx-auto grid max-w-[1180px] items-center gap-10 px-5 pb-24 pt-16 sm:px-8 md:grid-cols-[1.05fr_0.95fr] md:gap-8 lg:grid-cols-[1.06fr_0.94fr] lg:gap-10 lg:pb-32 lg:pt-24">
         <div className="w-full max-w-xl">
-          <h1 className="max-w-[14ch] text-[2.5rem] font-extrabold sm:text-[3.4rem] lg:text-[4.05rem]">
+          <h1 className="max-w-[15ch] text-[2.5rem] font-extrabold sm:text-[3.4rem] md:text-[3rem] lg:text-[4.05rem]">
             Tu próximo coach de natación, a un toque.
           </h1>
 
