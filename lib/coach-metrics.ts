@@ -25,15 +25,15 @@ export const METRIC_GROUPS: MetricGroup[] = [
     id: 'personality',
     label: 'Personalidad',
     icon: '🧠',
-    bg: 'rgba(249,168,212,0.10)',
-    border: 'rgba(249,168,212,0.45)',
+    bg: 'rgba(249,168,212,0.28)',
+    border: 'rgba(236,72,153,0.55)',
   },
   {
     id: 'method',
     label: 'Metodología',
     icon: '⚙️',
-    bg: 'rgba(144,224,239,0.14)',
-    border: 'rgba(0,180,216,0.35)',
+    bg: 'rgba(144,224,239,0.32)',
+    border: 'rgba(0,180,216,0.55)',
   },
 ]
 
