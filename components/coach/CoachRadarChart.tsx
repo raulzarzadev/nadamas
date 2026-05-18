@@ -43,30 +43,21 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
   return (
     <div className="rounded-[var(--r-md)] border border-[rgba(0,119,182,0.12)] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(244,251,255,0.72)_100%)] p-4 shadow-[var(--shadow-md)]">
       <div className="mb-2">
-        <p className="text-sm font-semibold text-[var(--c-text-2)]">Vista rápida</p>
         <h3 className="text-lg font-bold text-[var(--c-ocean)]">
           {CARD_PROPIERTIES_AND_STYLES_LABEL}
         </h3>
       </div>
 
-      <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto h-auto w-full max-w-[320px]">
+      <svg
+        viewBox={`-34 -6 ${size + 68} ${size + 12}`}
+        className="mx-auto h-auto w-full max-w-[360px]"
+      >
         <defs>
           <linearGradient id="style-fill" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#f9a8d4" stopOpacity="0.56" />
             <stop offset="100%" stopColor="#90e0ef" stopOpacity="0.48" />
           </linearGradient>
         </defs>
-
-        {levels.map((level) => (
-          <circle
-            key={level}
-            cx={center}
-            cy={center}
-            r={(level / 5) * radius}
-            fill="none"
-            stroke="rgba(10,37,64,0.10)"
-          />
-        ))}
 
         {RADAR_METRICS.map((_, index) => {
           const p = point(index, 5)
@@ -77,25 +68,37 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
               y1={center}
               x2={p.x}
               y2={p.y}
-              stroke="rgba(10,37,64,0.10)"
+              stroke="rgba(10,37,64,0.06)"
+              strokeWidth="1"
             />
           )
         })}
+
+        {levels.map((level) => (
+          <circle
+            key={level}
+            cx={center}
+            cy={center}
+            r={(level / 5) * radius}
+            fill="none"
+            stroke="rgba(10,37,64,0.09)"
+          />
+        ))}
 
         <path
           d={buildSoftPath(stylePoints)}
           fill="url(#style-fill)"
           stroke="#ec4899"
-          strokeWidth="3"
+          strokeWidth="2.5"
           strokeLinejoin="round"
         />
 
         {RADAR_METRICS.map((metric, index) => {
           const p = point(index, toScheme(metrics[metric.key]))
-          const label = point(index, 6.2)
+          const label = point(index, 6.3)
           return (
             <g key={metric.key}>
-              <circle cx={p.x} cy={p.y} r="5" fill="#ec4899" stroke="#fff" strokeWidth="2" />
+              <circle cx={p.x} cy={p.y} r="4" fill="#ec4899" stroke="#fff" strokeWidth="2" />
               <text
                 x={label.x}
                 y={label.y}
