@@ -16,6 +16,7 @@ import {
   parseBookingSelections,
 } from '@/lib/coach-booking'
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
+import { formatPesos } from '@/lib/coach-offerings'
 
 interface CoachDetail {
   coach: CoachPublic
@@ -180,8 +181,8 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
           <div className="rounded-2xl bg-[var(--c-surface)] px-4 py-3">
             <dt className="text-xs font-semibold uppercase text-[var(--c-text-2)]">Precio</dt>
             <dd className="mt-1 font-semibold text-[var(--c-ocean)]">
-              {primarySelection.price !== null
-                ? `$${primarySelection.price} ${
+              {primarySelection.priceCents !== null
+                ? `${formatPesos(primarySelection.priceCents)} ${
                     {
                       clase: 'por clase',
                       sesión: 'por sesión',

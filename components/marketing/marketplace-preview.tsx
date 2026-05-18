@@ -18,6 +18,7 @@ import {
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
 import {
   addDays,
+  formatPesos,
   offeringsAvailabilitySummary,
   offeringsPriceSummary,
   resolveOfferings,
@@ -194,7 +195,7 @@ export default function MarketplacePreview() {
             selectedSlotKeys.includes(bookingSelectionKey(selection))
           )
           const selectedTotal = selectedSelections.reduce(
-            (total, selection) => total + (selection.price ?? 0),
+            (total, selection) => total + (selection.priceCents ?? 0),
             0
           )
           const bookingStateForCoach = bookingState[coach.id]
@@ -377,9 +378,11 @@ export default function MarketplacePreview() {
                                   </span>
                                   <span className="text-right">
                                     <span className="font-semibold text-[var(--c-ocean)]">
-                                      {selection.price !== null ? `$${selection.price}` : '—'}
+                                      {selection.priceCents !== null
+                                        ? formatPesos(selection.priceCents)
+                                        : '—'}
                                     </span>
-                                    {selection.price !== null && (
+                                    {selection.priceCents !== null && (
                                       <span className="ml-1 text-xs text-[var(--c-text-2)]">
                                         {UNIT_LABEL[selection.unit]}
                                       </span>
@@ -388,10 +391,12 @@ export default function MarketplacePreview() {
                                 </li>
                               ))}
                             </ul>
-                            {selectedSelections.every((selection) => selection.price !== null) ? (
+                            {selectedSelections.every(
+                              (selection) => selection.priceCents !== null
+                            ) ? (
                               <div className="mt-3 flex items-baseline justify-end gap-3 border-t border-[var(--c-border)] pt-3">
                                 <p className="text-lg font-extrabold text-[var(--c-ocean)]">
-                                  Total ${selectedTotal}
+                                  Total {formatPesos(selectedTotal)}
                                 </p>
                               </div>
                             ) : (

@@ -96,7 +96,10 @@ export interface CoachClassOffering {
   startTime?: string
   endTime?: string
   durationMinutes?: number | null
-  price: number | null
+  /** Legacy pesos field. Read-only for old docs. */
+  price?: number | null
+  /** Canonical amount stored as integer cents. */
+  priceCents?: number | null
   currency: 'MXN'
   unit: CoachOfferingUnit
   details?: string

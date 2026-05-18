@@ -76,7 +76,7 @@ export default function PhoneInput({
   }
 
   return (
-    <div className="block">
+    <div className="min-w-0">
       {label && (
         <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-[var(--c-text-2)]">
           {label}

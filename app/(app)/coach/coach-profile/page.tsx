@@ -21,6 +21,7 @@ export default function CoachProfilePage() {
   const [pub, setPub] = useState<CoachPublic | null | undefined>(undefined)
   const [priv, setPriv] = useState<CoachPrivate | null | undefined>(undefined)
   const [savingSection, setSavingSection] = useState<string | null>(null)
+  const [requestingVerification, setRequestingVerification] = useState(false)
   const [verificationRequestError, setVerificationRequestError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -126,6 +127,7 @@ export default function CoachProfilePage() {
     }
 
     try {
+      setRequestingVerification(true)
       if (identityVerification.status === 'pending') {
         await postAuthed('/api/notifications/verification-requested')
         await CoachCRUD.upsertPrivate(uid, {
@@ -146,6 +148,8 @@ export default function CoachProfilePage() {
       })
     } catch {
       setVerificationRequestError('No pudimos enviar la solicitud. Inténtalo de nuevo.')
+    } finally {
+      setRequestingVerification(false)
     }
   }
 
@@ -158,7 +162,7 @@ export default function CoachProfilePage() {
         identityStatus={identityVerification?.status}
         missingItems={missingItems}
         onRequestVerification={requestVerification}
-        requesting={savingSection === 'private'}
+        requesting={requestingVerification}
         requestError={verificationRequestError}
         visible={pubVal.publicProfileVisible === true}
         togglingVisible={savingSection === 'visibility'}
@@ -166,6 +170,16 @@ export default function CoachProfilePage() {
       />
 
       <PersonalDataCard />
+
+      <LinksCard
+        value={{
+          bio: pubVal.bio,
+          publicLinks: pubVal.publicLinks,
+          socials: pubVal.socials,
+        }}
+        saving={savingSection === 'links'}
+        onSave={(v) => savePublic('links', v)}
+      />
 
       <SkillsCard
         value={pubVal.metrics}
@@ -195,16 +209,6 @@ export default function CoachProfilePage() {
         }}
         saving={savingSection === 'media'}
         onSave={(v) => savePublic('media', v)}
-      />
-
-      <LinksCard
-        value={{
-          bio: pubVal.bio,
-          publicLinks: pubVal.publicLinks,
-          socials: pubVal.socials,
-        }}
-        saving={savingSection === 'links'}
-        onSave={(v) => savePublic('links', v)}
       />
 
       <PrivateCard

@@ -17,6 +17,7 @@ export function useAutosave(
   const [status, setStatus] = useState<AutosaveStatus>('idle')
   const firstRun = useRef(true)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastSavedKey = useRef<string | null>(null)
   const saveRef = useRef(save)
   saveRef.current = save
 
@@ -30,6 +31,7 @@ export function useAutosave(
   const saveNow = () => {
     clear()
     saveRef.current()
+    lastSavedKey.current = key
     setStatus('saved')
   }
 
@@ -37,14 +39,17 @@ export function useAutosave(
   useEffect(() => {
     if (firstRun.current) {
       firstRun.current = false
+      lastSavedKey.current = key
       return
     }
     if (!enabled) return
+    if (key === lastSavedKey.current) return
 
     setStatus('pending')
     clear()
     timer.current = setTimeout(() => {
       saveRef.current()
+      lastSavedKey.current = key
       setStatus('saved')
     }, delay)
 

@@ -4,6 +4,7 @@ import {
   dateKey,
   DAY_TO_INDEX,
   offeringPlaceLabel,
+  offeringPriceCents,
   resolveOfferings,
   resolveOfferingSchedules,
   scheduleIsAvailableOn,
@@ -21,7 +22,8 @@ export type CoachBookingSelection = {
   date: string
   startTime: string
   endTime: string
-  price: number | null
+  price?: number | null
+  priceCents: number | null
   currency: 'MXN'
   unit: CoachClassOffering['unit']
 }
@@ -68,6 +70,7 @@ export function flattenCoachBookingSelections(
           startTime: schedule.startTime,
           endTime: schedule.endTime,
           price: offering.price,
+          priceCents: offeringPriceCents(offering),
           currency: offering.currency,
           unit: offering.unit,
         }))
@@ -136,6 +139,9 @@ function normalizeBookingSelection(raw: unknown): CoachBookingSelection | null {
     startTime: parsed.startTime,
     endTime: parsed.endTime,
     price: parsed.price ?? null,
+    priceCents:
+      parsed.priceCents ??
+      (parsed.price !== undefined && parsed.price !== null ? parsed.price * 100 : null),
     currency: 'MXN',
     unit: parsed.unit ?? 'clase',
   }

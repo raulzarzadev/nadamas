@@ -124,6 +124,9 @@ export async function POST(request: Request) {
       startTime: selection.startTime as string,
       endTime: selection.endTime as string,
       price: selection.price ?? null,
+      priceCents:
+        selection.priceCents ??
+        (selection.price !== undefined && selection.price !== null ? selection.price * 100 : null),
       currency: 'MXN' as const,
       unit: selection.unit ?? 'clase',
       status: 'confirmed',
@@ -155,7 +158,7 @@ export async function POST(request: Request) {
           locationName: booking.locationName,
           date: booking.date,
           startTime: booking.startTime,
-          price: booking.price,
+          priceCents: booking.priceCents,
         })),
       })
     }

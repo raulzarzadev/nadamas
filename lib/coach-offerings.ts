@@ -23,7 +23,7 @@ export function createOffering(): CoachClassOffering {
     groupType: 'particular',
     maxPeople: null,
     schedules: [createOfferingSchedule()],
-    price: null,
+    priceCents: null,
     currency: 'MXN',
     unit: 'clase',
     details: '',
@@ -77,6 +77,7 @@ export function deriveOfferingsFromLegacy(
       endTime: slot.endTime,
       durationMinutes: onlyPrice?.durationMinutes ?? 60,
       price: onlyPrice?.amount ?? null,
+      priceCents: onlyPrice?.amount !== null && onlyPrice ? onlyPrice.amount * 100 : null,
       currency: 'MXN' as const,
       unit: onlyPrice?.unit ?? ('clase' as const),
       details: onlyPrice?.details || '',
@@ -125,14 +126,15 @@ export function offeringWhen(offering: CoachClassOffering): string {
 
 export function offeringPrice(offering: CoachClassOffering): string {
   const unit = OFFERING_UNITS.find((u) => u.value === offering.unit)?.label || 'por clase'
-  return offering.price !== null ? `$${offering.price} ${unit}` : `$ — ${unit}`
+  const cents = offeringPriceCents(offering)
+  return cents !== null ? `${formatPesos(cents)} ${unit}` : `$ — ${unit}`
 }
 
 /** Cheapest priced offering label for cards, or a fallback. */
 export function offeringsPriceSummary(offerings: CoachClassOffering[]): string {
   const priced = offerings
-    .filter((o) => o.price !== null)
-    .sort((a, b) => (a.price as number) - (b.price as number))
+    .filter((o) => offeringPriceCents(o) !== null)
+    .sort((a, b) => (offeringPriceCents(a) as number) - (offeringPriceCents(b) as number))
   if (!priced.length) return 'Precio por definir'
   return offeringPrice(priced[0])
 }
@@ -165,6 +167,19 @@ export function resolveOfferingSchedules(offering: CoachClassOffering): CoachOff
     ]
   }
   return []
+}
+
+export function offeringPriceCents(offering: CoachClassOffering) {
+  if (offering.priceCents !== undefined) return offering.priceCents
+  return offering.price !== undefined && offering.price !== null ? offering.price * 100 : null
+}
+
+export function formatPesos(cents: number) {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2,
+  }).format(cents / 100)
 }
 
 export const DAY_TO_INDEX: Record<string, number> = {

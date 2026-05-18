@@ -119,19 +119,24 @@ export function sendBookingConfirmedEmail({
   coachName?: string
   athleteName: string
   athletePhone?: string
-  bookings: Array<{ locationName: string; date: string; startTime: string; price: number | null }>
+  bookings: Array<{
+    locationName: string
+    date: string
+    startTime: string
+    priceCents: number | null
+  }>
 }) {
   const greeting = coachName ? `Hola ${coachName},` : 'Hola,'
   const rows = bookings
     .map(
       (booking) =>
-        `<li style="margin:0 0 8px"><strong>${booking.date}</strong> · ${booking.startTime} · ${booking.locationName}${booking.price !== null ? ` · $${booking.price}` : ''}</li>`
+        `<li style="margin:0 0 8px"><strong>${booking.date}</strong> · ${booking.startTime} · ${booking.locationName}${booking.priceCents !== null ? ` · $${(booking.priceCents / 100).toFixed(2)}` : ''}</li>`
     )
     .join('')
   const textRows = bookings
     .map(
       (booking) =>
-        `- ${booking.date} · ${booking.startTime} · ${booking.locationName}${booking.price !== null ? ` · $${booking.price}` : ''}`
+        `- ${booking.date} · ${booking.startTime} · ${booking.locationName}${booking.priceCents !== null ? ` · $${(booking.priceCents / 100).toFixed(2)}` : ''}`
     )
     .join('\n')
   return sendEmail({

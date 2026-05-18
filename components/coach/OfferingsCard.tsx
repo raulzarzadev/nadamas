@@ -1,5 +1,6 @@
 'use client'
 import ImageInput from '@comps/Inputs/ImageInput'
+import InputCurrency from '@comps/Inputs/InputCurrency'
 import SaveButton from '@comps/SaveButton'
 import { useEffect, useMemo, useState } from 'react'
 import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
@@ -13,6 +14,7 @@ import {
   OFFERING_UNITS,
   offeringHeadline,
   offeringPrice,
+  offeringPriceCents,
   offeringWhen,
   resolveOfferings,
   resolveOfferingSchedules,
@@ -155,16 +157,24 @@ export default function OfferingsCard({
 
         <div className="flex gap-2 text-xs font-semibold">
           {['Dónde', 'Qué y cuándo', 'Cuánto'].map((label, index) => (
-            <span
+            <button
               key={label}
+              type="button"
+              disabled={
+                index + 1 > step &&
+                Array.from({ length: index }, (_, currentIndex) => currentIndex + 1).some(
+                  (currentStep) => !stepValid(currentStep, editing)
+                )
+              }
+              onClick={() => setStep(index + 1)}
               className={`rounded-full px-3 py-1 ${
                 step === index + 1
                   ? 'bg-[var(--c-ocean)] text-white'
                   : 'bg-[var(--c-surface)] text-[var(--c-text-2)]'
-              }`}
+              } disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {index + 1}. {label}
-            </span>
+            </button>
           ))}
         </div>
 
@@ -507,36 +517,31 @@ export default function OfferingsCard({
 
         {step === 3 && (
           <div className="flex flex-col gap-3">
-            <div className="flex gap-3">
-              <label className="relative flex-1">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--c-text-2)]">
-                  $
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  inputMode="numeric"
-                  className="input input-bordered w-full border-[var(--c-border)] bg-white pl-7 font-semibold text-[var(--c-ocean)] shadow-sm focus:border-[var(--c-aqua)]"
-                  placeholder="450"
-                  value={editing.price ?? ''}
-                  onChange={(event) =>
-                    patchEditing({ price: event.target.value ? Number(event.target.value) : null })
-                  }
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
+              <label className="flex min-w-0 flex-col gap-1.5">
+                <span className="text-sm font-semibold text-[var(--c-ocean)]">Precio</span>
+                <InputCurrency
+                  valueCents={offeringPriceCents(editing)}
+                  onChange={(priceCents) => patchEditing({ priceCents })}
+                  className="h-14 rounded-2xl px-5 text-lg"
                 />
               </label>
-              <select
-                className="select select-bordered border-[var(--c-border)] bg-white font-semibold text-[var(--c-ocean)] shadow-sm focus:border-[var(--c-aqua)]"
-                value={editing.unit}
-                onChange={(event) =>
-                  patchEditing({ unit: event.target.value as CoachClassOffering['unit'] })
-                }
-              >
-                {OFFERING_UNITS.map((unit) => (
-                  <option key={unit.value} value={unit.value}>
-                    {unit.label}
-                  </option>
-                ))}
-              </select>
+              <label className="flex min-w-0 flex-col gap-1.5">
+                <span className="text-sm font-semibold text-[var(--c-ocean)]">Cobro</span>
+                <select
+                  className="select select-bordered h-14 w-full rounded-2xl border-[var(--c-border)] bg-white px-5 font-semibold text-[var(--c-ocean)] shadow-sm focus:border-[var(--c-aqua)]"
+                  value={editing.unit}
+                  onChange={(event) =>
+                    patchEditing({ unit: event.target.value as CoachClassOffering['unit'] })
+                  }
+                >
+                  {OFFERING_UNITS.map((unit) => (
+                    <option key={unit.value} value={unit.value}>
+                      {unit.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-semibold text-[var(--c-ocean)]">

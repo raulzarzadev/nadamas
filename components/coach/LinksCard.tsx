@@ -1,4 +1,5 @@
 'use client'
+import PhoneInput from 'Inputs/PhoneInput'
 import RichTextArea from '@comps/Inputs/RichTextArea'
 import SaveButton from '@comps/SaveButton'
 import { useEffect, useMemo, useState } from 'react'
@@ -107,7 +108,7 @@ export default function LinksCard({
           return (
             <div
               key={`${link.kind}-${index}`}
-              className="grid gap-2 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3 sm:grid-cols-[11rem_1fr_auto] sm:items-center"
+              className="grid gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3 sm:grid-cols-[11rem_minmax(0,1fr)_auto] sm:items-center"
             >
               <label className="relative">
                 <span className="sr-only">Tipo de enlace</span>
@@ -138,23 +139,38 @@ export default function LinksCard({
                 </select>
               </label>
 
-              <input
-                className="input input-bordered w-full bg-white"
-                placeholder={option.placeholder}
-                value={link.value}
-                onChange={(event) =>
-                  setLinks((current) =>
-                    current.map((item, itemIndex) =>
-                      itemIndex === index ? { ...item, value: event.target.value } : item
+              {link.kind === 'whatsapp' ? (
+                <PhoneInput
+                  label=""
+                  placeholder="WhatsApp"
+                  value={link.value}
+                  onChange={(nextValue) =>
+                    setLinks((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, value: nextValue } : item
+                      )
                     )
-                  )
-                }
-              />
+                  }
+                />
+              ) : (
+                <input
+                  className="input input-bordered w-full bg-white"
+                  placeholder={option.placeholder}
+                  value={link.value}
+                  onChange={(event) =>
+                    setLinks((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, value: event.target.value } : item
+                      )
+                    )
+                  }
+                />
+              )}
 
               <button
                 type="button"
                 aria-label={`Quitar enlace ${index + 1}`}
-                className="btn btn-ghost"
+                className="btn btn-ghost justify-self-end sm:justify-self-auto"
                 onClick={() =>
                   setLinks((current) => current.filter((_, itemIndex) => itemIndex !== index))
                 }
