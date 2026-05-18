@@ -1,5 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { FiArrowRight, FiSearch, FiUser } from 'react-icons/fi'
+
+const TAGS = ['Aguas abiertas', 'Triatlón', 'Técnica de crol', 'Principiantes']
 
 const FACES = [
   'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=facearea&facepad=3&w=96&h=96&q=70',
@@ -37,18 +40,7 @@ export default function Hero() {
 
       <div className="mx-auto grid max-w-[1180px] items-center gap-14 px-5 pb-24 pt-16 sm:px-8 lg:grid-cols-[1.06fr_0.94fr] lg:gap-10 lg:pb-32 lg:pt-24">
         <div className="max-w-[36ch]">
-          <span
-            className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[0.8rem] font-semibold"
-            style={{ background: 'var(--c-surface)', color: 'var(--c-ocean-mid)' }}
-          >
-            <span
-              className="block h-1.5 w-1.5 rounded-full"
-              style={{ background: 'var(--c-aqua)' }}
-            />
-            Marketplace de coaches de natación
-          </span>
-
-          <h1 className="mt-6 text-[2.7rem] font-extrabold sm:text-[3.6rem] lg:text-[4.05rem]">
+          <h1 className="text-[2.7rem] font-extrabold sm:text-[3.6rem] lg:text-[4.05rem]">
             Tu próximo coach de natación, a un toque.
           </h1>
 
@@ -56,43 +48,54 @@ export default function Hero() {
             className="mt-6 max-w-[46ch] text-lg leading-relaxed sm:text-xl"
             style={{ color: 'var(--c-text-2)' }}
           >
-            Encuentra coaches verificados, reserva tu clase en minutos y entrena
-            con quien de verdad mejora tu técnica. Aguas abiertas, triatlón,
-            principiantes y más.
+            Explora coaches por estilo y ubicación, compara su carta de habilidades y agenda tu
+            clase en minutos. Sin llamadas, sin esperas.
           </p>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            {TAGS.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full px-3 py-1 text-sm font-medium"
+                style={{ background: 'var(--c-surface)', color: 'var(--c-ocean-mid)' }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <a
               href="#coaches"
-              className="inline-flex items-center justify-center rounded-full px-7 py-4 text-base font-semibold text-white"
+              className="group inline-flex items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-white transition-transform duration-300 hover:-translate-y-0.5"
               style={{
-                background: 'var(--c-aqua-strong)',
+                background: 'var(--grad-brand)',
                 boxShadow: 'var(--shadow-aqua)',
-                transition: 'transform 300ms var(--ease-expo)',
               }}
             >
+              <FiSearch aria-hidden="true" className="text-lg" />
               Encontrar coach
+              <FiArrowRight
+                aria-hidden="true"
+                className="transition-transform duration-300 group-hover:translate-x-0.5"
+              />
             </a>
             <a
               href="/login?intent=coach"
-              className="inline-flex items-center justify-center rounded-full px-7 py-4 text-base font-semibold"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-base font-semibold transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"
               style={{
                 color: 'var(--c-ocean)',
                 border: '1px solid var(--c-border)',
-                background: 'color-mix(in oklch, var(--c-bg) 60%, transparent)',
               }}
             >
-              Publicar mi perfil
+              <FiUser aria-hidden="true" className="text-lg" />
+              Soy coach
             </a>
           </div>
 
           <p className="mt-4 text-sm" style={{ color: 'var(--c-text-2)' }}>
             ¿Ya tienes cuenta?{' '}
-            <Link
-              href="/login"
-              className="font-semibold"
-              style={{ color: 'var(--c-ocean-mid)' }}
-            >
+            <Link href="/login" className="font-semibold" style={{ color: 'var(--c-ocean-mid)' }}>
               Inicia sesión
             </Link>
           </p>
@@ -105,13 +108,7 @@ export default function Hero() {
                   className="relative inline-block h-9 w-9 overflow-hidden rounded-full"
                   style={{ border: '2px solid var(--c-bg)' }}
                 >
-                  <Image
-                    src={src}
-                    alt=""
-                    fill
-                    sizes="36px"
-                    className="object-cover"
-                  />
+                  <Image src={src} alt="" fill sizes="36px" className="object-cover" />
                 </span>
               ))}
             </div>
@@ -131,10 +128,7 @@ export default function Hero() {
             className="rounded-[44px] p-[3px]"
             style={{ background: 'var(--grad-brand)', boxShadow: 'var(--shadow-lg)' }}
           >
-            <div
-              className="overflow-hidden rounded-[41px]"
-              style={{ background: 'var(--c-bg)' }}
-            >
+            <div className="overflow-hidden rounded-[41px]" style={{ background: 'var(--c-bg)' }}>
               <div
                 className="flex items-center justify-between px-6 pb-3 pt-6"
                 style={{ color: 'var(--c-ocean)' }}
