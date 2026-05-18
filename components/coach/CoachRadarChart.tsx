@@ -7,17 +7,9 @@ const toScheme = (value: number) => (value / METRIC_MAX) * RADAR_LEVELS
 
 function buildSoftPath(points: Array<{ x: number; y: number }>) {
   if (points.length === 0) return ''
-  const mid = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
-    x: (a.x + b.x) / 2,
-    y: (a.y + b.y) / 2,
-  })
-  const firstMid = mid(points[points.length - 1], points[0])
-  const segments = points.map((point, index) => {
-    const next = points[(index + 1) % points.length]
-    const nextMid = mid(point, next)
-    return `Q ${point.x} ${point.y} ${nextMid.x} ${nextMid.y}`
-  })
-  return `M ${firstMid.x} ${firstMid.y} ${segments.join(' ')} Z`
+  // Straight radar polygon — one segment per axis (no bezier blob).
+  const [first, ...rest] = points
+  return `M ${first.x} ${first.y} ${rest.map((p) => `L ${p.x} ${p.y}`).join(' ')} Z`
 }
 
 export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) {
