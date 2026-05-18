@@ -1,13 +1,13 @@
-import type { Metadata } from 'next'
+import Faq from '@comps/marketing/faq'
+import Features from '@comps/marketing/features'
+import FinalCta from '@comps/marketing/final-cta'
+import ForCoaches from '@comps/marketing/for-coaches'
 import Hero from '@comps/marketing/hero'
-import SocialProof from '@comps/marketing/social-proof'
 import HowItWorks from '@comps/marketing/how-it-works'
 import MarketplacePreview from '@comps/marketing/marketplace-preview'
-import Features from '@comps/marketing/features'
-import ForCoaches from '@comps/marketing/for-coaches'
 import ProductShots from '@comps/marketing/product-shots'
-import Faq from '@comps/marketing/faq'
-import FinalCta from '@comps/marketing/final-cta'
+import SocialProof from '@comps/marketing/social-proof'
+import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://nadamas.app'),
@@ -139,7 +139,7 @@ export default function LandingPage() {
       <Hero />
       <SocialProof />
       <HowItWorks />
-      <MarketplacePreview />
+      <MarketplacePreview initialVisibleCount={4} showViewMoreLink />
       <Features />
       <ForCoaches />
       <ProductShots />

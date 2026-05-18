@@ -4,8 +4,9 @@ import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
 import IconInfo from '@comps/IconInfo'
 import { onAuthStateChanged } from 'firebase/auth'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
@@ -29,6 +30,13 @@ interface PublicCoachDirectoryItem extends CoachPublic {
   id: string
   name: string
   avatarUrl?: string
+}
+
+interface MarketplacePreviewProps {
+  initialVisibleCount?: number
+  pageSize?: number
+  infiniteScroll?: boolean
+  showViewMoreLink?: boolean
 }
 
 const UNIT_LABEL: Record<CoachBookingSelection['unit'], string> = {
@@ -86,7 +94,12 @@ function groupSelections(selections: CoachBookingSelection[]) {
   return [...groups.values()]
 }
 
-export default function MarketplacePreview() {
+export default function MarketplacePreview({
+  initialVisibleCount,
+  pageSize = 12,
+  infiniteScroll = false,
+  showViewMoreLink = false,
+}: MarketplacePreviewProps) {
   const router = useRouter()
   const [coaches, setCoaches] = useState<PublicCoachDirectoryItem[]>([])
   const [query, setQuery] = useState('')
@@ -104,6 +117,10 @@ export default function MarketplacePreview() {
       }
     >
   >({})
+  const loadMoreRef = useRef<HTMLDivElement | null>(null)
+  const startingVisibleCount =
+    initialVisibleCount ?? (infiniteScroll ? pageSize : Number.POSITIVE_INFINITY)
+  const [visibleCount, setVisibleCount] = useState(startingVisibleCount)
 
   useEffect(() => {
     async function loadCoaches() {
@@ -132,6 +149,31 @@ export default function MarketplacePreview() {
     if (!normalizedQuery) return coaches
     return coaches.filter((coach) => coach.name.toLowerCase().includes(normalizedQuery))
   }, [coaches, query])
+  const renderedCoaches = visibleCoaches.slice(0, visibleCount)
+  const hasMoreCoaches = renderedCoaches.length < visibleCoaches.length
+
+  useEffect(() => {
+    setVisibleCount(startingVisibleCount)
+  }, [startingVisibleCount])
+
+  useEffect(() => {
+    if (!infiniteScroll || !hasMoreCoaches) return
+
+    const target = loadMoreRef.current
+    if (!target) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setVisibleCount((current) => Math.min(current + pageSize, visibleCoaches.length))
+        }
+      },
+      { rootMargin: '240px 0px' }
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [hasMoreCoaches, infiniteScroll, pageSize, visibleCoaches.length])
 
   const scheduleSelection = (selections: CoachBookingSelection[]) => {
     if (!selections.length) return
@@ -168,7 +210,10 @@ export default function MarketplacePreview() {
             <span className="sr-only">Buscar coach por nombre</span>
             <input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setVisibleCount(startingVisibleCount)
+              }}
               placeholder="Buscar por nombre"
               className="h-14 w-full rounded-full border border-[var(--c-border)] bg-white px-6 text-base shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--c-aqua)]"
             />
@@ -200,7 +245,7 @@ export default function MarketplacePreview() {
           </div>
         )}
 
-        {visibleCoaches.map((coach) => {
+        {renderedCoaches.map((coach) => {
           const photo = coachPhoto(coach)
           const isExpanded = expandedId === coach.id
           const metrics = normalizeCoachMetrics(coach.metrics)
@@ -458,6 +503,29 @@ export default function MarketplacePreview() {
           )
         })}
       </div>
+
+      {showViewMoreLink && visibleCoaches.length > renderedCoaches.length && (
+        <div className="mt-8 flex justify-center">
+          <Link
+            href="/coaches"
+            className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5"
+            style={{ background: 'var(--c-ocean)' }}
+          >
+            Ver más coaches
+          </Link>
+        </div>
+      )}
+
+      {infiniteScroll && hasMoreCoaches && (
+        <div
+          ref={loadMoreRef}
+          aria-hidden
+          className="mt-8 h-10 rounded-full"
+          style={{
+            background: 'linear-gradient(90deg, transparent, var(--c-surface), transparent)',
+          }}
+        />
+      )}
     </section>
   )
 }
