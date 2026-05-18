@@ -1,5 +1,14 @@
 import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
-import { type CoachMetrics, METRIC_MAX, RADAR_LEVELS, RADAR_METRICS } from '@/lib/coach-metrics'
+import {
+  type CoachMetrics,
+  METRIC_GROUPS,
+  METRIC_MAX,
+  RADAR_LEVELS,
+  RADAR_METRICS,
+} from '@/lib/coach-metrics'
+
+const PERSONALITY = METRIC_GROUPS.find((g) => g.id === 'personality')
+const METHOD = METRIC_GROUPS.find((g) => g.id === 'method')
 
 // Stored values use the 1..METRIC_MAX form scale; the radar keeps its
 // 5-ring scheme, so map every value down to that scheme.
@@ -7,9 +16,17 @@ const toScheme = (value: number) => (value / METRIC_MAX) * RADAR_LEVELS
 
 function buildSoftPath(points: Array<{ x: number; y: number }>) {
   if (points.length === 0) return ''
-  // Straight radar polygon — one segment per axis (no bezier blob).
-  const [first, ...rest] = points
-  return `M ${first.x} ${first.y} ${rest.map((p) => `L ${p.x} ${p.y}`).join(' ')} Z`
+  const mid = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  })
+  const firstMid = mid(points[points.length - 1], points[0])
+  const segments = points.map((point, index) => {
+    const next = points[(index + 1) % points.length]
+    const nextMid = mid(point, next)
+    return `Q ${point.x} ${point.y} ${nextMid.x} ${nextMid.y}`
+  })
+  return `M ${firstMid.x} ${firstMid.y} ${segments.join(' ')} Z`
 }
 
 export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) {
@@ -20,7 +37,7 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
   const angleStep = (Math.PI * 2) / RADAR_METRICS.length
 
   const point = (index: number, value: number) => {
-    const angle = -Math.PI / 2 + index * angleStep
+    const angle = -Math.PI / 2 + angleStep / 2 + index * angleStep
     const distance = (value / 5) * radius
     return {
       x: center + Math.cos(angle) * distance,
@@ -33,17 +50,28 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
   )
 
   return (
-    <div className="rounded-[var(--r-md)] border border-[rgba(0,119,182,0.12)] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(244,251,255,0.72)_100%)] p-4 shadow-[var(--shadow-md)]">
+    <div className="relative rounded-[var(--r-md)] border border-[rgba(0,119,182,0.12)] bg-[linear-gradient(180deg,rgba(255,255,255,0.72)_0%,rgba(244,251,255,0.72)_100%)] p-4 shadow-[var(--shadow-md)]">
+      {PERSONALITY && (
+        <span
+          title={PERSONALITY.label}
+          className="absolute left-2 top-1/2 -translate-y-1/2 text-2xl"
+        >
+          {PERSONALITY.icon}
+        </span>
+      )}
+      {METHOD && (
+        <span title={METHOD.label} className="absolute right-2 top-1/2 -translate-y-1/2 text-2xl">
+          {METHOD.icon}
+        </span>
+      )}
+
       <div className="mb-2">
         <h3 className="text-lg font-bold text-[var(--c-ocean)]">
           {CARD_PROPIERTIES_AND_STYLES_LABEL}
         </h3>
       </div>
 
-      <svg
-        viewBox={`-34 -6 ${size + 68} ${size + 12}`}
-        className="mx-auto h-auto w-full max-w-[360px]"
-      >
+      <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto h-auto w-full max-w-[400px]">
         <defs>
           <linearGradient id="style-fill" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#f9a8d4" stopOpacity="0.56" />
@@ -87,7 +115,7 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
 
         {RADAR_METRICS.map((metric, index) => {
           const p = point(index, toScheme(metrics[metric.key]))
-          const label = point(index, 6.3)
+          const label = point(index, 6.2)
           return (
             <g key={metric.key}>
               <circle cx={p.x} cy={p.y} r="4" fill="#ec4899" stroke="#fff" strokeWidth="2" />
@@ -115,7 +143,7 @@ export function CoachStyleMapPreview({ metrics }: { metrics: CoachMetrics }) {
   const angleStep = (Math.PI * 2) / RADAR_METRICS.length
 
   const point = (index: number, value: number) => {
-    const angle = -Math.PI / 2 + index * angleStep
+    const angle = -Math.PI / 2 + angleStep / 2 + index * angleStep
     const distance = (value / 5) * radius
     return {
       x: center + Math.cos(angle) * distance,

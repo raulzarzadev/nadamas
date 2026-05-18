@@ -1,8 +1,10 @@
 'use client'
+import SaveButton from '@comps/SaveButton'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useUser } from '@/context/UserContext'
+import { useAutosave } from '@/hooks/useAutosave'
 import { patchAuthed } from '@/lib/client/authed-api'
 
 export default function ProfilePage() {
@@ -29,6 +31,12 @@ export default function ProfilePage() {
     setFirstName((current) => current || user.firstName || '')
     setLastName((current) => current || user.lastName || '')
   }, [user])
+
+  const { saveNow } = useAutosave(
+    JSON.stringify({ nickname, firstName, lastName }),
+    () => void save(),
+    { enabled: !!user && !!nickname.trim() }
+  )
 
   if (!user) return null
 
@@ -133,14 +141,12 @@ export default function ProfilePage() {
           </p>
         )}
 
-        <button
-          type="button"
-          disabled={status === 'saving'}
-          onClick={() => void save()}
-          className="inline-flex items-center justify-center rounded-full bg-[var(--c-aqua)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--c-aqua-strong)] disabled:opacity-60"
-        >
-          {status === 'saving' ? 'Guardando…' : 'Guardar datos'}
-        </button>
+        <SaveButton
+          status={status}
+          onClick={saveNow}
+          idleLabel="Guardado"
+          savedLabel="Datos guardados"
+        />
       </div>
 
       <button type="button" onClick={logout} className="btn btn-outline w-full">

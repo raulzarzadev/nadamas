@@ -1,7 +1,9 @@
 'use client'
 import IconInfo from '@comps/IconInfo'
+import SaveButton from '@comps/SaveButton'
 import { useEffect, useState } from 'react'
 import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
+import { useAutosave } from '@/hooks/useAutosave'
 import { type CoachMetrics, normalizeCoachMetrics } from '@/lib/coach-metrics'
 import CoachMetricsForm from './CoachMetricsForm'
 import { CoachStyleMapPreview } from './CoachRadarChart'
@@ -21,6 +23,8 @@ export default function SkillsCard({
   useEffect(() => {
     setDraft(normalizeCoachMetrics(value))
   }, [value])
+
+  const { status: autoStatus, saveNow } = useAutosave(JSON.stringify(draft), () => onSave(draft))
 
   return (
     <ProfileSection
@@ -46,14 +50,12 @@ export default function SkillsCard({
       <CoachMetricsForm value={draft} onChange={setDraft} />
 
       <div className="flex border-t border-[var(--c-border)] pt-4 sm:justify-end">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => onSave(draft)}
-          className="btn btn-primary min-w-36 self-start disabled:opacity-50 sm:self-auto"
-        >
-          {saving ? 'Guardando…' : 'Guardar carta'}
-        </button>
+        <SaveButton
+          status={saving ? 'saving' : autoStatus}
+          onClick={saveNow}
+          idleLabel="Guardado"
+          savedLabel="Guardado"
+        />
       </div>
     </ProfileSection>
   )

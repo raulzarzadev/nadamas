@@ -1,12 +1,14 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { CoachCRUD } from '@/firebase/coaches/main'
-import { FiMapPin, FiPlus, FiTrash2 } from 'react-icons/fi'
 import ImageInput from '@comps/Inputs/ImageInput'
-import ProfileSection from './ProfileSection'
+import SaveButton from '@comps/SaveButton'
+import { useEffect, useState } from 'react'
+import { FiMapPin, FiPlus, FiTrash2 } from 'react-icons/fi'
+import type { CoachGalleryPhoto, CoachTeachingLocation } from '@/firebase/coaches/coach.model'
+import { CoachCRUD } from '@/firebase/coaches/main'
+import { useAutosave } from '@/hooks/useAutosave'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
-import type { CoachGalleryPhoto, CoachTeachingLocation } from '@/firebase/coaches/coach.model'
+import ProfileSection from './ProfileSection'
 
 const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
@@ -43,6 +45,12 @@ export default function LocationsCard({
 
   useEffect(() => setLocations(value.teachingLocations || []), [value.teachingLocations])
   useEffect(() => setGalleryPhotos(value.galleryPhotos || []), [value.galleryPhotos])
+
+  const { status: autoStatus, saveNow } = useAutosave(
+    JSON.stringify({ locations, galleryPhotos }),
+    () => onSave({ teachingLocations: locations, galleryPhotos }),
+    { enabled: !busyLocationId }
+  )
 
   const uploadLocationImage = async (locationId: string, file: File) => {
     setError(null)
@@ -333,14 +341,13 @@ export default function LocationsCard({
       </button>
 
       <div className="flex justify-end border-t border-[var(--c-border)] pt-5">
-        <button
-          type="button"
-          disabled={saving || !!busyLocationId}
-          onClick={() => onSave({ teachingLocations: locations, galleryPhotos })}
-          className="btn btn-primary min-w-36 disabled:opacity-50"
-        >
-          {saving ? 'Guardando…' : 'Guardar lugares'}
-        </button>
+        <SaveButton
+          status={saving ? 'saving' : autoStatus}
+          onClick={saveNow}
+          disabled={!!busyLocationId}
+          idleLabel="Guardado"
+          savedLabel="Guardado"
+        />
       </div>
     </ProfileSection>
   )

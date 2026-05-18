@@ -1,8 +1,10 @@
 'use client'
+import SaveButton from '@comps/SaveButton'
 import { useEffect, useState } from 'react'
 import { FiPlus, FiTrash2 } from 'react-icons/fi'
-import ProfileSection from './ProfileSection'
 import type { CoachPriceOption } from '@/firebase/coaches/coach.model'
+import { useAutosave } from '@/hooks/useAutosave'
+import ProfileSection from './ProfileSection'
 
 interface PricingValue {
   priceOptions?: CoachPriceOption[]
@@ -35,11 +37,13 @@ export default function PricingCard({
   saving: boolean
   onSave: (value: PricingValue) => void
 }) {
-  const [options, setOptions] = useState<CoachPriceOption[]>(
-    value.priceOptions || []
-  )
+  const [options, setOptions] = useState<CoachPriceOption[]>(value.priceOptions || [])
 
   useEffect(() => setOptions(value.priceOptions || []), [value.priceOptions])
+
+  const { status: autoStatus, saveNow } = useAutosave(JSON.stringify(options), () =>
+    onSave({ priceOptions: options })
+  )
 
   return (
     <ProfileSection
@@ -56,19 +60,13 @@ export default function PricingCard({
             type="button"
             aria-label={`Quitar precio ${index + 1}`}
             className="btn btn-ghost btn-sm absolute right-2 top-2 text-[var(--c-error,#b91c1c)]"
-            onClick={() =>
-              setOptions((current) =>
-                current.filter((item) => item.id !== option.id)
-              )
-            }
+            onClick={() => setOptions((current) => current.filter((item) => item.id !== option.id))}
           >
             <FiTrash2 aria-hidden="true" />
           </button>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[var(--c-ocean)]">
-              Nombre
-            </span>
+            <span className="text-sm font-semibold text-[var(--c-ocean)]">Nombre</span>
             <input
               className="input input-bordered bg-white"
               placeholder="Ej. Clase individual"
@@ -76,9 +74,7 @@ export default function PricingCard({
               onChange={(event) =>
                 setOptions((current) =>
                   current.map((item) =>
-                    item.id === option.id
-                      ? { ...item, title: event.target.value }
-                      : item
+                    item.id === option.id ? { ...item, title: event.target.value } : item
                   )
                 )
               }
@@ -86,9 +82,7 @@ export default function PricingCard({
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[var(--c-ocean)]">
-              Precio
-            </span>
+            <span className="text-sm font-semibold text-[var(--c-ocean)]">Precio</span>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--c-text-2)]">
                 $
@@ -106,9 +100,7 @@ export default function PricingCard({
                       item.id === option.id
                         ? {
                             ...item,
-                            amount: event.target.value
-                              ? Number(event.target.value)
-                              : null,
+                            amount: event.target.value ? Number(event.target.value) : null,
                           }
                         : item
                     )
@@ -119,9 +111,7 @@ export default function PricingCard({
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[var(--c-ocean)]">
-              Cobro
-            </span>
+            <span className="text-sm font-semibold text-[var(--c-ocean)]">Cobro</span>
             <select
               className="select select-bordered bg-white"
               value={option.unit}
@@ -146,9 +136,7 @@ export default function PricingCard({
           </label>
 
           <label className="flex flex-col gap-1.5 sm:col-span-1">
-            <span className="text-sm font-semibold text-[var(--c-ocean)]">
-              Duración
-            </span>
+            <span className="text-sm font-semibold text-[var(--c-ocean)]">Duración</span>
             <div className="relative">
               <input
                 type="number"
@@ -163,9 +151,7 @@ export default function PricingCard({
                       item.id === option.id
                         ? {
                             ...item,
-                            durationMinutes: event.target.value
-                              ? Number(event.target.value)
-                              : null,
+                            durationMinutes: event.target.value ? Number(event.target.value) : null,
                           }
                         : item
                     )
@@ -179,9 +165,7 @@ export default function PricingCard({
           </label>
 
           <label className="flex flex-col gap-1.5 sm:col-span-2">
-            <span className="text-sm font-semibold text-[var(--c-ocean)]">
-              Detalles
-            </span>
+            <span className="text-sm font-semibold text-[var(--c-ocean)]">Detalles</span>
             <input
               className="input input-bordered bg-white"
               placeholder="Ej. Incluye evaluación inicial"
@@ -189,9 +173,7 @@ export default function PricingCard({
               onChange={(event) =>
                 setOptions((current) =>
                   current.map((item) =>
-                    item.id === option.id
-                      ? { ...item, details: event.target.value }
-                      : item
+                    item.id === option.id ? { ...item, details: event.target.value } : item
                   )
                 )
               }
@@ -209,14 +191,12 @@ export default function PricingCard({
       </button>
 
       <div className="flex justify-end border-t border-[var(--c-border)] pt-5">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => onSave({ priceOptions: options })}
-          className="btn btn-primary min-w-36 disabled:opacity-50"
-        >
-          {saving ? 'Guardando…' : 'Guardar precios'}
-        </button>
+        <SaveButton
+          status={saving ? 'saving' : autoStatus}
+          onClick={saveNow}
+          idleLabel="Guardado"
+          savedLabel="Guardado"
+        />
       </div>
     </ProfileSection>
   )

@@ -24,14 +24,14 @@ export const METRIC_GROUPS: MetricGroup[] = [
   {
     id: 'personality',
     label: 'Personalidad',
-    icon: '🧠',
+    icon: '😊',
     bg: 'rgba(249,168,212,0.28)',
     border: 'rgba(236,72,153,0.55)',
   },
   {
     id: 'method',
     label: 'Metodología',
-    icon: '⚙️',
+    icon: '📖',
     bg: 'rgba(144,224,239,0.32)',
     border: 'rgba(0,180,216,0.55)',
   },
@@ -129,10 +129,18 @@ export const DEFAULT_COACH_METRICS: CoachMetrics = {
   connection: 5,
 }
 
+// Radar axes grouped: personality dimensions on one half, methodology on
+// the other, so the chart visually splits the two sides.
 export const RADAR_METRICS: Array<{
   key: keyof CoachMetrics
   label: string
-}> = COACH_METRICS.map(({ key, label }) => ({ key, label }))
+}> = [
+  // Right half = method (top→bottom in card order). Left half = personality
+  // reversed so it reads top→bottom too. Chart is rotated by half a step
+  // (see CoachRadarChart) so the split is a clean vertical 4 / 4.
+  ...COACH_METRICS.filter((m) => m.group === 'method'),
+  ...COACH_METRICS.filter((m) => m.group === 'personality').reverse(),
+].map(({ key, label }) => ({ key, label }))
 
 export function normalizeCoachMetrics(metrics?: Partial<CoachMetrics> | null): CoachMetrics {
   return { ...DEFAULT_COACH_METRICS, ...(metrics || {}) }

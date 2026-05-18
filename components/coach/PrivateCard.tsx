@@ -1,8 +1,10 @@
 'use client'
 import ImageInput from '@comps/Inputs/ImageInput'
+import SaveButton from '@comps/SaveButton'
 import { useEffect, useState } from 'react'
 import type { CoachDocument, CoachIdentityVerification } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
+import { useAutosave } from '@/hooks/useAutosave'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import ProfileSection from './ProfileSection'
@@ -39,6 +41,12 @@ export default function PrivateCard({
   const verification = draft.identityVerification || {
     status: 'not_submitted' as const,
   }
+
+  const { status: autoStatus, saveNow } = useAutosave(
+    JSON.stringify(verification),
+    () => onSave({ identityVerification: verification }),
+    { enabled: !busy && !!verification.document }
+  )
 
   const uploadIne = async (file: File) => {
     setError(null)
@@ -112,14 +120,14 @@ export default function PrivateCard({
         <p className="text-sm text-[var(--c-text-2)]">
           Flujo admin: pendiente → verificada o rechazada.
         </p>
-        <button
-          type="button"
-          disabled={saving || busy || !verification.document}
-          onClick={() => onSave({ identityVerification: verification })}
-          className="btn btn-primary min-w-36 self-start disabled:opacity-50 sm:self-auto"
-        >
-          {saving ? 'Guardando…' : 'Guardar documento'}
-        </button>
+        <SaveButton
+          status={saving ? 'saving' : autoStatus}
+          onClick={saveNow}
+          disabled={busy || !verification.document}
+          idleLabel="Guardado"
+          savedLabel="Guardado"
+          className="self-start sm:self-auto"
+        />
       </div>
     </ProfileSection>
   )
