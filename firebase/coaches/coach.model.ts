@@ -101,6 +101,8 @@ export interface CoachPublic {
   youtubeLinks?: CoachYoutubeLink[]
   // Reserved, no UI in this scope:
   presentationVideo?: { kind: 'youtube' | 'upload'; value: string }
+  /** Coach opt-in: when true the profile is listed/searchable in the marketplace. */
+  publicProfileVisible?: boolean
   verification?: CoachVerification
   createdAt?: number
   updatedAt?: number

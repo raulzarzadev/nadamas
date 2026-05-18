@@ -177,7 +177,17 @@ export default function MarketplacePreview() {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-lg font-bold text-[var(--c-ocean)]">{coach.name}</h3>
+                  <h3 className="flex items-center gap-1.5 text-lg font-bold text-[var(--c-ocean)]">
+                    <span className="truncate">{coach.name}</span>
+                    {coach.verification?.status === 'verified' && (
+                      <span
+                        title="Coach verificado"
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#1d4ed8] px-2 py-0.5 text-xs font-semibold text-white"
+                      >
+                        ✓
+                      </span>
+                    )}
+                  </h3>
                   <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-[var(--c-text-2)]">
                     {coach.bio || 'Este coach todavía está afinando su presentación.'}
                   </p>

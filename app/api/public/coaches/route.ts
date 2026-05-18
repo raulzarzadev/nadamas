@@ -11,7 +11,10 @@ interface PublicCoachDirectoryItem extends CoachPublic {
 
 export async function GET() {
   try {
-    const coachesSnapshot = await adminDb.collection('coaches').get()
+    const coachesSnapshot = await adminDb
+      .collection('coaches')
+      .where('publicProfileVisible', '==', true)
+      .get()
     const coaches = await Promise.all(
       coachesSnapshot.docs.map(async (doc) => {
         const coach = doc.data() as CoachPublic

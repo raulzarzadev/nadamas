@@ -161,6 +161,9 @@ export default function CoachProfilePage() {
         onRequestVerification={requestVerification}
         requesting={savingSection === 'private'}
         requestError={verificationRequestError}
+        visible={pubVal.publicProfileVisible === true}
+        togglingVisible={savingSection === 'visibility'}
+        onToggleVisible={(next) => savePublic('visibility', { publicProfileVisible: next })}
       />
 
       <PersonalDataCard />
