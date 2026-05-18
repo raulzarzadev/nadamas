@@ -67,6 +67,47 @@ export function sendVerificationRequestedEmails({
   return Promise.all(tasks)
 }
 
+export function sendBookingCancelledEmail({
+  email,
+  coachName,
+  athleteName,
+  locationName,
+  slotLabel,
+}: {
+  email: string
+  coachName?: string
+  athleteName: string
+  locationName: string
+  slotLabel: string
+}) {
+  const greeting = coachName ? `Hola ${coachName},` : 'Hola,'
+  return sendEmail({
+    to: [{ email }],
+    subject: 'Una reserva fue cancelada',
+    textContent: `${athleteName} canceló su clase en ${locationName} (${slotLabel}).`,
+    htmlContent: `
+      <div style="margin:0;background:#f5fbfd;padding:28px 12px;font-family:Arial,sans-serif;color:#102a43">
+        <div style="margin:0 auto;max-width:520px;overflow:hidden;border:1px solid #d8edf4;border-radius:28px;background:#ffffff">
+          <div style="padding:24px 28px;background:#eef9fc">
+            <p style="margin:0;color:#0877ad;font-size:14px;font-weight:700">nadamas.app</p>
+            <h1 style="margin:10px 0 0;font-size:24px;line-height:1.2">Reserva cancelada</h1>
+          </div>
+          <div style="padding:28px">
+            <p style="margin:0 0 14px;color:#52606d;font-size:16px;line-height:1.5">${greeting}</p>
+            <p style="margin:0 0 14px;color:#52606d;font-size:16px;line-height:1.5">
+              <strong>${athleteName}</strong> canceló su clase contigo.
+            </p>
+            <div style="margin:0 0 8px;border-radius:16px;background:#f5fbfd;padding:16px 18px">
+              <p style="margin:0 0 6px;color:#102a43;font-size:15px"><strong>Lugar:</strong> ${locationName}</p>
+              <p style="margin:0;color:#102a43;font-size:15px"><strong>Horario:</strong> ${slotLabel}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `,
+  })
+}
+
 export function sendVerificationReviewedEmail({
   email,
   status,

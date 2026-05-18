@@ -99,7 +99,10 @@ export async function POST(request: Request) {
     athletePhone: profilePhone,
     athleteEmail: athleteDoc.data()?.email || caller.email || null,
     coachId: body.coachId,
-    coachName: coachDoc.data()?.displayName || coachDoc.data()?.name || null,
+    coachName:
+      coachDoc.data()?.displayName ||
+      coachDoc.data()?.name ||
+      (typeof coachDoc.data()?.email === 'string' ? coachDoc.data()?.email.split('@')[0] : null),
     locationId: body.locationId,
     locationName: body.locationName,
     days: body.days,
