@@ -108,6 +108,57 @@ export function sendBookingCancelledEmail({
   })
 }
 
+export function sendBookingConfirmedEmail({
+  email,
+  coachName,
+  athleteName,
+  athletePhone,
+  bookings,
+}: {
+  email: string
+  coachName?: string
+  athleteName: string
+  athletePhone?: string
+  bookings: Array<{ locationName: string; date: string; startTime: string; price: number | null }>
+}) {
+  const greeting = coachName ? `Hola ${coachName},` : 'Hola,'
+  const rows = bookings
+    .map(
+      (booking) =>
+        `<li style="margin:0 0 8px"><strong>${booking.date}</strong> · ${booking.startTime} · ${booking.locationName}${booking.price !== null ? ` · $${booking.price}` : ''}</li>`
+    )
+    .join('')
+  const textRows = bookings
+    .map(
+      (booking) =>
+        `- ${booking.date} · ${booking.startTime} · ${booking.locationName}${booking.price !== null ? ` · $${booking.price}` : ''}`
+    )
+    .join('\n')
+  return sendEmail({
+    to: [{ email }],
+    subject: bookings.length === 1 ? 'Nueva clase agendada' : 'Nuevas clases agendadas',
+    textContent: `${athleteName} agendó ${bookings.length === 1 ? 'una clase' : `${bookings.length} clases`} contigo.\n${textRows}`,
+    htmlContent: `
+      <div style="margin:0;background:#f5fbfd;padding:28px 12px;font-family:Arial,sans-serif;color:#102a43">
+        <div style="margin:0 auto;max-width:520px;overflow:hidden;border:1px solid #d8edf4;border-radius:28px;background:#ffffff">
+          <div style="padding:24px 28px;background:#eef9fc">
+            <p style="margin:0;color:#0877ad;font-size:14px;font-weight:700">nadamas.app</p>
+            <h1 style="margin:10px 0 0;font-size:24px;line-height:1.2">Nueva reserva</h1>
+          </div>
+          <div style="padding:28px">
+            <p style="margin:0 0 14px;color:#52606d;font-size:16px;line-height:1.5">${greeting}</p>
+            <p style="margin:0 0 14px;color:#52606d;font-size:16px;line-height:1.5">
+              <strong>${athleteName}</strong> agendó ${bookings.length === 1 ? 'una clase' : `${bookings.length} clases`} contigo.
+            </p>
+            ${athletePhone ? `<p style="margin:0 0 14px;color:#52606d;font-size:15px"><strong>Teléfono:</strong> ${athletePhone}</p>` : ''}
+            <ul style="margin:0;padding:16px 18px 16px 34px;border-radius:16px;background:#f5fbfd">${rows}</ul>
+          </div>
+        </div>
+      </div>
+    `,
+  })
+}
+
 export function sendVerificationReviewedEmail({
   email,
   status,

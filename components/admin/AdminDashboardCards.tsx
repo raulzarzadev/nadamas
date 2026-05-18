@@ -4,19 +4,24 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { UserCRUD } from '@/firebase/users/main'
+import { getAuthed } from '@/lib/client/authed-api'
 
 export default function AdminDashboardCards() {
   const [pendingReviews, setPendingReviews] = useState(0)
   const [users, setUsers] = useState(0)
+  const [bookings, setBookings] = useState(0)
 
   useEffect(
-    () =>
-      CoachCRUD.listenPendingIdentityReviews((items) =>
-        setPendingReviews(items.length)
-      ),
+    () => CoachCRUD.listenPendingIdentityReviews((items) => setPendingReviews(items.length)),
     []
   )
   useEffect(() => UserCRUD.listenAll((items) => setUsers(items.length)), [])
+  useEffect(() => {
+    getAuthed('/api/admin/bookings')
+      .then((response) => response.json())
+      .then((payload: { bookings?: unknown[] }) => setBookings(payload.bookings?.length || 0))
+      .catch(() => setBookings(0))
+  }, [])
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -26,6 +31,13 @@ export default function AdminDashboardCards() {
         body="Coaches pendientes de validación de identidad."
         stat={pendingReviews}
         statLabel="pendientes"
+      />
+      <AdminCard
+        href="/admin/bookings"
+        title="Clases agendadas"
+        body="Reservas confirmadas y canceladas."
+        stat={bookings}
+        statLabel="reservas"
       />
       <AdminCard
         href="/admin/users"
@@ -57,9 +69,7 @@ function AdminCard({
       className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-6 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]"
     >
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-lg font-bold text-[var(--c-ocean-mid)]">
-          {title}
-        </h2>
+        <h2 className="text-lg font-bold text-[var(--c-ocean-mid)]">{title}</h2>
         <span className="rounded-full bg-[var(--c-surface)] px-3 py-1 text-sm font-bold text-[var(--c-ocean)]">
           {stat}
         </span>

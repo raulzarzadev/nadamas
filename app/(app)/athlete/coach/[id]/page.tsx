@@ -102,14 +102,10 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
     setBookingStatus('loading')
     setBookingMessage(null)
     try {
-      await Promise.all(
-        bookingSelections.map((selection) =>
-          postAuthed('/api/bookings', {
-            ...selection,
-            athleteProfile: { name: trimmedName, phone: trimmedPhone },
-          })
-        )
-      )
+      await postAuthed('/api/bookings', {
+        selections: bookingSelections,
+        athleteProfile: { name: trimmedName, phone: trimmedPhone },
+      })
       await refreshUser?.()
       setBookingStatus('success')
       setBookingMessage('Clase agendada')

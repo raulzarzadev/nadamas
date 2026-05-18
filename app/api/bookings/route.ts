@@ -2,9 +2,12 @@ import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import type { CoachBookingSelection } from '@/lib/coach-booking'
 import { publicNameFromUser } from '@/lib/public-name'
+import { sendBookingConfirmedEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 
 export const runtime = 'nodejs'
+
+type BookingInput = Partial<CoachBookingSelection> & { locationId?: string }
 
 function getBearerToken(request: Request) {
   const authorization = request.headers.get('authorization') || ''
@@ -50,22 +53,27 @@ export async function POST(request: Request) {
   }
 
   const caller = await adminAuth.verifyIdToken(token)
-  const body = (await request.json()) as Partial<CoachBookingSelection> & {
+  const body = (await request.json()) as BookingInput & {
+    selections?: BookingInput[]
     locationId?: string
     athleteProfile?: { name?: string; phone?: string }
   }
 
-  const offeringId = body.offeringId || body.locationId
-  if (
-    !body.coachId ||
-    !offeringId ||
-    !body.date ||
-    !body.locationName ||
-    !Array.isArray(body.days) ||
-    body.days.length === 0 ||
-    !body.startTime ||
-    !body.endTime
-  ) {
+  const selections = body.selections?.length ? body.selections : [body]
+  const invalid = selections.some((selection) => {
+    const offeringId = selection.offeringId || selection.locationId
+    return (
+      !selection.coachId ||
+      !offeringId ||
+      !selection.date ||
+      !selection.locationName ||
+      !Array.isArray(selection.days) ||
+      selection.days.length === 0 ||
+      !selection.startTime ||
+      !selection.endTime
+    )
+  })
+  if (invalid) {
     return NextResponse.json({ error: 'Datos de reserva incompletos.' }, { status: 400 })
   }
 
@@ -90,42 +98,70 @@ export async function POST(request: Request) {
   )
 
   const athleteDoc = await adminDb.collection('users').doc(caller.uid).get()
-  const coachDoc = await adminDb.collection('users').doc(body.coachId).get()
-  const booking = {
-    athleteId: caller.uid,
-    athleteName:
-      profileName ||
-      athleteDoc.data()?.displayName ||
-      athleteDoc.data()?.name ||
-      caller.name ||
-      'Alumno',
-    athletePhone: profilePhone,
-    athleteEmail: athleteDoc.data()?.email || caller.email || null,
-    coachId: body.coachId,
-    coachName: publicNameFromUser(coachDoc.data()),
-    offeringId,
-    scheduleId: body.scheduleId || `${offeringId}:legacy`,
-    date: body.date,
-    locationName: body.locationName,
-    mode: body.mode ?? 'fixed',
-    groupType: body.groupType ?? 'particular',
-    days: body.days,
-    startTime: body.startTime,
-    endTime: body.endTime,
-    price: body.price ?? null,
-    currency: 'MXN' as const,
-    unit: body.unit ?? 'clase',
-    status: 'confirmed',
-    source: 'marketplace',
-    createdAt: now,
-    updatedAt: now,
+  const coachId = selections[0].coachId as string
+  const coachDoc = await adminDb.collection('users').doc(coachId).get()
+  const bookings = selections.map((selection) => {
+    const offeringId = (selection.offeringId || selection.locationId) as string
+    return {
+      athleteId: caller.uid,
+      athleteName:
+        profileName ||
+        athleteDoc.data()?.displayName ||
+        athleteDoc.data()?.name ||
+        caller.name ||
+        'Alumno',
+      athletePhone: profilePhone,
+      athleteEmail: athleteDoc.data()?.email || caller.email || null,
+      coachId,
+      coachName: publicNameFromUser(coachDoc.data()),
+      offeringId,
+      scheduleId: selection.scheduleId || `${offeringId}:legacy`,
+      date: selection.date as string,
+      locationName: selection.locationName as string,
+      mode: selection.mode ?? 'fixed',
+      groupType: selection.groupType ?? 'particular',
+      days: selection.days as string[],
+      startTime: selection.startTime as string,
+      endTime: selection.endTime as string,
+      price: selection.price ?? null,
+      currency: 'MXN' as const,
+      unit: selection.unit ?? 'clase',
+      status: 'confirmed',
+      source: 'marketplace',
+      createdAt: now,
+      updatedAt: now,
+    }
+  })
+
+  const savedBookings = bookings.map((booking) => ({
+    id: bookingIdFor(caller.uid, booking),
+    ...booking,
+  }))
+  await Promise.all(
+    savedBookings.map((booking) =>
+      adminDb.collection('bookings').doc(booking.id).set(booking, { merge: true })
+    )
+  )
+
+  try {
+    const coachEmail = coachDoc.data()?.email
+    if (typeof coachEmail === 'string') {
+      await sendBookingConfirmedEmail({
+        email: coachEmail,
+        coachName: publicNameFromUser(coachDoc.data()),
+        athleteName: savedBookings[0].athleteName,
+        athletePhone: savedBookings[0].athletePhone,
+        bookings: savedBookings.map((booking) => ({
+          locationName: booking.locationName,
+          date: booking.date,
+          startTime: booking.startTime,
+          price: booking.price,
+        })),
+      })
+    }
+  } catch (error) {
+    console.error('[BOOKING_CONFIRM_NOTIFY]', error)
   }
 
-  const id = bookingIdFor(caller.uid, booking)
-  await adminDb
-    .collection('bookings')
-    .doc(id)
-    .set({ id, ...booking }, { merge: true })
-
-  return NextResponse.json({ ok: true, booking: { id, ...booking } })
+  return NextResponse.json({ ok: true, bookings: savedBookings })
 }
