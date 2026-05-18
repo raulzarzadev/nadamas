@@ -39,8 +39,8 @@ export default function Hero() {
       </div>
 
       <div className="mx-auto grid max-w-[1180px] items-center gap-14 px-5 pb-24 pt-16 sm:px-8 lg:grid-cols-[1.06fr_0.94fr] lg:gap-10 lg:pb-32 lg:pt-24">
-        <div className="max-w-[36ch]">
-          <h1 className="text-[2.7rem] font-extrabold sm:text-[3.6rem] lg:text-[4.05rem]">
+        <div className="w-full max-w-xl">
+          <h1 className="max-w-[14ch] text-[2.5rem] font-extrabold sm:text-[3.4rem] lg:text-[4.05rem]">
             Tu próximo coach de natación, a un toque.
           </h1>
 
@@ -64,31 +64,31 @@ export default function Hero() {
             ))}
           </div>
 
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a
               href="#coaches"
-              className="group inline-flex items-center justify-center gap-2 rounded-full px-7 py-4 text-base font-semibold text-white transition-transform duration-300 hover:-translate-y-0.5"
+              className="group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 py-4 text-base font-semibold text-white transition-transform duration-300 hover:-translate-y-0.5"
               style={{
                 background: 'var(--grad-brand)',
                 boxShadow: 'var(--shadow-aqua)',
               }}
             >
-              <FiSearch aria-hidden="true" className="text-lg" />
+              <FiSearch aria-hidden="true" className="shrink-0 text-lg" />
               Encontrar coach
               <FiArrowRight
                 aria-hidden="true"
-                className="transition-transform duration-300 group-hover:translate-x-0.5"
+                className="shrink-0 transition-transform duration-300 group-hover:translate-x-0.5"
               />
             </a>
             <a
               href="/login?intent=coach"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-base font-semibold transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-white px-6 py-4 text-base font-semibold transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)]"
               style={{
                 color: 'var(--c-ocean)',
                 border: '1px solid var(--c-border)',
               }}
             >
-              <FiUser aria-hidden="true" className="text-lg" />
+              <FiUser aria-hidden="true" className="shrink-0 text-lg" />
               Soy coach
             </a>
           </div>
