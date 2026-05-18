@@ -2,6 +2,7 @@
 import LinksCard from '@comps/coach/LinksCard'
 import LocationsCard from '@comps/coach/LocationsCard'
 import MediaCard from '@comps/coach/MediaCard'
+import PersonalDataCard from '@comps/coach/PersonalDataCard'
 import PricingCard from '@comps/coach/PricingCard'
 import PrivateCard from '@comps/coach/PrivateCard'
 import ScoreCard from '@comps/coach/ScoreCard'
@@ -114,7 +115,7 @@ export default function CoachProfilePage() {
     !hasFacePhoto && 'Foto tuya',
     !hasLocation && 'Lugar y horarios',
     !hasLegalName && 'Nombre y apellidos',
-    !hasIne && 'INE',
+    !hasIne && 'Documento de identidad',
   ].filter(Boolean) as string[]
 
   const requestVerification = async () => {
@@ -171,6 +172,8 @@ export default function CoachProfilePage() {
         requesting={savingSection === 'private'}
         requestError={verificationRequestError}
       />
+
+      <PersonalDataCard />
 
       <SkillsCard
         value={pubVal.metrics}

@@ -1,25 +1,19 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { CoachCRUD } from '@/firebase/coaches/main'
 import ImageInput from '@comps/Inputs/ImageInput'
-import ProfileSection from './ProfileSection'
+import { useEffect, useState } from 'react'
+import type { CoachDocument, CoachIdentityVerification } from '@/firebase/coaches/coach.model'
+import { CoachCRUD } from '@/firebase/coaches/main'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
-import {
-  GENERIC_USER_ERROR,
-  reportInternalError,
-} from '@/lib/user-facing-error'
-import type {
-  CoachDocument,
-  CoachIdentityVerification,
-} from '@/firebase/coaches/coach.model'
+import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import ProfileSection from './ProfileSection'
 
 interface PrivateValue {
   identityVerification?: CoachIdentityVerification
 }
 
 const STATUS_COPY: Record<CoachIdentityVerification['status'], string> = {
-  not_submitted: 'Aún no has subido tu INE.',
-  pending: 'Tu INE está en revisión por un administrador.',
+  not_submitted: 'Aún no has subido tu documento de identidad.',
+  pending: 'Tu documento está en revisión por un administrador.',
   verified: 'Identidad validada por el equipo.',
   rejected: 'La revisión fue rechazada. Sube una imagen más clara.',
 }
@@ -80,7 +74,7 @@ export default function PrivateCard({
     setTimeout(() => {
       if (finished) return
       finished = true
-      setError('No se pudo subir la INE. Intenta de nuevo.')
+      setError('No se pudo subir el documento. Intenta de nuevo.')
       setBusy(false)
       setProgress(undefined)
     }, 30000)
@@ -90,35 +84,41 @@ export default function PrivateCard({
     <ProfileSection
       id="coach-verification-documents"
       title="Mis documentos (verificación)"
-      description="Sube únicamente tu INE. Esta sección es privada y un administrador debe validar la identidad antes de marcarla como verificada."
-      summary={`INE · ${STATUS_COPY[verification.status]}`}
+      description="Sube un documento de identidad oficial: identificación nacional, pasaporte, INE, DNI o cédula. Esta sección es privada y un administrador debe validar la identidad antes de marcarla como verificada."
+      summary={`Documento de identidad · ${STATUS_COPY[verification.status]}`}
       surface="tinted"
     >
-        {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
+      {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
 
-        <ImageInput
-          label="INE"
-          imageUrl={verification.document?.url}
-          imageAlt="INE subida"
-          busy={busy}
-          progress={progress}
-          helperText={`${STATUS_COPY[verification.status]}${verification.document?.name ? ` · ${verification.document.name}` : ''}`}
-          onFileSelected={uploadIne}
-        />
+      <ImageInput
+        label="Documento de identidad"
+        imageUrl={verification.document?.url}
+        imageAlt="Documento de identidad subido"
+        busy={busy}
+        progress={progress}
+        helperText={`${STATUS_COPY[verification.status]}${verification.document?.name ? ` · ${verification.document.name}` : ''}`}
+        onFileSelected={uploadIne}
+      />
 
-        <div className="flex flex-col gap-3 border-t border-[var(--c-border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-[var(--c-text-2)]">
-            Flujo admin: pendiente → verificada o rechazada.
-          </p>
-          <button
-            type="button"
-            disabled={saving || busy || !verification.document}
-            onClick={() => onSave({ identityVerification: verification })}
-            className="btn btn-primary min-w-36 self-start disabled:opacity-50 sm:self-auto"
-          >
-            {saving ? 'Guardando…' : 'Guardar documento'}
-          </button>
-        </div>
+      <p className="rounded-2xl bg-white/70 px-4 py-3 text-xs leading-5 text-[var(--c-text-2)]">
+        <span className="font-semibold text-[var(--c-ocean-mid)]">¿Por qué pedimos esto?</span> Solo
+        para verificar tu identidad. Los atletas u otros coaches nunca tienen acceso a este
+        documento ni a estos datos.
+      </p>
+
+      <div className="flex flex-col gap-3 border-t border-[var(--c-border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-[var(--c-text-2)]">
+          Flujo admin: pendiente → verificada o rechazada.
+        </p>
+        <button
+          type="button"
+          disabled={saving || busy || !verification.document}
+          onClick={() => onSave({ identityVerification: verification })}
+          className="btn btn-primary min-w-36 self-start disabled:opacity-50 sm:self-auto"
+        >
+          {saving ? 'Guardando…' : 'Guardar documento'}
+        </button>
+      </div>
     </ProfileSection>
   )
 }
