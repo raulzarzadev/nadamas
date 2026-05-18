@@ -29,3 +29,65 @@
   --radius-field: 14px;
   --radius-box: 22px;
 }
+
+/* Coach metric slider: visible track fill + reactive thumb. */
+@keyframes metric-thumb-pulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+.metric-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--c-border, #d6eaf0);
+  outline: none;
+  cursor: pointer;
+}
+
+.metric-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--c-aqua, #00b4d8);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 119, 182, 0.35);
+  transition: transform 160ms var(--ease-expo, ease), box-shadow 160ms ease;
+}
+.metric-range::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--c-aqua, #00b4d8);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 119, 182, 0.35);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.metric-range:hover::-webkit-slider-thumb,
+.metric-range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 6px rgba(0, 180, 216, 0.22);
+}
+.metric-range:hover::-moz-range-thumb,
+.metric-range:focus-visible::-moz-range-thumb {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 6px rgba(0, 180, 216, 0.22);
+}
+.metric-range:active::-webkit-slider-thumb {
+  transform: scale(1.28);
+}
+.metric-range:active::-moz-range-thumb {
+  transform: scale(1.28);
+}
+
+.metric-range.is-bumping::-webkit-slider-thumb {
+  animation: metric-thumb-pulse 320ms var(--ease-expo, ease);
+}
+.metric-range.is-bumping::-moz-range-thumb {
+  animation: metric-thumb-pulse 320ms ease;
+}
