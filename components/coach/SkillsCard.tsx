@@ -1,12 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
+import { type CoachMetrics, normalizeCoachMetrics } from '@/lib/coach-metrics'
 import CoachMetricsForm from './CoachMetricsForm'
 import { CoachStyleMapPreview } from './CoachRadarChart'
 import ProfileSection from './ProfileSection'
-import {
-  normalizeCoachMetrics,
-  type CoachMetrics,
-} from '@/lib/coach-metrics'
 
 export default function SkillsCard({
   value,
@@ -25,9 +23,9 @@ export default function SkillsCard({
 
   return (
     <ProfileSection
-      title="Carta de gustos y habilidades"
+      title={CARD_PROPIERTIES_AND_STYLES_LABEL}
       description="Ajusta tu estilo de entrenamiento para que los alumnos entiendan de un vistazo cómo acompañas, corriges y exiges."
-      summary="8 métricas · mapa de estilo"
+      summary={`8 métricas · ${CARD_PROPIERTIES_AND_STYLES_LABEL}`}
       headerAside={
         <div className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 sm:right-12">
           <CoachStyleMapPreview metrics={draft} />

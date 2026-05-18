@@ -5,6 +5,7 @@ import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
 import Loading from '@comps/Loading'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { use, useEffect, useMemo, useState } from 'react'
+import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
@@ -151,7 +152,7 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
           <CoachStyleMapPreview metrics={normalizeCoachMetrics(coach.metrics)} />
           <div>
             <h1 className="text-xl font-extrabold text-[var(--c-ocean)]">{coachName}</h1>
-            <p className="text-sm text-[var(--c-text-2)]">Mapa de estilo</p>
+            <p className="text-sm text-[var(--c-text-2)]">{CARD_PROPIERTIES_AND_STYLES_LABEL}</p>
           </div>
         </div>
 
