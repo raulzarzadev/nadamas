@@ -1,7 +1,6 @@
 'use client'
 
 import type { CoachIdentityVerification, CoachVerification } from '@/firebase/coaches/coach.model'
-import { effectiveScore } from '@/lib/coach-score'
 
 export default function ScoreCard({
   verification,
@@ -18,23 +17,11 @@ export default function ScoreCard({
   requesting: boolean
   requestError?: string | null
 }) {
-  const score = effectiveScore(verification)
   const verified = verification?.status === 'verified'
   const completionDone = missingItems.length === 0
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[0.72fr_1.28fr]">
-      <section className="flex flex-col gap-2 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)] sm:p-6">
-        <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">Tu calificación</h2>
-        <p className="text-4xl font-extrabold text-[var(--c-ocean)]">
-          {score}
-          <span className="text-base font-medium text-[var(--c-text-2)]"> / 100</span>
-        </p>
-        <p className="text-sm text-[var(--c-text-2)]">
-          Este puntaje resume qué tan completo y sólido se ve tu perfil para un atleta.
-        </p>
-      </section>
-
+    <div>
       <section className="flex flex-col gap-3 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)] sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="mr-auto text-xl font-bold text-[var(--c-ocean-mid)]">Estado del perfil</h2>
