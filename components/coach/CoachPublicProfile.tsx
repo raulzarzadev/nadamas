@@ -1,5 +1,5 @@
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
-import { COACH_METRICS, normalizeCoachMetrics } from '@/lib/coach-metrics'
+import { normalizeCoachMetrics } from '@/lib/coach-metrics'
 import {
   offeringHeadline,
   offeringPrice,
@@ -7,7 +7,7 @@ import {
   resolveOfferings,
 } from '@/lib/coach-offerings'
 import { effectiveScore } from '@/lib/coach-score'
-import CoachRadarChart from './CoachRadarChart'
+import CoachMetricsOverview from './CoachMetricsOverview'
 
 export default function CoachPublicProfile({ coach }: { coach: CoachPublic }) {
   const verified = coach.verification?.status === 'verified'
@@ -58,30 +58,7 @@ export default function CoachPublicProfile({ coach }: { coach: CoachPublic }) {
 
       {coach.bio && <p className="text-[var(--c-text-2)]">{coach.bio}</p>}
 
-      {metrics && (
-        <section className="grid gap-4 lg:grid-cols-[19rem_1fr] lg:items-start">
-          <CoachRadarChart metrics={metrics} />
-          <div className="grid gap-3 sm:grid-cols-2">
-            {COACH_METRICS.map((metric) => (
-              <div
-                key={metric.key}
-                className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-3"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-[var(--c-ocean)]">{metric.label}</span>
-                  <span className="rounded-full bg-[var(--c-surface)] px-2 py-0.5 text-sm font-bold text-[var(--c-ocean-mid)]">
-                    {metrics[metric.key]}/5
-                  </span>
-                </div>
-                <div className="mt-2 flex justify-between text-sm text-[var(--c-text-2)]">
-                  <span>{metric.minLabel}</span>
-                  <span>{metric.maxLabel}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {metrics && <CoachMetricsOverview metrics={metrics} />}
 
       {galleryPhotos.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">

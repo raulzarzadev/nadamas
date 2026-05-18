@@ -130,12 +130,20 @@ export function offeringPrice(offering: CoachClassOffering): string {
   return cents !== null ? `${formatPesos(cents)} ${unit}` : `$ — ${unit}`
 }
 
-/** Cheapest priced offering label for cards, or a fallback. */
+/** Compact card label: a price range when comparable, otherwise the cheapest priced offering. */
 export function offeringsPriceSummary(offerings: CoachClassOffering[]): string {
   const priced = offerings
     .filter((o) => offeringPriceCents(o) !== null)
     .sort((a, b) => (offeringPriceCents(a) as number) - (offeringPriceCents(b) as number))
   if (!priced.length) return 'Precio por definir'
+
+  const units = new Set(priced.map((offering) => offering.unit))
+  const min = offeringPriceCents(priced[0]) as number
+  const max = offeringPriceCents(priced[priced.length - 1]) as number
+  if (units.size === 1 && min !== max) {
+    return `${formatPesosCompact(min)} - ${formatPesosCompact(max)}`
+  }
+
   return offeringPrice(priced[0])
 }
 
@@ -179,6 +187,15 @@ export function formatPesos(cents: number) {
     style: 'currency',
     currency: 'MXN',
     minimumFractionDigits: 2,
+  }).format(cents / 100)
+}
+
+export function formatPesosCompact(cents: number) {
+  return new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
+    minimumFractionDigits: 0,
   }).format(cents / 100)
 }
 

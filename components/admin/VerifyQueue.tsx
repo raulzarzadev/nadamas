@@ -7,6 +7,8 @@ import { FiCheck, FiExternalLink, FiX } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import type { CoachPrivate } from '@/firebase/coaches/coach.model'
+import { UserCRUD } from '@/firebase/users/main'
+import type { AppUser } from '@/firebase/users/user.model'
 import { postAuthed } from '@/lib/client/authed-api'
 
 type PendingReview = CoachPrivate & { coachId: string }
@@ -14,9 +16,11 @@ type PendingReview = CoachPrivate & { coachId: string }
 export default function VerifyQueue() {
   const { user } = useUser()
   const [items, setItems] = useState<PendingReview[]>([])
+  const [users, setUsers] = useState<AppUser[]>([])
   const [busyId, setBusyId] = useState<string | null>(null)
 
   useEffect(() => CoachCRUD.listenPendingIdentityReviews(setItems), [])
+  useEffect(() => UserCRUD.listenAll(setUsers), [])
 
   async function review(coachId: string, status: 'verified' | 'rejected') {
     setBusyId(coachId)
@@ -56,6 +60,17 @@ export default function VerifyQueue() {
       ) : (
         items.map((item) => {
           const document = item.identityVerification?.document
+          const coachUser = users.find((candidate) => candidate.id === item.coachId)
+          const coachName =
+            coachUser?.displayName ||
+            coachUser?.name ||
+            [coachUser?.firstName, coachUser?.lastName].filter(Boolean).join(' ') ||
+            'Coach sin nombre'
+          const phone =
+            coachUser?.phone ||
+            item.privateContacts?.find((contact) =>
+              ['phone', 'whatsapp'].includes(contact.type.toLowerCase())
+            )?.value
 
           return (
             <article
@@ -82,30 +97,39 @@ export default function VerifyQueue() {
               )}
 
               <div className="min-w-0">
-                <p className="font-bold text-[var(--c-ocean)]">
-                  Coach {item.coachId}
+                <p className="font-bold text-[var(--c-ocean)]">{coachName}</p>
+                <p className="mt-1 text-sm text-[var(--c-text-2)]">
+                  {phone || 'Teléfono no registrado'}
                 </p>
                 <p className="mt-1 truncate text-sm text-[var(--c-text-2)]">
                   {document?.name || 'Documento sin nombre'}
                 </p>
-                {document?.url && (
-                  <div className="mt-2 flex flex-wrap gap-4">
-                    <Link
-                      href={`/admin/verify-queue/${item.coachId}`}
-                      className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--c-ocean-mid)]"
-                    >
-                      Revisar perfil
-                    </Link>
-                    <a
-                      href={document.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--c-ocean-mid)]"
-                    >
-                      Ver documento <FiExternalLink aria-hidden="true" />
-                    </a>
-                  </div>
-                )}
+                <div className="mt-2 flex flex-wrap gap-4">
+                  <Link
+                    href={`/admin/users/${item.coachId}`}
+                    className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--c-ocean-mid)]"
+                  >
+                    Ver perfil
+                  </Link>
+                  {document?.url && (
+                    <>
+                      <Link
+                        href={`/admin/verify-queue/${item.coachId}`}
+                        className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--c-ocean-mid)]"
+                      >
+                        Revisar perfil
+                      </Link>
+                      <a
+                        href={document.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-sm font-semibold text-[var(--c-ocean-mid)]"
+                      >
+                        Ver documento <FiExternalLink aria-hidden="true" />
+                      </a>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2">

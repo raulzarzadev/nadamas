@@ -148,8 +148,8 @@ export default function MarketplacePreview() {
 
   return (
     <section id="coaches" className="mx-auto max-w-[1180px] px-5 py-20 sm:px-8 lg:py-28">
-      <div className="reveal grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
-        <div className="max-w-[34ch]">
+      <div className="reveal grid gap-6 lg:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)] lg:items-end lg:gap-10">
+        <div className="">
           <h2 className="text-[2.1rem] font-extrabold sm:text-[2.9rem]">
             Encuentra un coach compatible contigo
           </h2>
@@ -160,15 +160,31 @@ export default function MarketplacePreview() {
           </p>
         </div>
 
-        <label className="block">
-          <span className="sr-only">Buscar coach por nombre</span>
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar por nombre"
-            className="h-14 w-full rounded-full border border-[var(--c-border)] bg-white px-6 text-base shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--c-aqua)]"
-          />
-        </label>
+        <div
+          className="rounded-[30px] p-4 sm:p-5 m-auto w-full"
+          style={{ background: 'var(--c-surface)' }}
+        >
+          <label className="block">
+            <span className="sr-only">Buscar coach por nombre</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar por nombre"
+              className="h-14 w-full rounded-full border border-[var(--c-border)] bg-white px-6 text-base shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--c-aqua)]"
+            />
+          </label>
+          <div className="mt-3 flex flex-wrap gap-2 text-sm" style={{ color: 'var(--c-text-2)' }}>
+            {['Compara estilo', 'Revisa horarios', 'Reserva al instante'].map((item) => (
+              <span
+                key={item}
+                className="rounded-full bg-white px-3 py-1.5"
+                style={{ border: '1px solid var(--c-border)' }}
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="reveal mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -205,41 +221,43 @@ export default function MarketplacePreview() {
               key={coach.id}
               className="overflow-hidden rounded-[32px] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]"
             >
-              <div className="flex items-center gap-4 p-5">
-                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-3xl bg-[var(--c-surface)]">
-                  {photo ? (
-                    <Image
-                      src={photo}
-                      alt={coach.name}
-                      fill
-                      sizes="80px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--c-ocean-mid)]">
-                      {coach.name.slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <h3 className="flex items-center gap-1.5 text-lg font-bold text-[var(--c-ocean)]">
-                    <span className="truncate">{coach.name}</span>
-                    {coach.verification?.status === 'verified' && (
-                      <span
-                        title="Coach verificado"
-                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#1d4ed8] px-2 py-0.5 text-xs font-semibold text-white"
-                      >
-                        ✓
-                      </span>
+              <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                <div className="flex min-w-0 items-center gap-4 sm:flex-1">
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-3xl bg-[var(--c-surface)]">
+                    {photo ? (
+                      <Image
+                        src={photo}
+                        alt={coach.name}
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--c-ocean-mid)]">
+                        {coach.name.slice(0, 1).toUpperCase()}
+                      </div>
                     )}
-                  </h3>
-                  <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-[var(--c-text-2)]">
-                    {coach.bio || 'Este coach todavía está afinando su presentación.'}
-                  </p>
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="flex items-center gap-1.5 text-lg font-bold text-[var(--c-ocean)]">
+                      <span className="truncate">{coach.name}</span>
+                      {coach.verification?.status === 'verified' && (
+                        <span
+                          title="Coach verificado"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#1d4ed8] px-2 py-0.5 text-xs font-semibold text-white"
+                        >
+                          ✓
+                        </span>
+                      )}
+                    </h3>
+                    <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-[var(--c-text-2)]">
+                      {coach.bio || 'Este coach todavía está afinando su presentación.'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex shrink-0 flex-col items-center">
+                <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:gap-0">
                   <CoachStyleMapPreview metrics={metrics} />
                   <div className="mt-0.5 flex items-center gap-0.5">
                     <span className="text-[0.6rem] font-semibold uppercase tracking-wide text-[var(--c-text-2)]">
