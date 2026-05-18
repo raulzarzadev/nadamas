@@ -1,21 +1,12 @@
 import { NextResponse } from 'next/server'
-import { adminDb } from '@/lib/server/firebase-admin'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
+import { publicNameFromUser } from '@/lib/public-name'
+import { adminDb } from '@/lib/server/firebase-admin'
 
 interface PublicCoachDirectoryItem extends CoachPublic {
   id: string
   name: string
   avatarUrl?: string
-}
-
-function publicNameFromUser(user?: FirebaseFirestore.DocumentData) {
-  const explicitName = user?.displayName || user?.name
-  if (typeof explicitName === 'string' && explicitName.trim()) return explicitName.trim()
-
-  const email = typeof user?.email === 'string' ? user.email : ''
-  if (email) return email.split('@')[0]
-
-  return 'Coach de natación'
 }
 
 export async function GET() {

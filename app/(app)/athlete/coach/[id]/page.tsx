@@ -62,7 +62,7 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     if (!user) return
-    setName((current) => current || user.displayName || user.name || '')
+    setName((current) => current || user.nickname || user.displayName || user.name || '')
     setPhone((current) => current || user.phone || '')
   }, [user])
 

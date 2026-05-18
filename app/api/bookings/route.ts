@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import type { CoachBookingSelection } from '@/lib/coach-booking'
+import { publicNameFromUser } from '@/lib/public-name'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 
 export const runtime = 'nodejs'
@@ -99,10 +100,7 @@ export async function POST(request: Request) {
     athletePhone: profilePhone,
     athleteEmail: athleteDoc.data()?.email || caller.email || null,
     coachId: body.coachId,
-    coachName:
-      coachDoc.data()?.displayName ||
-      coachDoc.data()?.name ||
-      (typeof coachDoc.data()?.email === 'string' ? coachDoc.data()?.email.split('@')[0] : null),
+    coachName: publicNameFromUser(coachDoc.data()),
     locationId: body.locationId,
     locationName: body.locationName,
     days: body.days,

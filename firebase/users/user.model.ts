@@ -6,6 +6,12 @@ export interface AppUser {
   displayName?: string
   name?: string
   email?: string
+  /** Visible public name set by the user. */
+  nickname?: string
+  /** Legal given name(s) — private, cotejado con INE. */
+  firstName?: string
+  /** Legal surname(s) — private, cotejado con INE. */
+  lastName?: string
   phone?: string
   profileCompletedAt?: number
   photoURL?: string

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { formatSlotLabel } from '@/lib/coach-booking'
+import { publicNameFromUser } from '@/lib/public-name'
 import { sendBookingCancelledEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 
@@ -8,13 +9,6 @@ export const runtime = 'nodejs'
 function getBearerToken(request: Request) {
   const match = (request.headers.get('authorization') || '').match(/^Bearer (.+)$/i)
   return match?.[1] || null
-}
-
-function coachDisplayName(user?: FirebaseFirestore.DocumentData) {
-  const explicit = user?.displayName || user?.name
-  if (typeof explicit === 'string' && explicit.trim()) return explicit.trim()
-  const email = typeof user?.email === 'string' ? user.email : ''
-  return email ? email.split('@')[0] : 'Coach'
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -61,7 +55,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     if (typeof email === 'string') {
       await sendBookingCancelledEmail({
         email,
-        coachName: coachDisplayName(coachUser.data()),
+        coachName: publicNameFromUser(coachUser.data()),
         athleteName: booking.athleteName || 'Un alumno',
         locationName: booking.locationName,
         slotLabel: formatSlotLabel({
