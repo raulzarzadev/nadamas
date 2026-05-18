@@ -1,4 +1,5 @@
 import type { CoachPrivate, CoachPublic } from '@/firebase/coaches/coach.model'
+import { resolveOfferings } from '@/lib/coach-offerings'
 
 /**
  * Single source of truth for what a coach must complete before the profile
@@ -22,7 +23,7 @@ export function coachMissingItems({
   const hasFacePhoto = !!(
     pubVal.facePhoto?.url || gallery.find((photo) => photo.label === 'Yo')?.url
   )
-  const hasLocation = !!pubVal.teachingLocations?.length
+  const hasLocation = resolveOfferings(pubVal).length > 0
   const hasBio = !!pubVal.bio?.trim()
   const hasMetrics = !!pubVal.metrics && Object.keys(pubVal.metrics).length > 0
   const hasIne = !!privVal.identityVerification?.document?.url

@@ -13,7 +13,7 @@ import {
   type Booking,
   bookingSelectionKey,
   formatSlotLabel,
-  parseBookingSelection,
+  parseBookingSelections,
 } from '@/lib/coach-booking'
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
 
@@ -21,12 +21,6 @@ interface CoachDetail {
   coach: CoachPublic
   name: string
   avatarUrl: string | null
-}
-
-function priceSummary(coach: CoachPublic) {
-  const option = coach.priceOptions?.find((item) => item.amount !== null)
-  if (!option || option.amount === null) return 'Precio por definir'
-  return `$${option.amount} / ${option.unit}`
 }
 
 export default function AthleteCoachView({ params }: { params: Promise<{ id: string }> }) {
@@ -42,9 +36,11 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
   const [bookingMessage, setBookingMessage] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const bookingSelection = useMemo(() => {
-    const parsed = parseBookingSelection(searchParams.get('booking'))
-    return parsed?.coachId === id ? parsed : null
+  const bookingSelections = useMemo(() => {
+    const parsed = parseBookingSelections(
+      searchParams.get('bookings') || searchParams.get('booking')
+    )
+    return parsed?.every((selection) => selection.coachId === id) ? parsed : null
   }, [searchParams, id])
 
   useEffect(() => {
@@ -70,15 +66,17 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
   // Booking lives server-side with a deterministic id, so a reload must
   // reflect an already-confirmed class instead of asking again.
   useEffect(() => {
-    if (!user || !bookingSelection) return
+    if (!user || !bookingSelections) return
     let active = true
     getAuthed('/api/bookings')
       .then((res) => res.json())
       .then((payload: { bookings?: Booking[] }) => {
         if (!active) return
-        const key = bookingSelectionKey(bookingSelection)
-        const exists = (payload.bookings || []).some(
-          (booking) => bookingSelectionKey(booking) === key
+        const existingKeys = new Set(
+          (payload.bookings || []).map((booking) => bookingSelectionKey(booking))
+        )
+        const exists = bookingSelections.every((selection) =>
+          existingKeys.has(bookingSelectionKey(selection))
         )
         if (exists) {
           setBookingStatus('success')
@@ -89,10 +87,10 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
     return () => {
       active = false
     }
-  }, [user, bookingSelection])
+  }, [user, bookingSelections])
 
   async function confirmBooking() {
-    if (!bookingSelection) return
+    if (!bookingSelections) return
     const trimmedName = name.trim()
     const trimmedPhone = phone.trim()
     if (!trimmedName || !trimmedPhone) {
@@ -104,10 +102,14 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
     setBookingStatus('loading')
     setBookingMessage(null)
     try {
-      await postAuthed('/api/bookings', {
-        ...bookingSelection,
-        athleteProfile: { name: trimmedName, phone: trimmedPhone },
-      })
+      await Promise.all(
+        bookingSelections.map((selection) =>
+          postAuthed('/api/bookings', {
+            ...selection,
+            athleteProfile: { name: trimmedName, phone: trimmedPhone },
+          })
+        )
+      )
       await refreshUser?.()
       setBookingStatus('success')
       setBookingMessage('Clase agendada')
@@ -132,7 +134,7 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
   const { coach, name: coachName } = detail
   const confirmed = bookingStatus === 'success'
 
-  if (!bookingSelection) {
+  if (!bookingSelections) {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-extrabold">{coachName}</h1>
@@ -140,6 +142,8 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
       </div>
     )
   }
+
+  const primarySelection = bookingSelections[0]
 
   return (
     <div className="flex flex-col gap-6">
@@ -156,22 +160,48 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl bg-[var(--c-surface)] px-4 py-3">
             <dt className="text-xs font-semibold uppercase text-[var(--c-text-2)]">Lugar</dt>
             <dd className="mt-1 font-semibold text-[var(--c-ocean)]">
-              {bookingSelection.locationName}
+              {bookingSelections.map((selection) => selection.locationName).join(', ')}
             </dd>
           </div>
           <div className="rounded-2xl bg-[var(--c-surface)] px-4 py-3">
             <dt className="text-xs font-semibold uppercase text-[var(--c-text-2)]">Horario</dt>
             <dd className="mt-1 font-semibold text-[var(--c-ocean)]">
-              {formatSlotLabel(bookingSelection)}
+              {bookingSelections
+                .map(
+                  (selection) =>
+                    `${new Date(`${selection.date}T12:00:00`).toLocaleDateString('es-MX', {
+                      day: 'numeric',
+                      month: 'short',
+                    })} · ${selection.startTime}`
+                )
+                .join(' · ')}
             </dd>
           </div>
           <div className="rounded-2xl bg-[var(--c-surface)] px-4 py-3">
             <dt className="text-xs font-semibold uppercase text-[var(--c-text-2)]">Precio</dt>
-            <dd className="mt-1 font-semibold text-[var(--c-ocean)]">{priceSummary(coach)}</dd>
+            <dd className="mt-1 font-semibold text-[var(--c-ocean)]">
+              {primarySelection.price !== null
+                ? `$${primarySelection.price} ${
+                    {
+                      clase: 'por clase',
+                      sesión: 'por sesión',
+                      mes: 'por mes',
+                      paquete: 'por paquete',
+                    }[primarySelection.unit]
+                  }`
+                : 'Precio por definir'}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-[var(--c-surface)] px-4 py-3">
+            <dt className="text-xs font-semibold uppercase text-[var(--c-text-2)]">Modalidad</dt>
+            <dd className="mt-1 font-semibold text-[var(--c-ocean)]">
+              {primarySelection.mode === 'home' ? '🏠 A domicilio' : '📍 Lugar fijo'} ·{' '}
+              {primarySelection.groupType === 'grupal' ? 'Grupal' : 'Particular'}
+            </dd>
           </div>
         </dl>
 

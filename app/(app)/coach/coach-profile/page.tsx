@@ -1,9 +1,8 @@
 'use client'
 import LinksCard from '@comps/coach/LinksCard'
-import LocationsCard from '@comps/coach/LocationsCard'
 import MediaCard from '@comps/coach/MediaCard'
+import OfferingsCard from '@comps/coach/OfferingsCard'
 import PersonalDataCard from '@comps/coach/PersonalDataCard'
-import PricingCard from '@comps/coach/PricingCard'
 import PrivateCard from '@comps/coach/PrivateCard'
 import ScoreCard from '@comps/coach/ScoreCard'
 import SkillsCard from '@comps/coach/SkillsCard'
@@ -174,14 +173,16 @@ export default function CoachProfilePage() {
         onSave={(metrics) => savePublic('metrics', { metrics })}
       />
 
-      <LocationsCard
+      <OfferingsCard
         uid={uid}
         value={{
+          classOfferings: pubVal.classOfferings,
           teachingLocations: pubVal.teachingLocations,
+          priceOptions: pubVal.priceOptions,
           galleryPhotos: pubVal.galleryPhotos,
         }}
-        saving={savingSection === 'locations'}
-        onSave={(v) => savePublic('locations', v)}
+        saving={savingSection === 'offerings'}
+        onSave={(v) => savePublic('offerings', v)}
       />
 
       <MediaCard
@@ -213,14 +214,6 @@ export default function CoachProfilePage() {
         }}
         saving={savingSection === 'private'}
         onSave={(v) => savePrivate('private', v)}
-      />
-
-      <PricingCard
-        value={{
-          priceOptions: pubVal.priceOptions,
-        }}
-        saving={savingSection === 'pricing'}
-        onSave={(v) => savePublic('pricing', v)}
       />
     </div>
   )

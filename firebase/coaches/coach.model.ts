@@ -65,6 +65,43 @@ export interface CoachTeachingLocation {
   availability: CoachAvailabilitySlot[]
 }
 
+export type CoachOfferingMode = 'fixed' | 'home'
+export type CoachOfferingGroup = 'particular' | 'grupal'
+export type CoachOfferingUnit = 'clase' | 'sesión' | 'mes' | 'paquete'
+
+export interface CoachOfferingSchedule {
+  id: string
+  days: string[]
+  startTime: string
+  endTime: string
+  availabilityMode?: 'always' | 'next_week' | 'dates'
+  availableDates?: string[]
+}
+
+export interface CoachClassOffering {
+  id: string
+  mode: CoachOfferingMode
+  /** fixed mode */
+  placeName?: string
+  locationUrl?: string
+  imageUrl?: string
+  /** home mode — free text coverage zone */
+  coverageArea?: string
+  groupType: CoachOfferingGroup
+  /** only meaningful when groupType === 'grupal' */
+  maxPeople?: number | null
+  schedules?: CoachOfferingSchedule[]
+  /** Legacy single-schedule fields kept for existing docs. */
+  days?: string[]
+  startTime?: string
+  endTime?: string
+  durationMinutes?: number | null
+  price: number | null
+  currency: 'MXN'
+  unit: CoachOfferingUnit
+  details?: string
+}
+
 export interface CoachPriceOption {
   id: string
   title: string
@@ -97,6 +134,8 @@ export interface CoachPublic {
   publicLinks?: CoachPublicLink[]
   teachingLocations?: CoachTeachingLocation[]
   priceOptions?: CoachPriceOption[]
+  /** New unified model. Replaces teachingLocations + priceOptions. */
+  classOfferings?: CoachClassOffering[]
   socials?: CoachSocial[]
   youtubeLinks?: CoachYoutubeLink[]
   // Reserved, no UI in this scope:

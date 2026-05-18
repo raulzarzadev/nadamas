@@ -1,28 +1,33 @@
-import { effectiveScore } from '@/lib/coach-score'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
-import CoachRadarChart from './CoachRadarChart'
 import { COACH_METRICS, normalizeCoachMetrics } from '@/lib/coach-metrics'
+import {
+  offeringHeadline,
+  offeringPrice,
+  offeringWhen,
+  resolveOfferings,
+} from '@/lib/coach-offerings'
+import { effectiveScore } from '@/lib/coach-score'
+import CoachRadarChart from './CoachRadarChart'
 
 export default function CoachPublicProfile({ coach }: { coach: CoachPublic }) {
   const verified = coach.verification?.status === 'verified'
   const score = effectiveScore(coach.verification)
-  const galleryPhotos =
-    coach.galleryPhotos?.length
-      ? coach.galleryPhotos
-      : [
-          ...(coach.facePhoto ? [{ ...coach.facePhoto, label: 'Yo' }] : []),
-          ...(coach.workplacePhotos || []).map((photo) => ({
-            ...photo,
-            label: 'Lugares de trabajo',
-          })),
-          ...(coach.achievementPhotos || []).map((photo) => ({
-            ...photo,
-            label: 'Logros y eventos',
-          })),
-        ]
-  const heroPhoto =
-    galleryPhotos.find((photo) => photo.label === 'Yo') ?? galleryPhotos[0]
+  const galleryPhotos = coach.galleryPhotos?.length
+    ? coach.galleryPhotos
+    : [
+        ...(coach.facePhoto ? [{ ...coach.facePhoto, label: 'Yo' }] : []),
+        ...(coach.workplacePhotos || []).map((photo) => ({
+          ...photo,
+          label: 'Lugares de trabajo',
+        })),
+        ...(coach.achievementPhotos || []).map((photo) => ({
+          ...photo,
+          label: 'Logros y eventos',
+        })),
+      ]
+  const heroPhoto = galleryPhotos.find((photo) => photo.label === 'Yo') ?? galleryPhotos[0]
   const metrics = coach.metrics ? normalizeCoachMetrics(coach.metrics) : null
+  const offerings = resolveOfferings(coach)
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,10 +42,7 @@ export default function CoachPublicProfile({ coach }: { coach: CoachPublic }) {
         <div>
           <p className="text-3xl font-extrabold text-[var(--c-ocean)]">
             {score}
-            <span className="text-base font-medium text-[var(--c-text-2)]">
-              {' '}
-              / 100
-            </span>
+            <span className="text-base font-medium text-[var(--c-text-2)]"> / 100</span>
           </p>
           <span
             className={`inline-block rounded-full px-3 py-1 text-sm font-semibold ${
@@ -66,9 +68,7 @@ export default function CoachPublicProfile({ coach }: { coach: CoachPublic }) {
                 className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-3"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold text-[var(--c-ocean)]">
-                    {metric.label}
-                  </span>
+                  <span className="font-semibold text-[var(--c-ocean)]">{metric.label}</span>
                   <span className="rounded-full bg-[var(--c-surface)] px-2 py-0.5 text-sm font-bold text-[var(--c-ocean-mid)]">
                     {metrics[metric.key]}/5
                   </span>
@@ -85,9 +85,9 @@ export default function CoachPublicProfile({ coach }: { coach: CoachPublic }) {
 
       {galleryPhotos.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-          {galleryPhotos.map((p, i) => (
+          {galleryPhotos.map((p) => (
             <figure
-              key={p.url + i}
+              key={p.url}
               className="overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] bg-white"
             >
               <img
@@ -107,8 +107,8 @@ export default function CoachPublicProfile({ coach }: { coach: CoachPublic }) {
 
       {!!coach.publicLinks?.length && (
         <ul className="flex flex-wrap gap-3">
-          {coach.publicLinks.map((link, i) => (
-            <li key={link.kind + link.value + i}>
+          {coach.publicLinks.map((link) => (
+            <li key={link.kind + link.value}>
               <a
                 href={
                   link.kind === 'whatsapp'
@@ -128,88 +128,44 @@ export default function CoachPublicProfile({ coach }: { coach: CoachPublic }) {
         </ul>
       )}
 
-      {!!coach.teachingLocations?.length && (
+      {offerings.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">
-            Horarios y lugares
-          </h2>
+          <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">Clases</h2>
           <div className="grid gap-3 md:grid-cols-2">
-            {coach.teachingLocations.map((location) => (
+            {offerings.map((offering) => (
               <article
-                key={location.id}
+                key={offering.id}
                 className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-4"
               >
                 <div className="flex gap-3">
-                  {location.imageUrl && (
+                  {offering.imageUrl && (
                     <img
-                      src={location.imageUrl}
-                      alt={location.name}
+                      src={offering.imageUrl}
+                      alt={offering.placeName || 'Lugar de clases'}
                       className="h-20 w-20 rounded-[var(--r-sm)] object-cover"
                     />
                   )}
-                  <div>
-                    <p className="font-bold text-[var(--c-ocean)]">
-                      {location.name || 'Lugar por definir'}
+                  <div className="min-w-0">
+                    <p className="font-bold text-[var(--c-ocean)]">{offeringHeadline(offering)}</p>
+                    <p className="mt-1 text-sm text-[var(--c-text-2)]">{offeringWhen(offering)}</p>
+                    <p className="mt-1 text-sm font-bold text-[var(--c-ocean)]">
+                      {offeringPrice(offering)}
                     </p>
-                    {location.locationUrl && (
+                    {offering.locationUrl && (
                       <a
-                        href={location.locationUrl}
+                        href={offering.locationUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-sm font-semibold text-[var(--c-aqua-strong)] underline"
+                        className="mt-1 inline-block text-sm font-semibold text-[var(--c-aqua-strong)] underline"
                       >
                         Ver ubicación
                       </a>
                     )}
-                  </div>
-                </div>
-                <ul className="mt-3 flex flex-col gap-1 text-sm text-[var(--c-text-2)]">
-                  {location.availability.map((slot, index) => (
-                    <li key={`${location.id}-${index}`}>
-                      {slot.days.join(', ')} · {slot.startTime}–{slot.endTime}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!!coach.priceOptions?.length && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-xl font-bold text-[var(--c-ocean-mid)]">
-            Precios
-          </h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {coach.priceOptions.map((option) => (
-              <article
-                key={option.id}
-                className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-bold text-[var(--c-ocean)]">
-                      {option.title || 'Clase'}
-                    </p>
-                    {!!option.durationMinutes && (
-                      <p className="text-sm text-[var(--c-text-2)]">
-                        {option.durationMinutes} min
-                      </p>
+                    {offering.details && (
+                      <p className="mt-1 text-sm text-[var(--c-text-2)]">{offering.details}</p>
                     )}
                   </div>
-                  <p className="text-lg font-extrabold text-[var(--c-ocean)]">
-                    {option.amount !== null ? `$${option.amount}` : '—'}
-                  </p>
                 </div>
-                <p className="mt-2 text-sm text-[var(--c-text-2)]">
-                  Por {option.unit}
-                </p>
-                {option.details && (
-                  <p className="mt-2 text-sm text-[var(--c-text-2)]">
-                    {option.details}
-                  </p>
-                )}
               </article>
             ))}
           </div>

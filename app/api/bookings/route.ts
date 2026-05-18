@@ -18,11 +18,10 @@ function bookingIdFor(athleteId: string, selection: CoachBookingSelection) {
       [
         athleteId,
         selection.coachId,
-        selection.locationId,
-        selection.locationName,
+        selection.offeringId,
+        selection.scheduleId,
+        selection.date,
         selection.days.join(','),
-        selection.startTime,
-        selection.endTime,
       ].join('|')
     )
     .digest('hex')
@@ -52,12 +51,15 @@ export async function POST(request: Request) {
 
   const caller = await adminAuth.verifyIdToken(token)
   const body = (await request.json()) as Partial<CoachBookingSelection> & {
+    locationId?: string
     athleteProfile?: { name?: string; phone?: string }
   }
 
+  const offeringId = body.offeringId || body.locationId
   if (
     !body.coachId ||
-    !body.locationId ||
+    !offeringId ||
+    !body.date ||
     !body.locationName ||
     !Array.isArray(body.days) ||
     body.days.length === 0 ||
@@ -101,11 +103,18 @@ export async function POST(request: Request) {
     athleteEmail: athleteDoc.data()?.email || caller.email || null,
     coachId: body.coachId,
     coachName: publicNameFromUser(coachDoc.data()),
-    locationId: body.locationId,
+    offeringId,
+    scheduleId: body.scheduleId || `${offeringId}:legacy`,
+    date: body.date,
     locationName: body.locationName,
+    mode: body.mode ?? 'fixed',
+    groupType: body.groupType ?? 'particular',
     days: body.days,
     startTime: body.startTime,
     endTime: body.endTime,
+    price: body.price ?? null,
+    currency: 'MXN' as const,
+    unit: body.unit ?? 'clase',
     status: 'confirmed',
     source: 'marketplace',
     createdAt: now,

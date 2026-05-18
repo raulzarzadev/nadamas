@@ -14,14 +14,27 @@ import {
   buildCoachBookingTarget,
   type CoachBookingSelection,
   flattenCoachBookingSelections,
-  formatSlotLabel,
 } from '@/lib/coach-booking'
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
+import {
+  addDays,
+  offeringsAvailabilitySummary,
+  offeringsPriceSummary,
+  resolveOfferings,
+  startOfWeek,
+} from '@/lib/coach-offerings'
 
 interface PublicCoachDirectoryItem extends CoachPublic {
   id: string
   name: string
   avatarUrl?: string
+}
+
+const UNIT_LABEL: Record<CoachBookingSelection['unit'], string> = {
+  clase: 'por clase',
+  sesión: 'por sesión',
+  mes: 'por mes',
+  paquete: 'por paquete',
 }
 
 function coachPhoto(coach: PublicCoachDirectoryItem) {
@@ -34,17 +47,42 @@ function coachPhoto(coach: PublicCoachDirectoryItem) {
 }
 
 function availabilitySummary(coach: PublicCoachDirectoryItem) {
-  const locations = coach.teachingLocations || []
-  const slotCount = locations.reduce((total, location) => total + location.availability.length, 0)
-  if (!locations.length) return 'Horarios por publicar'
-  if (!slotCount) return `${locations.length} ${locations.length === 1 ? 'lugar' : 'lugares'}`
-  return `${locations.length} ${locations.length === 1 ? 'lugar' : 'lugares'} · ${slotCount} ${slotCount === 1 ? 'horario' : 'horarios'}`
+  return offeringsAvailabilitySummary(resolveOfferings(coach))
 }
 
 function priceSummary(coach: PublicCoachDirectoryItem) {
-  const firstPrice = coach.priceOptions?.find((option) => option.amount !== null)
-  if (!firstPrice) return 'Precio por definir'
-  return `$${firstPrice.amount} / ${firstPrice.unit}`
+  return offeringsPriceSummary(resolveOfferings(coach))
+}
+
+function groupSelections(selections: CoachBookingSelection[]) {
+  const groups = new Map<
+    string,
+    {
+      key: string
+      locationName: string
+      mode: CoachBookingSelection['mode']
+      startTime: string
+      selections: CoachBookingSelection[]
+    }
+  >()
+
+  for (const selection of selections) {
+    const key = [selection.offeringId, selection.scheduleId].join('::')
+    const group = groups.get(key)
+    if (group) {
+      group.selections.push(selection)
+      continue
+    }
+    groups.set(key, {
+      key,
+      locationName: selection.locationName,
+      mode: selection.mode,
+      startTime: selection.startTime,
+      selections: [selection],
+    })
+  }
+
+  return [...groups.values()]
 }
 
 export default function MarketplacePreview() {
@@ -54,7 +92,8 @@ export default function MarketplacePreview() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [selectedSlots, setSelectedSlots] = useState<Record<string, string>>({})
+  const [selectedSlots, setSelectedSlots] = useState<Record<string, string[]>>({})
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [bookingState] = useState<
     Record<
       string,
@@ -93,9 +132,10 @@ export default function MarketplacePreview() {
     return coaches.filter((coach) => coach.name.toLowerCase().includes(normalizedQuery))
   }, [coaches, query])
 
-  const scheduleSelection = (selection: CoachBookingSelection) => {
+  const scheduleSelection = (selections: CoachBookingSelection[]) => {
+    if (!selections.length) return
     const sessionUserId = currentUserId || auth.currentUser?.uid || null
-    const target = buildCoachBookingTarget(selection)
+    const target = buildCoachBookingTarget(selections)
 
     if (!sessionUserId) {
       router.push(`/login?redirectTo=${encodeURIComponent(target)}`)
@@ -147,12 +187,15 @@ export default function MarketplacePreview() {
           const photo = coachPhoto(coach)
           const isExpanded = expandedId === coach.id
           const metrics = normalizeCoachMetrics(coach.metrics)
-          const selections = flattenCoachBookingSelections(coach)
-          const fallbackSelection = selections[0]
-          const selectedSlotKey =
-            selectedSlots[coach.id] || (fallbackSelection && bookingSelectionKey(fallbackSelection))
-          const selectedSelection = selections.find(
-            (selection) => bookingSelectionKey(selection) === selectedSlotKey
+          const selections = flattenCoachBookingSelections(coach, weekStart)
+          const selectionGroups = groupSelections(selections)
+          const selectedSlotKeys = selectedSlots[coach.id] || []
+          const selectedSelections = selections.filter((selection) =>
+            selectedSlotKeys.includes(bookingSelectionKey(selection))
+          )
+          const selectedTotal = selectedSelections.reduce(
+            (total, selection) => total + (selection.price ?? 0),
+            0
           )
           const bookingStateForCoach = bookingState[coach.id]
 
@@ -238,50 +281,127 @@ export default function MarketplacePreview() {
 
                 {isExpanded && (
                   <div className="mt-4 space-y-4 border-t border-[var(--c-border)] pt-4 text-sm text-[var(--c-text-2)]">
-                    {coach.teachingLocations?.length ? (
+                    {resolveOfferings(coach).length ? (
                       <div>
                         <p className="font-semibold text-[var(--c-ocean)]">Horarios y lugares</p>
-                        {selections.length > 0 ? (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {selections.map((selection) => {
-                              const key = bookingSelectionKey(selection)
-                              const isActive = key === selectedSlotKey
-                              return (
-                                <button
-                                  key={key}
-                                  type="button"
-                                  onClick={() =>
-                                    setSelectedSlots((current) => ({
-                                      ...current,
-                                      [coach.id]: key,
-                                    }))
-                                  }
-                                  className={`rounded-full border px-3 py-2 text-left text-sm font-semibold transition ${
-                                    isActive
-                                      ? 'border-[var(--c-aqua)] bg-[var(--c-aqua-light)] text-[var(--c-ocean)]'
-                                      : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua)]'
-                                  }`}
-                                >
-                                  {formatSlotLabel(selection)}
-                                </button>
-                              )
+                        <div className="mt-3 flex items-center justify-between gap-3">
+                          <button
+                            type="button"
+                            className="rounded-full border border-[var(--c-border)] px-3 py-1 font-semibold text-[var(--c-ocean)]"
+                            onClick={() => setWeekStart((current) => addDays(current, -7))}
+                          >
+                            ←
+                          </button>
+                          <p className="font-semibold text-[var(--c-ocean)]">
+                            Semana del{' '}
+                            {weekStart.toLocaleDateString('es-MX', {
+                              day: 'numeric',
+                              month: 'short',
                             })}
+                          </p>
+                          <button
+                            type="button"
+                            className="rounded-full border border-[var(--c-border)] px-3 py-1 font-semibold text-[var(--c-ocean)]"
+                            onClick={() => setWeekStart((current) => addDays(current, 7))}
+                          >
+                            →
+                          </button>
+                        </div>
+                        {selectionGroups.length > 0 ? (
+                          <div className="mt-3 flex flex-col gap-3">
+                            {selectionGroups.map((group) => (
+                              <div
+                                key={group.key}
+                                className="rounded-[24px] border border-[var(--c-border)] bg-white p-4"
+                              >
+                                <p className="font-semibold text-[var(--c-ocean)]">
+                                  {group.mode === 'home' ? '🏠 ' : '📍 '}
+                                  {group.locationName}
+                                </p>
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                  <span className="min-w-12 font-bold text-[var(--c-ocean)]">
+                                    {group.startTime}
+                                  </span>
+                                  {group.selections.map((selection) => {
+                                    const key = bookingSelectionKey(selection)
+                                    const isActive = selectedSlotKeys.includes(key)
+                                    return (
+                                      <button
+                                        key={key}
+                                        type="button"
+                                        onClick={() =>
+                                          setSelectedSlots((current) => ({
+                                            ...current,
+                                            [coach.id]: isActive
+                                              ? selectedSlotKeys.filter((item) => item !== key)
+                                              : [...selectedSlotKeys, key],
+                                          }))
+                                        }
+                                        className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+                                          isActive
+                                            ? 'border-[var(--c-aqua)] bg-[var(--c-aqua-light)] text-[var(--c-ocean)]'
+                                            : 'border-[var(--c-border)] bg-[var(--c-surface)] text-[var(--c-ocean)] hover:border-[var(--c-aqua)]'
+                                        }`}
+                                      >
+                                        <span className="block">{selection.days[0]}</span>
+                                        <span className="block text-xs font-medium">
+                                          {new Date(`${selection.date}T12:00:00`).getDate()}
+                                        </span>
+                                      </button>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         ) : (
                           <p className="mt-2">Aún no publica horarios.</p>
                         )}
 
-                        {!!selectedSelection && (
+                        {selectedSelections.length > 0 && (
                           <div className="mt-4 rounded-[24px] border border-[var(--c-border)] bg-white p-4">
                             <p className="text-sm font-semibold text-[var(--c-ocean)]">
-                              {selectedSelection.locationName}
+                              Clases seleccionadas
                             </p>
-                            <p className="mt-1 text-sm text-[var(--c-text-2)]">
-                              {formatSlotLabel(selectedSelection)}
-                            </p>
+                            <ul className="mt-2 space-y-1 text-sm text-[var(--c-text-2)]">
+                              {selectedSelections.map((selection) => (
+                                <li
+                                  key={bookingSelectionKey(selection)}
+                                  className="flex items-center justify-between gap-3"
+                                >
+                                  <span>
+                                    {selection.mode === 'home' ? '🏠 ' : '📍 '}
+                                    {selection.locationName} · {selection.days[0]}{' '}
+                                    {new Date(`${selection.date}T12:00:00`).getDate()} ·{' '}
+                                    {selection.startTime}
+                                  </span>
+                                  <span className="text-right">
+                                    <span className="font-semibold text-[var(--c-ocean)]">
+                                      {selection.price !== null ? `$${selection.price}` : '—'}
+                                    </span>
+                                    {selection.price !== null && (
+                                      <span className="ml-1 text-xs text-[var(--c-text-2)]">
+                                        {UNIT_LABEL[selection.unit]}
+                                      </span>
+                                    )}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                            {selectedSelections.every((selection) => selection.price !== null) ? (
+                              <div className="mt-3 flex items-baseline justify-end gap-3 border-t border-[var(--c-border)] pt-3">
+                                <p className="text-lg font-extrabold text-[var(--c-ocean)]">
+                                  Total ${selectedTotal}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="mt-1 text-sm font-bold text-[var(--c-ocean)]">
+                                Precio por definir
+                              </p>
+                            )}
                             <button
                               type="button"
-                              onClick={() => scheduleSelection(selectedSelection)}
+                              onClick={() => scheduleSelection(selectedSelections)}
                               disabled={bookingStateForCoach?.status === 'loading'}
                               className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[var(--c-aqua)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60"
                             >
@@ -289,7 +409,7 @@ export default function MarketplacePreview() {
                                 ? 'Agendando…'
                                 : bookingStateForCoach?.status === 'success'
                                   ? 'Clase agendada'
-                                  : 'Agendar'}
+                                  : `Agendar ${selectedSelections.length === 1 ? 'clase' : `${selectedSelections.length} clases`}`}
                             </button>
                             {bookingStateForCoach?.message && (
                               <p
@@ -307,20 +427,6 @@ export default function MarketplacePreview() {
                       </div>
                     ) : (
                       <p>Aún no publica horarios.</p>
-                    )}
-
-                    {!!coach.priceOptions?.length && (
-                      <div>
-                        <p className="font-semibold text-[var(--c-ocean)]">Precios</p>
-                        <ul className="mt-2 space-y-1">
-                          {coach.priceOptions.map((option) => (
-                            <li key={option.id}>
-                              {option.title || 'Clase'} ·{' '}
-                              {option.amount !== null ? `$${option.amount}` : '—'} / {option.unit}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
                     )}
                   </div>
                 )}
