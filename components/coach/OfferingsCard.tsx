@@ -631,7 +631,7 @@ export default function OfferingsCard({
       description="Cada clase que ofreces: dónde la das, qué días y horario, y cuánto cuesta. Puedes tener una en un lugar fijo y otra a domicilio con precio distinto."
       summary={`${offerings.length} ${offerings.length === 1 ? 'clase' : 'clases'}`}
     >
-      {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
+      {error && <p className="text-sm text-[var(--cc-error,#b91c1c)]">{error}</p>}
 
       {offerings.length === 0 && (
         <div className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-bg)] px-4 py-8 text-center text-sm text-[var(--c-text-2)]">
