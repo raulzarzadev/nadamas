@@ -73,12 +73,6 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
 
       <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto h-auto w-full max-w-[320px]">
         <title>{CARD_PROPIERTIES_AND_STYLES_LABEL}</title>
-        <defs>
-          <linearGradient id="style-fill" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#f9a8d4" stopOpacity="0.56" />
-            <stop offset="100%" stopColor="#90e0ef" stopOpacity="0.48" />
-          </linearGradient>
-        </defs>
 
         {RADAR_METRICS.map((metric, index) => {
           const p = point(index, 5)
@@ -108,7 +102,7 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
 
         <path
           d={buildSoftPath(stylePoints)}
-          fill="url(#style-fill)"
+          fill="none"
           stroke="#ec4899"
           strokeWidth="2.5"
           strokeLinejoin="round"
@@ -125,7 +119,7 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
                 y={label.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="fill-[var(--c-ocean)] text-[9px] font-semibold"
+                className="fill-[var(--c-ocean)] text-[11px] font-bold"
               >
                 {metric.label}
               </text>
@@ -162,13 +156,6 @@ export function CoachStyleMapPreview({ metrics }: { metrics: CoachMetrics }) {
       aria-hidden="true"
       className="h-24 w-24 shrink-0 sm:h-28 sm:w-28"
     >
-      <defs>
-        <linearGradient id="style-preview-fill" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#f9a8d4" stopOpacity="0.68" />
-          <stop offset="100%" stopColor="#90e0ef" stopOpacity="0.58" />
-        </linearGradient>
-      </defs>
-
       {[1, 2, 3].map((level) => (
         <circle
           key={level}
@@ -196,7 +183,7 @@ export function CoachStyleMapPreview({ metrics }: { metrics: CoachMetrics }) {
 
       <path
         d={buildSoftPath(stylePoints)}
-        fill="url(#style-preview-fill)"
+        fill="none"
         stroke="#ec4899"
         strokeWidth="2"
         strokeLinejoin="round"

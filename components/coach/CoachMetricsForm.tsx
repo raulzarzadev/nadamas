@@ -18,12 +18,12 @@ export default function CoachMetricsForm({
   const metrics = normalizeCoachMetrics(value)
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_19rem] lg:items-start">
-      <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+      <div className="grid min-w-0 gap-4 md:grid-cols-2">
         {METRIC_GROUPS.map((group) => (
           <section
             key={group.id}
-            className="flex flex-col gap-3 rounded-[var(--r-md)] border p-4"
+            className="flex min-w-0 flex-col gap-3 rounded-[var(--r-md)] border p-3 sm:p-4"
             style={{ background: group.bg, borderColor: group.border }}
           >
             <div className="flex items-center gap-2">
@@ -32,7 +32,7 @@ export default function CoachMetricsForm({
               </span>
               <h3 className="font-bold text-[var(--c-ocean)]">{group.label}</h3>
             </div>
-            <div className="grid gap-3">
+            <div className="grid min-w-0 gap-3">
               {COACH_METRICS.filter((m) => m.group === group.id).map((metric) => (
                 <CoachMetricSlider
                   key={metric.key}

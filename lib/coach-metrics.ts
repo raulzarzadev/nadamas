@@ -41,7 +41,9 @@ export interface CoachMetricDefinition {
   key: keyof CoachMetrics
   label: string
   minLabel: string
+  middleLabel?: string
   maxLabel: string
+  optionLabels?: string[]
   icon: string
   group: MetricGroupId
 }
@@ -49,9 +51,10 @@ export interface CoachMetricDefinition {
 export const COACH_METRICS: CoachMetricDefinition[] = [
   {
     key: 'intensity',
-    label: 'Intensidad',
-    minLabel: 'Relajado',
-    maxLabel: 'Exigente',
+    label: 'Objetivo',
+    minLabel: 'Relajación',
+    maxLabel: 'Entrenamiento',
+    optionLabels: ['Relajación', 'Aprendizaje', 'Mantenimiento', 'Entrenamiento'],
     icon: '⚡',
     group: 'method',
   },
@@ -59,6 +62,7 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
     key: 'methodology',
     label: 'Metodología',
     minLabel: 'Intuitiva',
+    middleLabel: 'Adaptativa',
     maxLabel: 'Estructurada',
     icon: '🧭',
     group: 'method',
@@ -67,6 +71,7 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
     key: 'communication',
     label: 'Comunicación',
     minLabel: 'Motivacional',
+    middleLabel: 'Balanceada',
     maxLabel: 'Técnico',
     icon: '💬',
     group: 'personality',
@@ -74,8 +79,9 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
   {
     key: 'patience',
     label: 'Paciencia',
-    minLabel: 'Rápido',
-    maxLabel: 'Paciente',
+    minLabel: 'Ágil',
+    middleLabel: 'Intermedia',
+    maxLabel: 'Pausada',
     icon: '🌊',
     group: 'personality',
   },
@@ -83,31 +89,35 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
     key: 'attention',
     label: 'Atención',
     minLabel: 'Grupal',
+    middleLabel: 'Mixta',
     maxLabel: 'Personalizada',
     icon: '🎯',
     group: 'personality',
   },
   {
     key: 'training',
-    label: 'Entrenamiento',
-    minLabel: 'Recreativo',
-    maxLabel: 'Competitivo',
+    label: 'Alumnos',
+    minLabel: 'Todos',
+    maxLabel: 'Solo bebés',
+    optionLabels: ['Todos', 'Adultos', 'Niños', 'Solo bebés'],
     icon: '🏊',
     group: 'method',
   },
   {
     key: 'planning',
     label: 'Planeación',
-    minLabel: 'Improvisado',
+    minLabel: 'Espontánea',
+    middleLabel: 'Intermedia',
     maxLabel: 'Planeado',
     icon: '📋',
     group: 'method',
   },
   {
     key: 'connection',
-    label: 'Relación con el agua',
-    minLabel: 'Deportiva',
-    maxLabel: 'Meditativa',
+    label: 'Habilidad',
+    minLabel: 'Principiantes',
+    maxLabel: 'Multideporte',
+    optionLabels: ['Principiantes', 'Intermedio', 'Avanzados', 'Multideporte'],
     icon: '🌿',
     group: 'personality',
   },
@@ -144,4 +154,17 @@ export const RADAR_METRICS: Array<{
 
 export function normalizeCoachMetrics(metrics?: Partial<CoachMetrics> | null): CoachMetrics {
   return { ...DEFAULT_COACH_METRICS, ...(metrics || {}) }
+}
+
+export function getMetricScaleLabels(metric: CoachMetricDefinition) {
+  return (
+    metric.optionLabels || [metric.minLabel, metric.middleLabel, metric.maxLabel].filter(Boolean)
+  )
+}
+
+export function getMetricSelectedLabel(metric: CoachMetricDefinition, value: number) {
+  const labels = getMetricScaleLabels(metric)
+  const position = Math.max(1, Math.min(METRIC_MAX, value))
+  const index = Math.round(((position - 1) / (METRIC_MAX - 1)) * (labels.length - 1))
+  return labels[index]
 }

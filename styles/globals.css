@@ -30,7 +30,7 @@
   --radius-box: 22px;
 }
 
-/* Coach metric slider: visible track fill + reactive thumb. */
+/* Coach metric slider: neutral preference rail + reactive thumb. */
 @keyframes metric-thumb-pulse {
   0% { transform: scale(1); }
   45% { transform: scale(1.35); }
