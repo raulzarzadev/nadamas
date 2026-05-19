@@ -127,11 +127,15 @@ export default function ScoreCard({
         {!completionDone && (
           <ul className="flex flex-wrap gap-2">
             {missingItems.map((item) => (
-              <li
-                key={item}
-                className="rounded-full bg-[var(--c-surface)] px-3 py-1 text-sm text-[var(--c-text-2)]"
-              >
-                {item}
+              <li key={item}>
+                <a
+                  href={item === 'Documento de identidad' ? '#coach-verification-documents' : '#'}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-surface)] px-3 py-1 text-sm font-semibold text-[var(--c-ocean-mid)] transition hover:bg-[var(--c-border)]"
+                >
+                  <span>Falta:</span>
+                  <span>{item}</span>
+                  <span aria-hidden="true">→</span>
+                </a>
               </li>
             ))}
           </ul>

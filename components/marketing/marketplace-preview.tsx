@@ -3,8 +3,8 @@
 import CoachMetricsOverview from '@comps/coach/CoachMetricsOverview'
 import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
 import IconInfo from '@comps/IconInfo'
+import PreviewImage from '@comps/PreviewImage'
 import { onAuthStateChanged } from 'firebase/auth'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -284,21 +284,22 @@ export default function MarketplacePreview({
           return (
             <article
               key={coach.id}
-              className="overflow-hidden rounded-[32px] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]"
+              className="overflow-hidden rounded-4xl border border-(--c-border) bg-white shadow-(--shadow-sm)"
             >
               <div className="flex  gap-4 p-5 flex-col sm:flex-row sm:items-center">
                 <div className="flex min-w-0 items-center gap-4 flex-1">
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-3xl bg-[var(--c-surface)]">
+                  <div className="shrink-0">
                     {photo ? (
-                      <Image
-                        src={photo}
+                      <PreviewImage
+                        image={photo}
                         alt={coach.name}
-                        fill
-                        sizes="80px"
-                        className="object-cover"
+                        previewSize="avatar"
+                        previewClassName="m-0 overflow-hidden rounded-3xl bg-(--c-surface) opacity-100 shadow-none hover:opacity-100"
+                        modalImageSize="lg"
+                        variant="lightbox"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-[var(--c-ocean-mid)]">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-(--c-surface) text-2xl font-bold text-(--c-ocean-mid)">
                         {coach.name.slice(0, 1).toUpperCase()}
                       </div>
                     )}
@@ -406,7 +407,11 @@ export default function MarketplacePreview({
                                 className="rounded-[24px] border border-[var(--c-border)] bg-white p-4"
                               >
                                 <p className="font-semibold text-[var(--c-ocean)]">
-                                  {group.mode === 'home' ? '🏠 ' : '📍 '}
+                                  {group.mode === 'home'
+                                    ? '🏠 '
+                                    : group.mode === 'online'
+                                      ? '💻 '
+                                      : '📍 '}
                                   {group.locationName}
                                 </p>
                                 <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -461,7 +466,11 @@ export default function MarketplacePreview({
                                   className="flex items-center justify-between gap-3"
                                 >
                                   <span>
-                                    {selection.mode === 'home' ? '🏠 ' : '📍 '}
+                                    {selection.mode === 'home'
+                                      ? '🏠 '
+                                      : selection.mode === 'online'
+                                        ? '💻 '
+                                        : '📍 '}
                                     {selection.locationName} · {selection.days[0]}{' '}
                                     {new Date(`${selection.date}T12:00:00`).getDate()} ·{' '}
                                     {selection.startTime}

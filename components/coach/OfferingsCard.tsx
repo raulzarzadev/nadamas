@@ -1,6 +1,6 @@
 'use client'
+import { DateField, MoneyField, SelectField, TextField, TimeField } from '@comps/Inputs/FormFields'
 import ImageInput from '@comps/Inputs/ImageInput'
-import InputCurrency from '@comps/Inputs/InputCurrency'
 import SaveButton from '@comps/SaveButton'
 import { useEffect, useMemo, useState } from 'react'
 import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
@@ -16,8 +16,8 @@ import {
   offeringPrice,
   offeringPriceCents,
   offeringWhen,
-  resolveOfferings,
   resolveOfferingSchedules,
+  resolveOfferings,
 } from '@/lib/coach-offerings'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
@@ -96,7 +96,9 @@ export default function OfferingsCard({
     if (currentStep === 1)
       return offering.mode === 'home'
         ? !!offering.coverageArea?.trim()
-        : !!offering.placeName?.trim()
+        : offering.mode === 'online'
+          ? true
+          : !!offering.placeName?.trim()
     if (currentStep === 2)
       return resolveOfferingSchedules(offering).some(
         (schedule) => schedule.days.length > 0 && !!schedule.startTime && !!schedule.endTime
@@ -181,7 +183,7 @@ export default function OfferingsCard({
         {step === 1 && (
           <div className="flex flex-col gap-3">
             <div className="flex gap-2">
-              {(['fixed', 'home'] as const).map((mode) => (
+              {(['fixed', 'home', 'online'] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
@@ -192,24 +194,23 @@ export default function OfferingsCard({
                   }`}
                   onClick={() => patchEditing({ mode })}
                 >
-                  {mode === 'fixed' ? '📍 Lugar fijo' : '🏠 A domicilio'}
+                  {mode === 'fixed'
+                    ? '📍 Lugar fijo'
+                    : mode === 'home'
+                      ? '🏠 A domicilio'
+                      : '💻 En línea'}
                 </button>
               ))}
             </div>
 
             {editing.mode === 'fixed' ? (
               <>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-sm font-semibold text-[var(--c-ocean)]">
-                    Nombre del lugar
-                  </span>
-                  <input
-                    className="input input-bordered bg-white"
-                    placeholder="Ej. Alberca El Coromuel"
-                    value={editing.placeName || ''}
-                    onChange={(event) => patchEditing({ placeName: event.target.value })}
-                  />
-                </label>
+                <TextField
+                  label="Nombre del lugar"
+                  placeholder="Ej. Alberca El Coromuel"
+                  value={editing.placeName || ''}
+                  onChange={(event) => patchEditing({ placeName: event.target.value })}
+                />
                 <details className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3">
                   <summary className="cursor-pointer text-sm font-semibold text-[var(--c-text-2)]">
                     Más opciones (opcional)
@@ -233,18 +234,20 @@ export default function OfferingsCard({
                   </div>
                 </details>
               </>
+            ) : editing.mode === 'home' ? (
+              <TextField
+                label="Zona / colonias que cubro"
+                placeholder="Ej. Centro y Fovissste, La Paz"
+                value={editing.coverageArea || ''}
+                onChange={(event) => patchEditing({ coverageArea: event.target.value })}
+              />
             ) : (
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-[var(--c-ocean)]">
-                  Zona / colonias que cubro
-                </span>
-                <input
-                  className="input input-bordered bg-white"
-                  placeholder="Ej. Centro y Fovissste, La Paz"
-                  value={editing.coverageArea || ''}
-                  onChange={(event) => patchEditing({ coverageArea: event.target.value })}
-                />
-              </label>
+              <TextField
+                label="Detalles de la clase en línea (opcional)"
+                placeholder="Ej. Zoom · te envío el enlace al reservar"
+                value={editing.onlineDetails || ''}
+                onChange={(event) => patchEditing({ onlineDetails: event.target.value })}
+              />
             )}
           </div>
         )}
@@ -269,24 +272,20 @@ export default function OfferingsCard({
             </div>
 
             {editing.groupType === 'grupal' && (
-              <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-semibold text-[var(--c-ocean)]">
-                  Cupo máximo (opcional)
-                </span>
-                <input
-                  type="number"
-                  min="1"
-                  inputMode="numeric"
-                  className="input input-bordered w-32 bg-white"
-                  placeholder="8"
-                  value={editing.maxPeople ?? ''}
-                  onChange={(event) =>
-                    patchEditing({
-                      maxPeople: event.target.value ? Number(event.target.value) : null,
-                    })
-                  }
-                />
-              </label>
+              <TextField
+                label="Cupo máximo (opcional)"
+                type="number"
+                min="1"
+                inputMode="numeric"
+                className="w-32"
+                placeholder="8"
+                value={editing.maxPeople ?? ''}
+                onChange={(event) =>
+                  patchEditing({
+                    maxPeople: event.target.value ? Number(event.target.value) : null,
+                  })
+                }
+              />
             )}
 
             {resolveOfferingSchedules(editing).map((schedule, scheduleIndex) => (
@@ -336,38 +335,30 @@ export default function OfferingsCard({
                   </div>
                   {(schedule.availabilityMode ?? 'always') === 'dates' && (
                     <div className="grid gap-3 lg:grid-cols-[18rem_1fr] lg:items-end">
-                      <label className="flex flex-col gap-1.5">
-                        <span className="flex items-center gap-2 text-xs font-semibold text-[var(--c-text-2)]">
-                          Agregar fecha disponible
-                          <span className="rounded-full bg-[var(--c-surface)] px-2 py-0.5 text-[0.7rem] font-bold text-[var(--c-ocean)]">
-                            {(schedule.availableDates || []).length}{' '}
-                            {(schedule.availableDates || []).length === 1 ? 'fecha' : 'fechas'}
-                          </span>
-                        </span>
-                        <input
-                          type="date"
-                          className="input input-bordered h-14 w-full rounded-2xl border-[var(--c-border)] bg-white px-5 text-base font-semibold text-[var(--c-ocean)] shadow-[var(--shadow-sm)] focus:border-[var(--c-aqua)]"
-                          onChange={(event) => {
-                            if (!event.target.value) return
-                            patchEditing({
-                              schedules: resolveOfferingSchedules(editing).map((item) =>
-                                item.id === schedule.id
-                                  ? {
-                                      ...item,
-                                      availableDates: [
-                                        ...new Set([
-                                          ...(item.availableDates || []),
-                                          event.target.value,
-                                        ]),
-                                      ].sort(),
-                                    }
-                                  : item
-                              ),
-                            })
-                            event.target.value = ''
-                          }}
-                        />
-                      </label>
+                      <DateField
+                        label={`Agregar fecha disponible · ${(schedule.availableDates || []).length} ${
+                          (schedule.availableDates || []).length === 1 ? 'fecha' : 'fechas'
+                        }`}
+                        onChange={(event) => {
+                          if (!event.target.value) return
+                          patchEditing({
+                            schedules: resolveOfferingSchedules(editing).map((item) =>
+                              item.id === schedule.id
+                                ? {
+                                    ...item,
+                                    availableDates: [
+                                      ...new Set([
+                                        ...(item.availableDates || []),
+                                        event.target.value,
+                                      ]),
+                                    ].sort(),
+                                  }
+                                : item
+                            ),
+                          })
+                          event.target.value = ''
+                        }}
+                      />
                       <div className="-mx-1 flex min-h-12 gap-2 overflow-x-auto px-1 py-1 lg:mx-0 lg:min-h-14 lg:flex-wrap lg:items-center lg:overflow-visible lg:rounded-2xl lg:border lg:border-[var(--c-border)] lg:bg-white lg:px-3 lg:py-2 lg:shadow-[var(--shadow-sm)]">
                         {(schedule.availableDates || []).length === 0 && (
                           <span className="shrink-0 px-2 py-2 text-sm text-[var(--c-text-2)]">
@@ -463,40 +454,30 @@ export default function OfferingsCard({
                   })}
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold text-[var(--c-text-2)]">Desde</span>
-                    <input
-                      type="time"
-                      className="input input-bordered h-12 border-[var(--c-border)] bg-white font-semibold text-[var(--c-ocean)] shadow-sm focus:border-[var(--c-aqua)]"
-                      value={schedule.startTime}
-                      onChange={(event) =>
-                        patchEditing({
-                          schedules: resolveOfferingSchedules(editing).map((item) =>
-                            item.id === schedule.id
-                              ? { ...item, startTime: event.target.value }
-                              : item
-                          ),
-                        })
-                      }
-                    />
-                  </label>
-                  <label className="flex flex-col gap-1.5">
-                    <span className="text-xs font-semibold text-[var(--c-text-2)]">Hasta</span>
-                    <input
-                      type="time"
-                      className="input input-bordered h-12 border-[var(--c-border)] bg-white font-semibold text-[var(--c-ocean)] shadow-sm focus:border-[var(--c-aqua)]"
-                      value={schedule.endTime}
-                      onChange={(event) =>
-                        patchEditing({
-                          schedules: resolveOfferingSchedules(editing).map((item) =>
-                            item.id === schedule.id
-                              ? { ...item, endTime: event.target.value }
-                              : item
-                          ),
-                        })
-                      }
-                    />
-                  </label>
+                  <TimeField
+                    label="Desde"
+                    value={schedule.startTime}
+                    onChange={(event) =>
+                      patchEditing({
+                        schedules: resolveOfferingSchedules(editing).map((item) =>
+                          item.id === schedule.id
+                            ? { ...item, startTime: event.target.value }
+                            : item
+                        ),
+                      })
+                    }
+                  />
+                  <TimeField
+                    label="Hasta"
+                    value={schedule.endTime}
+                    onChange={(event) =>
+                      patchEditing({
+                        schedules: resolveOfferingSchedules(editing).map((item) =>
+                          item.id === schedule.id ? { ...item, endTime: event.target.value } : item
+                        ),
+                      })
+                    }
+                  />
                 </div>
               </div>
             ))}
@@ -518,42 +499,31 @@ export default function OfferingsCard({
         {step === 3 && (
           <div className="flex flex-col gap-3">
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
-              <label className="flex min-w-0 flex-col gap-1.5">
-                <span className="text-sm font-semibold text-[var(--c-ocean)]">Precio</span>
-                <InputCurrency
-                  valueCents={offeringPriceCents(editing)}
-                  onChange={(priceCents) => patchEditing({ priceCents })}
-                  className="h-14 rounded-2xl px-5 text-lg"
-                />
-              </label>
-              <label className="flex min-w-0 flex-col gap-1.5">
-                <span className="text-sm font-semibold text-[var(--c-ocean)]">Cobro</span>
-                <select
-                  className="select select-bordered h-14 w-full rounded-2xl border-[var(--c-border)] bg-white px-5 font-semibold text-[var(--c-ocean)] shadow-sm focus:border-[var(--c-aqua)]"
-                  value={editing.unit}
-                  onChange={(event) =>
-                    patchEditing({ unit: event.target.value as CoachClassOffering['unit'] })
-                  }
-                >
-                  {OFFERING_UNITS.map((unit) => (
-                    <option key={unit.value} value={unit.value}>
-                      {unit.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-semibold text-[var(--c-ocean)]">
-                Detalles (opcional)
-              </span>
-              <input
-                className="input input-bordered border-[var(--c-border)] bg-white font-semibold text-[var(--c-ocean)] shadow-sm focus:border-[var(--c-aqua)]"
-                placeholder="Ej. Incluye evaluación inicial"
-                value={editing.details || ''}
-                onChange={(event) => patchEditing({ details: event.target.value })}
+              <MoneyField
+                label="Precio"
+                valueCents={offeringPriceCents(editing)}
+                onChange={(priceCents) => patchEditing({ priceCents })}
               />
-            </label>
+              <SelectField
+                label="Cobro"
+                value={editing.unit}
+                onChange={(event) =>
+                  patchEditing({ unit: event.target.value as CoachClassOffering['unit'] })
+                }
+              >
+                {OFFERING_UNITS.map((unit) => (
+                  <option key={unit.value} value={unit.value}>
+                    {unit.label}
+                  </option>
+                ))}
+              </SelectField>
+            </div>
+            <TextField
+              label="Detalles (opcional)"
+              placeholder="Ej. Incluye evaluación inicial"
+              value={editing.details || ''}
+              onChange={(event) => patchEditing({ details: event.target.value })}
+            />
 
             <div className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-bg)] p-4">
               <p className="font-semibold text-[var(--c-ocean)]">{offeringHeadline(editing)}</p>

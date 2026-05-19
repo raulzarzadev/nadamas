@@ -65,7 +65,7 @@ export interface CoachTeachingLocation {
   availability: CoachAvailabilitySlot[]
 }
 
-export type CoachOfferingMode = 'fixed' | 'home'
+export type CoachOfferingMode = 'fixed' | 'home' | 'online'
 export type CoachOfferingGroup = 'particular' | 'grupal'
 export type CoachOfferingUnit = 'clase' | 'sesión' | 'mes' | 'paquete'
 
@@ -87,6 +87,8 @@ export interface CoachClassOffering {
   imageUrl?: string
   /** home mode — free text coverage zone */
   coverageArea?: string
+  /** online mode — optional platform/link details */
+  onlineDetails?: string
   groupType: CoachOfferingGroup
   /** only meaningful when groupType === 'grupal' */
   maxPeople?: number | null

@@ -20,6 +20,7 @@ export function createOffering(): CoachClassOffering {
     placeName: '',
     locationUrl: '',
     coverageArea: '',
+    onlineDetails: '',
     groupType: 'particular',
     maxPeople: null,
     schedules: [createOfferingSchedule()],
@@ -97,11 +98,14 @@ export function offeringPlaceLabel(offering: CoachClassOffering): string {
   if (offering.mode === 'home') {
     return offering.coverageArea?.trim() || 'A domicilio'
   }
+  if (offering.mode === 'online') {
+    return offering.onlineDetails?.trim() || 'En línea'
+  }
   return offering.placeName?.trim() || 'Lugar por definir'
 }
 
 export function offeringHeadline(offering: CoachClassOffering): string {
-  const icon = offering.mode === 'home' ? '🏠' : '📍'
+  const icon = offering.mode === 'home' ? '🏠' : offering.mode === 'online' ? '💻' : '📍'
   const group =
     offering.groupType === 'grupal'
       ? offering.maxPeople

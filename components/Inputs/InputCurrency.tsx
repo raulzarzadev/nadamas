@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 
-interface InputCurrencyProps {
+interface InputCurrencyProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
   valueCents: number | null
   onChange: (valueCents: number | null) => void
   placeholder?: string
@@ -31,6 +32,7 @@ export default function InputCurrency({
   onChange,
   placeholder = '$ 99.00',
   className = '',
+  ...props
 }: InputCurrencyProps) {
   const [text, setText] = useState(formatCurrency(valueCents))
   const [isFocused, setIsFocused] = useState(false)
@@ -58,7 +60,8 @@ export default function InputCurrency({
         setIsFocused(false)
         setText(formatCurrency(valueCents))
       }}
-      className={`input input-bordered w-full border-[var(--c-border)] bg-white font-semibold text-[var(--c-ocean)] shadow-sm focus:border-[var(--c-aqua)] ${className}`}
+      className={className}
+      {...props}
     />
   )
 }

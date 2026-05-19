@@ -12,7 +12,6 @@ import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import {
   type Booking,
   bookingSelectionKey,
-  formatSlotLabel,
   parseBookingSelections,
 } from '@/lib/coach-booking'
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
@@ -196,8 +195,12 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
           <div className="rounded-2xl bg-[var(--c-surface)] px-4 py-3">
             <dt className="text-xs font-semibold uppercase text-[var(--c-text-2)]">Modalidad</dt>
             <dd className="mt-1 font-semibold text-[var(--c-ocean)]">
-              {primarySelection.mode === 'home' ? '🏠 A domicilio' : '📍 Lugar fijo'} ·{' '}
-              {primarySelection.groupType === 'grupal' ? 'Grupal' : 'Particular'}
+              {primarySelection.mode === 'home'
+                ? '🏠 A domicilio'
+                : primarySelection.mode === 'online'
+                  ? '💻 En línea'
+                  : '📍 Lugar fijo'}{' '}
+              · {primarySelection.groupType === 'grupal' ? 'Grupal' : 'Particular'}
             </dd>
           </div>
         </dl>

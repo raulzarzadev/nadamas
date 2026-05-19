@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiChevronDown } from 'react-icons/fi'
 
 export default function ProfileSection({
@@ -23,6 +23,18 @@ export default function ProfileSection({
 }) {
   const [isOpen, setIsOpen] = useState(false)
 
+  useEffect(() => {
+    if (!id) return
+
+    function openFromHash() {
+      if (window.location.hash === `#${id}`) setIsOpen(true)
+    }
+
+    openFromHash()
+    window.addEventListener('hashchange', openFromHash)
+    return () => window.removeEventListener('hashchange', openFromHash)
+  }, [id])
+
   return (
     <section
       id={id}
@@ -40,18 +52,12 @@ export default function ProfileSection({
           surface === 'white'
             ? 'bg-[linear-gradient(135deg,rgba(0,119,182,0.1),rgba(144,224,239,0.18))]'
             : ''
-        } rounded-[calc(var(--r-md)-1px)] ${
-          isOpen ? 'rounded-b-none' : ''
-        }`}
+        } rounded-[calc(var(--r-md)-1px)] ${isOpen ? 'rounded-b-none' : ''}`}
       >
         <div className={headerAside ? 'pr-28 sm:pr-40' : ''}>
-          <h2 className="text-lg font-bold text-[var(--c-ocean-mid)] sm:text-xl">
-            {title}
-          </h2>
+          <h2 className="text-lg font-bold text-[var(--c-ocean-mid)] sm:text-xl">{title}</h2>
           {isOpen ? (
-            <p className="mt-1 text-sm leading-6 text-[var(--c-text-2)]">
-              {description}
-            </p>
+            <p className="mt-1 text-sm leading-6 text-[var(--c-text-2)]">{description}</p>
           ) : (
             <p className="mt-1 text-sm text-[var(--c-text-2)]">{summary}</p>
           )}
