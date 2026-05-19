@@ -8,10 +8,16 @@ import {
 } from '@/lib/coach-metrics'
 import CoachRadarChart from './CoachRadarChart'
 
-export default function CoachMetricsOverview({ metrics }: { metrics: CoachMetrics }) {
+export default function CoachMetricsOverview({
+  metrics,
+  showChart = true,
+}: {
+  metrics: CoachMetrics
+  showChart?: boolean
+}) {
   return (
     <section className="grid gap-5">
-      <CoachRadarChart metrics={metrics} />
+      {showChart && <CoachRadarChart metrics={metrics} />}
 
       <div className="grid gap-3 md:grid-cols-2">
         {METRIC_GROUPS.map((group) => (

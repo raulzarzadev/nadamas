@@ -3,7 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useRole } from '@/context/RoleContext'
 import { ROLE_LABEL } from './nav-config'
 
-export default function RoleSwitcher({ currentRole }: { currentRole?: 'athlete' | 'coach' | 'admin' }) {
+export default function RoleSwitcher({
+  currentRole,
+}: {
+  currentRole?: 'athlete' | 'coach' | 'admin'
+}) {
   const { roles, activeRole, setActiveRole, enableCoach } = useRole()
   const displayedRole = currentRole ?? activeRole
   const [open, setOpen] = useState(false)
@@ -25,9 +29,7 @@ export default function RoleSwitcher({ currentRole }: { currentRole?: 'athlete' 
   const getItems = () =>
     menuRef.current
       ? Array.from(
-          menuRef.current.querySelectorAll<HTMLButtonElement>(
-            '[role="menuitem"]:not([disabled])'
-          )
+          menuRef.current.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])')
         )
       : []
 
@@ -44,17 +46,13 @@ export default function RoleSwitcher({ currentRole }: { currentRole?: 'athlete' 
     }
     const items = getItems()
     if (items.length === 0) return
-    const currentIndex = items.indexOf(
-      document.activeElement as HTMLButtonElement
-    )
+    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement)
     let nextIndex: number | null = null
     if (e.key === 'ArrowDown') {
       nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length
     } else if (e.key === 'ArrowUp') {
       nextIndex =
-        currentIndex < 0
-          ? items.length - 1
-          : (currentIndex - 1 + items.length) % items.length
+        currentIndex < 0 ? items.length - 1 : (currentIndex - 1 + items.length) % items.length
     } else if (e.key === 'Home') {
       nextIndex = 0
     } else if (e.key === 'End') {
@@ -70,9 +68,7 @@ export default function RoleSwitcher({ currentRole }: { currentRole?: 'athlete' 
     if (!open) return
     const items = menuRef.current
       ? Array.from(
-          menuRef.current.querySelectorAll<HTMLButtonElement>(
-            '[role="menuitem"]:not([disabled])'
-          )
+          menuRef.current.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])')
         )
       : []
     items[0]?.focus()
@@ -88,17 +84,12 @@ export default function RoleSwitcher({ currentRole }: { currentRole?: 'athlete' 
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span className="hidden xl:inline">Actuando como: </span>
-        {ROLE_LABEL[displayedRole]}{' '}
-        <span aria-hidden="true">▾</span>
+        {/* <span className="hidden xl:inline">Actuando como: </span> */}
+        {ROLE_LABEL[displayedRole]} <span aria-hidden="true">▾</span>
       </button>
       {open && (
         <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setOpen(false)}
-            aria-hidden
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden />
           <ul
             ref={menuRef}
             role="menu"
@@ -114,7 +105,7 @@ export default function RoleSwitcher({ currentRole }: { currentRole?: 'athlete' 
                 }}
                 className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
               >
-                {ROLE_LABEL.athlete}
+                Modo {ROLE_LABEL.athlete}
               </button>
             </li>
             <li role="none">
@@ -127,7 +118,7 @@ export default function RoleSwitcher({ currentRole }: { currentRole?: 'athlete' 
                   }}
                   className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
                 >
-                  {ROLE_LABEL.coach}
+                  Modo {ROLE_LABEL.coach}
                 </button>
               ) : (
                 <button

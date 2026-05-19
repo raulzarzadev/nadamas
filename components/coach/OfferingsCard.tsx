@@ -18,9 +18,11 @@ import {
   offeringWhen,
   resolveOfferingSchedules,
   resolveOfferings,
+  scheduleIsOpen,
 } from '@/lib/coach-offerings'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import OfferingSummaryCard from './OfferingSummaryCard'
 import ProfileSection from './ProfileSection'
 
 export default function OfferingsCard({
@@ -86,7 +88,9 @@ export default function OfferingsCard({
           offering.id !== editingId ||
           offering.placeName?.trim() ||
           offering.coverageArea?.trim() ||
-          resolveOfferingSchedules(offering).some((schedule) => schedule.days.length > 0)
+          resolveOfferingSchedules(offering).some(
+            (schedule) => scheduleIsOpen(schedule) || schedule.days.length > 0
+          )
       )
     )
     closeStepper()
@@ -101,7 +105,9 @@ export default function OfferingsCard({
           : !!offering.placeName?.trim()
     if (currentStep === 2)
       return resolveOfferingSchedules(offering).some(
-        (schedule) => schedule.days.length > 0 && !!schedule.startTime && !!schedule.endTime
+        (schedule) =>
+          scheduleIsOpen(schedule) ||
+          (schedule.days.length > 0 && !!schedule.startTime && !!schedule.endTime)
       )
     return true
   }
@@ -294,114 +300,6 @@ export default function OfferingsCard({
                 key={schedule.id}
                 className="flex flex-col gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3"
               >
-                <div className="flex flex-col gap-2">
-                  <span className="text-xs font-semibold text-[var(--c-text-2)]">
-                    Fechas disponibles
-                  </span>
-                  <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
-                    {[
-                      ['always', 'Siempre'],
-                      ['next_week', 'Solo próxima semana'],
-                      ['dates', 'Solo algunas fechas'],
-                    ].map(([mode, label]) => {
-                      const isActive = (schedule.availabilityMode ?? 'always') === mode
-                      return (
-                        <button
-                          key={mode}
-                          type="button"
-                          className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                            isActive
-                              ? 'bg-[var(--c-ocean)] text-white'
-                              : 'bg-[var(--c-surface)] text-[var(--c-ocean)]'
-                          }`}
-                          onClick={() =>
-                            patchEditing({
-                              schedules: resolveOfferingSchedules(editing).map((item) =>
-                                item.id === schedule.id
-                                  ? {
-                                      ...item,
-                                      availabilityMode: mode as NonNullable<
-                                        typeof item.availabilityMode
-                                      >,
-                                    }
-                                  : item
-                              ),
-                            })
-                          }
-                        >
-                          {label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  {(schedule.availabilityMode ?? 'always') === 'dates' && (
-                    <div className="grid gap-3 lg:grid-cols-[18rem_1fr] lg:items-end">
-                      <DateField
-                        label={`Agregar fecha disponible · ${(schedule.availableDates || []).length} ${
-                          (schedule.availableDates || []).length === 1 ? 'fecha' : 'fechas'
-                        }`}
-                        onChange={(event) => {
-                          if (!event.target.value) return
-                          patchEditing({
-                            schedules: resolveOfferingSchedules(editing).map((item) =>
-                              item.id === schedule.id
-                                ? {
-                                    ...item,
-                                    availableDates: [
-                                      ...new Set([
-                                        ...(item.availableDates || []),
-                                        event.target.value,
-                                      ]),
-                                    ].sort(),
-                                  }
-                                : item
-                            ),
-                          })
-                          event.target.value = ''
-                        }}
-                      />
-                      <div className="-mx-1 flex min-h-12 gap-2 overflow-x-auto px-1 py-1 lg:mx-0 lg:min-h-14 lg:flex-wrap lg:items-center lg:overflow-visible lg:rounded-2xl lg:border lg:border-[var(--c-border)] lg:bg-white lg:px-3 lg:py-2 lg:shadow-[var(--shadow-sm)]">
-                        {(schedule.availableDates || []).length === 0 && (
-                          <span className="shrink-0 px-2 py-2 text-sm text-[var(--c-text-2)]">
-                            Aún no agregas fechas.
-                          </span>
-                        )}
-                        {(schedule.availableDates || []).map((availableDate) => {
-                          const label = new Date(`${availableDate}T12:00:00`).toLocaleDateString(
-                            'es-MX',
-                            { day: 'numeric', month: 'short' }
-                          )
-                          return (
-                            <button
-                              key={availableDate}
-                              type="button"
-                              className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--c-ocean)] transition hover:border-[var(--c-aqua)]"
-                              onClick={() =>
-                                patchEditing({
-                                  schedules: resolveOfferingSchedules(editing).map((item) =>
-                                    item.id === schedule.id
-                                      ? {
-                                          ...item,
-                                          availableDates: (item.availableDates || []).filter(
-                                            (date) => date !== availableDate
-                                          ),
-                                        }
-                                      : item
-                                  ),
-                                })
-                              }
-                            >
-                              {label}
-                              <span aria-hidden="true" className="text-[var(--c-text-2)]">
-                                ×
-                              </span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-[var(--c-ocean)]">
                     Horario {scheduleIndex + 1}
@@ -422,64 +320,221 @@ export default function OfferingsCard({
                     </button>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {OFFERING_DAYS.map((day) => {
-                    const isSelected = schedule.days.includes(day)
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                          isSelected
-                            ? 'bg-[var(--c-ocean)] text-white'
-                            : 'bg-[var(--c-surface)] text-[var(--c-ocean)]'
-                        }`}
-                        onClick={() =>
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-semibold text-[var(--c-text-2)]">
+                    Tipo de horario
+                  </span>
+                  <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+                    {[
+                      ['fixed', 'Horario fijo'],
+                      ['open', 'Horario abierto'],
+                    ].map(([timeMode, label]) => {
+                      const isActive = (schedule.timeMode ?? 'fixed') === timeMode
+                      return (
+                        <button
+                          key={timeMode}
+                          type="button"
+                          className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${
+                            isActive
+                              ? 'bg-[var(--c-ocean)] text-white'
+                              : 'bg-[var(--c-surface)] text-[var(--c-ocean)]'
+                          }`}
+                          onClick={() =>
+                            patchEditing({
+                              schedules: resolveOfferingSchedules(editing).map((item) =>
+                                item.id === schedule.id
+                                  ? {
+                                      ...item,
+                                      timeMode: timeMode as NonNullable<typeof item.timeMode>,
+                                    }
+                                  : item
+                              ),
+                            })
+                          }
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {scheduleIsOpen(schedule) ? (
+                  <div className="rounded-[var(--r-sm)] border border-dashed border-[var(--c-border)] bg-white p-3 text-sm text-[var(--c-text-2)]">
+                    Publica esta clase como horario abierto para acordar día y hora con cada alumno.
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs font-semibold text-[var(--c-text-2)]">
+                        Fechas disponibles
+                      </span>
+                      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+                        {[
+                          ['always', 'Siempre'],
+                          ['next_week', 'Solo próxima semana'],
+                          ['dates', 'Solo algunas fechas'],
+                        ].map(([mode, label]) => {
+                          const isActive = (schedule.availabilityMode ?? 'always') === mode
+                          return (
+                            <button
+                              key={mode}
+                              type="button"
+                              className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                                isActive
+                                  ? 'bg-[var(--c-ocean)] text-white'
+                                  : 'bg-[var(--c-surface)] text-[var(--c-ocean)]'
+                              }`}
+                              onClick={() =>
+                                patchEditing({
+                                  schedules: resolveOfferingSchedules(editing).map((item) =>
+                                    item.id === schedule.id
+                                      ? {
+                                          ...item,
+                                          availabilityMode: mode as NonNullable<
+                                            typeof item.availabilityMode
+                                          >,
+                                        }
+                                      : item
+                                  ),
+                                })
+                              }
+                            >
+                              {label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {(schedule.availabilityMode ?? 'always') === 'dates' && (
+                        <div className="grid gap-3 lg:grid-cols-[18rem_1fr] lg:items-end">
+                          <DateField
+                            label={`Agregar fecha disponible · ${(schedule.availableDates || []).length} ${
+                              (schedule.availableDates || []).length === 1 ? 'fecha' : 'fechas'
+                            }`}
+                            onChange={(event) => {
+                              if (!event.target.value) return
+                              patchEditing({
+                                schedules: resolveOfferingSchedules(editing).map((item) =>
+                                  item.id === schedule.id
+                                    ? {
+                                        ...item,
+                                        availableDates: [
+                                          ...new Set([
+                                            ...(item.availableDates || []),
+                                            event.target.value,
+                                          ]),
+                                        ].sort(),
+                                      }
+                                    : item
+                                ),
+                              })
+                              event.target.value = ''
+                            }}
+                          />
+                          <div className="-mx-1 flex min-h-12 gap-2 overflow-x-auto px-1 py-1 lg:mx-0 lg:min-h-14 lg:flex-wrap lg:items-center lg:overflow-visible lg:rounded-2xl lg:border lg:border-[var(--c-border)] lg:bg-white lg:px-3 lg:py-2 lg:shadow-[var(--shadow-sm)]">
+                            {(schedule.availableDates || []).length === 0 && (
+                              <span className="shrink-0 px-2 py-2 text-sm text-[var(--c-text-2)]">
+                                Aún no agregas fechas.
+                              </span>
+                            )}
+                            {(schedule.availableDates || []).map((availableDate) => {
+                              const label = new Date(
+                                `${availableDate}T12:00:00`
+                              ).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+                              return (
+                                <button
+                                  key={availableDate}
+                                  type="button"
+                                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-1.5 text-sm font-semibold text-[var(--c-ocean)] transition hover:border-[var(--c-aqua)]"
+                                  onClick={() =>
+                                    patchEditing({
+                                      schedules: resolveOfferingSchedules(editing).map((item) =>
+                                        item.id === schedule.id
+                                          ? {
+                                              ...item,
+                                              availableDates: (item.availableDates || []).filter(
+                                                (date) => date !== availableDate
+                                              ),
+                                            }
+                                          : item
+                                      ),
+                                    })
+                                  }
+                                >
+                                  {label}
+                                  <span aria-hidden="true" className="text-[var(--c-text-2)]">
+                                    ×
+                                  </span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {OFFERING_DAYS.map((day) => {
+                        const isSelected = schedule.days.includes(day)
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                              isSelected
+                                ? 'bg-[var(--c-ocean)] text-white'
+                                : 'bg-[var(--c-surface)] text-[var(--c-ocean)]'
+                            }`}
+                            onClick={() =>
+                              patchEditing({
+                                schedules: resolveOfferingSchedules(editing).map((item) =>
+                                  item.id === schedule.id
+                                    ? {
+                                        ...item,
+                                        days: isSelected
+                                          ? item.days.filter((currentDay) => currentDay !== day)
+                                          : [...item.days, day],
+                                      }
+                                    : item
+                                ),
+                              })
+                            }
+                          >
+                            {day}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <TimeField
+                        label="Desde"
+                        value={schedule.startTime}
+                        onChange={(event) =>
                           patchEditing({
                             schedules: resolveOfferingSchedules(editing).map((item) =>
                               item.id === schedule.id
-                                ? {
-                                    ...item,
-                                    days: isSelected
-                                      ? item.days.filter((currentDay) => currentDay !== day)
-                                      : [...item.days, day],
-                                  }
+                                ? { ...item, startTime: event.target.value }
                                 : item
                             ),
                           })
                         }
-                      >
-                        {day}
-                      </button>
-                    )
-                  })}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <TimeField
-                    label="Desde"
-                    value={schedule.startTime}
-                    onChange={(event) =>
-                      patchEditing({
-                        schedules: resolveOfferingSchedules(editing).map((item) =>
-                          item.id === schedule.id
-                            ? { ...item, startTime: event.target.value }
-                            : item
-                        ),
-                      })
-                    }
-                  />
-                  <TimeField
-                    label="Hasta"
-                    value={schedule.endTime}
-                    onChange={(event) =>
-                      patchEditing({
-                        schedules: resolveOfferingSchedules(editing).map((item) =>
-                          item.id === schedule.id ? { ...item, endTime: event.target.value } : item
-                        ),
-                      })
-                    }
-                  />
-                </div>
+                      />
+                      <TimeField
+                        label="Hasta"
+                        value={schedule.endTime}
+                        onChange={(event) =>
+                          patchEditing({
+                            schedules: resolveOfferingSchedules(editing).map((item) =>
+                              item.id === schedule.id
+                                ? { ...item, endTime: event.target.value }
+                                : item
+                            ),
+                          })
+                        }
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             ))}
 
@@ -586,41 +641,35 @@ export default function OfferingsCard({
 
       <div className="flex flex-col gap-3">
         {offerings.map((offering) => (
-          <article
+          <OfferingSummaryCard
             key={offering.id}
-            className="flex items-start justify-between gap-3 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-4"
-          >
-            <div className="min-w-0">
-              <p className="font-semibold text-[var(--c-ocean)]">{offeringHeadline(offering)}</p>
-              <p className="mt-1 text-sm text-[var(--c-text-2)]">{offeringWhen(offering)}</p>
-              <p className="mt-1 text-sm font-bold text-[var(--c-ocean)]">
-                {offeringPrice(offering)}
-              </p>
-            </div>
-            <div className="flex shrink-0 gap-1">
-              <button
-                type="button"
-                aria-label="Editar clase"
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  setStep(1)
-                  setEditingId(offering.id)
-                }}
-              >
-                <FiEdit2 aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                aria-label="Quitar clase"
-                className="btn btn-ghost btn-sm text-[var(--c-error,#b91c1c)]"
-                onClick={() =>
-                  setOfferings((current) => current.filter((item) => item.id !== offering.id))
-                }
-              >
-                <FiTrash2 aria-hidden="true" />
-              </button>
-            </div>
-          </article>
+            offering={offering}
+            actions={
+              <>
+                <button
+                  type="button"
+                  aria-label="Editar clase"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setStep(1)
+                    setEditingId(offering.id)
+                  }}
+                >
+                  <FiEdit2 aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Quitar clase"
+                  className="btn btn-ghost btn-sm text-[var(--c-error,#b91c1c)]"
+                  onClick={() =>
+                    setOfferings((current) => current.filter((item) => item.id !== offering.id))
+                  }
+                >
+                  <FiTrash2 aria-hidden="true" />
+                </button>
+              </>
+            }
+          />
         ))}
       </div>
 

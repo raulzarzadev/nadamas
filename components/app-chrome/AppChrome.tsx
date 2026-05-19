@@ -37,10 +37,7 @@ export default function AppChrome({
   }
 
   return (
-    <div
-      data-theme="nadamas"
-      className="min-h-screen bg-[var(--c-bg)] text-[var(--c-ocean)]"
-    >
+    <div data-theme="nadamas" className="min-h-screen bg-[var(--c-bg)] text-[var(--c-ocean)]">
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-[var(--c-border)]">
         <div className="mx-auto flex max-w-5xl items-center gap-4 px-3 py-2.5 sm:px-4 sm:py-3">
           <Link href="/" className="relative block h-7 w-24 shrink-0 sm:w-28">
@@ -76,9 +73,6 @@ export default function AppChrome({
             })}
           </nav>
           <div className="ml-auto flex items-center gap-2">
-            <span className="hidden rounded-full border border-[var(--c-border)] bg-white px-3 py-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--c-text-2)] xl:inline-flex">
-              {ROLE_LABEL[role]}
-            </span>
             {isAdmin && (
               <Link
                 href="/admin/home"
@@ -93,7 +87,9 @@ export default function AppChrome({
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-2.5 pb-20 pt-4 sm:px-4 sm:pb-24 sm:pt-6">{children}</main>
+      <main className="max-w-5xl mx-auto px-2.5 pb-20 pt-4 sm:px-4 sm:pb-24 sm:pt-6">
+        {children}
+      </main>
 
       <nav
         aria-label="Navegación móvil"

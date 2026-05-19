@@ -9,26 +9,26 @@ export interface NavLink {
 
 export const NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
-    { href: '/athlete/home', label: 'Panel', mobileLabel: 'Panel', icon: 'home' },
     { href: '/athlete/find-coach', label: 'Buscar coach', mobileLabel: 'Buscar', icon: 'search' },
+    { href: '/athlete/home', label: 'Incio', mobileLabel: 'Incio', icon: 'home' },
     { href: '/athlete/progress', label: 'Mi progreso', mobileLabel: 'Progreso', icon: 'chart' },
     { href: '/athlete/bookings', label: 'Mis reservas', mobileLabel: 'Reservas', icon: 'calendar' },
-    { href: '/profile', label: 'Mi cuenta', mobileLabel: 'Cuenta', icon: 'user' },
+    { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
   coach: [
-    { href: '/coach/home', label: 'Panel', mobileLabel: 'Panel', icon: 'home' },
-    { href: '/coach/agenda', label: 'Agenda', mobileLabel: 'Agenda', icon: 'calendar' },
-    { href: '/coach/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
+    { href: '/coach/home', label: 'Incio', mobileLabel: 'Incio', icon: 'home' },
     {
       href: '/coach/coach-profile',
-      label: 'Perfil público',
+      label: 'Perfil de Coach',
       mobileLabel: 'Perfil coach',
       icon: 'badge',
     },
-    { href: '/profile', label: 'Mi cuenta', mobileLabel: 'Cuenta', icon: 'user' },
+    { href: '/coach/agenda', label: 'Agenda', mobileLabel: 'Agenda', icon: 'calendar' },
+    { href: '/coach/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
+    { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
   admin: [
-    { href: '/admin/home', label: 'Panel', mobileLabel: 'Panel', icon: 'home' },
+    { href: '/admin/home', label: 'Incio', mobileLabel: 'Incio', icon: 'home' },
     {
       href: '/admin/verify-queue',
       label: 'Verificaciones',
@@ -37,7 +37,7 @@ export const NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     },
     { href: '/admin/bookings', label: 'Clases agendadas', mobileLabel: 'Clases', icon: 'calendar' },
     { href: '/admin/users', label: 'Usuarios', mobileLabel: 'Usuarios', icon: 'users' },
-    { href: '/profile', label: 'Mi cuenta', mobileLabel: 'Cuenta', icon: 'user' },
+    { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
 }
 

@@ -116,17 +116,14 @@ export default function PrivateCard({
         documento ni a estos datos.
       </p>
 
-      <div className="flex flex-col gap-3 border-t border-[var(--c-border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-[var(--c-text-2)]">
-          Flujo admin: pendiente → verificada o rechazada.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <SaveButton
           status={saving ? 'saving' : autoStatus}
           onClick={saveNow}
           disabled={busy || !verification.document}
           idleLabel="Guardado"
           savedLabel="Guardado"
-          className="self-start sm:self-auto"
+          className=""
         />
       </div>
     </ProfileSection>

@@ -34,6 +34,7 @@ export function createOffering(): CoachClassOffering {
 export function createOfferingSchedule(): CoachOfferingSchedule {
   return {
     id: crypto.randomUUID(),
+    timeMode: 'fixed',
     days: [],
     startTime: '06:00',
     endTime: '07:00',
@@ -104,15 +105,28 @@ export function offeringPlaceLabel(offering: CoachClassOffering): string {
   return offering.placeName?.trim() || 'Lugar por definir'
 }
 
+export function offeringTypeLabel(offering: CoachClassOffering): string {
+  if (offering.groupType === 'grupal') {
+    return offering.maxPeople ? `Grupal (máx ${offering.maxPeople})` : 'Grupal'
+  }
+  return 'Particular'
+}
+
+export function offeringContextLabel(offering: CoachClassOffering): string {
+  if (offering.mode === 'online') return 'En línea'
+  if (offering.mode === 'home') {
+    const area = offering.coverageArea?.trim()
+    return area ? `En ${area}` : 'A domicilio'
+  }
+  return offering.placeName?.trim() || 'Lugar por definir'
+}
+
+export function offeringIcon(offering: CoachClassOffering): string {
+  return offering.mode === 'home' ? '🏠' : offering.mode === 'online' ? '💻' : '📍'
+}
+
 export function offeringHeadline(offering: CoachClassOffering): string {
-  const icon = offering.mode === 'home' ? '🏠' : offering.mode === 'online' ? '💻' : '📍'
-  const group =
-    offering.groupType === 'grupal'
-      ? offering.maxPeople
-        ? `Grupal (máx ${offering.maxPeople})`
-        : 'Grupal'
-      : 'Particular'
-  return `${icon} ${group} · ${offeringPlaceLabel(offering)}`
+  return `${offeringIcon(offering)} ${offeringTypeLabel(offering)} · ${offeringContextLabel(offering)}`
 }
 
 export function offeringWhen(offering: CoachClassOffering): string {
@@ -120,12 +134,24 @@ export function offeringWhen(offering: CoachClassOffering): string {
   if (!schedules.length) return 'Horarios por definir'
   return schedules
     .map((schedule) => {
+      if (scheduleIsOpen(schedule)) return 'Horario abierto'
       const days = schedule.days.join(', ') || 'Días por definir'
       const time =
         schedule.startTime && schedule.endTime ? ` · ${schedule.startTime}–${schedule.endTime}` : ''
       return `${days}${time}`
     })
     .join(' · ')
+}
+
+export function offeringScheduleSummary(offering: CoachClassOffering): string {
+  const schedules = resolveOfferingSchedules(offering)
+  if (!schedules.length) return 'Horarios por definir'
+  if (schedules.some(scheduleIsOpen)) return 'Horario abierto'
+
+  const availableCount = schedules.reduce((total, schedule) => total + schedule.days.length, 0)
+  if (!availableCount) return 'Horarios por definir'
+
+  return `Horario disponible (${availableCount})`
 }
 
 export function offeringPrice(offering: CoachClassOffering): string {
@@ -153,15 +179,16 @@ export function offeringsPriceSummary(offerings: CoachClassOffering[]): string {
 
 export function offeringsAvailabilitySummary(offerings: CoachClassOffering[]): string {
   if (!offerings.length) return 'Horarios por publicar'
-  const weeklySlotCount = offerings.reduce(
-    (total, offering) =>
-      total +
-      resolveOfferingSchedules(offering).reduce(
-        (scheduleTotal, schedule) => scheduleTotal + schedule.days.length,
-        0
-      ),
+  const schedules = offerings.flatMap(resolveOfferingSchedules)
+  const openScheduleCount = schedules.filter(scheduleIsOpen).length
+  const weeklySlotCount = schedules.reduce(
+    (total, schedule) => total + (scheduleIsOpen(schedule) ? 0 : schedule.days.length),
     0
   )
+  if (openScheduleCount && !weeklySlotCount) return 'Horario abierto'
+  if (openScheduleCount && weeklySlotCount) {
+    return `${weeklySlotCount} ${weeklySlotCount === 1 ? 'horario' : 'horarios'} por semana + abierto`
+  }
   if (!weeklySlotCount) return 'Horarios por publicar'
   return `${weeklySlotCount} ${weeklySlotCount === 1 ? 'horario' : 'horarios'} por semana`
 }
@@ -184,6 +211,10 @@ export function resolveOfferingSchedules(offering: CoachClassOffering): CoachOff
 export function offeringPriceCents(offering: CoachClassOffering) {
   if (offering.priceCents !== undefined) return offering.priceCents
   return offering.price !== undefined && offering.price !== null ? offering.price * 100 : null
+}
+
+export function scheduleIsOpen(schedule: CoachOfferingSchedule) {
+  return schedule.timeMode === 'open'
 }
 
 export function formatPesos(cents: number) {
@@ -236,6 +267,8 @@ export function addDays(date: Date, amount: number) {
 }
 
 export function scheduleIsAvailableOn(schedule: CoachOfferingSchedule, date: Date) {
+  if (scheduleIsOpen(schedule)) return false
+
   const day = Object.entries(DAY_TO_INDEX).find(([, index]) => index === date.getDay())?.[0]
   if (!day || !schedule.days.includes(day)) return false
 

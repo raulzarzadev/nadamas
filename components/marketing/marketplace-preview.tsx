@@ -2,29 +2,24 @@
 
 import CoachMetricsOverview from '@comps/coach/CoachMetricsOverview'
 import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
+import OfferingSummaryCard from '@comps/coach/OfferingSummaryCard'
+import VerifiedBadge from '@comps/coach/VerifiedBadge'
 import IconInfo from '@comps/IconInfo'
 import { SearchField } from '@comps/Inputs/FormFields'
 import PreviewImage from '@comps/PreviewImage'
-import { onAuthStateChanged } from 'firebase/auth'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
-import { auth } from '@/firebase/index'
-import {
-  bookingSelectionKey,
-  buildCoachBookingTarget,
-  type CoachBookingSelection,
-  flattenCoachBookingSelections,
-} from '@/lib/coach-booking'
+import { type CoachBookingSelection, flattenCoachBookingSelections } from '@/lib/coach-booking'
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
 import {
   addDays,
-  formatPesos,
   offeringsAvailabilitySummary,
   offeringsPriceSummary,
+  resolveOfferingSchedules,
   resolveOfferings,
+  scheduleIsOpen,
   startOfWeek,
 } from '@/lib/coach-offerings'
 
@@ -39,13 +34,6 @@ interface MarketplacePreviewProps {
   pageSize?: number
   infiniteScroll?: boolean
   showViewMoreLink?: boolean
-}
-
-const UNIT_LABEL: Record<CoachBookingSelection['unit'], string> = {
-  clase: 'por clase',
-  sesión: 'por sesión',
-  mes: 'por mes',
-  paquete: 'por paquete',
 }
 
 function coachPhoto(coach: PublicCoachDirectoryItem) {
@@ -65,13 +53,17 @@ function priceSummary(coach: PublicCoachDirectoryItem) {
   return offeringsPriceSummary(resolveOfferings(coach))
 }
 
+function coachProfileHref(coach: Pick<PublicCoachDirectoryItem, 'id'>) {
+  return `/${coach.id}`
+}
+
 function groupSelections(selections: CoachBookingSelection[]) {
   const groups = new Map<
     string,
     {
       key: string
+      offeringId: string
       locationName: string
-      mode: CoachBookingSelection['mode']
       startTime: string
       selections: CoachBookingSelection[]
     }
@@ -86,8 +78,8 @@ function groupSelections(selections: CoachBookingSelection[]) {
     }
     groups.set(key, {
       key,
+      offeringId: selection.offeringId,
       locationName: selection.locationName,
-      mode: selection.mode,
       startTime: selection.startTime,
       selections: [selection],
     })
@@ -102,24 +94,12 @@ export default function MarketplacePreview({
   infiniteScroll = false,
   showViewMoreLink = false,
 }: MarketplacePreviewProps) {
-  const router = useRouter()
   const [coaches, setCoaches] = useState<PublicCoachDirectoryItem[]>([])
   const [query, setQuery] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [styleCoach, setStyleCoach] = useState<PublicCoachDirectoryItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [selectedSlots, setSelectedSlots] = useState<Record<string, string[]>>({})
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
-  const [bookingState] = useState<
-    Record<
-      string,
-      {
-        status: 'idle' | 'loading' | 'success' | 'error'
-        message?: string
-      }
-    >
-  >({})
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const startingVisibleCount =
     initialVisibleCount ?? (infiniteScroll ? pageSize : Number.POSITIVE_INFINITY)
@@ -139,12 +119,6 @@ export default function MarketplacePreview({
     }
 
     void loadCoaches()
-  }, [])
-
-  useEffect(() => {
-    return onAuthStateChanged(auth, (user) => {
-      setCurrentUserId(user?.uid || null)
-    })
   }, [])
 
   useEffect(() => {
@@ -195,19 +169,6 @@ export default function MarketplacePreview({
     observer.observe(target)
     return () => observer.disconnect()
   }, [hasMoreCoaches, infiniteScroll, pageSize, visibleCoaches.length])
-
-  const scheduleSelection = (selections: CoachBookingSelection[]) => {
-    if (!selections.length) return
-    const sessionUserId = currentUserId || auth.currentUser?.uid || null
-    const target = buildCoachBookingTarget(selections)
-
-    if (!sessionUserId) {
-      router.push(`/login?redirectTo=${encodeURIComponent(target)}`)
-      return
-    }
-
-    router.push(target)
-  }
 
   return (
     <section id="coaches" className="mx-auto max-w-[1180px] px-5 py-20 sm:px-8 lg:py-28">
@@ -268,17 +229,19 @@ export default function MarketplacePreview({
           const photo = coachPhoto(coach)
           const isExpanded = expandedId === coach.id
           const metrics = normalizeCoachMetrics(coach.metrics)
+          const offerings = resolveOfferings(coach)
+          const offeringsById = new Map(offerings.map((offering) => [offering.id, offering]))
+          const openOfferings = offerings.filter((offering) =>
+            resolveOfferingSchedules(offering).some(scheduleIsOpen)
+          )
           const selections = flattenCoachBookingSelections(coach, weekStart)
           const selectionGroups = groupSelections(selections)
-          const selectedSlotKeys = selectedSlots[coach.id] || []
-          const selectedSelections = selections.filter((selection) =>
-            selectedSlotKeys.includes(bookingSelectionKey(selection))
-          )
-          const selectedTotal = selectedSelections.reduce(
-            (total, selection) => total + (selection.priceCents ?? 0),
-            0
-          )
-          const bookingStateForCoach = bookingState[coach.id]
+          const visibleOpenOfferings = openOfferings.slice(0, 2)
+          const visibleSelectionGroups = selectionGroups.slice(0, 2)
+          const hiddenScheduleCount =
+            Math.max(0, openOfferings.length - visibleOpenOfferings.length) +
+            Math.max(0, selectionGroups.length - visibleSelectionGroups.length)
+          const profileHref = coachProfileHref(coach)
 
           return (
             <article
@@ -308,12 +271,7 @@ export default function MarketplacePreview({
                     <h3 className="flex items-center gap-1.5 text-lg font-bold text-[var(--c-ocean)]">
                       <span className="truncate">{coach.name}</span>
                       {coach.verification?.status === 'verified' && (
-                        <span
-                          title="Coach verificado"
-                          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#1d4ed8] px-2 py-0.5 text-xs font-semibold text-white"
-                        >
-                          ✓
-                        </span>
+                        <VerifiedBadge verified className="shrink-0 scale-90" />
                       )}
                     </h3>
                     <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-[var(--c-text-2)]">
@@ -374,7 +332,15 @@ export default function MarketplacePreview({
                   <div className="mt-4 space-y-4 border-t border-[var(--c-border)] pt-4 text-sm text-[var(--c-text-2)]">
                     {resolveOfferings(coach).length ? (
                       <div>
-                        <p className="font-semibold text-[var(--c-ocean)]">Horarios y lugares</p>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <p className="font-semibold text-[var(--c-ocean)]">Resumen de horarios</p>
+                          <Link
+                            href={profileHref}
+                            className="inline-flex items-center justify-center rounded-full bg-[var(--c-ocean)] px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5"
+                          >
+                            Ver perfil completo
+                          </Link>
+                        </div>
                         <div className="mt-3 flex items-center justify-between gap-3">
                           <button
                             type="button"
@@ -398,133 +364,55 @@ export default function MarketplacePreview({
                             →
                           </button>
                         </div>
-                        {selectionGroups.length > 0 ? (
+                        {visibleOpenOfferings.length > 0 && (
                           <div className="mt-3 flex flex-col gap-3">
-                            {selectionGroups.map((group) => (
-                              <div
-                                key={group.key}
-                                className="rounded-[24px] border border-[var(--c-border)] bg-white p-4"
-                              >
-                                <p className="font-semibold text-[var(--c-ocean)]">
-                                  {group.mode === 'home'
-                                    ? '🏠 '
-                                    : group.mode === 'online'
-                                      ? '💻 '
-                                      : '📍 '}
-                                  {group.locationName}
-                                </p>
-                                <div className="mt-3 flex flex-wrap items-center gap-2">
-                                  <span className="min-w-12 font-bold text-[var(--c-ocean)]">
-                                    {group.startTime}
-                                  </span>
-                                  {group.selections.map((selection) => {
-                                    const key = bookingSelectionKey(selection)
-                                    const isActive = selectedSlotKeys.includes(key)
-                                    return (
-                                      <button
-                                        key={key}
-                                        type="button"
-                                        onClick={() =>
-                                          setSelectedSlots((current) => ({
-                                            ...current,
-                                            [coach.id]: isActive
-                                              ? selectedSlotKeys.filter((item) => item !== key)
-                                              : [...selectedSlotKeys, key],
-                                          }))
-                                        }
-                                        className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
-                                          isActive
-                                            ? 'border-[var(--c-aqua)] bg-[var(--c-aqua-light)] text-[var(--c-ocean)]'
-                                            : 'border-[var(--c-border)] bg-[var(--c-surface)] text-[var(--c-ocean)] hover:border-[var(--c-aqua)]'
-                                        }`}
-                                      >
-                                        <span className="block">{selection.days[0]}</span>
-                                        <span className="block text-xs font-medium">
-                                          {new Date(`${selection.date}T12:00:00`).getDate()}
-                                        </span>
-                                      </button>
-                                    )
-                                  })}
-                                </div>
-                              </div>
+                            {visibleOpenOfferings.map((offering) => (
+                              <OfferingSummaryCard
+                                key={offering.id}
+                                offering={offering}
+                                className="rounded-[24px]"
+                                href={profileHref}
+                              />
                             ))}
                           </div>
-                        ) : (
-                          <p className="mt-2">Aún no publica horarios.</p>
                         )}
 
-                        {selectedSelections.length > 0 && (
-                          <div className="mt-4 rounded-[24px] border border-[var(--c-border)] bg-white p-4">
-                            <p className="text-sm font-semibold text-[var(--c-ocean)]">
-                              Clases seleccionadas
-                            </p>
-                            <ul className="mt-2 space-y-1 text-sm text-[var(--c-text-2)]">
-                              {selectedSelections.map((selection) => (
-                                <li
-                                  key={bookingSelectionKey(selection)}
-                                  className="flex items-center justify-between gap-3"
+                        {visibleSelectionGroups.length > 0 ? (
+                          <div className="mt-3 flex flex-col gap-3">
+                            {visibleSelectionGroups.map((group) => {
+                              const offering = offeringsById.get(group.offeringId)
+                              if (!offering) return null
+                              return (
+                                <OfferingSummaryCard
+                                  key={group.key}
+                                  offering={offering}
+                                  className="rounded-[24px]"
+                                  href={profileHref}
                                 >
-                                  <span>
-                                    {selection.mode === 'home'
-                                      ? '🏠 '
-                                      : selection.mode === 'online'
-                                        ? '💻 '
-                                        : '📍 '}
-                                    {selection.locationName} · {selection.days[0]}{' '}
-                                    {new Date(`${selection.date}T12:00:00`).getDate()} ·{' '}
-                                    {selection.startTime}
-                                  </span>
-                                  <span className="text-right">
-                                    <span className="font-semibold text-[var(--c-ocean)]">
-                                      {selection.priceCents !== null
-                                        ? formatPesos(selection.priceCents)
-                                        : '—'}
-                                    </span>
-                                    {selection.priceCents !== null && (
-                                      <span className="ml-1 text-xs text-[var(--c-text-2)]">
-                                        {UNIT_LABEL[selection.unit]}
-                                      </span>
-                                    )}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                            {selectedSelections.every(
-                              (selection) => selection.priceCents !== null
-                            ) ? (
-                              <div className="mt-3 flex items-baseline justify-end gap-3 border-t border-[var(--c-border)] pt-3">
-                                <p className="text-lg font-extrabold text-[var(--c-ocean)]">
-                                  Total {formatPesos(selectedTotal)}
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="mt-1 text-sm font-bold text-[var(--c-ocean)]">
-                                Precio por definir
-                              </p>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => scheduleSelection(selectedSelections)}
-                              disabled={bookingStateForCoach?.status === 'loading'}
-                              className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-[var(--c-aqua)] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                                  <p className="mt-3 text-sm font-semibold text-[var(--c-text-2)]">
+                                    Toca para ver fechas y agendar.
+                                  </p>
+                                </OfferingSummaryCard>
+                              )
+                            })}
+                          </div>
+                        ) : (
+                          openOfferings.length === 0 && (
+                            <p className="mt-2">Aún no publica horarios.</p>
+                          )
+                        )}
+                        {hiddenScheduleCount > 0 && (
+                          <div className="mt-3 rounded-[24px] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-4">
+                            <p className="font-semibold text-[var(--c-ocean)]">
+                              + {hiddenScheduleCount}{' '}
+                              {hiddenScheduleCount === 1 ? 'opción más' : 'opciones más'}
+                            </p>
+                            <Link
+                              href={profileHref}
+                              className="mt-2 inline-flex items-center justify-center rounded-full border border-[var(--c-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--c-ocean)] transition hover:border-[var(--c-aqua)]"
                             >
-                              {bookingStateForCoach?.status === 'loading'
-                                ? 'Agendando…'
-                                : bookingStateForCoach?.status === 'success'
-                                  ? 'Clase agendada'
-                                  : `Agendar ${selectedSelections.length === 1 ? 'clase' : `${selectedSelections.length} clases`}`}
-                            </button>
-                            {bookingStateForCoach?.message && (
-                              <p
-                                className={`mt-2 text-sm ${
-                                  bookingStateForCoach.status === 'error'
-                                    ? 'text-red-600'
-                                    : 'text-[var(--c-text-2)]'
-                                }`}
-                              >
-                                {bookingStateForCoach.message}
-                              </p>
-                            )}
+                              Ver todos los horarios
+                            </Link>
                           </div>
                         )}
                       </div>

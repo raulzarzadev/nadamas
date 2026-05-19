@@ -71,6 +71,7 @@ export type CoachOfferingUnit = 'clase' | 'sesión' | 'mes' | 'paquete'
 
 export interface CoachOfferingSchedule {
   id: string
+  timeMode?: 'fixed' | 'open'
   days: string[]
   startTime: string
   endTime: string
