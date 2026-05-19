@@ -1,5 +1,5 @@
 'use client'
-import PhoneInput from 'Inputs/PhoneInput'
+import { PhoneField, SelectField, TextField } from '@comps/Inputs/FormFields'
 import RichTextArea from '@comps/Inputs/RichTextArea'
 import SaveButton from '@comps/SaveButton'
 import { useEffect, useMemo, useState } from 'react'
@@ -107,16 +107,18 @@ export default function LinksCard({
           const LinkIcon = option.icon
           return (
             <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: stored public links do not include ids.
               key={`${link.kind}-${index}`}
               className="grid gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3 sm:grid-cols-[11rem_minmax(0,1fr)_auto] sm:items-center"
             >
-              <label className="relative">
-                <span className="sr-only">Tipo de enlace</span>
+              <div className="relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white px-2 py-1 text-xs font-bold text-[var(--c-ocean-mid)]">
                   <LinkIcon className="h-4 w-4" />
                 </span>
-                <select
-                  className="select select-bordered w-full bg-white pl-14 text-[var(--c-ocean)]"
+                <SelectField
+                  label="Tipo de enlace"
+                  hideLabel
+                  className="pl-14"
                   value={link.kind}
                   onChange={(event) =>
                     setLinks((current) =>
@@ -136,11 +138,11 @@ export default function LinksCard({
                       {item.label}
                     </option>
                   ))}
-                </select>
-              </label>
+                </SelectField>
+              </div>
 
               {link.kind === 'whatsapp' ? (
-                <PhoneInput
+                <PhoneField
                   label=""
                   placeholder="WhatsApp"
                   value={link.value}
@@ -153,8 +155,9 @@ export default function LinksCard({
                   }
                 />
               ) : (
-                <input
-                  className="input input-bordered w-full bg-white"
+                <TextField
+                  label={option.label}
+                  hideLabel
                   placeholder={option.placeholder}
                   value={link.value}
                   onChange={(event) =>

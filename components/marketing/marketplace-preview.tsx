@@ -3,6 +3,7 @@
 import CoachMetricsOverview from '@comps/coach/CoachMetricsOverview'
 import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
 import IconInfo from '@comps/IconInfo'
+import { SearchField } from '@comps/Inputs/FormFields'
 import PreviewImage from '@comps/PreviewImage'
 import { onAuthStateChanged } from 'firebase/auth'
 import Link from 'next/link'
@@ -226,18 +227,16 @@ export default function MarketplacePreview({
           className="rounded-[30px] p-4 sm:p-5 m-auto w-full"
           style={{ background: 'var(--c-surface)' }}
         >
-          <label className="block">
-            <span className="sr-only">Buscar coach por nombre</span>
-            <input
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value)
-                setVisibleCount(startingVisibleCount)
-              }}
-              placeholder="Buscar por nombre"
-              className="h-14 w-full rounded-full border border-[var(--c-border)] bg-white px-6 text-base shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--c-aqua)]"
-            />
-          </label>
+          <SearchField
+            label="Buscar coach por nombre"
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setVisibleCount(startingVisibleCount)
+            }}
+            placeholder="Buscar por nombre"
+            className="rounded-full px-6 text-base"
+          />
           <div className="mt-3 flex flex-wrap gap-2 text-sm" style={{ color: 'var(--c-text-2)' }}>
             {['Compara estilo', 'Revisa horarios', 'Reserva al instante'].map((item) => (
               <span

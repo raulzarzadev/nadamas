@@ -1,12 +1,15 @@
 import React from 'react'
 
+/**
+ * @deprecated Use SwitchField or a dedicated checkbox field from @comps/Inputs/FormFields instead.
+ */
 const Checkbox = React.forwardRef((props, ref) => {
   const { label, labelPosition = 'top' } = props
   const POSITION = {
     top: 'flex flex-col ',
     bottom: 'flex flex-col-reverse ',
     left: 'flex',
-    rigth: 'flex flex-reverse'
+    rigth: 'flex flex-reverse',
   }
   return (
     <div className="form-control">

@@ -1,4 +1,5 @@
 'use client'
+import { TextField } from '@comps/Inputs/FormFields'
 import SaveButton from '@comps/SaveButton'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -97,41 +98,28 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[var(--c-text-2)]">
-            Nombre visible (nickname)
-          </span>
-          <input
-            value={nickname}
-            onChange={(event) => setNickname(event.target.value)}
-            placeholder="Cómo quieres que te vean"
-            className="h-12 w-full rounded-2xl border border-[var(--c-border)] bg-white px-4 outline-none transition focus:border-[var(--c-aqua)]"
-          />
-        </label>
+        <TextField
+          label="Nombre visible (nickname)"
+          value={nickname}
+          onChange={(event) => setNickname(event.target.value)}
+          placeholder="Cómo quieres que te vean"
+        />
 
-        <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[var(--c-text-2)]">Nombre(s)</span>
-          <input
-            value={firstName}
-            onChange={(event) => setFirstName(event.target.value)}
-            placeholder="Como aparece en tu INE"
-            autoComplete="given-name"
-            className="h-12 w-full rounded-2xl border border-[var(--c-border)] bg-white px-4 outline-none transition focus:border-[var(--c-aqua)]"
-          />
-        </label>
+        <TextField
+          label="Nombre(s)"
+          value={firstName}
+          onChange={(event) => setFirstName(event.target.value)}
+          placeholder="Como aparece en tu INE"
+          autoComplete="given-name"
+        />
 
-        <label className="block">
-          <span className="mb-1 block text-sm font-semibold text-[var(--c-text-2)]">
-            Apellido(s)
-          </span>
-          <input
-            value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
-            placeholder="Como aparece en tu INE"
-            autoComplete="family-name"
-            className="h-12 w-full rounded-2xl border border-[var(--c-border)] bg-white px-4 outline-none transition focus:border-[var(--c-aqua)]"
-          />
-        </label>
+        <TextField
+          label="Apellido(s)"
+          value={lastName}
+          onChange={(event) => setLastName(event.target.value)}
+          placeholder="Como aparece en tu INE"
+          autoComplete="family-name"
+        />
 
         {message && (
           <p

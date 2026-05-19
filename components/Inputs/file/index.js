@@ -1,14 +1,27 @@
-import Image from "next/image";
-import React from "react"
+import Image from 'next/image'
+import React from 'react'
 
+/**
+ * @deprecated Use ImageInput, PhotoGalleryInput, or a dedicated file field instead.
+ */
 const File = React.forwardRef(({ label, preview = null, ...rest }, ref) => {
   return (
     <div className="form-control w-full max-w-sm">
-      {preview &&
+      {preview && (
         <figure className="relative h-36">
-          <Image src={preview} fill style={{ objectFit: 'contain' }} blurDataURL="/images/overlander.jpg" placeholder="blur" alt={label || ''} />
-        </figure>}
-      <label htmlFor="formFileMultiple" className="form-label inline-block  text-left">{label}</label>
+          <Image
+            src={preview}
+            fill
+            style={{ objectFit: 'contain' }}
+            blurDataURL="/images/overlander.jpg"
+            placeholder="blur"
+            alt={label || ''}
+          />
+        </figure>
+      )}
+      <label htmlFor="formFileMultiple" className="form-label inline-block  text-left">
+        {label}
+      </label>
       <input
         ref={ref}
         className="
@@ -22,7 +35,7 @@ const File = React.forwardRef(({ label, preview = null, ...rest }, ref) => {
         id="formFileMultiple"
         {...rest}
       />
-    </div >
+    </div>
   )
 })
 

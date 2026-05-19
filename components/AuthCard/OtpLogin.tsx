@@ -1,12 +1,10 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { TextField } from '@comps/Inputs/FormFields'
 import { signInWithCustomToken } from 'firebase/auth'
+import { type FormEvent, useState } from 'react'
 import { auth } from '@/firebase/index'
-import {
-  GENERIC_USER_ERROR,
-  reportInternalError,
-} from '@/lib/user-facing-error'
+import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 export default function OtpLogin({ disabled }: { disabled: boolean }) {
   const [email, setEmail] = useState('')
@@ -70,20 +68,17 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
     <div>
       {step === 'email' ? (
         <form onSubmit={requestCode} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[var(--c-ocean)]">
-              Correo
-            </span>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="tu@correo.com"
-              className="input input-bordered h-12 w-full rounded-2xl bg-white"
-            />
-          </label>
+          <TextField
+            label="Correo"
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="tu@correo.com"
+            className="h-12"
+          />
           <button
+            type="submit"
             disabled={disabled || busy}
             className="btn btn-primary h-12 rounded-2xl disabled:border-[var(--c-border)] disabled:bg-[var(--c-surface)] disabled:text-[var(--c-text-2)]"
           >
@@ -92,24 +87,19 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
         </form>
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-semibold text-[var(--c-ocean)]">
-              Código enviado a {email}
-            </span>
-            <input
-              inputMode="numeric"
-              required
-              value={code}
-              onChange={(event) =>
-                setCode(event.target.value.replace(/\D/g, '').slice(0, 6))
-              }
-              placeholder="000000"
-              maxLength={6}
-              autoComplete="one-time-code"
-              className="input input-bordered h-12 w-full rounded-2xl bg-white text-center text-lg tracking-[0.45em]"
-            />
-          </label>
+          <TextField
+            label={`Código enviado a ${email}`}
+            inputMode="numeric"
+            required
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="000000"
+            maxLength={6}
+            autoComplete="one-time-code"
+            className="h-12 text-center text-lg tracking-[0.45em]"
+          />
           <button
+            type="submit"
             disabled={busy || code.length !== 6}
             className="btn btn-primary h-12 rounded-2xl"
           >
@@ -134,9 +124,7 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
       {message && (
         <p
           className={`mt-3 rounded-2xl px-3 py-2 text-sm ${
-            hasError
-              ? 'bg-red-50 text-red-700'
-              : 'bg-[var(--c-surface)] text-[var(--c-text-2)]'
+            hasError ? 'bg-red-50 text-red-700' : 'bg-[var(--c-surface)] text-[var(--c-text-2)]'
           }`}
         >
           {message}

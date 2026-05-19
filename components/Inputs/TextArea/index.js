@@ -1,5 +1,8 @@
 import React from 'react'
 
+/**
+ * @deprecated Use TextAreaField from @comps/Inputs/FormFields instead.
+ */
 const TextArea = React.forwardRef(
   (
     {
@@ -25,9 +28,7 @@ const TextArea = React.forwardRef(
           rows={4}
           {...rest}
         />
-        {helperText && (
-          <span className="label-text text-info">{helperText}</span>
-        )}
+        {helperText && <span className="label-text text-info">{helperText}</span>}
         {error && <span className="label-text text-error">{error}</span>}
       </div>
     )

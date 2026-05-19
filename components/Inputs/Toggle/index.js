@@ -1,4 +1,8 @@
 import React from 'react'
+
+/**
+ * @deprecated Use SwitchField from @comps/Inputs/FormFields instead.
+ */
 const Toggle = React.forwardRef(({ label = null, size = 'xs', ...rest }, ref) => {
   const sizing = {
     lg: 'toggle-lg',

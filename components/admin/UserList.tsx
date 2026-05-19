@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { SearchField } from '@comps/Inputs/FormFields'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { FiCheckCircle, FiExternalLink, FiEye, FiUser } from 'react-icons/fi'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
@@ -26,7 +27,9 @@ export default function UserList() {
       )
     )
 
-    return () => unsubs.forEach((unsub) => unsub())
+    return () => {
+      for (const unsub of unsubs) unsub()
+    }
   }, [users])
 
   async function toggleCoachState(
@@ -50,15 +53,13 @@ export default function UserList() {
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="block">
-        <span className="sr-only">Buscar usuarios</span>
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar por nombre o correo"
-          className="h-12 w-full rounded-2xl border border-[var(--c-border)] bg-white px-4 shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--c-aqua)]"
-        />
-      </label>
+      <SearchField
+        label="Buscar usuarios"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Buscar por nombre o correo"
+        className="h-12"
+      />
 
       <div className="overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
         {visibleUsers.length === 0 ? (

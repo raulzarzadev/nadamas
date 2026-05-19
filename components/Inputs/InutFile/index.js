@@ -1,31 +1,35 @@
-import Image from "next/image";
-import React from "react"
+import Image from 'next/image'
+import React from 'react'
 
-const InputFile = React.forwardRef(({
-  label,
-  preview = null,
-  onUpload = ({ fieldName, file }) => { },
-  progress = null,
-  name = 'image',
-  ...rest
-}, ref) => {
-  return (
-    <div className="form-control w-full max-w-sm">
-      {!progress ??
-        <progress value={progress} max="100" className="progress" />
-      }
-      <label className="label">
-        {label &&
-          <span className="label-text">{label}</span>
-        }
-      </label>
-      {preview &&
-        <figure className="relative h-36">
-          <Image src={preview} fill style={{ objectFit: 'contain' }} blurDataURL="/images/logo-3.png" placeholder="blur" alt={label || ''} />
-        </figure>}
-      <input
-        ref={ref}
-        className="
+/**
+ * @deprecated Use ImageInput, PhotoGalleryInput, or a dedicated file field instead.
+ */
+const InputFile = React.forwardRef(
+  (
+    { label, preview = null, onUpload = () => {}, progress = null, name = 'image', ...rest },
+    ref
+  ) => {
+    return (
+      <div className="form-control w-full max-w-sm">
+        {progress && <progress value={progress} max="100" className="progress" />}
+        <label htmlFor="formFileMultiple" className="label">
+          {label && <span className="label-text">{label}</span>}
+        </label>
+        {preview && (
+          <figure className="relative h-36">
+            <Image
+              src={preview}
+              fill
+              style={{ objectFit: 'contain' }}
+              blurDataURL="/images/logo-3.png"
+              placeholder="blur"
+              alt={label || ''}
+            />
+          </figure>
+        )}
+        <input
+          ref={ref}
+          className="
           input 
           input-bordered w-full
           file:btn
@@ -33,13 +37,14 @@ const InputFile = React.forwardRef(({
           max-w-xs
           p-0
           "
-        type="file"
-        id="formFileMultiple"
-        onChange={({ target: { files } }) => onUpload({ fieldName: name, file: files[0] })}
-        {...rest}
-      />
-    </div >
-  )
-})
+          type="file"
+          id="formFileMultiple"
+          onChange={({ target: { files } }) => onUpload({ fieldName: name, file: files[0] })}
+          {...rest}
+        />
+      </div>
+    )
+  }
+)
 
 export default InputFile

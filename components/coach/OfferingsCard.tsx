@@ -216,8 +216,9 @@ export default function OfferingsCard({
                     Más opciones (opcional)
                   </summary>
                   <div className="mt-3 flex flex-col gap-3">
-                    <input
-                      className="input input-bordered bg-white"
+                    <TextField
+                      label="Link de Google Maps"
+                      hideLabel
                       placeholder="Link de Google Maps"
                       value={editing.locationUrl || ''}
                       onChange={(event) => patchEditing({ locationUrl: event.target.value })}

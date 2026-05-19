@@ -1,4 +1,5 @@
 'use client'
+import { TextField } from '@comps/Inputs/FormFields'
 import SaveButton from '@comps/SaveButton'
 import { useEffect, useState } from 'react'
 import { useUser } from '@/context/UserContext'
@@ -73,39 +74,28 @@ export default function PersonalDataCard() {
       summary={summary}
       surface="tinted"
     >
-      <label className="block">
-        <span className="mb-1 block text-sm font-semibold text-[var(--c-text-2)]">
-          Nombre visible (nickname)
-        </span>
-        <input
-          value={nickname}
-          onChange={(event) => setNickname(event.target.value)}
-          placeholder="Cómo quieres que te vean"
-          className="h-12 w-full rounded-2xl border border-[var(--c-border)] bg-white px-4 outline-none transition focus:border-[var(--c-aqua)]"
-        />
-      </label>
+      <TextField
+        label="Nombre visible (nickname)"
+        value={nickname}
+        onChange={(event) => setNickname(event.target.value)}
+        placeholder="Cómo quieres que te vean"
+      />
 
-      <label className="block">
-        <span className="mb-1 block text-sm font-semibold text-[var(--c-text-2)]">Nombre(s)</span>
-        <input
-          value={firstName}
-          onChange={(event) => setFirstName(event.target.value)}
-          placeholder="Como aparece en tu documento"
-          autoComplete="given-name"
-          className="h-12 w-full rounded-2xl border border-[var(--c-border)] bg-white px-4 outline-none transition focus:border-[var(--c-aqua)]"
-        />
-      </label>
+      <TextField
+        label="Nombre(s)"
+        value={firstName}
+        onChange={(event) => setFirstName(event.target.value)}
+        placeholder="Como aparece en tu documento"
+        autoComplete="given-name"
+      />
 
-      <label className="block">
-        <span className="mb-1 block text-sm font-semibold text-[var(--c-text-2)]">Apellido(s)</span>
-        <input
-          value={lastName}
-          onChange={(event) => setLastName(event.target.value)}
-          placeholder="Como aparece en tu documento"
-          autoComplete="family-name"
-          className="h-12 w-full rounded-2xl border border-[var(--c-border)] bg-white px-4 outline-none transition focus:border-[var(--c-aqua)]"
-        />
-      </label>
+      <TextField
+        label="Apellido(s)"
+        value={lastName}
+        onChange={(event) => setLastName(event.target.value)}
+        placeholder="Como aparece en tu documento"
+        autoComplete="family-name"
+      />
 
       {message && (
         <p className={`text-sm ${status === 'error' ? 'text-red-600' : 'text-[var(--c-text-2)]'}`}>

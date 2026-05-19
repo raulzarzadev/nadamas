@@ -1,7 +1,7 @@
 'use client'
-import PhoneInput from 'Inputs/PhoneInput'
 import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
+import { PhoneField, TextField } from '@comps/Inputs/FormFields'
 import Loading from '@comps/Loading'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { use, useEffect, useMemo, useState } from 'react'
@@ -9,11 +9,7 @@ import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
-import {
-  type Booking,
-  bookingSelectionKey,
-  parseBookingSelections,
-} from '@/lib/coach-booking'
+import { type Booking, bookingSelectionKey, parseBookingSelections } from '@/lib/coach-booking'
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
 import { formatPesos } from '@/lib/coach-offerings'
 
@@ -207,19 +203,15 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
 
         {!confirmed && (
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1 block text-sm font-semibold text-[var(--c-text-2)]">
-                Nombre completo
-              </span>
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="Tu nombre"
-                autoComplete="name"
-                className="h-12 w-full rounded-2xl border border-[var(--c-border)] bg-white px-4 outline-none transition focus:border-[var(--c-aqua)]"
-              />
-            </label>
-            <PhoneInput value={phone} onChange={setPhone} />
+            <TextField
+              label="Nombre completo"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Tu nombre"
+              autoComplete="name"
+              className="h-12"
+            />
+            <PhoneField value={phone} onChange={setPhone} />
           </div>
         )}
 

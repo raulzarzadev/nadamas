@@ -1,7 +1,14 @@
 'use client'
 
 import InputCurrency from '@comps/Inputs/InputCurrency'
-import { type ReactNode, useId } from 'react'
+import PhoneInput from '@comps/Inputs/PhoneInput'
+import {
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+  useId,
+} from 'react'
 
 const labelClassName = 'text-sm font-semibold text-[var(--c-ocean)]'
 const helperClassName = 'text-sm text-[var(--c-text-2)]'
@@ -12,50 +19,72 @@ interface FieldShellProps {
   id: string
   label: string
   helperText?: string
+  hideLabel?: boolean
   children: ReactNode
 }
 
-function FieldShell({ id, label, helperText, children }: FieldShellProps) {
+function FieldShell({ id, label, helperText, hideLabel = false, children }: FieldShellProps) {
   return (
     <label htmlFor={id} className="flex min-w-0 flex-col gap-1.5">
-      <span className={labelClassName}>{label}</span>
+      <span className={hideLabel ? 'sr-only' : labelClassName}>{label}</span>
       {children}
       {helperText && <span className={helperClassName}>{helperText}</span>}
     </label>
   )
 }
 
-interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
   helperText?: string
+  hideLabel?: boolean
 }
 
-export function TextField({ label, helperText, className = '', ...props }: TextFieldProps) {
-  const id = useId()
+export function TextField({
+  id,
+  label,
+  helperText,
+  hideLabel,
+  className = '',
+  ...props
+}: TextFieldProps) {
+  const generatedId = useId()
+  const fieldId = id ?? generatedId
   return (
-    <FieldShell id={id} label={label} helperText={helperText}>
-      <input id={id} className={`${controlClassName} ${className}`} {...props} />
+    <FieldShell id={fieldId} label={label} helperText={helperText} hideLabel={hideLabel}>
+      <input id={fieldId} className={`${controlClassName} ${className}`} {...props} />
     </FieldShell>
   )
 }
 
-interface TextAreaFieldProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+type SearchFieldProps = Omit<TextFieldProps, 'type'> & {
+  hideLabel?: boolean
+}
+
+export function SearchField({ hideLabel = true, ...props }: SearchFieldProps) {
+  return <TextField type="search" hideLabel={hideLabel} {...props} />
+}
+
+interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label: string
   helperText?: string
+  hideLabel?: boolean
 }
 
 export function TextAreaField({
+  id,
   label,
   helperText,
+  hideLabel,
   className = '',
   rows = 4,
   ...props
 }: TextAreaFieldProps) {
-  const id = useId()
+  const generatedId = useId()
+  const fieldId = id ?? generatedId
   return (
-    <FieldShell id={id} label={label} helperText={helperText}>
+    <FieldShell id={fieldId} label={label} helperText={helperText} hideLabel={hideLabel}>
       <textarea
-        id={id}
+        id={fieldId}
         rows={rows}
         className={`${controlClassName} min-h-28 resize-y py-4 ${className}`}
         {...props}
@@ -64,22 +93,26 @@ export function TextAreaField({
   )
 }
 
-interface SelectFieldProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label: string
   helperText?: string
+  hideLabel?: boolean
 }
 
 export function SelectField({
+  id,
   label,
   helperText,
+  hideLabel,
   className = '',
   children,
   ...props
 }: SelectFieldProps) {
-  const id = useId()
+  const generatedId = useId()
+  const fieldId = id ?? generatedId
   return (
-    <FieldShell id={id} label={label} helperText={helperText}>
-      <select id={id} className={`${controlClassName} ${className}`} {...props}>
+    <FieldShell id={fieldId} label={label} helperText={helperText} hideLabel={hideLabel}>
+      <select id={fieldId} className={`${controlClassName} ${className}`} {...props}>
         {children}
       </select>
     </FieldShell>
@@ -90,6 +123,24 @@ type NativeInputFieldProps = Omit<TextFieldProps, 'type'>
 
 export function DateField(props: NativeInputFieldProps) {
   return <TextField type="date" {...props} />
+}
+
+interface SwitchFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  label: string
+  helperText?: string
+}
+
+export function SwitchField({ label, helperText, className = '', ...props }: SwitchFieldProps) {
+  const id = useId()
+  return (
+    <label htmlFor={id} className="flex cursor-pointer items-start gap-3">
+      <input id={id} type="checkbox" className={`toggle mt-0.5 ${className}`} {...props} />
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className={labelClassName}>{label}</span>
+        {helperText && <span className={helperClassName}>{helperText}</span>}
+      </span>
+    </label>
+  )
 }
 
 export function TimeField(props: NativeInputFieldProps) {
@@ -124,5 +175,25 @@ export function MoneyField({
         className={`${controlClassName} text-lg ${className}`}
       />
     </FieldShell>
+  )
+}
+
+interface PhoneFieldProps {
+  value: string
+  onChange: (value: string) => void
+  label?: string
+  helperText?: string
+  error?: string
+  placeholder?: string
+  required?: boolean
+  name?: string
+}
+
+export function PhoneField({ helperText, ...props }: PhoneFieldProps) {
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <PhoneInput {...props} />
+      {helperText && <span className={helperClassName}>{helperText}</span>}
+    </div>
   )
 }

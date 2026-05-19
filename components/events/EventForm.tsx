@@ -1,8 +1,15 @@
 'use client'
-import { useState } from 'react'
+import {
+  DateField,
+  SelectField,
+  SwitchField,
+  TextAreaField,
+  TextField,
+} from '@comps/Inputs/FormFields'
 import { useRouter } from 'next/navigation'
-import { submitEvent } from '@/firebase/events'
+import { useState } from 'react'
 import STATUS_EVENT from '@/CONSTANTS/STATUS_EVENT'
+import { submitEvent } from '@/firebase/events'
 
 export type EventDoc = {
   id?: string
@@ -13,12 +20,11 @@ export type EventDoc = {
   status?: string
 }
 
-const STATUS_OPTIONS = Object.entries(
-  STATUS_EVENT as Record<string, { label: string }>
-).map(([value, { label }]) => ({ value, label }))
+const STATUS_OPTIONS = Object.entries(STATUS_EVENT as Record<string, { label: string }>).map(
+  ([value, { label }]) => ({ value, label })
+)
 
-const toDateInput = (ms?: number) =>
-  ms ? new Date(ms).toISOString().slice(0, 10) : ''
+const toDateInput = (ms?: number) => (ms ? new Date(ms).toISOString().slice(0, 10) : '')
 
 export default function EventForm({ event }: { event?: EventDoc }) {
   const router = useRouter()
@@ -32,8 +38,7 @@ export default function EventForm({ event }: { event?: EventDoc }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const set = (patch: Partial<EventDoc>) =>
-    setForm((f) => ({ ...f, ...patch }))
+  const set = (patch: Partial<EventDoc>) => setForm((f) => ({ ...f, ...patch }))
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,65 +59,46 @@ export default function EventForm({ event }: { event?: EventDoc }) {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4 max-w-md mx-auto">
-      <label className="form-control">
-        <span className="label-text">Título</span>
-        <input
-          className="input input-bordered"
-          value={form.title ?? ''}
-          onChange={(e) => set({ title: e.target.value })}
-        />
-      </label>
+      <TextField
+        label="Título"
+        value={form.title ?? ''}
+        onChange={(e) => set({ title: e.target.value })}
+      />
 
-      <label className="form-control">
-        <span className="label-text">Fecha</span>
-        <input
-          type="date"
-          className="input input-bordered"
-          value={toDateInput(form.date)}
-          onChange={(e) =>
-            set({
-              date: e.target.value
-                ? new Date(e.target.value).getTime()
-                : undefined,
-            })
-          }
-        />
-      </label>
+      <DateField
+        label="Fecha"
+        value={toDateInput(form.date)}
+        onChange={(e) =>
+          set({
+            date: e.target.value ? new Date(e.target.value).getTime() : undefined,
+          })
+        }
+      />
 
-      <label className="form-control">
-        <span className="label-text">Descripción</span>
-        <textarea
-          className="textarea textarea-bordered"
-          rows={3}
-          value={form.description ?? ''}
-          onChange={(e) => set({ description: e.target.value })}
-        />
-      </label>
+      <TextAreaField
+        label="Descripción"
+        rows={3}
+        value={form.description ?? ''}
+        onChange={(e) => set({ description: e.target.value })}
+      />
 
-      <label className="form-control">
-        <span className="label-text">Estado</span>
-        <select
-          className="select select-bordered"
-          value={form.status ?? ''}
-          onChange={(e) => set({ status: e.target.value })}
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <SelectField
+        label="Estado"
+        value={form.status ?? ''}
+        onChange={(e) => set({ status: e.target.value })}
+      >
+        {STATUS_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </SelectField>
 
-      <label className="label cursor-pointer justify-start gap-3">
-        <input
-          type="checkbox"
-          className="toggle"
-          checked={!!form.publicEvent}
-          onChange={(e) => set({ publicEvent: e.target.checked })}
-        />
-        <span className="label-text">Evento público</span>
-      </label>
+      <SwitchField
+        label="Evento público"
+        checked={!!form.publicEvent}
+        onChange={(e) => set({ publicEvent: e.target.checked })}
+      />
 
       {error && <p className="text-error text-sm">{error}</p>}
 
