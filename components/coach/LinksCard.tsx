@@ -81,6 +81,7 @@ export default function LinksCard({
 
   return (
     <ProfileSection
+      id="coach-bio"
       title="Presentación y enlaces"
       description="Una bio breve y los canales donde un atleta puede conocerte o contactarte."
       summary={`${bio ? 'Bio lista' : 'Sin bio'} · ${links.length} ${links.length === 1 ? 'enlace' : 'enlaces'}`}

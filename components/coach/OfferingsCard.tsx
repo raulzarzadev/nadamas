@@ -627,6 +627,7 @@ export default function OfferingsCard({
 
   return (
     <ProfileSection
+      id="coach-offerings"
       title="Lugares, horarios y precios"
       description="Cada clase que ofreces: dónde la das, qué días y horario, y cuánto cuesta. Puedes tener una en un lugar fijo y otra a domicilio con precio distinto."
       summary={`${offerings.length} ${offerings.length === 1 ? 'clase' : 'clases'}`}

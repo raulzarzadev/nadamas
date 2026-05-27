@@ -1,5 +1,5 @@
 'use client'
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
 import ImageInput from './ImageInput'
 
@@ -27,7 +27,6 @@ export default function PhotoGalleryInput<TPhoto extends GalleryPhotoValue>({
   onFilesSelected,
   onChange,
 }: PhotoGalleryInputProps<TPhoto>) {
-  const inputId = useId()
   const [previewPhoto, setPreviewPhoto] = useState<TPhoto | null>(null)
   const remainingSlots = Math.max(maxPhotos - photos.length, 0)
   const isFull = remainingSlots === 0
@@ -42,16 +41,8 @@ export default function PhotoGalleryInput<TPhoto extends GalleryPhotoValue>({
         multiple
         buttonLabel={uploading ? 'Subiendo fotos…' : 'Agregar fotos'}
         helperText={`JPG, PNG, WEBP o AVIF · hasta ${maxPhotos} fotos`}
-        onFilesSelected={(files) =>
-          onFilesSelected(files.slice(0, remainingSlots))
-        }
+        onFilesSelected={(files) => onFilesSelected(files.slice(0, remainingSlots))}
       />
-      <datalist id={`${inputId}-tags`}>
-        {tagOptions.map((option) => (
-          <option key={option} value={option} />
-        ))}
-      </datalist>
-
       <div className="flex items-center justify-between gap-3 text-sm">
         <span className="font-semibold text-[var(--c-ocean)]">
           {photos.length}/{maxPhotos} fotos
@@ -98,21 +89,26 @@ export default function PhotoGalleryInput<TPhoto extends GalleryPhotoValue>({
                 <span className="text-xs font-semibold uppercase tracking-wide text-[var(--c-text-2)]">
                   Etiqueta
                 </span>
-                <input
-                  list={`${inputId}-tags`}
-                  placeholder="Ej. Mis clases"
-                  className="input input-bordered input-sm w-full bg-white text-[var(--c-ocean)]"
+                <select
+                  className="select select-bordered select-sm w-full bg-white text-[var(--c-ocean)]"
                   value={photo.label || ''}
                   onChange={(event) =>
                     onChange(
                       photos.map((item, i) =>
-                        i === index
-                          ? ({ ...item, label: event.target.value } as TPhoto)
-                          : item
+                        i === index ? ({ ...item, label: event.target.value } as TPhoto) : item
                       )
                     )
                   }
-                />
+                >
+                  <option value="" disabled>
+                    Elige una etiqueta…
+                  </option>
+                  {tagOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </label>
             </article>
           ))}

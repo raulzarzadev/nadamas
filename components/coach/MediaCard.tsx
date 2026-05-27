@@ -100,6 +100,7 @@ export default function MediaCard({
   }
 
   const unlabeledCount = galleryPhotos.filter((photo) => !photo.label).length
+  const hasFacePhoto = galleryPhotos.some((photo) => photo.label === 'Yo')
 
   const { status: autoStatus, saveNow } = useAutosave(
     JSON.stringify(galleryPhotos),
@@ -109,11 +110,24 @@ export default function MediaCard({
 
   return (
     <ProfileSection
+      id="coach-gallery"
       title="Galería"
       description="Sube hasta 20 fotos y etiqueta cada una para contar mejor quién eres, dónde enseñas y qué has construido."
       summary={`${galleryPhotos.length}/20 fotos · ${unlabeledCount ? `${unlabeledCount} sin etiqueta` : 'todo etiquetado'}`}
     >
       {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
+
+      {!hasFacePhoto && (
+        <div className="flex items-start gap-3 rounded-[var(--r-sm)] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="mt-0.5 text-base leading-none" aria-hidden="true">
+            📸
+          </span>
+          <p>
+            <span className="font-semibold">Falta una foto tuya.</span> Sube una foto y etiquétala
+            como <span className="font-semibold">Yo</span> para que los alumnos puedan reconocerte.
+          </p>
+        </div>
+      )}
 
       <PhotoGalleryInput
         photos={galleryPhotos}
