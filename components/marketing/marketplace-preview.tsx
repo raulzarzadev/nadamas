@@ -1,8 +1,8 @@
 'use client'
 
 import CoachMetricsOverview from '@comps/coach/CoachMetricsOverview'
+import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 import { CoachStyleMapPreview } from '@comps/coach/CoachRadarChart'
-import OfferingSummaryCard from '@comps/coach/OfferingSummaryCard'
 import VerifiedBadge from '@comps/coach/VerifiedBadge'
 import IconInfo from '@comps/IconInfo'
 import { SearchField } from '@comps/Inputs/FormFields'
@@ -11,16 +11,11 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
-import { type CoachBookingSelection, flattenCoachBookingSelections } from '@/lib/coach-booking'
 import { normalizeCoachMetrics } from '@/lib/coach-metrics'
 import {
-  addDays,
   offeringsAvailabilitySummary,
   offeringsPriceSummary,
-  resolveOfferingSchedules,
   resolveOfferings,
-  scheduleIsOpen,
-  startOfWeek,
 } from '@/lib/coach-offerings'
 
 interface PublicCoachDirectoryItem extends CoachPublic {
@@ -57,37 +52,6 @@ function coachProfileHref(coach: Pick<PublicCoachDirectoryItem, 'id'>) {
   return `/${coach.id}`
 }
 
-function groupSelections(selections: CoachBookingSelection[]) {
-  const groups = new Map<
-    string,
-    {
-      key: string
-      offeringId: string
-      locationName: string
-      startTime: string
-      selections: CoachBookingSelection[]
-    }
-  >()
-
-  for (const selection of selections) {
-    const key = [selection.offeringId, selection.scheduleId].join('::')
-    const group = groups.get(key)
-    if (group) {
-      group.selections.push(selection)
-      continue
-    }
-    groups.set(key, {
-      key,
-      offeringId: selection.offeringId,
-      locationName: selection.locationName,
-      startTime: selection.startTime,
-      selections: [selection],
-    })
-  }
-
-  return [...groups.values()]
-}
-
 export default function MarketplacePreview({
   initialVisibleCount,
   pageSize = 12,
@@ -96,10 +60,9 @@ export default function MarketplacePreview({
 }: MarketplacePreviewProps) {
   const [coaches, setCoaches] = useState<PublicCoachDirectoryItem[]>([])
   const [query, setQuery] = useState('')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [profileCoach, setProfileCoach] = useState<PublicCoachDirectoryItem | null>(null)
   const [styleCoach, setStyleCoach] = useState<PublicCoachDirectoryItem | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const startingVisibleCount =
     initialVisibleCount ?? (infiniteScroll ? pageSize : Number.POSITIVE_INFINITY)
@@ -123,21 +86,31 @@ export default function MarketplacePreview({
 
   useEffect(() => {
     if (!styleCoach) return
-
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') setStyleCoach(null)
     }
-
     window.addEventListener('keydown', handleKeyDown)
-
     return () => {
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [styleCoach])
+
+  useEffect(() => {
+    if (!profileCoach) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setProfileCoach(null)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [profileCoach])
 
   const visibleCoaches = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -227,21 +200,7 @@ export default function MarketplacePreview({
 
         {renderedCoaches.map((coach) => {
           const photo = coachPhoto(coach)
-          const isExpanded = expandedId === coach.id
           const metrics = normalizeCoachMetrics(coach.metrics)
-          const offerings = resolveOfferings(coach)
-          const offeringsById = new Map(offerings.map((offering) => [offering.id, offering]))
-          const openOfferings = offerings.filter((offering) =>
-            resolveOfferingSchedules(offering).some(scheduleIsOpen)
-          )
-          const selections = flattenCoachBookingSelections(coach, weekStart)
-          const selectionGroups = groupSelections(selections)
-          const visibleOpenOfferings = openOfferings.slice(0, 2)
-          const visibleSelectionGroups = selectionGroups.slice(0, 2)
-          const hiddenScheduleCount =
-            Math.max(0, openOfferings.length - visibleOpenOfferings.length) +
-            Math.max(0, selectionGroups.length - visibleSelectionGroups.length)
-          const profileHref = coachProfileHref(coach)
 
           return (
             <article
@@ -322,105 +281,11 @@ export default function MarketplacePreview({
 
                 <button
                   type="button"
-                  onClick={() => setExpandedId(isExpanded ? null : coach.id)}
+                  onClick={() => setProfileCoach(coach)}
                   className="mt-4 inline-flex items-center justify-center rounded-full border border-[var(--c-border)] px-4 py-2 text-sm font-semibold text-[var(--c-ocean)] transition hover:border-[var(--c-aqua)]"
                 >
-                  {isExpanded ? 'Ver menos' : 'Ver horarios y más detalles'}
+                  Ver horarios y más detalles
                 </button>
-
-                {isExpanded && (
-                  <div className="mt-4 space-y-4 border-t border-[var(--c-border)] pt-4 text-sm text-[var(--c-text-2)]">
-                    {resolveOfferings(coach).length ? (
-                      <div>
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <p className="font-semibold text-[var(--c-ocean)]">Resumen de horarios</p>
-                          <Link
-                            href={profileHref}
-                            className="inline-flex items-center justify-center rounded-full bg-[var(--c-ocean)] px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5"
-                          >
-                            Ver perfil completo
-                          </Link>
-                        </div>
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            className="rounded-full border border-[var(--c-border)] px-3 py-1 font-semibold text-[var(--c-ocean)]"
-                            onClick={() => setWeekStart((current) => addDays(current, -7))}
-                          >
-                            ←
-                          </button>
-                          <p className="font-semibold text-[var(--c-ocean)]">
-                            Semana del{' '}
-                            {weekStart.toLocaleDateString('es-MX', {
-                              day: 'numeric',
-                              month: 'short',
-                            })}
-                          </p>
-                          <button
-                            type="button"
-                            className="rounded-full border border-[var(--c-border)] px-3 py-1 font-semibold text-[var(--c-ocean)]"
-                            onClick={() => setWeekStart((current) => addDays(current, 7))}
-                          >
-                            →
-                          </button>
-                        </div>
-                        {visibleOpenOfferings.length > 0 && (
-                          <div className="mt-3 flex flex-col gap-3">
-                            {visibleOpenOfferings.map((offering) => (
-                              <OfferingSummaryCard
-                                key={offering.id}
-                                offering={offering}
-                                className="rounded-[24px]"
-                                href={profileHref}
-                              />
-                            ))}
-                          </div>
-                        )}
-
-                        {visibleSelectionGroups.length > 0 ? (
-                          <div className="mt-3 flex flex-col gap-3">
-                            {visibleSelectionGroups.map((group) => {
-                              const offering = offeringsById.get(group.offeringId)
-                              if (!offering) return null
-                              return (
-                                <OfferingSummaryCard
-                                  key={group.key}
-                                  offering={offering}
-                                  className="rounded-[24px]"
-                                  href={profileHref}
-                                >
-                                  <p className="mt-3 text-sm font-semibold text-[var(--c-text-2)]">
-                                    Toca para ver fechas y agendar.
-                                  </p>
-                                </OfferingSummaryCard>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          openOfferings.length === 0 && (
-                            <p className="mt-2">Aún no publica horarios.</p>
-                          )
-                        )}
-                        {hiddenScheduleCount > 0 && (
-                          <div className="mt-3 rounded-[24px] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-4">
-                            <p className="font-semibold text-[var(--c-ocean)]">
-                              + {hiddenScheduleCount}{' '}
-                              {hiddenScheduleCount === 1 ? 'opción más' : 'opciones más'}
-                            </p>
-                            <Link
-                              href={profileHref}
-                              className="mt-2 inline-flex items-center justify-center rounded-full border border-[var(--c-border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--c-ocean)] transition hover:border-[var(--c-aqua)]"
-                            >
-                              Ver todos los horarios
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p>Aún no publica horarios.</p>
-                    )}
-                  </div>
-                )}
               </div>
             </article>
           )
@@ -448,6 +313,56 @@ export default function MarketplacePreview({
             background: 'linear-gradient(90deg, transparent, var(--c-surface), transparent)',
           }}
         />
+      )}
+
+      {profileCoach && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="coach-profile-dialog-title"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setProfileCoach(null)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setProfileCoach(null)
+          }}
+        >
+          <div className="relative flex max-h-[min(58rem,calc(100vh-1rem))] w-full max-w-2xl flex-col rounded-t-[32px] bg-[var(--c-bg)] shadow-[var(--shadow-lg)] sm:max-h-[min(58rem,calc(100vh-2rem))] sm:rounded-[32px]">
+            <div className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--c-border)] px-6 py-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[var(--c-text-2)]">
+                  Perfil del coach
+                </p>
+                <h2
+                  id="coach-profile-dialog-title"
+                  className="mt-0.5 text-xl font-extrabold text-[var(--c-ocean)]"
+                >
+                  {profileCoach.name}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={coachProfileHref(profileCoach)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--c-border)] px-3 py-1.5 text-sm font-semibold text-[var(--c-ocean)] transition hover:border-[var(--c-aqua)]"
+                >
+                  Perfil completo
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setProfileCoach(null)}
+                  aria-label="Cerrar perfil"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[var(--c-border)] bg-white text-xl text-[var(--c-ocean)]"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            <div className="overflow-y-auto px-6 py-5">
+              <CoachPublicProfile coach={profileCoach} />
+            </div>
+          </div>
+        </div>
       )}
 
       {styleCoach && (

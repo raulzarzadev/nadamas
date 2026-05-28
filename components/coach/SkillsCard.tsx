@@ -4,7 +4,7 @@ import SaveButton from '@comps/SaveButton'
 import { useEffect, useState } from 'react'
 import { CARD_PROPIERTIES_AND_STYLES_LABEL } from '@/CONSTANTS/LABELS'
 import { useAutosave } from '@/hooks/useAutosave'
-import { type CoachMetrics, normalizeCoachMetrics } from '@/lib/coach-metrics'
+import { COACH_METRICS, type CoachMetrics, normalizeCoachMetrics } from '@/lib/coach-metrics'
 import CoachMetricsForm from './CoachMetricsForm'
 import { CoachStyleMapPreview } from './CoachRadarChart'
 import ProfileSection from './ProfileSection'
@@ -30,7 +30,7 @@ export default function SkillsCard({
     <ProfileSection
       title={CARD_PROPIERTIES_AND_STYLES_LABEL}
       description="No hay respuestas buenas o malas: la compatibilidad nace de mostrar tu estilo real."
-      summary={`8 métricas · ${CARD_PROPIERTIES_AND_STYLES_LABEL}`}
+      summary={`${COACH_METRICS.length} métricas · ${CARD_PROPIERTIES_AND_STYLES_LABEL}`}
       headerAside={
         <div className="pointer-events-none absolute right-10 top-1/2 -translate-y-1/2 sm:right-12">
           <CoachStyleMapPreview metrics={draft} />

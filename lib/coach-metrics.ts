@@ -1,12 +1,12 @@
 export interface CoachMetrics {
-  intensity: number
-  methodology: number
   communication: number
-  patience: number
+  energy: number
+  motivation: number
   attention: number
-  training: number
+  goal: number
+  methodology: number
   planning: number
-  connection: number
+  correction: number
 }
 
 export type MetricGroupId = 'personality' | 'method'
@@ -30,7 +30,7 @@ export const METRIC_GROUPS: MetricGroup[] = [
   },
   {
     id: 'method',
-    label: 'Metodología',
+    label: 'Método',
     icon: '📖',
     bg: 'rgba(144,224,239,0.32)',
     border: 'rgba(0,180,216,0.55)',
@@ -50,39 +50,30 @@ export interface CoachMetricDefinition {
 
 export const COACH_METRICS: CoachMetricDefinition[] = [
   {
-    key: 'intensity',
-    label: 'Objetivo',
-    minLabel: 'Relajación',
-    maxLabel: 'Entrenamiento',
-    optionLabels: ['Relajación', 'Aprendizaje', 'Mantenimiento', 'Entrenamiento'],
-    icon: '⚡',
-    group: 'method',
-  },
-  {
-    key: 'methodology',
-    label: 'Metodología',
-    minLabel: 'Intuitiva',
-    middleLabel: 'Adaptativa',
-    maxLabel: 'Estructurada',
-    icon: '🧭',
-    group: 'method',
-  },
-  {
     key: 'communication',
     label: 'Comunicación',
     minLabel: 'Motivacional',
     middleLabel: 'Balanceada',
-    maxLabel: 'Técnico',
+    maxLabel: 'Técnica',
     icon: '💬',
     group: 'personality',
   },
   {
-    key: 'patience',
-    label: 'Paciencia',
-    minLabel: 'Ágil',
-    middleLabel: 'Intermedia',
-    maxLabel: 'Pausada',
-    icon: '🌊',
+    key: 'energy',
+    label: 'Energía',
+    minLabel: 'Calmada',
+    middleLabel: 'Dinámica',
+    maxLabel: 'Intensa',
+    icon: '⚡',
+    group: 'personality',
+  },
+  {
+    key: 'motivation',
+    label: 'Motivación',
+    minLabel: 'Paciente',
+    middleLabel: 'Balanceada',
+    maxLabel: 'Retadora',
+    icon: '🔥',
     group: 'personality',
   },
   {
@@ -95,32 +86,67 @@ export const COACH_METRICS: CoachMetricDefinition[] = [
     group: 'personality',
   },
   {
-    key: 'training',
-    label: 'Alumnos',
-    minLabel: 'Todos',
-    maxLabel: 'Solo bebés',
-    optionLabels: ['Todos', 'Adultos', 'Niños', 'Solo bebés'],
-    icon: '🏊',
+    key: 'goal',
+    label: 'Objetivo',
+    minLabel: 'Recreativo',
+    maxLabel: 'Rendimiento',
+    optionLabels: ['Recreativo', 'Aprendizaje', 'Fitness', 'Rendimiento'],
+    icon: '🏁',
+    group: 'method',
+  },
+  {
+    key: 'methodology',
+    label: 'Metodología',
+    minLabel: 'Intuitiva',
+    middleLabel: 'Adaptativa',
+    maxLabel: 'Estructurada',
+    icon: '🧭',
     group: 'method',
   },
   {
     key: 'planning',
     label: 'Planeación',
-    minLabel: 'Espontánea',
+    minLabel: 'Flexible',
     middleLabel: 'Intermedia',
-    maxLabel: 'Planeado',
+    maxLabel: 'Programada',
     icon: '📋',
     group: 'method',
   },
   {
-    key: 'connection',
-    label: 'Habilidad',
-    minLabel: 'Principiantes',
-    maxLabel: 'Multideporte',
-    optionLabels: ['Principiantes', 'Intermedio', 'Avanzados', 'Multideporte'],
-    icon: '🌿',
-    group: 'personality',
+    key: 'correction',
+    label: 'Corrección',
+    minLabel: 'General',
+    middleLabel: 'Balanceada',
+    maxLabel: 'Detallada',
+    icon: '🔍',
+    group: 'method',
   },
+]
+
+export interface CoachTagDefinition {
+  key: string
+  label: string
+  icon: string
+}
+
+export const COACH_AUDIENCE_TAGS: CoachTagDefinition[] = [
+  { key: 'babies', label: 'Bebés', icon: '👶' },
+  { key: 'kids', label: 'Niños', icon: '🧒' },
+  { key: 'teens', label: 'Adolescentes', icon: '🏊' },
+  { key: 'adults', label: 'Adultos', icon: '👤' },
+  { key: 'older_adults', label: 'Adultos mayores', icon: '🌿' },
+]
+
+export const COACH_SPECIALTY_TAGS: CoachTagDefinition[] = [
+  { key: 'beginners', label: 'Principiantes', icon: '🌱' },
+  { key: 'intermediate', label: 'Intermedios', icon: '🏊' },
+  { key: 'advanced', label: 'Avanzados', icon: '💪' },
+  { key: 'technique', label: 'Técnica', icon: '🧠' },
+  { key: 'open_water', label: 'Aguas abiertas', icon: '🌊' },
+  { key: 'triathlon', label: 'Triatlón', icon: '🚴' },
+  { key: 'competition', label: 'Competencia', icon: '🏆' },
+  { key: 'rehab', label: 'Rehabilitación', icon: '🩺' },
+  { key: 'fitness', label: 'Condición física', icon: '🔥' },
 ]
 
 /** Form scale is 1..METRIC_MAX; the radar still draws on a 5-ring scheme. */
@@ -129,28 +155,35 @@ export const METRIC_MAX = 10
 export const RADAR_LEVELS = 5
 
 export const DEFAULT_COACH_METRICS: CoachMetrics = {
-  intensity: 5,
-  methodology: 5,
   communication: 5,
-  patience: 5,
+  energy: 5,
+  motivation: 5,
   attention: 5,
-  training: 5,
+  goal: 5,
+  methodology: 5,
   planning: 5,
-  connection: 5,
+  correction: 5,
 }
 
-// Radar axes grouped: personality dimensions on one half, methodology on
-// the other, so the chart visually splits the two sides.
+// Radar principal: 7 dimensiones más representativas del estilo del coach.
+// Planning se muestra en el perfil detallado pero queda fuera del radar
+// para mantener la gráfica limpia.
 export const RADAR_METRICS: Array<{
   key: keyof CoachMetrics
   label: string
 }> = [
-  // Right half = method (top→bottom in card order). Left half = personality
-  // reversed so it reads top→bottom too. Chart is rotated by half a step
-  // (see CoachRadarChart) so the split is a clean vertical 4 / 4.
-  ...COACH_METRICS.filter((m) => m.group === 'method'),
-  ...COACH_METRICS.filter((m) => m.group === 'personality').reverse(),
-].map(({ key, label }) => ({ key, label }))
+  'goal',
+  'methodology',
+  'correction',
+  'attention',
+  'motivation',
+  'energy',
+  'communication',
+].map((key) => {
+  const metric = COACH_METRICS.find((m) => m.key === key)
+  if (!metric) throw new Error(`Metric definition not found for key: ${key}`)
+  return { key: metric.key, label: metric.label }
+})
 
 export function normalizeCoachMetrics(metrics?: Partial<CoachMetrics> | null): CoachMetrics {
   return { ...DEFAULT_COACH_METRICS, ...(metrics || {}) }
