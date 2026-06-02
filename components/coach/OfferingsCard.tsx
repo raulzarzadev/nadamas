@@ -64,7 +64,9 @@ export default function OfferingsCard({
 
   const editing = offerings.find((offering) => offering.id === editingId) || null
 
-  useEffect(() => setOfferings(initial), [initial])
+  useEffect(() => {
+    if (!editingId) setOfferings(initial)
+  }, [initial, editingId])
   useEffect(() => setGalleryPhotos(value.galleryPhotos || []), [value.galleryPhotos])
   useEffect(() => {
     if (scheduleModal) setSplitOnSave(true)
