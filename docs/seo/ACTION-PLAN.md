@@ -1,6 +1,56 @@
-# SEO Action Plan — nadamas.app landing
+# SEO Action Plan — nadamas.app
 
-Prioritized. Score today ≈ 77/100. Doing Critical + High → ~90+.
+Updated: 2026-06-02.
+
+Prioritized. Current product positioning must cover both sides of nadamas: coaches publish horarios, manage their calendar, take student notes and measure progress; athletes find coaches, reserve classes and review their own progress.
+
+## Implemented in this pass
+
+- Landing/root metadata now describes the coach platform: horarios publicados, calendario, notas and student progress.
+- Public coaches page metadata now mentions published schedules and progress follow-up.
+- App now has a coach calendar view at `/coach/agenda` instead of only a list of upcoming bookings.
+- Coaches can record student level, objective, next focus, notes and a 1–5 progress score from `/coach/students`.
+- Athletes can see coach progress notes and summary metrics at `/athlete/progress`.
+
+## NEW PRODUCT SEO PRIORITIES
+
+### P1 — Make the coach product explicit above the fold
+The landing still visually behaves mostly like a marketplace. Add visible Spanish copy for:
+- "Publica tus horarios"
+- "Administra tu calendario de clases"
+- "Toma notas por alumno"
+- "Mide el progreso con objetivos y seguimiento"
+
+Suggested H1 direction: `Calendario y seguimiento para coaches de natación`.
+Suggested supporting copy: `Publica horarios, recibe reservas y lleva el progreso de cada alumno desde una sola plataforma.`
+
+### P2 — Add a coach-focused landing section
+Create a section targeting commercial-intent searches:
+- `Software para coaches de natación`
+- `Calendario para entrenadores de natación`
+- `Seguimiento de progreso de alumnos`
+- `Notas de clases de natación`
+
+Use concrete UI screenshots from agenda/students/progress once stable.
+
+### P3 — Extend FAQ + FAQPage schema
+Add questions that match the new product:
+- `¿Puedo publicar mis horarios como coach?`
+- `¿La plataforma tiene calendario para clases?`
+- `¿Puedo tomar notas de mis alumnos?`
+- `¿Cómo mide nadamas el progreso del alumno?`
+
+Sync answers byte-for-byte with JSON-LD in `app/(marketing)/page.tsx`.
+
+### P4 — Add Product/SoftwareApplication schema when product copy is public
+Current WebSite/Organization/WebPage/FAQPage is valid. Once the coach SaaS value prop is visible on-page, add a conservative `SoftwareApplication` node without fake ratings:
+- applicationCategory: `SportsApplication`
+- operatingSystem: `Web`
+- audience: `Swim coaches and athletes`
+- featureList: horarios, calendario, reservas, notas, progreso
+
+### P5 — Internal linking
+Add marketing links to `/coaches`, `/contacto`, `/como-verificamos`, `/privacidad`, `/terminos`, and keep app routes noindexed. If a coach waitlist page is added, link CTA traffic there instead of forcing `/login`.
 
 ## CRITICAL (fix immediately)
 

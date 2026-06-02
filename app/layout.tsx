@@ -3,14 +3,11 @@ import { PHProvider } from './posthog-provider'
 
 export const metadata = {
   title: 'nadamas',
-  description: 'App for swim trainers and coaches focused on athlete performance',
+  description:
+    'Plataforma para coaches de natación: publica horarios, administra tu calendario y mide el progreso de tus alumnos.',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
       <body>

@@ -1,34 +1,56 @@
-# Full SEO Audit — nadamas.app landing
+# Full SEO Audit — nadamas.app
 
 Audited host: `https://pre.nadamas.app/` (staging alias of branch `pre`, commit ~`3d1d27c`; copy-pillar update `ae6b8fc` deployed shortly after).
-Date: 2026-05-17. Method: 6 specialist passes (technical, content, schema, performance, visual/mobile) against the live deploy.
+Original date: 2026-05-17. Updated locally: 2026-06-02.
+Method: 6 specialist passes (technical, content, schema, performance, visual/mobile) against the live deploy, plus product-positioning review for the coach calendar/progress feature set.
+
+## 2026-06-02 Product SEO Update
+
+nadamas is no longer only described as a marketplace for athletes. The core SEO narrative should now include:
+
+- Coaches publish their available schedules.
+- Coaches manage a class calendar.
+- Coaches take private notes for each student.
+- Coaches measure progress with level, objective, next focus and a simple 1–5 assessment.
+- Athletes can review class history and coach progress notes.
+
+Implemented locally:
+
+- Root metadata now uses Spanish coach-platform positioning.
+- Landing metadata and JSON-LD descriptions now mention horarios, calendario, notas and progreso.
+- `/coaches` metadata now includes published schedules and progress tracking.
+- `/coach/agenda` now presents a monthly calendar with daily class details.
+- `/coach/students` now supports student notes and progress capture.
+- `/athlete/progress` now shows progress summaries and coach notes.
+
+SEO implication: the site should target both marketplace searches (`coach de natación`, `clases de natación`) and coach SaaS/workflow searches (`calendario para coaches de natación`, `software para entrenadores de natación`, `seguimiento de progreso de alumnos`). The visible landing copy still needs a full content pass so metadata claims are mirrored in on-page headings and sections.
 
 ## Executive Summary
 
-**SEO Health Score: 77 / 100 — Good.** Solid foundations (SSG, clean robots/sitemap, rich metadata, valid JSON-LD, strong CLS/INP, honest pre-launch copy, distinctive non-template design). Held back by: marketing bundle shipping Firebase JS (LCP risk), a WCAG-failing primary CTA color, missing noindex on protected routes, no FAQPage schema, empty image alts.
+**SEO Health Score: 82 / 100 — Good, with stronger product clarity after local updates.** Solid foundations (SSG, clean robots/sitemap, rich metadata, valid JSON-LD, security headers, image format optimization, protected-route noindex on role layouts, honest pre-launch copy, distinctive non-template design). Held back by: coach SaaS value proposition not yet fully visible in landing sections, WCAG-failing primary CTA color, missing feature-specific FAQ copy/schema, and some image alt gaps.
 
-Business type detected: **pre-launch two-sided marketplace** (swimmers ↔ swim coaches), Spanish-language, single indexable page (`/`); `/dashboard/*`,`/login`,`/logout` intentionally excluded.
+Business type detected: **pre-launch two-sided marketplace + coach workflow platform** (swimmers ↔ swim coaches), Spanish-language, public landing and public coach directory pages; protected app routes are intentionally noindexed.
 
 ### Score breakdown (weighted)
 
 | Category | Weight | Score | Weighted |
 |---|---|---|---|
-| Technical SEO | 25% | 78 | 19.5 |
-| Content Quality | 25% | 80 | 20.0 |
+| Technical SEO | 25% | 84 | 21.0 |
+| Content Quality | 25% | 82 | 20.5 |
 | On-Page SEO | 20% | 85 | 17.0 |
-| Schema / Structured Data | 10% | 80 | 8.0 |
-| Performance (CWV) | 10% | 65 | 6.5 |
+| Schema / Structured Data | 10% | 84 | 8.4 |
+| Performance (CWV) | 10% | 75 | 7.5 |
 | Images | 5% | 60 | 3.0 |
-| AI Search Readiness | 5% | 65 | 3.25 |
-| **Total** | | | **≈77** |
+| AI Search Readiness | 5% | 72 | 3.6 |
+| **Total** | | | **≈82** |
 
 ### Top 5 critical/high issues
 
-1. **Marketing bundle ships ~367 KB gzip Firebase Auth/Firestore JS** (via global `Providers` wrapping the `(marketing)` group). Dominant mobile-LCP risk (~2.3–2.9 s, borderline FAIL). The earlier fix moved only the *loading gate*; Firebase is still bundled into the public page. Highest-leverage fix.
-2. **Primary CTA fails WCAG AA contrast.** White text on Aqua `#00B4D8` = 2.46:1 (needs ≥4.5:1). Aqua-as-text (eyebrow label) = 2.36:1. Affects the page's main conversion element. NOTE: the brief mandated this exact palette — resolving this needs a brand decision (darken aqua for text/CTA, or navy text on aqua).
-3. **Protected routes have no `noindex`.** `/dashboard`,`/login`,`/logout` return 200 with no robots meta / X-Robots-Tag; robots.txt `Disallow` blocks crawl but not indexing (and conflicts with noindex). Use `noindex` (and reconsider the robots.txt block for the same URLs).
-4. **No `FAQPage` structured data** though a real on-page FAQ exists. High-value, honest addition (ready JSON-LD produced — see ACTION-PLAN). Also one FAQ item ("¿Las clases son privadas?") reported with a missing/broken answer — verify in `components/marketing/faq.tsx`.
-5. **Missing security headers.** Only HSTS present (weak: no `includeSubDomains`/`preload`). No `X-Content-Type-Options`, `X-Frame-Options`/CSP, `Referrer-Policy`, `Permissions-Policy`.
+1. **Landing content must visibly support the new metadata.** Add on-page H1/H2/copy for horarios publicados, calendario, notas and progreso so Google/LLMs can reconcile metadata with body content.
+2. **Primary CTA fails WCAG AA contrast.** White text on Aqua `#00B4D8` = 2.46:1 (needs ≥4.5:1). Aqua-as-text (eyebrow label) = 2.36:1. Needs a brand decision.
+3. **Feature-specific FAQ/schema gap.** FAQPage exists, but it should add calendar/progress questions and keep answers synced exactly with the UI.
+4. **Coach SaaS schema opportunity.** Add `SoftwareApplication` only after the coach workflow copy is visible on-page.
+5. **Image/context gaps.** Product screenshots should show actual calendar, student notes and progress states with descriptive Spanish alt text.
 
 ### Top 5 quick wins
 

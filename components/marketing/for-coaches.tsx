@@ -2,14 +2,14 @@ const BEFORE = [
   'Coordinar por WhatsApp a todas horas',
   'Perseguir pagos y transferencias sueltas',
   'Anotar reservas en mil sitios distintos',
-  'Huecos vacíos por avisos de última hora',
+  'Perder notas y avances entre clases',
 ]
 
 const AFTER = [
-  'Tu agenda publicada, reservas solas',
+  'Horarios publicados y calendario claro',
   'El pago entra al confirmar la clase',
-  'Alumnos, horarios y cobros en un lugar',
-  'Tu perfil te trae nadadores nuevos',
+  'Notas por alumno después de cada clase',
+  'Objetivos y progreso visibles para cada nadador',
 ]
 
 export default function ForCoaches() {
@@ -31,10 +31,9 @@ export default function ForCoaches() {
               className="mt-5 max-w-[42ch] text-lg leading-relaxed"
               style={{ color: 'var(--c-text-2)' }}
             >
-              Si ya das clases, sabes lo que cuesta llenar la agenda y cobrar a
-              tiempo. nadamas convierte ese caos en un perfil que trabaja por ti.
-              Y pasar la evaluación práctica y teórica te da una credibilidad
-              que un anuncio suelto no consigue.
+              Si ya das clases, sabes lo que cuesta llenar la agenda, cobrar a tiempo y recordar el
+              avance de cada alumno. nadamas convierte ese trabajo operativo en horarios publicados,
+              calendario, notas y seguimiento de progreso en un solo lugar.
             </p>
             <a
               href="/login?intent=coach"
@@ -96,18 +95,13 @@ export default function ForCoaches() {
                     className="flex items-start gap-3 text-[0.98rem]"
                     style={{ color: 'color-mix(in oklch, #f8fafc 88%, transparent)' }}
                   >
-                    <svg
+                    <span
                       aria-hidden
-                      viewBox="0 0 20 20"
-                      className="mt-0.5 h-5 w-5 shrink-0"
-                      fill="none"
-                      stroke="var(--c-aqua)"
-                      strokeWidth="2.4"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-sm font-bold"
+                      style={{ color: 'var(--c-aqua)' }}
                     >
-                      <path d="M4 10.5 8.5 15 16 5.5" />
-                    </svg>
+                      ✓
+                    </span>
                     {a}
                   </li>
                 ))}

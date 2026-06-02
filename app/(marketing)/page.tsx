@@ -11,37 +11,35 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://nadamas.app'),
-  title: 'nadamas.app · Encuentra y reserva tu coach de natación',
+  title: 'nadamas.app · Calendario y progreso para coaches de natación',
   description:
-    'Descubre coaches de natación verificados, reserva en minutos y mejora tu técnica. Aguas abiertas, triatlón, principiantes y más.',
+    'Publica horarios, administra tu calendario, toma notas de alumnos y mide su progreso. También permite encontrar y reservar coaches verificados.',
   keywords: [
     'coach de natación',
     'clases de natación',
+    'calendario para coaches',
+    'progreso de alumnos',
+    'software para entrenadores de natación',
     'reservar coach',
     'aguas abiertas',
     'triatlón',
     'entrenador de natación',
   ],
   openGraph: {
-    title: 'nadamas.app · Tu próximo coach de natación, a un toque',
+    title: 'nadamas.app · Calendario y progreso para coaches de natación',
     description:
-      'Coaches verificados, reserva en minutos, paga en la app. Aprende, mejora y entrena.',
+      'Coaches publican horarios, administran reservas, toman notas y dan seguimiento al progreso de sus alumnos.',
     url: 'https://nadamas.app/',
     siteName: 'nadamas.app',
     locale: 'es_ES',
-    images: [
-      { url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' },
-    ],
+    images: [{ url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' }],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'nadamas.app · Tu próximo coach de natación, a un toque',
-    description:
-      'Coaches verificados, reserva en minutos, paga en la app.',
-    images: [
-      { url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' },
-    ],
+    title: 'nadamas.app · Calendario y progreso para coaches de natación',
+    description: 'Horarios, calendario, notas y seguimiento de progreso para coaches de natación.',
+    images: [{ url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' }],
   },
   alternates: { canonical: 'https://nadamas.app/' },
 }
@@ -55,7 +53,7 @@ const jsonLd = {
       name: 'nadamas.app',
       url: 'https://nadamas.app',
       description:
-        'Marketplace premium para encontrar y reservar coaches de natación.',
+        'Plataforma para coaches de natación con horarios publicados, calendario, reservas y seguimiento de progreso.',
       inLanguage: 'es',
       publisher: { '@id': 'https://nadamas.app/#org' },
     },
@@ -65,7 +63,7 @@ const jsonLd = {
       name: 'nadamas.app',
       url: 'https://nadamas.app',
       description:
-        'Marketplace para encontrar y reservar coaches de natación verificados: clases privadas o de grupo, en piscina o aguas abiertas.',
+        'Plataforma para coaches de natación verificados: publicación de horarios, calendario de clases, notas de alumnos, seguimiento de progreso y reservas.',
       logo: {
         '@type': 'ImageObject',
         url: 'https://nadamas.app/icons/icon_x512.png',
@@ -77,9 +75,9 @@ const jsonLd = {
       '@type': ['WebPage', 'FAQPage'],
       '@id': 'https://nadamas.app/#webpage',
       url: 'https://nadamas.app/',
-      name: 'nadamas.app · Encuentra y reserva tu coach de natación',
+      name: 'nadamas.app · Calendario y progreso para coaches de natación',
       description:
-        'Descubre coaches de natación verificados, reserva en minutos y mejora tu técnica.',
+        'Publica horarios, administra reservas, toma notas de alumnos y mide su progreso en clases de natación.',
       inLanguage: 'es',
       isPartOf: { '@id': 'https://nadamas.app/#website' },
       about: { '@id': 'https://nadamas.app/#org' },
@@ -124,6 +122,38 @@ const jsonLd = {
             text: 'Pueden serlo. Filtras por clases privadas si quieres atención individual, o eliges grupos pequeños si prefieres entrenar acompañado y a mejor precio.',
           },
         },
+        {
+          '@type': 'Question',
+          name: '¿Puedo publicar mis horarios como coach?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Sí. Como coach puedes publicar horarios, precios y lugares de clase para que los nadadores encuentren disponibilidad real antes de reservar.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿La plataforma tiene calendario para clases?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Sí. El coach cuenta con una agenda mensual para ver sus clases por día, revisar horarios, alumno, lugar y datos de contacto.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Puedo tomar notas de mis alumnos?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Sí. Cada alumno puede tener nivel, objetivo, próximo foco, notas de seguimiento y una evaluación simple de avance.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: '¿Cómo mide nadamas el progreso del alumno?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'El progreso se registra con historial de clases, nivel, objetivos, foco de entrenamiento y una evaluación del coach del 1 al 5.',
+          },
+        },
       ],
     },
   ],
@@ -134,6 +164,7 @@ export default function LandingPage() {
     <>
       <script
         type="application/ld+json"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD is serialized from a static server-side object.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Hero />

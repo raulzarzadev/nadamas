@@ -19,6 +19,22 @@ const QA = [
     q: '¿Las clases son privadas?',
     a: 'Pueden serlo. Filtras por clases privadas si quieres atención individual, o eliges grupos pequeños si prefieres entrenar acompañado y a mejor precio.',
   },
+  {
+    q: '¿Puedo publicar mis horarios como coach?',
+    a: 'Sí. Como coach puedes publicar horarios, precios y lugares de clase para que los nadadores encuentren disponibilidad real antes de reservar.',
+  },
+  {
+    q: '¿La plataforma tiene calendario para clases?',
+    a: 'Sí. El coach cuenta con una agenda mensual para ver sus clases por día, revisar horarios, alumno, lugar y datos de contacto.',
+  },
+  {
+    q: '¿Puedo tomar notas de mis alumnos?',
+    a: 'Sí. Cada alumno puede tener nivel, objetivo, próximo foco, notas de seguimiento y una evaluación simple de avance.',
+  },
+  {
+    q: '¿Cómo mide nadamas el progreso del alumno?',
+    a: 'El progreso se registra con historial de clases, nivel, objetivos, foco de entrenamiento y una evaluación del coach del 1 al 5.',
+  },
 ]
 
 export default function Faq() {
@@ -26,11 +42,9 @@ export default function Faq() {
     <section id="faq" className="mx-auto max-w-[1180px] px-5 py-20 sm:px-8 lg:py-28">
       <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
         <div className="reveal lg:sticky lg:top-28 lg:self-start">
-          <h2 className="text-[2.1rem] font-extrabold sm:text-[2.9rem]">
-            Preguntas frecuentes
-          </h2>
+          <h2 className="text-[2.1rem] font-extrabold sm:text-[2.9rem]">Preguntas frecuentes</h2>
           <p className="mt-4 max-w-[34ch] text-lg" style={{ color: 'var(--c-text-2)' }}>
-            Lo que la gente suele preguntar antes de reservar su primera clase.
+            Lo que nadadores y coaches suelen preguntar antes de empezar.
           </p>
         </div>
 
@@ -52,16 +66,7 @@ export default function Faq() {
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform duration-300 group-open:rotate-45"
                   style={{ background: 'var(--c-surface)', color: 'var(--c-aqua-strong)' }}
                 >
-                  <svg
-                    viewBox="0 0 20 20"
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.4"
-                    strokeLinecap="round"
-                  >
-                    <path d="M10 4v12M4 10h12" />
-                  </svg>
+                  +
                 </span>
               </summary>
               <p
