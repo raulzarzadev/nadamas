@@ -54,7 +54,7 @@ export default function CoachMetricsForm({
             className="pointer-events-none absolute inset-0 -z-10 blur-2xl"
             style={{
               background:
-                'radial-gradient(55% 55% at 22% 16%, #ec4899 0%, transparent 60%), radial-gradient(55% 55% at 84% 88%, #00b4d8 0%, transparent 60%)',
+                'radial-gradient(55% 55% at 22% 16%, #0077b6 0%, transparent 60%), radial-gradient(55% 55% at 84% 88%, #00b4d8 0%, transparent 60%)',
               opacity: 0.5,
             }}
           />

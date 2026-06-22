@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import {
   buildAvailableSlots,
+  type CoachOpenSlot,
   type CoachScheduleBlock,
   monthRange,
   normalizeScheduleBlockInput,
+  openSlotsToAvailable,
   type ScheduleBlockInput,
 } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
@@ -38,10 +40,11 @@ export async function GET(request: Request) {
   const coachId = verification.caller.uid
   const url = new URL(request.url)
   const range = monthRange(url.searchParams.get('month'))
-  const [coachDoc, bookingsSnapshot, blocksSnapshot] = await Promise.all([
+  const [coachDoc, bookingsSnapshot, blocksSnapshot, openSlotsSnapshot] = await Promise.all([
     adminDb.collection('coaches').doc(coachId).get(),
     adminDb.collection('bookings').where('coachId', '==', coachId).get(),
     adminDb.collection('coachScheduleBlocks').where('coachId', '==', coachId).get(),
+    adminDb.collection('coachOpenSlots').where('coachId', '==', coachId).get(),
   ])
 
   const coach = { id: coachDoc.id, ...coachDoc.data() } as CoachPublic
@@ -53,12 +56,11 @@ export async function GET(request: Request) {
     .sort((a, b) =>
       `${a.date} ${a.startTime || ''}`.localeCompare(`${b.date} ${b.startTime || ''}`)
     )
+  const openSlots = openSlotsSnapshot.docs.map((doc) => doc.data() as CoachOpenSlot)
   const offerings = resolveOfferings(coach)
 
-  return NextResponse.json({
-    bookings,
-    blocks,
-    availableSlots: buildAvailableSlots({
+  const availableSlots = [
+    ...buildAvailableSlots({
       coachId,
       offerings,
       bookings,
@@ -66,7 +68,10 @@ export async function GET(request: Request) {
       startDate: range.start,
       endDate: range.end,
     }),
-  })
+    ...openSlotsToAvailable(openSlots, bookings, blocks),
+  ].sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+
+  return NextResponse.json({ bookings, blocks, availableSlots })
 }
 
 export async function POST(request: Request) {

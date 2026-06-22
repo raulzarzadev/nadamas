@@ -1,12 +1,14 @@
-import CoachProfileGate from '@comps/coach/CoachProfileGate'
 import CoachAgenda from '@comps/coach/CoachAgenda'
+import CoachProfileGate from '@comps/coach/CoachProfileGate'
 
 export default function CoachAgendaPage() {
   return (
     <CoachProfileGate>
       <div className="flex flex-col gap-4">
-        <h1 className="text-3xl font-extrabold">Agenda</h1>
-        <p className="text-[var(--c-text-2)]">Tus próximas clases agendadas.</p>
+        <h1 className="text-3xl font-extrabold">Mis clases</h1>
+        <p className="text-[var(--c-text-2)]">
+          Como coach, aquí ves tus clases agendadas y horarios publicados.
+        </p>
         <CoachAgenda />
       </div>
     </CoachProfileGate>

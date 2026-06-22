@@ -1,10 +1,10 @@
 'use client'
-import { createContext, useContext, useEffect, useState } from 'react'
-
-import { authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { usePostHog } from 'posthog-js/react'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { getUser, loginUser } from '@/firebase/users'
+
 const UserContext = createContext()
 
 export function UserProvider({ children }) {
@@ -37,12 +37,12 @@ export function UserProvider({ children }) {
       posthog?.capture('login_attempt', { provider })
       return googleLogin()
         .then((user) => {
+          if (!user) return
           loginUser(user)
             .then((res) => {
               setUser(res)
               posthog?.capture('login_success', { provider })
               redirectTo ? router.push(redirectTo) : router.push('/athlete/home')
-
             })
             .catch((err) => {
               console.error(err)
@@ -70,14 +70,13 @@ export function UserProvider({ children }) {
 
   useEffect(() => {
     /**
-    * Redirect user if is comming from other page then after login turn it back
-    * if user is logged redirect to profile
-    */
+     * Redirect user if is comming from other page then after login turn it back
+     * if user is logged redirect to profile
+     */
     if (user && redirectTo) {
       router.push(redirectTo)
     }
   }, [user, router])
-
 
   return (
     <UserContext.Provider value={{ user, login, logout, refreshUser }}>

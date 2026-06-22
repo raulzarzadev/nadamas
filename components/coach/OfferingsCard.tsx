@@ -4,7 +4,7 @@ import ImageInput from '@comps/Inputs/ImageInput'
 import SaveButton from '@comps/SaveButton'
 import { useEffect, useMemo, useState } from 'react'
 import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
-import type { CoachClassOffering, CoachGalleryPhoto } from '@/firebase/coaches/coach.model'
+import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { useAutosave } from '@/hooks/useAutosave'
 import {
@@ -36,10 +36,9 @@ export default function OfferingsCard({
     classOfferings?: CoachClassOffering[]
     teachingLocations?: import('@/firebase/coaches/coach.model').CoachTeachingLocation[]
     priceOptions?: import('@/firebase/coaches/coach.model').CoachPriceOption[]
-    galleryPhotos?: CoachGalleryPhoto[]
   }
   saving: boolean
-  onSave: (v: { classOfferings: CoachClassOffering[]; galleryPhotos?: CoachGalleryPhoto[] }) => void
+  onSave: (v: { classOfferings: CoachClassOffering[] }) => void
 }) {
   const initial = useMemo(
     () =>
@@ -51,7 +50,6 @@ export default function OfferingsCard({
     [value.classOfferings, value.teachingLocations, value.priceOptions]
   )
   const [offerings, setOfferings] = useState<CoachClassOffering[]>(initial)
-  const [galleryPhotos, setGalleryPhotos] = useState<CoachGalleryPhoto[]>(value.galleryPhotos || [])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [step, setStep] = useState(1)
   const [scheduleModal, setScheduleModal] = useState<
@@ -67,14 +65,13 @@ export default function OfferingsCard({
   useEffect(() => {
     if (!editingId) setOfferings(initial)
   }, [initial, editingId])
-  useEffect(() => setGalleryPhotos(value.galleryPhotos || []), [value.galleryPhotos])
   useEffect(() => {
     if (scheduleModal) setSplitOnSave(true)
   }, [scheduleModal])
 
   const { status: autoStatus, saveNow } = useAutosave(
-    JSON.stringify({ offerings, galleryPhotos }),
-    () => onSave({ classOfferings: offerings, galleryPhotos }),
+    JSON.stringify(offerings),
+    () => onSave({ classOfferings: offerings }),
     { enabled: !editingId }
   )
 
@@ -182,7 +179,6 @@ export default function OfferingsCard({
       if (!url || finished) return
       finished = true
       patchEditing({ imageUrl: url })
-      setGalleryPhotos((current) => [...current, { url, label: 'Lugares de trabajo' }])
       setImageProgress(undefined)
       setBusyImage(false)
     })
@@ -408,7 +404,7 @@ export default function OfferingsCard({
                         imageAlt={editing.placeName || 'Lugar de clases'}
                         busy={busyImage}
                         progress={imageProgress}
-                        helperText="También se agrega a tu galería como “Lugares de trabajo”."
+                        helperText="Foto de este lugar de clases."
                         onFileSelected={(file) => uploadImage(file)}
                       />
                     </div>

@@ -2,11 +2,18 @@
 const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Storage emulator serves from a private IP (127.0.0.1); the optimizer
+    // refuses to fetch private IPs, so skip optimization in emulator mode only.
+    ...(process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR ? { unoptimized: true } : {}),
     remotePatterns: [
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'img.icons8.com' },
+      // Storage emulator (dev only): uploaded images are served from 127.0.0.1.
+      ...(process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR
+        ? [{ protocol: 'http', hostname: '127.0.0.1', port: '9199' }]
+        : []),
     ],
   },
   async redirects() {
@@ -14,7 +21,11 @@ const nextConfig = {
       { source: '/dashboard', destination: '/athlete/home', permanent: false },
       { source: '/dashboard/profile', destination: '/profile', permanent: false },
       { source: '/dashboard/events', destination: '/athlete/progress', permanent: false },
-      { source: '/dashboard/events/:path*', destination: '/athlete/progress/:path*', permanent: false },
+      {
+        source: '/dashboard/events/:path*',
+        destination: '/athlete/progress/:path*',
+        permanent: false,
+      },
     ]
   },
   async headers() {

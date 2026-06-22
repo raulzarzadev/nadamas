@@ -1,17 +1,15 @@
 'use client'
 
 import Loading from '@comps/Loading'
+import Avatar from '@comps/ui/avatar'
 import type React from 'react'
 import { useEffect, useState } from 'react'
-import { FiCalendar, FiCheck, FiMail, FiPhone, FiTrendingUp, FiUser } from 'react-icons/fi'
-import { getAuthed, patchAuthed } from '@/lib/client/authed-api'
+import { FiCalendar, FiChevronDown, FiMail, FiPhone, FiPlus, FiTrendingUp } from 'react-icons/fi'
+import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
-import {
-  STUDENT_LEVELS,
-  type StudentLevel,
-  type StudentProgress,
-} from '@/lib/coach-student-progress'
+import type { StudentProgress, StudentProgressEntry } from '@/lib/coach-student-progress'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import StudentProgressModal from './StudentProgressModal'
 
 interface StudentSummary {
   athleteId: string
@@ -22,7 +20,10 @@ interface StudentSummary {
   nextClass?: Booking
   lastClass?: Booking
   progress?: StudentProgress | null
+  entries: StudentProgressEntry[]
 }
+
+const ENTRY_PREVIEW = 4
 
 export default function CoachStudents() {
   const [students, setStudents] = useState<StudentSummary[] | undefined>(undefined)
@@ -43,93 +44,94 @@ export default function CoachStudents() {
 
   if (!students.length) {
     return (
-      <div className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-[var(--c-surface)] p-10 text-center text-[var(--c-text-2)]">
-        {error || 'Aún no tienes alumnos'}
+      <div className="rounded-[var(--r-md)] border border-dashed border-(--c-border) bg-(--c-surface) p-10 text-center text-sm text-(--c-text-2)">
+        {error || 'Aún no tienes alumnos. Cuando alguien reserve una clase, aparecerá aquí.'}
       </div>
     )
   }
 
+  const updateStudent = (
+    athleteId: string,
+    entry: StudentProgressEntry,
+    progress: StudentProgress
+  ) =>
+    setStudents((current) =>
+      current?.map((item) =>
+        item.athleteId === athleteId
+          ? { ...item, progress, entries: [entry, ...item.entries] }
+          : item
+      )
+    )
+
   return (
-    <div className="grid gap-3">
+    <ul className="flex flex-col gap-3">
       {students.map((student) => (
         <StudentCard
           key={student.athleteId}
           student={student}
-          onSaved={(progress) =>
-            setStudents((current) =>
-              current?.map((item) =>
-                item.athleteId === student.athleteId ? { ...item, progress } : item
-              )
-            )
-          }
+          onProgressSaved={(entry, progress) => updateStudent(student.athleteId, entry, progress)}
         />
       ))}
-    </div>
+    </ul>
   )
 }
 
 function StudentCard({
   student,
-  onSaved,
+  onProgressSaved,
 }: {
   student: StudentSummary
-  onSaved: (progress: StudentProgress) => void
+  onProgressSaved: (entry: StudentProgressEntry, progress: StudentProgress) => void
 }) {
-  const [level, setLevel] = useState<StudentLevel>(student.progress?.level || 'Inicial')
-  const [coachAssessment, setCoachAssessment] = useState(student.progress?.coachAssessment || 1)
-  const [goal, setGoal] = useState(student.progress?.goal || '')
-  const [nextFocus, setNextFocus] = useState(student.progress?.nextFocus || '')
-  const [lastNote, setLastNote] = useState(student.progress?.lastNote || '')
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [open, setOpen] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
 
-  async function saveProgress() {
-    setStatus('saving')
-    try {
-      const response = await patchAuthed('/api/coach/students', {
-        athleteId: student.athleteId,
-        level,
-        coachAssessment,
-        goal,
-        nextFocus,
-        lastNote,
-      })
-      const payload = (await response.json()) as { progress: StudentProgress }
-      onSaved(payload.progress)
-      setStatus('saved')
-    } catch (err) {
-      reportInternalError('COACH_STUDENT_SAVE', err)
-      setStatus('error')
-    }
-  }
+  const level = student.progress?.level || 'Inicial'
+  const assessment = student.progress?.coachAssessment
+  const summary = `${student.totalClasses} ${student.totalClasses === 1 ? 'clase' : 'clases'} · Nivel ${level}`
+  const visibleEntries = showAll ? student.entries : student.entries.slice(0, ENTRY_PREVIEW)
 
   return (
-    <article className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)]">
-      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-2">
-            <p className="flex items-center gap-2 text-lg font-bold text-[var(--c-ocean)]">
-              <FiUser aria-hidden="true" />
-              {student.name}
-            </p>
+    <li className="overflow-hidden rounded-[var(--r-md)] border border-(--c-border) bg-white shadow-[var(--shadow-sm)]">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-(--c-surface)"
+      >
+        <Avatar name={student.name} size={46} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-bold text-(--c-ocean)">{student.name}</p>
+          <p className="mt-0.5 truncate text-xs text-(--c-text-2)">{summary}</p>
+        </div>
+        <FiChevronDown
+          aria-hidden="true"
+          className={`shrink-0 text-(--c-ocean-mid) transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && (
+        <div className="flex flex-col gap-4 border-t border-(--c-border) p-4 sm:p-5">
+          <div className="flex flex-col gap-1.5">
             {student.email && (
-              <p className="flex items-center gap-2 text-sm text-[var(--c-text-2)]">
-                <FiMail aria-hidden="true" />
-                {student.email}
+              <p className="flex items-center gap-2 text-sm text-(--c-text-2)">
+                <FiMail aria-hidden="true" /> {student.email}
               </p>
             )}
             {student.phone && (
-              <p className="flex items-center gap-2 text-sm text-[var(--c-text-2)]">
-                <FiPhone aria-hidden="true" />
-                {student.phone}
+              <p className="flex items-center gap-2 text-sm text-(--c-text-2)">
+                <FiPhone aria-hidden="true" /> {student.phone}
               </p>
             )}
             {student.nextClass && (
-              <p className="flex items-center gap-2 text-sm text-[var(--c-text-2)]">
-                <FiCalendar aria-hidden="true" />
-                Próxima: {student.nextClass.date} · {student.nextClass.startTime}
+              <p className="flex items-center gap-2 text-sm text-(--c-text-2)">
+                <FiCalendar aria-hidden="true" /> Próxima: {student.nextClass.date} ·{' '}
+                {student.nextClass.startTime}
               </p>
             )}
           </div>
+
           <div className="grid grid-cols-2 gap-2">
             <MetricPill
               icon={<FiCalendar aria-hidden="true" />}
@@ -139,88 +141,116 @@ function StudentCard({
             <MetricPill
               icon={<FiTrendingUp aria-hidden="true" />}
               label="Avance"
-              value={`${coachAssessment}/5`}
+              value={assessment ? `${assessment}/5` : '—'}
             />
           </div>
-        </div>
 
-        <div className="grid gap-3">
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem]">
-            <label className="grid gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-              Nivel
-              <select
-                value={level}
-                onChange={(event) => setLevel(event.target.value as StudentLevel)}
-                className="min-h-11 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 text-sm text-[var(--c-ocean)]"
-              >
-                {STUDENT_LEVELS.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-              Avance
-              <input
-                type="number"
-                min="1"
-                max="5"
-                value={coachAssessment}
-                onChange={(event) => setCoachAssessment(Number(event.target.value))}
-                className="min-h-11 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 text-sm text-[var(--c-ocean)]"
-              />
-            </label>
-          </div>
-          <label className="grid gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-            Objetivo
-            <input
-              value={goal}
-              onChange={(event) => setGoal(event.target.value)}
-              maxLength={240}
-              placeholder="Ej. mejorar respiración bilateral"
-              className="min-h-11 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 text-sm text-[var(--c-ocean)]"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-            Próximo foco
-            <input
-              value={nextFocus}
-              onChange={(event) => setNextFocus(event.target.value)}
-              maxLength={240}
-              placeholder="Ej. salida y patada constante"
-              className="min-h-11 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 text-sm text-[var(--c-ocean)]"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-            Nota privada para seguimiento
-            <textarea
-              value={lastNote}
-              onChange={(event) => setLastNote(event.target.value)}
-              maxLength={800}
-              rows={3}
-              placeholder="Observaciones de técnica, asistencia o tareas para la siguiente clase."
-              className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 py-2 text-sm text-[var(--c-ocean)]"
-            />
-          </label>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="min-h-5 text-sm text-[var(--c-text-2)]">
-              {status === 'saved' && 'Seguimiento guardado.'}
-              {status === 'error' && GENERIC_USER_ERROR}
-            </p>
-            <button
-              type="button"
-              onClick={saveProgress}
-              disabled={status === 'saving'}
-              className="inline-flex min-h-11 items-center gap-2 rounded-[var(--r-sm)] bg-[var(--c-ocean)] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              <FiCheck aria-hidden="true" />
-              {status === 'saving' ? 'Guardando' : 'Guardar progreso'}
-            </button>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full bg-(--c-ocean) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+          >
+            <FiPlus aria-hidden="true" /> Agregar progreso
+          </button>
+
+          <div className="flex flex-col gap-2">
+            <h4 className="text-sm font-bold text-(--c-ocean)">Progresos registrados</h4>
+            {student.entries.length === 0 ? (
+              <p className="rounded-[var(--r-sm)] border border-dashed border-(--c-border) bg-(--c-surface) p-4 text-sm text-(--c-text-2)">
+                Aún no registras progreso. Agrega el primero.
+              </p>
+            ) : (
+              <>
+                <ul className="flex flex-col gap-2">
+                  {visibleEntries.map((entry) => (
+                    <EntryItem key={entry.id} entry={entry} />
+                  ))}
+                </ul>
+                {student.entries.length > ENTRY_PREVIEW && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAll((current) => !current)}
+                    className="self-start text-sm font-semibold text-(--c-aqua-strong) hover:underline"
+                  >
+                    {showAll
+                      ? 'Mostrar menos'
+                      : `Mostrar más (${student.entries.length - ENTRY_PREVIEW})`}
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
-      </div>
-    </article>
+      )}
+
+      {modalOpen && (
+        <StudentProgressModal
+          athleteId={student.athleteId}
+          studentName={student.name}
+          initial={student.progress}
+          onClose={() => setModalOpen(false)}
+          onSaved={(entry, progress) => {
+            onProgressSaved(entry, progress)
+            setModalOpen(false)
+          }}
+        />
+      )}
+    </li>
+  )
+}
+
+function EntryItem({ entry }: { entry: StudentProgressEntry }) {
+  const [open, setOpen] = useState(false)
+  const date = new Date(entry.createdAt).toLocaleDateString('es-MX', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+
+  return (
+    <li className="rounded-[var(--r-sm)] border border-(--c-border)">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-start gap-2 p-3 text-left transition-colors hover:bg-(--c-surface)"
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-bold text-(--c-ocean)">{date}</span>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-(--c-surface) px-2.5 py-0.5 text-xs font-semibold text-(--c-ocean)">
+              {entry.level} · {entry.coachAssessment}/5
+            </span>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            <DetailCol label="Objetivo" text={entry.goal} truncate={!open} />
+            <DetailCol label="Próximo foco" text={entry.nextFocus} truncate={!open} />
+          </div>
+        </div>
+        <FiChevronDown
+          aria-hidden="true"
+          className={`mt-0.5 shrink-0 text-(--c-ocean-mid) transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      {open && entry.note && (
+        <div className="px-3 pb-3">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-(--c-text-2)">Nota</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm text-(--c-ocean)">{entry.note}</p>
+        </div>
+      )}
+    </li>
+  )
+}
+
+function DetailCol({ label, text, truncate }: { label: string; text: string; truncate: boolean }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-(--c-text-2)">{label}</p>
+      <p className={`text-sm text-(--c-ocean) ${truncate ? 'truncate' : 'whitespace-pre-wrap'}`}>
+        {text || '—'}
+      </p>
+    </div>
   )
 }
 
@@ -234,9 +264,9 @@ function MetricPill({
   value: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-[var(--r-sm)] bg-[var(--c-surface)] px-3 py-2 text-sm text-[var(--c-ocean)]">
-      <span className="text-[var(--c-ocean-mid)]">{icon}</span>
-      <span className="text-[var(--c-text-2)]">{label}</span>
+    <div className="flex items-center gap-2 rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-sm text-(--c-ocean)">
+      <span className="text-(--c-ocean-mid)">{icon}</span>
+      <span className="text-(--c-text-2)">{label}</span>
       <strong className="ml-auto">{value}</strong>
     </div>
   )

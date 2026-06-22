@@ -2,8 +2,10 @@
 import { TextField } from '@comps/Inputs/FormFields'
 import SaveButton from '@comps/SaveButton'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
 import { useAutosave } from '@/hooks/useAutosave'
 import { patchAuthed } from '@/lib/client/authed-api'
@@ -15,6 +17,7 @@ export default function ProfilePage() {
     logout: () => void
     refreshUser?: () => Promise<unknown>
   }
+  const { roles } = useRole()
 
   const [nickname, setNickname] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -86,6 +89,15 @@ export default function ProfilePage() {
             <p className="truncate text-[var(--c-text-2)]">{user.email}</p>
           </div>
         </div>
+
+        {roles.coach && (
+          <Link
+            href="/coach/coach-profile"
+            className="btn btn-outline min-h-11 w-full justify-center text-[var(--c-ocean)] sm:w-fit"
+          >
+            Ver perfil de coach
+          </Link>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)] sm:p-6">

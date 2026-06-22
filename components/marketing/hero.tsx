@@ -66,7 +66,7 @@ export default function Hero() {
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a
-              href="#coaches"
+              href="/coaches"
               className="group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-6 py-4 text-base font-semibold text-white transition-transform duration-300 hover:-translate-y-0.5"
               style={{
                 background: 'var(--grad-brand)',

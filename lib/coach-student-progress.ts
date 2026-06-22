@@ -28,6 +28,19 @@ export type StudentProgressInput = Partial<
   Pick<StudentProgress, 'level' | 'goal' | 'lastNote' | 'nextFocus' | 'coachAssessment'>
 >
 
+/** One timestamped progress record in a student's history. */
+export interface StudentProgressEntry {
+  id: string
+  coachId: string
+  athleteId: string
+  level: StudentLevel
+  coachAssessment: number
+  goal: string
+  nextFocus: string
+  note: string
+  createdAt: number
+}
+
 export function studentProgressId(coachId: string, athleteId: string) {
   return `${coachId}_${athleteId}`
 }

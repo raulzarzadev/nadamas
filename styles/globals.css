@@ -30,6 +30,12 @@
   --radius-box: 22px;
 }
 
+/* Bottom sheet enter animation (components/ui/sheet.tsx). */
+@keyframes sheet-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
 /* Coach metric slider: neutral preference rail + reactive thumb. */
 @keyframes metric-thumb-pulse {
   0% { transform: scale(1); }

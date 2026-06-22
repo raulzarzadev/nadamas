@@ -1,22 +1,16 @@
 'use client'
-import { use, useEffect, useState } from 'react'
+import type { EventDoc } from '@comps/events/EventForm'
+import EventView from '@comps/events/EventView'
 import { useRouter } from 'next/navigation'
+import { use, useEffect, useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import { listenEvent } from '@/firebase/events'
-import EventView from '@comps/events/EventView'
-import type { EventDoc } from '@comps/events/EventForm'
 
-export default function EventDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const { user } = useUser()
-  const [event, setEvent] = useState<(EventDoc & { userId?: string }) | null>(
-    null
-  )
+  const [event, setEvent] = useState<(EventDoc & { userId?: string }) | null>(null)
 
   useEffect(() => {
     if (user === null) router.push('/login')
@@ -27,10 +21,10 @@ export default function EventDetailPage({
   }, [id])
 
   if (!user) return null
-  if (!event) return <p className="py-6 text-center opacity-60">Cargando…</p>
+  if (!event) return <p className="py-6 text-center text-[var(--c-text-2)]">Cargando…</p>
 
   return (
-    <div className="py-6">
+    <div className="flex flex-col gap-6">
       <EventView event={event} />
     </div>
   )
