@@ -15,6 +15,9 @@ export interface CoachScheduleBlock {
   endTime: string | null
   allDay: boolean
   note: string
+  /** hidden = removed entirely (not shown to the coach). false = blocked but
+   * still visible to the coach so they can add a student manually. */
+  hidden?: boolean
   createdAt: number
   updatedAt: number
 }
@@ -61,6 +64,7 @@ export type ScheduleBlockInput = {
   endTime?: string | null
   allDay?: boolean
   note?: string
+  hidden?: boolean
 }
 
 export function normalizeScheduleBlockInput(input: ScheduleBlockInput) {
@@ -78,6 +82,7 @@ export function normalizeScheduleBlockInput(input: ScheduleBlockInput) {
     startTime,
     endTime,
     note: typeof input.note === 'string' ? input.note.trim().slice(0, 160) : '',
+    hidden: input.hidden === true,
   }
 }
 

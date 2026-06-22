@@ -78,7 +78,7 @@ export default function CoachAgenda() {
     // A coach can add a student to a blocked hour; once booked, show the booking
     // row instead of the block.
     const blocked = dayBlocks
-      .filter((block) => !block.allDay && !bookedTimes.has(block.startTime || ''))
+      .filter((block) => !block.allDay && !block.hidden && !bookedTimes.has(block.startTime || ''))
       .map((block) => ({ kind: 'blocked' as const, sort: block.startTime || '', block }))
     return [...available, ...booked, ...blocked].sort((a, b) => a.sort.localeCompare(b.sort))
   }, [daySlots, dayBookings, dayBlocks])
@@ -97,26 +97,30 @@ export default function CoachAgenda() {
     }
   }
 
-  const blockSlot = (slot: CoachAvailableSlot) =>
+  const block = (slot: CoachAvailableSlot, hidden: boolean) =>
     run(() =>
       postAuthed('/api/coach/agenda', {
         date: slot.date,
         allDay: false,
         startTime: slot.startTime,
         endTime: slot.endTime,
+        hidden,
       })
     )
 
-  const deleteOpenSlot = (slot: CoachAvailableSlot) => {
-    const id = slot.openSlotId
-    if (!id) return
-    return run(() => deleteAuthed(`/api/coach/agenda/slots?id=${encodeURIComponent(id)}`))
-  }
+  // Bloquear: hide from athletes but keep visible to the coach (Bloqueado row,
+  // can still add a student).
+  const bloquearSlot = (slot: CoachAvailableSlot) => block(slot, false)
 
-  // Removing an availability means: delete it if it's an ad-hoc open hour, or
-  // block it if it comes from a recurring offering (can't delete an occurrence).
-  const removeOrBlock = (slot: CoachAvailableSlot) =>
-    slot.source === 'open' ? deleteOpenSlot(slot) : blockSlot(slot)
+  // Eliminar: remove entirely. Delete the open hour, or hide the recurring
+  // offering occurrence so it disappears from the day.
+  const eliminarSlot = (slot: CoachAvailableSlot) => {
+    if (slot.source === 'open' && slot.openSlotId) {
+      const id = slot.openSlotId
+      return run(() => deleteAuthed(`/api/coach/agenda/slots?id=${encodeURIComponent(id)}`))
+    }
+    return block(slot, true)
+  }
 
   const cancelBooking = (booking: Booking) =>
     run(() => deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}`))
@@ -286,14 +290,14 @@ export default function CoachAgenda() {
                           </Link>
                         </span>
                       </div>
-                      <RowIconButton
-                        ariaLabel={`Cancelar clase de ${row.booking.athleteName}`}
-                        tone="danger"
+                      <button
+                        type="button"
                         onClick={() => cancelBooking(row.booking)}
                         disabled={busy}
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-500 transition-colors hover:bg-rose-50 disabled:opacity-50"
                       >
-                        <FiX aria-hidden="true" />
-                      </RowIconButton>
+                        <FiX aria-hidden="true" /> Cancelar clase
+                      </button>
                     </div>
                   </AgendaRow>
                 )
@@ -363,15 +367,20 @@ export default function CoachAgenda() {
                         <FiPlus aria-hidden="true" /> Alumno
                       </button>
                       <RowIconButton
-                        ariaLabel={
-                          row.slot.source === 'open'
-                            ? 'Eliminar este horario'
-                            : 'Bloquear este horario'
+                        ariaLabel="Eliminar este horario"
+                        onClick={() => eliminarSlot(row.slot)}
+                        disabled={
+                          busy || dayBookings.some((b) => b.startTime === row.slot.startTime)
                         }
-                        onClick={() => removeOrBlock(row.slot)}
-                        disabled={busy}
                       >
                         <FiX aria-hidden="true" />
+                      </RowIconButton>
+                      <RowIconButton
+                        ariaLabel="Bloquear este horario para los atletas"
+                        onClick={() => bloquearSlot(row.slot)}
+                        disabled={busy}
+                      >
+                        <FiLock aria-hidden="true" />
                       </RowIconButton>
                     </div>
                   </div>
