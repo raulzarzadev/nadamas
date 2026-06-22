@@ -1,9 +1,10 @@
 'use client'
 
 import Loading from '@comps/Loading'
+import Avatar from '@comps/ui/avatar'
 import type React from 'react'
 import { useEffect, useState } from 'react'
-import { FiCalendar, FiMapPin, FiTarget, FiTrendingUp } from 'react-icons/fi'
+import { FiCalendar, FiMapPin, FiTarget, FiTrendingUp, FiUsers } from 'react-icons/fi'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
 import type { StudentProgress } from '@/lib/coach-student-progress'
@@ -33,106 +34,118 @@ export default function ProgressPage() {
     .filter((booking) => booking.status !== 'cancelled' && booking.date < today)
     .sort((a, b) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`))
 
+  const avgAssessment = progress.length
+    ? `${Math.round(
+        progress.reduce((total, item) => total + item.coachAssessment, 0) / progress.length
+      )}/5`
+    : '—'
+
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-3xl font-extrabold">Mi progreso</h1>
-        <p className="mt-2 text-[var(--c-text-2)]">
+        <h1 className="text-3xl font-extrabold text-(--c-ocean)">Mi progreso</h1>
+        <p className="mt-1 text-(--c-text-2)">
           Historial de clases, objetivos y seguimiento de tus coaches.
         </p>
       </header>
 
       {error && (
-        <div className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-[var(--c-surface)] p-4 text-sm text-[var(--c-text-2)]">
+        <div className="rounded-[var(--r-md)] border border-(--c-border) bg-(--c-surface) p-4 text-sm text-(--c-text-2)">
           {error}
         </div>
       )}
 
-      <section className="grid gap-3 md:grid-cols-3">
-        <SummaryCard label="Clases tomadas" value={completedClasses.length} />
-        <SummaryCard label="Coaches con seguimiento" value={progress.length} />
-        <SummaryCard
-          label="Avance promedio"
-          value={
-            progress.length
-              ? `${Math.round(
-                  progress.reduce((total, item) => total + item.coachAssessment, 0) /
-                    progress.length
-                )}/5`
-              : '—'
-          }
+      <section className="grid grid-cols-3 gap-3">
+        <StatTile
+          icon={<FiCalendar aria-hidden="true" />}
+          label="Clases tomadas"
+          value={bookings === undefined ? undefined : completedClasses.length}
+        />
+        <StatTile
+          icon={<FiUsers aria-hidden="true" />}
+          label="Coaches"
+          value={bookings === undefined ? undefined : progress.length}
+        />
+        <StatTile
+          icon={<FiTrendingUp aria-hidden="true" />}
+          label="Avance prom."
+          value={bookings === undefined ? undefined : avgAssessment}
         />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl font-bold text-[var(--c-ocean)]">Seguimiento del coach</h2>
+        <h2 className="text-xl font-bold text-(--c-ocean)">Seguimiento del coach</h2>
         {bookings === undefined ? (
           <Loading />
         ) : progress.length === 0 ? (
-          <div className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-5">
-            <h3 className="font-bold text-[var(--c-ocean)]">Sin notas todavía</h3>
-            <p className="mt-1 text-sm text-[var(--c-text-2)]">
+          <div className="rounded-[var(--r-md)] border border-dashed border-(--c-border) bg-(--c-surface) p-5">
+            <h3 className="font-bold text-(--c-ocean)">Sin notas todavía</h3>
+            <p className="mt-1 text-sm text-(--c-text-2)">
               Cuando tu coach registre objetivos, observaciones o foco de entrenamiento, aparecerán
               aquí.
             </p>
           </div>
         ) : (
           <div className="grid gap-3">
-            {progress.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)]"
-              >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="font-bold text-[var(--c-ocean)]">
-                      {coachNameFor(item.coachId, bookings || [])}
-                    </p>
-                    <p className="mt-1 text-sm text-[var(--c-text-2)]">Nivel: {item.level}</p>
+            {progress.map((item) => {
+              const coachName = coachNameFor(item.coachId, bookings || [])
+              return (
+                <article
+                  key={item.id}
+                  className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-4 shadow-[var(--shadow-sm)] sm:p-5"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar name={coachName} size={42} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-bold text-(--c-ocean)">{coachName}</p>
+                      <p className="mt-0.5 text-sm text-(--c-text-2)">Nivel: {item.level}</p>
+                    </div>
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-(--c-surface) px-3 py-1 text-sm font-semibold text-(--c-ocean)">
+                      <FiTrendingUp aria-hidden="true" />
+                      {item.coachAssessment}/5
+                    </span>
                   </div>
-                  <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[var(--c-surface)] px-3 py-1 text-sm font-semibold text-[var(--c-ocean)]">
-                    <FiTrendingUp aria-hidden="true" />
-                    {item.coachAssessment}/5
-                  </span>
-                </div>
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {item.goal && (
-                    <ProgressNote
-                      icon={<FiTarget aria-hidden="true" />}
-                      label="Objetivo"
-                      text={item.goal}
-                    />
+                  {(item.goal || item.nextFocus) && (
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      {item.goal && (
+                        <ProgressNote
+                          icon={<FiTarget aria-hidden="true" />}
+                          label="Objetivo"
+                          text={item.goal}
+                        />
+                      )}
+                      {item.nextFocus && (
+                        <ProgressNote
+                          icon={<FiCalendar aria-hidden="true" />}
+                          label="Próximo foco"
+                          text={item.nextFocus}
+                        />
+                      )}
+                    </div>
                   )}
-                  {item.nextFocus && (
-                    <ProgressNote
-                      icon={<FiCalendar aria-hidden="true" />}
-                      label="Próximo foco"
-                      text={item.nextFocus}
-                    />
+                  {item.lastNote && (
+                    <p className="mt-4 rounded-[var(--r-sm)] bg-(--c-surface) p-4 text-sm leading-6 text-(--c-text-2)">
+                      {item.lastNote}
+                    </p>
                   )}
-                </div>
-                {item.lastNote && (
-                  <p className="mt-4 rounded-[var(--r-sm)] bg-[var(--c-surface)] p-4 text-sm leading-6 text-[var(--c-text-2)]">
-                    {item.lastNote}
-                  </p>
-                )}
-              </article>
-            ))}
+                </article>
+              )
+            })}
           </div>
         )}
       </section>
 
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-[var(--c-ocean)]">Clases tomadas</h2>
-          <span className="rounded-full bg-[var(--c-surface)] px-3 py-1 text-sm font-semibold text-[var(--c-ocean)]">
+          <h2 className="text-xl font-bold text-(--c-ocean)">Clases tomadas</h2>
+          <span className="rounded-full bg-(--c-surface) px-3 py-1 text-sm font-semibold text-(--c-ocean)">
             {completedClasses.length}
           </span>
         </div>
         {bookings === undefined ? (
           <Loading />
         ) : completedClasses.length === 0 ? (
-          <div className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-[var(--c-surface)] p-8 text-center text-[var(--c-text-2)]">
+          <div className="rounded-[var(--r-md)] border border-(--c-border) bg-(--c-surface) p-8 text-center text-sm text-(--c-text-2)">
             Tus clases tomadas aparecerán aquí.
           </div>
         ) : (
@@ -140,24 +153,27 @@ export default function ProgressPage() {
             {completedClasses.map((booking) => (
               <li
                 key={booking.id}
-                className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)]"
+                className="flex items-center gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-4 shadow-[var(--shadow-sm)]"
               >
-                <p className="font-bold text-[var(--c-ocean)]">
-                  {booking.coachName || 'Coach de natación'}
-                </p>
-                <p className="mt-2 flex items-center gap-2 text-sm text-[var(--c-text-2)]">
-                  <FiCalendar aria-hidden="true" />
-                  {new Date(`${booking.date}T12:00:00`).toLocaleDateString('es-MX', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })}{' '}
-                  · {booking.startTime}
-                </p>
-                <p className="mt-1 flex items-center gap-2 text-sm text-[var(--c-text-2)]">
-                  <FiMapPin aria-hidden="true" />
-                  {booking.locationName}
-                </p>
+                <Avatar name={booking.coachName || 'Coach'} size={42} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-(--c-ocean)">
+                    {booking.coachName || 'Coach de natación'}
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-(--c-text-2)">
+                    <FiCalendar aria-hidden="true" />
+                    {new Date(`${booking.date}T12:00:00`).toLocaleDateString('es-MX', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}{' '}
+                    · {booking.startTime}
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-(--c-text-2)">
+                    <FiMapPin aria-hidden="true" />
+                    {booking.locationName}
+                  </p>
+                </div>
               </li>
             ))}
           </ul>
@@ -167,11 +183,22 @@ export default function ProgressPage() {
   )
 }
 
-function SummaryCard({ label, value }: { label: string; value: string | number }) {
+function StatTile({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string | number | undefined
+}) {
   return (
-    <div className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-4 shadow-[var(--shadow-sm)]">
-      <p className="text-sm font-semibold text-[var(--c-text-2)]">{label}</p>
-      <p className="mt-2 text-2xl font-extrabold text-[var(--c-ocean)]">{value}</p>
+    <div className="flex flex-col gap-1 rounded-[var(--r-md)] border border-(--c-border) bg-white p-4 shadow-[var(--shadow-sm)]">
+      <span className="text-(--c-ocean-mid)">{icon}</span>
+      <span className="text-2xl font-extrabold leading-none text-(--c-ocean)">
+        {value === undefined ? '—' : value}
+      </span>
+      <span className="text-xs font-semibold text-(--c-text-2)">{label}</span>
     </div>
   )
 }
@@ -186,11 +213,11 @@ function ProgressNote({
   text: string
 }) {
   return (
-    <div className="flex gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] p-3">
-      <span className="mt-0.5 text-[var(--c-ocean-mid)]">{icon}</span>
+    <div className="flex gap-3 rounded-[var(--r-sm)] border border-(--c-border) p-3">
+      <span className="mt-0.5 text-(--c-ocean-mid)">{icon}</span>
       <div>
-        <p className="text-xs font-bold uppercase text-[var(--c-text-2)]">{label}</p>
-        <p className="mt-1 text-sm text-[var(--c-ocean)]">{text}</p>
+        <p className="text-xs font-bold uppercase text-(--c-text-2)">{label}</p>
+        <p className="mt-1 text-sm text-(--c-ocean)">{text}</p>
       </div>
     </div>
   )

@@ -78,24 +78,24 @@ export async function POST(request: Request) {
   }
 
   const profileName = body.athleteProfile?.name?.trim()
-  const profilePhone = body.athleteProfile?.phone?.trim()
-  if (!profileName || !profilePhone) {
-    return NextResponse.json(
-      { error: 'Completa tu nombre y teléfono para confirmar.' },
-      { status: 400 }
-    )
+  const profilePhone = body.athleteProfile?.phone?.trim() || ''
+  if (!profileName) {
+    return NextResponse.json({ error: 'Completa tu nombre para confirmar.' }, { status: 400 })
   }
 
   const now = Date.now()
-  await adminDb.collection('users').doc(caller.uid).set(
-    {
-      name: profileName,
-      phone: profilePhone,
-      profileCompletedAt: now,
-      updatedAt: now,
-    },
-    { merge: true }
-  )
+  await adminDb
+    .collection('users')
+    .doc(caller.uid)
+    .set(
+      {
+        name: profileName,
+        ...(profilePhone ? { phone: profilePhone } : {}),
+        profileCompletedAt: now,
+        updatedAt: now,
+      },
+      { merge: true }
+    )
 
   const athleteDoc = await adminDb.collection('users').doc(caller.uid).get()
   const coachId = selections[0].coachId as string
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
         athleteDoc.data()?.name ||
         caller.name ||
         'Alumno',
-      athletePhone: profilePhone,
+      athletePhone: profilePhone || null,
       athleteEmail: athleteDoc.data()?.email || caller.email || null,
       coachId,
       coachName: publicNameFromUser(coachDoc.data()),
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
         email: coachEmail,
         coachName: publicNameFromUser(coachDoc.data()),
         athleteName: savedBookings[0].athleteName,
-        athletePhone: savedBookings[0].athletePhone,
+        athletePhone: savedBookings[0].athletePhone ?? undefined,
         bookings: savedBookings.map((booking) => ({
           locationName: booking.locationName,
           date: booking.date,

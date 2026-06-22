@@ -1,4 +1,4 @@
-import MarketplacePreview from '@comps/marketing/marketplace-preview'
+import CoachDirectoryList from '@comps/coach/CoachDirectoryList'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -8,5 +8,13 @@ export const metadata: Metadata = {
 }
 
 export default function CoachesPage() {
-  return <MarketplacePreview infiniteScroll />
+  return (
+    <section className="mx-auto max-w-2xl px-5 py-16 sm:px-8">
+      <h1 className="text-3xl font-extrabold text-(--c-ocean) sm:text-4xl">Coaches de natación</h1>
+      <p className="mt-2 mb-6 text-(--c-text-2)">
+        Explora coaches, revisa sus horarios reales y agenda tu clase.
+      </p>
+      <CoachDirectoryList />
+    </section>
+  )
 }

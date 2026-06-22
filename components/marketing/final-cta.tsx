@@ -30,13 +30,13 @@ export default function FinalCta() {
           className="relative mx-auto mt-6 max-w-[46ch] text-lg leading-relaxed"
           style={{ color: 'color-mix(in oklch, #f8fafc 82%, transparent)' }}
         >
-          Tu próxima clase puede empezar hoy. Encuentra a quien te lleve más
-          lejos en el agua, sin vueltas.
+          Tu próxima clase puede empezar hoy. Encuentra a quien te lleve más lejos en el agua, sin
+          vueltas.
         </p>
 
         <div className="relative mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <a
-            href="#coaches"
+            href="/coaches"
             className="inline-flex items-center justify-center rounded-full px-8 py-4 text-base font-semibold"
             style={{
               background: '#f8fafc',

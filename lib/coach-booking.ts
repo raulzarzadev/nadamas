@@ -1,12 +1,12 @@
 import type { CoachClassOffering, CoachPublic } from '@/firebase/coaches/coach.model'
 import {
   addDays,
-  dateKey,
   DAY_TO_INDEX,
+  dateKey,
   offeringPlaceLabel,
   offeringPriceCents,
-  resolveOfferings,
   resolveOfferingSchedules,
+  resolveOfferings,
   scheduleIsAvailableOn,
 } from '@/lib/coach-offerings'
 
@@ -39,6 +39,60 @@ export interface Booking extends CoachBookingSelection {
   source: string
   createdAt: number
   updatedAt: number
+}
+
+export interface PublicBookedSlot {
+  offeringId: string
+  scheduleId: string
+  date: string
+  startTime: string
+  endTime: string
+  bookedCount: number
+}
+
+/** Ad-hoc hour a coach published from the agenda, surfaced to athletes. */
+export interface PublicOpenSlot {
+  id: string
+  date: string
+  startTime: string
+  endTime: string
+  locationName?: string
+  priceCents?: number | null
+}
+
+/** Turn published open slots into bookable selections for the visible week. */
+export function openSlotsToSelections(
+  openSlots: PublicOpenSlot[],
+  coachId: string,
+  weekStart: Date
+): CoachBookingSelection[] {
+  const weekDates = new Set(
+    Array.from({ length: 7 }, (_, offset) => dateKey(addDays(weekStart, offset)))
+  )
+  return openSlots
+    .filter((slot) => weekDates.has(slot.date))
+    .map((slot) => {
+      const dayIndex = new Date(`${slot.date}T12:00:00`).getDay()
+      const dayLabel =
+        Object.entries(DAY_TO_INDEX).find(([, value]) => value === dayIndex)?.[0] || ''
+      const priceCents = slot.priceCents ?? null
+      return {
+        coachId,
+        offeringId: 'open',
+        scheduleId: `open:${slot.id}`,
+        locationName: slot.locationName || 'Horario abierto',
+        mode: 'fixed' as const,
+        groupType: 'particular' as const,
+        days: [dayLabel],
+        date: slot.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        price: priceCents !== null ? priceCents / 100 : null,
+        priceCents,
+        currency: 'MXN' as const,
+        unit: 'clase' as const,
+      }
+    })
 }
 
 export function formatSlotLabel(

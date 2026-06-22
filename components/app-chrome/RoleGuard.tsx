@@ -1,10 +1,9 @@
 'use client'
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { notFound } from 'next/navigation'
-import { useUser } from '@/context/UserContext'
-import { useRole } from '@/context/RoleContext'
 import Loading from '@comps/Loading'
+import { notFound, useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import { useRole } from '@/context/RoleContext'
+import { useUser } from '@/context/UserContext'
 import type { RoleName } from '@/lib/roles'
 
 export default function RoleGuard({

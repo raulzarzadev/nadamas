@@ -1,15 +1,16 @@
 import { initializeApp } from 'firebase/app'
 import {
   browserSessionPersistence,
-  getAuth,
+  connectAuthEmulator,
   GoogleAuthProvider,
+  getAuth,
   initializeAuth,
   onAuthStateChanged,
   signInWithPopup,
   signOut,
 } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
+import { connectStorageEmulator, getStorage } from 'firebase/storage'
 import { getUser } from './users'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
@@ -18,7 +19,16 @@ export const app = initializeApp(JSON.parse(firebaseConfig))
 export const auth = getAuth(app)
 
 export const db = getFirestore(app)
-export const storage = getStorage(app);
+export const storage = getStorage(app)
+
+// Local development: point the SDK at the Firebase emulators. Guarded by a
+// module-level flag so hot-reload doesn't reconnect (which throws).
+if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === '1' && !globalThis.__nadamasEmulatorWired) {
+  globalThis.__nadamasEmulatorWired = true
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  connectStorageEmulator(storage, '127.0.0.1', 9199)
+}
 
 export const authStateChanged = (cb = () => {}) => {
   return onAuthStateChanged(auth, async (user) => {
@@ -47,11 +57,18 @@ export const authStateChanged = (cb = () => {}) => {
   })
 }
 
+// Prevents a second popup request while one is still pending, which would
+// otherwise make Firebase cancel the first with auth/cancelled-popup-request.
+let googleLoginInFlight = false
+
 export const googleLogin = async () => {
+  if (googleLoginInFlight) return null
+
   const provider = new GoogleAuthProvider()
   provider.addScope('profile')
   provider.addScope('email')
 
+  googleLoginInFlight = true
   try {
     const result = await signInWithPopup(auth, provider)
     // This gives you a Google Access Token. You can use it to access the Google API.
@@ -66,21 +83,22 @@ export const googleLogin = async () => {
       displayName,
       email,
       photoURL,
-      providerId
+      providerId,
     }
 
     // return await createNewUser(user)
   } catch (error) {
-    console.error(error)
-    // Handle Errors here.
-    const errorCode = error.code
-    const errorMessage = error.message
-    // The email of the user's account used.
-    const email = error.email
-    // The AuthCredential type that was used.
-    const credential_1 = GoogleAuthProvider.credentialFromError(error)
+    // Benign popup outcomes (user closed it, or a duplicate request was
+    // cancelled). Treat as a silent no-op, not a failure.
+    if (
+      error?.code === 'auth/cancelled-popup-request' ||
+      error?.code === 'auth/popup-closed-by-user'
+    ) {
+      return null
+    }
     throw new Error('Could not login with Google')
-    return null
+  } finally {
+    googleLoginInFlight = false
   }
 }
 

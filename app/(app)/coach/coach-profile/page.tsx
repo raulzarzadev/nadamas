@@ -3,7 +3,6 @@ import LinksCard from '@comps/coach/LinksCard'
 import MediaCard from '@comps/coach/MediaCard'
 import OfferingsCard from '@comps/coach/OfferingsCard'
 import PersonalDataCard from '@comps/coach/PersonalDataCard'
-import PrivateCard from '@comps/coach/PrivateCard'
 import ScoreCard from '@comps/coach/ScoreCard'
 import SkillsCard from '@comps/coach/SkillsCard'
 import Loading from '@comps/Loading'
@@ -169,7 +168,12 @@ export default function CoachProfilePage() {
         onToggleVisible={(next) => savePublic('visibility', { publicProfileVisible: next })}
       />
 
-      <PersonalDataCard />
+      <PersonalDataCard
+        uid={uid}
+        identityValue={{ identityVerification: privVal.identityVerification }}
+        savingIdentity={savingSection === 'private'}
+        onSaveIdentity={(v) => savePrivate('private', v)}
+      />
 
       <LinksCard
         value={{
@@ -193,7 +197,6 @@ export default function CoachProfilePage() {
           classOfferings: pubVal.classOfferings,
           teachingLocations: pubVal.teachingLocations,
           priceOptions: pubVal.priceOptions,
-          galleryPhotos: pubVal.galleryPhotos,
         }}
         saving={savingSection === 'offerings'}
         onSave={(v) => savePublic('offerings', v)}
@@ -209,15 +212,6 @@ export default function CoachProfilePage() {
         }}
         saving={savingSection === 'media'}
         onSave={(v) => savePublic('media', v)}
-      />
-
-      <PrivateCard
-        uid={uid}
-        value={{
-          identityVerification: privVal.identityVerification,
-        }}
-        saving={savingSection === 'private'}
-        onSave={(v) => savePrivate('private', v)}
       />
     </div>
   )

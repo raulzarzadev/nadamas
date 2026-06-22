@@ -11,6 +11,11 @@
   --c-text-2: #4b5563;
   --c-border: #d6eaf0;
 
+  /* Danger / destructive (rose) — used by cancel actions and sheets. */
+  --rose-bg: #fdeef0;
+  --rose-bd: #f6d2d8;
+  --rose-tx: #b4475a;
+
   --grad-brand: linear-gradient(135deg, #0a2540 0%, #0077b6 45%, #00b4d8 100%);
 
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);

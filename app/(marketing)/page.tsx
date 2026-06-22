@@ -1,10 +1,10 @@
+import CoachesTeaser from '@comps/marketing/coaches-teaser'
 import Faq from '@comps/marketing/faq'
 import Features from '@comps/marketing/features'
 import FinalCta from '@comps/marketing/final-cta'
 import ForCoaches from '@comps/marketing/for-coaches'
 import Hero from '@comps/marketing/hero'
 import HowItWorks from '@comps/marketing/how-it-works'
-import MarketplacePreview from '@comps/marketing/marketplace-preview'
 import ProductShots from '@comps/marketing/product-shots'
 import SocialProof from '@comps/marketing/social-proof'
 import type { Metadata } from 'next'
@@ -170,7 +170,7 @@ export default function LandingPage() {
       <Hero />
       <SocialProof />
       <HowItWorks />
-      <MarketplacePreview initialVisibleCount={4} showViewMoreLink />
+      <CoachesTeaser />
       <Features />
       <ForCoaches />
       <ProductShots />

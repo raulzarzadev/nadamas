@@ -43,17 +43,23 @@ export default function EventForm({ event }: { event?: EventDoc }) {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.title?.trim()) return setError('El título es obligatorio')
+    if (!form.date) return setError('La fecha es obligatoria')
     setSaving(true)
     setError(null)
-    const res: any = await submitEvent({
-      ...(event?.id ? { id: event.id } : {}),
-      ...form,
-    })
-    setSaving(false)
-    if (res?.ok) {
-      router.push('/athlete/progress')
-    } else {
+    try {
+      const res: any = await submitEvent({
+        ...(event?.id ? { id: event.id } : {}),
+        ...form,
+      })
+      if (res?.ok) {
+        router.push('/athlete/progress')
+        return
+      }
       setError('No se pudo guardar el evento')
+    } catch {
+      setError('No se pudo guardar el evento')
+    } finally {
+      setSaving(false)
     }
   }
 

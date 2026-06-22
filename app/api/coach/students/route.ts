@@ -3,6 +3,7 @@ import type { Booking } from '@/lib/coach-booking'
 import {
   normalizeStudentProgressInput,
   type StudentProgress,
+  type StudentProgressEntry,
   type StudentProgressInput,
   studentProgressId,
 } from '@/lib/coach-student-progress'
@@ -41,13 +42,18 @@ export async function GET(request: Request) {
     .map((doc) => doc.data() as Booking)
     .filter((booking) => booking.status !== 'cancelled')
 
-  const progressSnapshot = await adminDb
-    .collection('coachStudentProgress')
-    .where('coachId', '==', coachId)
-    .get()
+  const [progressSnapshot, entriesSnapshot] = await Promise.all([
+    adminDb.collection('coachStudentProgress').where('coachId', '==', coachId).get(),
+    adminDb.collection('coachStudentProgressEntries').where('coachId', '==', coachId).get(),
+  ])
   const progressByAthlete = new Map(
     progressSnapshot.docs.map((doc) => [doc.data().athleteId as string, doc.data()])
   )
+  const entriesByAthlete = new Map<string, StudentProgressEntry[]>()
+  for (const doc of entriesSnapshot.docs) {
+    const entry = doc.data() as StudentProgressEntry
+    entriesByAthlete.set(entry.athleteId, [...(entriesByAthlete.get(entry.athleteId) || []), entry])
+  }
 
   const now = new Date().toISOString().slice(0, 10)
   const students = [...groupBookingsByAthlete(bookings).values()]
@@ -69,6 +75,9 @@ export async function GET(request: Request) {
         nextClass,
         lastClass,
         progress,
+        entries: (entriesByAthlete.get(first.athleteId) || []).sort(
+          (a, b) => b.createdAt - a.createdAt
+        ),
       }
     })
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -107,16 +116,31 @@ export async function PATCH(request: Request) {
     coachId,
     athleteId: body.athleteId,
     athleteName: booking.athleteName,
-    athleteEmail: booking.athleteEmail,
-    athletePhone: booking.athletePhone,
+    athleteEmail: booking.athleteEmail ?? null,
+    // Firestore rejects `undefined`; only include the phone when present.
+    ...(booking.athletePhone ? { athletePhone: booking.athletePhone } : {}),
     createdAt: (current.data()?.createdAt as number | undefined) || now,
     updatedAt: now,
     ...normalized,
   }
 
-  await docRef.set(progress, { merge: true })
+  // Append a timestamped entry to the student's progress history.
+  const entryRef = adminDb.collection('coachStudentProgressEntries').doc()
+  const entry: StudentProgressEntry = {
+    id: entryRef.id,
+    coachId,
+    athleteId: body.athleteId,
+    level: normalized.level,
+    coachAssessment: normalized.coachAssessment,
+    goal: normalized.goal,
+    nextFocus: normalized.nextFocus,
+    note: normalized.lastNote,
+    createdAt: now,
+  }
 
-  return NextResponse.json({ progress })
+  await Promise.all([docRef.set(progress, { merge: true }), entryRef.set(entry)])
+
+  return NextResponse.json({ progress, entry })
 }
 
 function groupBookingsByAthlete(bookings: Booking[]) {

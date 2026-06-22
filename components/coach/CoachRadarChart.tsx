@@ -102,8 +102,8 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
 
         <path
           d={buildSoftPath(stylePoints)}
-          fill="none"
-          stroke="#ec4899"
+          fill="rgba(0,180,216,0.10)"
+          stroke="#00b4d8"
           strokeWidth="2.5"
           strokeLinejoin="round"
         />
@@ -113,7 +113,7 @@ export default function CoachRadarChart({ metrics }: { metrics: CoachMetrics }) 
           const label = point(index, 6.2)
           return (
             <g key={metric.key}>
-              <circle cx={p.x} cy={p.y} r="4" fill="#ec4899" stroke="#fff" strokeWidth="2" />
+              <circle cx={p.x} cy={p.y} r="4" fill="#00b4d8" stroke="#f8fafc" strokeWidth="2" />
               <text
                 x={label.x}
                 y={label.y}
@@ -183,8 +183,8 @@ export function CoachStyleMapPreview({ metrics }: { metrics: CoachMetrics }) {
 
       <path
         d={buildSoftPath(stylePoints)}
-        fill="none"
-        stroke="#ec4899"
+        fill="rgba(0,180,216,0.10)"
+        stroke="#00b4d8"
         strokeWidth="2"
         strokeLinejoin="round"
       />

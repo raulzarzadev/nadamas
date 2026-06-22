@@ -39,15 +39,13 @@ export default async function CoachPublicPage({ params }: CoachPublicPageProps) 
         Volver a coaches
       </Link>
 
-      <header className="mt-6">
-        <p className="text-sm font-semibold uppercase text-[var(--c-text-2)]">Perfil público</p>
-        <h1 className="mt-2 text-4xl font-extrabold text-[var(--c-ocean)] sm:text-5xl">
-          {detail.name}
-        </h1>
-      </header>
-
-      <div className="mt-8 rounded-[32px] border border-[var(--c-border)] bg-[var(--c-bg)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
-        <CoachPublicProfile coach={detail.coach} />
+      <div className="mt-6 rounded-[32px] border border-[var(--c-border)] bg-[var(--c-bg)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
+        <CoachPublicProfile
+          coach={detail.coach}
+          name={detail.name}
+          bookedSlots={detail.bookedSlots}
+          openSlots={detail.openSlots}
+        />
       </div>
     </section>
   )
