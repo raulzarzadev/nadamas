@@ -49,3 +49,7 @@ screenshots/
 
 # brainstorm visual companion
 .superpowers/
+
+.emulator-data/
+firebase-debug.log
+firestore-debug.log
