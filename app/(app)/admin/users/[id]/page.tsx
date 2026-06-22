@@ -222,7 +222,15 @@ export default function AdminUserDetailPage({
 
       {!!summary.coach && (
         <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)]">
-          <h2 className="mb-4 text-xl font-bold">Perfil público de coach</h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold">Perfil público de coach</h2>
+            <Link
+              href={`/admin/coaches/${id}/schedule`}
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--c-aqua)] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            >
+              Ver y editar horarios
+            </Link>
+          </div>
           <CoachPublicProfile coach={summary.coach} />
         </section>
       )}

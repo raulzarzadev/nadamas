@@ -15,7 +15,13 @@ const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
 
 type ActiveSlot = { date: string; startTime: string; endTime: string; locationName: string }
 
-export default function CoachAgenda() {
+export default function CoachAgenda({ coachId }: { coachId?: string }) {
+  // When an admin opens another coach's agenda, `coachId` targets that coach and
+  // booking actions (add/cancel students) are hidden — admin mode manages open
+  // hours and blocks only.
+  const adminMode = Boolean(coachId)
+  const coachQuery = coachId ? `&coachId=${encodeURIComponent(coachId)}` : ''
+
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()))
   const [busy, setBusy] = useState(false)
@@ -25,17 +31,20 @@ export default function CoachAgenda() {
 
   const monthOfSelected = selectedDate.slice(0, 7)
 
-  const loadAgenda = useCallback(async (month: string) => {
-    setError(null)
-    try {
-      const response = await getAuthed(`/api/coach/agenda?month=${month}`)
-      setAgenda((await response.json()) as CoachAgendaPayload)
-    } catch (err) {
-      reportInternalError('COACH_AGENDA_LOAD', err)
-      setError(GENERIC_USER_ERROR)
-      setAgenda({ bookings: [], availableSlots: [], blocks: [] })
-    }
-  }, [])
+  const loadAgenda = useCallback(
+    async (month: string) => {
+      setError(null)
+      try {
+        const response = await getAuthed(`/api/coach/agenda?month=${month}${coachQuery}`)
+        setAgenda((await response.json()) as CoachAgendaPayload)
+      } catch (err) {
+        reportInternalError('COACH_AGENDA_LOAD', err)
+        setError(GENERIC_USER_ERROR)
+        setAgenda({ bookings: [], availableSlots: [], blocks: [] })
+      }
+    },
+    [coachQuery]
+  )
 
   useEffect(() => {
     loadAgenda(monthOfSelected)
@@ -105,6 +114,7 @@ export default function CoachAgenda() {
         startTime: slot.startTime,
         endTime: slot.endTime,
         hidden,
+        ...(coachId ? { coachId } : {}),
       })
     )
 
@@ -117,7 +127,9 @@ export default function CoachAgenda() {
   const eliminarSlot = (slot: CoachAvailableSlot) => {
     if (slot.source === 'open' && slot.openSlotId) {
       const id = slot.openSlotId
-      return run(() => deleteAuthed(`/api/coach/agenda/slots?id=${encodeURIComponent(id)}`))
+      return run(() =>
+        deleteAuthed(`/api/coach/agenda/slots?id=${encodeURIComponent(id)}${coachQuery}`)
+      )
     }
     return block(slot, true)
   }
@@ -126,11 +138,15 @@ export default function CoachAgenda() {
     run(() => deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}`))
 
   const unblock = (block: CoachScheduleBlock) =>
-    run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}`))
+    run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${coachQuery}`))
 
   const submitOpenHours = (dates: string[], times: string[]) =>
     run(async () => {
-      await postAuthed('/api/coach/agenda/slots', { dates, times })
+      await postAuthed('/api/coach/agenda/slots', {
+        dates,
+        times,
+        ...(coachId ? { coachId } : {}),
+      })
       setOpenHoursOpen(false)
     })
 
@@ -176,7 +192,9 @@ export default function CoachAgenda() {
         </div>
       </div>
       <p className="-mt-2 text-sm text-[var(--c-text-2)]">
-        Toca un día para ver y editar tus horas.
+        {adminMode
+          ? 'Toca un día para ver y editar los horarios del coach.'
+          : 'Toca un día para ver y editar tus horas.'}
       </p>
 
       {/* Week strip */}
@@ -290,14 +308,16 @@ export default function CoachAgenda() {
                           </Link>
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => cancelBooking(row.booking)}
-                        disabled={busy}
-                        className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-500 transition-colors hover:bg-rose-50 disabled:opacity-50"
-                      >
-                        <FiX aria-hidden="true" /> Cancelar clase
-                      </button>
+                      {!adminMode && (
+                        <button
+                          type="button"
+                          onClick={() => cancelBooking(row.booking)}
+                          disabled={busy}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-500 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                        >
+                          <FiX aria-hidden="true" /> Cancelar clase
+                        </button>
+                      )}
                     </div>
                   </AgendaRow>
                 )
@@ -311,7 +331,7 @@ export default function CoachAgenda() {
                         {row.block.note ? ` · ${row.block.note}` : ''}
                       </span>
                       <div className="flex items-center gap-2">
-                        {row.block.startTime && row.block.endTime && (
+                        {!adminMode && row.block.startTime && row.block.endTime && (
                           <button
                             type="button"
                             onClick={() =>
@@ -351,21 +371,23 @@ export default function CoachAgenda() {
                       Disponible
                     </span>
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setAddStudentSlot({
-                            date: row.slot.date,
-                            startTime: row.slot.startTime,
-                            endTime: row.slot.endTime,
-                            locationName: row.slot.locationName,
-                          })
-                        }
-                        disabled={busy}
-                        className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                      >
-                        <FiPlus aria-hidden="true" /> Alumno
-                      </button>
+                      {!adminMode && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAddStudentSlot({
+                              date: row.slot.date,
+                              startTime: row.slot.startTime,
+                              endTime: row.slot.endTime,
+                              locationName: row.slot.locationName,
+                            })
+                          }
+                          disabled={busy}
+                          className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                        >
+                          <FiPlus aria-hidden="true" /> Alumno
+                        </button>
+                      )}
                       <RowIconButton
                         ariaLabel="Eliminar este horario"
                         onClick={() => eliminarSlot(row.slot)}

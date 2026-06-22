@@ -17,21 +17,33 @@ async function verifyCoach(request: Request) {
 
   const caller = await adminAuth.verifyIdToken(token)
   const callerDoc = await adminDb.collection('users').doc(caller.uid).get()
-  if (callerDoc.data()?.roles?.coach !== true && callerDoc.data()?.roles?.admin !== true) {
+  const isAdmin = callerDoc.data()?.roles?.admin === true
+  if (callerDoc.data()?.roles?.coach !== true && !isAdmin) {
     return { error: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
   }
 
-  return { caller }
+  return { caller, isAdmin }
+}
+
+// Admins may target another coach via `coachId`; everyone else acts on their own uid.
+function resolveCoachId(
+  verification: { caller: { uid: string }; isAdmin: boolean },
+  target: string | null | undefined
+) {
+  return verification.isAdmin && target ? target : verification.caller.uid
 }
 
 export async function POST(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
-  const coachId = verification.caller.uid
-  const combos = normalizeOpenSlotInput(
-    (await request.json()) as { dates?: unknown; times?: unknown }
-  )
+  const body = (await request.json()) as {
+    dates?: unknown
+    times?: unknown
+    coachId?: string
+  }
+  const coachId = resolveCoachId(verification, body.coachId)
+  const combos = normalizeOpenSlotInput(body)
   if (!combos) {
     return NextResponse.json({ error: 'Selecciona al menos un día y una hora.' }, { status: 400 })
   }
@@ -83,12 +95,14 @@ export async function DELETE(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
-  const id = new URL(request.url).searchParams.get('id')
+  const url = new URL(request.url)
+  const id = url.searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'Horario inválido.' }, { status: 400 })
 
+  const coachId = resolveCoachId(verification, url.searchParams.get('coachId'))
   const ref = adminDb.collection('coachOpenSlots').doc(id)
   const current = await ref.get()
-  if (!current.exists || current.data()?.coachId !== verification.caller.uid) {
+  if (!current.exists || current.data()?.coachId !== coachId) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
 

@@ -26,19 +26,28 @@ async function verifyCoach(request: Request) {
 
   const caller = await adminAuth.verifyIdToken(token)
   const callerDoc = await adminDb.collection('users').doc(caller.uid).get()
-  if (callerDoc.data()?.roles?.coach !== true && callerDoc.data()?.roles?.admin !== true) {
+  const isAdmin = callerDoc.data()?.roles?.admin === true
+  if (callerDoc.data()?.roles?.coach !== true && !isAdmin) {
     return { error: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
   }
 
-  return { caller }
+  return { caller, isAdmin }
+}
+
+// Admins may target another coach via `coachId`; everyone else acts on their own uid.
+function resolveCoachId(
+  verification: { caller: { uid: string }; isAdmin: boolean },
+  target: string | null
+) {
+  return verification.isAdmin && target ? target : verification.caller.uid
 }
 
 export async function GET(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
-  const coachId = verification.caller.uid
   const url = new URL(request.url)
+  const coachId = resolveCoachId(verification, url.searchParams.get('coachId'))
   const range = monthRange(url.searchParams.get('month'))
   const [coachDoc, bookingsSnapshot, blocksSnapshot, openSlotsSnapshot] = await Promise.all([
     adminDb.collection('coaches').doc(coachId).get(),
@@ -78,7 +87,9 @@ export async function POST(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
-  const input = normalizeScheduleBlockInput((await request.json()) as ScheduleBlockInput)
+  const body = (await request.json()) as ScheduleBlockInput & { coachId?: string }
+  const coachId = resolveCoachId(verification, body.coachId ?? null)
+  const input = normalizeScheduleBlockInput(body)
   if (!input) {
     return NextResponse.json({ error: 'Datos de bloqueo inválidos.' }, { status: 400 })
   }
@@ -87,7 +98,7 @@ export async function POST(request: Request) {
   const ref = adminDb.collection('coachScheduleBlocks').doc()
   const block: CoachScheduleBlock = {
     id: ref.id,
-    coachId: verification.caller.uid,
+    coachId,
     createdAt: now,
     updatedAt: now,
     ...input,
@@ -105,9 +116,10 @@ export async function DELETE(request: Request) {
   const id = url.searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'Bloqueo inválido.' }, { status: 400 })
 
+  const coachId = resolveCoachId(verification, url.searchParams.get('coachId'))
   const ref = adminDb.collection('coachScheduleBlocks').doc(id)
   const current = await ref.get()
-  if (!current.exists || current.data()?.coachId !== verification.caller.uid) {
+  if (!current.exists || current.data()?.coachId !== coachId) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
 

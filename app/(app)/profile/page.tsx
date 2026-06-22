@@ -12,9 +12,8 @@ import { patchAuthed } from '@/lib/client/authed-api'
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, logout, refreshUser } = useUser() as {
+  const { user, refreshUser } = useUser() as {
     user: any
-    logout: () => void
     refreshUser?: () => Promise<unknown>
   }
   const { roles } = useRole()
@@ -149,9 +148,6 @@ export default function ProfilePage() {
         />
       </div>
 
-      <button type="button" onClick={logout} className="btn btn-outline w-full">
-        Cerrar sesión
-      </button>
     </div>
   )
 }

@@ -1,10 +1,8 @@
 'use client'
 
-import { onAuthStateChanged, type User } from 'firebase/auth'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { auth } from '@/firebase/index'
 
 const LINKS = [
   { href: '/#inicio', label: 'Inicio' },
@@ -17,7 +15,6 @@ const LINKS = [
 export default function SiteNav() {
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
-  const [user, setUser] = useState<User | null>(auth.currentUser)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16)
@@ -25,8 +22,6 @@ export default function SiteNav() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
-
-  useEffect(() => onAuthStateChanged(auth, setUser), [])
 
   return (
     <header
@@ -73,56 +68,31 @@ export default function SiteNav() {
         </ul>
 
         <div className="hidden items-center gap-3 lg:flex">
-          {user ? (
-            <>
-              <Link
-                href="/profile"
-                className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
-                style={{ color: 'var(--c-ocean)' }}
-              >
-                Mi perfil
-              </Link>
-              <Link
-                href="/dashboard"
-                className="rounded-full px-5 py-2.5 text-[0.92rem] font-semibold text-white"
-                style={{
-                  background: 'var(--c-aqua-strong)',
-                  boxShadow: 'var(--shadow-aqua)',
-                  transition: 'transform 280ms var(--ease-expo), filter 280ms var(--ease-expo)',
-                }}
-              >
-                Mi cuenta
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
-                style={{ color: 'var(--c-ocean)' }}
-              >
-                Ingresar
-              </Link>
-              <a
-                href="/login?intent=coach"
-                className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
-                style={{ color: 'var(--c-ocean)' }}
-              >
-                Soy coach
-              </a>
-              <Link
-                href="/#coaches"
-                className="rounded-full px-5 py-2.5 text-[0.92rem] font-semibold text-white"
-                style={{
-                  background: 'var(--c-aqua-strong)',
-                  boxShadow: 'var(--shadow-aqua)',
-                  transition: 'transform 280ms var(--ease-expo), filter 280ms var(--ease-expo)',
-                }}
-              >
-                Encontrar coach
-              </Link>
-            </>
-          )}
+          <Link
+            href="/login"
+            className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
+            style={{ color: 'var(--c-ocean)' }}
+          >
+            Ingresar
+          </Link>
+          <a
+            href="/login?intent=coach"
+            className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
+            style={{ color: 'var(--c-ocean)' }}
+          >
+            Soy coach
+          </a>
+          <Link
+            href="/#coaches"
+            className="rounded-full px-5 py-2.5 text-[0.92rem] font-semibold text-white"
+            style={{
+              background: 'var(--c-aqua-strong)',
+              boxShadow: 'var(--shadow-aqua)',
+              transition: 'transform 280ms var(--ease-expo), filter 280ms var(--ease-expo)',
+            }}
+          >
+            Encontrar coach
+          </Link>
         </div>
 
         <button
@@ -192,59 +162,33 @@ export default function SiteNav() {
             </li>
           ))}
           <li className="mt-2 pb-2">
-            {user ? (
-              <>
-                <Link
-                  href="/profile"
-                  onClick={() => setOpen(false)}
-                  className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
-                  style={{
-                    color: 'var(--c-ocean)',
-                    border: '1px solid var(--c-border)',
-                  }}
-                >
-                  Mi perfil
-                </Link>
-                <Link
-                  href="/dashboard"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-full px-5 py-3 text-center text-base font-semibold text-white"
-                  style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
-                >
-                  Mi cuenta
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
-                  style={{
-                    color: 'var(--c-ocean)',
-                    border: '1px solid var(--c-border)',
-                  }}
-                >
-                  Ingresar
-                </Link>
-                <a
-                  href="/login?intent=coach"
-                  onClick={() => setOpen(false)}
-                  className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
-                  style={{ color: 'var(--c-ocean)', border: '1px solid var(--c-border)' }}
-                >
-                  Soy coach
-                </a>
-                <Link
-                  href="/#coaches"
-                  onClick={() => setOpen(false)}
-                  className="block rounded-full px-5 py-3 text-center text-base font-semibold text-white"
-                  style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
-                >
-                  Encontrar coach
-                </Link>
-              </>
-            )}
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
+              style={{
+                color: 'var(--c-ocean)',
+                border: '1px solid var(--c-border)',
+              }}
+            >
+              Ingresar
+            </Link>
+            <a
+              href="/login?intent=coach"
+              onClick={() => setOpen(false)}
+              className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
+              style={{ color: 'var(--c-ocean)', border: '1px solid var(--c-border)' }}
+            >
+              Soy coach
+            </a>
+            <Link
+              href="/#coaches"
+              onClick={() => setOpen(false)}
+              className="block rounded-full px-5 py-3 text-center text-base font-semibold text-white"
+              style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
+            >
+              Encontrar coach
+            </Link>
           </li>
         </ul>
       </div>

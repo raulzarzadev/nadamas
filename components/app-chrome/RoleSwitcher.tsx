@@ -40,7 +40,10 @@ export default function RoleSwitcher({
   currentRole?: 'athlete' | 'coach' | 'admin'
 }) {
   const { roles, activeRole, setActiveRole, enableCoach } = useRole()
-  const { user } = useUser() as { user: Parameters<typeof initialsFrom>[0] }
+  const { user, logout } = useUser() as {
+    user: Parameters<typeof initialsFrom>[0]
+    logout: () => void
+  }
   const pathname = usePathname()
   const displayedRole = currentRole ?? activeRole
   const secondaryLinks = SECONDARY_NAV_BY_ROLE[displayedRole]
@@ -200,6 +203,39 @@ export default function RoleSwitcher({
                   {busy ? 'Activando…' : 'Activar modo entrenador'}
                 </button>
               )}
+            </li>
+            {roles.admin && (
+              <li role="none">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setActiveRole('admin')
+                    setOpen(false)
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+                >
+                  Modo {ROLE_LABEL.admin}
+                </button>
+              </li>
+            )}
+
+            <li role="none" aria-hidden="true">
+              <div className="my-1 border-t border-[var(--c-border)]" />
+            </li>
+
+            <li role="none">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  logout()
+                  setOpen(false)
+                }}
+                className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-red-600 hover:bg-[var(--c-surface)] cursor-pointer"
+              >
+                Cerrar sesión
+              </button>
             </li>
           </ul>
         </>

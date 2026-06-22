@@ -1,11 +1,30 @@
 'use client'
 
+import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useUser } from '@/context/UserContext'
 import { useRole } from '@/context/RoleContext'
 import AuthCard from '@comps/AuthCard'
 import Loading from '@comps/Loading'
+
+function LoginHeader() {
+  return (
+    <header className="flex justify-center px-3 pb-6 pt-4">
+      <Link href="/" aria-label="nadamas.app inicio">
+        <Image
+          src="/logo-nadamas.webp"
+          alt=""
+          width={293}
+          height={100}
+          priority
+          className="h-9 w-auto"
+        />
+      </Link>
+    </header>
+  )
+}
 
 function AuthCardSkeleton() {
   return (
@@ -65,8 +84,11 @@ export default function LoginPage() {
 
   if (user === undefined) {
     return (
-      <div className="min-h-[calc(100vh-2rem)] px-3 py-6 sm:grid sm:place-items-center sm:py-10">
-        <AuthCardSkeleton />
+      <div className="min-h-[calc(100vh-2rem)]">
+        <LoginHeader />
+        <div className="px-3 pb-6 sm:grid sm:place-items-center sm:pb-10">
+          <AuthCardSkeleton />
+        </div>
       </div>
     )
   }
@@ -80,8 +102,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-2rem)] px-3 py-6 sm:grid sm:place-items-center sm:py-10">
-      <AuthCard />
+    <div className="min-h-[calc(100vh-2rem)]">
+      <LoginHeader />
+      <div className="px-3 pb-6 sm:grid sm:place-items-center sm:pb-10">
+        <AuthCard />
+      </div>
     </div>
   )
 }
