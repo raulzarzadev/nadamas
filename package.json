@@ -13,9 +13,10 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "emu": "firebase emulators:start --only auth,firestore,storage --project nadamas-b1ecf --import ./.emulator-data --export-on-exit ./.emulator-data",
-    "emu:kill": "pids=$(lsof -ti -i tcp:4000 -i tcp:4400 -i tcp:4500 -i tcp:8080 -i tcp:9099 -i tcp:9150 -i tcp:9199); if [ -n \"$pids\" ]; then kill $pids 2>/dev/null; echo \"stopped emulator pids: $pids\"; else echo 'no emulator processes running'; fi",
+    "emu:kill": "node scripts/kill-emulator.mjs",
     "seed": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 GCLOUD_PROJECT=nadamas-b1ecf node scripts/seed-emulator.mjs",
-    "dev:emu": "NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 GCLOUD_PROJECT=nadamas-b1ecf next dev"
+    "dev:emu": "node scripts/dev-emulator.mjs",
+    "dev:emu:app": "NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 GCLOUD_PROJECT=nadamas-b1ecf next dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -1,16 +1,14 @@
 'use client'
-import { DateField, MoneyField, SelectField, TextField, TimeField } from '@comps/Inputs/FormFields'
+import { MoneyField, SelectField, TextField } from '@comps/Inputs/FormFields'
 import ImageInput from '@comps/Inputs/ImageInput'
 import SaveButton from '@comps/SaveButton'
 import { useEffect, useMemo, useState } from 'react'
-import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
-import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
+import { FiPlus, FiTrash2 } from 'react-icons/fi'
+import type { CoachClassOffering, CoachOfferingSchedule } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { useAutosave } from '@/hooks/useAutosave'
 import {
   createOffering,
-  createOfferingSchedule,
-  OFFERING_DAYS,
   OFFERING_UNITS,
   offeringHeadline,
   offeringPrice,
@@ -22,8 +20,46 @@ import {
 } from '@/lib/coach-offerings'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import AgendaOpenHoursModal, { type AgendaWeekDay } from './AgendaOpenHoursModal'
 import OfferingSummaryCard from './OfferingSummaryCard'
 import ProfileSection from './ProfileSection'
+
+const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+function dateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function buildNextWeekDays(): AgendaWeekDay[] {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date()
+    date.setDate(date.getDate() + index)
+    return {
+      key: dateKey(date),
+      label: `${DAY_LABELS[date.getDay()]} ${date.getDate()}`,
+    }
+  })
+}
+
+function addMinutes(time: string, minutesToAdd: number) {
+  const [hour = 0, minute = 0] = time.split(':').map(Number)
+  const total = Math.min(hour * 60 + minute + minutesToAdd, 23 * 60 + 59)
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+function dayLabelsFromDates(dates: string[]) {
+  return [
+    ...new Set(
+      dates.map((date) => {
+        const parsed = new Date(`${date}T12:00:00`)
+        return DAY_LABELS[parsed.getDay()]
+      })
+    ),
+  ]
+}
 
 export default function OfferingsCard({
   uid,
@@ -52,22 +88,20 @@ export default function OfferingsCard({
   const [offerings, setOfferings] = useState<CoachClassOffering[]>(initial)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [step, setStep] = useState(1)
-  const [scheduleModal, setScheduleModal] = useState<
-    import('@/firebase/coaches/coach.model').CoachOfferingSchedule | null
-  >(null)
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
   const [busyImage, setBusyImage] = useState(false)
   const [imageProgress, setImageProgress] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
-  const [splitOnSave, setSplitOnSave] = useState(true)
 
-  const editing = offerings.find((offering) => offering.id === editingId) || null
+  const legacyWizardEnabled = false as boolean
+  const editing = legacyWizardEnabled
+    ? offerings.find((offering) => offering.id === editingId) || null
+    : null
+  const weekDays = useMemo(() => buildNextWeekDays(), [])
 
   useEffect(() => {
     if (!editingId) setOfferings(initial)
   }, [initial, editingId])
-  useEffect(() => {
-    if (scheduleModal) setSplitOnSave(true)
-  }, [scheduleModal])
 
   const { status: autoStatus, saveNow } = useAutosave(
     JSON.stringify(offerings),
@@ -81,33 +115,11 @@ export default function OfferingsCard({
     )
   }
 
-  function splitScheduleIntoSlots(
-    schedule: import('@/firebase/coaches/coach.model').CoachOfferingSchedule,
-    durationMinutes: number
-  ): import('@/firebase/coaches/coach.model').CoachOfferingSchedule[] {
-    const [startH, startM] = schedule.startTime.split(':').map(Number)
-    const [endH, endM] = schedule.endTime.split(':').map(Number)
-    const startTotal = startH * 60 + startM
-    const endTotal = endH * 60 + endM
-    if (endTotal <= startTotal + durationMinutes) return [schedule]
-    const slots: import('@/firebase/coaches/coach.model').CoachOfferingSchedule[] = []
-    for (let t = startTotal; t + durationMinutes <= endTotal; t += durationMinutes) {
-      const fmt = (mins: number) =>
-        `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
-      slots.push({
-        ...schedule,
-        id: crypto.randomUUID(),
-        startTime: fmt(t),
-        endTime: fmt(t + durationMinutes),
-      })
-    }
-    return slots
-  }
-
   function closeStepper() {
     setEditingId(null)
     setStep(1)
     setError(null)
+    setScheduleModalOpen(false)
   }
 
   function cancelStepper() {
@@ -193,10 +205,35 @@ export default function OfferingsCard({
   }
 
   function startAdd() {
-    const next = createOffering()
-    setOfferings((current) => [...current, next])
-    setStep(1)
-    setEditingId(next.id)
+    setScheduleModalOpen(true)
+  }
+
+  function addSchedulesFromModal(dates: string[], times: string[]) {
+    if (dates.length === 0 || times.length === 0) return
+
+    const days = dayLabelsFromDates(dates)
+    const durationMinutes = editing?.durationMinutes ?? 60
+    const schedules: CoachOfferingSchedule[] = times.map((time) => ({
+      id: crypto.randomUUID(),
+      timeMode: 'fixed',
+      days,
+      startTime: time,
+      endTime: addMinutes(time, durationMinutes),
+      availabilityMode: 'dates',
+      availableDates: dates,
+    }))
+
+    if (editing) {
+      patchEditing({
+        schedules: [...resolveOfferingSchedules(editing), ...schedules],
+      })
+    } else {
+      const next = createOffering()
+      next.schedules = schedules
+      setOfferings((current) => [...current, next])
+    }
+
+    setScheduleModalOpen(false)
   }
 
   if (editing) {
@@ -453,14 +490,6 @@ export default function OfferingsCard({
                       <div className="flex shrink-0 gap-1">
                         <button
                           type="button"
-                          aria-label="Editar horario"
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => setScheduleModal({ ...schedule })}
-                        >
-                          <FiEdit2 aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
                           aria-label="Quitar horario"
                           className="btn btn-ghost btn-sm text-[var(--c-error,#b91c1c)]"
                           disabled={resolveOfferingSchedules(editing).length <= 1}
@@ -483,7 +512,7 @@ export default function OfferingsCard({
               <button
                 type="button"
                 className="btn btn-ghost self-start"
-                onClick={() => setScheduleModal(createOfferingSchedule())}
+                onClick={() => setScheduleModalOpen(true)}
               >
                 <FiPlus /> Agregar horario
               </button>
@@ -535,242 +564,14 @@ export default function OfferingsCard({
           </div>
         </ProfileSection>
 
-        {scheduleModal && editing && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Configurar horario"
-            className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setScheduleModal(null)
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setScheduleModal(null)
-            }}
-          >
-            <div className="flex w-full max-w-lg flex-col gap-4 rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)]">
-              <h3 className="text-base font-bold text-[var(--c-ocean-mid)]">Configurar horario</h3>
-
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-semibold text-[var(--c-text-2)]">
-                  Tipo de horario
-                </span>
-                <div className="flex gap-2">
-                  {(
-                    [
-                      ['fixed', 'Horario fijo'],
-                      ['open', 'Horario abierto'],
-                    ] as const
-                  ).map(([timeMode, label]) => {
-                    const isActive = (scheduleModal.timeMode ?? 'fixed') === timeMode
-                    return (
-                      <button
-                        key={timeMode}
-                        type="button"
-                        className={`rounded-full px-3 py-1 text-sm font-semibold ${isActive ? 'bg-[var(--c-ocean)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-ocean)]'}`}
-                        onClick={() => setScheduleModal((s) => s && { ...s, timeMode })}
-                      >
-                        {label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {scheduleIsOpen(scheduleModal) ? (
-                <div className="rounded-[var(--r-sm)] border border-dashed border-[var(--c-border)] bg-[var(--c-bg)] p-3 text-sm text-[var(--c-text-2)]">
-                  Publica esta clase como horario abierto para acordar día y hora con cada alumno.
-                </div>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-[var(--c-text-2)]">
-                      Fechas disponibles
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {(
-                        [
-                          ['always', 'Siempre'],
-                          ['next_week', 'Solo próxima semana'],
-                          ['dates', 'Solo algunas fechas'],
-                        ] as const
-                      ).map(([mode, label]) => {
-                        const isActive = (scheduleModal.availabilityMode ?? 'always') === mode
-                        return (
-                          <button
-                            key={mode}
-                            type="button"
-                            className={`rounded-full px-3 py-1 text-sm font-semibold ${isActive ? 'bg-[var(--c-ocean)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-ocean)]'}`}
-                            onClick={() =>
-                              setScheduleModal((s) => s && { ...s, availabilityMode: mode })
-                            }
-                          >
-                            {label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                    {(scheduleModal.availabilityMode ?? 'always') === 'dates' && (
-                      <div className="grid gap-3 sm:grid-cols-[16rem_1fr] sm:items-end">
-                        <DateField
-                          label={`Agregar fecha · ${(scheduleModal.availableDates || []).length} ${(scheduleModal.availableDates || []).length === 1 ? 'fecha' : 'fechas'}`}
-                          onChange={(event) => {
-                            if (!event.target.value) return
-                            setScheduleModal(
-                              (s) =>
-                                s && {
-                                  ...s,
-                                  availableDates: [
-                                    ...new Set([...(s.availableDates || []), event.target.value]),
-                                  ].sort(),
-                                }
-                            )
-                            event.target.value = ''
-                          }}
-                        />
-                        <div className="flex min-h-10 flex-wrap gap-2">
-                          {(scheduleModal.availableDates || []).length === 0 && (
-                            <span className="text-sm text-[var(--c-text-2)]">Sin fechas aún.</span>
-                          )}
-                          {(scheduleModal.availableDates || []).map((d) => (
-                            <button
-                              key={d}
-                              type="button"
-                              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-1 text-sm font-semibold text-[var(--c-ocean)]"
-                              onClick={() =>
-                                setScheduleModal(
-                                  (s) =>
-                                    s && {
-                                      ...s,
-                                      availableDates: (s.availableDates || []).filter(
-                                        (x) => x !== d
-                                      ),
-                                    }
-                                )
-                              }
-                            >
-                              {new Date(`${d}T12:00:00`).toLocaleDateString('es-MX', {
-                                day: 'numeric',
-                                month: 'short',
-                              })}
-                              <span aria-hidden="true">×</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <span className="text-xs font-semibold text-[var(--c-text-2)]">Días</span>
-                    <div className="flex flex-wrap gap-2">
-                      {OFFERING_DAYS.map((day) => {
-                        const isSelected = scheduleModal.days.includes(day)
-                        return (
-                          <button
-                            key={day}
-                            type="button"
-                            className={`rounded-full px-3 py-1 text-sm font-semibold ${isSelected ? 'bg-[var(--c-ocean)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-ocean)]'}`}
-                            onClick={() =>
-                              setScheduleModal(
-                                (s) =>
-                                  s && {
-                                    ...s,
-                                    days: isSelected
-                                      ? s.days.filter((d) => d !== day)
-                                      : [...s.days, day],
-                                  }
-                              )
-                            }
-                          >
-                            {day}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <TimeField
-                      label="Desde"
-                      value={scheduleModal.startTime}
-                      onChange={(e) =>
-                        setScheduleModal((s) => s && { ...s, startTime: e.target.value })
-                      }
-                    />
-                    <TimeField
-                      label="Hasta"
-                      value={scheduleModal.endTime}
-                      onChange={(e) =>
-                        setScheduleModal((s) => s && { ...s, endTime: e.target.value })
-                      }
-                    />
-                  </div>
-
-                  {(() => {
-                    const dur = editing.durationMinutes ?? 60
-                    const [sh, sm] = scheduleModal.startTime.split(':').map(Number)
-                    const [eh, em] = scheduleModal.endTime.split(':').map(Number)
-                    const count = Math.floor((eh * 60 + em - (sh * 60 + sm)) / dur)
-                    if (count <= 1) return null
-                    return (
-                      <label className="flex cursor-pointer items-center gap-2">
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-sm"
-                          checked={splitOnSave}
-                          onChange={(e) => setSplitOnSave(e.target.checked)}
-                        />
-                        <span className="text-sm text-[var(--c-ocean)]">
-                          Dividir en {count} tramos de {dur} min
-                        </span>
-                      </label>
-                    )
-                  })()}
-                </>
-              )}
-
-              <div className="flex justify-end gap-3 border-t border-[var(--c-border)] pt-4">
-                <button
-                  type="button"
-                  className="btn btn-ghost"
-                  onClick={() => setScheduleModal(null)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="btn bg-[var(--c-aqua)] text-white hover:bg-[var(--c-aqua-strong)]"
-                  onClick={() => {
-                    const dur = editing.durationMinutes ?? 60
-                    const [sh, sm] = scheduleModal.startTime.split(':').map(Number)
-                    const [eh, em] = scheduleModal.endTime.split(':').map(Number)
-                    const count = Math.floor((eh * 60 + em - (sh * 60 + sm)) / dur)
-                    const shouldSplit = splitOnSave && count > 1
-                    const schedulesToAdd = shouldSplit
-                      ? splitScheduleIntoSlots(scheduleModal, dur)
-                      : [scheduleModal]
-                    const isNew = !resolveOfferingSchedules(editing).some(
-                      (s) => s.id === scheduleModal.id
-                    )
-                    patchEditing({
-                      schedules: isNew
-                        ? [...resolveOfferingSchedules(editing), ...schedulesToAdd]
-                        : [
-                            ...resolveOfferingSchedules(editing).filter(
-                              (s) => s.id !== scheduleModal.id
-                            ),
-                            ...schedulesToAdd,
-                          ],
-                    })
-                    setScheduleModal(null)
-                  }}
-                >
-                  Guardar
-                </button>
-              </div>
-            </div>
-          </div>
+        {scheduleModalOpen && (
+          <AgendaOpenHoursModal
+            weekDays={weekDays}
+            defaultDate={weekDays[0]?.key}
+            busy={false}
+            onClose={() => setScheduleModalOpen(false)}
+            onSubmit={addSchedulesFromModal}
+          />
         )}
       </>
     )
@@ -797,37 +598,34 @@ export default function OfferingsCard({
             key={offering.id}
             offering={offering}
             actions={
-              <>
-                <button
-                  type="button"
-                  aria-label="Editar clase"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => {
-                    setStep(1)
-                    setEditingId(offering.id)
-                  }}
-                >
-                  <FiEdit2 aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Quitar clase"
-                  className="btn btn-ghost btn-sm text-[var(--c-error,#b91c1c)]"
-                  onClick={() =>
-                    setOfferings((current) => current.filter((item) => item.id !== offering.id))
-                  }
-                >
-                  <FiTrash2 aria-hidden="true" />
-                </button>
-              </>
+              <button
+                type="button"
+                aria-label="Quitar clase"
+                className="btn btn-ghost btn-sm text-[var(--c-error,#b91c1c)]"
+                onClick={() =>
+                  setOfferings((current) => current.filter((item) => item.id !== offering.id))
+                }
+              >
+                <FiTrash2 aria-hidden="true" />
+              </button>
             }
           />
         ))}
       </div>
 
       <button type="button" className="btn btn-ghost self-start" onClick={startAdd}>
-        <FiPlus /> Agregar clase
+        <FiPlus /> Abrir horarios
       </button>
+
+      {scheduleModalOpen && (
+        <AgendaOpenHoursModal
+          weekDays={weekDays}
+          defaultDate={weekDays[0]?.key}
+          busy={false}
+          onClose={() => setScheduleModalOpen(false)}
+          onSubmit={addSchedulesFromModal}
+        />
+      )}
 
       <div className="flex justify-end border-t border-[var(--c-border)] pt-5">
         <SaveButton

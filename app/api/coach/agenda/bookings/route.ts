@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { Booking } from '@/lib/coach-booking'
 import { DAY_TO_INDEX } from '@/lib/coach-offerings'
+import { type StudentProgress, studentProgressId } from '@/lib/coach-student-progress'
 import { publicNameFromUser } from '@/lib/public-name'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 
@@ -96,6 +97,29 @@ export async function POST(request: Request) {
   }
 
   await ref.set(booking)
+  const progressRef = adminDb
+    .collection('coachStudentProgress')
+    .doc(studentProgressId(coachId, booking.athleteId))
+  const progressSnap = await progressRef.get()
+  if (!progressSnap.exists) {
+    const progress: StudentProgress = {
+      id: progressRef.id,
+      coachId,
+      athleteId: booking.athleteId,
+      athleteName: booking.athleteName,
+      athleteEmail: booking.athleteEmail ?? null,
+      ...(booking.athletePhone ? { athletePhone: booking.athletePhone } : {}),
+      level: 'Inicial',
+      goal: '',
+      lastNote: '',
+      nextFocus: '',
+      coachAssessment: 1,
+      createdAt: now,
+      updatedAt: now,
+    }
+    await progressRef.set(progress)
+  }
+
   return NextResponse.json({ booking })
 }
 

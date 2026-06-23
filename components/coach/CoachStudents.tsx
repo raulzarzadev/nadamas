@@ -9,6 +9,7 @@ import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
 import type { StudentProgress, StudentProgressEntry } from '@/lib/coach-student-progress'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import AddStudentModal, { type CreatedStudentPayload } from './AddStudentModal'
 import StudentProgressModal from './StudentProgressModal'
 
 interface StudentSummary {
@@ -28,6 +29,7 @@ const ENTRY_PREVIEW = 4
 export default function CoachStudents() {
   const [students, setStudents] = useState<StudentSummary[] | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [addModalOpen, setAddModalOpen] = useState(false)
 
   useEffect(() => {
     getAuthed('/api/coach/students')
@@ -42,11 +44,37 @@ export default function CoachStudents() {
 
   if (students === undefined) return <Loading />
 
+  const addStudent = (student: CreatedStudentPayload) => {
+    setStudents((current) =>
+      [...(current || []), student].sort((a, b) => a.name.localeCompare(b.name))
+    )
+    setAddModalOpen(false)
+  }
+
   if (!students.length) {
     return (
-      <div className="rounded-[var(--r-md)] border border-dashed border-(--c-border) bg-(--c-surface) p-10 text-center text-sm text-(--c-text-2)">
-        {error || 'Aún no tienes alumnos. Cuando alguien reserve una clase, aparecerá aquí.'}
-      </div>
+      <>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-(--c-text-2)">
+            {error || 'Aún no tienes alumnos. Agrega uno para empezar a registrar progreso.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setAddModalOpen(true)}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-aqua) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+          >
+            <FiPlus aria-hidden="true" /> Agregar alumno
+          </button>
+        </div>
+
+        <div className="rounded-[var(--r-md)] border border-dashed border-(--c-border) bg-(--c-surface) p-10 text-center text-sm text-(--c-text-2)">
+          Cuando tengas alumnos, aparecerán aquí.
+        </div>
+
+        {addModalOpen && (
+          <AddStudentModal onClose={() => setAddModalOpen(false)} onCreated={addStudent} />
+        )}
+      </>
     )
   }
 
@@ -64,15 +92,31 @@ export default function CoachStudents() {
     )
 
   return (
-    <ul className="flex flex-col gap-3">
-      {students.map((student) => (
-        <StudentCard
-          key={student.athleteId}
-          student={student}
-          onProgressSaved={(entry, progress) => updateStudent(student.athleteId, entry, progress)}
-        />
-      ))}
-    </ul>
+    <>
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setAddModalOpen(true)}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-aqua) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+        >
+          <FiPlus aria-hidden="true" /> Agregar alumno
+        </button>
+      </div>
+
+      <ul className="flex flex-col gap-3">
+        {students.map((student) => (
+          <StudentCard
+            key={student.athleteId}
+            student={student}
+            onProgressSaved={(entry, progress) => updateStudent(student.athleteId, entry, progress)}
+          />
+        ))}
+      </ul>
+
+      {addModalOpen && (
+        <AddStudentModal onClose={() => setAddModalOpen(false)} onCreated={addStudent} />
+      )}
+    </>
   )
 }
 

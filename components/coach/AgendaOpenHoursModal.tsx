@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 
 const HOUR_OPTIONS = Array.from(
   { length: 16 },
@@ -10,6 +11,63 @@ const HOUR_OPTIONS = Array.from(
 export interface AgendaWeekDay {
   key: string
   label: string
+}
+
+const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+function dateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function dateFromKey(key: string) {
+  return new Date(`${key}T12:00:00`)
+}
+
+function startOfWeek(date: Date) {
+  const next = new Date(date)
+  const day = next.getDay()
+  next.setHours(0, 0, 0, 0)
+  next.setDate(next.getDate() + (day === 0 ? -6 : 1 - day))
+  return next
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function buildWeekDays(start: Date): AgendaWeekDay[] {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(start, index)
+    return {
+      key: dateKey(date),
+      label: `${DAY_LABELS[date.getDay()]}|${date.getDate()}`,
+    }
+  })
+}
+
+function weekRangeLabel(days: AgendaWeekDay[]) {
+  if (!days.length) return ''
+  const first = dateFromKey(days[0].key)
+  const last = dateFromKey(days[days.length - 1].key)
+  const format = (date: Date) =>
+    date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+  return `${format(first)} - ${format(last)}`
+}
+
+function isPastDay(key: string) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const day = new Date(`${key}T00:00:00`)
+  return day < today
+}
+
+function isPastDateTime(key: string, time: string) {
+  return new Date(`${key}T${time}:00`).getTime() <= Date.now()
 }
 
 export default function AgendaOpenHoursModal({
@@ -25,8 +83,13 @@ export default function AgendaOpenHoursModal({
   onClose: () => void
   onSubmit: (dates: string[], times: string[]) => void
 }) {
-  const [dates, setDates] = useState<Set<string>>(() => new Set(defaultDate ? [defaultDate] : []))
+  const initialKey = defaultDate || weekDays[0]?.key || dateKey(new Date())
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(dateFromKey(initialKey)))
+  const [dates, setDates] = useState<Set<string>>(
+    () => new Set(defaultDate && !isPastDay(defaultDate) ? [defaultDate] : [])
+  )
   const [times, setTimes] = useState<Set<string>>(() => new Set())
+  const visibleWeekDays = buildWeekDays(weekStart)
 
   const toggle = (set: Set<string>, value: string) => {
     const next = new Set(set)
@@ -35,7 +98,11 @@ export default function AgendaOpenHoursModal({
     return next
   }
 
-  const canSubmit = dates.size > 0 && times.size > 0 && !busy
+  const selectedDates = [...dates]
+  const timeDisabled = (time: string) =>
+    selectedDates.length > 0 && selectedDates.every((date) => isPastDateTime(date, time))
+  const validTimes = [...times].filter((time) => !timeDisabled(time))
+  const canSubmit = dates.size > 0 && validTimes.length > 0 && !busy
 
   return (
     <div
@@ -60,24 +127,56 @@ export default function AgendaOpenHoursModal({
         </div>
 
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
-            Días
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {weekDays.map((day) => {
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
+              Días
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label="Semana anterior"
+                onClick={() => setWeekStart((current) => addDays(current, -7))}
+                className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
+              >
+                <FiChevronLeft aria-hidden="true" />
+              </button>
+              <span className="min-w-[7.5rem] text-center text-xs font-bold text-[var(--c-ocean)]">
+                {weekRangeLabel(visibleWeekDays)}
+              </span>
+              <button
+                type="button"
+                aria-label="Semana siguiente"
+                onClick={() => setWeekStart((current) => addDays(current, 7))}
+                className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
+              >
+                <FiChevronRight aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-1.5">
+            {visibleWeekDays.map((day) => {
               const active = dates.has(day.key)
+              const disabled = isPastDay(day.key)
+              const isWeekend = [0, 6].includes(dateFromKey(day.key).getDay())
+              const [weekday, dayNumber] = day.label.split('|')
               return (
                 <button
                   key={day.key}
                   type="button"
+                  disabled={disabled}
                   onClick={() => setDates((current) => toggle(current, day.key))}
-                  className={`rounded-[var(--r-sm)] border px-3.5 py-2 text-sm font-semibold transition-colors ${
-                    active
-                      ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                      : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                  className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-[var(--r-sm)] border px-1.5 py-1.5 text-center text-xs font-bold leading-tight transition-colors ${
+                    disabled
+                      ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
+                      : active
+                        ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                        : isWeekend
+                          ? 'border-emerald-200 bg-emerald-50 text-[var(--c-ocean)] hover:bg-emerald-100'
+                          : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
                   }`}
                 >
-                  {day.label}
+                  <span>{weekday}</span>
+                  <span className="text-sm">{dayNumber}</span>
                 </button>
               )
             })}
@@ -91,15 +190,19 @@ export default function AgendaOpenHoursModal({
           <div className="flex flex-wrap gap-2">
             {HOUR_OPTIONS.map((time) => {
               const active = times.has(time)
+              const disabled = timeDisabled(time)
               return (
                 <button
                   key={time}
                   type="button"
+                  disabled={disabled}
                   onClick={() => setTimes((current) => toggle(current, time))}
                   className={`rounded-[var(--r-sm)] border px-3.5 py-2 text-sm font-semibold transition-colors ${
-                    active
-                      ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                      : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                    disabled
+                      ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
+                      : active
+                        ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                        : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
                   }`}
                 >
                   {time}
@@ -113,7 +216,7 @@ export default function AgendaOpenHoursModal({
           <button
             type="button"
             disabled={!canSubmit}
-            onClick={() => onSubmit([...dates], [...times])}
+            onClick={() => onSubmit([...dates], validTimes)}
             className="min-h-12 rounded-full bg-[var(--c-aqua)] font-bold text-white transition-opacity hover:opacity-90 disabled:bg-slate-400 disabled:opacity-100"
           >
             Abrir horario(s)

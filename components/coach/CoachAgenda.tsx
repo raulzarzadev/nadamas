@@ -4,6 +4,7 @@ import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiUnlock, FiX } from 'react-icons/fi'
+import Sheet from '@/components/ui/sheet'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
@@ -14,6 +15,9 @@ import AgendaOpenHoursModal from './AgendaOpenHoursModal'
 const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
 
 type ActiveSlot = { date: string; startTime: string; endTime: string; locationName: string }
+type ConfirmAction =
+  | { kind: 'cancel-booking'; booking: Booking }
+  | { kind: 'delete-slot'; slot: CoachAvailableSlot }
 
 export default function CoachAgenda({ coachId }: { coachId?: string }) {
   // When an admin opens another coach's agenda, `coachId` targets that coach and
@@ -28,6 +32,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const [error, setError] = useState<string | null>(null)
   const [openHoursOpen, setOpenHoursOpen] = useState(false)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
 
   const monthOfSelected = selectedDate.slice(0, 7)
 
@@ -155,6 +160,32 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       await postAuthed('/api/coach/agenda/bookings', { ...slot, ...payload })
       setAddStudentSlot(null)
     })
+
+  const confirmCopy =
+    confirmAction?.kind === 'cancel-booking'
+      ? {
+          title: 'Cancelar clase',
+          body: `Se cancelará la clase de ${confirmAction.booking.athleteName} a las ${confirmAction.booking.startTime}. El alumno seguirá guardado en tu lista.`,
+          action: 'Cancelar clase',
+        }
+      : confirmAction?.kind === 'delete-slot'
+        ? {
+            title: 'Eliminar horario',
+            body: `Se eliminará el horario de las ${confirmAction.slot.startTime}. Ya no aparecerá como disponible para alumnos.`,
+            action: 'Eliminar horario',
+          }
+        : null
+
+  const runConfirmedAction = () => {
+    if (!confirmAction) return
+    const action = confirmAction
+    setConfirmAction(null)
+    if (action.kind === 'cancel-booking') {
+      cancelBooking(action.booking)
+      return
+    }
+    eliminarSlot(action.slot)
+  }
 
   if (agenda === undefined) return <Loading />
 
@@ -311,7 +342,9 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                       {!adminMode && (
                         <button
                           type="button"
-                          onClick={() => cancelBooking(row.booking)}
+                          onClick={() =>
+                            setConfirmAction({ kind: 'cancel-booking', booking: row.booking })
+                          }
                           disabled={busy}
                           className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-500 transition-colors hover:bg-rose-50 disabled:opacity-50"
                         >
@@ -390,7 +423,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                       )}
                       <RowIconButton
                         ariaLabel="Eliminar este horario"
-                        onClick={() => eliminarSlot(row.slot)}
+                        onClick={() => setConfirmAction({ kind: 'delete-slot', slot: row.slot })}
                         disabled={
                           busy || dayBookings.some((b) => b.startTime === row.slot.startTime)
                         }
@@ -437,6 +470,38 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           onSubmit={(payload) => submitAddStudent(addStudentSlot, payload)}
         />
       )}
+
+      <Sheet
+        open={!!confirmAction}
+        onClose={() => setConfirmAction(null)}
+        label={confirmCopy?.title}
+      >
+        {confirmCopy && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <h3 className="text-xl font-bold text-[var(--c-ocean)]">{confirmCopy.title}</h3>
+              <p className="mt-2 text-sm text-[var(--c-text-2)]">{confirmCopy.body}</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                onClick={runConfirmedAction}
+                disabled={busy}
+                className="min-h-11 rounded-full bg-rose-500 px-4 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {confirmCopy.action}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                className="min-h-11 rounded-full px-4 text-sm font-bold text-[var(--c-text-2)] hover:text-[var(--c-ocean)]"
+              >
+                Volver
+              </button>
+            </div>
+          </div>
+        )}
+      </Sheet>
     </div>
   )
 }
