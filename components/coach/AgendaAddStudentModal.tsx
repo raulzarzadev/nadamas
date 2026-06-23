@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { FiPlus, FiSearch } from 'react-icons/fi'
 import { getAuthed } from '@/lib/client/authed-api'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
@@ -32,7 +33,9 @@ export default function AgendaAddStudentModal({
   const [students, setStudents] = useState<CoachStudent[] | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [manualName, setManualName] = useState('')
+  const [query, setQuery] = useState('')
+  const [mode, setMode] = useState<'search' | 'create'>('search')
+  const [newStudentName, setNewStudentName] = useState('')
 
   useEffect(() => {
     let active = true
@@ -53,11 +56,23 @@ export default function AgendaAddStudentModal({
     }
   }, [])
 
+  const normalizedQuery = query.trim().toLowerCase()
   const selected = students?.find((student) => student.athleteId === selectedId)
-  const canSubmit = !busy && (Boolean(selected) || manualName.trim().length > 0)
+  const matches =
+    students
+      ?.filter((student) => {
+        if (!normalizedQuery) return true
+        return [student.name, student.email || '', student.phone || '']
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedQuery)
+      })
+      .slice(0, 5) || []
+  const canSubmit =
+    !busy && (mode === 'search' ? Boolean(selected) : newStudentName.trim().length > 1)
 
   const submit = () => {
-    if (selected) {
+    if (mode === 'search' && selected) {
       onSubmit({
         athleteId: selected.athleteId,
         athleteName: selected.name,
@@ -66,7 +81,7 @@ export default function AgendaAddStudentModal({
       })
       return
     }
-    const name = manualName.trim()
+    const name = newStudentName.trim()
     if (name) onSubmit({ athleteName: name })
   }
 
@@ -92,62 +107,105 @@ export default function AgendaAddStudentModal({
 
         {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
 
-        {students === undefined ? (
-          <p className="py-6 text-center text-sm text-[var(--c-text-2)]">Cargando alumnos…</p>
-        ) : (
-          <div className="flex max-h-64 flex-col gap-2 overflow-y-auto">
-            {students.length === 0 && (
-              <p className="text-sm text-[var(--c-text-2)]">
-                Aún no tienes alumnos. Escribe un nombre abajo para agregar uno manualmente.
-              </p>
+        {mode === 'search' ? (
+          <>
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem]">
+              <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
+                Buscar alumno
+                <span className="relative">
+                  <FiSearch
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--c-text-2)]"
+                  />
+                  <input
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value)
+                      setSelectedId(null)
+                    }}
+                    placeholder="Nombre, correo o teléfono"
+                    className="min-h-11 w-full rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white pl-9 pr-3 font-normal"
+                  />
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('create')
+                  setNewStudentName(query.trim())
+                  setSelectedId(null)
+                }}
+                className="mt-auto inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 text-sm font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+              >
+                Crear nuevo <FiPlus aria-hidden="true" />
+              </button>
+            </div>
+
+            {students === undefined ? (
+              <p className="py-6 text-center text-sm text-[var(--c-text-2)]">Cargando alumnos...</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex max-h-56 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)]">
+                  {matches.map((student) => {
+                    const active = student.athleteId === selectedId
+                    return (
+                      <button
+                        key={student.athleteId}
+                        type="button"
+                        onClick={() => {
+                          setSelectedId(active ? null : student.athleteId)
+                          setQuery(student.name)
+                        }}
+                        className={`flex items-center gap-3 border-b border-[var(--c-border)] px-3 py-2.5 text-left transition-colors last:border-b-0 ${
+                          active ? 'bg-[var(--c-aqua-light)]/45' : 'hover:bg-[var(--c-surface)]'
+                        }`}
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--c-aqua)] to-[var(--c-ocean)] text-xs font-bold text-white">
+                          {initials(student.name)}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-semibold text-[var(--c-ocean)]">
+                            {student.name}
+                          </span>
+                          {student.email && (
+                            <span className="block truncate text-xs text-[var(--c-text-2)]">
+                              {student.email}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {matches.length === 0 && (
+                  <p className="rounded-[var(--r-sm)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-3 text-sm text-[var(--c-text-2)]">
+                    No hay coincidencias. Puedes crear un alumno nuevo.
+                  </p>
+                )}
+              </div>
             )}
-            {students.map((student) => {
-              const active = student.athleteId === selectedId
-              return (
-                <button
-                  key={student.athleteId}
-                  type="button"
-                  onClick={() => {
-                    setSelectedId(active ? null : student.athleteId)
-                    setManualName('')
-                  }}
-                  className={`flex items-center gap-3 rounded-[var(--r-sm)] border px-3 py-2.5 text-left transition-colors ${
-                    active
-                      ? 'border-[var(--c-aqua)] bg-[var(--c-aqua-light)]/40'
-                      : 'border-[var(--c-border)] hover:bg-[var(--c-surface)]'
-                  }`}
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--c-aqua)] to-[var(--c-ocean)] text-xs font-bold text-white">
-                    {initials(student.name)}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate font-semibold text-[var(--c-ocean)]">
-                      {student.name}
-                    </span>
-                    {student.email && (
-                      <span className="block truncate text-xs text-[var(--c-text-2)]">
-                        {student.email}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              )
-            })}
+          </>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
+            <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
+              Nombre del nuevo alumno
+              <input
+                value={newStudentName}
+                onChange={(event) => setNewStudentName(event.target.value)}
+                placeholder="Ej. Mariana"
+                className="min-h-11 w-full rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 font-normal"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setMode('search')}
+              className="mt-auto inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 text-sm font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+            >
+              Buscar
+            </button>
           </div>
         )}
-
-        <label className="flex flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-          O agrega un nombre manual
-          <input
-            value={manualName}
-            onChange={(event) => {
-              setManualName(event.target.value)
-              setSelectedId(null)
-            }}
-            placeholder="Nombre del alumno"
-            className="min-h-11 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 font-normal"
-          />
-        </label>
 
         <div className="mt-1 flex flex-col gap-2">
           <button
