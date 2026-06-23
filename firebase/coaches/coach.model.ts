@@ -134,7 +134,7 @@ export interface CoachPublic {
   metrics?: CoachMetrics
   bio?: string
   galleryPhotos?: CoachGalleryPhoto[]
-  facePhoto?: CoachPhoto
+  facePhoto?: CoachPhoto | null
   workplacePhotos?: CoachPhoto[]
   achievementPhotos?: CoachPhoto[]
   publicLinks?: CoachPublicLink[]

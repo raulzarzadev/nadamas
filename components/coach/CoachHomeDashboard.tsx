@@ -12,8 +12,8 @@ import type { CoachAgendaPayload } from '@/lib/coach-agenda'
 const ACTION_CARDS = [
   {
     href: '/coach/agenda',
-    title: 'Mis clases',
-    body: 'Clases agendadas, horarios publicados y bloqueos.',
+    title: 'Mis horarios',
+    body: 'Horarios publicados, clases agendadas y bloqueos.',
     icon: FiCalendar,
   },
   {

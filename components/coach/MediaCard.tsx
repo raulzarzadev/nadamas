@@ -14,7 +14,7 @@ const PHOTO_TAGS = ['Yo', 'Lugares de trabajo', 'Logros y eventos', 'Mis clases'
 
 interface MediaValue {
   galleryPhotos?: CoachGalleryPhoto[]
-  facePhoto?: CoachPhoto
+  facePhoto?: CoachPhoto | null
   workplacePhotos?: CoachPhoto[]
   achievementPhotos?: CoachPhoto[]
 }
@@ -37,7 +37,7 @@ function toGallery(value: MediaValue): CoachGalleryPhoto[] {
 
 function toLegacyFields(galleryPhotos: CoachGalleryPhoto[]) {
   return {
-    facePhoto: galleryPhotos.find((photo) => photo.label === 'Yo'),
+    facePhoto: galleryPhotos.find((photo) => photo.label === 'Yo') ?? null,
     workplacePhotos: galleryPhotos.filter((photo) => photo.label === 'Lugares de trabajo'),
     achievementPhotos: galleryPhotos.filter((photo) => photo.label === 'Logros y eventos'),
   }
@@ -54,13 +54,33 @@ export default function MediaCard({
   saving: boolean
   onSave: (v: MediaValue) => void
 }) {
-  const [galleryPhotos, setGalleryPhotos] = useState<CoachGalleryPhoto[]>(toGallery(value || {}))
+  const {
+    galleryPhotos: valueGalleryPhotos,
+    facePhoto: valueFacePhoto,
+    workplacePhotos: valueWorkplacePhotos,
+    achievementPhotos: valueAchievementPhotos,
+  } = value
+  const [galleryPhotos, setGalleryPhotos] = useState<CoachGalleryPhoto[]>(
+    toGallery({
+      galleryPhotos: valueGalleryPhotos,
+      facePhoto: valueFacePhoto,
+      workplacePhotos: valueWorkplacePhotos,
+      achievementPhotos: valueAchievementPhotos,
+    })
+  )
   const [pendingUploads, setPendingUploads] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setGalleryPhotos(toGallery(value || {}))
-  }, [value.galleryPhotos, value.facePhoto, value.workplacePhotos, value.achievementPhotos])
+    setGalleryPhotos(
+      toGallery({
+        galleryPhotos: valueGalleryPhotos,
+        facePhoto: valueFacePhoto,
+        workplacePhotos: valueWorkplacePhotos,
+        achievementPhotos: valueAchievementPhotos,
+      })
+    )
+  }, [valueGalleryPhotos, valueFacePhoto, valueWorkplacePhotos, valueAchievementPhotos])
 
   const uploadFiles = (files: File[]) => {
     const allowedFiles = files.slice(0, Math.max(MAX_GALLERY_PHOTOS - galleryPhotos.length, 0))
@@ -141,9 +161,11 @@ export default function MediaCard({
 
       <div className="flex flex-col gap-3 border-t border-[var(--c-border)] pt-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-[var(--c-text-2)]">
-          {unlabeledCount > 0
-            ? `Falta etiquetar ${unlabeledCount} ${unlabeledCount === 1 ? 'foto' : 'fotos'}.`
-            : 'Cada foto ya tiene contexto para mostrarse mejor en tu perfil.'}
+          {!hasFacePhoto
+            ? 'Falta una foto tuya: etiqueta una foto como Yo.'
+            : unlabeledCount > 0
+              ? `Falta etiquetar ${unlabeledCount} ${unlabeledCount === 1 ? 'foto' : 'fotos'}.`
+              : 'Cada foto ya tiene contexto para mostrarse mejor en tu perfil.'}
         </p>
 
         <SaveButton

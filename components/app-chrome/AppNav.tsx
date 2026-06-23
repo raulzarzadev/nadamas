@@ -55,7 +55,7 @@ export default function AppNav({ role: roleProp }: { role?: RoleName }) {
           </div>
         </div>
 
-        <nav aria-label="Navegación principal" className="flex items-center gap-2">
+        <nav aria-label="Navegación principal" className="grid grid-cols-3 gap-2">
           {primary.map((l) => {
             const active = pathname.startsWith(l.href)
             const Icon = NAV_ICONS[l.icon]
@@ -64,14 +64,15 @@ export default function AppNav({ role: roleProp }: { role?: RoleName }) {
                 key={l.href}
                 href={l.href}
                 aria-current={active ? 'page' : undefined}
-                className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-semibold transition-colors ${
+                className={`flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border px-2.5 py-3 text-center text-sm font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:px-4 ${
                   active
-                    ? 'bg-[var(--c-ocean)] text-white'
-                    : 'text-[var(--c-text-2)] hover:text-[var(--c-ocean)]'
+                    ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                    : 'border-[var(--c-border)] bg-white text-[var(--c-text-2)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]'
                 }`}
               >
-                <Icon aria-hidden="true" className="h-4 w-4" />
-                {l.label}
+                <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 truncate sm:hidden">{l.mobileLabel}</span>
+                <span className="hidden min-w-0 truncate sm:inline">{l.label}</span>
               </Link>
             )
           })}

@@ -7,17 +7,24 @@ export interface NavLink {
   icon: 'home' | 'search' | 'chart' | 'calendar' | 'users' | 'badge' | 'user'
 }
 
-// Primary nav = the two top-level destinations shown as a segmented toggle
-// directly under the header (matches the product design). Everything else
-// lives in the role-pill menu (SECONDARY_NAV_BY_ROLE) so the bar stays clean.
+// Primary nav = the role-specific destinations shown as the sub-navbar directly
+// under the header. Keep the role-switcher menu focused on account and mode
+// actions, not frequent navigation.
 export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
     { href: '/athlete/find-coach', label: 'Buscar coach', mobileLabel: 'Buscar', icon: 'search' },
     { href: '/athlete/bookings', label: 'Mis clases', mobileLabel: 'Clases', icon: 'calendar' },
+    { href: '/athlete/progress', label: 'Mi progreso', mobileLabel: 'Progreso', icon: 'chart' },
   ],
   coach: [
-    { href: '/coach/agenda', label: 'Mis clases', mobileLabel: 'Clases', icon: 'calendar' },
+    { href: '/coach/agenda', label: 'Mis horarios', mobileLabel: 'Horarios', icon: 'calendar' },
     { href: '/coach/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
+    {
+      href: '/coach/coach-profile',
+      label: 'Perfil de coach',
+      mobileLabel: 'Perfil',
+      icon: 'badge',
+    },
   ],
   admin: [
     {
@@ -27,29 +34,22 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
       icon: 'badge',
     },
     { href: '/admin/bookings', label: 'Clases', mobileLabel: 'Clases', icon: 'calendar' },
+    { href: '/admin/users', label: 'Usuarios', mobileLabel: 'Usuarios', icon: 'users' },
   ],
 }
 
-// Secondary nav = reachable from the role-pill dropdown menu.
+// Secondary nav = low-frequency account-adjacent links in the role-pill dropdown.
 export const SECONDARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
     { href: '/athlete/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
-    { href: '/athlete/progress', label: 'Mi progreso', mobileLabel: 'Progreso', icon: 'chart' },
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
   coach: [
     { href: '/coach/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
-    {
-      href: '/coach/coach-profile',
-      label: 'Perfil de coach',
-      mobileLabel: 'Perfil coach',
-      icon: 'badge',
-    },
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
   admin: [
     { href: '/admin/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
-    { href: '/admin/users', label: 'Usuarios', mobileLabel: 'Usuarios', icon: 'users' },
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
 }

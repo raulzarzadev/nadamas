@@ -15,6 +15,7 @@ import {
   offeringsAvailabilitySummary,
   resolveOfferings,
 } from '@/lib/coach-offerings'
+import { coachDisplayPhoto } from '@/lib/coach-photo'
 
 interface DirectoryCoach extends CoachPublic {
   id: string
@@ -28,15 +29,6 @@ const SKILL_LABELS: Record<string, Record<string, string>> = Object.fromEntries(
     Object.fromEntries(dimension.options.map((option) => [option.value, option.label])),
   ])
 )
-
-function coachPhoto(coach: DirectoryCoach) {
-  return (
-    coach.facePhoto?.url ||
-    coach.galleryPhotos?.find((photo) => photo.label === 'Yo')?.url ||
-    coach.avatarUrl ||
-    null
-  )
-}
 
 function skillTag(coach: DirectoryCoach) {
   return (['experiencia', 'personalidad'] as const)
@@ -126,7 +118,11 @@ export default function CoachDirectoryList({
                 key={coach.id}
                 className="flex items-center gap-3 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-3.5 shadow-[var(--shadow-sm)]"
               >
-                <Avatar name={coach.name} src={coachPhoto(coach)} size={52} />
+                <Avatar
+                  name={coach.name}
+                  src={coachDisplayPhoto(coach, coach.avatarUrl)}
+                  size={52}
+                />
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1.5 font-extrabold leading-tight text-[var(--c-ocean)]">
                     <span className="truncate">{coach.name}</span>

@@ -20,6 +20,7 @@ function initialsFrom(
     displayName?: string
     name?: string
     nickname?: string
+    email?: string
   } | null
 ): string {
   const full =
@@ -48,10 +49,12 @@ export default function RoleSwitcher({
   const displayedRole = currentRole ?? activeRole
   const secondaryLinks = SECONDARY_NAV_BY_ROLE[displayedRole]
   const avatarText = displayedRole === 'athlete' ? 'TÚ' : initialsFrom(user)
+  const userEmail = user?.email
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const switcherRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const menuRef = useRef<HTMLUListElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const handleEnableCoach = async () => {
     setBusy(true)
@@ -67,7 +70,7 @@ export default function RoleSwitcher({
   const getItems = () =>
     menuRef.current
       ? Array.from(
-          menuRef.current.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])')
+          menuRef.current.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])')
         )
       : []
 
@@ -76,7 +79,7 @@ export default function RoleSwitcher({
     triggerRef.current?.focus()
   }
 
-  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Escape') {
       e.preventDefault()
       closeAndFocusTrigger()
@@ -84,7 +87,7 @@ export default function RoleSwitcher({
     }
     const items = getItems()
     if (items.length === 0) return
-    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement)
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement)
     let nextIndex: number | null = null
     if (e.key === 'ArrowDown') {
       nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % items.length
@@ -106,14 +109,27 @@ export default function RoleSwitcher({
     if (!open) return
     const items = menuRef.current
       ? Array.from(
-          menuRef.current.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])')
+          menuRef.current.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])')
         )
       : []
     items[0]?.focus()
   }, [open])
 
+  useEffect(() => {
+    if (!open) return
+
+    const closeOnOutsidePointerDown = (event: PointerEvent) => {
+      if (!switcherRef.current?.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsidePointerDown)
+    return () => document.removeEventListener('pointerdown', closeOnOutsidePointerDown)
+  }, [open])
+
   return (
-    <div className="relative">
+    <div ref={switcherRef} className="relative">
       <button
         ref={triggerRef}
         type="button"
@@ -135,110 +151,119 @@ export default function RoleSwitcher({
         </span>
       </button>
       {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} aria-hidden />
-          <ul
-            ref={menuRef}
-            role="menu"
-            onKeyDown={handleMenuKeyDown}
-            className="absolute right-0 z-20 mt-2 w-60 rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] border border-[var(--c-border)] p-2"
-          >
-            {secondaryLinks.map((link) => {
-              const active = pathname.startsWith(link.href)
-              return (
-                <li role="none" key={link.href}>
-                  <Link
-                    role="menuitem"
-                    href={link.href}
-                    aria-current={active ? 'page' : undefined}
-                    onClick={() => setOpen(false)}
-                    className={`block w-full rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
-                      active ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              )
-            })}
+        <div
+          ref={menuRef}
+          role="menu"
+          onKeyDown={handleMenuKeyDown}
+          className="absolute right-0 z-20 mt-2 w-60 rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] border border-[var(--c-border)] p-2"
+        >
+          {userEmail && (
+            <div role="none" className="px-3 py-2">
+              <p className="truncate text-xs font-semibold text-[var(--c-text-2)]">{userEmail}</p>
+            </div>
+          )}
 
-            <li role="none" aria-hidden="true">
+          {userEmail && (
+            <div role="none" aria-hidden="true">
               <div className="my-1 border-t border-[var(--c-border)]" />
-            </li>
+            </div>
+          )}
 
-            <li role="none">
+          {secondaryLinks.map((link) => {
+            const active = pathname.startsWith(link.href)
+            return (
+              <div role="none" key={link.href}>
+                <Link
+                  role="menuitem"
+                  href={link.href}
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => setOpen(false)}
+                  className={`block w-full rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
+                    active ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              </div>
+            )
+          })}
+
+          <div role="none" aria-hidden="true">
+            <div className="my-1 border-t border-[var(--c-border)]" />
+          </div>
+
+          <div role="none">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setActiveRole('athlete')
+                setOpen(false)
+              }}
+              className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+            >
+              Modo {ROLE_LABEL.athlete}
+            </button>
+          </div>
+          <div role="none">
+            {roles.coach ? (
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  setActiveRole('athlete')
+                  setActiveRole('coach')
                   setOpen(false)
                 }}
                 className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
               >
-                Modo {ROLE_LABEL.athlete}
+                Modo {ROLE_LABEL.coach}
               </button>
-            </li>
-            <li role="none">
-              {roles.coach ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setActiveRole('coach')
-                    setOpen(false)
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
-                >
-                  Modo {ROLE_LABEL.coach}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={busy}
-                  onClick={handleEnableCoach}
-                  className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-[var(--c-aqua-strong)] font-semibold hover:bg-[var(--c-surface)] disabled:opacity-50 cursor-pointer"
-                >
-                  {busy ? 'Activando…' : 'Activar modo entrenador'}
-                </button>
-              )}
-            </li>
-            {roles.admin && (
-              <li role="none">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setActiveRole('admin')
-                    setOpen(false)
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
-                >
-                  Modo {ROLE_LABEL.admin}
-                </button>
-              </li>
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy}
+                onClick={handleEnableCoach}
+                className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-[var(--c-aqua-strong)] font-semibold hover:bg-[var(--c-surface)] disabled:opacity-50 cursor-pointer"
+              >
+                {busy ? 'Activando…' : 'Activar modo entrenador'}
+              </button>
             )}
-
-            <li role="none" aria-hidden="true">
-              <div className="my-1 border-t border-[var(--c-border)]" />
-            </li>
-
-            <li role="none">
+          </div>
+          {roles.admin && (
+            <div role="none">
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  logout()
+                  setActiveRole('admin')
                   setOpen(false)
                 }}
-                className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-red-600 hover:bg-[var(--c-surface)] cursor-pointer"
+                className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
               >
-                Cerrar sesión
+                Modo {ROLE_LABEL.admin}
               </button>
-            </li>
-          </ul>
-        </>
+            </div>
+          )}
+
+          <div role="none" aria-hidden="true">
+            <div className="my-1 border-t border-[var(--c-border)]" />
+          </div>
+
+          <div role="none">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                logout()
+                setOpen(false)
+              }}
+              className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-red-600 hover:bg-[var(--c-surface)] cursor-pointer"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

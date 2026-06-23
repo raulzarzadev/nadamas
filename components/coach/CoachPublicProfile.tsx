@@ -26,6 +26,7 @@ import {
   scheduleIsOpen,
   startOfWeek,
 } from '@/lib/coach-offerings'
+import { coachDisplayPhoto } from '@/lib/coach-photo'
 import CoachScheduleRows from './CoachScheduleRows'
 import VerifiedBadge from './VerifiedBadge'
 
@@ -163,11 +164,7 @@ export default function CoachPublicProfile({
       : null)
   const refreshUser = userContext?.refreshUser
   const verified = coach.verification?.status === 'verified'
-  const heroPhoto =
-    avatarUrl ||
-    coach.facePhoto?.url ||
-    coach.galleryPhotos?.find((photo) => photo.label === 'Yo')?.url ||
-    null
+  const heroPhoto = coachDisplayPhoto(coach, avatarUrl)
   const offerings = resolveOfferings(coach)
   const openOfferings = offerings.filter((offering) =>
     resolveOfferingSchedules(offering).some(scheduleIsOpen)
