@@ -186,15 +186,28 @@ export default function CoachPublicProfile({
   // Hours the coach blocked — shown struck-through (not bookable) on the public
   // schedule. Whole-day blocks cover every hour of that date.
   const blockedLookup = useMemo(() => {
-    const days = new Set(blockedSlots.filter((b) => b.allDay).map((b) => b.date))
-    const hours = new Set(
-      blockedSlots.filter((b) => !b.allDay && b.startTime).map((b) => `${b.date}|${b.startTime}`)
+    const allBlocks = blockedSlots
+    const visibleBlocks = blockedSlots.filter((block) => block.hidden !== true)
+    const allDays = new Set(allBlocks.filter((b) => b.allDay).map((b) => b.date))
+    const allHours = new Set(
+      allBlocks.filter((b) => !b.allDay && b.startTime).map((b) => `${b.date}|${b.startTime}`)
     )
-    return { days, hours }
+    const visibleDays = new Set(visibleBlocks.filter((b) => b.allDay).map((b) => b.date))
+    const visibleHours = new Set(
+      visibleBlocks.filter((b) => !b.allDay && b.startTime).map((b) => `${b.date}|${b.startTime}`)
+    )
+    return { allDays, allHours, visibleDays, visibleHours }
   }, [blockedSlots])
-  const isBlocked = (selection: CoachBookingSelection) =>
-    blockedLookup.days.has(selection.date) ||
-    blockedLookup.hours.has(`${selection.date}|${selection.startTime}`)
+  const isBlocked = (selection: CoachBookingSelection) => {
+    const lookup =
+      selection.offeringId === 'open'
+        ? { days: blockedLookup.visibleDays, hours: blockedLookup.visibleHours }
+        : { days: blockedLookup.allDays, hours: blockedLookup.allHours }
+    return (
+      lookup.days.has(selection.date) ||
+      lookup.hours.has(`${selection.date}|${selection.startTime}`)
+    )
+  }
   const bookedSlotCounts = useMemo(() => buildBookedSlotMap(bookedSlots), [bookedSlots])
   // Any booking at a given date+hour marks it occupied — coach-added bookings use
   // a synthetic offeringId ('open') that won't match the offering selection key,

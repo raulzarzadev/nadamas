@@ -56,6 +56,9 @@ export interface PublicBlockedSlot {
   date: string
   startTime: string | null
   allDay: boolean
+  /** Hidden blocks remove recurring offering hours, but should not suppress an
+   * explicitly published open slot at the same time. */
+  hidden?: boolean
 }
 
 /** Ad-hoc hour a coach published from the agenda, surfaced to athletes. */

@@ -34,11 +34,17 @@ export async function getPublicBlockedSlots(coachId: string): Promise<PublicBloc
     .get()
   return snapshot.docs
     .map((doc) => {
-      const data = doc.data() as { date?: string; startTime?: string | null; allDay?: boolean }
+      const data = doc.data() as {
+        date?: string
+        startTime?: string | null
+        allDay?: boolean
+        hidden?: boolean
+      }
       return {
         date: data.date || '',
         startTime: data.allDay ? null : data.startTime || null,
         allDay: data.allDay === true,
+        hidden: data.hidden === true,
       }
     })
     .filter((block) => block.date && (block.allDay || block.startTime))

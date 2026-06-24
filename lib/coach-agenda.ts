@@ -135,6 +135,8 @@ export function openSlotsToAvailable(
   bookings: Booking[],
   blocks: CoachScheduleBlock[]
 ): CoachAvailableSlot[] {
+  const visibleBlocks = blocks.filter((block) => block.hidden !== true)
+
   return openSlots.map((openSlot) => {
     const base = {
       id: `open::${openSlot.id}`,
@@ -148,7 +150,7 @@ export function openSlotsToAvailable(
       source: 'open' as const,
       openSlotId: openSlot.id,
     }
-    return { ...base, status: slotStatus(base, bookings, blocks) }
+    return { ...base, status: slotStatus(base, bookings, visibleBlocks) }
   })
 }
 
