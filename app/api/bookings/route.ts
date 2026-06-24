@@ -4,6 +4,7 @@ import type { CoachBookingSelection } from '@/lib/coach-booking'
 import { publicNameFromUser } from '@/lib/public-name'
 import { sendBookingConfirmedEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { notifyBookingConfirmed } from '@/lib/server/notifications'
 
 export const runtime = 'nodejs'
 
@@ -164,6 +165,22 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error('[BOOKING_CONFIRM_NOTIFY]', error)
+  }
+
+  try {
+    const first = savedBookings[0]
+    await notifyBookingConfirmed({
+      coachId,
+      athleteId: caller.uid,
+      athleteName: first.athleteName,
+      date: first.date,
+      startTime: first.startTime,
+      locationName: first.locationName,
+      bookingId: first.id,
+      count: savedBookings.length,
+    })
+  } catch (error) {
+    console.error('[BOOKING_CONFIRM_NOTIFY_INAPP]', error)
   }
 
   return NextResponse.json({ ok: true, bookings: savedBookings })

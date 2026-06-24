@@ -28,6 +28,7 @@ interface StudentSummary {
   phone?: string
   totalClasses: number
   nextClass?: Booking
+  upcomingClasses?: Booking[]
   lastClass?: Booking
   progress?: StudentProgress | null
   entries: StudentProgressEntry[]
@@ -228,11 +229,19 @@ function StudentCard({
                 <FiPhone aria-hidden="true" /> {student.phone}
               </p>
             )}
-            {student.nextClass && (
-              <p className="flex items-center gap-2 text-sm text-(--c-text-2)">
-                <FiCalendar aria-hidden="true" /> Próxima: {student.nextClass.date} ·{' '}
-                {student.nextClass.startTime}
-              </p>
+            {student.upcomingClasses && student.upcomingClasses.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
+                  Próximas clases ({student.upcomingClasses.length})
+                </p>
+                {student.upcomingClasses.map((booking) => (
+                  <p key={booking.id} className="flex items-center gap-2 text-sm text-(--c-text-2)">
+                    <FiCalendar aria-hidden="true" className="shrink-0" /> {booking.date} ·{' '}
+                    {booking.startTime}
+                    {booking.locationName ? ` · ${booking.locationName}` : ''}
+                  </p>
+                ))}
+              </div>
             )}
           </div>
 

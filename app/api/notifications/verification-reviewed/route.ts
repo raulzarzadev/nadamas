@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { sendVerificationReviewedEmail } from '@/lib/server/emails'
+import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { notifyVerificationReviewed } from '@/lib/server/notifications'
 
 export const runtime = 'nodejs'
 
@@ -31,6 +32,16 @@ export async function POST(request: Request) {
   const email = coachUser.data()?.email
   if (typeof email === 'string') {
     await sendVerificationReviewedEmail({ email, status: body.status })
+  }
+
+  try {
+    await notifyVerificationReviewed({
+      coachId: body.coachId,
+      adminId: caller.uid,
+      status: body.status,
+    })
+  } catch (error) {
+    console.error('[VERIFICATION_REVIEWED_NOTIFY_INAPP]', error)
   }
 
   return NextResponse.json({ ok: true })

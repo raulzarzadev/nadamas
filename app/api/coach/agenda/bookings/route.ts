@@ -4,6 +4,7 @@ import { DAY_TO_INDEX } from '@/lib/coach-offerings'
 import { type StudentProgress, studentProgressId } from '@/lib/coach-student-progress'
 import { publicNameFromUser } from '@/lib/public-name'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { notifyBookingByCoach } from '@/lib/server/notifications'
 
 export const runtime = 'nodejs'
 
@@ -120,6 +121,21 @@ export async function POST(request: Request) {
     await progressRef.set(progress)
   }
 
+  // Notify the athlete (skipped automatically for manual_* placeholder ids).
+  try {
+    await notifyBookingByCoach({
+      athleteId: booking.athleteId,
+      coachId,
+      coachName: booking.coachName,
+      date: booking.date,
+      startTime: booking.startTime,
+      locationName: booking.locationName,
+      bookingId: booking.id,
+    })
+  } catch (error) {
+    console.error('[COACH_BOOKING_NOTIFY_INAPP]', error)
+  }
+
   return NextResponse.json({ booking })
 }
 
@@ -138,5 +154,22 @@ export async function DELETE(request: Request) {
 
   const now = Date.now()
   await ref.set({ status: 'cancelled', cancelledAt: now, updatedAt: now }, { merge: true })
+
+  const cancelled = current.data() as Booking
+  try {
+    await notifyBookingByCoach({
+      athleteId: cancelled.athleteId,
+      coachId: verification.caller.uid,
+      coachName: cancelled.coachName,
+      date: cancelled.date,
+      startTime: cancelled.startTime,
+      locationName: cancelled.locationName,
+      bookingId: id,
+      cancelled: true,
+    })
+  } catch (error) {
+    console.error('[COACH_BOOKING_CANCEL_NOTIFY_INAPP]', error)
+  }
+
   return NextResponse.json({ ok: true, status: 'cancelled' })
 }

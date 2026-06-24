@@ -6,7 +6,9 @@ export default function AppChrome({
   role,
   children,
 }: {
-  role: RoleName
+  // Optional: when omitted (shared pages like /notifications) the nav follows the
+  // active role from RoleContext.
+  role?: RoleName
   children: React.ReactNode
 }) {
   return (

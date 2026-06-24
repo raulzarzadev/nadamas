@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   FiBarChart2,
+  FiBell,
   FiCalendar,
   FiHome,
   FiSearch,
@@ -13,6 +14,7 @@ import {
 } from 'react-icons/fi'
 import { useRole } from '@/context/RoleContext'
 import type { RoleName } from '@/lib/roles'
+import NotificationsBell from './NotificationsBell'
 import { PRIMARY_NAV_BY_ROLE } from './nav-config'
 import RoleSwitcher from './RoleSwitcher'
 
@@ -24,6 +26,7 @@ const NAV_ICONS = {
   users: FiUsers,
   badge: FiShield,
   user: FiUser,
+  bell: FiBell,
 }
 
 // Shared top bar: logo + role pill + the two primary destinations as a
@@ -51,6 +54,7 @@ export default function AppNav({ role: roleProp }: { role?: RoleName }) {
             />
           </Link>
           <div className="ml-auto flex items-center gap-2">
+            <NotificationsBell />
             <RoleSwitcher currentRole={role} />
           </div>
         </div>

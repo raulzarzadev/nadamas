@@ -19,6 +19,7 @@ interface CoachStudentSummary {
   phone?: string
   totalClasses: number
   nextClass?: Booking
+  upcomingClasses: Booking[]
   lastClass?: Booking
   progress: StudentProgress | null
   entries: StudentProgressEntry[]
@@ -78,7 +79,8 @@ export async function GET(request: Request) {
         `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
       )
       const first = sorted[0]
-      const nextClass = sorted.find((booking) => booking.date >= now)
+      const upcomingClasses = sorted.filter((booking) => booking.date >= now)
+      const nextClass = upcomingClasses[0]
       const lastClass = [...sorted].reverse().find((booking) => booking.date < now) || sorted.at(-1)
       const progress = progressByAthlete.get(first.athleteId) || null
 
@@ -89,6 +91,7 @@ export async function GET(request: Request) {
         phone: first.athletePhone,
         totalClasses: sorted.length,
         nextClass,
+        upcomingClasses,
         lastClass,
         progress,
         entries: (entriesByAthlete.get(first.athleteId) || []).sort(
@@ -108,6 +111,7 @@ export async function GET(request: Request) {
       email: progress.athleteEmail,
       phone: progress.athletePhone,
       totalClasses: 0,
+      upcomingClasses: [],
       progress,
       entries: (entriesByAthlete.get(progress.athleteId) || []).sort(
         (a, b) => b.createdAt - a.createdAt

@@ -4,7 +4,7 @@ export interface NavLink {
   href: string
   label: string
   mobileLabel: string
-  icon: 'home' | 'search' | 'chart' | 'calendar' | 'users' | 'badge' | 'user'
+  icon: 'home' | 'search' | 'chart' | 'calendar' | 'users' | 'badge' | 'user' | 'bell'
 }
 
 // Primary nav = the role-specific destinations shown as the sub-navbar directly
@@ -42,14 +42,17 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
 export const SECONDARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
     { href: '/athlete/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
+    { href: '/notifications', label: 'Notificaciones', mobileLabel: 'Avisos', icon: 'bell' },
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
   coach: [
     { href: '/coach/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
+    { href: '/notifications', label: 'Notificaciones', mobileLabel: 'Avisos', icon: 'bell' },
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
   admin: [
     { href: '/admin/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
+    { href: '/notifications', label: 'Notificaciones', mobileLabel: 'Avisos', icon: 'bell' },
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
 }

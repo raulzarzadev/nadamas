@@ -3,6 +3,7 @@ import { formatSlotLabel } from '@/lib/coach-booking'
 import { publicNameFromUser } from '@/lib/public-name'
 import { sendBookingCancelledEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { notifyBookingCancelled } from '@/lib/server/notifications'
 
 export const runtime = 'nodejs'
 
@@ -67,6 +68,19 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
   } catch (error) {
     console.error('[BOOKING_CANCEL_NOTIFY]', error)
+  }
+
+  try {
+    await notifyBookingCancelled({
+      coachId: booking.coachId,
+      athleteId: caller.uid,
+      athleteName: booking.athleteName || 'Un alumno',
+      locationName: booking.locationName,
+      startTime: booking.startTime,
+      bookingId: id,
+    })
+  } catch (error) {
+    console.error('[BOOKING_CANCEL_NOTIFY_INAPP]', error)
   }
 
   return NextResponse.json({ ok: true, status: 'cancelled' })

@@ -307,10 +307,44 @@ async function seed() {
       })
   }
 
+  // Demo in-app notifications: one unread received + one sent, for the coach and
+  // the athlete, so the bell/list have data without performing a real booking.
+  const demoNotifications = [
+    {
+      id: 'notif-demo-coach-1',
+      recipientId: coach.uid,
+      actorId: ATHLETE.uid,
+      actorName: ATHLETE.name,
+      type: 'booking_confirmed',
+      title: 'Nueva clase agendada',
+      body: `${ATHLETE.name} agendó una clase contigo.`,
+      link: '/coach/agenda',
+      readAt: null,
+    },
+    {
+      id: 'notif-demo-athlete-1',
+      recipientId: ATHLETE.uid,
+      actorId: coach.uid,
+      actorName: coach.name,
+      type: 'booking_created_by_coach',
+      title: 'Tu coach agendó una clase',
+      body: `${coach.name} te agendó una clase.`,
+      link: '/athlete/bookings',
+      readAt: now,
+    },
+  ]
+  for (const notification of demoNotifications) {
+    await db
+      .collection('notifications')
+      .doc(notification.id)
+      .set({ ...notification, createdAt: now })
+  }
+
   console.log('✓ Seed complete:')
   console.log(`  • ${COACHES.length} coaches (public, visible in marketplace)`)
   console.log(`  • athlete: ${ATHLETE.email} / ${ATHLETE.password} (uid ${ATHLETE.uid})`)
   console.log('  • 2 demo bookings for the athlete')
+  console.log('  • 2 demo notifications (coach + athlete)')
   console.log('\nEmulator UI: http://127.0.0.1:4000')
 }
 
