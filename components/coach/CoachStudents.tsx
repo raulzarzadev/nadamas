@@ -2,9 +2,18 @@
 
 import Loading from '@comps/Loading'
 import Avatar from '@comps/ui/avatar'
+import { useSearchParams } from 'next/navigation'
 import type React from 'react'
-import { useEffect, useState } from 'react'
-import { FiCalendar, FiChevronDown, FiMail, FiPhone, FiPlus, FiTrendingUp } from 'react-icons/fi'
+import { useEffect, useRef, useState } from 'react'
+import {
+  FiCalendar,
+  FiChevronDown,
+  FiMail,
+  FiPhone,
+  FiPlus,
+  FiSearch,
+  FiTrendingUp,
+} from 'react-icons/fi'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
 import type { StudentProgress, StudentProgressEntry } from '@/lib/coach-student-progress'
@@ -30,6 +39,9 @@ export default function CoachStudents() {
   const [students, setStudents] = useState<StudentSummary[] | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  // Deep link from the agenda ("ver perfil") to open a student's card directly.
+  const focusId = useSearchParams().get('student')
 
   useEffect(() => {
     getAuthed('/api/coach/students')
@@ -91,27 +103,59 @@ export default function CoachStudents() {
       )
     )
 
+  const normalizedQuery = query.trim().toLowerCase()
+  const visibleStudents = normalizedQuery
+    ? students.filter((student) =>
+        [student.name, student.email || '', student.phone || '']
+          .join(' ')
+          .toLowerCase()
+          .includes(normalizedQuery)
+      )
+    : students
+
   return (
     <>
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label className="relative min-w-0 flex-1">
+          <FiSearch
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--c-text-2)"
+          />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar alumno"
+            aria-label="Buscar alumno"
+            className="min-h-11 w-full rounded-full border border-(--c-border) bg-white pl-10 pr-3 text-sm text-(--c-ocean) outline-none transition focus:border-(--c-aqua) focus:ring-4 focus:ring-[rgba(0,180,216,0.16)]"
+          />
+        </label>
         <button
           type="button"
           onClick={() => setAddModalOpen(true)}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-aqua) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-(--c-aqua) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
         >
           <FiPlus aria-hidden="true" /> Agregar alumno
         </button>
       </div>
 
-      <ul className="flex flex-col gap-3">
-        {students.map((student) => (
-          <StudentCard
-            key={student.athleteId}
-            student={student}
-            onProgressSaved={(entry, progress) => updateStudent(student.athleteId, entry, progress)}
-          />
-        ))}
-      </ul>
+      {visibleStudents.length === 0 ? (
+        <p className="rounded-[var(--r-md)] border border-dashed border-(--c-border) bg-(--c-surface) p-6 text-center text-sm text-(--c-text-2)">
+          No hay alumnos que coincidan con “{query.trim()}”.
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {visibleStudents.map((student) => (
+            <StudentCard
+              key={student.athleteId}
+              student={student}
+              focused={student.athleteId === focusId}
+              onProgressSaved={(entry, progress) =>
+                updateStudent(student.athleteId, entry, progress)
+              }
+            />
+          ))}
+        </ul>
+      )}
 
       {addModalOpen && (
         <AddStudentModal onClose={() => setAddModalOpen(false)} onCreated={addStudent} />
@@ -122,14 +166,25 @@ export default function CoachStudents() {
 
 function StudentCard({
   student,
+  focused = false,
   onProgressSaved,
 }: {
   student: StudentSummary
+  focused?: boolean
   onProgressSaved: (entry: StudentProgressEntry, progress: StudentProgress) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(focused)
   const [showAll, setShowAll] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const ref = useRef<HTMLLIElement>(null)
+
+  // When deep-linked from the agenda, open and scroll this card into view.
+  useEffect(() => {
+    if (focused) {
+      setOpen(true)
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [focused])
 
   const level = student.progress?.level || 'Inicial'
   const assessment = student.progress?.coachAssessment
@@ -137,7 +192,12 @@ function StudentCard({
   const visibleEntries = showAll ? student.entries : student.entries.slice(0, ENTRY_PREVIEW)
 
   return (
-    <li className="overflow-hidden rounded-[var(--r-md)] border border-(--c-border) bg-white shadow-[var(--shadow-sm)]">
+    <li
+      ref={ref}
+      className={`overflow-hidden rounded-[var(--r-md)] border bg-white shadow-[var(--shadow-sm)] ${
+        focused ? 'border-(--c-aqua)' : 'border-(--c-border)'
+      }`}
+    >
       <button
         type="button"
         aria-expanded={open}

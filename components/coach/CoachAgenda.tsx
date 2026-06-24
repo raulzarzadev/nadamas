@@ -449,7 +449,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                             {row.booking.athleteName}
                           </span>
                           <Link
-                            href="/coach/students"
+                            href={`/coach/students?student=${encodeURIComponent(row.booking.athleteId)}`}
                             className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
                           >
                             ver perfil ›
