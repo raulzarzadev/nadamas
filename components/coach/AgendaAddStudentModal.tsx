@@ -32,10 +32,9 @@ export default function AgendaAddStudentModal({
 }) {
   const [students, setStudents] = useState<CoachStudent[] | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  // null = nothing chosen, 'create' = create new with current query, otherwise an athleteId
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
-  const [mode, setMode] = useState<'search' | 'create'>('search')
-  const [newStudentName, setNewStudentName] = useState('')
 
   useEffect(() => {
     let active = true
@@ -56,7 +55,8 @@ export default function AgendaAddStudentModal({
     }
   }, [])
 
-  const normalizedQuery = query.trim().toLowerCase()
+  const trimmedQuery = query.trim()
+  const normalizedQuery = trimmedQuery.toLowerCase()
   const selected = students?.find((student) => student.athleteId === selectedId)
   const matches =
     students
@@ -68,11 +68,17 @@ export default function AgendaAddStudentModal({
           .includes(normalizedQuery)
       })
       .slice(0, 5) || []
-  const canSubmit =
-    !busy && (mode === 'search' ? Boolean(selected) : newStudentName.trim().length > 1)
+  // Only offer "create" when the typed name doesn't exactly match an existing student.
+  const hasExactMatch = matches.some(
+    (student) => student.name.trim().toLowerCase() === normalizedQuery
+  )
+  const canCreate = trimmedQuery.length > 1 && !hasExactMatch
+  const creating = selectedId === 'create'
+
+  const canSubmit = !busy && (Boolean(selected) || (creating && canCreate))
 
   const submit = () => {
-    if (mode === 'search' && selected) {
+    if (selected) {
       onSubmit({
         athleteId: selected.athleteId,
         athleteName: selected.name,
@@ -81,8 +87,7 @@ export default function AgendaAddStudentModal({
       })
       return
     }
-    const name = newStudentName.trim()
-    if (name) onSubmit({ athleteName: name })
+    if (creating && canCreate) onSubmit({ athleteName: trimmedQuery })
   }
 
   return (
@@ -90,7 +95,7 @@ export default function AgendaAddStudentModal({
       role="dialog"
       aria-modal="true"
       aria-label="Agregar alumno"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-2 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
@@ -98,131 +103,132 @@ export default function AgendaAddStudentModal({
         if (event.key === 'Escape') onClose()
       }}
     >
-      <div className="flex w-full max-w-lg flex-col gap-4 rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)]">
-        <div className="mx-auto h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
-        <div>
+      <div className="flex max-h-[min(86dvh,38rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-[26px] bg-white shadow-[var(--shadow-md)] sm:rounded-[var(--r-md)]">
+        <div className="shrink-0 px-4 pt-3 sm:px-5 sm:pt-5">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
           <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar alumno</h3>
           <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>
         </div>
 
-        {error && <p className="text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+          {error && <p className="mb-3 text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
 
-        {mode === 'search' ? (
-          <>
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_10rem]">
-              <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-                Buscar alumno
-                <span className="relative">
-                  <FiSearch
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--c-text-2)]"
-                  />
-                  <input
-                    value={query}
-                    onChange={(event) => {
-                      setQuery(event.target.value)
-                      setSelectedId(null)
-                    }}
-                    placeholder="Nombre, correo o teléfono"
-                    className="min-h-11 w-full rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white pl-9 pr-3 font-normal"
-                  />
-                </span>
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('create')
-                  setNewStudentName(query.trim())
-                  setSelectedId(null)
-                }}
-                className="mt-auto inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 text-sm font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-              >
-                Crear nuevo <FiPlus aria-hidden="true" />
-              </button>
-            </div>
+          <div className="flex flex-col gap-3">
+            <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
+              Nombre del alumno
+              <span className="relative">
+                <FiSearch
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--c-text-2)]"
+                />
+                <input
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value)
+                    setSelectedId(null)
+                  }}
+                  placeholder="Escribe para buscar o crear"
+                  className="min-h-12 w-full rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white pl-10 pr-3 font-normal text-[var(--c-ocean)] outline-none transition focus:border-[var(--c-aqua)] focus:ring-4 focus:ring-[rgba(0,180,216,0.16)]"
+                />
+              </span>
+            </label>
 
             {students === undefined ? (
-              <p className="py-6 text-center text-sm text-[var(--c-text-2)]">Cargando alumnos...</p>
+              <div className="flex h-56 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)]">
+                Cargando alumnos...
+              </div>
             ) : (
-              <div className="flex flex-col gap-2">
-                <div className="flex max-h-56 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)]">
-                  {matches.map((student) => {
-                    const active = student.athleteId === selectedId
-                    return (
-                      <button
-                        key={student.athleteId}
-                        type="button"
-                        onClick={() => {
-                          setSelectedId(active ? null : student.athleteId)
-                          setQuery(student.name)
-                        }}
-                        className={`flex items-center gap-3 border-b border-[var(--c-border)] px-3 py-2.5 text-left transition-colors last:border-b-0 ${
-                          active ? 'bg-[var(--c-aqua-light)]/45' : 'hover:bg-[var(--c-surface)]'
-                        }`}
-                      >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--c-aqua)] to-[var(--c-ocean)] text-xs font-bold text-white">
-                          {initials(student.name)}
+              <div className="flex h-56 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)]">
+                {matches.map((student) => {
+                  const active = student.athleteId === selectedId
+                  return (
+                    <button
+                      key={student.athleteId}
+                      type="button"
+                      onClick={() => setSelectedId(active ? null : student.athleteId)}
+                      className={`flex min-h-14 items-center gap-3 border-b border-[var(--c-border)] px-3 py-2.5 text-left transition-colors last:border-b-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--c-aqua-strong)] ${
+                        active ? 'bg-[var(--c-aqua-light)]/45' : 'hover:bg-[var(--c-surface)]'
+                      }`}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--c-aqua)] to-[var(--c-ocean)] text-xs font-bold text-white">
+                        {initials(student.name)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold text-[var(--c-ocean)]">
+                          {student.name}
                         </span>
-                        <span className="min-w-0">
-                          <span className="block truncate font-semibold text-[var(--c-ocean)]">
-                            {student.name}
+                        {student.email && (
+                          <span className="block truncate text-xs text-[var(--c-text-2)]">
+                            {student.email}
                           </span>
-                          {student.email && (
-                            <span className="block truncate text-xs text-[var(--c-text-2)]">
-                              {student.email}
-                            </span>
-                          )}
+                        )}
+                      </span>
+                      {active && (
+                        <span className="shrink-0 text-xs font-bold text-[var(--c-aqua-strong)]">
+                          ✓
                         </span>
-                      </button>
-                    )
-                  })}
-                </div>
+                      )}
+                    </button>
+                  )
+                })}
 
-                {matches.length === 0 && (
-                  <p className="rounded-[var(--r-sm)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-3 text-sm text-[var(--c-text-2)]">
-                    No hay coincidencias. Puedes crear un alumno nuevo.
+                {canCreate && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId('create')}
+                    className={`flex min-h-14 items-center gap-3 px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--c-aqua-strong)] ${
+                      matches.length > 0 ? 'border-t border-[var(--c-border)]' : ''
+                    } ${creating ? 'bg-[var(--c-aqua-light)]/45' : 'hover:bg-[var(--c-surface)]'}`}
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--c-aqua)] text-[var(--c-aqua-strong)]">
+                      <FiPlus aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-[var(--c-ocean)]">
+                        Crear «{trimmedQuery}»
+                      </span>
+                      <span className="block truncate text-xs text-[var(--c-text-2)]">
+                        Nuevo alumno
+                      </span>
+                    </span>
+                    {creating && (
+                      <span className="shrink-0 text-xs font-bold text-[var(--c-aqua-strong)]">
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                )}
+
+                {matches.length === 0 && !canCreate && (
+                  <p className="px-3 py-4 text-sm text-[var(--c-text-2)]">
+                    {trimmedQuery
+                      ? 'Escribe un nombre más largo para crear un alumno.'
+                      : 'Escribe un nombre para buscar o crear un alumno.'}
                   </p>
                 )}
               </div>
             )}
-          </>
-        ) : (
-          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
-            <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-              Nombre del nuevo alumno
-              <input
-                value={newStudentName}
-                onChange={(event) => setNewStudentName(event.target.value)}
-                placeholder="Ej. Mariana"
-                className="min-h-11 w-full rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 font-normal"
-              />
-            </label>
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-[var(--c-border)] bg-white px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-5">
+          <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <button
               type="button"
-              onClick={() => setMode('search')}
-              className="mt-auto inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 text-sm font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+              disabled={!canSubmit}
+              onClick={submit}
+              className="min-h-12 rounded-full bg-[var(--c-aqua)] px-4 font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:bg-slate-400 disabled:opacity-100"
             >
-              Buscar
+              {creating ? 'Crear y agregar' : 'Agregar alumno'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-11 rounded-full px-4 font-semibold text-[var(--c-text-2)] hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+            >
+              Cancelar
             </button>
           </div>
-        )}
-
-        <div className="mt-1 flex flex-col gap-2">
-          <button
-            type="button"
-            disabled={!canSubmit}
-            onClick={submit}
-            className="min-h-12 rounded-full bg-[var(--c-aqua)] font-bold text-white transition-opacity hover:opacity-90 disabled:bg-slate-400 disabled:opacity-100"
-          >
-            Agregar alumno
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 rounded-full font-semibold text-[var(--c-text-2)] hover:text-[var(--c-ocean)]"
-          >
-            Cancelar
-          </button>
         </div>
       </div>
     </div>

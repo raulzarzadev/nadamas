@@ -1,7 +1,7 @@
 import 'server-only'
 
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
-import type { PublicBookedSlot, PublicOpenSlot } from '@/lib/coach-booking'
+import type { PublicBlockedSlot, PublicBookedSlot, PublicOpenSlot } from '@/lib/coach-booking'
 import { publicNameFromUser } from '@/lib/public-name'
 import { adminDb } from '@/lib/server/firebase-admin'
 
@@ -12,9 +12,10 @@ export async function getPublicCoachDetail(id: string) {
   const userSnap = await adminDb.collection('users').doc(id).get()
   const user = userSnap.data()
   const coach = { ...(coachSnap.data() as CoachPublic), id: coachSnap.id }
-  const [bookedSlots, openSlots] = await Promise.all([
+  const [bookedSlots, openSlots, blockedSlots] = await Promise.all([
     getPublicBookedSlots(id),
     getPublicOpenSlots(id),
+    getPublicBlockedSlots(id),
   ])
 
   return {
@@ -22,7 +23,25 @@ export async function getPublicCoachDetail(id: string) {
     name: publicNameFromUser(user),
     bookedSlots,
     openSlots,
+    blockedSlots,
   }
+}
+
+export async function getPublicBlockedSlots(coachId: string): Promise<PublicBlockedSlot[]> {
+  const snapshot = await adminDb
+    .collection('coachScheduleBlocks')
+    .where('coachId', '==', coachId)
+    .get()
+  return snapshot.docs
+    .map((doc) => {
+      const data = doc.data() as { date?: string; startTime?: string | null; allDay?: boolean }
+      return {
+        date: data.date || '',
+        startTime: data.allDay ? null : data.startTime || null,
+        allDay: data.allDay === true,
+      }
+    })
+    .filter((block) => block.date && (block.allDay || block.startTime))
 }
 
 export async function getPublicOpenSlots(coachId: string): Promise<PublicOpenSlot[]> {

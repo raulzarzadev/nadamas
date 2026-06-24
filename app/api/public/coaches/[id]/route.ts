@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { publicNameFromUser } from '@/lib/public-name'
 import { adminDb } from '@/lib/server/firebase-admin'
-import { getPublicBookedSlots, getPublicOpenSlots } from '@/lib/server/public-coach'
+import {
+  getPublicBlockedSlots,
+  getPublicBookedSlots,
+  getPublicOpenSlots,
+} from '@/lib/server/public-coach'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,9 +20,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const userSnap = await adminDb.collection('users').doc(id).get()
     const user = userSnap.data()
     const coach = coachSnap.data() as CoachPublic
-    const [bookedSlots, openSlots] = await Promise.all([
+    const [bookedSlots, openSlots, blockedSlots] = await Promise.all([
       getPublicBookedSlots(id),
       getPublicOpenSlots(id),
+      getPublicBlockedSlots(id),
     ])
 
     return NextResponse.json({
@@ -32,6 +37,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
             : null,
       bookedSlots,
       openSlots,
+      blockedSlots,
     })
   } catch (error) {
     console.error('[PUBLIC_COACH_DETAIL]', error)

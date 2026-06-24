@@ -7,12 +7,30 @@ import { FiChevronLeft, FiChevronRight, FiLock, FiPlus, FiUnlock, FiX } from 're
 import Sheet from '@/components/ui/sheet'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
+import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
 import type { Booking } from '@/lib/coach-booking'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import AgendaOpenHoursModal from './AgendaOpenHoursModal'
 
 const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
+const OCCUPANCY_BAR_KEYS = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6'] as const
+const OCCUPANCY_MAX_BARS = OCCUPANCY_BAR_KEYS.length
+
+// One thick line per hour, colored by status, in the SAME chronological order as
+// the day's hour list (earliest at top). When a day has more hours than
+// OCCUPANCY_MAX_BARS, evenly downsample while preserving order.
+function occupancyBars(statuses: HourStatus[]): string[] {
+  if (statuses.length === 0) return []
+  let picked = statuses
+  if (statuses.length > OCCUPANCY_MAX_BARS) {
+    picked = Array.from(
+      { length: OCCUPANCY_MAX_BARS },
+      (_, index) => statuses[Math.floor((index * statuses.length) / OCCUPANCY_MAX_BARS)]
+    )
+  }
+  return picked.map((status) => HOUR_STATUS_STYLE[status].bar)
+}
 
 type ActiveSlot = { date: string; startTime: string; endTime: string; locationName: string }
 type ConfirmAction =
@@ -65,14 +83,68 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     [agenda?.bookings]
   )
 
-  const dayStats = useMemo(() => {
-    const map = new Map<string, number>()
-    for (const booking of activeBookings) map.set(booking.date, (map.get(booking.date) || 0) + 1)
-    for (const slot of agenda?.availableSlots || []) {
-      if (slot.status === 'available') map.set(slot.date, (map.get(slot.date) || 0) + 1)
+  // Per-day hour statuses in chronological order — drives the colored bar meter
+  // on each weekday chip so the bars line up with the day's hour list.
+  const dayStatuses = useMemo(() => {
+    const map = new Map<string, { time: string; status: HourStatus }[]>()
+    const push = (date: string, time: string, status: HourStatus) => {
+      const entries = map.get(date) || []
+      entries.push({ time, status })
+      map.set(date, entries)
     }
-    return map
-  }, [activeBookings, agenda?.availableSlots])
+    const bookedKeys = new Set<string>()
+    for (const booking of activeBookings) {
+      push(booking.date, booking.startTime, 'booked')
+      bookedKeys.add(`${booking.date}|${booking.startTime}`)
+    }
+    for (const slot of agenda?.availableSlots || []) {
+      if (slot.status === 'available') push(slot.date, slot.startTime, 'available')
+    }
+    for (const block of agenda?.blocks || []) {
+      if (block.allDay || block.hidden) continue
+      // A blocked hour that already has a student shows as booked, not blocked.
+      if (bookedKeys.has(`${block.date}|${block.startTime || ''}`)) continue
+      push(block.date, block.startTime || '', 'blocked')
+    }
+    const ordered = new Map<string, HourStatus[]>()
+    for (const [date, entries] of map) {
+      entries.sort((a, b) => a.time.localeCompare(b.time))
+      ordered.set(
+        date,
+        entries.map((entry) => entry.status)
+      )
+    }
+    return ordered
+  }, [activeBookings, agenda?.availableSlots, agenda?.blocks])
+
+  // Month-level occupancy: booked vs total offered, restricted to the month shown
+  // in the header (the payload can bleed into adjacent months on boundary weeks).
+  const monthStats = useMemo(() => {
+    const inMonth = (date: string) => date.startsWith(monthOfSelected)
+    const booked = activeBookings.filter((booking) => inMonth(booking.date)).length
+    const available = (agenda?.availableSlots || []).filter(
+      (slot) => slot.status === 'available' && inMonth(slot.date)
+    ).length
+    return { booked, total: booked + available }
+  }, [activeBookings, agenda?.availableSlots, monthOfSelected])
+
+  // Week-level occupancy: sum booked/total across the 7 visible days.
+  const weekStats = useMemo(() => {
+    let booked = 0
+    let total = 0
+    for (const date of weekDates) {
+      const statuses = dayStatuses.get(dateKey(date)) || []
+      for (const status of statuses) {
+        if (status === 'booked') {
+          booked += 1
+          total += 1
+        } else if (status === 'available') {
+          total += 1
+        }
+      }
+    }
+    return { booked, total }
+  }, [weekDates, dayStatuses])
 
   const dayBookings = activeBookings.filter((booking) => booking.date === selectedDate)
   const daySlots = (agenda?.availableSlots || []).filter((slot) => slot.date === selectedDate)
@@ -89,11 +161,34 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       sort: booking.startTime,
       booking,
     }))
-    // A coach can add a student to a blocked hour; once booked, show the booking
-    // row instead of the block.
-    const blocked = dayBlocks
-      .filter((block) => !block.allDay && !block.hidden && !bookedTimes.has(block.startTime || ''))
-      .map((block) => ({ kind: 'blocked' as const, sort: block.startTime || '', block }))
+    // Render one blocked row per blocked hour (derived from the slots), not per
+    // block doc — a block covering several slots must not make the extra hours
+    // vanish. A coach can still add a student to a blocked hour; once booked it
+    // shows as a booking row instead.
+    const seen = new Set<string>()
+    const blocked: {
+      kind: 'blocked'
+      sort: string
+      slot: CoachAvailableSlot
+      block?: CoachScheduleBlock
+    }[] = []
+    for (const slot of daySlots) {
+      if (slot.status !== 'blocked') continue
+      if (bookedTimes.has(slot.startTime) || seen.has(slot.startTime)) continue
+      seen.add(slot.startTime)
+      const block = dayBlocks.find(
+        (b) =>
+          !b.allDay &&
+          !b.hidden &&
+          b.startTime &&
+          b.endTime &&
+          b.startTime < slot.endTime &&
+          slot.startTime < b.endTime
+      )
+      // Hidden blocks (removed entirely) have no visible row.
+      if (!block) continue
+      blocked.push({ kind: 'blocked', sort: slot.startTime, slot, block })
+    }
     return [...available, ...booked, ...blocked].sort((a, b) => a.sort.localeCompare(b.sort))
   }, [daySlots, dayBookings, dayBlocks])
 
@@ -222,7 +317,16 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           </button>
         </div>
       </div>
-      <p className="-mt-2 text-sm text-[var(--c-text-2)]">
+      <div className="-mt-2 flex items-center justify-between gap-3 text-sm text-[var(--c-text-2)]">
+        <span>
+          Lleno: {monthStats.booked}/{monthStats.total}
+        </span>
+        <span>
+          Lleno: {weekStats.booked}/{weekStats.total}
+        </span>
+      </div>
+
+      <p className="-mt-1 text-sm text-[var(--c-text-2)]">
         {adminMode
           ? 'Toca un día para ver y editar los horarios del coach.'
           : 'Toca un día para ver y editar tus horas.'}
@@ -233,12 +337,20 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         {weekDates.map((date) => {
           const key = dateKey(date)
           const selected = key === selectedDate
-          const count = Math.min(dayStats.get(key) || 0, 3)
+          const statuses = dayStatuses.get(key) || []
+          // Colored lines in chronological order: blue=bloqueado, green=disponible, purple=ocupado.
+          const bars = occupancyBars(statuses)
+          const count = (status: HourStatus) => statuses.filter((s) => s === status).length
           return (
             <button
               type="button"
               key={key}
               onClick={() => setSelectedDate(key)}
+              aria-label={
+                statuses.length
+                  ? `${weekdayChipLabel(date)}: ${count('booked')} ocupadas, ${count('available')} disponibles, ${count('blocked')} bloqueadas`
+                  : weekdayChipLabel(date)
+              }
               className={`flex flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${
                 selected
                   ? 'border-transparent bg-gradient-to-b from-[var(--c-aqua)] to-[var(--c-ocean)] text-white'
@@ -251,11 +363,14 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                 {WEEKDAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]}
               </span>
               <span className="text-lg font-extrabold leading-none">{date.getDate()}</span>
-              <span className="flex h-1.5 items-center gap-0.5">
-                {['d1', 'd2', 'd3'].slice(0, count).map((dotKey) => (
+              <span
+                aria-hidden="true"
+                className="flex min-h-[14px] flex-col items-center justify-center gap-[2px] pt-0.5"
+              >
+                {bars.map((color, index) => (
                   <span
-                    key={dotKey}
-                    className={`h-1 w-1 rounded-full ${selected ? 'bg-white' : 'bg-[var(--c-aqua)]'}`}
+                    key={OCCUPANCY_BAR_KEYS[index]}
+                    className={`h-[3px] w-4 rounded-full ${color}`}
                   />
                 ))}
               </span>
@@ -276,8 +391,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               })}
             </h3>
             <p className="mt-0.5 text-sm text-[var(--c-text-2)]">
-              {dayBookings.length} agendada(s) ·{' '}
-              {rows.filter((row) => row.kind === 'available').length} libres
+              Lleno: {dayBookings.length}/
+              {dayBookings.length + rows.filter((row) => row.kind === 'available').length}
             </p>
           </div>
           <button
@@ -322,18 +437,20 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               if (row.kind === 'booked') {
                 return (
                   <AgendaRow key={`b-${row.booking.id}`} time={row.booking.startTime}>
-                    <div className="flex flex-1 items-center justify-between gap-3 rounded-[var(--r-md)] border border-[var(--c-aqua-light)] bg-[var(--c-aqua-light)]/25 px-3 py-2.5">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)]">
+                    <div
+                      className={`flex min-w-0 flex-1 flex-col gap-2.5 rounded-[var(--r-md)] border px-3 py-3 sm:flex-row sm:items-center sm:justify-between ${HOUR_STATUS_STYLE.booked.border} ${HOUR_STATUS_STYLE.booked.bg}`}
+                    >
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
                           {initials(row.booking.athleteName)}
                         </span>
-                        <span className="min-w-0">
-                          <span className="block truncate font-bold text-[var(--c-ocean)]">
+                        <span className="min-w-0 flex-1">
+                          <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
                             {row.booking.athleteName}
                           </span>
                           <Link
                             href="/coach/students"
-                            className="text-xs font-semibold text-[var(--c-aqua-strong)] hover:underline"
+                            className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
                           >
                             ver perfil ›
                           </Link>
@@ -342,13 +459,14 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                       {!adminMode && (
                         <button
                           type="button"
+                          aria-label={`Cancelar clase de ${row.booking.athleteName}`}
                           onClick={() =>
                             setConfirmAction({ kind: 'cancel-booking', booking: row.booking })
                           }
                           disabled={busy}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-500 transition-colors hover:bg-rose-50 disabled:opacity-50"
+                          className="inline-flex min-h-11 w-fit shrink-0 items-center gap-1.5 self-end rounded-full border border-[var(--rose-bd)] bg-white px-3.5 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:self-center"
                         >
-                          <FiX aria-hidden="true" /> Cancelar clase
+                          <FiX aria-hidden="true" /> Cancelar
                         </button>
                       )}
                     </div>
@@ -357,37 +475,43 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               }
               if (row.kind === 'blocked') {
                 return (
-                  <AgendaRow key={`x-${row.block.id}`} time={row.block.startTime || ''}>
-                    <div className="flex flex-1 items-center justify-between gap-3 rounded-[var(--r-md)] border border-rose-100 bg-rose-50/60 px-3 py-2.5">
-                      <span className="flex items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
-                        <FiLock aria-hidden="true" /> Bloqueado
-                        {row.block.note ? ` · ${row.block.note}` : ''}
+                  <AgendaRow key={`x-${row.slot.id}`} time={row.slot.startTime}>
+                    <div
+                      className={`flex flex-1 items-center justify-between gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 sm:px-3 ${HOUR_STATUS_STYLE.blocked.border} ${HOUR_STATUS_STYLE.blocked.bg}`}
+                    >
+                      <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
+                        <FiLock aria-hidden="true" className="shrink-0" />{' '}
+                        <span className="truncate">
+                          Bloqueado{row.block?.note ? ` · ${row.block.note}` : ''}
+                        </span>
                       </span>
-                      <div className="flex items-center gap-2">
-                        {!adminMode && row.block.startTime && row.block.endTime && (
+                      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                        {!adminMode && (
                           <button
                             type="button"
                             onClick={() =>
                               setAddStudentSlot({
-                                date: row.block.date,
-                                startTime: row.block.startTime as string,
-                                endTime: row.block.endTime as string,
-                                locationName: 'Horario abierto',
+                                date: row.slot.date,
+                                startTime: row.slot.startTime,
+                                endTime: row.slot.endTime,
+                                locationName: row.slot.locationName || 'Horario abierto',
                               })
                             }
                             disabled={busy}
-                            className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                            className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-3"
                           >
                             <FiPlus aria-hidden="true" /> Alumno
                           </button>
                         )}
-                        <RowIconButton
-                          ariaLabel="Desbloquear"
-                          onClick={() => unblock(row.block)}
-                          disabled={busy}
-                        >
-                          <FiUnlock aria-hidden="true" />
-                        </RowIconButton>
+                        {row.block && (
+                          <RowIconButton
+                            ariaLabel="Desbloquear"
+                            onClick={() => unblock(row.block as CoachScheduleBlock)}
+                            disabled={busy}
+                          >
+                            <FiUnlock aria-hidden="true" />
+                          </RowIconButton>
+                        )}
                       </div>
                     </div>
                   </AgendaRow>
@@ -395,15 +519,17 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               }
               return (
                 <AgendaRow key={`a-${row.slot.id}`} time={row.slot.startTime}>
-                  <div className="flex flex-1 items-center justify-between gap-2 rounded-[var(--r-md)] border border-[var(--c-aqua-light)] bg-[var(--c-surface)] px-3 py-2.5">
-                    <span className="flex items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
+                  <div
+                    className={`flex flex-1 items-center justify-between gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 sm:px-3 ${HOUR_STATUS_STYLE.available.border} ${HOUR_STATUS_STYLE.available.bg}`}
+                  >
+                    <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
                       <span
-                        className="h-2 w-2 rounded-full bg-[var(--c-aqua)]"
+                        className={`h-2 w-2 shrink-0 rounded-full ${HOUR_STATUS_STYLE.available.dot}`}
                         aria-hidden="true"
                       />
-                      Disponible
+                      <span className="truncate">Disponible</span>
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                       {!adminMode && (
                         <button
                           type="button"
@@ -416,7 +542,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                             })
                           }
                           disabled={busy}
-                          className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                          className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-3"
                         >
                           <FiPlus aria-hidden="true" /> Alumno
                         </button>
@@ -508,8 +634,10 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
 
 function AgendaRow({ time, children }: { time: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 border-b border-[var(--c-border)] px-4 py-2.5 last:border-b-0 sm:px-5">
-      <span className="w-12 shrink-0 text-sm font-semibold text-[var(--c-text-2)]">{time}</span>
+    <div className="flex items-center gap-2 border-b border-[var(--c-border)] px-3 py-2.5 last:border-b-0 sm:gap-3 sm:px-5">
+      <span className="w-9 shrink-0 text-xs font-semibold text-[var(--c-text-2)] sm:w-12 sm:text-sm">
+        {time}
+      </span>
       {children}
     </div>
   )

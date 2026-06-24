@@ -50,6 +50,14 @@ export interface PublicBookedSlot {
   bookedCount: number
 }
 
+/** Hour (or whole day) the coach blocked — surfaced so the public schedule can
+ * hide it. `allDay` blocks the whole `date`; otherwise `startTime` is the hour. */
+export interface PublicBlockedSlot {
+  date: string
+  startTime: string | null
+  allDay: boolean
+}
+
 /** Ad-hoc hour a coach published from the agenda, surfaced to athletes. */
 export interface PublicOpenSlot {
   id: string

@@ -45,6 +45,7 @@ export default async function CoachPublicPage({ params }: CoachPublicPageProps) 
           name={detail.name}
           bookedSlots={detail.bookedSlots}
           openSlots={detail.openSlots}
+          blockedSlots={detail.blockedSlots}
         />
       </div>
     </section>

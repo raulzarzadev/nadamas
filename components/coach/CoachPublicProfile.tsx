@@ -1,5 +1,6 @@
 'use client'
 
+import CopyLinkButton from '@comps/coach/CopyLinkButton'
 import { TextField } from '@comps/Inputs/FormFields'
 import Avatar from '@comps/ui/avatar'
 import Sheet from '@comps/ui/sheet'
@@ -13,6 +14,7 @@ import {
   type CoachBookingSelection,
   flattenCoachBookingSelections,
   openSlotsToSelections,
+  type PublicBlockedSlot,
   type PublicBookedSlot,
   type PublicOpenSlot,
 } from '@/lib/coach-booking'
@@ -136,12 +138,14 @@ export default function CoachPublicProfile({
   avatarUrl,
   bookedSlots = [],
   openSlots = [],
+  blockedSlots = [],
 }: {
   coach: CoachPublic
   name?: string
   avatarUrl?: string | null
   bookedSlots?: PublicBookedSlot[]
   openSlots?: PublicOpenSlot[]
+  blockedSlots?: PublicBlockedSlot[]
 }) {
   const [bookingModalOpen, setBookingModalOpen] = useState(false)
   const [bookingStep, setBookingStep] = useState<'details' | 'otp' | 'done'>('details')
@@ -179,7 +183,26 @@ export default function CoachPublicProfile({
         : ([] as CoachBookingSelection[]),
     [coach, openSlots, weekStart]
   )
+  // Hours the coach blocked — shown struck-through (not bookable) on the public
+  // schedule. Whole-day blocks cover every hour of that date.
+  const blockedLookup = useMemo(() => {
+    const days = new Set(blockedSlots.filter((b) => b.allDay).map((b) => b.date))
+    const hours = new Set(
+      blockedSlots.filter((b) => !b.allDay && b.startTime).map((b) => `${b.date}|${b.startTime}`)
+    )
+    return { days, hours }
+  }, [blockedSlots])
+  const isBlocked = (selection: CoachBookingSelection) =>
+    blockedLookup.days.has(selection.date) ||
+    blockedLookup.hours.has(`${selection.date}|${selection.startTime}`)
   const bookedSlotCounts = useMemo(() => buildBookedSlotMap(bookedSlots), [bookedSlots])
+  // Any booking at a given date+hour marks it occupied — coach-added bookings use
+  // a synthetic offeringId ('open') that won't match the offering selection key,
+  // so match by time instead of relying solely on per-offering capacity.
+  const bookedHours = useMemo(
+    () => new Set(bookedSlots.map((slot) => `${slot.date}|${slot.startTime}`)),
+    [bookedSlots]
+  )
   const sortedAllSelectedSelections = useMemo(
     () => sortSelectedSelections(Object.values(selectedSlots)),
     [selectedSlots]
@@ -325,23 +348,26 @@ export default function CoachPublicProfile({
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center gap-4">
-        <Avatar name={name} src={heroPhoto} size={72} />
-        <div className="min-w-0 flex-1">
-          {name && (
-            <h1 className="truncate text-2xl font-extrabold text-[var(--c-ocean)]">{name}</h1>
-          )}
-          <div className="mt-1">
-            <VerifiedBadge verified={verified} />
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <Avatar name={name} src={heroPhoto} size={72} />
+          <div className="min-w-0 flex-1">
+            {name && (
+              <h1 className="truncate text-2xl font-extrabold text-[var(--c-ocean)]">{name}</h1>
+            )}
+            <div className="mt-1">
+              <VerifiedBadge verified={verified} />
+            </div>
           </div>
         </div>
+        <CopyLinkButton label="Compartir horarios" className="w-full sm:ml-auto sm:w-auto" />
       </header>
 
       {coach.bio && <p className="text-[var(--c-text-2)]">{coach.bio}</p>}
 
       {offerings.length > 0 && (
         <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div>
               <h2 className="text-lg font-bold text-[var(--c-ocean)]">Horarios disponibles</h2>
               <p className="text-sm text-[var(--c-text-2)]">
@@ -349,7 +375,7 @@ export default function CoachPublicProfile({
               </p>
             </div>
             {dayGroups.length > 0 && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 self-end sm:self-auto">
                 <button
                   type="button"
                   className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--c-border)] text-sm font-bold text-[var(--c-ocean)]"
@@ -388,22 +414,30 @@ export default function CoachPublicProfile({
                 }),
                 times: group.selections.map((selection) => {
                   const key = bookingSelectionKey(selection)
-                  const isFull = isSelectionFull(coach, selection, bookedSlotCounts)
+                  const occupied =
+                    isSelectionFull(coach, selection, bookedSlotCounts) ||
+                    bookedHours.has(`${selection.date}|${selection.startTime}`)
+                  const blocked = isBlocked(selection)
+                  // Occupied (booked/full) or blocked hours are shown struck-through
+                  // and aren't bookable.
+                  const struck = occupied || blocked
                   return {
                     key,
                     label: selection.startTime,
                     active: selectedKeys.has(key),
-                    disabled: isFull,
+                    disabled: struck,
                     ariaLabel: `${DAY_LABELS[group.day] || group.day} ${selection.startTime}${
-                      isFull ? ', horario lleno' : ''
+                      blocked ? ', horario no disponible' : occupied ? ', horario lleno' : ''
                     }`,
-                    onClick: () =>
-                      setSelectedSlots((current) => {
-                        if (!current[key]) return { ...current, [key]: selection }
-                        const next = { ...current }
-                        delete next[key]
-                        return next
-                      }),
+                    onClick: struck
+                      ? undefined
+                      : () =>
+                          setSelectedSlots((current) => {
+                            if (!current[key]) return { ...current, [key]: selection }
+                            const next = { ...current }
+                            delete next[key]
+                            return next
+                          }),
                   }
                 }),
               }))}
