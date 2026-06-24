@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: CoachPublicPageProps): Promis
   const images = [{ url: coachDisplayPhoto(detail.coach) || '/og-nadamas.png' }]
   return {
     metadataBase: new URL('https://nadamas.app'),
-    title,
+    title: `${title} · Coach de natación`,
     description,
     openGraph: { title, description, type: 'profile', images },
     twitter: { card: 'summary_large_image', title, description, images },
