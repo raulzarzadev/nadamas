@@ -83,7 +83,7 @@ export default function SiteNav() {
             Soy coach
           </a>
           <Link
-            href="/#coaches"
+            href="/coaches"
             className="rounded-full px-5 py-2.5 text-[0.92rem] font-semibold text-white"
             style={{
               background: 'var(--c-aqua-strong)',
@@ -182,7 +182,7 @@ export default function SiteNav() {
               Soy coach
             </a>
             <Link
-              href="/#coaches"
+              href="/coaches"
               onClick={() => setOpen(false)}
               className="block rounded-full px-5 py-3 text-center text-base font-semibold text-white"
               style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
