@@ -15,6 +15,10 @@ export interface AppUser {
   phone?: string
   profileCompletedAt?: number
   photoURL?: string
+  /** Short public bio shown on the athlete's public profile card. */
+  athleteBio?: string
+  /** Current public slugs per role (mirror of the `slugs` registry). */
+  slugs?: { coach?: string; athlete?: string }
   roles?: Partial<Roles>
   isCoach?: boolean
   createdAt?: number

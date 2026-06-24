@@ -6,6 +6,7 @@ import PersonalDataCard from '@comps/coach/PersonalDataCard'
 import ScoreCard from '@comps/coach/ScoreCard'
 import SkillsCard from '@comps/coach/SkillsCard'
 import Loading from '@comps/Loading'
+import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import { useEffect, useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import type { CoachPrivate, CoachPublic, CoachVerification } from '@/firebase/coaches/coach.model'
@@ -167,6 +168,8 @@ export default function CoachProfilePage() {
         togglingVisible={savingSection === 'visibility'}
         onToggleVisible={(next) => savePublic('visibility', { publicProfileVisible: next })}
       />
+
+      <PublicLinkEditor />
 
       <PersonalDataCard
         uid={uid}

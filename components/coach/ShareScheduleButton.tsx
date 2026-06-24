@@ -1,19 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiCheck, FiShare2 } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
+import { getAuthed } from '@/lib/client/authed-api'
 
 export default function ShareScheduleButton() {
   const { user } = useUser()
   const [copied, setCopied] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [coachSlug, setCoachSlug] = useState<string | null>(null)
 
   const uid = user?.uid || user?.id
 
+  // Prefer the readable coach slug; fall back to the uid.
+  useEffect(() => {
+    if (!uid) return
+    let active = true
+    getAuthed('/api/slug?self=1')
+      .then((response) => response.json())
+      .then((data: { slugs?: { coach?: string } }) => {
+        if (active && data.slugs?.coach) setCoachSlug(data.slugs.coach)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [uid])
+
   const share = async () => {
     if (!uid) return
-    const link = `${window.location.origin}/${uid}`
+    const link = `${window.location.origin}/${coachSlug || uid}`
     setFailed(false)
     try {
       await navigator.clipboard.writeText(link)

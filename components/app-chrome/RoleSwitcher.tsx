@@ -2,8 +2,10 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { FiCheck, FiShare2 } from 'react-icons/fi'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
+import { getAuthed } from '@/lib/client/authed-api'
 import type { RoleName } from '@/lib/roles'
 import { ROLE_LABEL, SECONDARY_NAV_BY_ROLE } from './nav-config'
 
@@ -52,6 +54,8 @@ export default function RoleSwitcher({
   const userEmail = user?.email
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [slugs, setSlugs] = useState<{ coach?: string; athlete?: string }>({})
+  const [copiedKind, setCopiedKind] = useState<'coach' | 'athlete' | null>(null)
   const switcherRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -128,6 +132,50 @@ export default function RoleSwitcher({
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointerDown)
   }, [open])
 
+  // Load the user's public slugs lazily when the menu opens.
+  useEffect(() => {
+    if (!open) return
+    let active = true
+    getAuthed('/api/slug?self=1')
+      .then((response) => response.json())
+      .then((data: { slugs?: { coach?: string; athlete?: string } }) => {
+        if (active) setSlugs(data.slugs || {})
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [open])
+
+  const shareSlug = async (kind: 'coach' | 'athlete', slug: string) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/${slug}`)
+      setCopiedKind(kind)
+      setTimeout(() => setCopiedKind((current) => (current === kind ? null : current)), 2000)
+    } catch {}
+  }
+
+  const renderShare = (kind: 'coach' | 'athlete') => {
+    const slug = slugs[kind]
+    if (!slug) return null
+    const copied = copiedKind === kind
+    return (
+      <button
+        type="button"
+        onClick={() => shareSlug(kind, slug)}
+        aria-label={`Copiar enlace de ${ROLE_LABEL[kind]}`}
+        title={`nadamas.app/${slug}`}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]"
+      >
+        {copied ? (
+          <FiCheck aria-hidden="true" className="text-[var(--c-aqua-strong)]" />
+        ) : (
+          <FiShare2 aria-hidden="true" />
+        )}
+      </button>
+    )
+  }
+
   return (
     <div ref={switcherRef} className="relative">
       <button
@@ -192,7 +240,16 @@ export default function RoleSwitcher({
             <div className="my-1 border-t border-[var(--c-border)]" />
           </div>
 
-          <div role="none">
+          {(slugs.athlete || slugs.coach) && (
+            <p
+              role="none"
+              className="px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--c-text-2)]"
+            >
+              Compartir perfil
+            </p>
+          )}
+
+          <div role="none" className="flex items-center gap-1 pr-1">
             <button
               type="button"
               role="menuitem"
@@ -200,24 +257,28 @@ export default function RoleSwitcher({
                 setActiveRole('athlete')
                 setOpen(false)
               }}
-              className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+              className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
             >
               Modo {ROLE_LABEL.athlete}
             </button>
+            {renderShare('athlete')}
           </div>
-          <div role="none">
+          <div role="none" className="flex items-center gap-1 pr-1">
             {roles.coach ? (
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setActiveRole('coach')
-                  setOpen(false)
-                }}
-                className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
-              >
-                Modo {ROLE_LABEL.coach}
-              </button>
+              <>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setActiveRole('coach')
+                    setOpen(false)
+                  }}
+                  className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+                >
+                  Modo {ROLE_LABEL.coach}
+                </button>
+                {renderShare('coach')}
+              </>
             ) : (
               <button
                 type="button"

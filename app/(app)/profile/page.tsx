@@ -1,5 +1,6 @@
 'use client'
 import { TextField } from '@comps/Inputs/FormFields'
+import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import SaveButton from '@comps/SaveButton'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -21,6 +22,7 @@ export default function ProfilePage() {
   const [nickname, setNickname] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [athleteBio, setAthleteBio] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [message, setMessage] = useState<string | null>(null)
 
@@ -33,10 +35,11 @@ export default function ProfilePage() {
     setNickname((current) => current || user.nickname || user.displayName || user.name || '')
     setFirstName((current) => current || user.firstName || '')
     setLastName((current) => current || user.lastName || '')
+    setAthleteBio((current) => current || user.athleteBio || '')
   }, [user])
 
   const { saveNow } = useAutosave(
-    JSON.stringify({ nickname, firstName, lastName }),
+    JSON.stringify({ nickname, firstName, lastName, athleteBio }),
     () => void save(),
     { enabled: !!user && !!nickname.trim() }
   )
@@ -57,6 +60,7 @@ export default function ProfilePage() {
         nickname: trimmed,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
+        athleteBio: athleteBio.trim(),
       })
       await refreshUser?.()
       setStatus('saved')
@@ -132,6 +136,18 @@ export default function ProfilePage() {
           autoComplete="family-name"
         />
 
+        <label className="flex flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
+          Bio (perfil de atleta)
+          <textarea
+            value={athleteBio}
+            onChange={(event) => setAthleteBio(event.target.value)}
+            placeholder="Una línea sobre ti como nadador (se muestra en tu perfil público)."
+            rows={3}
+            maxLength={280}
+            className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 py-2 font-normal text-[var(--c-ocean)] outline-none transition focus:border-[var(--c-aqua)] focus:ring-4 focus:ring-[rgba(0,180,216,0.16)]"
+          />
+        </label>
+
         {message && (
           <p
             className={`text-sm ${status === 'error' ? 'text-red-600' : 'text-[var(--c-text-2)]'}`}
@@ -148,6 +164,7 @@ export default function ProfilePage() {
         />
       </div>
 
+      <PublicLinkEditor />
     </div>
   )
 }

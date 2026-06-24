@@ -19,6 +19,7 @@ export async function PATCH(request: Request) {
     nickname?: string
     firstName?: string
     lastName?: string
+    athleteBio?: string
   }
 
   const nickname = body.nickname?.trim()
@@ -40,6 +41,9 @@ export async function PATCH(request: Request) {
         nickname,
         firstName: firstName || null,
         lastName: lastName || null,
+        ...(body.athleteBio !== undefined
+          ? { athleteBio: body.athleteBio.trim().slice(0, 280) }
+          : {}),
         updatedAt: Date.now(),
       },
       { merge: true }

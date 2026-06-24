@@ -1,5 +1,6 @@
 'use client'
 
+import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import Link from 'next/link'
 import type React from 'react'
 import { useEffect, useState } from 'react'
@@ -165,6 +166,8 @@ export default function AthleteHomeDashboard() {
           )
         })}
       </div>
+
+      <PublicLinkEditor />
     </div>
   )
 }

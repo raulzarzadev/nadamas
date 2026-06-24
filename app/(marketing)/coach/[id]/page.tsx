@@ -2,6 +2,7 @@ import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { coachDisplayPhoto } from '@/lib/coach-photo'
 import { getPublicCoachDetail } from '@/lib/server/public-coach'
 
 interface CoachPublicPageProps {
@@ -12,16 +13,19 @@ export async function generateMetadata({ params }: CoachPublicPageProps): Promis
   const { id } = await params
   const detail = await getPublicCoachDetail(id)
   if (!detail) {
-    return {
-      title: 'Coach no disponible · nadamas.app',
-    }
+    return { title: 'Perfil no disponible' }
   }
 
+  const title = detail.name
+  const description =
+    detail.coach.bio || 'Perfil de coach de natación: estilo, clases y horarios disponibles.'
+  const images = [{ url: coachDisplayPhoto(detail.coach) || '/og-nadamas.png' }]
   return {
-    title: `${detail.name} · Coach de natación · nadamas.app`,
-    description:
-      detail.coach.bio ||
-      'Perfil público de coach de natación en nadamas.app con estilo, clases y horarios.',
+    metadataBase: new URL('https://nadamas.app'),
+    title,
+    description,
+    openGraph: { title, description, type: 'profile', images },
+    twitter: { card: 'summary_large_image', title, description, images },
   }
 }
 
