@@ -22,7 +22,9 @@ import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from 
 import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
 import type { Booking } from '@/lib/coach-booking'
 import {
+  addDays,
   createOffering,
+  dateKey,
   formatPesosCompact,
   initialDatesForOffering,
   initialTimesForOffering,
@@ -31,6 +33,7 @@ import {
   offeringTypeLabel,
   offeringWithHours,
   offeringWithoutHours,
+  startOfWeek,
 } from '@/lib/coach-offerings'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
@@ -972,25 +975,4 @@ function buildNextWeekDays(): AgendaWeekDay[] {
     date.setDate(date.getDate() + index)
     return { key: dateKey(date), label: weekdayChipLabel(date) }
   })
-}
-
-function dateKey(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function startOfWeek(date: Date) {
-  const next = new Date(date)
-  const day = next.getDay()
-  next.setHours(0, 0, 0, 0)
-  next.setDate(next.getDate() + (day === 0 ? -6 : 1 - day))
-  return next
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date)
-  next.setDate(next.getDate() + days)
-  return next
 }

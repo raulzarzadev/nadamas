@@ -1,5 +1,6 @@
 import AthletePublicProfile from '@comps/athlete/AthletePublicProfile'
 import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
+import JsonLd from '@comps/JsonLd'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { coachDisplayPhoto } from '@/lib/coach-photo'
@@ -20,30 +21,36 @@ export async function generateMetadata({ params }: PublicProfilePageProps): Prom
 
   let title: string
   let description: string
-  let image: string | null
 
   if (target.kind === 'coach') {
     const detail = await getPublicCoachDetail(target.uid)
     if (!detail) return { title: 'Perfil no disponible' }
-    title = detail.name
+    title = `${detail.name} · Coach de natación`
     description =
       detail.coach.bio || 'Perfil de coach de natación: estilo, clases y horarios disponibles.'
-    image = coachDisplayPhoto(detail.coach)
   } else {
     const detail = await getPublicAthleteDetail(target.uid)
     if (!detail) return { title: 'Perfil no disponible' }
     title = detail.name
     description = detail.bio || 'Perfil de nadador en nadamas.'
-    image = detail.photoURL
   }
 
-  const images = [{ url: image || '/og-nadamas.png' }]
+  // og:image / twitter:image come from the colocated opengraph-image.tsx
+  // (1200×630 card with the profile photo) — do not set images here.
   return {
     metadataBase: METADATA_BASE,
     title,
     description,
-    openGraph: { title, description, type: 'profile', images },
-    twitter: { card: 'summary_large_image', title, description, images },
+    alternates: { canonical: `/${id}` },
+    openGraph: {
+      title,
+      description,
+      type: 'profile',
+      siteName: 'nadamas.app',
+      locale: 'es_MX',
+      url: `/${id}`,
+    },
+    twitter: { card: 'summary_large_image', title, description },
   }
 }
 
@@ -66,8 +73,18 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
 
   const detail = await getPublicCoachDetail(target.uid)
   if (!detail) notFound()
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: detail.name,
+    jobTitle: 'Coach de natación',
+    ...(detail.coach.bio ? { description: detail.coach.bio } : {}),
+    ...(coachDisplayPhoto(detail.coach) ? { image: coachDisplayPhoto(detail.coach) } : {}),
+    url: `${METADATA_BASE.origin}/${id}`,
+  }
   return (
     <section className="mx-auto max-w-[1040px] px-5 py-6 sm:px-8 lg:py-8">
+      <JsonLd data={jsonLd} />
       <div className="rounded-[32px] border border-[var(--c-border)] bg-[var(--c-bg)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
         <CoachPublicProfile
           coach={detail.coach}

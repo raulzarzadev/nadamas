@@ -3,11 +3,14 @@
 import { MoneyField, TextField } from '@comps/Inputs/FormFields'
 import { useState } from 'react'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
-
-const HOUR_OPTIONS = Array.from(
-  { length: 16 },
-  (_, index) => `${String(index + 6).padStart(2, '0')}:00`
-)
+import {
+  addDays,
+  dateFromKey,
+  dateKey,
+  HOUR_OPTIONS,
+  startOfWeek,
+  WEEKDAY_LABELS,
+} from '@/lib/coach-offerings'
 
 export interface AgendaWeekDay {
   key: string
@@ -20,39 +23,12 @@ export interface OpenHoursDetails {
   priceCents: number | null
 }
 
-const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-
-function dateKey(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function dateFromKey(key: string) {
-  return new Date(`${key}T12:00:00`)
-}
-
-function startOfWeek(date: Date) {
-  const next = new Date(date)
-  const day = next.getDay()
-  next.setHours(0, 0, 0, 0)
-  next.setDate(next.getDate() + (day === 0 ? -6 : 1 - day))
-  return next
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date)
-  next.setDate(next.getDate() + days)
-  return next
-}
-
 function buildWeekDays(start: Date): AgendaWeekDay[] {
   return Array.from({ length: 7 }, (_, index) => {
     const date = addDays(start, index)
     return {
       key: dateKey(date),
-      label: `${DAY_LABELS[date.getDay()]}|${date.getDate()}`,
+      label: `${WEEKDAY_LABELS[date.getDay()]}|${date.getDate()}`,
     }
   })
 }

@@ -125,10 +125,6 @@ export function offeringIcon(offering: CoachClassOffering): string {
   return offering.mode === 'home' ? '🏠' : offering.mode === 'online' ? '💻' : '📍'
 }
 
-export function offeringHeadline(offering: CoachClassOffering): string {
-  return `${offeringIcon(offering)} ${offeringTypeLabel(offering)} · ${offeringContextLabel(offering)}`
-}
-
 export function offeringWhen(offering: CoachClassOffering): string {
   const schedules = resolveOfferingSchedules(offering)
   if (!schedules.length) return 'Horarios por definir'
@@ -158,23 +154,6 @@ export function offeringPrice(offering: CoachClassOffering): string {
   const unit = OFFERING_UNITS.find((u) => u.value === offering.unit)?.label || 'por clase'
   const cents = offeringPriceCents(offering)
   return cents !== null ? `${formatPesos(cents)} ${unit}` : `$ — ${unit}`
-}
-
-/** Compact card label: a price range when comparable, otherwise the cheapest priced offering. */
-export function offeringsPriceSummary(offerings: CoachClassOffering[]): string {
-  const priced = offerings
-    .filter((o) => offeringPriceCents(o) !== null)
-    .sort((a, b) => (offeringPriceCents(a) as number) - (offeringPriceCents(b) as number))
-  if (!priced.length) return 'Precio por definir'
-
-  const units = new Set(priced.map((offering) => offering.unit))
-  const min = offeringPriceCents(priced[0]) as number
-  const max = offeringPriceCents(priced[priced.length - 1]) as number
-  if (units.size === 1 && min !== max) {
-    return `${formatPesosCompact(min)} - ${formatPesosCompact(max)}`
-  }
-
-  return offeringPrice(priced[0])
 }
 
 export function offeringsAvailabilitySummary(offerings: CoachClassOffering[]): string {
@@ -281,7 +260,18 @@ export function scheduleIsAvailableOn(schedule: CoachOfferingSchedule, date: Dat
   return dateKey(nextWeek) === dateKey(weekStart)
 }
 
-const DAY_LABELS_SUNDAY_FIRST = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+/** Weekday short labels indexed by Date.getDay() (0 = Sunday). */
+export const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+/** Selectable hour slots for the schedule editors (06:00–21:00). */
+export const HOUR_OPTIONS = Array.from(
+  { length: 16 },
+  (_, index) => `${String(index + 6).padStart(2, '0')}:00`
+)
+
+export function dateFromKey(key: string) {
+  return new Date(`${key}T12:00:00`)
+}
 
 export function addMinutes(time: string, minutesToAdd: number) {
   const [hour = 0, minute = 0] = time.split(':').map(Number)
@@ -290,27 +280,7 @@ export function addMinutes(time: string, minutesToAdd: number) {
 }
 
 export function dayLabelsFromDates(dates: string[]) {
-  return [
-    ...new Set(dates.map((date) => DAY_LABELS_SUNDAY_FIRST[new Date(`${date}T12:00:00`).getDay()])),
-  ]
-}
-
-/** Build offering schedules from a {dates, times} selection (date-pinned hours). */
-export function schedulesFromSelection(
-  dates: string[],
-  times: string[],
-  durationMinutes: number
-): CoachOfferingSchedule[] {
-  const days = dayLabelsFromDates(dates)
-  return times.map((time) => ({
-    id: crypto.randomUUID(),
-    timeMode: 'fixed',
-    days,
-    startTime: time,
-    endTime: addMinutes(time, durationMinutes),
-    availabilityMode: 'dates',
-    availableDates: dates,
-  }))
+  return [...new Set(dates.map((date) => WEEKDAY_LABELS[new Date(`${date}T12:00:00`).getDay()]))]
 }
 
 export function initialDatesForOffering(offering: CoachClassOffering) {

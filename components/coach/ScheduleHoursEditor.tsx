@@ -2,40 +2,16 @@
 
 import { useState } from 'react'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
-
-const HOUR_OPTIONS = Array.from(
-  { length: 16 },
-  (_, index) => `${String(index + 6).padStart(2, '0')}:00`
-)
-
-const DAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+import {
+  addDays,
+  dateFromKey,
+  dateKey,
+  HOUR_OPTIONS,
+  startOfWeek,
+  WEEKDAY_LABELS,
+} from '@/lib/coach-offerings'
 
 export type HoursMode = 'add' | 'remove'
-
-function dateKey(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-function dateFromKey(key: string) {
-  return new Date(`${key}T12:00:00`)
-}
-
-function startOfWeek(date: Date) {
-  const next = new Date(date)
-  const day = next.getDay()
-  next.setHours(0, 0, 0, 0)
-  next.setDate(next.getDate() + (day === 0 ? -6 : 1 - day))
-  return next
-}
-
-function addDays(date: Date, amount: number) {
-  const next = new Date(date)
-  next.setDate(next.getDate() + amount)
-  return next
-}
 
 function todayKey() {
   return dateKey(new Date())
@@ -197,7 +173,7 @@ export default function ScheduleHoursEditor({
                           : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
                     } ${isToday ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
                   >
-                    <span>{DAY_LABELS[date.getDay()]}</span>
+                    <span>{WEEKDAY_LABELS[date.getDay()]}</span>
                     <span className="text-sm">{date.getDate()}</span>
                   </button>
                 )
