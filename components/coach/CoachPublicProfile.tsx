@@ -13,10 +13,8 @@ import {
   bookingSelectionKey,
   type CoachBookingSelection,
   flattenCoachBookingSelections,
-  openSlotsToSelections,
   type PublicBlockedSlot,
   type PublicBookedSlot,
-  type PublicOpenSlot,
 } from '@/lib/coach-booking'
 import {
   addDays,
@@ -137,14 +135,12 @@ export default function CoachPublicProfile({
   name,
   avatarUrl,
   bookedSlots = [],
-  openSlots = [],
   blockedSlots = [],
 }: {
   coach: CoachPublic
   name?: string
   avatarUrl?: string | null
   bookedSlots?: PublicBookedSlot[]
-  openSlots?: PublicOpenSlot[]
   blockedSlots?: PublicBlockedSlot[]
 }) {
   const [bookingModalOpen, setBookingModalOpen] = useState(false)
@@ -157,6 +153,7 @@ export default function CoachPublicProfile({
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [selectedSlots, setSelectedSlots] = useState<Record<string, CoachBookingSelection>>({})
   const [firebaseUser, setFirebaseUser] = useState(auth.currentUser)
+  const currentWeekStart = useMemo(() => startOfWeek(new Date()), [])
   const userContext = useUser() as OptionalUserContext | undefined
   const user =
     userContext?.user ??
@@ -176,38 +173,22 @@ export default function CoachPublicProfile({
   const bookingSelections = useMemo(
     () =>
       coach.id
-        ? [
-            ...flattenCoachBookingSelections({ ...coach, id: coach.id }, weekStart),
-            ...openSlotsToSelections(openSlots, coach.id, weekStart),
-          ]
+        ? flattenCoachBookingSelections({ ...coach, id: coach.id }, weekStart)
         : ([] as CoachBookingSelection[]),
-    [coach, openSlots, weekStart]
+    [coach, weekStart]
   )
   // Hours the coach blocked — shown struck-through (not bookable) on the public
   // schedule. Whole-day blocks cover every hour of that date.
   const blockedLookup = useMemo(() => {
-    const allBlocks = blockedSlots
-    const visibleBlocks = blockedSlots.filter((block) => block.hidden !== true)
-    const allDays = new Set(allBlocks.filter((b) => b.allDay).map((b) => b.date))
+    const allDays = new Set(blockedSlots.filter((b) => b.allDay).map((b) => b.date))
     const allHours = new Set(
-      allBlocks.filter((b) => !b.allDay && b.startTime).map((b) => `${b.date}|${b.startTime}`)
+      blockedSlots.filter((b) => !b.allDay && b.startTime).map((b) => `${b.date}|${b.startTime}`)
     )
-    const visibleDays = new Set(visibleBlocks.filter((b) => b.allDay).map((b) => b.date))
-    const visibleHours = new Set(
-      visibleBlocks.filter((b) => !b.allDay && b.startTime).map((b) => `${b.date}|${b.startTime}`)
-    )
-    return { allDays, allHours, visibleDays, visibleHours }
+    return { allDays, allHours }
   }, [blockedSlots])
-  const isBlocked = (selection: CoachBookingSelection) => {
-    const lookup =
-      selection.offeringId === 'open'
-        ? { days: blockedLookup.visibleDays, hours: blockedLookup.visibleHours }
-        : { days: blockedLookup.allDays, hours: blockedLookup.allHours }
-    return (
-      lookup.days.has(selection.date) ||
-      lookup.hours.has(`${selection.date}|${selection.startTime}`)
-    )
-  }
+  const isBlocked = (selection: CoachBookingSelection) =>
+    blockedLookup.allDays.has(selection.date) ||
+    blockedLookup.allHours.has(`${selection.date}|${selection.startTime}`)
   const bookedSlotCounts = useMemo(() => buildBookedSlotMap(bookedSlots), [bookedSlots])
   // Any booking at a given date+hour marks it occupied — coach-added bookings use
   // a synthetic offeringId ('open') that won't match the offering selection key,
@@ -222,6 +203,7 @@ export default function CoachPublicProfile({
   )
   const dayGroups = useMemo(() => groupSelectionsByDay(bookingSelections), [bookingSelections])
   const selectedKeys = new Set(Object.keys(selectedSlots))
+  const canGoPreviousWeek = weekStart > currentWeekStart
 
   useEffect(() => onAuthStateChanged(auth, setFirebaseUser), [])
 
@@ -359,6 +341,15 @@ export default function CoachPublicProfile({
     })
   }
 
+  function moveWeek(amount: number) {
+    setWeekStart((current) => {
+      const next = startOfWeek(addDays(current, amount))
+      if (next < currentWeekStart) return current
+      return next
+    })
+    setSelectedSlots({})
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -387,33 +378,32 @@ export default function CoachPublicProfile({
                 Elige una o más horas para reservar tu clase.
               </p>
             </div>
-            {dayGroups.length > 0 && (
-              <div className="flex items-center gap-1 self-end sm:self-auto">
-                <button
-                  type="button"
-                  className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--c-border)] text-sm font-bold text-[var(--c-ocean)]"
-                  aria-label="Semana anterior"
-                  onClick={() => setWeekStart((current) => addDays(current, -7))}
-                >
-                  &#8592;
-                </button>
-                <span className="min-w-[8.5rem] text-center text-xs font-semibold text-[var(--c-ocean)]">
-                  {weekStart.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} →{' '}
-                  {addDays(weekStart, 6).toLocaleDateString('es-MX', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </span>
-                <button
-                  type="button"
-                  className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--c-border)] text-sm font-bold text-[var(--c-ocean)]"
-                  aria-label="Semana siguiente"
-                  onClick={() => setWeekStart((current) => addDays(current, 7))}
-                >
-                  &#8594;
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-1 self-end sm:self-auto">
+              <button
+                type="button"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--c-border)] text-sm font-bold text-[var(--c-ocean)] transition disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Semana anterior"
+                disabled={!canGoPreviousWeek}
+                onClick={() => moveWeek(-7)}
+              >
+                &#8592;
+              </button>
+              <span className="min-w-[8.5rem] text-center text-xs font-semibold text-[var(--c-ocean)]">
+                {weekStart.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} →{' '}
+                {addDays(weekStart, 6).toLocaleDateString('es-MX', {
+                  day: 'numeric',
+                  month: 'short',
+                })}
+              </span>
+              <button
+                type="button"
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--c-border)] text-sm font-bold text-[var(--c-ocean)]"
+                aria-label="Semana siguiente"
+                onClick={() => moveWeek(7)}
+              >
+                &#8594;
+              </button>
+            </div>
           </div>
 
           {dayGroups.length > 0 ? (

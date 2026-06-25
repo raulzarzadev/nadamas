@@ -1,7 +1,6 @@
 'use client'
 import LinksCard from '@comps/coach/LinksCard'
 import MediaCard from '@comps/coach/MediaCard'
-import OfferingsCard from '@comps/coach/OfferingsCard'
 import PersonalDataCard from '@comps/coach/PersonalDataCard'
 import ScoreCard from '@comps/coach/ScoreCard'
 import SkillsCard from '@comps/coach/SkillsCard'
@@ -192,17 +191,6 @@ export default function CoachProfilePage() {
         value={pubVal.metrics}
         saving={savingSection === 'metrics'}
         onSave={(metrics) => savePublic('metrics', { metrics })}
-      />
-
-      <OfferingsCard
-        uid={uid}
-        value={{
-          classOfferings: pubVal.classOfferings,
-          teachingLocations: pubVal.teachingLocations,
-          priceOptions: pubVal.priceOptions,
-        }}
-        saving={savingSection === 'offerings'}
-        onSave={(v) => savePublic('offerings', v)}
       />
 
       <MediaCard

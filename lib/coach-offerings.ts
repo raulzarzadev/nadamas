@@ -280,3 +280,53 @@ export function scheduleIsAvailableOn(schedule: CoachOfferingSchedule, date: Dat
   const weekStart = startOfWeek(date)
   return dateKey(nextWeek) === dateKey(weekStart)
 }
+
+const DAY_LABELS_SUNDAY_FIRST = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+export function addMinutes(time: string, minutesToAdd: number) {
+  const [hour = 0, minute = 0] = time.split(':').map(Number)
+  const total = Math.min(hour * 60 + minute + minutesToAdd, 23 * 60 + 59)
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
+export function dayLabelsFromDates(dates: string[]) {
+  return [
+    ...new Set(dates.map((date) => DAY_LABELS_SUNDAY_FIRST[new Date(`${date}T12:00:00`).getDay()])),
+  ]
+}
+
+/** Build offering schedules from a {dates, times} selection (date-pinned hours). */
+export function schedulesFromSelection(
+  dates: string[],
+  times: string[],
+  durationMinutes: number
+): CoachOfferingSchedule[] {
+  const days = dayLabelsFromDates(dates)
+  return times.map((time) => ({
+    id: crypto.randomUUID(),
+    timeMode: 'fixed',
+    days,
+    startTime: time,
+    endTime: addMinutes(time, durationMinutes),
+    availabilityMode: 'dates',
+    availableDates: dates,
+  }))
+}
+
+export function initialDatesForOffering(offering: CoachClassOffering) {
+  return [
+    ...new Set(
+      resolveOfferingSchedules(offering).flatMap((schedule) => schedule.availableDates || [])
+    ),
+  ].sort()
+}
+
+export function initialTimesForOffering(offering: CoachClassOffering) {
+  return [
+    ...new Set(
+      resolveOfferingSchedules(offering)
+        .filter((schedule) => !scheduleIsOpen(schedule) && schedule.startTime)
+        .map((schedule) => schedule.startTime)
+    ),
+  ].sort()
+}

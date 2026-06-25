@@ -32,30 +32,13 @@ export interface CoachAvailableSlot {
   endTime: string
   locationName: string
   status: 'available' | 'booked' | 'blocked'
-  /** 'offering' = derived from an offering schedule, 'open' = ad-hoc published hour */
-  source: 'offering' | 'open'
-  /** present when source === 'open' so the row can be removed */
-  openSlotId?: string
-}
-
-/** Ad-hoc hour a coach publishes from the agenda, independent of offerings. */
-export interface CoachOpenSlot {
-  id: string
-  coachId: string
-  date: string
-  startTime: string
-  endTime: string
-  /** Defaults inherited from the coach's offerings when published. */
-  locationName?: string
-  priceCents?: number | null
-  createdAt: number
-  updatedAt: number
 }
 
 export interface CoachAgendaPayload {
   bookings: Booking[]
   availableSlots: CoachAvailableSlot[]
   blocks: CoachScheduleBlock[]
+  offerings: CoachClassOffering[]
 }
 
 export type ScheduleBlockInput = {
@@ -120,63 +103,12 @@ export function buildAvailableSlots({
         }
         slots.push({
           ...slot,
-          source: 'offering' as const,
           status: slotStatus(slot, bookings, blocks),
         })
       }
     }
   }
   return slots.sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
-}
-
-/** Materialize coach-published open slots into available-slot rows. */
-export function openSlotsToAvailable(
-  openSlots: CoachOpenSlot[],
-  bookings: Booking[],
-  blocks: CoachScheduleBlock[]
-): CoachAvailableSlot[] {
-  const visibleBlocks = blocks.filter((block) => block.hidden !== true)
-
-  return openSlots.map((openSlot) => {
-    const base = {
-      id: `open::${openSlot.id}`,
-      coachId: openSlot.coachId,
-      offeringId: 'open',
-      scheduleId: `open:${openSlot.id}`,
-      date: openSlot.date,
-      startTime: openSlot.startTime,
-      endTime: openSlot.endTime,
-      locationName: openSlot.locationName || 'Horario abierto',
-      source: 'open' as const,
-      openSlotId: openSlot.id,
-    }
-    return { ...base, status: slotStatus(base, bookings, visibleBlocks) }
-  })
-}
-
-/** Expand a {dates, times} selection into 1-hour open-slot rows. */
-export function normalizeOpenSlotInput(input: { dates?: unknown; times?: unknown }) {
-  const dates = Array.isArray(input.dates)
-    ? input.dates.filter(
-        (value): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-      )
-    : []
-  const times = Array.isArray(input.times)
-    ? input.times.filter(
-        (value): value is string => typeof value === 'string' && /^\d{2}:\d{2}$/.test(value)
-      )
-    : []
-  if (!dates.length || !times.length) return null
-
-  const combos: { date: string; startTime: string; endTime: string }[] = []
-  for (const date of dates) {
-    for (const startTime of times) {
-      const [hour, minute] = startTime.split(':').map(Number)
-      const endTime = `${String(hour + 1).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
-      combos.push({ date, startTime, endTime })
-    }
-  }
-  return combos
 }
 
 export function localDateKey(date: Date) {

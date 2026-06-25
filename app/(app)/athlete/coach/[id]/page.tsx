@@ -3,14 +3,13 @@ import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 import Loading from '@comps/Loading'
 import { use, useEffect, useState } from 'react'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
-import type { PublicBlockedSlot, PublicBookedSlot, PublicOpenSlot } from '@/lib/coach-booking'
+import type { PublicBlockedSlot, PublicBookedSlot } from '@/lib/coach-booking'
 
 interface CoachDetail {
   coach: CoachPublic
   name: string
   avatarUrl: string | null
   bookedSlots?: PublicBookedSlot[]
-  openSlots?: PublicOpenSlot[]
   blockedSlots?: PublicBlockedSlot[]
 }
 
@@ -50,7 +49,6 @@ export default function AthleteCoachView({ params }: { params: Promise<{ id: str
       name={detail.name}
       avatarUrl={detail.avatarUrl}
       bookedSlots={detail.bookedSlots || []}
-      openSlots={detail.openSlots || []}
       blockedSlots={detail.blockedSlots || []}
     />
   )
