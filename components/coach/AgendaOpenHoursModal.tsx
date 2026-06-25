@@ -250,41 +250,39 @@ export default function AgendaOpenHoursModal({
           )}
 
           {showDetailsForm && (
-            <div className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <TextField
-                  label="Tipo de clase"
-                  value="Particular"
-                  disabled
-                  readOnly
-                  helperText="Próximamente: clases grupales."
-                  className="sm:col-span-2 disabled:cursor-not-allowed disabled:bg-[var(--c-surface)] disabled:text-[var(--c-text-2)] disabled:opacity-70 disabled:shadow-none"
-                />
-                <TextField
-                  label="Lugar"
-                  placeholder="Ej. Playa el Coromuel"
-                  value={placeName}
-                  onChange={(event) => setPlaceName(event.target.value)}
-                />
-                <MoneyField
-                  label="Precio"
-                  valueCents={priceCents}
-                  onChange={setPriceCents}
-                  placeholder="$350"
-                />
-                <TextField
-                  label="Descripción (opcional)"
-                  placeholder="Ej. Clase de técnica libre"
-                  value={detailTitle}
-                  onChange={(event) => setDetailTitle(event.target.value)}
-                  className="sm:col-span-2"
-                />
-              </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <TextField
+                label="Tipo de clase"
+                value="Particular"
+                disabled
+                readOnly
+                helperText="Próximamente: clases grupales."
+                className="sm:col-span-2 disabled:cursor-not-allowed disabled:bg-[var(--c-surface)] disabled:text-[var(--c-text-2)] disabled:opacity-70 disabled:shadow-none"
+              />
+              <TextField
+                label="Lugar"
+                placeholder="Ej. Playa el Coromuel"
+                value={placeName}
+                onChange={(event) => setPlaceName(event.target.value)}
+              />
+              <MoneyField
+                label="Precio"
+                valueCents={priceCents}
+                onChange={setPriceCents}
+                placeholder="$350"
+              />
+              <TextField
+                label="Descripción (opcional)"
+                placeholder="Ej. Clase de técnica libre"
+                value={detailTitle}
+                onChange={(event) => setDetailTitle(event.target.value)}
+                className="sm:col-span-2"
+              />
             </div>
           )}
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--c-border)] bg-white p-5 pt-4">
+        <div className="flex shrink-0 flex-col gap-2 bg-white p-5 pt-4">
           <button
             type="button"
             disabled={!canSubmit}
