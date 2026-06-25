@@ -362,9 +362,32 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const applyHours = (mode: HoursMode, dates: string[], times: string[]) => {
     if (!selfUid || dates.length === 0 || times.length === 0) return
     setNotice(null)
+    // Bloqueos (incluidos rango y ocultos) que se traslapan con los (día,hora).
+    const overlappingBlockIds = (pairs: { date: string; time: string }[]) =>
+      (agenda?.blocks || [])
+        .filter(
+          (bl) =>
+            !bl.allDay &&
+            bl.startTime &&
+            bl.endTime &&
+            pairs.some(
+              (p) =>
+                p.date === bl.date &&
+                (bl.startTime as string) <= p.time &&
+                p.time < (bl.endTime as string)
+            )
+        )
+        .map((bl) => bl.id)
+    const deleteBlocks = async (pairs: { date: string; time: string }[]) => {
+      for (const id of overlappingBlockIds(pairs)) {
+        await deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(id)}${coachQuery}`)
+      }
+    }
     run(async () => {
       if (mode === 'add') {
         const base = offering ?? createOffering()
+        // Quita bloqueos que tapan estas horas para que queden disponibles.
+        await deleteBlocks(dates.flatMap((date) => times.map((time) => ({ date, time }))))
         await saveOfferings(offeringWithHours(base, dates, times, base.durationMinutes ?? 60))
         setHoursEditorOpen(false)
         return
@@ -384,18 +407,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           pairs.push({ date, time })
         }
       }
-      // Borra también los bloqueos en esos (día,hora).
-      const blockIds = (agenda?.blocks || [])
-        .filter(
-          (bl) =>
-            !bl.allDay &&
-            bl.startTime &&
-            pairs.some((p) => p.date === bl.date && p.time === bl.startTime)
-        )
-        .map((bl) => bl.id)
-      for (const id of blockIds) {
-        await deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(id)}${coachQuery}`)
-      }
+      await deleteBlocks(pairs)
       await saveOfferings(offeringWithoutHours(offering, pairs))
       setHoursEditorOpen(false)
       if (skipped > 0) {
