@@ -118,15 +118,27 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     setSelectedDate(dateKey(new Date(base.getFullYear(), base.getMonth() + delta, 1)))
   }
 
-  // Swipe lateral sobre la tira de días para cambiar de semana.
+  // Swipe lateral sobre la tira de días para cambiar de semana. La tira sigue el
+  // dedo (dragX) y rebota al soltar para que se note que es deslizable.
   const touchStartX = useRef<number | null>(null)
+  const [dragX, setDragX] = useState(0)
+  const [dragging, setDragging] = useState(false)
   const onStripTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0]?.clientX ?? null
+    setDragging(true)
+    setDragX(0)
+  }
+  const onStripTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const dx = (e.touches[0]?.clientX ?? touchStartX.current) - touchStartX.current
+    setDragX(Math.max(-100, Math.min(100, dx)))
   }
   const onStripTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return
     const dx = (e.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current
     touchStartX.current = null
+    setDragging(false)
+    setDragX(0)
     if (Math.abs(dx) > 40) changeWeek(dx < 0 ? 1 : -1)
   }
 
@@ -433,12 +445,14 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         {adminMode
           ? 'Toca un día para ver y editar los horarios del coach.'
           : 'Toca un día para ver y editar tus horas.'}
+        <span className="block text-xs sm:hidden">Desliza para cambiar de semana.</span>
       </p>
 
       {/* Week strip (flechas + swipe lateral para cambiar de semana) */}
       <div
-        className="flex items-stretch gap-1"
+        className="flex touch-pan-y items-stretch gap-1"
         onTouchStart={onStripTouchStart}
+        onTouchMove={onStripTouchMove}
         onTouchEnd={onStripTouchEnd}
       >
         <button
@@ -449,7 +463,14 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         >
           <FiChevronLeft aria-hidden="true" />
         </button>
-        <div className="grid flex-1 grid-cols-7 gap-1.5">
+        <div
+          className="grid flex-1 grid-cols-7 gap-1.5"
+          style={{
+            transform: `translateX(${dragX}px)`,
+            opacity: dragging ? 0.85 : 1,
+            transition: dragging ? 'none' : 'transform 200ms ease, opacity 200ms ease',
+          }}
+        >
           {weekDates.map((date) => {
             const key = dateKey(date)
             const selected = key === selectedDate
