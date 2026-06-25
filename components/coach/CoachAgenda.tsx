@@ -28,7 +28,6 @@ import {
   offeringPriceCents,
   offeringWithHours,
   offeringWithoutHours,
-  resolveOfferingSchedules,
 } from '@/lib/coach-offerings'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
@@ -61,7 +60,6 @@ type ActiveSlot = { date: string; startTime: string; endTime: string; locationNa
 type ConfirmAction =
   | { kind: 'cancel-booking'; booking: Booking }
   | { kind: 'delete-slot'; slot: CoachAvailableSlot }
-  | { kind: 'clear-future' }
 
 export default function CoachAgenda({ coachId }: { coachId?: string }) {
   // When an admin opens another coach's agenda, `coachId` targets that coach and
@@ -364,33 +362,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     })
   }
 
-  // Hay disponibilidad derivada del offering de hoy en adelante.
-  const hasFutureOfferingSlots = (agenda?.availableSlots || []).some(
-    (slot) => slot.date >= dateKey(new Date())
-  )
-
-  // Eliminar horarios futuros: quita de cada schedule las availableDates >= hoy,
-  // descarta schedules sin fechas restantes y offerings vacíos. Las clases ya
-  // agendadas (bookings) se conservan: siguen mostrándose como ocupadas.
-  const clearFutureOfferings = () => {
-    if (!selfUid) return
-    run(async () => {
-      const today = dateKey(new Date())
-      const nextOfferings = offerings
-        .map((item) => ({
-          ...item,
-          schedules: resolveOfferingSchedules(item)
-            .map((schedule) => ({
-              ...schedule,
-              availableDates: (schedule.availableDates || []).filter((d) => d < today),
-            }))
-            .filter((schedule) => (schedule.availableDates?.length ?? 0) > 0),
-        }))
-        .filter((item) => (item.schedules?.length ?? 0) > 0)
-      await CoachCRUD.upsertPublic(selfUid, { classOfferings: nextOfferings })
-    })
-  }
-
   const confirmCopy =
     confirmAction?.kind === 'cancel-booking'
       ? {
@@ -404,13 +375,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             body: `Se eliminará el horario de las ${confirmAction.slot.startTime}. Ya no aparecerá como disponible para alumnos.`,
             action: 'Eliminar horario',
           }
-        : confirmAction?.kind === 'clear-future'
-          ? {
-              title: 'Eliminar horarios futuros',
-              body: 'Se quitarán todos los horarios de hoy en adelante de tu agenda. Las clases ya agendadas se conservan. Esta acción no se puede deshacer.',
-              action: 'Eliminar',
-            }
-          : null
+        : null
 
   const runConfirmedAction = () => {
     if (!confirmAction) return
@@ -418,10 +383,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     setConfirmAction(null)
     if (action.kind === 'cancel-booking') {
       cancelBooking(action.booking)
-      return
-    }
-    if (action.kind === 'clear-future') {
-      clearFutureOfferings()
       return
     }
     eliminarSlot(action.slot)
@@ -527,7 +488,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             </p>
           </div>
           {!adminMode && (
-            <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
+            <div className="flex flex-wrap gap-2 sm:justify-end">
               {offering ? (
                 <>
                   <button
@@ -542,9 +503,9 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                     type="button"
                     onClick={() => setDetailsModalOpen(true)}
                     disabled={busy}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3.5 py-2 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                   >
-                    <FiEdit2 aria-hidden="true" /> Editar horario
+                    <FiEdit2 aria-hidden="true" /> Editar detalles
                   </button>
                 </>
               ) : (
@@ -555,24 +516,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                   className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                 >
                   <FiPlus aria-hidden="true" /> Crear horario
-                </button>
-              )}
-              <button
-                type="button"
-                disabled
-                title="Próximamente"
-                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3.5 py-2 text-xs font-bold text-[var(--c-text-2)] opacity-60"
-              >
-                <FiPlus aria-hidden="true" /> Agregar otro tipo de horario
-              </button>
-              {hasFutureOfferingSlots && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmAction({ kind: 'clear-future' })}
-                  disabled={busy}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--rose-bd)] bg-white px-3.5 py-2 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] disabled:opacity-60"
-                >
-                  <FiX aria-hidden="true" /> Eliminar horarios futuros
                 </button>
               )}
             </div>
@@ -761,11 +704,11 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         />
       )}
 
-      {/* Editar horario: solo opciones de clase */}
+      {/* Editar detalles: solo opciones de clase */}
       {detailsModalOpen && offering && (
         <AgendaOpenHoursModal
           weekDays={buildNextWeekDays()}
-          title="Editar horario"
+          title="Editar detalles"
           description="Edita los datos de tu clase."
           submitLabel="Guardar cambios"
           initialDates={initialDatesForOffering(offering)}
