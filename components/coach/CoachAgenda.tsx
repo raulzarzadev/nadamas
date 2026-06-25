@@ -435,55 +435,73 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           : 'Toca un día para ver y editar tus horas.'}
       </p>
 
-      {/* Week strip (swipe lateral para cambiar de semana) */}
+      {/* Week strip (flechas + swipe lateral para cambiar de semana) */}
       <div
-        className="grid grid-cols-7 gap-1.5"
+        className="flex items-stretch gap-1"
         onTouchStart={onStripTouchStart}
         onTouchEnd={onStripTouchEnd}
       >
-        {weekDates.map((date) => {
-          const key = dateKey(date)
-          const selected = key === selectedDate
-          const statuses = dayStatuses.get(key) || []
-          // Colored lines in chronological order: blue=bloqueado, green=disponible, purple=ocupado.
-          const bars = occupancyBars(statuses)
-          const count = (status: HourStatus) => statuses.filter((s) => s === status).length
-          return (
-            <button
-              type="button"
-              key={key}
-              onClick={() => setSelectedDate(key)}
-              aria-label={
-                statuses.length
-                  ? `${weekdayChipLabel(date)}: ${count('booked')} ocupadas, ${count('available')} disponibles, ${count('blocked')} bloqueadas`
-                  : weekdayChipLabel(date)
-              }
-              className={`flex flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${
-                selected
-                  ? 'border-transparent bg-gradient-to-b from-[var(--c-aqua)] to-[var(--c-ocean)] text-white'
-                  : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
-              }`}
-            >
-              <span
-                className={`text-[10px] font-bold ${selected ? 'text-white/80' : 'text-[var(--c-text-2)]'}`}
+        <button
+          type="button"
+          aria-label="Semana anterior"
+          onClick={() => changeWeek(-1)}
+          className="grid w-6 shrink-0 place-items-center rounded-[var(--r-md)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+        >
+          <FiChevronLeft aria-hidden="true" />
+        </button>
+        <div className="grid flex-1 grid-cols-7 gap-1.5">
+          {weekDates.map((date) => {
+            const key = dateKey(date)
+            const selected = key === selectedDate
+            const statuses = dayStatuses.get(key) || []
+            // Colored lines in chronological order: blue=bloqueado, green=disponible, purple=ocupado.
+            const bars = occupancyBars(statuses)
+            const count = (status: HourStatus) => statuses.filter((s) => s === status).length
+            return (
+              <button
+                type="button"
+                key={key}
+                onClick={() => setSelectedDate(key)}
+                aria-label={
+                  statuses.length
+                    ? `${weekdayChipLabel(date)}: ${count('booked')} ocupadas, ${count('available')} disponibles, ${count('blocked')} bloqueadas`
+                    : weekdayChipLabel(date)
+                }
+                className={`flex flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${
+                  selected
+                    ? 'border-transparent bg-gradient-to-b from-[var(--c-aqua)] to-[var(--c-ocean)] text-white'
+                    : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                }`}
               >
-                {WEEKDAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]}
-              </span>
-              <span className="text-lg font-extrabold leading-none">{date.getDate()}</span>
-              <span
-                aria-hidden="true"
-                className="flex min-h-[14px] flex-col items-center justify-center gap-[2px] pt-0.5"
-              >
-                {bars.map((color, index) => (
-                  <span
-                    key={OCCUPANCY_BAR_KEYS[index]}
-                    className={`h-[3px] w-4 rounded-full ${color}`}
-                  />
-                ))}
-              </span>
-            </button>
-          )
-        })}
+                <span
+                  className={`text-[10px] font-bold ${selected ? 'text-white/80' : 'text-[var(--c-text-2)]'}`}
+                >
+                  {WEEKDAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]}
+                </span>
+                <span className="text-lg font-extrabold leading-none">{date.getDate()}</span>
+                <span
+                  aria-hidden="true"
+                  className="flex min-h-[14px] flex-col items-center justify-center gap-[2px] pt-0.5"
+                >
+                  {bars.map((color, index) => (
+                    <span
+                      key={OCCUPANCY_BAR_KEYS[index]}
+                      className={`h-[3px] w-4 rounded-full ${color}`}
+                    />
+                  ))}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+        <button
+          type="button"
+          aria-label="Semana siguiente"
+          onClick={() => changeWeek(1)}
+          className="grid w-6 shrink-0 place-items-center rounded-[var(--r-md)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+        >
+          <FiChevronRight aria-hidden="true" />
+        </button>
       </div>
 
       {/* Day card */}
