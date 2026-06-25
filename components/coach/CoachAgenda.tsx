@@ -296,7 +296,22 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const eliminarSlot = (slot: CoachAvailableSlot) => block(slot, true)
 
   const cancelBooking = (booking: Booking) =>
-    run(() => deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}`))
+    run(async () => {
+      await deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}`)
+      // Devuelve la hora liberada a "Disponible". Si ya está en el horario es
+      // no-op; si la reserva era de una hora fuera del horario (legado), la
+      // re-publica para que no desaparezca de la agenda.
+      if (selfUid && offering) {
+        await saveOfferings(
+          offeringWithHours(
+            offering,
+            [booking.date],
+            [booking.startTime],
+            offering.durationMinutes ?? 60
+          )
+        )
+      }
+    })
 
   const unblock = (block: CoachScheduleBlock) =>
     run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${coachQuery}`))
