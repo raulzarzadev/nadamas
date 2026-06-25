@@ -488,14 +488,14 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             </p>
           </div>
           {!adminMode && (
-            <div className="flex flex-wrap gap-2 sm:justify-end">
+            <div className="flex gap-2 sm:justify-end">
               {offering ? (
                 <>
                   <button
                     type="button"
                     onClick={() => setHoursEditorOpen(true)}
                     disabled={busy}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua)] px-3 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:flex-none sm:px-4"
                   >
                     <FiClock aria-hidden="true" /> Editar horas
                   </button>
@@ -503,7 +503,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                     type="button"
                     onClick={() => setDetailsModalOpen(true)}
                     disabled={busy}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua)] px-3 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:flex-none sm:px-4"
                   >
                     <FiEdit2 aria-hidden="true" /> Editar detalles
                   </button>
@@ -513,7 +513,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                   type="button"
                   onClick={() => setHoursEditorOpen(true)}
                   disabled={busy}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:flex-none"
                 >
                   <FiPlus aria-hidden="true" /> Crear horario
                 </button>
