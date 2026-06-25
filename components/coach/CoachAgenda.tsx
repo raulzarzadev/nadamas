@@ -23,9 +23,12 @@ import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
 import type { Booking } from '@/lib/coach-booking'
 import {
   createOffering,
+  formatPesosCompact,
   initialDatesForOffering,
   initialTimesForOffering,
+  offeringContextLabel,
   offeringPriceCents,
+  offeringTypeLabel,
   offeringWithHours,
   offeringWithoutHours,
 } from '@/lib/coach-offerings'
@@ -295,6 +298,18 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   // Single class/schedule batch the coach edits from the agenda (self mode).
   const offerings = agenda?.offerings || []
   const offering = offerings[0] || null
+  const offeringSummary = offering
+    ? [
+        offeringTypeLabel(offering),
+        offeringContextLabel(offering),
+        offeringPriceCents(offering) != null
+          ? formatPesosCompact(offeringPriceCents(offering) as number)
+          : null,
+        offering.details?.trim() || null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : null
   const saveOfferings = (next: CoachClassOffering) =>
     CoachCRUD.upsertPublic(selfUid as string, {
       classOfferings: offering
@@ -474,18 +489,23 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       {/* Day card */}
       <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
-          <div className="flex items-baseline gap-2">
-            <h3 className="text-lg font-bold capitalize text-[var(--c-ocean)]">
-              {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-              })}
-            </h3>
-            <span className="text-sm font-semibold text-[var(--c-text-2)]">
-              {dayBookings.length}/
-              {dayBookings.length + rows.filter((row) => row.kind === 'available').length}
-            </span>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-lg font-bold capitalize text-[var(--c-ocean)]">
+                {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                })}
+              </h3>
+              <span className="text-sm font-semibold text-[var(--c-text-2)]">
+                {dayBookings.length}/
+                {dayBookings.length + rows.filter((row) => row.kind === 'available').length}
+              </span>
+            </div>
+            {offeringSummary && (
+              <p className="mt-0.5 text-sm text-[var(--c-text-2)]">{offeringSummary}</p>
+            )}
           </div>
           {!adminMode && (
             <div className="flex gap-2 sm:justify-end">
