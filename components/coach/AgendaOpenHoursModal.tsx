@@ -81,6 +81,7 @@ export default function AgendaOpenHoursModal({
   defaultDate,
   busy,
   showDetails = false,
+  detailsOnly = false,
   title = 'Abrir horarios',
   description = 'Publica las horas que quieres ofrecer. Aplica a uno o varios días.',
   submitLabel = 'Abrir horario(s)',
@@ -94,6 +95,8 @@ export default function AgendaOpenHoursModal({
   defaultDate?: string
   busy: boolean
   showDetails?: boolean
+  /** Only show the "Opciones de la clase" form; keep the schedule (dates/times) intact. */
+  detailsOnly?: boolean
   title?: string
   description?: string
   submitLabel?: string
@@ -132,7 +135,8 @@ export default function AgendaOpenHoursModal({
   const timeDisabled = (time: string) =>
     selectedDates.length > 0 && selectedDates.every((date) => isPastDateTime(date, time))
   const validTimes = [...times].filter((time) => !timeDisabled(time))
-  const canSubmit = dates.size > 0 && validTimes.length > 0 && !busy
+  const canSubmit = detailsOnly ? !busy : dates.size > 0 && validTimes.length > 0 && !busy
+  const showDetailsForm = showDetails || detailsOnly
 
   return (
     <div
@@ -155,94 +159,101 @@ export default function AgendaOpenHoursModal({
             <p className="mt-1 text-sm text-[var(--c-text-2)]">{description}</p>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
-                Días
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  aria-label="Semana anterior"
-                  onClick={() => setWeekStart((current) => addDays(current, -7))}
-                  className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
-                >
-                  <FiChevronLeft aria-hidden="true" />
-                </button>
-                <span className="min-w-[7.5rem] text-center text-xs font-bold text-[var(--c-ocean)]">
-                  {weekRangeLabel(visibleWeekDays)}
-                </span>
-                <button
-                  type="button"
-                  aria-label="Semana siguiente"
-                  onClick={() => setWeekStart((current) => addDays(current, 7))}
-                  className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
-                >
-                  <FiChevronRight aria-hidden="true" />
-                </button>
+          {!detailsOnly && (
+            <>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
+                    Días
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label="Semana anterior"
+                      onClick={() => setWeekStart((current) => addDays(current, -7))}
+                      className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
+                    >
+                      <FiChevronLeft aria-hidden="true" />
+                    </button>
+                    <span className="min-w-[7.5rem] text-center text-xs font-bold text-[var(--c-ocean)]">
+                      {weekRangeLabel(visibleWeekDays)}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Semana siguiente"
+                      onClick={() => setWeekStart((current) => addDays(current, 7))}
+                      className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
+                    >
+                      <FiChevronRight aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {visibleWeekDays.map((day) => {
+                    const active = dates.has(day.key)
+                    const disabled = isPastDay(day.key)
+                    const isWeekend = [0, 6].includes(dateFromKey(day.key).getDay())
+                    const [weekday, dayNumber] = day.label.split('|')
+                    return (
+                      <button
+                        key={day.key}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setDates((current) => toggle(current, day.key))}
+                        className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-[var(--r-sm)] border px-1.5 py-1.5 text-center text-xs font-bold leading-tight transition-colors ${
+                          disabled
+                            ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
+                            : active
+                              ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                              : isWeekend
+                                ? 'border-emerald-200 bg-emerald-50 text-[var(--c-ocean)] hover:bg-emerald-100'
+                                : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                        }`}
+                      >
+                        <span>{weekday}</span>
+                        <span className="text-sm">{dayNumber}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-7 gap-1.5">
-              {visibleWeekDays.map((day) => {
-                const active = dates.has(day.key)
-                const disabled = isPastDay(day.key)
-                const isWeekend = [0, 6].includes(dateFromKey(day.key).getDay())
-                const [weekday, dayNumber] = day.label.split('|')
-                return (
-                  <button
-                    key={day.key}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => setDates((current) => toggle(current, day.key))}
-                    className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-[var(--r-sm)] border px-1.5 py-1.5 text-center text-xs font-bold leading-tight transition-colors ${
-                      disabled
-                        ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
-                        : active
-                          ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                          : isWeekend
-                            ? 'border-emerald-200 bg-emerald-50 text-[var(--c-ocean)] hover:bg-emerald-100'
-                            : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
-                    }`}
-                  >
-                    <span>{weekday}</span>
-                    <span className="text-sm">{dayNumber}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
-              Horas
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {HOUR_OPTIONS.map((time) => {
-                const active = times.has(time)
-                const disabled = timeDisabled(time)
-                return (
-                  <button
-                    key={time}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => setTimes((current) => toggle(current, time))}
-                    className={`rounded-[var(--r-sm)] border px-3.5 py-2 text-sm font-semibold transition-colors ${
-                      disabled
-                        ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
-                        : active
-                          ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                          : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
-                    }`}
-                  >
-                    {time}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
+                  Horas
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {HOUR_OPTIONS.map((time) => {
+                    const active = times.has(time)
+                    const disabled = timeDisabled(time)
+                    return (
+                      <button
+                        key={time}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setTimes((current) => toggle(current, time))}
+                        className={`rounded-[var(--r-sm)] border px-3.5 py-2 text-sm font-semibold transition-colors ${
+                          disabled
+                            ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
+                            : active
+                              ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                              : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          )}
 
-          {showDetails && (
-            <details className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3">
+          {showDetailsForm && (
+            <details
+              open={detailsOnly}
+              className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3"
+            >
               <summary className="cursor-pointer text-sm font-bold text-[var(--c-ocean)]">
                 Opciones de la clase{' '}
                 <span className="font-medium text-[var(--c-text-2)]">
@@ -288,9 +299,9 @@ export default function AgendaOpenHoursModal({
             disabled={!canSubmit}
             onClick={() =>
               onSubmit(
-                [...dates],
-                validTimes,
-                showDetails
+                detailsOnly ? initialDates : [...dates],
+                detailsOnly ? initialTimes : validTimes,
+                showDetailsForm
                   ? {
                       title: detailTitle.trim(),
                       placeName: placeName.trim(),

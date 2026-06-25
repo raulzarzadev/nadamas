@@ -330,3 +330,51 @@ export function initialTimesForOffering(offering: CoachClassOffering) {
     ),
   ].sort()
 }
+
+/** Add (date × time) availability to an offering: one schedule per startTime with
+ * merged availableDates (deduped). Recomputes day labels from the dates. */
+export function offeringWithHours(
+  offering: CoachClassOffering,
+  dates: string[],
+  times: string[],
+  durationMinutes: number
+): CoachClassOffering {
+  const schedules = resolveOfferingSchedules(offering).map((schedule) => ({ ...schedule }))
+  for (const time of times) {
+    let schedule = schedules.find((s) => !scheduleIsOpen(s) && s.startTime === time)
+    if (!schedule) {
+      schedule = {
+        id: crypto.randomUUID(),
+        timeMode: 'fixed',
+        startTime: time,
+        endTime: addMinutes(time, durationMinutes),
+        availabilityMode: 'dates',
+        days: [],
+        availableDates: [],
+      }
+      schedules.push(schedule)
+    }
+    const merged = [...new Set([...(schedule.availableDates || []), ...dates])].sort()
+    schedule.availableDates = merged
+    schedule.days = dayLabelsFromDates(merged)
+  }
+  return { ...offering, schedules }
+}
+
+/** Remove (date,time) pairs from an offering. Drops schedules left with no dates. */
+export function offeringWithoutHours(
+  offering: CoachClassOffering,
+  pairs: { date: string; time: string }[]
+): CoachClassOffering {
+  const remove = new Set(pairs.map((p) => `${p.date}|${p.time}`))
+  const schedules = resolveOfferingSchedules(offering)
+    .map((schedule) => {
+      if (scheduleIsOpen(schedule)) return schedule
+      const availableDates = (schedule.availableDates || []).filter(
+        (date) => !remove.has(`${date}|${schedule.startTime}`)
+      )
+      return { ...schedule, availableDates, days: dayLabelsFromDates(availableDates) }
+    })
+    .filter((schedule) => scheduleIsOpen(schedule) || (schedule.availableDates?.length ?? 0) > 0)
+  return { ...offering, schedules }
+}

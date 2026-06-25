@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiChevronLeft,
   FiChevronRight,
+  FiClock,
   FiEdit2,
   FiLock,
   FiPlus,
@@ -25,8 +26,9 @@ import {
   initialDatesForOffering,
   initialTimesForOffering,
   offeringPriceCents,
+  offeringWithHours,
+  offeringWithoutHours,
   resolveOfferingSchedules,
-  schedulesFromSelection,
 } from '@/lib/coach-offerings'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
@@ -34,6 +36,7 @@ import AgendaOpenHoursModal, {
   type AgendaWeekDay,
   type OpenHoursDetails,
 } from './AgendaOpenHoursModal'
+import ScheduleHoursEditor, { type HoursMode } from './ScheduleHoursEditor'
 
 const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
 const OCCUPANCY_BAR_KEYS = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6'] as const
@@ -75,8 +78,10 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const [error, setError] = useState<string | null>(null)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
-  // Offering editor (self mode only): null = closed, 'create' = new, else editing id.
-  const [offeringModal, setOfferingModal] = useState<'create' | 'edit' | null>(null)
+  // Editores del horario (self mode): opciones de clase y editor de horas.
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const monthOfSelected = selectedDate.slice(0, 7)
 
@@ -292,26 +297,70 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   // Single class/schedule batch the coach edits from the agenda (self mode).
   const offerings = agenda?.offerings || []
   const offering = offerings[0] || null
+  const saveOfferings = (next: CoachClassOffering) =>
+    CoachCRUD.upsertPublic(selfUid as string, {
+      classOfferings: offering
+        ? offerings.map((item) => (item.id === next.id ? next : item))
+        : [...offerings, next],
+    })
 
-  // Save the (single) offering's schedule + details edited from the modal, then
-  // refresh the calendar. Offerings don't feed the autoScore, so no recompute.
-  const submitOffering = (dates: string[], times: string[], details?: OpenHoursDetails) => {
-    if (!selfUid || dates.length === 0 || times.length === 0) return
+  // "Editar horario": solo opciones de clase. Conserva los schedules tal cual.
+  const saveOfferingDetails = (details?: OpenHoursDetails) => {
+    if (!selfUid || !offering) return
     run(async () => {
-      const base = offeringModal === 'edit' && offering ? offering : createOffering()
-      const next: CoachClassOffering = {
-        ...base,
-        details: details?.title ?? base.details,
-        placeName: details?.placeName ?? base.placeName,
-        priceCents: details?.priceCents ?? base.priceCents,
-        schedules: schedulesFromSelection(dates, times, base.durationMinutes ?? 60),
+      await saveOfferings({
+        ...offering,
+        details: details?.title ?? offering.details,
+        placeName: details?.placeName ?? offering.placeName,
+        priceCents: details?.priceCents ?? offering.priceCents,
+      })
+      setDetailsModalOpen(false)
+    })
+  }
+
+  // Editor de horas (Quitar/Agregar): agrega o quita (día × hora) del offering.
+  const applyHours = (mode: HoursMode, dates: string[], times: string[]) => {
+    if (!selfUid || dates.length === 0 || times.length === 0) return
+    setNotice(null)
+    run(async () => {
+      if (mode === 'add') {
+        const base = offering ?? createOffering()
+        await saveOfferings(offeringWithHours(base, dates, times, base.durationMinutes ?? 60))
+        setHoursEditorOpen(false)
+        return
       }
-      const nextOfferings =
-        offeringModal === 'edit'
-          ? offerings.map((item) => (item.id === next.id ? next : item))
-          : [...offerings, next]
-      await CoachCRUD.upsertPublic(selfUid, { classOfferings: nextOfferings })
-      setOfferingModal(null)
+      if (!offering) {
+        setHoursEditorOpen(false)
+        return
+      }
+      const pairs: { date: string; time: string }[] = []
+      let skipped = 0
+      for (const date of dates) {
+        for (const time of times) {
+          if (activeBookings.some((b) => b.date === date && b.startTime === time)) {
+            skipped += 1
+            continue
+          }
+          pairs.push({ date, time })
+        }
+      }
+      // Borra también los bloqueos en esos (día,hora).
+      const blockIds = (agenda?.blocks || [])
+        .filter(
+          (bl) =>
+            !bl.allDay &&
+            bl.startTime &&
+            pairs.some((p) => p.date === bl.date && p.time === bl.startTime)
+        )
+        .map((bl) => bl.id)
+      for (const id of blockIds) {
+        await deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(id)}${coachQuery}`)
+      }
+      await saveOfferings(offeringWithoutHours(offering, pairs))
+      setHoursEditorOpen(false)
+      if (skipped > 0) {
+        setNotice(`No se quitaron ${skipped} hora(s) con alumno. Cancela la clase primero.`)
+      }
     })
   }
 
@@ -479,22 +528,35 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           </div>
           {!adminMode && (
             <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
-              <button
-                type="button"
-                onClick={() => setOfferingModal(offering ? 'edit' : 'create')}
-                disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-              >
-                {offering ? (
-                  <>
+              {offering ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setHoursEditorOpen(true)}
+                    disabled={busy}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                  >
+                    <FiClock aria-hidden="true" /> Editar horas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailsModalOpen(true)}
+                    disabled={busy}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3.5 py-2 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] disabled:opacity-60"
+                  >
                     <FiEdit2 aria-hidden="true" /> Editar horario
-                  </>
-                ) : (
-                  <>
-                    <FiPlus aria-hidden="true" /> Crear horario
-                  </>
-                )}
-              </button>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setHoursEditorOpen(true)}
+                  disabled={busy}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  <FiPlus aria-hidden="true" /> Crear horario
+                </button>
+              )}
               <button
                 type="button"
                 disabled
@@ -519,6 +581,9 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
 
         {error && (
           <p className="px-4 pb-2 text-sm text-[var(--c-error,#b91c1c)] sm:px-5">{error}</p>
+        )}
+        {notice && (
+          <p className="px-4 pb-2 text-sm font-semibold text-amber-600 sm:px-5">{notice}</p>
         )}
 
         <div className="border-t border-[var(--c-border)]">
@@ -696,36 +761,34 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         />
       )}
 
-      {offeringModal && (
+      {/* Editar horario: solo opciones de clase */}
+      {detailsModalOpen && offering && (
         <AgendaOpenHoursModal
           weekDays={buildNextWeekDays()}
-          title={offeringModal === 'edit' ? 'Editar horario' : 'Crear horario'}
-          description="Elige los días, horas, lugar y precio de tu clase."
-          submitLabel={offeringModal === 'edit' ? 'Guardar cambios' : 'Crear horario'}
-          defaultDate={
-            offeringModal === 'edit' && offering
-              ? initialDatesForOffering(offering)[0] || buildNextWeekDays()[0]?.key
-              : buildNextWeekDays()[0]?.key
-          }
-          initialDates={
-            offeringModal === 'edit' && offering ? initialDatesForOffering(offering) : []
-          }
-          initialTimes={
-            offeringModal === 'edit' && offering ? initialTimesForOffering(offering) : []
-          }
-          initialDetails={
-            offeringModal === 'edit' && offering
-              ? {
-                  title: offering.details || '',
-                  placeName: offering.placeName || '',
-                  priceCents: offeringPriceCents(offering),
-                }
-              : undefined
-          }
+          title="Editar horario"
+          description="Edita los datos de tu clase."
+          submitLabel="Guardar cambios"
+          initialDates={initialDatesForOffering(offering)}
+          initialTimes={initialTimesForOffering(offering)}
+          initialDetails={{
+            title: offering.details || '',
+            placeName: offering.placeName || '',
+            priceCents: offeringPriceCents(offering),
+          }}
           busy={busy}
-          showDetails
-          onClose={() => setOfferingModal(null)}
-          onSubmit={submitOffering}
+          detailsOnly
+          onClose={() => setDetailsModalOpen(false)}
+          onSubmit={(_dates, _times, details) => saveOfferingDetails(details)}
+        />
+      )}
+
+      {/* Editor de horas: Quitar / Agregar */}
+      {hoursEditorOpen && (
+        <ScheduleHoursEditor
+          defaultDate={selectedDate}
+          busy={busy}
+          onClose={() => setHoursEditorOpen(false)}
+          onSubmit={applyHours}
         />
       )}
 
