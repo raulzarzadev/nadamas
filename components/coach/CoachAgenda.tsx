@@ -474,7 +474,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       {/* Day card */}
       <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
-          <div>
+          <div className="flex items-baseline gap-2">
             <h3 className="text-lg font-bold capitalize text-[var(--c-ocean)]">
               {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
                 weekday: 'short',
@@ -482,10 +482,10 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                 month: 'short',
               })}
             </h3>
-            <p className="mt-0.5 text-sm text-[var(--c-text-2)]">
-              Lleno: {dayBookings.length}/
+            <span className="text-sm font-semibold text-[var(--c-text-2)]">
+              {dayBookings.length}/
               {dayBookings.length + rows.filter((row) => row.kind === 'available').length}
-            </p>
+            </span>
           </div>
           {!adminMode && (
             <div className="flex gap-2 sm:justify-end">
@@ -789,29 +789,27 @@ function NavStepper({
   labelClassName?: string
 }) {
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      <div className="flex items-center justify-center gap-3">
-        <button
-          type="button"
-          aria-label={prevLabel}
-          onClick={onPrev}
-          className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-        >
-          <FiChevronLeft aria-hidden="true" />
-        </button>
-        <span className={`min-w-[9rem] text-center text-[var(--c-ocean)] ${labelClassName}`}>
-          {label}
-        </span>
-        <button
-          type="button"
-          aria-label={nextLabel}
-          onClick={onNext}
-          className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-        >
-          <FiChevronRight aria-hidden="true" />
-        </button>
-      </div>
-      <span className="text-xs font-semibold text-[var(--c-text-2)]">Lleno: {count}</span>
+    <div className="flex items-center justify-center gap-3">
+      <button
+        type="button"
+        aria-label={prevLabel}
+        onClick={onPrev}
+        className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+      >
+        <FiChevronLeft aria-hidden="true" />
+      </button>
+      <span className="inline-flex items-baseline justify-center gap-2 text-center">
+        <span className={`text-[var(--c-ocean)] ${labelClassName}`}>{label}</span>
+        <span className="text-xs font-semibold text-[var(--c-text-2)]">{count}</span>
+      </span>
+      <button
+        type="button"
+        aria-label={nextLabel}
+        onClick={onNext}
+        className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+      >
+        <FiChevronRight aria-hidden="true" />
+      </button>
     </div>
   )
 }
