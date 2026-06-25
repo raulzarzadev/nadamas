@@ -512,6 +512,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             const key = dateKey(date)
             const selected = key === selectedDate
             const isToday = key === dateKey(new Date())
+            const isWeekend = [0, 6].includes(date.getDay())
             const statuses = dayStatuses.get(key) || []
             // Colored lines in chronological order: blue=bloqueado, green=disponible, purple=ocupado.
             const bars = occupancyBars(statuses)
@@ -529,7 +530,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                 className={`flex flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${
                   selected
                     ? 'border-[var(--c-aqua)] bg-gradient-to-b from-[var(--c-aqua)] to-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]'
-                    : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                    : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
                 } ${isToday ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
               >
                 <span

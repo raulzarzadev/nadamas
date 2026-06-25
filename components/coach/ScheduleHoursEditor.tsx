@@ -143,6 +143,13 @@ export default function ScheduleHoursEditor({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setWeekStart(startOfWeek(new Date()))}
+                  className="rounded-full border border-[var(--c-border)] bg-white px-2.5 py-1 text-[11px] font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+                >
+                  Hoy
+                </button>
+                <button
+                  type="button"
                   aria-label="Semana anterior"
                   onClick={() => setWeekStart((current) => addDays(current, -7))}
                   className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
@@ -174,6 +181,8 @@ export default function ScheduleHoursEditor({
               {visibleWeekDays.map(({ key, date }) => {
                 const active = dates.has(key)
                 const disabled = key < todayKey()
+                const isWeekend = [0, 6].includes(date.getDay())
+                const isToday = key === todayKey()
                 return (
                   <button
                     key={key}
@@ -185,8 +194,8 @@ export default function ScheduleHoursEditor({
                         ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
                         : active
                           ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                          : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
-                    }`}
+                          : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
+                    } ${isToday ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
                   >
                     <span>{DAY_LABELS[date.getDay()]}</span>
                     <span className="text-sm">{date.getDate()}</span>
@@ -223,7 +232,14 @@ export default function ScheduleHoursEditor({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 border-t border-[var(--c-border)] bg-white p-5 pt-4">
+        <div className="flex shrink-0 flex-col gap-2 bg-white p-5 pt-4">
+          {dates.size > 0 && times.size > 0 && (
+            <p className="text-center text-sm font-semibold text-[var(--c-text-2)]">
+              {dates.size} {dates.size === 1 ? 'día' : 'días'} · {times.size}{' '}
+              {times.size === 1 ? 'clase' : 'clases'} por día ·{' '}
+              <span className="text-[var(--c-ocean)]">{dates.size * times.size} en total</span>
+            </p>
+          )}
           <button
             type="button"
             disabled={!canSubmit}

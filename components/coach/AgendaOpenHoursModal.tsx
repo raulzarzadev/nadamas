@@ -205,9 +205,7 @@ export default function AgendaOpenHoursModal({
                             ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
                             : active
                               ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                              : isWeekend
-                                ? 'border-emerald-200 bg-emerald-50 text-[var(--c-ocean)] hover:bg-emerald-100'
-                                : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                              : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
                         }`}
                       >
                         <span>{weekday}</span>
