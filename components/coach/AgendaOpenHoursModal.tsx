@@ -250,17 +250,8 @@ export default function AgendaOpenHoursModal({
           )}
 
           {showDetailsForm && (
-            <details
-              open={detailsOnly}
-              className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3"
-            >
-              <summary className="cursor-pointer text-sm font-bold text-[var(--c-ocean)]">
-                Opciones de la clase{' '}
-                <span className="font-medium text-[var(--c-text-2)]">
-                  (tipo, título, lugar, precio)
-                </span>
-              </summary>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-[var(--c-bg)] p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <TextField
                   label="Tipo de clase"
                   value="Particular"
@@ -268,12 +259,6 @@ export default function AgendaOpenHoursModal({
                   readOnly
                   helperText="Próximamente: clases grupales."
                   className="sm:col-span-2 disabled:cursor-not-allowed disabled:bg-[var(--c-surface)] disabled:text-[var(--c-text-2)] disabled:opacity-70 disabled:shadow-none"
-                />
-                <TextField
-                  label="Título"
-                  placeholder="Ej. Técnica libre"
-                  value={detailTitle}
-                  onChange={(event) => setDetailTitle(event.target.value)}
                 />
                 <TextField
                   label="Lugar"
@@ -286,10 +271,16 @@ export default function AgendaOpenHoursModal({
                   valueCents={priceCents}
                   onChange={setPriceCents}
                   placeholder="$350"
+                />
+                <TextField
+                  label="Descripción (opcional)"
+                  placeholder="Ej. Clase de técnica libre"
+                  value={detailTitle}
+                  onChange={(event) => setDetailTitle(event.target.value)}
                   className="sm:col-span-2"
                 />
               </div>
-            </details>
+            </div>
           )}
         </div>
 
