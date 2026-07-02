@@ -18,7 +18,6 @@ const nextConfig = {
   },
   async redirects() {
     return [
-      { source: '/dashboard', destination: '/athlete/home', permanent: false },
       { source: '/dashboard/profile', destination: '/profile', permanent: false },
       { source: '/dashboard/events', destination: '/athlete/progress', permanent: false },
       {

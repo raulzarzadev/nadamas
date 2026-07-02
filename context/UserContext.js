@@ -4,6 +4,8 @@ import { usePostHog } from 'posthog-js/react'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { getUser, loginUser } from '@/firebase/users'
+import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
+import { normalizeRoles } from '@/lib/roles'
 
 const UserContext = createContext()
 
@@ -42,7 +44,9 @@ export function UserProvider({ children }) {
             .then((res) => {
               setUser(res)
               posthog?.capture('login_success', { provider })
-              redirectTo ? router.push(redirectTo) : router.push('/athlete/home')
+              redirectTo
+                ? router.push(redirectTo)
+                : router.push(destinationForRole(entryRoleForSession(normalizeRoles(res))))
             })
             .catch((err) => {
               console.error(err)
@@ -76,7 +80,7 @@ export function UserProvider({ children }) {
     if (user && redirectTo) {
       router.push(redirectTo)
     }
-  }, [user, router])
+  }, [user, router, redirectTo])
 
   return (
     <UserContext.Provider value={{ user, login, logout, refreshUser }}>

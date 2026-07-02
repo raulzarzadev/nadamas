@@ -228,10 +228,16 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     const available = daySlots
       .filter((slot) => slot.status === 'available')
       .map((slot) => ({ kind: 'available' as const, sort: slot.startTime, slot }))
-    const booked = dayBookings.map((booking) => ({
+    const groupedBookings = new Map<string, Booking[]>()
+    for (const booking of dayBookings) {
+      const group = groupedBookings.get(booking.startTime) || []
+      group.push(booking)
+      groupedBookings.set(booking.startTime, group)
+    }
+    const booked = Array.from(groupedBookings.entries()).map(([startTime, bookings]) => ({
       kind: 'booked' as const,
-      sort: booking.startTime,
-      booking,
+      sort: startTime,
+      bookings: bookings.sort((a, b) => a.athleteName.localeCompare(b.athleteName)),
     }))
     // Render one blocked row per blocked hour (derived from the slots), not per
     // block doc — a block covering several slots must not make the extra hours
@@ -585,30 +591,32 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               </span>
             </div>
             {offeringSummary && (
-              <p className="mt-0.5 text-sm text-[var(--c-text-2)]">{offeringSummary}</p>
+              <div className="mt-0.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+                <p className="text-sm text-[var(--c-text-2)]">{offeringSummary}</p>
+                {!adminMode && offering && (
+                  <button
+                    type="button"
+                    onClick={() => setDetailsModalOpen(true)}
+                    disabled={busy}
+                    className="inline-flex min-h-8 w-fit items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3 text-xs font-semibold text-[var(--c-text-2)] transition-colors hover:border-[var(--c-aqua-light)] hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-60"
+                  >
+                    <FiEdit2 aria-hidden="true" /> Editar detalles
+                  </button>
+                )}
+              </div>
             )}
           </div>
           {!adminMode && (
             <div className="flex gap-2 sm:justify-end">
               {offering ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setHoursEditorOpen(true)}
-                    disabled={busy}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua)] px-3 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:flex-none sm:px-4"
-                  >
-                    <FiClock aria-hidden="true" /> Editar horas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDetailsModalOpen(true)}
-                    disabled={busy}
-                    className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua)] px-3 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:flex-none sm:px-4"
-                  >
-                    <FiEdit2 aria-hidden="true" /> Editar detalles
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => setHoursEditorOpen(true)}
+                  disabled={busy}
+                  className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua)] px-3 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:flex-none sm:px-4"
+                >
+                  <FiClock aria-hidden="true" /> Editar horas
+                </button>
               ) : (
                 <button
                   type="button"
@@ -656,40 +664,77 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           {!allDayBlock &&
             rows.map((row) => {
               if (row.kind === 'booked') {
+                const firstBooking = row.bookings[0]
+                if (!firstBooking) return null
                 return (
-                  <AgendaRow key={`b-${row.booking.id}`} time={row.booking.startTime}>
+                  <AgendaRow
+                    key={`b-${firstBooking.date}-${firstBooking.startTime}`}
+                    time={row.sort}
+                  >
                     <div
-                      className={`flex min-w-0 flex-1 flex-col gap-2.5 rounded-[var(--r-md)] border px-3 py-3 sm:flex-row sm:items-center sm:justify-between ${HOUR_STATUS_STYLE.booked.border} ${HOUR_STATUS_STYLE.booked.bg}`}
+                      className={`flex min-w-0 flex-1 flex-col gap-3 rounded-[var(--r-md)] border px-3 py-3 ${HOUR_STATUS_STYLE.booked.border} ${HOUR_STATUS_STYLE.booked.bg}`}
                     >
-                      <div className="flex min-w-0 items-start gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
-                          {initials(row.booking.athleteName)}
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-xs font-bold uppercase text-[var(--c-text-2)]">
+                          {row.bookings.length} {row.bookings.length === 1 ? 'alumno' : 'alumnos'}
                         </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
-                            {row.booking.athleteName}
-                          </span>
-                          <Link
-                            href={`/coach/students?student=${encodeURIComponent(row.booking.athleteId)}`}
-                            className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                        {!adminMode && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAddStudentSlot({
+                                date: firstBooking.date,
+                                startTime: firstBooking.startTime,
+                                endTime: firstBooking.endTime,
+                                locationName: firstBooking.locationName || 'Horario abierto',
+                              })
+                            }
+                            disabled={busy}
+                            className="inline-flex min-h-11 w-fit items-center justify-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-3.5 text-xs font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-60"
                           >
-                            ver perfil ›
-                          </Link>
-                        </span>
+                            <FiPlus aria-hidden="true" /> Alumno
+                          </button>
+                        )}
                       </div>
-                      {!adminMode && (
-                        <button
-                          type="button"
-                          aria-label={`Cancelar clase de ${row.booking.athleteName}`}
-                          onClick={() =>
-                            setConfirmAction({ kind: 'cancel-booking', booking: row.booking })
-                          }
-                          disabled={busy}
-                          className="inline-flex min-h-11 w-fit shrink-0 items-center gap-1.5 self-end rounded-full border border-[var(--rose-bd)] bg-white px-3.5 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:self-center"
-                        >
-                          <FiX aria-hidden="true" /> Cancelar
-                        </button>
-                      )}
+
+                      <ul className="flex flex-col gap-2">
+                        {row.bookings.map((booking) => (
+                          <li
+                            key={booking.id}
+                            className="flex flex-col gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-2 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="flex min-w-0 items-start gap-3">
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
+                                {initials(booking.athleteName)}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
+                                  {booking.athleteName}
+                                </span>
+                                <Link
+                                  href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
+                                  className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                                >
+                                  ver perfil ›
+                                </Link>
+                              </span>
+                            </div>
+                            {!adminMode && (
+                              <button
+                                type="button"
+                                aria-label={`Cancelar clase de ${booking.athleteName}`}
+                                onClick={() =>
+                                  setConfirmAction({ kind: 'cancel-booking', booking })
+                                }
+                                disabled={busy}
+                                className="inline-flex min-h-11 w-fit items-center gap-1.5 self-end rounded-full border border-[var(--rose-bd)] bg-white px-3.5 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:self-center"
+                              >
+                                <FiX aria-hidden="true" /> Cancelar
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </AgendaRow>
                 )

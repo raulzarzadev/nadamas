@@ -1,13 +1,14 @@
 'use client'
 
-import Image from 'next/image'
-import Link from 'next/link'
-import { useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useUser } from '@/context/UserContext'
-import { useRole } from '@/context/RoleContext'
 import AuthCard from '@comps/AuthCard'
 import Loading from '@comps/Loading'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useEffect } from 'react'
+import { useRole } from '@/context/RoleContext'
+import { useUser } from '@/context/UserContext'
+import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 
 function LoginHeader() {
   return (
@@ -70,17 +71,8 @@ export default function LoginPage() {
       return
     }
 
-    router.replace(`/${activeRole}/home`)
-  }, [
-    user,
-    redirectTo,
-    wantsCoach,
-    roles.coach,
-    activeRole,
-    enableCoach,
-    setActiveRole,
-    router,
-  ])
+    router.replace(destinationForRole(entryRoleForSession(roles, activeRole)))
+  }, [user, redirectTo, wantsCoach, roles, activeRole, enableCoach, setActiveRole, router])
 
   if (user === undefined) {
     return (
@@ -96,7 +88,7 @@ export default function LoginPage() {
   if (user) {
     return (
       <div className="grid min-h-[calc(100vh-2rem)] place-items-center px-3 py-6">
-        <Loading size="md" />
+        <Loading size="lg" fullScreen />
       </div>
     )
   }
