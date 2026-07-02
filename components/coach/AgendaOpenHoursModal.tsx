@@ -1,5 +1,6 @@
 'use client'
 
+import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import { MoneyField, TextField } from '@comps/Inputs/FormFields'
 import { useState } from 'react'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
@@ -98,6 +99,7 @@ export default function AgendaOpenHoursModal({
   const [detailTitle, setDetailTitle] = useState(initialDetails?.title || '')
   const [placeName, setPlaceName] = useState(initialDetails?.placeName || '')
   const [priceCents, setPriceCents] = useState<number | null>(initialDetails?.priceCents ?? null)
+  const keyboardSafeArea = useKeyboardSafeArea()
   const visibleWeekDays = buildWeekDays(weekStart)
 
   const toggle = (set: Set<string>, value: string) => {
@@ -113,13 +115,21 @@ export default function AgendaOpenHoursModal({
   const validTimes = [...times].filter((time) => !timeDisabled(time))
   const canSubmit = detailsOnly ? !busy : dates.size > 0 && validTimes.length > 0 && !busy
   const showDetailsForm = showDetails || detailsOnly
+  const dialogClassName = `fixed inset-0 z-50 flex justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm ${
+    showDetailsForm ? 'items-center overflow-y-auto' : 'items-end sm:items-center'
+  }`
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Abrir horarios"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
+      className={dialogClassName}
+      style={
+        showDetailsForm && keyboardSafeArea
+          ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` }
+          : undefined
+      }
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}

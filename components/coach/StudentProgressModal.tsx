@@ -1,5 +1,6 @@
 'use client'
 
+import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import { useState } from 'react'
 import { patchAuthed } from '@/lib/client/authed-api'
 import {
@@ -31,6 +32,7 @@ export default function StudentProgressModal({
   const [nextFocus, setNextFocus] = useState('')
   const [note, setNote] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
+  const keyboardSafeArea = useKeyboardSafeArea()
 
   async function save() {
     setStatus('saving')
@@ -59,7 +61,8 @@ export default function StudentProgressModal({
       role="dialog"
       aria-modal="true"
       aria-label={`Agregar progreso de ${studentName}`}
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm"
+      style={keyboardSafeArea ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` } : undefined}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
@@ -67,7 +70,7 @@ export default function StudentProgressModal({
         if (event.key === 'Escape') onClose()
       }}
     >
-      <div className="flex w-full max-w-lg flex-col gap-4 rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)]">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)]">
         <div className="mx-auto h-1 w-10 rounded-full bg-(--c-border) sm:hidden" />
         <div>
           <h3 className="text-xl font-bold text-(--c-ocean)">Agregar progreso</h3>

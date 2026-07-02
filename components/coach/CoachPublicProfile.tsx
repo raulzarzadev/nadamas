@@ -535,6 +535,7 @@ export default function CoachPublicProfile({
         open={bookingModalOpen}
         onClose={() => setBookingModalOpen(false)}
         label="Confirmar reserva"
+        keyboardAware
       >
         <p className="text-xs font-semibold uppercase tracking-widest text-[var(--c-text-2)]">
           Confirmar reserva

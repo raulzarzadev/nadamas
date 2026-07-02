@@ -1,5 +1,6 @@
 'use client'
 
+import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import { useEffect, useState } from 'react'
 import { FiPlus, FiSearch } from 'react-icons/fi'
 import { getAuthed } from '@/lib/client/authed-api'
@@ -35,6 +36,7 @@ export default function AgendaAddStudentModal({
   // null = nothing chosen, 'create' = create new with current query, otherwise an athleteId
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const keyboardSafeArea = useKeyboardSafeArea()
 
   useEffect(() => {
     let active = true
@@ -95,7 +97,8 @@ export default function AgendaAddStudentModal({
       role="dialog"
       aria-modal="true"
       aria-label="Agregar alumno"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-2 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm"
+      style={keyboardSafeArea ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` } : undefined}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
@@ -103,7 +106,7 @@ export default function AgendaAddStudentModal({
         if (event.key === 'Escape') onClose()
       }}
     >
-      <div className="flex max-h-[min(86dvh,38rem)] w-full max-w-lg flex-col overflow-hidden rounded-t-[26px] bg-white shadow-[var(--shadow-md)] sm:rounded-[var(--r-md)]">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] sm:max-h-[min(86dvh,38rem)]">
         <div className="shrink-0 px-4 pt-3 sm:px-5 sm:pt-5">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
           <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar alumno</h3>
@@ -134,11 +137,11 @@ export default function AgendaAddStudentModal({
             </label>
 
             {students === undefined ? (
-              <div className="flex h-56 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)]">
+              <div className="flex h-40 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)] sm:h-56">
                 Cargando alumnos...
               </div>
             ) : (
-              <div className="flex h-56 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)]">
+              <div className="flex h-40 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)] sm:h-56">
                 {matches.map((student) => {
                   const active = student.athleteId === selectedId
                   return (

@@ -1,5 +1,6 @@
 'use client'
 
+import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import { useState } from 'react'
 import { postAuthed } from '@/lib/client/authed-api'
 import type { StudentProgress } from '@/lib/coach-student-progress'
@@ -26,6 +27,7 @@ export default function AddStudentModal({
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
+  const keyboardSafeArea = useKeyboardSafeArea()
 
   const canSubmit = name.trim().length > 1 && status !== 'saving'
 
@@ -52,7 +54,8 @@ export default function AddStudentModal({
       role="dialog"
       aria-modal="true"
       aria-label="Agregar alumno"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm"
+      style={keyboardSafeArea ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` } : undefined}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
@@ -60,7 +63,7 @@ export default function AddStudentModal({
         if (event.key === 'Escape') onClose()
       }}
     >
-      <div className="flex w-full max-w-lg flex-col gap-4 rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)]">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)]">
         <div className="mx-auto h-1 w-10 rounded-full bg-(--c-border) sm:hidden" />
         <div>
           <h3 className="text-xl font-bold text-(--c-ocean)">Agregar alumno</h3>
