@@ -150,6 +150,7 @@ export default function CoachPublicProfile({
   const [bookingName, setBookingName] = useState('')
   const [bookingEmail, setBookingEmail] = useState('')
   const [otpCode, setOtpCode] = useState('')
+  const [showBookingDetails, setShowBookingDetails] = useState(false)
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [selectedSlots, setSelectedSlots] = useState<Record<string, CoachBookingSelection>>({})
   const [firebaseUser, setFirebaseUser] = useState(auth.currentUser)
@@ -201,6 +202,8 @@ export default function CoachPublicProfile({
     () => sortSelectedSelections(Object.values(selectedSlots)),
     [selectedSlots]
   )
+  const selectedCount = sortedAllSelectedSelections.length
+  const selectedTotal = selectedTotalLabel(sortedAllSelectedSelections)
   const dayGroups = useMemo(() => groupSelectionsByDay(bookingSelections), [bookingSelections])
   const selectedKeys = new Set(Object.keys(selectedSlots))
   const canGoPreviousWeek = weekStart > currentWeekStart
@@ -328,17 +331,10 @@ export default function CoachPublicProfile({
     setBookingName((user?.nickname || user?.displayName || user?.name || '').trim())
     setBookingEmail((user?.email || '').trim())
     setOtpCode('')
+    setShowBookingDetails(false)
     setBookingMessage(null)
     setBookingStep('details')
     setBookingModalOpen(true)
-  }
-
-  function removeSelection(key: string) {
-    setSelectedSlots((current) => {
-      const next = { ...current }
-      delete next[key]
-      return next
-    })
   }
 
   function moveWeek(amount: number) {
@@ -351,7 +347,7 @@ export default function CoachPublicProfile({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={`flex flex-col gap-6 ${selectedCount > 0 ? 'pb-28' : ''}`}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex min-w-0 items-center gap-4">
           <Avatar name={name} src={heroPhoto} size={72} />
@@ -488,46 +484,23 @@ export default function CoachPublicProfile({
       )}
 
       {/* Single selection summary (across all offerings). */}
-      {sortedAllSelectedSelections.length > 0 && (
-        <div className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-4 shadow-[var(--shadow-sm)]">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-extrabold text-[var(--c-ocean)]">
-              {selectedCountLabel(sortedAllSelectedSelections.length)}
-            </span>
-            <span className="text-sm font-bold text-[var(--c-text-2)]">
-              {selectedTotalLabel(sortedAllSelectedSelections)}
-            </span>
+      {selectedCount > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--c-border)] bg-white/95 px-4 py-3 shadow-[0_-10px_30px_rgba(10,37,64,0.12)] backdrop-blur">
+          <div className="mx-auto flex w-full max-w-md items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-extrabold text-[var(--c-ocean)]">
+                {selectedCount} {selectedCount === 1 ? 'clase' : 'clases'}
+              </p>
+              <p className="truncate text-sm font-bold text-[var(--c-text-2)]">{selectedTotal}</p>
+            </div>
+            <button
+              type="button"
+              onClick={openConfirm}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-[var(--c-ocean)] px-6 py-2 text-sm font-bold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+            >
+              Reservar
+            </button>
           </div>
-          <ul className="mt-3 grid gap-2">
-            {sortedAllSelectedSelections.map((selection) => {
-              const key = bookingSelectionKey(selection)
-              return (
-                <li
-                  key={key}
-                  className="flex items-center justify-between gap-3 rounded-xl bg-[var(--c-surface)] px-3 py-2"
-                >
-                  <span className="min-w-0 truncate text-sm font-semibold text-[var(--c-ocean)]">
-                    {selectedDetailLabel(selection)}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={`Quitar ${selectedDetailLabel(selection)}`}
-                    onClick={() => removeSelection(key)}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--c-border)] bg-white text-lg font-bold text-[var(--c-ocean)] transition hover:border-[var(--rose-bd)] hover:bg-[var(--rose-bg)] hover:text-[var(--rose-tx)]"
-                  >
-                    ×
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-          <button
-            type="button"
-            onClick={openConfirm}
-            className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--c-ocean)] px-4 py-2 text-sm font-bold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-          >
-            Reservar
-          </button>
         </div>
       )}
 
@@ -541,9 +514,7 @@ export default function CoachPublicProfile({
           Confirmar reserva
         </p>
         <h2 className="mt-1 text-xl font-extrabold text-[var(--c-ocean)]">
-          {bookingStep === 'done'
-            ? 'Clases agendadas'
-            : selectedCountLabel(sortedAllSelectedSelections.length)}
+          {bookingStep === 'done' ? 'Clases agendadas' : selectedCountLabel(selectedCount)}
         </h2>
 
         {bookingStep === 'done' ? (
@@ -565,32 +536,42 @@ export default function CoachPublicProfile({
           </div>
         ) : (
           <>
-            <div className="mt-4 rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] p-4">
+            <div className="mt-3 rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
                 <span className="font-extrabold text-[var(--c-ocean)]">
-                  {selectedTotalLabel(sortedAllSelectedSelections)}
+                  {selectedCount} {selectedCount === 1 ? 'clase' : 'clases'}
                 </span>
+                <span className="font-extrabold text-[var(--c-ocean)]">{selectedTotal}</span>
               </div>
-              <ul className="mt-3 grid gap-2">
-                {sortedAllSelectedSelections.map((selection) => {
-                  const key = bookingSelectionKey(selection)
-                  return (
+              <div className="mt-1 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowBookingDetails((current) => !current)}
+                  aria-expanded={showBookingDetails}
+                  className="inline-flex min-h-6 items-center text-right text-xs font-semibold text-[var(--c-text-2)] underline underline-offset-4 transition hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                >
+                  {showBookingDetails ? 'Ocultar detalles' : 'Ver detalles'}
+                </button>
+              </div>
+              {showBookingDetails && (
+                <ul className="mt-3 grid gap-2">
+                  {sortedAllSelectedSelections.map((selection) => (
                     <li
-                      key={key}
+                      key={bookingSelectionKey(selection)}
                       className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2"
                     >
-                      <span className="text-sm font-semibold text-[var(--c-ocean)]">
+                      <span className="min-w-0 truncate text-sm font-semibold text-[var(--c-ocean)]">
                         {selectedDetailLabel(selection)}
                       </span>
-                      <span className="text-sm font-bold text-[var(--c-text-2)]">
+                      <span className="shrink-0 text-sm font-bold text-[var(--c-text-2)]">
                         {selection.priceCents !== null
                           ? formatPesos(selection.priceCents)
                           : 'Por definir'}
                       </span>
                     </li>
-                  )
-                })}
-              </ul>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div className="mt-4 grid gap-3">
