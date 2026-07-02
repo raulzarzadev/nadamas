@@ -11,6 +11,46 @@
  * limitations under the License.
  */
 
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = {};
+  }
+
+  const title = payload.title || 'nadamas.app';
+  const options = {
+    body: payload.body || '',
+    icon: payload.icon || '/icons/icon_x192.png',
+    badge: payload.badge || '/icons/icon_x72.png',
+    data: {
+      link: payload.link || '/',
+      type: payload.type || '',
+      ...(payload.data || {}),
+    },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const link = event.notification.data?.link || '/';
+  const targetUrl = new URL(link, self.location.origin).href;
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        for (const client of clients) {
+          if ('focus' in client && client.url === targetUrl) return client.focus();
+        }
+        return self.clients.openWindow(targetUrl);
+      })
+  );
+});
+
 // If the loader is already loaded, just stop.
 if (!self.define) {
     let registry = {};

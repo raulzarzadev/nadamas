@@ -1,6 +1,7 @@
 'use client'
 
 import NotificationItem from '@comps/notifications/NotificationItem'
+import PushNotificationsControl from '@comps/notifications/PushNotificationsControl'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { FiBell } from 'react-icons/fi'
@@ -75,6 +76,9 @@ export default function NotificationsBell() {
         <div className="absolute right-0 z-20 mt-2 w-[min(20rem,calc(100vw-1.5rem))] overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-md)]">
           <div className="flex items-center justify-between px-3 py-2.5">
             <p className="text-sm font-bold text-[var(--c-ocean)]">Notificaciones</p>
+          </div>
+          <div className="border-t border-[var(--c-border)] p-1">
+            <PushNotificationsControl />
           </div>
           <div className="max-h-[60vh] overflow-y-auto border-t border-[var(--c-border)]">
             {preview.length === 0 ? (

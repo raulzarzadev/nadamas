@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { AppNotification, NotificationType } from '@/lib/notification'
 import { adminDb } from './firebase-admin'
+import { sendPushNotificationToUser } from './web-push'
 
 interface CreateNotificationInput {
   recipientId: string
@@ -37,6 +38,9 @@ export async function createNotification(input: CreateNotificationInput) {
     readAt: null,
   }
   await ref.set(notification)
+  sendPushNotificationToUser(input.recipientId, notification).catch((error) => {
+    console.error('[WEB_PUSH_SEND]', error)
+  })
   return notification
 }
 
