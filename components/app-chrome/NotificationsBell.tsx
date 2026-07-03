@@ -76,9 +76,7 @@ export default function NotificationsBell() {
         <div className="fixed left-3 right-3 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-md)] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[min(20rem,calc(100vw-1.5rem))]">
           <div className="flex items-center justify-between px-3 py-2.5">
             <p className="text-sm font-bold text-[var(--c-ocean)]">Notificaciones</p>
-          </div>
-          <div className="border-t border-[var(--c-border)] p-1">
-            <PushNotificationsControl />
+            <PushNotificationsControl compact />
           </div>
           <div className="max-h-[60vh] overflow-y-auto border-t border-[var(--c-border)]">
             {preview.length === 0 ? (
