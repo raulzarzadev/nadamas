@@ -122,6 +122,10 @@ function selectedCountLabel(count: number) {
   return count === 1 ? '1 clase seleccionada' : `${count} clases seleccionadas`
 }
 
+function hasSelectionPassed(selection: Pick<CoachBookingSelection, 'date' | 'startTime'>) {
+  return new Date(`${selection.date}T${selection.startTime}:00`).getTime() <= Date.now()
+}
+
 function whatsappUrl(coach: CoachPublic, message: string) {
   const link = coach.publicLinks?.find((item) => item.kind === 'whatsapp')
   if (!link?.value) return null
@@ -417,16 +421,23 @@ export default function CoachPublicProfile({
                     isSelectionFull(coach, selection, bookedSlotCounts) ||
                     bookedHours.has(`${selection.date}|${selection.startTime}`)
                   const blocked = isBlocked(selection)
+                  const passed = hasSelectionPassed(selection)
                   // Occupied (booked/full) or blocked hours are shown struck-through
                   // and aren't bookable.
-                  const struck = occupied || blocked
+                  const struck = occupied || blocked || passed
                   return {
                     key,
                     label: selection.startTime,
                     active: selectedKeys.has(key),
                     disabled: struck,
                     ariaLabel: `${DAY_LABELS[group.day] || group.day} ${selection.startTime}${
-                      blocked ? ', horario no disponible' : occupied ? ', horario lleno' : ''
+                      passed
+                        ? ', horario ya pasó'
+                        : blocked
+                          ? ', horario no disponible'
+                          : occupied
+                            ? ', horario lleno'
+                            : ''
                     }`,
                     onClick: struck
                       ? undefined
