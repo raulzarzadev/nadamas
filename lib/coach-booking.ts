@@ -70,11 +70,12 @@ export function formatSlotLabel(
 
 export function flattenCoachBookingSelections(
   coach: CoachPublic & { id: string },
-  weekStart: Date
+  weekStart: Date,
+  dayCount = 7
 ): CoachBookingSelection[] {
   return resolveOfferings(coach).flatMap((offering) =>
     resolveOfferingSchedules(offering).flatMap((schedule) =>
-      Array.from({ length: 7 }, (_, offset) => addDays(weekStart, offset))
+      Array.from({ length: dayCount }, (_, offset) => addDays(weekStart, offset))
         .filter((date) => scheduleIsAvailableOn(schedule, date))
         .map((date) => ({
           coachId: coach.id as string,
