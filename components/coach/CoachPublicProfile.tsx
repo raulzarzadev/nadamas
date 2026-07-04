@@ -5,7 +5,7 @@ import { TextField } from '@comps/Inputs/FormFields'
 import Avatar from '@comps/ui/avatar'
 import Sheet from '@comps/ui/sheet'
 import { onAuthStateChanged, signInWithCustomToken } from 'firebase/auth'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
@@ -18,13 +18,13 @@ import {
 } from '@/lib/coach-booking'
 import {
   addDays,
+  dateKey,
   formatPesos,
   offeringContextLabel,
   offeringTypeLabel,
   resolveOfferingSchedules,
   resolveOfferings,
   scheduleIsOpen,
-  startOfWeek,
 } from '@/lib/coach-offerings'
 import { coachDisplayPhoto } from '@/lib/coach-photo'
 import CoachScheduleRows from './CoachScheduleRows'
@@ -126,6 +126,12 @@ function hasSelectionPassed(selection: Pick<CoachBookingSelection, 'date' | 'sta
   return new Date(`${selection.date}T${selection.startTime}:00`).getTime() <= Date.now()
 }
 
+function todayStart() {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return today
+}
+
 function whatsappUrl(coach: CoachPublic, message: string) {
   const link = coach.publicLinks?.find((item) => item.kind === 'whatsapp')
   if (!link?.value) return null
@@ -155,10 +161,10 @@ export default function CoachPublicProfile({
   const [bookingEmail, setBookingEmail] = useState('')
   const [otpCode, setOtpCode] = useState('')
   const [showBookingDetails, setShowBookingDetails] = useState(false)
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
+  const [periodStart, setPeriodStart] = useState(() => todayStart())
   const [selectedSlots, setSelectedSlots] = useState<Record<string, CoachBookingSelection>>({})
   const [firebaseUser, setFirebaseUser] = useState(auth.currentUser)
-  const currentWeekStart = useMemo(() => startOfWeek(new Date()), [])
+  const currentPeriodStart = useMemo(() => todayStart(), [])
   const userContext = useUser() as OptionalUserContext | undefined
   const user =
     userContext?.user ??
@@ -178,9 +184,9 @@ export default function CoachPublicProfile({
   const bookingSelections = useMemo(
     () =>
       coach.id
-        ? flattenCoachBookingSelections({ ...coach, id: coach.id }, weekStart)
+        ? flattenCoachBookingSelections({ ...coach, id: coach.id }, periodStart)
         : ([] as CoachBookingSelection[]),
-    [coach, weekStart]
+    [coach, periodStart]
   )
   // Hours the coach blocked — shown struck-through (not bookable) on the public
   // schedule. Whole-day blocks cover every hour of that date.
@@ -191,9 +197,12 @@ export default function CoachPublicProfile({
     )
     return { allDays, allHours }
   }, [blockedSlots])
-  const isBlocked = (selection: CoachBookingSelection) =>
-    blockedLookup.allDays.has(selection.date) ||
-    blockedLookup.allHours.has(`${selection.date}|${selection.startTime}`)
+  const isBlocked = useCallback(
+    (selection: CoachBookingSelection) =>
+      blockedLookup.allDays.has(selection.date) ||
+      blockedLookup.allHours.has(`${selection.date}|${selection.startTime}`),
+    [blockedLookup]
+  )
   const bookedSlotCounts = useMemo(() => buildBookedSlotMap(bookedSlots), [bookedSlots])
   // Any booking at a given date+hour marks it occupied — coach-added bookings use
   // a synthetic offeringId ('open') that won't match the offering selection key,
@@ -208,11 +217,86 @@ export default function CoachPublicProfile({
   )
   const selectedCount = sortedAllSelectedSelections.length
   const selectedTotal = selectedTotalLabel(sortedAllSelectedSelections)
-  const dayGroups = useMemo(() => groupSelectionsByDay(bookingSelections), [bookingSelections])
-  const selectedKeys = new Set(Object.keys(selectedSlots))
-  const canGoPreviousWeek = weekStart > currentWeekStart
+  const selectedKeys = useMemo(() => new Set(Object.keys(selectedSlots)), [selectedSlots])
+  const canGoPreviousPeriod = periodStart > currentPeriodStart
+
+  const isBookableSelection = useCallback(
+    (selection: CoachBookingSelection) =>
+      !isSelectionFull(coach, selection, bookedSlotCounts) &&
+      !bookedHours.has(`${selection.date}|${selection.startTime}`) &&
+      !isBlocked(selection) &&
+      !hasSelectionPassed(selection),
+    [coach, bookedSlotCounts, bookedHours, isBlocked]
+  )
+
+  const firstBookableDate = useMemo(() => {
+    if (!coach.id) return currentPeriodStart
+
+    const selections = flattenCoachBookingSelections(
+      { ...coach, id: coach.id },
+      currentPeriodStart,
+      56
+    )
+    const first = sortSelectedSelections(selections).find(isBookableSelection)
+    return first ? new Date(`${first.date}T00:00:00`) : currentPeriodStart
+  }, [coach, currentPeriodStart, isBookableSelection])
+
+  const dayRows = useMemo(
+    () =>
+      groupSelectionsByDay(bookingSelections)
+        .map((group) => ({
+          key: group.date,
+          dayLabel: DAY_LABELS[group.day] || group.day,
+          dateLabel: new Date(`${group.date}T12:00:00`).toLocaleDateString('es-MX', {
+            day: 'numeric',
+            month: 'short',
+          }),
+          times: group.selections.map((selection) => {
+            const key = bookingSelectionKey(selection)
+            const occupied =
+              isSelectionFull(coach, selection, bookedSlotCounts) ||
+              bookedHours.has(`${selection.date}|${selection.startTime}`)
+            const blocked = isBlocked(selection)
+            const passed = hasSelectionPassed(selection)
+            const disabled = occupied || blocked || passed
+            return {
+              key,
+              label: selection.startTime,
+              active: selectedKeys.has(key),
+              disabled,
+              ariaLabel: `${DAY_LABELS[group.day] || group.day} ${selection.startTime}${
+                passed
+                  ? ', horario ya pasó'
+                  : blocked
+                    ? ', horario no disponible'
+                    : occupied
+                      ? ', horario lleno'
+                      : ''
+              }`,
+              onClick: disabled
+                ? undefined
+                : () =>
+                    setSelectedSlots((current) => {
+                      if (!current[key]) return { ...current, [key]: selection }
+                      const next = { ...current }
+                      delete next[key]
+                      return next
+                    }),
+            }
+          }),
+        }))
+        .filter((day) => day.times.some((time) => !time.disabled)),
+    [bookingSelections, coach, bookedSlotCounts, bookedHours, isBlocked, selectedKeys]
+  )
 
   useEffect(() => onAuthStateChanged(auth, setFirebaseUser), [])
+
+  useEffect(() => {
+    setPeriodStart((current) => {
+      if (dateKey(current) !== dateKey(currentPeriodStart)) return current
+      return firstBookableDate
+    })
+  }, [currentPeriodStart, firstBookableDate])
 
   const loggedBookingName = (
     user?.nickname ||
@@ -341,10 +425,11 @@ export default function CoachPublicProfile({
     setBookingModalOpen(true)
   }
 
-  function moveWeek(amount: number) {
-    setWeekStart((current) => {
-      const next = startOfWeek(addDays(current, amount))
-      if (next < currentWeekStart) return current
+  function movePeriod(amount: number) {
+    setPeriodStart((current) => {
+      const next = addDays(current, amount)
+      next.setHours(0, 0, 0, 0)
+      if (next < currentPeriodStart) return currentPeriodStart
       return next
     })
     setSelectedSlots({})
@@ -382,15 +467,15 @@ export default function CoachPublicProfile({
               <button
                 type="button"
                 className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--c-border)] text-sm font-bold text-[var(--c-ocean)] transition disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Semana anterior"
-                disabled={!canGoPreviousWeek}
-                onClick={() => moveWeek(-7)}
+                aria-label="Periodo anterior"
+                disabled={!canGoPreviousPeriod}
+                onClick={() => movePeriod(-7)}
               >
                 &#8592;
               </button>
               <span className="min-w-[8.5rem] text-center text-xs font-semibold text-[var(--c-ocean)]">
-                {weekStart.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} →{' '}
-                {addDays(weekStart, 6).toLocaleDateString('es-MX', {
+                {periodStart.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} →{' '}
+                {addDays(periodStart, 6).toLocaleDateString('es-MX', {
                   day: 'numeric',
                   month: 'short',
                 })}
@@ -398,63 +483,21 @@ export default function CoachPublicProfile({
               <button
                 type="button"
                 className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--c-border)] text-sm font-bold text-[var(--c-ocean)]"
-                aria-label="Semana siguiente"
-                onClick={() => moveWeek(7)}
+                aria-label="Periodo siguiente"
+                onClick={() => movePeriod(7)}
               >
                 &#8594;
               </button>
             </div>
           </div>
 
-          {dayGroups.length > 0 ? (
-            <CoachScheduleRows
-              days={dayGroups.map((group) => ({
-                key: group.date,
-                dayLabel: DAY_LABELS[group.day] || group.day,
-                dateLabel: new Date(`${group.date}T12:00:00`).toLocaleDateString('es-MX', {
-                  day: 'numeric',
-                  month: 'short',
-                }),
-                times: group.selections.map((selection) => {
-                  const key = bookingSelectionKey(selection)
-                  const occupied =
-                    isSelectionFull(coach, selection, bookedSlotCounts) ||
-                    bookedHours.has(`${selection.date}|${selection.startTime}`)
-                  const blocked = isBlocked(selection)
-                  const passed = hasSelectionPassed(selection)
-                  // Occupied (booked/full) or blocked hours are shown struck-through
-                  // and aren't bookable.
-                  const struck = occupied || blocked || passed
-                  return {
-                    key,
-                    label: selection.startTime,
-                    active: selectedKeys.has(key),
-                    disabled: struck,
-                    ariaLabel: `${DAY_LABELS[group.day] || group.day} ${selection.startTime}${
-                      passed
-                        ? ', horario ya pasó'
-                        : blocked
-                          ? ', horario no disponible'
-                          : occupied
-                            ? ', horario lleno'
-                            : ''
-                    }`,
-                    onClick: struck
-                      ? undefined
-                      : () =>
-                          setSelectedSlots((current) => {
-                            if (!current[key]) return { ...current, [key]: selection }
-                            const next = { ...current }
-                            delete next[key]
-                            return next
-                          }),
-                  }
-                }),
-              }))}
-            />
+          {dayRows.length > 0 ? (
+            <CoachScheduleRows days={dayRows} />
           ) : (
             openOfferings.length === 0 && (
-              <p className="text-sm text-[var(--c-text-2)]">Sin horarios esta semana.</p>
+              <p className="text-sm text-[var(--c-text-2)]">
+                Sin horarios disponibles en este periodo.
+              </p>
             )
           )}
 
