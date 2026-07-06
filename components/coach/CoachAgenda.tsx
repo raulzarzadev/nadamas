@@ -4,9 +4,11 @@ import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  FiCheck,
   FiChevronLeft,
   FiChevronRight,
   FiClock,
+  FiCopy,
   FiEdit2,
   FiLock,
   FiPlus,
@@ -18,6 +20,7 @@ import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
 import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
 import type { Booking } from '@/lib/coach-booking'
@@ -35,6 +38,11 @@ import {
   offeringWithoutHours,
   startOfWeek,
 } from '@/lib/coach-offerings'
+import {
+  DAY_LABELS,
+  formatWhatsappScheduleText,
+  type WhatsappScheduleDay,
+} from '@/lib/coach-whatsapp-schedule'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import AgendaOpenHoursModal, {
@@ -86,6 +94,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [whatsappCopied, setWhatsappCopied] = useState(false)
+  const [whatsappCopyFailed, setWhatsappCopyFailed] = useState(false)
 
   const monthOfSelected = selectedDate.slice(0, 7)
 
@@ -217,6 +227,38 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     }
     return { booked, total }
   }, [weekDates, dayStatuses])
+
+  const offeringGroupTypes = useMemo(() => {
+    return new Map((agenda?.offerings || []).map((item) => [item.id, item.groupType]))
+  }, [agenda?.offerings])
+
+  const whatsappDayRows = useMemo<WhatsappScheduleDay[]>(() => {
+    return weekDates
+      .map((date) => {
+        const key = dateKey(date)
+        const dayKey = whatsappDayKey(date)
+        const slots = (agenda?.availableSlots || [])
+          .filter((slot) => slot.date === key)
+          .sort((a, b) => a.startTime.localeCompare(b.startTime))
+
+        return {
+          dayKey,
+          dayLabel: DAY_LABELS[dayKey] || dayKey,
+          times: slots.map((slot) => ({
+            label: `${slot.startTime} - ${slot.endTime}`,
+            disabled: slot.status !== 'available' || slotHasPassed(slot),
+            groupType: offeringGroupTypes.get(slot.offeringId) || null,
+          })),
+        }
+      })
+      .filter((day) => day.times.length > 0)
+  }, [agenda?.availableSlots, offeringGroupTypes, weekDates])
+
+  const whatsappScheduleText = useMemo(() => {
+    return formatWhatsappScheduleText(whatsappDayRows, weekDates[0] || new Date())
+  }, [whatsappDayRows, weekDates])
+
+  const canCopyWhatsappSchedule = whatsappScheduleText.length > 0
 
   const dayBookings = activeBookings.filter((booking) => booking.date === selectedDate)
   const daySlots = (agenda?.availableSlots || []).filter((slot) => slot.date === selectedDate)
@@ -451,6 +493,20 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     eliminarSlot(action.slot)
   }
 
+  async function copyWhatsappSchedule() {
+    if (!whatsappScheduleText) return
+
+    setWhatsappCopyFailed(false)
+    try {
+      await copyTextToClipboard(whatsappScheduleText)
+      setWhatsappCopied(true)
+      setTimeout(() => setWhatsappCopied(false), 2000)
+    } catch {
+      setWhatsappCopyFailed(true)
+      setTimeout(() => setWhatsappCopyFailed(false), 3000)
+    }
+  }
+
   if (agenda === undefined) return <Loading />
 
   return (
@@ -476,6 +532,28 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         onNext={() => changeWeek(1)}
         labelClassName="text-sm font-semibold"
       />
+
+      <div className="flex justify-center">
+        <button
+          type="button"
+          onClick={() => void copyWhatsappSchedule()}
+          disabled={!canCopyWhatsappSchedule}
+          aria-label="Copiar horarios para WhatsApp"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-3.5 py-2 text-sm font-bold text-[var(--c-ocean)] transition-colors hover:border-[var(--c-aqua)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {whatsappCopied ? (
+            <>
+              <FiCheck aria-hidden="true" /> Copiado
+            </>
+          ) : whatsappCopyFailed ? (
+            'No se pudo copiar'
+          ) : (
+            <>
+              <FiCopy aria-hidden="true" /> Copiar para WhatsApp
+            </>
+          )}
+        </button>
+      </div>
 
       <p className="text-center text-sm text-[var(--c-text-2)]">
         {adminMode
@@ -1011,6 +1089,14 @@ function initials(name: string) {
 function weekdayChipLabel(date: Date) {
   const weekday = date.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')
   return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${date.getDate()}`
+}
+
+function whatsappDayKey(date: Date) {
+  return ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][date.getDay()] || ''
+}
+
+function slotHasPassed(slot: Pick<CoachAvailableSlot, 'date' | 'startTime'>) {
+  return new Date(`${slot.date}T${slot.startTime}:00`).getTime() <= Date.now()
 }
 
 // Next 7 days as selectable chips for the offering editor modal.
