@@ -161,6 +161,8 @@ export function offeringsAvailabilitySummary(offerings: CoachClassOffering[]): s
   const schedules = offerings.flatMap(resolveOfferingSchedules)
   const openScheduleCount = schedules.filter(scheduleIsOpen).length
   const now = new Date()
+  const dateWindowStart = firstUpcomingAvailableDate(schedules, now)
+  const dateWindowEnd = dateWindowStart ? dateKey(addDays(dateFromKey(dateWindowStart), 6)) : null
   const slotCounts = schedules.reduce(
     (totals, schedule) => {
       if (scheduleIsOpen(schedule)) return totals
@@ -175,7 +177,7 @@ export function offeringsAvailabilitySummary(offerings: CoachClassOffering[]): s
         return totals
       }
 
-      totals.published += upcomingAvailableDateCount(schedule, now)
+      totals.published += upcomingAvailableDateCount(schedule, now, dateWindowStart, dateWindowEnd)
       return totals
     },
     { weekly: 0, nextWeek: 0, published: 0 }
@@ -207,20 +209,43 @@ export function hasPublishedOfferingSchedules(offerings: CoachClassOffering[]): 
   })
 }
 
-function upcomingAvailableDateCount(schedule: CoachOfferingSchedule, now: Date) {
+function firstUpcomingAvailableDate(schedules: CoachOfferingSchedule[], now: Date) {
+  return schedules
+    .filter((schedule) => (schedule.availabilityMode ?? 'always') === 'dates')
+    .flatMap((schedule) =>
+      [...new Set(schedule.availableDates || [])].filter((date) =>
+        isUpcomingAvailableDate(schedule, date, now)
+      )
+    )
+    .sort()[0]
+}
+
+function upcomingAvailableDateCount(
+  schedule: CoachOfferingSchedule,
+  now: Date,
+  windowStart?: string | null,
+  windowEnd?: string | null
+) {
+  return [...new Set(schedule.availableDates || [])].filter((date) => {
+    if (!isUpcomingAvailableDate(schedule, date, now)) return false
+    if (windowStart && date < windowStart) return false
+    if (windowEnd && date > windowEnd) return false
+    return true
+  }).length
+}
+
+function isUpcomingAvailableDate(schedule: CoachOfferingSchedule, date: string, now: Date) {
   const today = dateKey(now)
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(
     now.getMinutes()
   ).padStart(2, '0')}`
 
-  return [...new Set(schedule.availableDates || [])].filter((date) => {
-    if (date < today) return false
-    if (date === today && schedule.startTime <= currentTime) return false
-    if (!schedule.days.length) return true
+  if (date < today) return false
+  if (date === today && schedule.startTime <= currentTime) return false
+  if (!schedule.days.length) return true
 
-    const day = WEEKDAY_LABELS[new Date(`${date}T12:00:00`).getDay()]
-    return schedule.days.includes(day)
-  }).length
+  const day = WEEKDAY_LABELS[new Date(`${date}T12:00:00`).getDay()]
+  return schedule.days.includes(day)
 }
 
 export function resolveOfferingSchedules(offering: CoachClassOffering): CoachOfferingSchedule[] {
