@@ -172,6 +172,12 @@ export function offeringsAvailabilitySummary(offerings: CoachClassOffering[]): s
   return `${weeklySlotCount} ${weeklySlotCount === 1 ? 'horario' : 'horarios'} por semana`
 }
 
+export function hasPublishedOfferingSchedules(offerings: CoachClassOffering[]): boolean {
+  return offerings
+    .flatMap(resolveOfferingSchedules)
+    .some((schedule) => scheduleIsOpen(schedule) || schedule.days.length > 0)
+}
+
 export function resolveOfferingSchedules(offering: CoachClassOffering): CoachOfferingSchedule[] {
   if (offering.schedules?.length) return offering.schedules
   if (offering.days?.length && offering.startTime && offering.endTime) {
