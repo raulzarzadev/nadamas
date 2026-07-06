@@ -6,6 +6,7 @@ import Avatar from '@comps/ui/avatar'
 import Sheet from '@comps/ui/sheet'
 import { onAuthStateChanged, signInWithCustomToken } from 'firebase/auth'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FiCheck, FiCopy } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
@@ -38,6 +39,16 @@ const DAY_LABELS: Record<string, string> = {
   Vie: 'Viernes',
   Sáb: 'Sábado',
   Dom: 'Domingo',
+}
+
+const DAY_WHATSAPP_EMOJIS: Record<string, string> = {
+  Lun: '🌞',
+  Mar: '🌼',
+  Mié: '🌻',
+  Jue: '🌺',
+  Vie: '🪷',
+  Sáb: '🌿',
+  Dom: '☀️',
 }
 
 interface CurrentUser {
@@ -132,6 +143,10 @@ function todayStart() {
   return today
 }
 
+function whatsappWeekLabel(date: Date) {
+  return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })
+}
+
 function whatsappUrl(coach: CoachPublic, message: string) {
   const link = coach.publicLinks?.find((item) => item.kind === 'whatsapp')
   if (!link?.value) return null
@@ -162,6 +177,8 @@ export default function CoachPublicProfile({
   const [otpCode, setOtpCode] = useState('')
   const [showBookingDetails, setShowBookingDetails] = useState(false)
   const [periodStart, setPeriodStart] = useState(() => todayStart())
+  const [whatsappCopied, setWhatsappCopied] = useState(false)
+  const [whatsappCopyFailed, setWhatsappCopyFailed] = useState(false)
   const [selectedSlots, setSelectedSlots] = useState<Record<string, CoachBookingSelection>>({})
   const [firebaseUser, setFirebaseUser] = useState(auth.currentUser)
   const currentPeriodStart = useMemo(() => todayStart(), [])
@@ -288,6 +305,51 @@ export default function CoachPublicProfile({
         .filter((day) => day.times.some((time) => !time.disabled)),
     [bookingSelections, coach, bookedSlotCounts, bookedHours, isBlocked, selectedKeys]
   )
+  const whatsappDayRows = useMemo(
+    () =>
+      groupSelectionsByDay(bookingSelections)
+        .map((group) => ({
+          key: group.date,
+          dayKey: group.day,
+          dayLabel: DAY_LABELS[group.day] || group.day,
+          times: group.selections.map((selection) => {
+            const occupied =
+              isSelectionFull(coach, selection, bookedSlotCounts) ||
+              bookedHours.has(`${selection.date}|${selection.startTime}`)
+            const disabled = occupied || isBlocked(selection) || hasSelectionPassed(selection)
+
+            return {
+              key: bookingSelectionKey(selection),
+              label: `${selection.startTime} - ${selection.endTime}`,
+              disabled,
+              groupType: selection.groupType,
+            }
+          }),
+        }))
+        .filter((day) => day.times.length > 0),
+    [bookingSelections, coach, bookedSlotCounts, bookedHours, isBlocked]
+  )
+  const whatsappScheduleText = useMemo(() => {
+    if (whatsappDayRows.length === 0) return ''
+
+    const daysText = whatsappDayRows
+      .map(
+        (day) =>
+          `${DAY_WHATSAPP_EMOJIS[day.dayKey] || '▫️'} ${day.dayLabel}\n${day.times
+            .map((time) => {
+              const marker = time.disabled ? '❌' : '▫️'
+              const groupLabel = time.groupType === 'grupal' ? ' (Clases grupales)' : ''
+              return `${marker} ${time.label}${groupLabel}`
+            })
+            .join('\n')}`
+      )
+      .join('\n\n')
+
+    return `📅 HORARIOS DISPONIBLES\nSemana ${whatsappWeekLabel(
+      periodStart
+    )}\n\n${daysText}\n\n✅ Los espacios se asignan conforme se van reservando.\n💬 Indícame qué día y horario te interesa para agendar tu lugar.\n⏱️ Cancelación mínima de 24 horas para las clases agendadas. En caso contrario se acredita la clase.`
+  }, [whatsappDayRows, periodStart])
+  const canCopyWhatsappSchedule = whatsappScheduleText.length > 0
 
   useEffect(() => onAuthStateChanged(auth, setFirebaseUser), [])
 
@@ -435,6 +497,20 @@ export default function CoachPublicProfile({
     setSelectedSlots({})
   }
 
+  async function copyWhatsappSchedule() {
+    if (!whatsappScheduleText) return
+
+    setWhatsappCopyFailed(false)
+    try {
+      await navigator.clipboard.writeText(whatsappScheduleText)
+      setWhatsappCopied(true)
+      setTimeout(() => setWhatsappCopied(false), 2000)
+    } catch {
+      setWhatsappCopyFailed(true)
+      setTimeout(() => setWhatsappCopyFailed(false), 3000)
+    }
+  }
+
   return (
     <div className={`flex flex-col gap-6 ${selectedCount > 0 ? 'pb-28' : ''}`}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -449,7 +525,28 @@ export default function CoachPublicProfile({
             </div>
           </div>
         </div>
-        <CopyLinkButton label="Compartir horarios" className="w-full sm:ml-auto sm:w-auto" />
+        <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={() => void copyWhatsappSchedule()}
+            disabled={!canCopyWhatsappSchedule}
+            aria-label="Copiar horarios para WhatsApp"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-3.5 py-2 text-sm font-bold text-[var(--c-ocean)] transition-colors hover:border-[var(--c-aqua)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {whatsappCopied ? (
+              <>
+                <FiCheck aria-hidden="true" /> Copiado
+              </>
+            ) : whatsappCopyFailed ? (
+              'No se pudo copiar'
+            ) : (
+              <>
+                <FiCopy aria-hidden="true" /> Copiar para WhatsApp
+              </>
+            )}
+          </button>
+          <CopyLinkButton label="Compartir horarios" />
+        </div>
       </header>
 
       {coach.bio && <p className="text-[var(--c-text-2)]">{coach.bio}</p>}
