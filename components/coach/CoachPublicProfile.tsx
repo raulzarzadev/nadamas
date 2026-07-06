@@ -41,6 +41,16 @@ const DAY_LABELS: Record<string, string> = {
   Dom: 'Domingo',
 }
 
+const DAY_WHATSAPP_EMOJIS: Record<string, string> = {
+  Lun: '🌞',
+  Mar: '🌼',
+  Mié: '🌻',
+  Jue: '🌺',
+  Vie: '🪷',
+  Sáb: '🌿',
+  Dom: '☀️',
+}
+
 interface CurrentUser {
   nickname?: string
   displayName?: string
@@ -133,8 +143,8 @@ function todayStart() {
   return today
 }
 
-function shortDateLabel(date: Date) {
-  return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+function whatsappWeekLabel(date: Date) {
+  return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })
 }
 
 function whatsappUrl(coach: CoachPublic, message: string) {
@@ -295,27 +305,50 @@ export default function CoachPublicProfile({
         .filter((day) => day.times.some((time) => !time.disabled)),
     [bookingSelections, coach, bookedSlotCounts, bookedHours, isBlocked, selectedKeys]
   )
+  const whatsappDayRows = useMemo(
+    () =>
+      groupSelectionsByDay(bookingSelections)
+        .map((group) => ({
+          key: group.date,
+          dayKey: group.day,
+          dayLabel: DAY_LABELS[group.day] || group.day,
+          times: group.selections.map((selection) => {
+            const occupied =
+              isSelectionFull(coach, selection, bookedSlotCounts) ||
+              bookedHours.has(`${selection.date}|${selection.startTime}`)
+            const disabled = occupied || isBlocked(selection) || hasSelectionPassed(selection)
+
+            return {
+              key: bookingSelectionKey(selection),
+              label: `${selection.startTime} - ${selection.endTime}`,
+              disabled,
+              groupType: selection.groupType,
+            }
+          }),
+        }))
+        .filter((day) => day.times.length > 0),
+    [bookingSelections, coach, bookedSlotCounts, bookedHours, isBlocked]
+  )
   const whatsappScheduleText = useMemo(() => {
-    const availableDays = dayRows
-      .map((day) => ({
-        ...day,
-        times: day.times.filter((time) => !time.disabled),
-      }))
-      .filter((day) => day.times.length > 0)
+    if (whatsappDayRows.length === 0) return ''
 
-    if (availableDays.length === 0) return ''
-
-    const title = name ? `Horarios disponibles de ${name}` : 'Horarios disponibles'
-    const periodLabel = `${shortDateLabel(periodStart)} → ${shortDateLabel(addDays(periodStart, 6))}`
-    const daysText = availableDays
+    const daysText = whatsappDayRows
       .map(
         (day) =>
-          `${day.dayLabel} ${day.dateLabel}\n${day.times.map((time) => time.label).join(', ')}`
+          `${DAY_WHATSAPP_EMOJIS[day.dayKey] || '▫️'} ${day.dayLabel}\n${day.times
+            .map((time) => {
+              const marker = time.disabled ? '❌' : '▫️'
+              const groupLabel = time.groupType === 'grupal' ? ' (Clases grupales)' : ''
+              return `${marker} ${time.label}${groupLabel}`
+            })
+            .join('\n')}`
       )
       .join('\n\n')
 
-    return `${title}\n${periodLabel}\n\n${daysText}`
-  }, [dayRows, name, periodStart])
+    return `📅 HORARIOS DISPONIBLES\nSemana ${whatsappWeekLabel(
+      periodStart
+    )}\n\n${daysText}\n\n✅ Los espacios se asignan conforme se van reservando.\n💬 Indícame qué día y horario te interesa para agendar tu lugar.\n⏱️ Cancelación mínima de 24 horas para las clases agendadas. En caso contrario se acredita la clase.`
+  }, [whatsappDayRows, periodStart])
   const canCopyWhatsappSchedule = whatsappScheduleText.length > 0
 
   useEffect(() => onAuthStateChanged(auth, setFirebaseUser), [])
