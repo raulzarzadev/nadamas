@@ -29,13 +29,19 @@ export function postAuthed(path: string, body?: unknown) {
   })
 }
 
+export function putAuthed(path: string, body?: unknown) {
+  return requestAuthed(path, {
+    method: 'PUT',
+    body: JSON.stringify(body || {}),
+  })
+}
+
 export function patchAuthed(path: string, body?: unknown) {
   return requestAuthed(path, {
     method: 'PATCH',
     body: JSON.stringify(body || {}),
   })
 }
-
 
 export function deleteAuthed(path: string) {
   return requestAuthed(path, { method: 'DELETE' })

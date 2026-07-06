@@ -17,6 +17,8 @@ interface CoachStudentSummary {
   name: string
   email: string | null
   phone?: string
+  address?: string
+  location?: string
   totalClasses: number
   nextClass?: Booking
   upcomingClasses: Booking[]
@@ -86,9 +88,11 @@ export async function GET(request: Request) {
 
       return {
         athleteId: first.athleteId,
-        name: first.athleteName,
-        email: first.athleteEmail,
-        phone: first.athletePhone,
+        name: progress?.athleteName || first.athleteName,
+        email: progress?.athleteEmail ?? first.athleteEmail,
+        phone: progress?.athletePhone || first.athletePhone,
+        address: progress?.athleteAddress || '',
+        location: progress?.athleteLocation || '',
         totalClasses: sorted.length,
         nextClass,
         upcomingClasses,
@@ -110,6 +114,8 @@ export async function GET(request: Request) {
       name: progress.athleteName,
       email: progress.athleteEmail,
       phone: progress.athletePhone,
+      address: progress.athleteAddress || '',
+      location: progress.athleteLocation || '',
       totalClasses: 0,
       upcomingClasses: [],
       progress,
@@ -169,9 +175,97 @@ export async function POST(request: Request) {
       name,
       email: email || null,
       ...(phone ? { phone } : {}),
+      address: '',
+      location: '',
       totalClasses: 0,
       progress,
       entries: [],
+    },
+  })
+}
+
+export async function PUT(request: Request) {
+  const verification = await verifyCoach(request)
+  if (verification.error) return verification.error
+
+  const coachId = verification.caller.uid
+  const body = (await request.json()) as {
+    athleteId?: unknown
+    name?: unknown
+    email?: unknown
+    phone?: unknown
+    address?: unknown
+    location?: unknown
+  }
+  const athleteId = typeof body.athleteId === 'string' ? body.athleteId : ''
+  if (!athleteId) {
+    return NextResponse.json({ error: 'Alumno inválido.' }, { status: 400 })
+  }
+
+  const details = sanitizeStudentDetails(body)
+  if (details.name.length < 2) {
+    return NextResponse.json({ error: 'Nombre inválido.' }, { status: 400 })
+  }
+
+  const [bookingSnapshot, existingProgress] = await Promise.all([
+    adminDb
+      .collection('bookings')
+      .where('coachId', '==', coachId)
+      .where('athleteId', '==', athleteId)
+      .get(),
+    adminDb.collection('coachStudentProgress').doc(studentProgressId(coachId, athleteId)).get(),
+  ])
+  const current = existingProgress.data() as StudentProgress | undefined
+
+  if (bookingSnapshot.empty && !current) {
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  }
+
+  const now = Date.now()
+  const id = studentProgressId(coachId, athleteId)
+  const progress: StudentProgress = {
+    id,
+    coachId,
+    athleteId,
+    athleteName: details.name,
+    athleteEmail: details.email || null,
+    athletePhone: details.phone,
+    athleteAddress: details.address,
+    athleteLocation: details.location,
+    level: current?.level || 'Inicial',
+    goal: current?.goal || '',
+    lastNote: current?.lastNote || '',
+    nextFocus: current?.nextFocus || '',
+    coachAssessment: current?.coachAssessment || 1,
+    createdAt: current?.createdAt || now,
+    updatedAt: now,
+  }
+
+  const batch = adminDb.batch()
+  batch.set(adminDb.collection('coachStudentProgress').doc(id), progress, { merge: true })
+  for (const doc of bookingSnapshot.docs) {
+    batch.set(
+      doc.ref,
+      {
+        athleteName: details.name,
+        athleteEmail: details.email || null,
+        athletePhone: details.phone,
+        updatedAt: now,
+      },
+      { merge: true }
+    )
+  }
+  await batch.commit()
+
+  return NextResponse.json({
+    student: {
+      athleteId,
+      name: details.name,
+      email: details.email || null,
+      phone: details.phone,
+      address: details.address,
+      location: details.location,
+      progress,
     },
   })
 }
@@ -240,6 +334,22 @@ export async function PATCH(request: Request) {
   await Promise.all([docRef.set(progress, { merge: true }), entryRef.set(entry)])
 
   return NextResponse.json({ progress, entry })
+}
+
+function sanitizeStudentDetails(input: {
+  name?: unknown
+  email?: unknown
+  phone?: unknown
+  address?: unknown
+  location?: unknown
+}) {
+  return {
+    name: typeof input.name === 'string' ? input.name.trim().slice(0, 120) : '',
+    email: typeof input.email === 'string' ? input.email.trim().slice(0, 160) : '',
+    phone: typeof input.phone === 'string' ? input.phone.trim().slice(0, 40) : '',
+    address: typeof input.address === 'string' ? input.address.trim().slice(0, 240) : '',
+    location: typeof input.location === 'string' ? input.location.trim().slice(0, 500) : '',
+  }
 }
 
 function groupBookingsByAthlete(bookings: Booking[]) {

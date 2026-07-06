@@ -8,7 +8,11 @@ import { useEffect, useRef, useState } from 'react'
 import {
   FiCalendar,
   FiChevronDown,
+  FiEdit3,
+  FiExternalLink,
   FiMail,
+  FiMapPin,
+  FiNavigation,
   FiPhone,
   FiPlus,
   FiSearch,
@@ -19,6 +23,7 @@ import type { Booking } from '@/lib/coach-booking'
 import type { StudentProgress, StudentProgressEntry } from '@/lib/coach-student-progress'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AddStudentModal, { type CreatedStudentPayload } from './AddStudentModal'
+import EditStudentModal, { type UpdatedStudentPayload } from './EditStudentModal'
 import StudentProgressModal from './StudentProgressModal'
 
 interface StudentSummary {
@@ -26,6 +31,8 @@ interface StudentSummary {
   name: string
   email: string | null
   phone?: string
+  address?: string
+  location?: string
   totalClasses: number
   nextClass?: Booking
   upcomingClasses?: Booking[]
@@ -104,10 +111,35 @@ export default function CoachStudents() {
       )
     )
 
+  const updateStudentDetails = (updated: UpdatedStudentPayload) =>
+    setStudents((current) =>
+      current
+        ?.map((item) =>
+          item.athleteId === updated.athleteId
+            ? {
+                ...item,
+                name: updated.name,
+                email: updated.email,
+                phone: updated.phone,
+                address: updated.address,
+                location: updated.location,
+                progress: updated.progress,
+              }
+            : item
+        )
+        .sort((a, b) => a.name.localeCompare(b.name))
+    )
+
   const normalizedQuery = query.trim().toLowerCase()
   const visibleStudents = normalizedQuery
     ? students.filter((student) =>
-        [student.name, student.email || '', student.phone || '']
+        [
+          student.name,
+          student.email || '',
+          student.phone || '',
+          student.address || '',
+          student.location || '',
+        ]
           .join(' ')
           .toLowerCase()
           .includes(normalizedQuery)
@@ -153,6 +185,7 @@ export default function CoachStudents() {
               onProgressSaved={(entry, progress) =>
                 updateStudent(student.athleteId, entry, progress)
               }
+              onDetailsSaved={updateStudentDetails}
             />
           ))}
         </ul>
@@ -169,14 +202,17 @@ function StudentCard({
   student,
   focused = false,
   onProgressSaved,
+  onDetailsSaved,
 }: {
   student: StudentSummary
   focused?: boolean
   onProgressSaved: (entry: StudentProgressEntry, progress: StudentProgress) => void
+  onDetailsSaved: (student: UpdatedStudentPayload) => void
 }) {
   const [open, setOpen] = useState(focused)
   const [showAll, setShowAll] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const ref = useRef<HTMLLIElement>(null)
 
   // When deep-linked from the agenda, open and scroll this card into view.
@@ -229,6 +265,27 @@ function StudentCard({
                 <FiPhone aria-hidden="true" /> {student.phone}
               </p>
             )}
+            {student.address && (
+              <p className="flex items-center gap-2 text-sm text-(--c-text-2)">
+                <FiMapPin aria-hidden="true" /> {student.address}
+              </p>
+            )}
+            {student.location &&
+              (isWebUrl(student.location) ? (
+                <a
+                  href={student.location}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm font-semibold text-(--c-aqua-strong) hover:underline"
+                >
+                  <FiNavigation aria-hidden="true" /> Ver ubicación
+                  <FiExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+                </a>
+              ) : (
+                <p className="flex items-center gap-2 text-sm text-(--c-text-2)">
+                  <FiNavigation aria-hidden="true" /> {student.location}
+                </p>
+              ))}
             {student.upcomingClasses && student.upcomingClasses.length > 0 && (
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
@@ -258,13 +315,22 @@ function StudentCard({
             />
           </div>
 
-          <button
-            type="button"
-            onClick={() => setModalOpen(true)}
-            className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full bg-(--c-ocean) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
-          >
-            <FiPlus aria-hidden="true" /> Agregar progreso
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setEditModalOpen(true)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-4 py-2 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface)"
+            >
+              <FiEdit3 aria-hidden="true" /> Editar datos
+            </button>
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+            >
+              <FiPlus aria-hidden="true" /> Agregar progreso
+            </button>
+          </div>
 
           <div className="flex flex-col gap-2">
             <h4 className="text-sm font-bold text-(--c-ocean)">Progresos registrados</h4>
@@ -308,8 +374,23 @@ function StudentCard({
           }}
         />
       )}
+
+      {editModalOpen && (
+        <EditStudentModal
+          student={student}
+          onClose={() => setEditModalOpen(false)}
+          onSaved={(updated) => {
+            onDetailsSaved(updated)
+            setEditModalOpen(false)
+          }}
+        />
+      )}
     </li>
   )
+}
+
+function isWebUrl(value: string) {
+  return /^https?:\/\//i.test(value.trim())
 }
 
 function EntryItem({ entry }: { entry: StudentProgressEntry }) {
