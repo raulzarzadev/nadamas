@@ -160,22 +160,67 @@ export function offeringsAvailabilitySummary(offerings: CoachClassOffering[]): s
   if (!offerings.length) return 'Horarios por publicar'
   const schedules = offerings.flatMap(resolveOfferingSchedules)
   const openScheduleCount = schedules.filter(scheduleIsOpen).length
-  const weeklySlotCount = schedules.reduce(
-    (total, schedule) => total + (scheduleIsOpen(schedule) ? 0 : schedule.days.length),
-    0
+  const now = new Date()
+  const slotCounts = schedules.reduce(
+    (totals, schedule) => {
+      if (scheduleIsOpen(schedule)) return totals
+
+      const mode = schedule.availabilityMode ?? 'always'
+      if (mode === 'always') {
+        totals.weekly += schedule.days.length
+        return totals
+      }
+      if (mode === 'next_week') {
+        totals.nextWeek += schedule.days.length
+        return totals
+      }
+
+      totals.published += upcomingAvailableDateCount(schedule, now)
+      return totals
+    },
+    { weekly: 0, nextWeek: 0, published: 0 }
   )
-  if (openScheduleCount && !weeklySlotCount) return 'Horario abierto'
-  if (openScheduleCount && weeklySlotCount) {
-    return `${weeklySlotCount} ${weeklySlotCount === 1 ? 'horario' : 'horarios'} por semana + abierto`
+  const totalSlots = slotCounts.weekly + slotCounts.nextWeek + slotCounts.published
+  const openLabel = openScheduleCount ? ' + abierto' : ''
+
+  if (openScheduleCount && !totalSlots) return 'Horario abierto'
+  if (!totalSlots) return 'Horarios por publicar'
+  if (slotCounts.weekly && !slotCounts.nextWeek && !slotCounts.published) {
+    return `${slotCounts.weekly} ${slotCounts.weekly === 1 ? 'horario' : 'horarios'} por semana${openLabel}`
   }
-  if (!weeklySlotCount) return 'Horarios por publicar'
-  return `${weeklySlotCount} ${weeklySlotCount === 1 ? 'horario' : 'horarios'} por semana`
+  if (slotCounts.nextWeek && !slotCounts.weekly && !slotCounts.published) {
+    return `${slotCounts.nextWeek} ${slotCounts.nextWeek === 1 ? 'horario' : 'horarios'} la próxima semana${openLabel}`
+  }
+  if (slotCounts.published && !slotCounts.weekly && !slotCounts.nextWeek) {
+    return `${slotCounts.published} ${slotCounts.published === 1 ? 'horario publicado' : 'horarios publicados'}${openLabel}`
+  }
+  return `${totalSlots} ${totalSlots === 1 ? 'horario disponible' : 'horarios disponibles'}${openLabel}`
 }
 
 export function hasPublishedOfferingSchedules(offerings: CoachClassOffering[]): boolean {
-  return offerings
-    .flatMap(resolveOfferingSchedules)
-    .some((schedule) => scheduleIsOpen(schedule) || schedule.days.length > 0)
+  const now = new Date()
+  return offerings.flatMap(resolveOfferingSchedules).some((schedule) => {
+    if (scheduleIsOpen(schedule)) return true
+    const mode = schedule.availabilityMode ?? 'always'
+    if (mode === 'dates') return upcomingAvailableDateCount(schedule, now) > 0
+    return schedule.days.length > 0
+  })
+}
+
+function upcomingAvailableDateCount(schedule: CoachOfferingSchedule, now: Date) {
+  const today = dateKey(now)
+  const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(
+    now.getMinutes()
+  ).padStart(2, '0')}`
+
+  return [...new Set(schedule.availableDates || [])].filter((date) => {
+    if (date < today) return false
+    if (date === today && schedule.startTime <= currentTime) return false
+    if (!schedule.days.length) return true
+
+    const day = WEEKDAY_LABELS[new Date(`${date}T12:00:00`).getDay()]
+    return schedule.days.includes(day)
+  }).length
 }
 
 export function resolveOfferingSchedules(offering: CoachClassOffering): CoachOfferingSchedule[] {
