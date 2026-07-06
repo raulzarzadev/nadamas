@@ -32,7 +32,7 @@ export default function CoachScheduleRows({
   }
 
   return (
-    <div className="space-y-3 rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)] px-4 py-3">
+    <div className="my-3 space-y-4 rounded-[24px] border border-[var(--c-border)] bg-[var(--c-surface)] px-5 py-5 sm:px-6">
       {days.map((day) => (
         <div key={day.key} className="grid gap-1 sm:grid-cols-[7rem_1fr]">
           <div>

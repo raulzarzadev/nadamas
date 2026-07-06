@@ -85,14 +85,12 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   return (
     <section className="mx-auto max-w-[1040px] px-5 py-6 sm:px-8 lg:py-8">
       <JsonLd data={jsonLd} />
-      <div className="rounded-[32px] border border-[var(--c-border)] bg-[var(--c-bg)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
-        <CoachPublicProfile
-          coach={detail.coach}
-          name={detail.name}
-          bookedSlots={detail.bookedSlots}
-          blockedSlots={detail.blockedSlots}
-        />
-      </div>
+      <CoachPublicProfile
+        coach={detail.coach}
+        name={detail.name}
+        bookedSlots={detail.bookedSlots}
+        blockedSlots={detail.blockedSlots}
+      />
     </section>
   )
 }
