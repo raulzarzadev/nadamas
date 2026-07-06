@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { FiCheck, FiShare2 } from 'react-icons/fi'
+import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 
 /** Copies the current page URL (the public coach link) to the clipboard. */
 export default function CopyLinkButton({
@@ -17,7 +18,7 @@ export default function CopyLinkButton({
   const copy = async () => {
     setFailed(false)
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      await copyTextToClipboard(window.location.href)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
