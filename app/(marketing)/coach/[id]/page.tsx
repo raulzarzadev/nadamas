@@ -43,7 +43,7 @@ export default async function CoachPublicPage({ params }: CoachPublicPageProps) 
         Volver a coaches
       </Link>
 
-      <div className="mt-6 rounded-[32px] border border-[var(--c-border)] bg-[var(--c-bg)] p-5 shadow-[var(--shadow-sm)] sm:p-7">
+      <div className="mt-8">
         <CoachPublicProfile
           coach={detail.coach}
           name={detail.name}
