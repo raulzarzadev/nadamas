@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { FiCheck, FiShare2 } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
+import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 
 export default function ShareScheduleButton() {
   const { user } = useUser()
@@ -33,7 +34,7 @@ export default function ShareScheduleButton() {
     const link = `${window.location.origin}/${coachSlug || uid}`
     setFailed(false)
     try {
-      await navigator.clipboard.writeText(link)
+      await copyTextToClipboard(link)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {

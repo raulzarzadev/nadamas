@@ -10,6 +10,7 @@ import { FiCheck, FiCopy } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
+import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import {
   bookingSelectionKey,
   type CoachBookingSelection,
@@ -502,7 +503,7 @@ export default function CoachPublicProfile({
 
     setWhatsappCopyFailed(false)
     try {
-      await navigator.clipboard.writeText(whatsappScheduleText)
+      await copyTextToClipboard(whatsappScheduleText)
       setWhatsappCopied(true)
       setTimeout(() => setWhatsappCopied(false), 2000)
     } catch {
