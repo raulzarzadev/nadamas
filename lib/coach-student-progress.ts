@@ -15,6 +15,8 @@ export interface StudentProgress {
   athleteName: string
   athleteEmail: string | null
   athletePhone?: string
+  athleteAddress?: string
+  athleteLocation?: string
   level: StudentLevel
   goal: string
   lastNote: string
