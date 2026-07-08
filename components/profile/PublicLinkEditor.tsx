@@ -11,6 +11,11 @@ const KIND_LABEL: Record<SlugKind, string> = {
   athlete: 'Tu enlace de atleta',
 }
 
+const KIND_PREFIX: Record<SlugKind, string> = {
+  coach: 'nadamas.app/',
+  athlete: 'nadamas.app/atleta/',
+}
+
 function SlugRow({
   kind,
   initial,
@@ -59,7 +64,7 @@ function SlugRow({
       <span className="text-sm font-semibold text-[var(--c-ocean)]">{KIND_LABEL[kind]}</span>
       <div className="flex items-stretch gap-2">
         <span className="flex min-w-0 flex-1 items-center rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white pl-3 text-sm">
-          <span className="shrink-0 text-[var(--c-text-2)]">nadamas.app/</span>
+          <span className="shrink-0 text-[var(--c-text-2)]">{KIND_PREFIX[kind]}</span>
           <input
             value={value}
             onChange={(event) => setValue(event.target.value)}
@@ -116,7 +121,7 @@ export default function PublicLinkEditor() {
       <div>
         <h2 className="text-lg font-bold">Tu enlace público</h2>
         <p className="mt-1 text-sm text-[var(--c-text-2)]">
-          Comparte un enlace corto a tu perfil. Cada enlace debe ser único.
+          Comparte un enlace corto a tu perfil. Cada enlace debe ser único por tipo de perfil.
         </p>
       </div>
       <SlugRow kind="athlete" initial={slugs.athlete || ''} suggestion={suggestion} />

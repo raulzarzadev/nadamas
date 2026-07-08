@@ -11,28 +11,61 @@ interface SlugDoc {
   updatedAt: number
 }
 
-/** Resolve a public path segment to its owner. Tries the slug registry first,
- * then falls back to a raw coach uid (back-compat for old /<uid> links). */
-export async function resolveSlug(param: string): Promise<{ uid: string; kind: SlugKind } | null> {
+function slugDocId(kind: SlugKind, slug: string) {
+  return `${kind}:${slug}`
+}
+
+async function readSlugDoc(slug: string, kind: SlugKind) {
+  const scopedSnap = await adminDb.collection('slugs').doc(slugDocId(kind, slug)).get()
+  if (scopedSnap.exists) return scopedSnap
+
+  const legacySnap = await adminDb.collection('slugs').doc(slug).get()
+  if (legacySnap.exists && (legacySnap.data() as SlugDoc).kind === kind) return legacySnap
+
+  return null
+}
+
+async function findUserUidBySlug(slug: string, kind: SlugKind) {
+  const snap = await adminDb.collection('users').where(`slugs.${kind}`, '==', slug).limit(1).get()
+  return snap.docs[0]?.id ?? null
+}
+
+/** Resolve a public path segment to its owner. Slugs are scoped by profile kind
+ * so coach /zarza and athlete /atleta/zarza can coexist. */
+export async function resolveSlug(
+  param: string,
+  kind: SlugKind
+): Promise<{ uid: string; kind: SlugKind } | null> {
   const slug = normalizeSlug(param)
-  const slugSnap = await adminDb.collection('slugs').doc(slug).get()
-  if (slugSnap.exists) {
+  const slugSnap = await readSlugDoc(slug, kind)
+  if (slugSnap?.exists) {
     const data = slugSnap.data() as SlugDoc
     return { uid: data.uid, kind: data.kind }
   }
-  const coachSnap = await adminDb.collection('coaches').doc(param).get()
-  if (coachSnap.exists) return { uid: param, kind: 'coach' }
+
+  const uidFromUserSlug = await findUserUidBySlug(slug, kind)
+  if (uidFromUserSlug) return { uid: uidFromUserSlug, kind }
+
+  if (kind === 'coach') {
+    const coachSnap = await adminDb.collection('coaches').doc(param).get()
+    if (coachSnap.exists) return { uid: param, kind: 'coach' }
+  }
+
   return null
 }
 
 /** Find a free slug starting from `base`, appending -2, -3, … on collisions. */
-export async function ensureUniqueSlug(base: string, ownerUid: string): Promise<string> {
+export async function ensureUniqueSlug(
+  base: string,
+  ownerUid: string,
+  kind: SlugKind
+): Promise<string> {
   const root = slugify(base) || 'usuario'
   for (let attempt = 0; attempt < 50; attempt++) {
     const candidate = attempt === 0 ? root : `${root}-${attempt + 1}`
     if (!isValidSlug(candidate)) continue
-    const snap = await adminDb.collection('slugs').doc(candidate).get()
-    if (!snap.exists || (snap.data() as SlugDoc).uid === ownerUid) return candidate
+    const snap = await readSlugDoc(candidate, kind)
+    if (!snap?.exists || (snap.data() as SlugDoc).uid === ownerUid) return candidate
   }
   // Extremely unlikely fallback: suffix with part of the uid.
   return `${root}-${ownerUid.slice(0, 6).toLowerCase()}`
@@ -50,12 +83,20 @@ export async function setSlug(args: {
   const slug = normalizeSlug(args.requested)
   if (!isValidSlug(slug)) return { ok: false, reason: 'invalid' }
 
-  const slugRef = adminDb.collection('slugs').doc(slug)
+  const ownerFromUserSlug = await findUserUidBySlug(slug, args.kind)
+  if (ownerFromUserSlug && ownerFromUserSlug !== args.uid) return { ok: false, reason: 'taken' }
+
+  const slugRef = adminDb.collection('slugs').doc(slugDocId(args.kind, slug))
+  const legacySlugRef = adminDb.collection('slugs').doc(slug)
   const userRef = adminDb.collection('users').doc(args.uid)
 
   return adminDb.runTransaction(async (tx) => {
-    const existing = await tx.get(slugRef)
-    if (existing.exists && (existing.data() as SlugDoc).uid !== args.uid) {
+    const [existing, legacyExisting] = await Promise.all([tx.get(slugRef), tx.get(legacySlugRef)])
+    const legacyData = legacyExisting.exists ? (legacyExisting.data() as SlugDoc) : null
+    if (
+      (existing.exists && (existing.data() as SlugDoc).uid !== args.uid) ||
+      (legacyData?.kind === args.kind && legacyData.uid !== args.uid)
+    ) {
       return { ok: false as const, reason: 'taken' as const }
     }
 
@@ -66,6 +107,7 @@ export async function setSlug(args: {
     const now = Date.now()
 
     if (previous && previous !== slug) {
+      tx.delete(adminDb.collection('slugs').doc(slugDocId(args.kind, previous)))
       tx.delete(adminDb.collection('slugs').doc(previous))
     }
     tx.set(slugRef, {
@@ -80,10 +122,16 @@ export async function setSlug(args: {
   })
 }
 
-/** Whether `requested` can be claimed by `uid` (free or already theirs). */
-export async function isSlugAvailable(requested: string, uid: string): Promise<boolean> {
+/** Whether `requested` can be claimed by `uid` for this profile kind. */
+export async function isSlugAvailable(
+  requested: string,
+  uid: string,
+  kind: SlugKind
+): Promise<boolean> {
   const slug = normalizeSlug(requested)
   if (!isValidSlug(slug)) return false
-  const snap = await adminDb.collection('slugs').doc(slug).get()
-  return !snap.exists || (snap.data() as SlugDoc).uid === uid
+  const snap = await readSlugDoc(slug, kind)
+  if (snap?.exists) return (snap.data() as SlugDoc).uid === uid
+  const uidFromUserSlug = await findUserUidBySlug(slug, kind)
+  return !uidFromUserSlug || uidFromUserSlug === uid
 }

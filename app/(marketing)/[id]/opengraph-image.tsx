@@ -1,6 +1,5 @@
 import { ImageResponse } from 'next/og'
 import { coachDisplayPhoto } from '@/lib/coach-photo'
-import { getPublicAthleteDetail } from '@/lib/server/public-athlete'
 import { getPublicCoachDetail } from '@/lib/server/public-coach'
 import { resolveSlug } from '@/lib/server/slugs'
 
@@ -35,7 +34,7 @@ function initials(name: string) {
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const target = await resolveSlug(id)
+  const target = await resolveSlug(id, 'coach')
 
   let name = 'nadamas.app'
   let subtitle = 'Coach de natación'
@@ -47,13 +46,6 @@ export default async function Image({ params }: { params: Promise<{ id: string }
       name = detail.name
       subtitle = 'Coach de natación'
       photo = coachDisplayPhoto(detail.coach)
-    }
-  } else if (target?.kind === 'athlete') {
-    const detail = await getPublicAthleteDetail(target.uid)
-    if (detail) {
-      name = detail.name
-      subtitle = 'Nadador'
-      photo = detail.photoURL
     }
   }
 

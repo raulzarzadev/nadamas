@@ -5,6 +5,7 @@ export type SlugKind = 'coach' | 'athlete'
 export const RESERVED_SLUGS = new Set([
   'api',
   'admin',
+  'atleta',
   'athlete',
   'athletes',
   'auth-gate',

@@ -20,6 +20,13 @@ export async function getPublicCoachDetail(id: string) {
   return {
     coach,
     name: publicNameFromUser(user),
+    avatarUrl:
+      typeof user?.photoURL === 'string'
+        ? user.photoURL
+        : typeof user?.photoUrl === 'string'
+          ? user.photoUrl
+          : null,
+    coachSlug: typeof user?.slugs?.coach === 'string' ? user.slugs.coach : null,
     bookedSlots,
     blockedSlots,
   }
