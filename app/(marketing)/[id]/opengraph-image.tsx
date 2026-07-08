@@ -9,6 +9,7 @@ export const alt = 'Perfil en nadamas.app'
 
 const OCEAN = '#0A2540'
 const AQUA = '#0EA5C4'
+const MAX_SUMMARY_LENGTH = 132
 
 // Fetch the profile photo and inline it as a data URI so the OG renderer never
 // depends on the remote host being reachable at render time.
@@ -32,12 +33,21 @@ function initials(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
+function coachSummary(bio?: string) {
+  const fallback = 'Reserva tus clases de natación y revisa horarios disponibles.'
+  const summary = bio?.trim().replace(/\s+/g, ' ') || fallback
+  return summary.length > MAX_SUMMARY_LENGTH
+    ? `${summary.slice(0, MAX_SUMMARY_LENGTH - 1).trimEnd()}…`
+    : summary
+}
+
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const target = await resolveSlug(id, 'coach')
 
   let name = 'nadamas.app'
   let subtitle = 'Coach de natación'
+  let summary = 'Reserva tus clases de natación y revisa horarios disponibles.'
   let photo: string | null = null
 
   if (target?.kind === 'coach') {
@@ -45,7 +55,8 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     if (detail) {
       name = detail.name
       subtitle = 'Coach de natación'
-      photo = coachDisplayPhoto(detail.coach)
+      summary = coachSummary(detail.coach.bio)
+      photo = coachDisplayPhoto(detail.coach, detail.avatarUrl)
     }
   }
 
@@ -107,7 +118,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           {subtitle}
         </div>
         <div style={{ fontSize: 30, fontWeight: 500, opacity: 0.8, marginTop: 28 }}>
-          Reserva tus clases de natación
+          {summary}
         </div>
       </div>
     </div>,
