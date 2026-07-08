@@ -30,7 +30,9 @@ export async function GET(request: Request) {
   const slug = normalizeSlug(url.searchParams.get('slug') || '')
   if (!slug) return NextResponse.json({ valid: false, available: false })
   if (!isValidSlug(slug)) return NextResponse.json({ valid: false, available: false })
-  const available = await isSlugAvailable(slug, caller.uid)
+  const kind = parseKind(url.searchParams.get('kind'))
+  if (!kind) return NextResponse.json({ valid: false, available: false })
+  const available = await isSlugAvailable(slug, caller.uid, kind)
   return NextResponse.json({ valid: true, available })
 }
 
@@ -46,7 +48,7 @@ export async function POST(request: Request) {
   let requested = normalizeSlug(body.slug || '')
   if (!requested) {
     const snap = await adminDb.collection('users').doc(caller.uid).get()
-    requested = await ensureUniqueSlug(publicNameFromUser(snap.data()), caller.uid)
+    requested = await ensureUniqueSlug(publicNameFromUser(snap.data()), caller.uid, kind)
   }
 
   const result = await setSlug({ uid: caller.uid, kind, requested })

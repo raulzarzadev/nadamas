@@ -21,6 +21,7 @@ interface DirectoryCoach extends CoachPublic {
   id: string
   name: string
   avatarUrl?: string
+  slug?: string
 }
 
 const SKILL_LABELS: Record<string, Record<string, string>> = Object.fromEntries(
@@ -113,6 +114,7 @@ export default function CoachDirectoryList({
           {visible.map((coach) => {
             const tag = skillTag(coach)
             const availability = offeringsAvailabilitySummary(resolveOfferings(coach))
+            const coachHref = coach.slug ? `/${coach.slug}` : `${coachHrefBase}/${coach.id}`
             return (
               <li
                 key={coach.id}
@@ -138,7 +140,7 @@ export default function CoachDirectoryList({
                   )}
                 </div>
                 <Link
-                  href={`${coachHrefBase}/${coach.id}`}
+                  href={coachHref}
                   onClick={() => cacheCoachProfile(coach)}
                   className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--c-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
                 >

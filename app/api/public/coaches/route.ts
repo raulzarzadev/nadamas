@@ -8,6 +8,7 @@ interface PublicCoachDirectoryItem extends CoachPublic {
   id: string
   name: string
   avatarUrl?: string
+  slug?: string
 }
 
 function coachDirectoryPriority(coach: PublicCoachDirectoryItem) {
@@ -40,6 +41,7 @@ export async function GET() {
           ...coach,
           id: doc.id,
           name: publicNameFromUser(user),
+          slug: typeof user?.slugs?.coach === 'string' ? user.slugs.coach : undefined,
           avatarUrl:
             typeof user?.photoURL === 'string'
               ? user.photoURL

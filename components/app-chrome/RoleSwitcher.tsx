@@ -149,7 +149,8 @@ export default function RoleSwitcher({
 
   const shareSlug = async (kind: 'coach' | 'athlete', slug: string) => {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/${slug}`)
+      const path = kind === 'athlete' ? `/atleta/${slug}` : `/${slug}`
+      await navigator.clipboard.writeText(`${window.location.origin}${path}`)
       setCopiedKind(kind)
       setTimeout(() => setCopiedKind((current) => (current === kind ? null : current)), 2000)
     } catch {}
@@ -164,7 +165,7 @@ export default function RoleSwitcher({
         type="button"
         onClick={() => shareSlug(kind, slug)}
         aria-label={`Copiar enlace de ${ROLE_LABEL[kind]}`}
-        title={`nadamas.app/${slug}`}
+        title={kind === 'athlete' ? `nadamas.app/atleta/${slug}` : `nadamas.app/${slug}`}
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]"
       >
         {copied ? (
