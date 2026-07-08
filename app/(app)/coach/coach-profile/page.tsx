@@ -1,4 +1,5 @@
 'use client'
+import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
 import LinksCard from '@comps/coach/LinksCard'
 import MediaCard from '@comps/coach/MediaCard'
 import PersonalDataCard from '@comps/coach/PersonalDataCard'
@@ -169,6 +170,8 @@ export default function CoachProfilePage() {
       />
 
       <PublicLinkEditor />
+
+      <CalendarConnectionCard calendarRole="coach" />
 
       <PersonalDataCard
         uid={uid}

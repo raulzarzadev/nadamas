@@ -1,4 +1,5 @@
 'use client'
+import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
 import { TextField } from '@comps/Inputs/FormFields'
 import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import SaveButton from '@comps/SaveButton'
@@ -165,6 +166,8 @@ export default function ProfilePage() {
       </div>
 
       <PublicLinkEditor />
+
+      <CalendarConnectionCard calendarRole="athlete" />
     </div>
   )
 }

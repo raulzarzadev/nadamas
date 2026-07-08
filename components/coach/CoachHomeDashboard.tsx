@@ -1,5 +1,6 @@
 'use client'
 
+import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
 import CoachOnboardingBanner from '@comps/coach/CoachOnboardingBanner'
 import Link from 'next/link'
 import type React from 'react'
@@ -88,6 +89,8 @@ export default function CoachHomeDashboard() {
         <StatTile icon={<FiUsers aria-hidden="true" />} label="Alumnos" value={stats?.students} />
         <StatTile icon={<FiClock aria-hidden="true" />} label="Horas libres" value={stats?.free} />
       </div>
+
+      <CalendarConnectionCard calendarRole="coach" />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ACTION_CARDS.map((card) => {
