@@ -1,5 +1,6 @@
 'use client'
 
+import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
 import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import Link from 'next/link'
 import type React from 'react'
@@ -139,6 +140,8 @@ export default function AthleteHomeDashboard() {
           value={bookings === null ? undefined : coachCount}
         />
       </div>
+
+      <CalendarConnectionCard calendarRole="athlete" />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ACTION_CARDS.map((card) => {
