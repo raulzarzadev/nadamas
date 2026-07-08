@@ -12,6 +12,10 @@ interface PublicProfilePageProps {
 
 const METADATA_BASE = new URL('https://nadamas.app')
 
+function coachDescription(bio?: string) {
+  return bio?.trim() || 'Perfil de coach de natación: estilo, clases y horarios disponibles.'
+}
+
 export async function generateMetadata({ params }: PublicProfilePageProps): Promise<Metadata> {
   const { id } = await params
   const target = await resolveSlug(id, 'coach')
@@ -20,25 +24,32 @@ export async function generateMetadata({ params }: PublicProfilePageProps): Prom
   const detail = await getPublicCoachDetail(target.uid)
   if (!detail) return { title: 'Perfil no disponible' }
   const title = `${detail.name} · Coach de natación`
-  const description =
-    detail.coach.bio || 'Perfil de coach de natación: estilo, clases y horarios disponibles.'
+  const description = coachDescription(detail.coach.bio)
+  const url = `/${id}`
+  const images = [
+    {
+      url: `${url}/opengraph-image`,
+      width: 1200,
+      height: 630,
+      alt: `${detail.name} · Coach de natación`,
+    },
+  ]
 
-  // og:image / twitter:image come from the colocated opengraph-image.tsx
-  // (1200×630 card with the profile photo) — do not set images here.
   return {
     metadataBase: METADATA_BASE,
     title,
     description,
-    alternates: { canonical: `/${id}` },
+    alternates: { canonical: url },
     openGraph: {
       title,
       description,
       type: 'profile',
       siteName: 'nadamas.app',
       locale: 'es_MX',
-      url: `/${id}`,
+      url,
+      images,
     },
-    twitter: { card: 'summary_large_image', title, description },
+    twitter: { card: 'summary_large_image', title, description, images },
   }
 }
 
@@ -64,6 +75,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
       <CoachPublicProfile
         coach={detail.coach}
         name={detail.name}
+        avatarUrl={detail.avatarUrl}
         bookedSlots={detail.bookedSlots}
         blockedSlots={detail.blockedSlots}
       />
