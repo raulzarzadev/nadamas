@@ -26,11 +26,10 @@ export async function generateMetadata({ params }: PublicProfilePageProps): Prom
   const title = `${detail.name} · Coach de natación`
   const description = coachDescription(detail.coach.bio)
   const url = `/${id}`
+  const imageUrl = coachDisplayPhoto(detail.coach, detail.avatarUrl) || '/og-nadamas.png'
   const images = [
     {
-      url: `${url}/opengraph-image`,
-      width: 1200,
-      height: 630,
+      url: imageUrl,
       alt: `${detail.name} · Coach de natación`,
     },
   ]
