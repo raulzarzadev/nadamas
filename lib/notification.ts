@@ -5,6 +5,7 @@ export type NotificationType =
   | 'booking_cancelled_by_coach' // coach cancelled -> athlete
   | 'verification_requested' // coach requested -> admins
   | 'verification_reviewed' // admin reviewed -> coach
+  | 'push_test' // user requested a push delivery test
   | 'athlete_invite_accepted' // athlete accepted -> coach (future)
   | 'athlete_invite_rejected' // athlete rejected -> coach (future)
 
