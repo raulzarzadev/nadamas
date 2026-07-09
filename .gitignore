@@ -54,3 +54,6 @@ screenshots/
 .emulator-data/
 firebase-debug.log
 firestore-debug.log
+
+# Local codebase-memory index
+.codebase-memory/
