@@ -1,5 +1,6 @@
 import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 import WidgetFrameResizer from '@comps/widget/WidgetFrameResizer'
+import '@comps/widget/widget-dark.css'
 import type { CSSProperties } from 'react'
 import { getPublicCoachDetail } from '@/lib/server/public-coach'
 
@@ -15,17 +16,18 @@ export default async function CoachEmbedPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams?: Promise<{ color?: string }>
+  searchParams?: Promise<{ color?: string; theme?: string }>
 }) {
   const { id } = await params
   const query = searchParams ? await searchParams : {}
   const detail = await getPublicCoachDetail(id)
   const color = normalizeColor(query.color)
+  const dark = query.theme === 'dark'
 
   if (!detail) {
     return (
       <WidgetFrameResizer>
-        <main className="px-4 py-6">
+        <main className={`px-4 py-6 ${dark ? 'widget-dark' : ''}`}>
           <div className="rounded-2xl border border-[var(--c-border)] bg-white p-4 text-sm font-semibold text-[var(--c-ocean)]">
             No encontramos horarios para este coach.
           </div>
@@ -37,7 +39,7 @@ export default async function CoachEmbedPage({
   return (
     <WidgetFrameResizer>
       <main
-        className="mx-auto w-full max-w-3xl bg-white px-4 py-5"
+        className={`mx-auto w-full max-w-3xl px-4 py-5 ${dark ? 'widget-dark' : 'bg-white'}`}
         style={
           color
             ? ({

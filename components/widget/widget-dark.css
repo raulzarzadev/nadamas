@@ -1,0 +1,29 @@
+/* Dark theme for the embeddable coach widget (?theme=dark).
+   The widget UI colors run through the marketing-theme variables, so the theme
+   is mostly a variable swap; the few hardcoded Tailwind utilities (bg-white,
+   text-white on ocean buttons) get targeted overrides below. */
+.widget-dark {
+  --c-ocean: #e9f2f9;
+  --c-ocean-mid: #7cc7e8;
+  --c-aqua-strong: #35c3e8;
+  --c-aqua-light: #12384a;
+  --c-bg: #0b0f14;
+  --c-surface: #121a22;
+  --c-text-2: #9db0c0;
+  --c-border: #263340;
+  color-scheme: dark;
+  background: var(--c-bg);
+}
+
+.widget-dark .bg-white {
+  background-color: var(--c-surface);
+}
+
+.widget-dark .bg-white\/95 {
+  background-color: rgb(18 26 34 / 0.95);
+}
+
+/* Ocean is light in dark mode, so buttons filled with it need dark text. */
+.widget-dark [class*='bg-[var(--c-ocean)]'] {
+  color: #0a2540;
+}
