@@ -53,7 +53,8 @@ const nextConfig = {
           ...securityHeaders,
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://nandapaz.com https://www.nandapaz.com",
+            value:
+              "frame-ancestors 'self' https://nandapaz.com https://www.nandapaz.com https://abdon.mx https://www.abdon.mx",
           },
         ],
       },
