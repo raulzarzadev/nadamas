@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Contacto · nadamas.app',
+  title: 'Contacto',
   description: 'Habla con el equipo de nadamas.app.',
   alternates: { canonical: 'https://nadamas.app/contacto' },
 }

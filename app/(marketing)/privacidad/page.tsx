@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacidad · nadamas.app',
+  title: 'Privacidad',
   description:
     'Cómo nadamas.app trata tus datos: qué guardamos, para qué y tu control sobre tu historial.',
   alternates: { canonical: 'https://nadamas.app/privacidad' },

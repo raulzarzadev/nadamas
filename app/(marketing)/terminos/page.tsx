@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Términos y condiciones · nadamas.app',
+  title: 'Términos y condiciones',
   description:
     'Términos de uso de nadamas.app: marketplace para reservar coaches de natación.',
   alternates: { canonical: 'https://nadamas.app/terminos' },

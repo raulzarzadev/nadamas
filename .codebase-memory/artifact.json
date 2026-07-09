@@ -1,11 +1,11 @@
 {
     "schema_version": 1,
-    "commit": "f7a894a8284a12efbc06f596c679042a5a417be4",
-    "indexed_at": "2026-07-02T21:47:12Z",
+    "commit": "7729395ddc90f724e691ecad65b74ef677ae48a7",
+    "indexed_at": "2026-07-09T21:11:05Z",
     "project": "Users-zarza-Documents-projects-nadamas",
-    "nodes": 1937,
-    "edges": 4093,
-    "original_size": 7143424,
-    "compressed_size": 1254211,
+    "nodes": 2109,
+    "edges": 4347,
+    "original_size": 7536640,
+    "compressed_size": 1360220,
     "compression_level": 3
 }

@@ -1,6 +1,14 @@
-Sitemap: https://domain.com/api/posts-sitemap
+Sitemap: https://nadamas.app/sitemap.xml
 
 User-agent: *
 Allow: /*
 
-Disallow: /api/*
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /login
+Disallow: /logout
+Disallow: /auth-gate
+Disallow: /athlete/
+Disallow: /admin/
+Disallow: /profile
+Disallow: /notifications

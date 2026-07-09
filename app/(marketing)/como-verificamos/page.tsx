@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Cómo verificamos a los coaches · nadamas.app',
+  title: 'Cómo verificamos a los coaches',
   description:
     'Cada coach de nadamas.app pasa una evaluación práctica y teórica antes de publicarse. Así sabes con qué profesional entrenas.',
   alternates: { canonical: 'https://nadamas.app/como-verificamos' },

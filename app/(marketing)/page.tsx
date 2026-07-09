@@ -11,7 +11,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://nadamas.app'),
-  title: 'nadamas.app · Calendario y progreso para coaches de natación',
+  title: { absolute: 'nadamas.app | Calendario y progreso para coaches de natación' },
   description:
     'Publica horarios, administra tu calendario, toma notas de alumnos y mide su progreso. También permite encontrar y reservar coaches verificados.',
   keywords: [
@@ -72,6 +72,18 @@ const jsonLd = {
       },
     },
     {
+      '@type': 'SoftwareApplication',
+      '@id': 'https://nadamas.app/#app',
+      name: 'nadamas.app',
+      url: 'https://nadamas.app',
+      applicationCategory: 'SportsApplication',
+      operatingSystem: 'Web',
+      inLanguage: 'es-MX',
+      description:
+        'Plataforma web para encontrar coaches de natación, reservar clases y llevar seguimiento del progreso.',
+      publisher: { '@id': 'https://nadamas.app/#org' },
+    },
+    {
       '@type': ['WebPage', 'FAQPage'],
       '@id': 'https://nadamas.app/#webpage',
       url: 'https://nadamas.app/',
@@ -81,6 +93,7 @@ const jsonLd = {
       inLanguage: 'es',
       isPartOf: { '@id': 'https://nadamas.app/#website' },
       about: { '@id': 'https://nadamas.app/#org' },
+      mainEntityOfPage: { '@id': 'https://nadamas.app/#app' },
       mainEntity: [
         {
           '@type': 'Question',

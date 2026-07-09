@@ -1,13 +1,23 @@
 import '../styles/globals.css'
+import type { Metadata, Viewport } from 'next'
 import { PHProvider } from './posthog-provider'
 
-export const metadata = {
-  title: 'nadamas',
+export const metadata: Metadata = {
+  metadataBase: new URL('https://nadamas.app'),
+  title: {
+    default: 'nadamas.app | Coaches de natación y seguimiento de progreso',
+    template: '%s | nadamas.app',
+  },
   description:
-    'Plataforma para coaches de natación: publica horarios, administra tu calendario y mide el progreso de tus alumnos.',
+    'Encuentra coaches de natación verificados, reserva clases y da seguimiento al progreso de tu entrenamiento.',
+  applicationName: 'nadamas.app',
+  authors: [{ name: 'nadamas.app', url: 'https://nadamas.app' }],
+  creator: 'nadamas.app',
+  publisher: 'nadamas.app',
+  formatDetection: { email: false, address: false, telephone: false },
 }
 
-export const viewport = {
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

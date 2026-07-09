@@ -2,7 +2,7 @@ import CoachDirectoryList from '@comps/coach/CoachDirectoryList'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Coaches de natación · nadamas.app',
+  title: 'Coaches de natación',
   description:
     'Explora coaches de natación, compara su estilo, revisa horarios publicados y reserva clases con seguimiento de progreso.',
 }
