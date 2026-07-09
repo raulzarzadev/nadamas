@@ -15,6 +15,12 @@
   background: var(--c-bg);
 }
 
+/* The resize-driven iframe can be taller than the widget content; without this
+   the page body shows through as a white strip below the dark card. */
+body:has(.widget-dark) {
+  background: #0b0f14;
+}
+
 .widget-dark .bg-white {
   background-color: var(--c-surface);
 }
