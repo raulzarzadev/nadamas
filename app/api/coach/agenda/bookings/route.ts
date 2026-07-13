@@ -42,6 +42,31 @@ type CoachBookingInput = {
   athletePhone?: string | null
 }
 
+async function syncCoachCreatedSlotGroupType(coachId: string, date: string, startTime: string) {
+  const snapshot = await adminDb.collection('bookings').where('coachId', '==', coachId).get()
+  const slotBookings = snapshot.docs.filter((doc) => {
+    const booking = doc.data() as Booking
+    return (
+      booking.date === date &&
+      booking.startTime === startTime &&
+      booking.status !== 'cancelled' &&
+      booking.source === 'coach' &&
+      booking.offeringId === 'open'
+    )
+  })
+  const nextGroupType = slotBookings.length > 1 ? 'grupal' : 'particular'
+  const batch = adminDb.batch()
+  let changed = false
+
+  for (const doc of slotBookings) {
+    if ((doc.data() as Booking).groupType === nextGroupType) continue
+    batch.set(doc.ref, { groupType: nextGroupType, updatedAt: Date.now() }, { merge: true })
+    changed = true
+  }
+
+  if (changed) await batch.commit()
+}
+
 export async function POST(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
@@ -98,6 +123,8 @@ export async function POST(request: Request) {
   }
 
   await ref.set(booking)
+  await syncCoachCreatedSlotGroupType(coachId, date, startTime)
+
   const progressRef = adminDb
     .collection('coachStudentProgress')
     .doc(studentProgressId(coachId, booking.athleteId))
@@ -156,6 +183,8 @@ export async function DELETE(request: Request) {
   await ref.set({ status: 'cancelled', cancelledAt: now, updatedAt: now }, { merge: true })
 
   const cancelled = current.data() as Booking
+  await syncCoachCreatedSlotGroupType(verification.caller.uid, cancelled.date, cancelled.startTime)
+
   try {
     await notifyBookingByCoach({
       athleteId: cancelled.athleteId,

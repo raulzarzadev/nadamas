@@ -2,10 +2,11 @@
 // Canonical palette (see memory `agenda-status-palette`):
 //   green  = abierto / disponible (available)
 //   blue   = bloqueado (blocked)
-//   purple = ocupado / lleno (booked / full)
+//   red    = ocupado individual (booked)
+//   lime   = clase grupal derivada (2+ students in the same hour)
 // Classes are literal so Tailwind can detect them at build time.
 
-export type HourStatus = 'available' | 'blocked' | 'booked'
+export type HourStatus = 'available' | 'blocked' | 'booked' | 'group'
 
 export interface HourStatusStyle {
   /** Thin line in the day-chip occupancy meter. */
@@ -36,5 +37,11 @@ export const HOUR_STATUS_STYLE: Record<HourStatus, HourStatusStyle> = {
     border: 'border-red-200',
     bg: 'bg-red-50/60',
     dot: 'bg-red-500',
+  },
+  group: {
+    bar: 'bg-lime-400',
+    border: 'border-lime-200',
+    bg: 'bg-lime-50/70',
+    dot: 'bg-lime-500',
   },
 }
