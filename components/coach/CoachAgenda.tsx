@@ -70,6 +70,14 @@ function occupancyBars(statuses: HourStatus[]): string[] {
   return picked.map((status) => HOUR_STATUS_STYLE[status].bar)
 }
 
+function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
+  return `${booking.date}|${booking.startTime}`
+}
+
+function activeClassSlotCount(bookings: Booking[]) {
+  return new Set(bookings.map(bookingSlotKey)).size
+}
+
 type ActiveSlot = { date: string; startTime: string; endTime: string; locationName: string }
 type ConfirmAction =
   | { kind: 'cancel-booking'; booking: Booking }
@@ -169,11 +177,19 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       entries.push({ time, status })
       map.set(date, entries)
     }
-    const bookedKeys = new Set<string>()
+    const bookingsByTime = new Map<string, Booking[]>()
     for (const booking of activeBookings) {
-      push(booking.date, booking.startTime, 'booked')
-      bookedKeys.add(`${booking.date}|${booking.startTime}`)
+      const key = bookingSlotKey(booking)
+      const bookings = bookingsByTime.get(key) || []
+      bookings.push(booking)
+      bookingsByTime.set(key, bookings)
     }
+    for (const bookings of bookingsByTime.values()) {
+      const booking = bookings[0]
+      if (!booking) continue
+      push(booking.date, booking.startTime, bookings.length > 1 ? 'group' : 'booked')
+    }
+    const bookedKeys = new Set(bookingsByTime.keys())
     const slotKeys = new Set<string>()
     for (const slot of agenda?.availableSlots || []) {
       slotKeys.add(`${slot.date}|${slot.startTime}`)
@@ -199,11 +215,11 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     return ordered
   }, [activeBookings, agenda?.availableSlots, agenda?.blocks])
 
-  // Month-level occupancy: booked vs total offered, restricted to the month shown
+  // Month-level occupancy: class slots vs total offered, restricted to the month shown
   // in the header (the payload can bleed into adjacent months on boundary weeks).
   const monthStats = useMemo(() => {
     const inMonth = (date: string) => date.startsWith(monthOfSelected)
-    const booked = activeBookings.filter((booking) => inMonth(booking.date)).length
+    const booked = activeClassSlotCount(activeBookings.filter((booking) => inMonth(booking.date)))
     const available = (agenda?.availableSlots || []).filter(
       (slot) => slot.status === 'available' && inMonth(slot.date)
     ).length
@@ -217,7 +233,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     for (const date of weekDates) {
       const statuses = dayStatuses.get(dateKey(date)) || []
       for (const status of statuses) {
-        if (status === 'booked') {
+        if (status === 'booked' || status === 'group') {
           booked += 1
           total += 1
         } else if (status === 'available') {
@@ -601,9 +617,12 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             const isToday = key === dateKey(new Date())
             const isWeekend = [0, 6].includes(date.getDay())
             const statuses = dayStatuses.get(key) || []
-            // Colored lines in chronological order: blue=bloqueado, green=disponible, purple=ocupado.
+            // Colored lines in chronological order: green=disponible, blue=bloqueado,
+            // red=ocupado individual, lime=grupal.
             const bars = occupancyBars(statuses)
             const count = (status: HourStatus) => statuses.filter((s) => s === status).length
+            const bookedCount = count('booked')
+            const groupCount = count('group')
             return (
               <button
                 type="button"
@@ -611,7 +630,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                 onClick={() => setSelectedDate(key)}
                 aria-label={
                   statuses.length
-                    ? `${weekdayChipLabel(date)}: ${count('booked')} ocupadas, ${count('available')} disponibles, ${count('blocked')} bloqueadas`
+                    ? `${weekdayChipLabel(date)}: ${bookedCount} ocupadas, ${groupCount} grupales, ${count('available')} disponibles, ${count('blocked')} bloqueadas`
                     : weekdayChipLabel(date)
                 }
                 className={`flex flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${
@@ -664,8 +683,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                 })}
               </h3>
               <span className="text-sm font-semibold text-[var(--c-text-2)]">
-                {dayBookings.length}/
-                {dayBookings.length + rows.filter((row) => row.kind === 'available').length}
+                {rows.filter((row) => row.kind === 'booked').length}/
+                {rows.filter((row) => row.kind === 'booked' || row.kind === 'available').length}
               </span>
             </div>
             {offeringSummary && (
@@ -744,17 +763,21 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               if (row.kind === 'booked') {
                 const firstBooking = row.bookings[0]
                 if (!firstBooking) return null
+                const classStyle =
+                  row.bookings.length > 1 ? HOUR_STATUS_STYLE.group : HOUR_STATUS_STYLE.booked
                 return (
                   <AgendaRow
                     key={`b-${firstBooking.date}-${firstBooking.startTime}`}
                     time={row.sort}
                   >
                     <div
-                      className={`flex min-w-0 flex-1 flex-col gap-3 rounded-[var(--r-md)] border px-3 py-3 ${HOUR_STATUS_STYLE.booked.border} ${HOUR_STATUS_STYLE.booked.bg}`}
+                      className={`flex min-w-0 flex-1 flex-col gap-3 rounded-[var(--r-md)] border px-3 py-3 ${classStyle.border} ${classStyle.bg}`}
                     >
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-xs font-bold uppercase text-[var(--c-text-2)]">
-                          {row.bookings.length} {row.bookings.length === 1 ? 'alumno' : 'alumnos'}
+                          {row.bookings.length > 1
+                            ? `Clase grupal · ${row.bookings.length} alumnos`
+                            : '1 alumno'}
                         </span>
                         {!adminMode && (
                           <button
