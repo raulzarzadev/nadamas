@@ -10,6 +10,7 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [step, setStep] = useState<'email' | 'code'>('email')
+  const [manualEntry, setManualEntry] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [hasError, setHasError] = useState(false)
@@ -26,8 +27,9 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
         body: JSON.stringify({ email }),
       })
       if (!response.ok) throw new Error('request_failed')
+      setManualEntry(false)
       setStep('code')
-      setMessage('Te enviamos un código de 6 dígitos.')
+      setMessage('Te enviamos un correo con un botón para entrar y un código de 6 dígitos.')
     } catch {
       setHasError(true)
       setMessage('No pudimos enviar el código. Intenta de nuevo.')
@@ -50,6 +52,11 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
       const payload = (await response.json()) as {
         customToken?: string
         error?: string
+      }
+      if (response.status === 400) {
+        setHasError(true)
+        setMessage('El correo o el código no coinciden.')
+        return
       }
       if (!response.ok || !payload.customToken) {
         throw new Error(payload.error || 'Código inválido.')
@@ -84,11 +91,35 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
           >
             {busy ? 'Enviando…' : 'Recibir código'}
           </button>
+          <button
+            type="button"
+            disabled={disabled || busy}
+            onClick={() => {
+              setManualEntry(true)
+              setStep('code')
+              setMessage(null)
+              setHasError(false)
+            }}
+            className="text-sm font-semibold text-[var(--c-ocean-mid)]"
+          >
+            ¿Ya tienes un código?
+          </button>
         </form>
       ) : (
         <form onSubmit={verifyCode} className="flex flex-col gap-3">
+          {manualEntry && (
+            <TextField
+              label="Correo"
+              type="email"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="tu@correo.com"
+              className="h-12"
+            />
+          )}
           <TextField
-            label={`Código enviado a ${email}`}
+            label={manualEntry ? 'Código' : `Código enviado a ${email}`}
             inputMode="numeric"
             required
             value={code}
@@ -100,7 +131,11 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
           />
           <button
             type="submit"
-            disabled={busy || code.length !== 6}
+            disabled={
+              busy ||
+              code.length !== 6 ||
+              (manualEntry && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+            }
             className="btn btn-primary h-12 rounded-2xl"
           >
             {busy ? 'Entrando…' : 'Entrar'}

@@ -1,6 +1,7 @@
 'use client'
 
 import CopyLinkButton from '@comps/coach/CopyLinkButton'
+import Icon from '@comps/Icon'
 import { TextField } from '@comps/Inputs/FormFields'
 import Avatar from '@comps/ui/avatar'
 import Sheet from '@comps/ui/sheet'
@@ -9,7 +10,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiCheck, FiCopy } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
-import { auth } from '@/firebase/index'
+import { auth, googleLogin } from '@/firebase/index'
+import { loginUser } from '@/firebase/users'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import {
   bookingSelectionKey,
@@ -391,11 +393,14 @@ export default function CoachPublicProfile({
       const response = await fetch('/api/auth/otp/request', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          pendingBooking: { selections: sortedAllSelectedSelections, athleteName: trimmedName },
+        }),
       })
       if (!response.ok) throw new Error('otp_request_failed')
       setBookingStep('otp')
-      setBookingMessage('Te enviamos un código a tu correo.')
+      setBookingMessage('Te enviamos un correo con un botón para entrar y un código.')
     } catch {
       setBookingStatus('error')
       setBookingMessage('Ups, algo salió mal. Inténtalo de nuevo más tarde.')
@@ -423,10 +428,15 @@ export default function CoachPublicProfile({
         body: JSON.stringify({ email, code }),
       })
       if (!response.ok) throw new Error('otp_verify_failed')
-      const payload = (await response.json()) as { customToken?: string }
+      const payload = (await response.json()) as {
+        customToken?: string
+        bookingCompleted?: boolean
+      }
       if (!payload.customToken) throw new Error('missing_token')
       await signInWithCustomToken(auth, payload.customToken)
-      await createBookings(sortedAllSelectedSelections, trimmedName)
+      if (!payload.bookingCompleted) {
+        await createBookings(sortedAllSelectedSelections, trimmedName)
+      }
       await refreshUser?.()
       setBookingStep('done')
       setSelectedSlots({})
@@ -435,6 +445,29 @@ export default function CoachPublicProfile({
       setBookingMessage('No se pudo confirmar. Revisa el código e intenta de nuevo.')
     } finally {
       setBookingStatus('idle')
+    }
+  }
+
+  async function continueWithGoogle() {
+    setBookingStatus('loading')
+    setBookingMessage(null)
+    try {
+      const googleUser = await googleLogin()
+      if (!googleUser) {
+        setBookingStatus('idle')
+        return
+      }
+      await loginUser(googleUser)
+      await refreshUser?.()
+      const bookerName = (googleUser.displayName || googleUser.email?.split('@')[0] || '').trim()
+      if (!bookerName) throw new Error('missing_name')
+      await createBookings(sortedAllSelectedSelections, bookerName)
+      setBookingStep('done')
+      setSelectedSlots({})
+      setBookingStatus('idle')
+    } catch {
+      setBookingStatus('error')
+      setBookingMessage('Ups, algo salió mal. Inténtalo de nuevo más tarde.')
     }
   }
 
@@ -738,6 +771,25 @@ export default function CoachPublicProfile({
                 />
               )}
             </div>
+
+            {!user && bookingStep === 'details' && (
+              <div className="mt-3">
+                <div className="mb-3 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-[var(--c-border)]" />
+                  <p className="text-xs font-medium text-[var(--c-text-2)]">o usa otra opción</p>
+                  <span className="h-px flex-1 bg-[var(--c-border)]" />
+                </div>
+                <button
+                  type="button"
+                  disabled={bookingStatus === 'loading'}
+                  onClick={() => void continueWithGoogle()}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--c-border)] bg-white text-sm font-medium text-[var(--c-text-2)] transition hover:border-[var(--c-aqua)] hover:text-[var(--c-ocean)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Icon name="color-google" size="sm" />
+                  Continuar con Google
+                </button>
+              </div>
+            )}
 
             {bookingMessage && (
               <p
