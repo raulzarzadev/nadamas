@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { AppNotification, NotificationType } from '@/lib/notification'
 import { adminDb } from './firebase-admin'
-import { sendPushNotificationToUser } from './web-push'
+import { type PushSendResult, sendPushNotificationToUser } from './web-push'
 
 interface CreateNotificationInput {
   recipientId: string
@@ -13,6 +13,10 @@ interface CreateNotificationInput {
   body: string
   link: string
   data?: AppNotification['data']
+}
+
+export interface CreateNotificationResult extends AppNotification {
+  pushResult: PushSendResult | null
 }
 
 /**
@@ -38,10 +42,13 @@ export async function createNotification(input: CreateNotificationInput) {
     readAt: null,
   }
   await ref.set(notification)
-  sendPushNotificationToUser(input.recipientId, notification).catch((error) => {
+  let pushResult: PushSendResult | null = null
+  try {
+    pushResult = await sendPushNotificationToUser(input.recipientId, notification)
+  } catch (error) {
     console.error('[WEB_PUSH_SEND]', error)
-  })
-  return notification
+  }
+  return { ...notification, pushResult }
 }
 
 function slotLabel(date?: string, startTime?: string) {

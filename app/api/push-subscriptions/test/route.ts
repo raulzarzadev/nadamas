@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     )
   }
 
-  await createNotification({
+  const notification = await createNotification({
     recipientId: caller.uid,
     actorId: caller.uid,
     actorName: null,
@@ -37,5 +37,13 @@ export async function POST(request: Request) {
     link: '/notifications',
   })
 
-  return NextResponse.json({ ok: true })
+  const pushResult = notification?.pushResult
+  if (!pushResult || pushResult.status !== 'sent') {
+    return NextResponse.json(
+      { error: 'No se pudo enviar la notificación push.', pushResult },
+      { status: 502 }
+    )
+  }
+
+  return NextResponse.json({ ok: true, pushResult })
 }

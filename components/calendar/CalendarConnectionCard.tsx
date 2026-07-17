@@ -38,8 +38,17 @@ function webcalUrl(url: string) {
 export default function CalendarConnectionCard({ calendarRole }: { calendarRole: CalendarRole }) {
   const [connection, setConnection] = useState<CalendarConnection>(EMPTY_CONNECTION)
   const [selectedOffsets, setSelectedOffsets] = useState<ReminderOffset[]>([1440, 60, 5])
+  const [isAppleCalendarPlatform, setIsAppleCalendarPlatform] = useState(false)
   const [status, setStatus] = useState<Status>('loading')
   const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    const userAgent = navigator.userAgent || ''
+    const platform = navigator.platform || ''
+    const appleMobile = /iPad|iPhone|iPod/.test(userAgent)
+    const appleDesktop = /Mac/.test(platform) && !/Android|Windows|Linux/.test(userAgent)
+    setIsAppleCalendarPlatform(appleMobile || appleDesktop)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -208,13 +217,23 @@ export default function CalendarConnectionCard({ calendarRole }: { calendarRole:
           <>
             {links && (
               <>
-                <a
-                  href={links.apple}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-(--c-ocean) px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
-                >
-                  Apple / iOS
-                  <FiExternalLink aria-hidden="true" />
-                </a>
+                {isAppleCalendarPlatform ? (
+                  <a
+                    href={links.apple}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-(--c-ocean) px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                  >
+                    Apple / iOS
+                    <FiExternalLink aria-hidden="true" />
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="inline-flex min-h-11 cursor-not-allowed items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-(--c-surface) px-4 py-2.5 text-sm font-bold text-(--c-text-2) opacity-70"
+                  >
+                    Apple / iOS no disponible
+                  </button>
+                )}
                 <a
                   href={links.google}
                   target="_blank"
