@@ -7,6 +7,7 @@ import {
   PROGRESS_RESULTS,
   PROGRESS_SUBLEVELS,
   type ProgressScaleOption,
+  progressLevelInfo,
 } from '@/CONSTANTS/PROGRESS_SCALE'
 import { getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import {
@@ -49,6 +50,7 @@ export default function StudentProgressModal({
   const [loading, setLoading] = useState(existingEntry === undefined)
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const keyboardSafeArea = useKeyboardSafeArea()
+  const levelInfo = progressLevelInfo(level)
 
   const presetFromEntry = (entry: StudentProgressEntry) => {
     setLevel(normalizeLevelValue(entry.level))
@@ -130,6 +132,15 @@ export default function StudentProgressModal({
 
         <fieldset disabled={loading} className="contents">
           <ScaleRow label="Nivel" options={PROGRESS_LEVELS} selected={level} onSelect={setLevel} />
+          {levelInfo && (
+            <div className="rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-xs leading-5 text-(--c-text-2)">
+              <p className="font-bold text-(--c-ocean)">{levelInfo.title}</p>
+              <p className="mt-0.5">{levelInfo.description}</p>
+              {levelInfo.objectives && (
+                <p className="mt-1 font-semibold">{levelInfo.objectives.join(' · ')}</p>
+              )}
+            </div>
+          )}
           <ScaleRow
             label="Avance"
             options={PROGRESS_SUBLEVELS}
@@ -219,6 +230,11 @@ function ScaleRow({
                     {option.emoji}
                   </span>
                   <span className="mt-0.5 text-[10px] font-semibold">{option.label}</span>
+                </>
+              ) : option.sublabel ? (
+                <>
+                  <span>{option.label}</span>
+                  <span className="mt-0.5 text-[10px] font-semibold">{option.sublabel}</span>
                 </>
               ) : (
                 option.label
