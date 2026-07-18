@@ -50,6 +50,7 @@ import AgendaOpenHoursModal, {
   type OpenHoursDetails,
 } from './AgendaOpenHoursModal'
 import ScheduleHoursEditor, { type HoursMode } from './ScheduleHoursEditor'
+import StudentProgressModal from './StudentProgressModal'
 
 const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
 const OCCUPANCY_BAR_KEYS = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6'] as const
@@ -98,6 +99,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const [error, setError] = useState<string | null>(null)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [progressBooking, setProgressBooking] = useState<Booking | null>(null)
   // Editores del horario (self mode): opciones de clase y editor de horas.
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
@@ -821,17 +823,28 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               </span>
                             </div>
                             {!adminMode && (
-                              <button
-                                type="button"
-                                aria-label={`Cancelar clase de ${booking.athleteName}`}
-                                onClick={() =>
-                                  setConfirmAction({ kind: 'cancel-booking', booking })
-                                }
-                                disabled={busy}
-                                className="inline-flex min-h-11 w-fit items-center gap-1.5 self-end rounded-full border border-[var(--rose-bd)] bg-white px-3.5 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:self-center"
-                              >
-                                <FiX aria-hidden="true" /> Cancelar
-                              </button>
+                              <div className="flex items-center gap-2 self-end sm:self-center">
+                                <button
+                                  type="button"
+                                  aria-label={`Agregar progreso de ${booking.athleteName}`}
+                                  onClick={() => setProgressBooking(booking)}
+                                  disabled={busy}
+                                  className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3.5 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+                                >
+                                  <FiPlus aria-hidden="true" /> Progreso
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`Cancelar clase de ${booking.athleteName}`}
+                                  onClick={() =>
+                                    setConfirmAction({ kind: 'cancel-booking', booking })
+                                  }
+                                  disabled={busy}
+                                  className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-[var(--rose-bd)] bg-white px-3.5 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50"
+                                >
+                                  <FiX aria-hidden="true" /> Cancelar
+                                </button>
+                              </div>
                             )}
                           </li>
                         ))}
@@ -937,6 +950,18 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             })}
         </div>
       </section>
+
+      {progressBooking && (
+        <StudentProgressModal
+          athleteId={progressBooking.athleteId}
+          studentName={progressBooking.athleteName}
+          onClose={() => setProgressBooking(null)}
+          onSaved={() => {
+            setProgressBooking(null)
+            setNotice('Progreso guardado.')
+          }}
+        />
+      )}
 
       {addStudentSlot && (
         <AgendaAddStudentModal
