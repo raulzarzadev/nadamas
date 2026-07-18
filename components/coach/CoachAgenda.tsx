@@ -396,9 +396,11 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const unblock = (block: CoachScheduleBlock) =>
     run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${coachQuery}`))
 
-  const submitAddStudent = (slot: ActiveSlot, payload: AddStudentPayload) =>
+  const submitAddStudent = (slot: ActiveSlot, payloads: AddStudentPayload[]) =>
     run(async () => {
-      await postAuthed('/api/coach/agenda/bookings', { ...slot, ...payload })
+      for (const payload of payloads) {
+        await postAuthed('/api/coach/agenda/bookings', { ...slot, ...payload })
+      }
       setAddStudentSlot(null)
     })
 
@@ -996,8 +998,22 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             month: 'short',
           })} · ${addStudentSlot.startTime}`}
           busy={busy}
+          takenAthleteIds={activeBookings
+            .filter(
+              (booking) =>
+                booking.date === addStudentSlot.date &&
+                booking.startTime === addStudentSlot.startTime
+            )
+            .map((booking) => booking.athleteId)}
+          takenNames={activeBookings
+            .filter(
+              (booking) =>
+                booking.date === addStudentSlot.date &&
+                booking.startTime === addStudentSlot.startTime
+            )
+            .map((booking) => booking.athleteName)}
           onClose={() => setAddStudentSlot(null)}
-          onSubmit={(payload) => submitAddStudent(addStudentSlot, payload)}
+          onSubmit={(payloads) => submitAddStudent(addStudentSlot, payloads)}
         />
       )}
 

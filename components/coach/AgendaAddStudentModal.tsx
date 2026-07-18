@@ -2,7 +2,7 @@
 
 import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import { useEffect, useState } from 'react'
-import { FiPlus, FiSearch } from 'react-icons/fi'
+import { FiPlus, FiSearch, FiX } from 'react-icons/fi'
 import { getAuthed } from '@/lib/client/authed-api'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
@@ -23,18 +23,23 @@ export interface AddStudentPayload {
 export default function AgendaAddStudentModal({
   slotLabel,
   busy,
+  takenAthleteIds = [],
+  takenNames = [],
   onClose,
   onSubmit,
 }: {
   slotLabel: string
   busy: boolean
+  /** Students already booked in this class — cannot be added again. */
+  takenAthleteIds?: string[]
+  takenNames?: string[]
   onClose: () => void
-  onSubmit: (payload: AddStudentPayload) => void
+  onSubmit: (payloads: AddStudentPayload[]) => void
 }) {
   const [students, setStudents] = useState<CoachStudent[] | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
-  // null = nothing chosen, 'create' = create new with current query, otherwise an athleteId
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [createNames, setCreateNames] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const keyboardSafeArea = useKeyboardSafeArea()
 
@@ -57,9 +62,10 @@ export default function AgendaAddStudentModal({
     }
   }, [])
 
+  const takenIds = new Set(takenAthleteIds)
+  const takenNamesNormalized = new Set(takenNames.map((name) => name.trim().toLowerCase()))
   const trimmedQuery = query.trim()
   const normalizedQuery = trimmedQuery.toLowerCase()
-  const selected = students?.find((student) => student.athleteId === selectedId)
   const matches =
     students
       ?.filter((student) => {
@@ -70,33 +76,50 @@ export default function AgendaAddStudentModal({
           .includes(normalizedQuery)
       })
       .slice(0, 5) || []
-  // Only offer "create" when the typed name doesn't exactly match an existing student.
-  const hasExactMatch = matches.some(
-    (student) => student.name.trim().toLowerCase() === normalizedQuery
-  )
+  // Only offer "create" when the typed name doesn't match an existing student,
+  // someone already in the class, or a pending new name.
+  const hasExactMatch =
+    matches.some((student) => student.name.trim().toLowerCase() === normalizedQuery) ||
+    takenNamesNormalized.has(normalizedQuery) ||
+    createNames.some((name) => name.toLowerCase() === normalizedQuery)
   const canCreate = trimmedQuery.length > 1 && !hasExactMatch
-  const creating = selectedId === 'create'
 
-  const canSubmit = !busy && (Boolean(selected) || (creating && canCreate))
+  const selectedStudents = (students || []).filter((student) => selectedIds.has(student.athleteId))
+  const totalSelected = selectedStudents.length + createNames.length
+  const canSubmit = !busy && totalSelected > 0
+
+  const toggleStudent = (athleteId: string) =>
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(athleteId)) next.delete(athleteId)
+      else next.add(athleteId)
+      return next
+    })
+
+  const addCreateName = () => {
+    if (!canCreate) return
+    setCreateNames((current) => [...current, trimmedQuery])
+    setQuery('')
+  }
 
   const submit = () => {
-    if (selected) {
-      onSubmit({
-        athleteId: selected.athleteId,
-        athleteName: selected.name,
-        athleteEmail: selected.email,
-        athletePhone: selected.phone,
-      })
-      return
-    }
-    if (creating && canCreate) onSubmit({ athleteName: trimmedQuery })
+    if (!canSubmit) return
+    onSubmit([
+      ...selectedStudents.map((student) => ({
+        athleteId: student.athleteId,
+        athleteName: student.name,
+        athleteEmail: student.email,
+        athletePhone: student.phone,
+      })),
+      ...createNames.map((name) => ({ athleteName: name })),
+    ])
   }
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Agregar alumno"
+      aria-label="Agregar alumnos"
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm"
       style={keyboardSafeArea ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` } : undefined}
       onClick={(event) => {
@@ -109,7 +132,7 @@ export default function AgendaAddStudentModal({
       <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] sm:max-h-[min(86dvh,38rem)]">
         <div className="shrink-0 px-4 pt-3 sm:px-5 sm:pt-5">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
-          <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar alumno</h3>
+          <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar alumnos</h3>
           <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>
         </div>
 
@@ -126,15 +149,33 @@ export default function AgendaAddStudentModal({
                 />
                 <input
                   value={query}
-                  onChange={(event) => {
-                    setQuery(event.target.value)
-                    setSelectedId(null)
-                  }}
+                  onChange={(event) => setQuery(event.target.value)}
                   placeholder="Escribe para buscar o crear"
                   className="min-h-12 w-full rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white pl-10 pr-3 font-normal text-[var(--c-ocean)] outline-none transition focus:border-[var(--c-aqua)] focus:ring-4 focus:ring-[rgba(0,180,216,0.16)]"
                 />
               </span>
             </label>
+
+            {totalSelected > 0 && (
+              <ul className="flex flex-wrap gap-1.5">
+                {selectedStudents.map((student) => (
+                  <SelectedChip
+                    key={student.athleteId}
+                    label={student.name}
+                    onRemove={() => toggleStudent(student.athleteId)}
+                  />
+                ))}
+                {createNames.map((name) => (
+                  <SelectedChip
+                    key={`create-${name}`}
+                    label={`${name} (nuevo)`}
+                    onRemove={() =>
+                      setCreateNames((current) => current.filter((item) => item !== name))
+                    }
+                  />
+                ))}
+              </ul>
+            )}
 
             {students === undefined ? (
               <div className="flex h-40 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)] sm:h-56">
@@ -143,14 +184,20 @@ export default function AgendaAddStudentModal({
             ) : (
               <div className="flex h-40 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)] sm:h-56">
                 {matches.map((student) => {
-                  const active = student.athleteId === selectedId
+                  const taken = takenIds.has(student.athleteId)
+                  const active = selectedIds.has(student.athleteId)
                   return (
                     <button
                       key={student.athleteId}
                       type="button"
-                      onClick={() => setSelectedId(active ? null : student.athleteId)}
+                      onClick={() => !taken && toggleStudent(student.athleteId)}
+                      disabled={taken}
                       className={`flex min-h-14 items-center gap-3 border-b border-[var(--c-border)] px-3 py-2.5 text-left transition-colors last:border-b-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--c-aqua-strong)] ${
-                        active ? 'bg-[var(--c-aqua-light)]/45' : 'hover:bg-[var(--c-surface)]'
+                        taken
+                          ? 'cursor-not-allowed opacity-55'
+                          : active
+                            ? 'bg-[var(--c-aqua-light)]/45'
+                            : 'hover:bg-[var(--c-surface)]'
                       }`}
                     >
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[var(--c-aqua)] to-[var(--c-ocean)] text-xs font-bold text-white">
@@ -166,10 +213,16 @@ export default function AgendaAddStudentModal({
                           </span>
                         )}
                       </span>
-                      {active && (
-                        <span className="shrink-0 text-xs font-bold text-[var(--c-aqua-strong)]">
-                          ✓
+                      {taken ? (
+                        <span className="shrink-0 text-xs font-semibold text-[var(--c-text-2)]">
+                          Ya en la clase
                         </span>
+                      ) : (
+                        active && (
+                          <span className="shrink-0 text-xs font-bold text-[var(--c-aqua-strong)]">
+                            ✓
+                          </span>
+                        )
                       )}
                     </button>
                   )
@@ -178,10 +231,10 @@ export default function AgendaAddStudentModal({
                 {canCreate && (
                   <button
                     type="button"
-                    onClick={() => setSelectedId('create')}
-                    className={`flex min-h-14 items-center gap-3 px-3 py-2.5 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--c-aqua-strong)] ${
+                    onClick={addCreateName}
+                    className={`flex min-h-14 items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--c-aqua-strong)] ${
                       matches.length > 0 ? 'border-t border-[var(--c-border)]' : ''
-                    } ${creating ? 'bg-[var(--c-aqua-light)]/45' : 'hover:bg-[var(--c-surface)]'}`}
+                    }`}
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--c-aqua)] text-[var(--c-aqua-strong)]">
                       <FiPlus aria-hidden="true" />
@@ -194,11 +247,6 @@ export default function AgendaAddStudentModal({
                         Nuevo alumno
                       </span>
                     </span>
-                    {creating && (
-                      <span className="shrink-0 text-xs font-bold text-[var(--c-aqua-strong)]">
-                        ✓
-                      </span>
-                    )}
                   </button>
                 )}
 
@@ -222,7 +270,7 @@ export default function AgendaAddStudentModal({
               onClick={submit}
               className="min-h-12 rounded-full bg-[var(--c-aqua)] px-4 font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:bg-slate-400 disabled:opacity-100"
             >
-              {creating ? 'Crear y agregar' : 'Agregar alumno'}
+              {totalSelected > 1 ? `Agregar ${totalSelected} alumnos` : 'Agregar alumno'}
             </button>
             <button
               type="button"
@@ -235,6 +283,22 @@ export default function AgendaAddStudentModal({
         </div>
       </div>
     </div>
+  )
+}
+
+function SelectedChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <li className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua-light)]/45 py-1 pl-3 pr-1 text-xs font-semibold text-[var(--c-ocean)]">
+      {label}
+      <button
+        type="button"
+        aria-label={`Quitar ${label}`}
+        onClick={onRemove}
+        className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--c-ocean)] transition-colors hover:bg-white/70"
+      >
+        <FiX aria-hidden="true" />
+      </button>
+    </li>
   )
 }
 

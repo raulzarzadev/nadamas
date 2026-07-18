@@ -91,12 +91,35 @@ export async function POST(request: Request) {
     )
   }
 
+  // One booking per student per class: match by id for existing students,
+  // by normalized name for free-text ones.
+  const requestedAthleteId = typeof body.athleteId === 'string' ? body.athleteId.trim() : ''
+  const slotSnapshot = await adminDb
+    .collection('bookings')
+    .where('coachId', '==', coachId)
+    .where('date', '==', date)
+    .where('startTime', '==', startTime)
+    .get()
+  const normalizedName = athleteName.toLowerCase()
+  const alreadyBooked = slotSnapshot.docs
+    .map((doc) => doc.data() as Booking)
+    .some(
+      (existing) =>
+        existing.status !== 'cancelled' &&
+        (requestedAthleteId
+          ? existing.athleteId === requestedAthleteId
+          : existing.athleteName.trim().toLowerCase() === normalizedName)
+    )
+  if (alreadyBooked) {
+    return NextResponse.json({ error: 'Este alumno ya está en esta clase.' }, { status: 409 })
+  }
+
   const now = Date.now()
   const ref = adminDb.collection('bookings').doc()
   const athletePhone = body.athletePhone?.trim()
   const booking: Booking = {
     id: ref.id,
-    athleteId: body.athleteId?.trim() || `manual:${ref.id}`,
+    athleteId: requestedAthleteId || `manual:${ref.id}`,
     athleteName,
     // Firestore rejects `undefined`; only include the field when present.
     ...(athletePhone ? { athletePhone } : {}),
