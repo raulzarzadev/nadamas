@@ -133,37 +133,29 @@ export default function StudentProgressModal({
         </div>
 
         <fieldset disabled={loading} className="contents">
-          <ScaleRow label="Nivel" options={PROGRESS_LEVELS} selected={level} onSelect={setLevel} />
-          {levelInfo && (
-            <div className="rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-xs leading-5 text-(--c-text-2)">
-              <p className="font-bold text-(--c-ocean)">{levelInfo.title}</p>
-              <p className="mt-0.5">{levelInfo.description}</p>
-              {levelInfo.objectives && (
-                <p className="mt-1 font-semibold">{levelInfo.objectives.join(' · ')}</p>
-              )}
-            </div>
-          )}
+          <ScaleRow
+            label="Nivel"
+            selectedName={levelInfo?.title}
+            hint={levelInfo?.description}
+            options={PROGRESS_LEVELS}
+            selected={level}
+            onSelect={setLevel}
+          />
           <ScaleRow
             label="Avance"
+            selectedName={sublevelInfo?.sublabel}
+            hint={sublevelInfo?.description}
             options={PROGRESS_SUBLEVELS}
             selected={subLevel}
             onSelect={setSubLevel}
           />
-          {sublevelInfo?.description && (
-            <p className="text-xs leading-5 text-(--c-text-2)">
-              <span className="font-bold text-(--c-ocean)">{sublevelInfo.sublabel}:</span>{' '}
-              {sublevelInfo.description}
-            </p>
-          )}
           <ScaleRow
             label="Resultado"
+            hint="Qué sentimiento percibes de los alumnos, los padres o tuyo."
             options={PROGRESS_RESULTS}
             selected={result}
             onSelect={setResult}
           />
-          <p className="text-xs leading-5 text-(--c-text-2)">
-            Es el sentimiento percibido por los padres, los alumnos o incluso del mismo profe.
-          </p>
         </fieldset>
 
         <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
@@ -206,18 +198,32 @@ export default function StudentProgressModal({
 
 function ScaleRow({
   label,
+  selectedName,
+  hint,
   options,
   selected,
   onSelect,
 }: {
   label: string
+  /** Name of the selected option, shown inline next to the label. */
+  selectedName?: string
+  /** Short gray description, inline after the name. */
+  hint?: string
   options: ProgressScaleOption[]
   selected: number | null
   onSelect: (value: number) => void
 }) {
   return (
     <fieldset className="grid gap-1.5">
-      <legend className="text-sm font-semibold text-(--c-ocean)">{label}</legend>
+      <legend className="contents">
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="text-sm font-semibold text-(--c-ocean)">{label}</span>
+          {selectedName && (
+            <span className="text-xs font-bold text-(--c-ocean)">{selectedName}</span>
+          )}
+          {hint && <span className="text-xs leading-5 text-(--c-text-2)">{hint}</span>}
+        </span>
+      </legend>
       <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-2">
         {options.map((option) => {
           const active = option.value === selected
