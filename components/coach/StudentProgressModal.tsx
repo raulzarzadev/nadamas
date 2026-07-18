@@ -7,6 +7,8 @@ import {
   PROGRESS_RESULTS,
   PROGRESS_SUBLEVELS,
   type ProgressScaleOption,
+  progressLevelInfo,
+  progressSublevelInfo,
 } from '@/CONSTANTS/PROGRESS_SCALE'
 import { getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import {
@@ -49,6 +51,8 @@ export default function StudentProgressModal({
   const [loading, setLoading] = useState(existingEntry === undefined)
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const keyboardSafeArea = useKeyboardSafeArea()
+  const levelInfo = progressLevelInfo(level)
+  const sublevelInfo = progressSublevelInfo(subLevel)
 
   const presetFromEntry = (entry: StudentProgressEntry) => {
     setLevel(normalizeLevelValue(entry.level))
@@ -129,15 +133,25 @@ export default function StudentProgressModal({
         </div>
 
         <fieldset disabled={loading} className="contents">
-          <ScaleRow label="Nivel" options={PROGRESS_LEVELS} selected={level} onSelect={setLevel} />
+          <ScaleRow
+            label="Nivel"
+            selectedName={levelInfo?.title}
+            hint={levelInfo?.description}
+            options={PROGRESS_LEVELS}
+            selected={level}
+            onSelect={setLevel}
+          />
           <ScaleRow
             label="Avance"
+            selectedName={sublevelInfo?.sublabel}
+            hint={sublevelInfo?.description}
             options={PROGRESS_SUBLEVELS}
             selected={subLevel}
             onSelect={setSubLevel}
           />
           <ScaleRow
             label="Resultado"
+            hint="Qué sentimiento percibes de los alumnos, los padres o tuyo."
             options={PROGRESS_RESULTS}
             selected={result}
             onSelect={setResult}
@@ -184,18 +198,32 @@ export default function StudentProgressModal({
 
 function ScaleRow({
   label,
+  selectedName,
+  hint,
   options,
   selected,
   onSelect,
 }: {
   label: string
+  /** Name of the selected option, shown inline next to the label. */
+  selectedName?: string
+  /** Short gray description, inline after the name. */
+  hint?: string
   options: ProgressScaleOption[]
   selected: number | null
   onSelect: (value: number) => void
 }) {
   return (
     <fieldset className="grid gap-1.5">
-      <legend className="text-sm font-semibold text-(--c-ocean)">{label}</legend>
+      <legend className="contents">
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <span className="text-sm font-semibold text-(--c-ocean)">{label}</span>
+          {selectedName && (
+            <span className="text-xs font-bold text-(--c-ocean)">{selectedName}</span>
+          )}
+          {hint && <span className="text-xs leading-5 text-(--c-text-2)">{hint}</span>}
+        </span>
+      </legend>
       <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-2">
         {options.map((option) => {
           const active = option.value === selected
@@ -219,6 +247,11 @@ function ScaleRow({
                     {option.emoji}
                   </span>
                   <span className="mt-0.5 text-[10px] font-semibold">{option.label}</span>
+                </>
+              ) : option.sublabel ? (
+                <>
+                  <span>{option.label}</span>
+                  <span className="mt-0.5 text-[10px] font-semibold">{option.sublabel}</span>
                 </>
               ) : (
                 option.label
