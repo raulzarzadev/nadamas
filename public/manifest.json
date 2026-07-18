@@ -1,13 +1,17 @@
 {
-  "name": "nadamas.app",
-  "short_name": "nadamas",
-  "description": "Encuentra y reserva coaches de natación. Aprende, mejora y entrena.",
+  "id": "/",
+  "name": "Nadamas",
+  "short_name": "Nadamas",
+  "description": "Reserva clases de natación y da seguimiento a tu progreso.",
+  "lang": "es-MX",
   "theme_color": "#0A2540",
   "background_color": "#F8FAFC",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "scope": "/",
-  "start_url": "/dashboard",
+  "start_url": "/dashboard?source=pwa",
+  "categories": ["sports", "health", "education"],
   "prefer_related_applications": false,
   "icons": [
     {

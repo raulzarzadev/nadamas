@@ -1,5 +1,6 @@
 import type { RoleName } from '@/lib/roles'
 import AppNav from './AppNav'
+import PwaInstallPrompt from './PwaInstallPrompt'
 import ScrollToTop from './ScrollToTop'
 
 export default function AppChrome({
@@ -15,6 +16,7 @@ export default function AppChrome({
     <div data-theme="nadamas" className="min-h-screen bg-[var(--c-bg)] text-[var(--c-ocean)]">
       <ScrollToTop />
       <AppNav role={role} />
+      <PwaInstallPrompt />
       <main className="mx-auto max-w-5xl px-2.5 pb-20 pt-4 sm:px-4 sm:pb-24 sm:pt-6">
         {children}
       </main>
