@@ -29,10 +29,6 @@ export const metadata: Metadata = {
     title: 'Nadamas',
     statusBarStyle: 'default',
   },
-  other: {
-    'apple-mobile-web-app-title': 'Nadamas',
-    'mobile-web-app-capable': 'yes',
-  },
 }
 
 export const viewport: Viewport = {
