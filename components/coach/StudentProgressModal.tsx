@@ -8,6 +8,7 @@ import {
   PROGRESS_SUBLEVELS,
   type ProgressScaleOption,
   progressLevelInfo,
+  progressSublevelInfo,
 } from '@/CONSTANTS/PROGRESS_SCALE'
 import { getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import {
@@ -51,6 +52,7 @@ export default function StudentProgressModal({
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const keyboardSafeArea = useKeyboardSafeArea()
   const levelInfo = progressLevelInfo(level)
+  const sublevelInfo = progressSublevelInfo(subLevel)
 
   const presetFromEntry = (entry: StudentProgressEntry) => {
     setLevel(normalizeLevelValue(entry.level))
@@ -147,12 +149,21 @@ export default function StudentProgressModal({
             selected={subLevel}
             onSelect={setSubLevel}
           />
+          {sublevelInfo?.description && (
+            <p className="text-xs leading-5 text-(--c-text-2)">
+              <span className="font-bold text-(--c-ocean)">{sublevelInfo.sublabel}:</span>{' '}
+              {sublevelInfo.description}
+            </p>
+          )}
           <ScaleRow
             label="Resultado"
             options={PROGRESS_RESULTS}
             selected={result}
             onSelect={setResult}
           />
+          <p className="text-xs leading-5 text-(--c-text-2)">
+            Es el sentimiento percibido por los padres, los alumnos o incluso del mismo profe.
+          </p>
         </fieldset>
 
         <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
