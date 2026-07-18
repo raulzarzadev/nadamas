@@ -21,27 +21,27 @@ export interface HourStatusStyle {
 
 export const HOUR_STATUS_STYLE: Record<HourStatus, HourStatusStyle> = {
   available: {
-    bar: 'border border-emerald-400 bg-transparent',
-    border: 'border-emerald-200',
-    bg: 'bg-emerald-50/60',
-    dot: 'bg-emerald-400',
-  },
-  blocked: {
-    bar: 'bg-gray-400',
-    border: 'border-gray-200',
-    bg: 'bg-gray-100/60',
-    dot: 'bg-gray-400',
-  },
-  booked: {
-    bar: 'bg-emerald-500',
-    border: 'border-emerald-200',
-    bg: 'bg-emerald-50/60',
+    bar: 'border border-emerald-500 bg-transparent',
+    border: 'border-emerald-300',
+    bg: 'bg-emerald-100/70',
     dot: 'bg-emerald-500',
   },
+  blocked: {
+    bar: 'bg-gray-500',
+    border: 'border-gray-300',
+    bg: 'bg-gray-200/70',
+    dot: 'bg-gray-500',
+  },
+  booked: {
+    bar: 'bg-emerald-600',
+    border: 'border-emerald-300',
+    bg: 'bg-emerald-100/70',
+    dot: 'bg-emerald-600',
+  },
   group: {
-    bar: 'bg-purple-500',
-    border: 'border-purple-200',
-    bg: 'bg-purple-50/70',
-    dot: 'bg-purple-500',
+    bar: 'bg-purple-600',
+    border: 'border-purple-300',
+    bg: 'bg-purple-100/70',
+    dot: 'bg-purple-600',
   },
 }
