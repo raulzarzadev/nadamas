@@ -1,12 +1,11 @@
-export const STUDENT_LEVELS = [
-  'Inicial',
-  'Básico',
-  'Intermedio',
-  'Avanzado',
-  'Competitivo',
-] as const
-
-export type StudentLevel = (typeof STUDENT_LEVELS)[number]
+/** Legacy string levels stored before the numeric 1-4 scale. */
+const LEGACY_LEVEL_MAP: Record<string, number> = {
+  Inicial: 1,
+  Básico: 2,
+  Intermedio: 3,
+  Avanzado: 4,
+  Competitivo: 4,
+}
 
 export interface StudentProgress {
   id: string
@@ -17,28 +16,32 @@ export interface StudentProgress {
   athletePhone?: string
   athleteAddress?: string
   athleteLocation?: string
-  level: StudentLevel
-  goal: string
-  lastNote: string
-  nextFocus: string
+  /** 1-4. Legacy docs may still hold a string; normalize with normalizeLevelValue. */
+  level: number
+  /** Sub-level 1-4 (field name kept for data compatibility). */
   coachAssessment: number
+  /** Last session result 1-4; absent on docs saved before this field existed. */
+  result?: number
+  lastNote: string
   createdAt: number
   updatedAt: number
 }
 
-export type StudentProgressInput = Partial<
-  Pick<StudentProgress, 'level' | 'goal' | 'lastNote' | 'nextFocus' | 'coachAssessment'>
->
+export interface StudentProgressInput {
+  level?: unknown
+  coachAssessment?: unknown
+  result?: unknown
+  lastNote?: unknown
+}
 
 /** One timestamped progress record in a student's history. */
 export interface StudentProgressEntry {
   id: string
   coachId: string
   athleteId: string
-  level: StudentLevel
+  level: number
   coachAssessment: number
-  goal: string
-  nextFocus: string
+  result?: number
   note: string
   createdAt: number
 }
@@ -47,26 +50,51 @@ export function studentProgressId(coachId: string, athleteId: string) {
   return `${coachId}_${athleteId}`
 }
 
-export function normalizeStudentProgressInput(input: StudentProgressInput) {
-  const level = STUDENT_LEVELS.includes(input.level as StudentLevel)
-    ? (input.level as StudentLevel)
-    : 'Inicial'
+export function clampScale(value: unknown, fallback: number) {
+  const score = Number(value)
+  if (!Number.isFinite(score)) return fallback
+  return Math.min(4, Math.max(1, Math.round(score)))
+}
 
+export function normalizeLevelValue(value: unknown): number {
+  if (typeof value === 'string' && value in LEGACY_LEVEL_MAP) return LEGACY_LEVEL_MAP[value]
+  return clampScale(value, 1)
+}
+
+/** Renders the combined position, e.g. level 3 + sub-level 2 -> "3.2". */
+export function formatStudentLevel(item: { level: unknown; coachAssessment: unknown }) {
+  return `${normalizeLevelValue(item.level)}.${clampScale(item.coachAssessment, 1)}`
+}
+
+/**
+ * Student position derived from the most recent entries: average of the last
+ * `window` entries on the combined 1-16 scale ((level-1)*4 + subLevel),
+ * rounded up so recent good sessions pull the level upward.
+ */
+export function computeStudentPosition(
+  entries: Array<Pick<StudentProgressEntry, 'level' | 'coachAssessment' | 'createdAt'>>,
+  window = 5
+) {
+  const recent = [...entries].sort((a, b) => b.createdAt - a.createdAt).slice(0, window)
+  if (recent.length === 0) return { level: 1, coachAssessment: 1 }
+  const total = recent.reduce(
+    (sum, entry) =>
+      sum + (normalizeLevelValue(entry.level) - 1) * 4 + clampScale(entry.coachAssessment, 1),
+    0
+  )
+  const score = Math.ceil(total / recent.length)
+  return { level: Math.floor((score - 1) / 4) + 1, coachAssessment: ((score - 1) % 4) + 1 }
+}
+
+export function normalizeStudentProgressInput(input: StudentProgressInput) {
   return {
-    level,
-    goal: limitText(input.goal, 240),
+    level: normalizeLevelValue(input.level),
+    coachAssessment: clampScale(input.coachAssessment, 1),
+    result: clampScale(input.result, 3),
     lastNote: limitText(input.lastNote, 800),
-    nextFocus: limitText(input.nextFocus, 240),
-    coachAssessment: clampScore(input.coachAssessment),
   }
 }
 
 function limitText(value: unknown, max: number) {
   return typeof value === 'string' ? value.trim().slice(0, max) : ''
-}
-
-function clampScore(value: unknown) {
-  const score = Number(value)
-  if (!Number.isFinite(score)) return 1
-  return Math.min(5, Math.max(1, Math.round(score)))
 }

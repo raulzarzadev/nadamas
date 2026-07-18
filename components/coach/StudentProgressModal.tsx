@@ -2,10 +2,16 @@
 
 import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import { useState } from 'react'
+import {
+  PROGRESS_LEVELS,
+  PROGRESS_RESULTS,
+  PROGRESS_SUBLEVELS,
+  type ProgressScaleOption,
+} from '@/CONSTANTS/PROGRESS_SCALE'
 import { patchAuthed } from '@/lib/client/authed-api'
 import {
-  STUDENT_LEVELS,
-  type StudentLevel,
+  clampScale,
+  normalizeLevelValue,
   type StudentProgress,
   type StudentProgressEntry,
 } from '@/lib/coach-student-progress'
@@ -25,24 +31,23 @@ export default function StudentProgressModal({
   onSaved: (entry: StudentProgressEntry, progress: StudentProgress) => void
 }) {
   // Level/avance carry the student's current state as a starting point; the
-  // session text fields start blank so each entry is a fresh log.
-  const [level, setLevel] = useState<StudentLevel>(initial?.level || 'Inicial')
-  const [coachAssessment, setCoachAssessment] = useState(initial?.coachAssessment || 1)
-  const [goal, setGoal] = useState('')
-  const [nextFocus, setNextFocus] = useState('')
+  // session result starts unselected because it grades this session only.
+  const [level, setLevel] = useState(() => normalizeLevelValue(initial?.level))
+  const [subLevel, setSubLevel] = useState(() => clampScale(initial?.coachAssessment, 1))
+  const [result, setResult] = useState<number | null>(null)
   const [note, setNote] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const keyboardSafeArea = useKeyboardSafeArea()
 
   async function save() {
+    if (result === null) return
     setStatus('saving')
     try {
       const response = await patchAuthed('/api/coach/students', {
         athleteId,
         level,
-        coachAssessment,
-        goal,
-        nextFocus,
+        coachAssessment: subLevel,
+        result,
         lastNote: note,
       })
       const payload = (await response.json()) as {
@@ -77,62 +82,28 @@ export default function StudentProgressModal({
           <p className="mt-0.5 text-sm text-(--c-text-2)">{studentName}</p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_9rem]">
-          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Nivel
-            <select
-              value={level}
-              onChange={(event) => setLevel(event.target.value as StudentLevel)}
-              className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-sm text-(--c-ocean)"
-            >
-              {STUDENT_LEVELS.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Avance
-            <input
-              type="number"
-              min="1"
-              max="5"
-              value={coachAssessment}
-              onChange={(event) => setCoachAssessment(Number(event.target.value))}
-              className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-sm text-(--c-ocean)"
-            />
-          </label>
-        </div>
+        <ScaleRow label="Nivel" options={PROGRESS_LEVELS} selected={level} onSelect={setLevel} />
+        <ScaleRow
+          label="Avance"
+          options={PROGRESS_SUBLEVELS}
+          selected={subLevel}
+          onSelect={setSubLevel}
+        />
+        <ScaleRow
+          label="Resultado"
+          options={PROGRESS_RESULTS}
+          selected={result}
+          onSelect={setResult}
+        />
 
         <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-          Objetivo
-          <input
-            value={goal}
-            onChange={(event) => setGoal(event.target.value)}
-            maxLength={240}
-            placeholder="Ej. mejorar respiración bilateral"
-            className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-sm text-(--c-ocean)"
-          />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-          Próximo foco
-          <input
-            value={nextFocus}
-            onChange={(event) => setNextFocus(event.target.value)}
-            maxLength={240}
-            placeholder="Ej. salida y patada constante"
-            className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-sm text-(--c-ocean)"
-          />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-          Nota de la sesión
+          Nota (opcional)
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
             maxLength={800}
-            rows={3}
-            placeholder="Observaciones de técnica, asistencia o tareas para la siguiente clase."
+            rows={2}
+            placeholder="Observaciones de la sesión."
             className="rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 py-2 text-sm text-(--c-ocean)"
           />
         </label>
@@ -145,7 +116,7 @@ export default function StudentProgressModal({
           <button
             type="button"
             onClick={save}
-            disabled={status === 'saving'}
+            disabled={status === 'saving' || result === null}
             className="min-h-12 rounded-full bg-(--c-ocean) font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {status === 'saving' ? 'Guardando…' : 'Guardar progreso'}
@@ -160,5 +131,54 @@ export default function StudentProgressModal({
         </div>
       </div>
     </div>
+  )
+}
+
+function ScaleRow({
+  label,
+  options,
+  selected,
+  onSelect,
+}: {
+  label: string
+  options: ProgressScaleOption[]
+  selected: number | null
+  onSelect: (value: number) => void
+}) {
+  return (
+    <fieldset className="grid gap-1.5">
+      <legend className="text-sm font-semibold text-(--c-ocean)">{label}</legend>
+      <div role="radiogroup" aria-label={label} className="grid grid-cols-4 gap-2">
+        {options.map((option) => {
+          const active = option.value === selected
+          return (
+            // biome-ignore lint/a11y/useSemanticElements: styled toggle button, not a native radio input
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onSelect(option.value)}
+              className={`flex min-h-12 flex-col items-center justify-center rounded-[var(--r-sm)] border text-sm font-bold transition-colors ${
+                active
+                  ? 'border-(--c-ocean) bg-(--c-ocean) text-white'
+                  : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'
+              }`}
+            >
+              {option.emoji ? (
+                <>
+                  <span aria-hidden="true" className="text-xl leading-none">
+                    {option.emoji}
+                  </span>
+                  <span className="mt-0.5 text-[10px] font-semibold">{option.label}</span>
+                </>
+              ) : (
+                option.label
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
   )
 }

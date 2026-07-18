@@ -18,9 +18,14 @@ import {
   FiSearch,
   FiTrendingUp,
 } from 'react-icons/fi'
+import { progressResultEmoji } from '@/CONSTANTS/PROGRESS_SCALE'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
-import type { StudentProgress, StudentProgressEntry } from '@/lib/coach-student-progress'
+import {
+  formatStudentLevel,
+  type StudentProgress,
+  type StudentProgressEntry,
+} from '@/lib/coach-student-progress'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AddStudentModal, { type CreatedStudentPayload } from './AddStudentModal'
 import EditStudentModal, { type UpdatedStudentPayload } from './EditStudentModal'
@@ -223,8 +228,7 @@ function StudentCard({
     }
   }, [focused])
 
-  const level = student.progress?.level || 'Inicial'
-  const assessment = student.progress?.coachAssessment
+  const level = student.progress ? formatStudentLevel(student.progress) : '1.1'
   const summary = `${student.totalClasses} ${student.totalClasses === 1 ? 'clase' : 'clases'} · Nivel ${level}`
   const visibleEntries = showAll ? student.entries : student.entries.slice(0, ENTRY_PREVIEW)
 
@@ -310,8 +314,8 @@ function StudentCard({
             />
             <MetricPill
               icon={<FiTrendingUp aria-hidden="true" />}
-              label="Avance"
-              value={assessment ? `${assessment}/5` : '—'}
+              label="Nivel"
+              value={student.progress ? formatStudentLevel(student.progress) : '—'}
             />
           </div>
 
@@ -395,6 +399,7 @@ function isWebUrl(value: string) {
 
 function EntryItem({ entry }: { entry: StudentProgressEntry }) {
   const [open, setOpen] = useState(false)
+  const emoji = progressResultEmoji(entry.result)
   const date = new Date(entry.createdAt).toLocaleDateString('es-MX', {
     day: 'numeric',
     month: 'short',
@@ -413,38 +418,24 @@ function EntryItem({ entry }: { entry: StudentProgressEntry }) {
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-bold text-(--c-ocean)">{date}</span>
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-(--c-surface) px-2.5 py-0.5 text-xs font-semibold text-(--c-ocean)">
-              {entry.level} · {entry.coachAssessment}/5
+              {formatStudentLevel(entry)}
+              {emoji && <span aria-hidden="true">· {emoji}</span>}
             </span>
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-3">
-            <DetailCol label="Objetivo" text={entry.goal} truncate={!open} />
-            <DetailCol label="Próximo foco" text={entry.nextFocus} truncate={!open} />
-          </div>
+          {entry.note && (
+            <p
+              className={`mt-2 text-sm text-(--c-text-2) ${open ? 'whitespace-pre-wrap' : 'truncate'}`}
+            >
+              {entry.note}
+            </p>
+          )}
         </div>
         <FiChevronDown
           aria-hidden="true"
           className={`mt-0.5 shrink-0 text-(--c-ocean-mid) transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
-
-      {open && entry.note && (
-        <div className="px-3 pb-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-(--c-text-2)">Nota</p>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-(--c-ocean)">{entry.note}</p>
-        </div>
-      )}
     </li>
-  )
-}
-
-function DetailCol({ label, text, truncate }: { label: string; text: string; truncate: boolean }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-(--c-text-2)">{label}</p>
-      <p className={`text-sm text-(--c-ocean) ${truncate ? 'truncate' : 'whitespace-pre-wrap'}`}>
-        {text || '—'}
-      </p>
-    </div>
   )
 }
 
