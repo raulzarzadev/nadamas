@@ -21,10 +21,11 @@ export interface HourStatusStyle {
 
 export const HOUR_STATUS_STYLE: Record<HourStatus, HourStatusStyle> = {
   available: {
+    // Hollow everywhere: an available hour is an empty (outlined) container.
     bar: 'border border-emerald-500 bg-transparent',
-    border: 'border-emerald-300',
-    bg: 'bg-emerald-100/70',
-    dot: 'bg-emerald-500',
+    border: 'border-emerald-400',
+    bg: 'bg-white',
+    dot: 'border-2 border-emerald-500 bg-transparent',
   },
   blocked: {
     bar: 'bg-gray-500',
