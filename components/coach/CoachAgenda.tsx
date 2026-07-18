@@ -50,6 +50,7 @@ import AgendaOpenHoursModal, {
   type OpenHoursDetails,
 } from './AgendaOpenHoursModal'
 import ScheduleHoursEditor, { type HoursMode } from './ScheduleHoursEditor'
+import StudentProgressModal from './StudentProgressModal'
 
 const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
 const OCCUPANCY_BAR_KEYS = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6'] as const
@@ -98,6 +99,18 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const [error, setError] = useState<string | null>(null)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [progressBooking, setProgressBooking] = useState<Booking | null>(null)
+  // Classes that already have a saved progress entry (labels the row button).
+  const [progressBookingIds, setProgressBookingIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    getAuthed('/api/coach/progress-entries')
+      .then((response) => response.json())
+      .then((payload: { bookingIds?: string[] }) =>
+        setProgressBookingIds(new Set(payload.bookingIds || []))
+      )
+      .catch((err) => reportInternalError('COACH_PROGRESS_IDS_LOAD', err))
+  }, [])
   // Editores del horario (self mode): opciones de clase y editor de horas.
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
@@ -383,9 +396,11 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const unblock = (block: CoachScheduleBlock) =>
     run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${coachQuery}`))
 
-  const submitAddStudent = (slot: ActiveSlot, payload: AddStudentPayload) =>
+  const submitAddStudent = (slot: ActiveSlot, payloads: AddStudentPayload[]) =>
     run(async () => {
-      await postAuthed('/api/coach/agenda/bookings', { ...slot, ...payload })
+      for (const payload of payloads) {
+        await postAuthed('/api/coach/agenda/bookings', { ...slot, ...payload })
+      }
       setAddStudentSlot(null)
     })
 
@@ -615,7 +630,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             const key = dateKey(date)
             const selected = key === selectedDate
             const isToday = key === dateKey(new Date())
-            const isWeekend = [0, 6].includes(date.getDay())
             const statuses = dayStatuses.get(key) || []
             // Colored lines in chronological order: green=disponible, blue=bloqueado,
             // red=ocupado individual, lime=grupal.
@@ -636,7 +650,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                 className={`flex flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${
                   selected
                     ? 'border-[var(--c-aqua)] bg-gradient-to-b from-[var(--c-aqua)] to-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]'
-                    : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
+                    : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${[0, 6].includes(date.getDay()) ? 'bg-[var(--c-surface)]' : 'bg-white'}`
                 } ${isToday ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
               >
                 <span
@@ -652,7 +666,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                   {bars.map((color, index) => (
                     <span
                       key={OCCUPANCY_BAR_KEYS[index]}
-                      className={`h-[3px] w-4 rounded-full ${color}`}
+                      className={`h-[4px] w-4 rounded-full ${color}`}
                     />
                   ))}
                 </span>
@@ -669,6 +683,29 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           <FiChevronRight aria-hidden="true" />
         </button>
       </div>
+
+      {/* Subtle legend for the occupancy bar colors */}
+      <ul
+        aria-label="Significado de los colores"
+        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-[var(--c-text-2)]"
+      >
+        {(
+          [
+            ['available', 'Disponible'],
+            ['booked', 'Ocupado'],
+            ['group', 'Grupal'],
+            ['blocked', 'Bloqueado'],
+          ] as const
+        ).map(([status, label]) => (
+          <li key={status} className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className={`h-[4px] w-4 rounded-full ${HOUR_STATUS_STYLE[status].bar}`}
+            />
+            {label}
+          </li>
+        ))}
+      </ul>
 
       {/* Day card */}
       <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
@@ -821,17 +858,40 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               </span>
                             </div>
                             {!adminMode && (
-                              <button
-                                type="button"
-                                aria-label={`Cancelar clase de ${booking.athleteName}`}
-                                onClick={() =>
-                                  setConfirmAction({ kind: 'cancel-booking', booking })
-                                }
-                                disabled={busy}
-                                className="inline-flex min-h-11 w-fit items-center gap-1.5 self-end rounded-full border border-[var(--rose-bd)] bg-white px-3.5 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:self-center"
-                              >
-                                <FiX aria-hidden="true" /> Cancelar
-                              </button>
+                              <div className="flex items-center gap-2 self-end sm:self-center">
+                                <button
+                                  type="button"
+                                  aria-label={
+                                    progressBookingIds.has(booking.id)
+                                      ? `Editar progreso de ${booking.athleteName}`
+                                      : `Agregar progreso de ${booking.athleteName}`
+                                  }
+                                  onClick={() => setProgressBooking(booking)}
+                                  disabled={busy}
+                                  className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3.5 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+                                >
+                                  {progressBookingIds.has(booking.id) ? (
+                                    <>
+                                      <FiEdit2 aria-hidden="true" /> Progreso guardado
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FiPlus aria-hidden="true" /> Progreso
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  aria-label={`Cancelar clase de ${booking.athleteName}`}
+                                  onClick={() =>
+                                    setConfirmAction({ kind: 'cancel-booking', booking })
+                                  }
+                                  disabled={busy}
+                                  className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-[var(--rose-bd)] bg-white px-3.5 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50"
+                                >
+                                  <FiX aria-hidden="true" /> Cancelar
+                                </button>
+                              </div>
                             )}
                           </li>
                         ))}
@@ -938,6 +998,20 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         </div>
       </section>
 
+      {progressBooking && (
+        <StudentProgressModal
+          athleteId={progressBooking.athleteId}
+          studentName={progressBooking.athleteName}
+          bookingId={progressBooking.id}
+          onClose={() => setProgressBooking(null)}
+          onSaved={() => {
+            setProgressBookingIds((current) => new Set(current).add(progressBooking.id))
+            setProgressBooking(null)
+            setNotice('Progreso guardado.')
+          }}
+        />
+      )}
+
       {addStudentSlot && (
         <AgendaAddStudentModal
           slotLabel={`${new Date(`${addStudentSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
@@ -946,8 +1020,22 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             month: 'short',
           })} · ${addStudentSlot.startTime}`}
           busy={busy}
+          takenAthleteIds={activeBookings
+            .filter(
+              (booking) =>
+                booking.date === addStudentSlot.date &&
+                booking.startTime === addStudentSlot.startTime
+            )
+            .map((booking) => booking.athleteId)}
+          takenNames={activeBookings
+            .filter(
+              (booking) =>
+                booking.date === addStudentSlot.date &&
+                booking.startTime === addStudentSlot.startTime
+            )
+            .map((booking) => booking.athleteName)}
           onClose={() => setAddStudentSlot(null)}
-          onSubmit={(payload) => submitAddStudent(addStudentSlot, payload)}
+          onSubmit={(payloads) => submitAddStudent(addStudentSlot, payloads)}
         />
       )}
 

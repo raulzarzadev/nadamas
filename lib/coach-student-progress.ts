@@ -34,16 +34,24 @@ export interface StudentProgressInput {
   lastNote?: unknown
 }
 
-/** One timestamped progress record in a student's history. */
+/** One timestamped progress record in a student's history, anchored to a class. */
 export interface StudentProgressEntry {
   id: string
   coachId: string
   athleteId: string
+  /** Booking the entry belongs to; absent on entries saved before anchoring. */
+  bookingId?: string
   level: number
   coachAssessment: number
   result?: number
   note: string
   createdAt: number
+  updatedAt?: number
+}
+
+/** Deterministic entry id: one progress record per class. */
+export function bookingProgressEntryId(bookingId: string) {
+  return `booking_${bookingId}`
 }
 
 export function studentProgressId(coachId: string, athleteId: string) {

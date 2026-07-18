@@ -1,14 +1,14 @@
 'use client'
 
 import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   PROGRESS_LEVELS,
   PROGRESS_RESULTS,
   PROGRESS_SUBLEVELS,
   type ProgressScaleOption,
 } from '@/CONSTANTS/PROGRESS_SCALE'
-import { patchAuthed } from '@/lib/client/authed-api'
+import { getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import {
   clampScale,
   normalizeLevelValue,
@@ -20,13 +20,22 @@ import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error
 export default function StudentProgressModal({
   athleteId,
   studentName,
+  bookingId,
   initial,
+  existingEntry,
   onClose,
   onSaved,
 }: {
   athleteId: string
   studentName: string
+  /** Class the progress is anchored to — one entry per class. */
+  bookingId: string
   initial?: StudentProgress | null
+  /**
+   * Entry already saved for this class: preset values and save edits it.
+   * Pass `null` when known absent; leave `undefined` to fetch it here.
+   */
+  existingEntry?: StudentProgressEntry | null
   onClose: () => void
   onSaved: (entry: StudentProgressEntry, progress: StudentProgress) => void
 }) {
@@ -36,8 +45,42 @@ export default function StudentProgressModal({
   const [subLevel, setSubLevel] = useState(() => clampScale(initial?.coachAssessment, 1))
   const [result, setResult] = useState<number | null>(null)
   const [note, setNote] = useState('')
+  const [editing, setEditing] = useState(Boolean(existingEntry))
+  const [loading, setLoading] = useState(existingEntry === undefined)
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
   const keyboardSafeArea = useKeyboardSafeArea()
+
+  const presetFromEntry = (entry: StudentProgressEntry) => {
+    setLevel(normalizeLevelValue(entry.level))
+    setSubLevel(clampScale(entry.coachAssessment, 1))
+    setResult(entry.result ?? null)
+    setNote(entry.note || '')
+    setEditing(true)
+  }
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: run once per open
+  useEffect(() => {
+    if (existingEntry) {
+      presetFromEntry(existingEntry)
+      return
+    }
+    if (existingEntry !== undefined) return
+    let cancelled = false
+    getAuthed(`/api/coach/progress-entries?bookingId=${encodeURIComponent(bookingId)}`)
+      .then((response) => response.json())
+      .then((payload: { entry?: StudentProgressEntry | null }) => {
+        if (cancelled) return
+        if (payload.entry) presetFromEntry(payload.entry)
+        setLoading(false)
+      })
+      .catch((err) => {
+        reportInternalError('COACH_PROGRESS_ENTRY_LOAD', err)
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function save() {
     if (result === null) return
@@ -45,6 +88,7 @@ export default function StudentProgressModal({
     try {
       const response = await patchAuthed('/api/coach/students', {
         athleteId,
+        bookingId,
         level,
         coachAssessment: subLevel,
         result,
@@ -65,7 +109,7 @@ export default function StudentProgressModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Agregar progreso de ${studentName}`}
+      aria-label={`${editing ? 'Editar' : 'Agregar'} progreso de ${studentName}`}
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm"
       style={keyboardSafeArea ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` } : undefined}
       onClick={(event) => {
@@ -78,23 +122,27 @@ export default function StudentProgressModal({
       <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)]">
         <div className="mx-auto h-1 w-10 rounded-full bg-(--c-border) sm:hidden" />
         <div>
-          <h3 className="text-xl font-bold text-(--c-ocean)">Agregar progreso</h3>
+          <h3 className="text-xl font-bold text-(--c-ocean)">
+            {editing ? 'Editar progreso' : 'Agregar progreso'}
+          </h3>
           <p className="mt-0.5 text-sm text-(--c-text-2)">{studentName}</p>
         </div>
 
-        <ScaleRow label="Nivel" options={PROGRESS_LEVELS} selected={level} onSelect={setLevel} />
-        <ScaleRow
-          label="Avance"
-          options={PROGRESS_SUBLEVELS}
-          selected={subLevel}
-          onSelect={setSubLevel}
-        />
-        <ScaleRow
-          label="Resultado"
-          options={PROGRESS_RESULTS}
-          selected={result}
-          onSelect={setResult}
-        />
+        <fieldset disabled={loading} className="contents">
+          <ScaleRow label="Nivel" options={PROGRESS_LEVELS} selected={level} onSelect={setLevel} />
+          <ScaleRow
+            label="Avance"
+            options={PROGRESS_SUBLEVELS}
+            selected={subLevel}
+            onSelect={setSubLevel}
+          />
+          <ScaleRow
+            label="Resultado"
+            options={PROGRESS_RESULTS}
+            selected={result}
+            onSelect={setResult}
+          />
+        </fieldset>
 
         <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
           Nota (opcional)
@@ -116,10 +164,10 @@ export default function StudentProgressModal({
           <button
             type="button"
             onClick={save}
-            disabled={status === 'saving' || result === null}
+            disabled={status === 'saving' || result === null || loading}
             className="min-h-12 rounded-full bg-(--c-ocean) font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {status === 'saving' ? 'Guardando…' : 'Guardar progreso'}
+            {status === 'saving' ? 'Guardando…' : editing ? 'Guardar cambios' : 'Guardar progreso'}
           </button>
           <button
             type="button"

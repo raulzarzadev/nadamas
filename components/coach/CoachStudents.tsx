@@ -109,11 +109,14 @@ export default function CoachStudents() {
     progress: StudentProgress
   ) =>
     setStudents((current) =>
-      current?.map((item) =>
-        item.athleteId === athleteId
-          ? { ...item, progress, entries: [entry, ...item.entries] }
-          : item
-      )
+      current?.map((item) => {
+        if (item.athleteId !== athleteId) return item
+        // An edit replaces the class's existing entry; a new save prepends.
+        const entries = item.entries.some((existing) => existing.id === entry.id)
+          ? item.entries.map((existing) => (existing.id === entry.id ? entry : existing))
+          : [entry, ...item.entries]
+        return { ...item, progress, entries }
+      })
     )
 
   const updateStudentDetails = (updated: UpdatedStudentPayload) =>
@@ -216,7 +219,10 @@ function StudentCard({
 }) {
   const [open, setOpen] = useState(focused)
   const [showAll, setShowAll] = useState(false)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [progressTarget, setProgressTarget] = useState<{
+    bookingId: string
+    existingEntry: StudentProgressEntry | null
+  } | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const ref = useRef<HTMLLIElement>(null)
 
@@ -231,6 +237,12 @@ function StudentCard({
   const level = student.progress ? formatStudentLevel(student.progress) : '1.1'
   const summary = `${student.totalClasses} ${student.totalClasses === 1 ? 'clase' : 'clases'} · Nivel ${level}`
   const visibleEntries = showAll ? student.entries : student.entries.slice(0, ENTRY_PREVIEW)
+  // Progress is anchored per class: the card button targets the most recent
+  // class, editing its entry when one already exists.
+  const lastClass = student.lastClass
+  const lastClassEntry = lastClass
+    ? student.entries.find((entry) => entry.bookingId === lastClass.id) || null
+    : null
 
   return (
     <li
@@ -329,12 +341,29 @@ function StudentCard({
             </button>
             <button
               type="button"
-              onClick={() => setModalOpen(true)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+              onClick={() =>
+                lastClass &&
+                setProgressTarget({ bookingId: lastClass.id, existingEntry: lastClassEntry })
+              }
+              disabled={!lastClass}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              <FiPlus aria-hidden="true" /> Agregar progreso
+              {lastClassEntry ? (
+                <>
+                  <FiEdit3 aria-hidden="true" /> Editar progreso
+                </>
+              ) : (
+                <>
+                  <FiPlus aria-hidden="true" /> Agregar progreso
+                </>
+              )}
             </button>
           </div>
+          {!lastClass && (
+            <p className="text-xs text-(--c-text-2)">
+              El progreso se registra por clase: agenda una clase con este alumno para empezar.
+            </p>
+          )}
 
           <div className="flex flex-col gap-2">
             <h4 className="text-sm font-bold text-(--c-ocean)">Progresos registrados</h4>
@@ -346,7 +375,19 @@ function StudentCard({
               <>
                 <ul className="flex flex-col gap-2">
                   {visibleEntries.map((entry) => (
-                    <EntryItem key={entry.id} entry={entry} />
+                    <EntryItem
+                      key={entry.id}
+                      entry={entry}
+                      onEdit={
+                        entry.bookingId
+                          ? () =>
+                              setProgressTarget({
+                                bookingId: entry.bookingId as string,
+                                existingEntry: entry,
+                              })
+                          : undefined
+                      }
+                    />
                   ))}
                 </ul>
                 {student.entries.length > ENTRY_PREVIEW && (
@@ -366,15 +407,17 @@ function StudentCard({
         </div>
       )}
 
-      {modalOpen && (
+      {progressTarget && (
         <StudentProgressModal
           athleteId={student.athleteId}
           studentName={student.name}
+          bookingId={progressTarget.bookingId}
           initial={student.progress}
-          onClose={() => setModalOpen(false)}
+          existingEntry={progressTarget.existingEntry}
+          onClose={() => setProgressTarget(null)}
           onSaved={(entry, progress) => {
             onProgressSaved(entry, progress)
-            setModalOpen(false)
+            setProgressTarget(null)
           }}
         />
       )}
@@ -397,7 +440,7 @@ function isWebUrl(value: string) {
   return /^https?:\/\//i.test(value.trim())
 }
 
-function EntryItem({ entry }: { entry: StudentProgressEntry }) {
+function EntryItem({ entry, onEdit }: { entry: StudentProgressEntry; onEdit?: () => void }) {
   const [open, setOpen] = useState(false)
   const emoji = progressResultEmoji(entry.result)
   const date = new Date(entry.createdAt).toLocaleDateString('es-MX', {
@@ -435,6 +478,17 @@ function EntryItem({ entry }: { entry: StudentProgressEntry }) {
           className={`mt-0.5 shrink-0 text-(--c-ocean-mid) transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
+      {open && onEdit && (
+        <div className="px-3 pb-3">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3 text-xs font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface)"
+          >
+            <FiEdit3 aria-hidden="true" /> Editar
+          </button>
+        </div>
+      )}
     </li>
   )
 }

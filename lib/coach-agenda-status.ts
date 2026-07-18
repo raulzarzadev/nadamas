@@ -1,9 +1,9 @@
 // Single source of truth for coach-agenda hour status colors.
 // Canonical palette (see memory `agenda-status-palette`):
-//   green  = abierto / disponible (available)
-//   blue   = bloqueado (blocked)
-//   red    = ocupado individual (booked)
-//   lime   = clase grupal derivada (2+ students in the same hour)
+//   green hollow/outlined = abierto / disponible (available, empty hour)
+//   green filled          = ocupado individual (booked)
+//   purple                = clase grupal derivada (2+ students in the same hour)
+//   gray                  = bloqueado (blocked)
 // Classes are literal so Tailwind can detect them at build time.
 
 export type HourStatus = 'available' | 'blocked' | 'booked' | 'group'
@@ -21,27 +21,28 @@ export interface HourStatusStyle {
 
 export const HOUR_STATUS_STYLE: Record<HourStatus, HourStatusStyle> = {
   available: {
-    bar: 'bg-emerald-400',
-    border: 'border-emerald-200',
-    bg: 'bg-emerald-50/60',
-    dot: 'bg-emerald-400',
+    // Hollow everywhere: an available hour is an empty (outlined) container.
+    bar: 'border border-emerald-500 bg-transparent',
+    border: 'border-emerald-400',
+    bg: 'bg-white',
+    dot: 'border-2 border-emerald-500 bg-transparent',
   },
   blocked: {
-    bar: 'bg-blue-500',
-    border: 'border-blue-100',
-    bg: 'bg-blue-50/60',
-    dot: 'bg-blue-500',
+    bar: 'bg-gray-500',
+    border: 'border-gray-300',
+    bg: 'bg-gray-200/70',
+    dot: 'bg-gray-500',
   },
   booked: {
-    bar: 'bg-red-500',
-    border: 'border-red-200',
-    bg: 'bg-red-50/60',
-    dot: 'bg-red-500',
+    bar: 'bg-emerald-600',
+    border: 'border-emerald-300',
+    bg: 'bg-emerald-100/70',
+    dot: 'bg-emerald-600',
   },
   group: {
-    bar: 'bg-lime-400',
-    border: 'border-lime-200',
-    bg: 'bg-lime-50/70',
-    dot: 'bg-lime-500',
+    bar: 'bg-purple-600',
+    border: 'border-purple-300',
+    bg: 'bg-purple-100/70',
+    dot: 'bg-purple-600',
   },
 }
