@@ -100,6 +100,17 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [progressBooking, setProgressBooking] = useState<Booking | null>(null)
+  // Classes that already have a saved progress entry (labels the row button).
+  const [progressBookingIds, setProgressBookingIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    getAuthed('/api/coach/progress-entries')
+      .then((response) => response.json())
+      .then((payload: { bookingIds?: string[] }) =>
+        setProgressBookingIds(new Set(payload.bookingIds || []))
+      )
+      .catch((err) => reportInternalError('COACH_PROGRESS_IDS_LOAD', err))
+  }, [])
   // Editores del horario (self mode): opciones de clase y editor de horas.
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
@@ -826,12 +837,24 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               <div className="flex items-center gap-2 self-end sm:self-center">
                                 <button
                                   type="button"
-                                  aria-label={`Agregar progreso de ${booking.athleteName}`}
+                                  aria-label={
+                                    progressBookingIds.has(booking.id)
+                                      ? `Editar progreso de ${booking.athleteName}`
+                                      : `Agregar progreso de ${booking.athleteName}`
+                                  }
                                   onClick={() => setProgressBooking(booking)}
                                   disabled={busy}
                                   className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3.5 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
                                 >
-                                  <FiPlus aria-hidden="true" /> Progreso
+                                  {progressBookingIds.has(booking.id) ? (
+                                    <>
+                                      <FiEdit2 aria-hidden="true" /> Progreso guardado
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FiPlus aria-hidden="true" /> Progreso
+                                    </>
+                                  )}
                                 </button>
                                 <button
                                   type="button"
@@ -958,6 +981,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           bookingId={progressBooking.id}
           onClose={() => setProgressBooking(null)}
           onSaved={() => {
+            setProgressBookingIds((current) => new Set(current).add(progressBooking.id))
             setProgressBooking(null)
             setNotice('Progreso guardado.')
           }}

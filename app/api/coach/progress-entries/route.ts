@@ -9,7 +9,11 @@ function getBearerToken(request: Request) {
   return match?.[1] || null
 }
 
-/** Progress entry anchored to a booking, if any: GET ?bookingId=… → { entry: … | null } */
+/**
+ * GET ?bookingId=… → { entry: … | null } (progress entry anchored to that class).
+ * GET without params → { bookingIds: string[] } (classes of this coach that
+ * already have progress, so the agenda can label its buttons).
+ */
 export async function GET(request: Request) {
   const token = getBearerToken(request)
   if (!token) return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
@@ -17,7 +21,14 @@ export async function GET(request: Request) {
 
   const bookingId = new URL(request.url).searchParams.get('bookingId') || ''
   if (!bookingId) {
-    return NextResponse.json({ error: 'Clase inválida.' }, { status: 400 })
+    const snapshot = await adminDb
+      .collection('coachStudentProgressEntries')
+      .where('coachId', '==', caller.uid)
+      .get()
+    const bookingIds = snapshot.docs
+      .map((doc) => (doc.data() as StudentProgressEntry).bookingId)
+      .filter((value): value is string => Boolean(value))
+    return NextResponse.json({ bookingIds })
   }
 
   const snapshot = await adminDb
