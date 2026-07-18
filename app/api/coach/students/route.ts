@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import type { Booking } from '@/lib/coach-booking'
 import {
+  bookingProgressEntryId,
   clampScale,
   computeStudentPosition,
   normalizeLevelValue,
@@ -276,25 +277,31 @@ export async function PATCH(request: Request) {
   if (verification.error) return verification.error
 
   const coachId = verification.caller.uid
-  const body = (await request.json()) as StudentProgressInput & { athleteId?: string }
+  const body = (await request.json()) as StudentProgressInput & {
+    athleteId?: string
+    bookingId?: string
+  }
   if (!body.athleteId) {
     return NextResponse.json({ error: 'Alumno inválido.' }, { status: 400 })
   }
+  const bookingId = typeof body.bookingId === 'string' ? body.bookingId : ''
+  if (!bookingId) {
+    return NextResponse.json({ error: 'Clase inválida.' }, { status: 400 })
+  }
 
-  const bookingSnapshot = await adminDb
-    .collection('bookings')
-    .where('coachId', '==', coachId)
-    .where('athleteId', '==', body.athleteId)
-    .limit(1)
-    .get()
-  const booking = bookingSnapshot.docs[0]?.data() as Booking | undefined
-  const existingProgress = await adminDb
-    .collection('coachStudentProgress')
-    .doc(studentProgressId(coachId, body.athleteId))
-    .get()
+  // The entry is anchored to one class: the booking must be this coach's
+  // class with this athlete.
+  const [bookingSnapshot, existingProgress] = await Promise.all([
+    adminDb.collection('bookings').doc(bookingId).get(),
+    adminDb
+      .collection('coachStudentProgress')
+      .doc(studentProgressId(coachId, body.athleteId))
+      .get(),
+  ])
+  const booking = bookingSnapshot.data() as Booking | undefined
   const manualProgress = existingProgress.data() as StudentProgress | undefined
 
-  if (!booking && !manualProgress) {
+  if (!booking || booking.coachId !== coachId || booking.athleteId !== body.athleteId) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
 
@@ -304,27 +311,35 @@ export async function PATCH(request: Request) {
   const current = existingProgress
   const normalized = normalizeStudentProgressInput(body)
 
-  // Append a timestamped entry to the student's progress history.
-  const entryRef = adminDb.collection('coachStudentProgressEntries').doc()
+  // One entry per class: deterministic id makes a re-save an edit, never a
+  // duplicate. Edits keep the original createdAt.
+  const entryRef = adminDb
+    .collection('coachStudentProgressEntries')
+    .doc(bookingProgressEntryId(bookingId))
+  const previousEntry = (await entryRef.get()).data() as StudentProgressEntry | undefined
   const entry: StudentProgressEntry = {
     id: entryRef.id,
     coachId,
     athleteId: body.athleteId,
+    bookingId,
     level: normalized.level,
     coachAssessment: normalized.coachAssessment,
     result: normalized.result,
     note: normalized.lastNote,
-    createdAt: now,
+    createdAt: previousEntry?.createdAt || now,
+    updatedAt: now,
   }
 
   // The doc's level is not the last click but the rounded-up average of the
-  // most recent entries (including this one).
+  // most recent entries (including this one, excluding its previous version).
   const historySnapshot = await adminDb
     .collection('coachStudentProgressEntries')
     .where('coachId', '==', coachId)
     .where('athleteId', '==', body.athleteId)
     .get()
-  const history = historySnapshot.docs.map((doc) => doc.data() as StudentProgressEntry)
+  const history = historySnapshot.docs
+    .map((doc) => doc.data() as StudentProgressEntry)
+    .filter((item) => item.id !== entry.id)
   const computed = computeStudentPosition([...history, entry])
 
   const progress: StudentProgress = {

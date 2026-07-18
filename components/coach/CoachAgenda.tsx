@@ -955,6 +955,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         <StudentProgressModal
           athleteId={progressBooking.athleteId}
           studentName={progressBooking.athleteName}
+          bookingId={progressBooking.id}
           onClose={() => setProgressBooking(null)}
           onSaved={() => {
             setProgressBooking(null)

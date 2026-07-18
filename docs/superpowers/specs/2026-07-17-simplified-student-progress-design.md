@@ -137,6 +137,17 @@ entries (incluida la nueva) sobre la escala combinada 1–16
 de vuelta a `nivel.avance`. La entry sí conserva los valores clickeados.
 Implementado en `computeStudentPosition` (`lib/coach-student-progress.ts`).
 
+## Addendum (2026-07-18): progreso anclado a una clase
+
+Cada progreso pertenece a una clase (booking). Id determinístico
+`booking_<bookingId>` en `coachStudentProgressEntries` + campo `bookingId` →
+guardar de nuevo la misma clase edita el entry (conserva `createdAt`, agrega
+`updatedAt`); imposible duplicar. El PATCH exige `bookingId` de una clase del
+coach con ese alumno. Entradas: botón de la fila en agenda (fetch del entry vía
+GET `/api/coach/progress-entries?bookingId=`), botón del card de Alumnos
+(ancla a la última clase; deshabilitado sin clases) y botón Editar en el
+historial. Entries viejos sin `bookingId` quedan solo-lectura.
+
 ## Out of scope
 
 - Personalización por coach de la escala.
