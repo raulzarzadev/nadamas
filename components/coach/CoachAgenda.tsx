@@ -684,6 +684,29 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         </button>
       </div>
 
+      {/* Subtle legend for the occupancy bar colors */}
+      <ul
+        aria-label="Significado de los colores"
+        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-[var(--c-text-2)]"
+      >
+        {(
+          [
+            ['available', 'Disponible'],
+            ['booked', 'Ocupado'],
+            ['group', 'Grupal'],
+            ['blocked', 'Bloqueado'],
+          ] as const
+        ).map(([status, label]) => (
+          <li key={status} className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className={`h-[4px] w-4 rounded-full ${HOUR_STATUS_STYLE[status].bar}`}
+            />
+            {label}
+          </li>
+        ))}
+      </ul>
+
       {/* Day card */}
       <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
         <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
