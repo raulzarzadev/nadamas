@@ -66,6 +66,26 @@ export function formatStudentLevel(item: { level: unknown; coachAssessment: unkn
   return `${normalizeLevelValue(item.level)}.${clampScale(item.coachAssessment, 1)}`
 }
 
+/**
+ * Student position derived from the most recent entries: average of the last
+ * `window` entries on the combined 1-16 scale ((level-1)*4 + subLevel),
+ * rounded up so recent good sessions pull the level upward.
+ */
+export function computeStudentPosition(
+  entries: Array<Pick<StudentProgressEntry, 'level' | 'coachAssessment' | 'createdAt'>>,
+  window = 5
+) {
+  const recent = [...entries].sort((a, b) => b.createdAt - a.createdAt).slice(0, window)
+  if (recent.length === 0) return { level: 1, coachAssessment: 1 }
+  const total = recent.reduce(
+    (sum, entry) =>
+      sum + (normalizeLevelValue(entry.level) - 1) * 4 + clampScale(entry.coachAssessment, 1),
+    0
+  )
+  const score = Math.ceil(total / recent.length)
+  return { level: Math.floor((score - 1) / 4) + 1, coachAssessment: ((score - 1) % 4) + 1 }
+}
+
 export function normalizeStudentProgressInput(input: StudentProgressInput) {
   return {
     level: normalizeLevelValue(input.level),

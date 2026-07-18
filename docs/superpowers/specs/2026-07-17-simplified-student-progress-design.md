@@ -128,6 +128,15 @@ genérico en español (estándar del repo).
   como 3.
 - E2e existente que toque progreso (si hay) se actualiza.
 
+## Addendum (2026-07-18): nivel = promedio de últimas 5 sesiones
+
+El `level`/`coachAssessment` del doc `StudentProgress` NO es el último click:
+al guardar, el PATCH recalcula la posición como el promedio de las últimas 5
+entries (incluida la nueva) sobre la escala combinada 1–16
+(`(nivel−1)·4 + avance`), redondeado hacia arriba (`Math.ceil`), y lo convierte
+de vuelta a `nivel.avance`. La entry sí conserva los valores clickeados.
+Implementado en `computeStudentPosition` (`lib/coach-student-progress.ts`).
+
 ## Out of scope
 
 - Personalización por coach de la escala.

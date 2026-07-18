@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import type { Booking } from '@/lib/coach-booking'
 import {
   clampScale,
+  computeStudentPosition,
   normalizeLevelValue,
   normalizeStudentProgressInput,
   type StudentProgress,
@@ -302,6 +303,30 @@ export async function PATCH(request: Request) {
   const docRef = adminDb.collection('coachStudentProgress').doc(id)
   const current = existingProgress
   const normalized = normalizeStudentProgressInput(body)
+
+  // Append a timestamped entry to the student's progress history.
+  const entryRef = adminDb.collection('coachStudentProgressEntries').doc()
+  const entry: StudentProgressEntry = {
+    id: entryRef.id,
+    coachId,
+    athleteId: body.athleteId,
+    level: normalized.level,
+    coachAssessment: normalized.coachAssessment,
+    result: normalized.result,
+    note: normalized.lastNote,
+    createdAt: now,
+  }
+
+  // The doc's level is not the last click but the rounded-up average of the
+  // most recent entries (including this one).
+  const historySnapshot = await adminDb
+    .collection('coachStudentProgressEntries')
+    .where('coachId', '==', coachId)
+    .where('athleteId', '==', body.athleteId)
+    .get()
+  const history = historySnapshot.docs.map((doc) => doc.data() as StudentProgressEntry)
+  const computed = computeStudentPosition([...history, entry])
+
   const progress: StudentProgress = {
     id,
     coachId,
@@ -315,19 +340,7 @@ export async function PATCH(request: Request) {
     createdAt: (current.data()?.createdAt as number | undefined) || now,
     updatedAt: now,
     ...normalized,
-  }
-
-  // Append a timestamped entry to the student's progress history.
-  const entryRef = adminDb.collection('coachStudentProgressEntries').doc()
-  const entry: StudentProgressEntry = {
-    id: entryRef.id,
-    coachId,
-    athleteId: body.athleteId,
-    level: normalized.level,
-    coachAssessment: normalized.coachAssessment,
-    result: normalized.result,
-    note: normalized.lastNote,
-    createdAt: now,
+    ...computed,
   }
 
   await Promise.all([docRef.set(progress, { merge: true }), entryRef.set(entry)])
