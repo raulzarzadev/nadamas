@@ -47,7 +47,7 @@ export default function ProgressPage() {
       <header>
         <h1 className="text-3xl font-extrabold text-(--c-ocean)">Mi progreso</h1>
         <p className="mt-1 text-(--c-text-2)">
-          Historial de clases, objetivos y seguimiento de tus coaches.
+          Historial de clases y seguimiento de tus coaches.
         </p>
       </header>
 
