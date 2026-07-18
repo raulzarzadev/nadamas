@@ -137,11 +137,9 @@ export async function POST(request: Request) {
       athleteName: booking.athleteName,
       athleteEmail: booking.athleteEmail ?? null,
       ...(booking.athletePhone ? { athletePhone: booking.athletePhone } : {}),
-      level: 'Inicial',
-      goal: '',
-      lastNote: '',
-      nextFocus: '',
+      level: 1,
       coachAssessment: 1,
+      lastNote: '',
       createdAt: now,
       updatedAt: now,
     }

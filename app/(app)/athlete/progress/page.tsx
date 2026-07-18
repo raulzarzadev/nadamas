@@ -4,10 +4,11 @@ import Loading from '@comps/Loading'
 import Avatar from '@comps/ui/avatar'
 import type React from 'react'
 import { useEffect, useState } from 'react'
-import { FiCalendar, FiMapPin, FiTarget, FiTrendingUp, FiUsers } from 'react-icons/fi'
+import { FiCalendar, FiMapPin, FiTrendingUp, FiUsers } from 'react-icons/fi'
+import { progressResultEmoji } from '@/CONSTANTS/PROGRESS_SCALE'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
-import type { StudentProgress } from '@/lib/coach-student-progress'
+import { clampScale, formatStudentLevel, type StudentProgress } from '@/lib/coach-student-progress'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 export default function ProgressPage() {
@@ -36,8 +37,9 @@ export default function ProgressPage() {
 
   const avgAssessment = progress.length
     ? `${Math.round(
-        progress.reduce((total, item) => total + item.coachAssessment, 0) / progress.length
-      )}/5`
+        progress.reduce((total, item) => total + clampScale(item.coachAssessment, 1), 0) /
+          progress.length
+      )}/4`
     : '—'
 
   return (
@@ -98,31 +100,15 @@ export default function ProgressPage() {
                     <Avatar name={coachName} size={42} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold text-(--c-ocean)">{coachName}</p>
-                      <p className="mt-0.5 text-sm text-(--c-text-2)">Nivel: {item.level}</p>
+                      <p className="mt-0.5 text-sm text-(--c-text-2)">
+                        Nivel {formatStudentLevel(item)}
+                      </p>
                     </div>
                     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-(--c-surface) px-3 py-1 text-sm font-semibold text-(--c-ocean)">
-                      <FiTrendingUp aria-hidden="true" />
-                      {item.coachAssessment}/5
+                      {progressResultEmoji(item.result) || <FiTrendingUp aria-hidden="true" />}
+                      {formatStudentLevel(item)}
                     </span>
                   </div>
-                  {(item.goal || item.nextFocus) && (
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      {item.goal && (
-                        <ProgressNote
-                          icon={<FiTarget aria-hidden="true" />}
-                          label="Objetivo"
-                          text={item.goal}
-                        />
-                      )}
-                      {item.nextFocus && (
-                        <ProgressNote
-                          icon={<FiCalendar aria-hidden="true" />}
-                          label="Próximo foco"
-                          text={item.nextFocus}
-                        />
-                      )}
-                    </div>
-                  )}
                   {item.lastNote && (
                     <p className="mt-4 rounded-[var(--r-sm)] bg-(--c-surface) p-4 text-sm leading-6 text-(--c-text-2)">
                       {item.lastNote}
@@ -199,26 +185,6 @@ function StatTile({
         {value === undefined ? '—' : value}
       </span>
       <span className="text-xs font-semibold text-(--c-text-2)">{label}</span>
-    </div>
-  )
-}
-
-function ProgressNote({
-  icon,
-  label,
-  text,
-}: {
-  icon: React.ReactNode
-  label: string
-  text: string
-}) {
-  return (
-    <div className="flex gap-3 rounded-[var(--r-sm)] border border-(--c-border) p-3">
-      <span className="mt-0.5 text-(--c-ocean-mid)">{icon}</span>
-      <div>
-        <p className="text-xs font-bold uppercase text-(--c-text-2)">{label}</p>
-        <p className="mt-1 text-sm text-(--c-ocean)">{text}</p>
-      </div>
     </div>
   )
 }

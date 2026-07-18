@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import type { Booking } from '@/lib/coach-booking'
 import {
+  clampScale,
+  normalizeLevelValue,
   normalizeStudentProgressInput,
   type StudentProgress,
   type StudentProgressEntry,
@@ -158,11 +160,9 @@ export async function POST(request: Request) {
     athleteName: name,
     athleteEmail: email || null,
     ...(phone ? { athletePhone: phone } : {}),
-    level: 'Inicial',
-    goal: '',
-    lastNote: '',
-    nextFocus: '',
+    level: 1,
     coachAssessment: 1,
+    lastNote: '',
     createdAt: now,
     updatedAt: now,
   }
@@ -232,11 +232,11 @@ export async function PUT(request: Request) {
     athletePhone: details.phone,
     athleteAddress: details.address,
     athleteLocation: details.location,
-    level: current?.level || 'Inicial',
-    goal: current?.goal || '',
+    level: normalizeLevelValue(current?.level),
+    coachAssessment: clampScale(current?.coachAssessment, 1),
+    // Firestore rejects `undefined`; only include result when the doc has one.
+    ...(current?.result ? { result: current.result } : {}),
     lastNote: current?.lastNote || '',
-    nextFocus: current?.nextFocus || '',
-    coachAssessment: current?.coachAssessment || 1,
     createdAt: current?.createdAt || now,
     updatedAt: now,
   }
@@ -325,8 +325,7 @@ export async function PATCH(request: Request) {
     athleteId: body.athleteId,
     level: normalized.level,
     coachAssessment: normalized.coachAssessment,
-    goal: normalized.goal,
-    nextFocus: normalized.nextFocus,
+    result: normalized.result,
     note: normalized.lastNote,
     createdAt: now,
   }
