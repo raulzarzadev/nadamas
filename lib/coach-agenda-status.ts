@@ -1,6 +1,6 @@
 // Single source of truth for coach-agenda hour status colors.
 // Canonical palette (see memory `agenda-status-palette`):
-//   green  = abierto / disponible (available)
+//   green  = abierto / disponible (available) — hollow/outlined bar: the hour is empty
 //   blue   = bloqueado (blocked)
 //   red    = ocupado individual (booked)
 //   lime   = clase grupal derivada (2+ students in the same hour)
@@ -21,7 +21,7 @@ export interface HourStatusStyle {
 
 export const HOUR_STATUS_STYLE: Record<HourStatus, HourStatusStyle> = {
   available: {
-    bar: 'bg-emerald-400',
+    bar: 'border border-emerald-400 bg-transparent',
     border: 'border-emerald-200',
     bg: 'bg-emerald-50/60',
     dot: 'bg-emerald-400',

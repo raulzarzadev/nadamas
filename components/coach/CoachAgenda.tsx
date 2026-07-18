@@ -650,8 +650,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                 className={`flex flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${
                   selected
                     ? 'border-[var(--c-aqua)] bg-gradient-to-b from-[var(--c-aqua)] to-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]'
-                    : // Unselected days: outlined rectangle only, no fill.
-                      'border-[var(--c-border)] bg-transparent text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                    : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${[0, 6].includes(date.getDay()) ? 'bg-[var(--c-surface)]' : 'bg-white'}`
                 } ${isToday ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
               >
                 <span
@@ -667,7 +666,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                   {bars.map((color, index) => (
                     <span
                       key={OCCUPANCY_BAR_KEYS[index]}
-                      className={`h-[3px] w-4 rounded-full ${color}`}
+                      className={`h-[4px] w-4 rounded-full ${color}`}
                     />
                   ))}
                 </span>
