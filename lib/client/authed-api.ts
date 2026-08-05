@@ -1,7 +1,24 @@
+import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/firebase/index'
 
+async function getAuthToken() {
+  const currentUser = auth.currentUser
+  if (currentUser) return currentUser.getIdToken()
+
+  const user = await new Promise<NonNullable<typeof auth.currentUser>>((resolve, reject) => {
+    let unsubscribe = () => {}
+    unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      unsubscribe()
+      if (nextUser) resolve(nextUser)
+      else reject(new Error('Tu sesión no está disponible. Vuelve a iniciar sesión.'))
+    })
+  })
+
+  return user.getIdToken()
+}
+
 async function requestAuthed(path: string, init?: RequestInit) {
-  const token = await auth.currentUser?.getIdToken()
+  const token = await getAuthToken()
   const response = await fetch(path, {
     ...init,
     headers: {
