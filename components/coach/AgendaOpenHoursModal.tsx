@@ -63,6 +63,7 @@ export default function AgendaOpenHoursModal({
   title = 'Abrir horarios',
   description = 'Publica las horas que quieres ofrecer. Aplica a uno o varios días.',
   submitLabel = 'Abrir horario(s)',
+  error,
   initialDates = [],
   initialTimes = [],
   initialDetails,
@@ -78,6 +79,7 @@ export default function AgendaOpenHoursModal({
   title?: string
   description?: string
   submitLabel?: string
+  error?: string | null
   initialDates?: string[]
   initialTimes?: string[]
   initialDetails?: OpenHoursDetails
@@ -271,8 +273,9 @@ export default function AgendaOpenHoursModal({
                   </span>
                 </button>
                 <p className="mt-1.5 text-xs text-[var(--c-text-2)]">
-                  Permite agregar más de un alumno; no se muestra bloqueado aunque ya tengas esa
-                  clase asignada.
+                  {groupType === 'grupal'
+                    ? 'Permite agregar más de un alumno; no se muestra bloqueada aunque ya tengas esa clase asignada.'
+                    : 'Solo permite agregar una persona; se bloqueará si intentas agregar a alguien más o desde la vista de compartir.'}
                 </p>
               </div>
               <TextField
@@ -299,6 +302,7 @@ export default function AgendaOpenHoursModal({
         </div>
 
         <div className="flex shrink-0 flex-col gap-2 bg-white p-5 pt-4">
+          {error && <p className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">{error}</p>}
           <button
             type="button"
             disabled={!canSubmit}

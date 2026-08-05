@@ -450,7 +450,16 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   }
 
   const addClass = (dates: string[], times: string[], details?: OpenHoursDetails) => {
-    if (!selfUid || dates.length === 0 || times.length === 0) return
+    if (!selfUid) {
+      setError(
+        'No se pudo identificar tu cuenta. Cierra sesión, vuelve a entrar e inténtalo de nuevo.'
+      )
+      return
+    }
+    if (dates.length === 0 || times.length === 0) {
+      setError('Selecciona al menos un día y una hora para agregar la clase.')
+      return
+    }
     run(async () => {
       const nextOffering = {
         ...createOffering(),
@@ -824,6 +833,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               if (row.kind === 'booked') {
                 const firstBooking = row.bookings[0]
                 if (!firstBooking) return null
+                const isGroupClass = firstBooking.groupType === 'grupal' || row.bookings.length > 1
                 const classStyle =
                   row.bookings.length > 1 ? HOUR_STATUS_STYLE.group : HOUR_STATUS_STYLE.booked
                 return (
@@ -840,7 +850,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                             ? `Clase grupal · ${row.bookings.length} alumnos`
                             : '1 alumno'}
                         </span>
-                        {!adminMode && (
+                        {!adminMode && isGroupClass && (
                           <button
                             type="button"
                             onClick={() =>
@@ -1025,7 +1035,10 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           <div className="border-t border-[var(--c-border)] p-4 sm:p-5">
             <button
               type="button"
-              onClick={() => setAddClassModalOpen(true)}
+              onClick={() => {
+                setError(null)
+                setAddClassModalOpen(true)
+              }}
               disabled={busy}
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--c-aqua)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--c-aqua-strong)] transition-colors hover:bg-[var(--c-aqua-light)] disabled:opacity-60"
             >
@@ -1083,6 +1096,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           title="Editar detalles"
           description="Edita los datos de tu clase."
           submitLabel="Guardar cambios"
+          error={error}
           initialDates={initialDatesForOffering(offering)}
           initialTimes={initialTimesForOffering(offering)}
           initialDetails={{
@@ -1107,6 +1121,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           title="Agregar clase"
           description="Elige los días y horarios, y completa los datos de tu nueva clase."
           submitLabel="Agregar clase"
+          error={error}
           onClose={() => setAddClassModalOpen(false)}
           onSubmit={addClass}
         />
