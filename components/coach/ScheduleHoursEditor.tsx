@@ -24,11 +24,13 @@ function todayKey() {
 export default function ScheduleHoursEditor({
   defaultDate,
   busy,
+  error,
   onClose,
   onSubmit,
 }: {
   defaultDate?: string
   busy: boolean
+  error?: string | null
   onClose: () => void
   onSubmit: (mode: HoursMode, dates: string[], times: string[]) => void
 }) {
@@ -209,6 +211,7 @@ export default function ScheduleHoursEditor({
         </div>
 
         <div className="flex shrink-0 flex-col gap-2 bg-white p-5 pt-4">
+          {error && <p className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">{error}</p>}
           {dates.size > 0 && times.size > 0 && (
             <p className="text-center text-sm font-semibold text-[var(--c-text-2)]">
               {dates.size} {dates.size === 1 ? 'día' : 'días'} · {times.size}{' '}
@@ -220,8 +223,10 @@ export default function ScheduleHoursEditor({
             type="button"
             disabled={!canSubmit}
             onClick={() => onSubmit(mode, [...dates], [...times])}
-            className={`min-h-12 rounded-full font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50 ${
-              isRemove ? 'bg-rose-500' : 'bg-[var(--c-aqua)]'
+            className={`min-h-12 rounded-full font-bold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${
+              isRemove
+                ? 'bg-rose-500 hover:bg-rose-600'
+                : 'bg-[var(--c-aqua-strong)] hover:bg-[var(--c-ocean-mid)]'
             }`}
           >
             {isRemove ? 'Quitar horarios' : 'Agregar horarios'}

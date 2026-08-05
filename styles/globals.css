@@ -30,6 +30,13 @@
   --radius-box: 22px;
 }
 
+/* Every enabled button is visibly interactive; disabled controls keep the
+   explicit not-allowed cursor from their component styles. */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']) {
+  cursor: pointer;
+}
+
 /* Bottom sheet enter animation (components/ui/sheet.tsx). */
 @keyframes sheet-slide-up {
   from { transform: translateY(100%); }

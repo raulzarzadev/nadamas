@@ -475,7 +475,16 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
 
   // Editor de horas (Quitar/Agregar): agrega o quita (día × hora) del offering.
   const applyHours = (mode: HoursMode, dates: string[], times: string[]) => {
-    if (!selfUid || dates.length === 0 || times.length === 0) return
+    if (!selfUid) {
+      setError(
+        'No se pudo identificar tu cuenta. Cierra sesión, vuelve a entrar e inténtalo de nuevo.'
+      )
+      return
+    }
+    if (dates.length === 0 || times.length === 0) {
+      setError('Selecciona al menos un día y una hora para continuar.')
+      return
+    }
     setNotice(null)
     // Bloqueos (incluidos rango y ocultos) que se traslapan con los (día,hora).
     const overlappingBlockIds = (pairs: { date: string; time: string }[]) =>
@@ -778,18 +787,24 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               {offering ? (
                 <button
                   type="button"
-                  onClick={() => setHoursEditorOpen(true)}
+                  onClick={() => {
+                    setError(null)
+                    setHoursEditorOpen(true)
+                  }}
                   disabled={busy}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua)] px-3 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:flex-none sm:px-4"
+                  className="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua-strong)] px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none sm:px-4"
                 >
                   <FiClock aria-hidden="true" /> Editar horas
                 </button>
               ) : (
                 <button
                   type="button"
-                  onClick={() => setHoursEditorOpen(true)}
+                  onClick={() => {
+                    setError(null)
+                    setHoursEditorOpen(true)
+                  }}
                   disabled={busy}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:flex-none"
+                  className="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua-strong)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
                 >
                   <FiPlus aria-hidden="true" /> Crear horario
                 </button>
@@ -1132,6 +1147,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         <ScheduleHoursEditor
           defaultDate={selectedDate}
           busy={busy}
+          error={error}
           onClose={() => setHoursEditorOpen(false)}
           onSubmit={applyHours}
         />

@@ -320,7 +320,7 @@ export default function AgendaOpenHoursModal({
                   : undefined
               )
             }
-            className="min-h-12 rounded-full bg-[var(--c-aqua)] font-bold text-white transition-opacity hover:opacity-90 disabled:bg-slate-400 disabled:opacity-100"
+            className="min-h-12 rounded-full bg-[var(--c-aqua-strong)] font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-100"
           >
             {submitLabel}
           </button>
@@ -424,7 +424,7 @@ function HourPickerModal({
             type="button"
             disabled={selected.size === 0 || busy}
             onClick={() => onSubmit([...selected].sort())}
-            className="min-h-12 rounded-full bg-[var(--c-aqua)] font-bold text-white transition-opacity hover:opacity-90 disabled:bg-slate-400 disabled:opacity-100"
+            className="min-h-12 rounded-full bg-[var(--c-aqua-strong)] font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-100"
           >
             Agregar horas
           </button>
