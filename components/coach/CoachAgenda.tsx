@@ -429,7 +429,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     : null
   const saveOfferings = (next: CoachClassOffering) =>
     postAuthed('/api/coach/offerings', {
-      classOfferings: offering
+      classOfferings: offerings.some((item) => item.id === next.id)
         ? offerings.map((item) => (item.id === next.id ? next : item))
         : [...offerings, next],
     })
