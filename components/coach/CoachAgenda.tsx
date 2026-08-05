@@ -18,7 +18,6 @@ import {
 import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
-import { CoachCRUD } from '@/firebase/coaches/main'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
@@ -357,7 +356,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       await loadAgenda(monthOfSelected)
     } catch (err) {
       reportInternalError('COACH_AGENDA_ACTION', err)
-      setError(GENERIC_USER_ERROR)
+      const message = err instanceof Error ? err.message : ''
+      setError(message && !message.startsWith('request_failed:') ? message : GENERIC_USER_ERROR)
     } finally {
       setBusy(false)
     }
@@ -428,7 +428,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         .join(' · ')
     : null
   const saveOfferings = (next: CoachClassOffering) =>
-    CoachCRUD.upsertPublic(selfUid as string, {
+    postAuthed('/api/coach/offerings', {
       classOfferings: offering
         ? offerings.map((item) => (item.id === next.id ? next : item))
         : [...offerings, next],

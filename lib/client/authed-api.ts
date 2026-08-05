@@ -12,7 +12,14 @@ async function requestAuthed(path: string, init?: RequestInit) {
   })
 
   if (!response.ok) {
-    throw new Error(`request_failed:${response.status}`)
+    let message = `request_failed:${response.status}`
+    try {
+      const payload = (await response.json()) as { error?: unknown }
+      if (typeof payload.error === 'string' && payload.error.trim()) message = payload.error
+    } catch {
+      // Keep the status-based fallback when the response is not JSON.
+    }
+    throw new Error(message)
   }
 
   return response
