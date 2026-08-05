@@ -3,15 +3,8 @@
 import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import { MoneyField, TextField } from '@comps/Inputs/FormFields'
 import { useState } from 'react'
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
-import {
-  addDays,
-  dateFromKey,
-  dateKey,
-  HOUR_OPTIONS,
-  startOfWeek,
-  WEEKDAY_LABELS,
-} from '@/lib/coach-offerings'
+import { FiChevronLeft, FiChevronRight, FiPlus, FiX } from 'react-icons/fi'
+import { addDays, dateFromKey, dateKey, startOfWeek, WEEKDAY_LABELS } from '@/lib/coach-offerings'
 
 export interface AgendaWeekDay {
   key: string
@@ -22,7 +15,15 @@ export interface OpenHoursDetails {
   title: string
   placeName: string
   priceCents: number | null
+  groupType: 'particular' | 'grupal'
 }
+
+const HALF_HOUR_OPTIONS = Array.from({ length: 32 }, (_, index) => {
+  const totalMinutes = (index + 12) * 30
+  const hour = Math.floor(totalMinutes / 60)
+  const minute = totalMinutes % 60
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+})
 
 function buildWeekDays(start: Date): AgendaWeekDay[] {
   return Array.from({ length: 7 }, (_, index) => {
@@ -99,6 +100,10 @@ export default function AgendaOpenHoursModal({
   const [detailTitle, setDetailTitle] = useState(initialDetails?.title || '')
   const [placeName, setPlaceName] = useState(initialDetails?.placeName || '')
   const [priceCents, setPriceCents] = useState<number | null>(initialDetails?.priceCents ?? null)
+  const [groupType, setGroupType] = useState<'particular' | 'grupal'>(
+    initialDetails?.groupType ?? 'particular'
+  )
+  const [hoursModalOpen, setHoursModalOpen] = useState(false)
   const keyboardSafeArea = useKeyboardSafeArea()
   const visibleWeekDays = buildWeekDays(weekStart)
 
@@ -207,42 +212,69 @@ export default function AgendaOpenHoursModal({
                   Horas
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {HOUR_OPTIONS.map((time) => {
-                    const active = times.has(time)
-                    const disabled = timeDisabled(time)
-                    return (
-                      <button
-                        key={time}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => setTimes((current) => toggle(current, time))}
-                        className={`rounded-[var(--r-sm)] border px-3.5 py-2 text-sm font-semibold transition-colors ${
-                          disabled
-                            ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
-                            : active
-                              ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                              : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    )
-                  })}
+                  {[...times].sort().map((time) => (
+                    <button
+                      key={time}
+                      type="button"
+                      onClick={() => setTimes((current) => toggle(current, time))}
+                      className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--c-ocean)] bg-[var(--c-ocean)] px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      aria-label={`Quitar hora ${time}`}
+                    >
+                      {time} <FiX aria-hidden="true" />
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setHoursModalOpen(true)}
+                    className="grid h-10 w-12 place-items-center rounded-[var(--r-sm)] border border-dashed border-[var(--c-aqua)] bg-white text-xl font-semibold text-[var(--c-aqua-strong)] transition-colors hover:bg-[var(--c-aqua-light)]"
+                    aria-label="Agregar horas"
+                  >
+                    <FiPlus aria-hidden="true" />
+                  </button>
                 </div>
+                {times.size === 0 && (
+                  <p className="text-xs text-[var(--c-text-2)]">Agrega una o más horas con +.</p>
+                )}
               </div>
             </>
           )}
 
           {showDetailsForm && (
             <div className="grid gap-3 sm:grid-cols-2">
-              <TextField
-                label="Tipo de clase"
-                value="Particular"
-                disabled
-                readOnly
-                helperText="Próximamente: clases grupales."
-                className="sm:col-span-2 disabled:cursor-not-allowed disabled:bg-[var(--c-surface)] disabled:text-[var(--c-text-2)] disabled:opacity-70 disabled:shadow-none"
-              />
+              <div className="sm:col-span-2">
+                <span className="block text-sm font-semibold text-[var(--c-ocean)]">
+                  Tipo de clase
+                </span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={groupType === 'grupal'}
+                  onClick={() =>
+                    setGroupType((current) => (current === 'grupal' ? 'particular' : 'grupal'))
+                  }
+                  className="mt-2 flex min-h-11 w-full items-center justify-between gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3.5 py-2 text-left transition-colors hover:bg-[var(--c-surface)]"
+                >
+                  <span className="text-sm font-semibold text-[var(--c-ocean)]">
+                    {groupType === 'grupal' ? 'Clase grupal' : 'Clase particular'}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                      groupType === 'grupal' ? 'bg-[var(--c-aqua)]' : 'bg-slate-300'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                        groupType === 'grupal' ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </span>
+                </button>
+                <p className="mt-1.5 text-xs text-[var(--c-text-2)]">
+                  Permite agregar más de un alumno; no se muestra bloqueado aunque ya tengas esa
+                  clase asignada.
+                </p>
+              </div>
               <TextField
                 label="Lugar"
                 placeholder="Ej. Playa el Coromuel"
@@ -279,6 +311,7 @@ export default function AgendaOpenHoursModal({
                       title: detailTitle.trim(),
                       placeName: placeName.trim(),
                       priceCents,
+                      groupType,
                     }
                   : undefined
               )
@@ -286,6 +319,110 @@ export default function AgendaOpenHoursModal({
             className="min-h-12 rounded-full bg-[var(--c-aqua)] font-bold text-white transition-opacity hover:opacity-90 disabled:bg-slate-400 disabled:opacity-100"
           >
             {submitLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-11 rounded-full font-semibold text-[var(--c-text-2)] hover:text-[var(--c-ocean)]"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+      {hoursModalOpen && (
+        <HourPickerModal
+          existingTimes={times}
+          selectedDates={selectedDates}
+          busy={busy}
+          onClose={() => setHoursModalOpen(false)}
+          onSubmit={(newTimes) => {
+            setTimes((current) => new Set([...current, ...newTimes]))
+            setHoursModalOpen(false)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function HourPickerModal({
+  existingTimes,
+  selectedDates,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  existingTimes: Set<string>
+  selectedDates: string[]
+  busy: boolean
+  onClose: () => void
+  onSubmit: (times: string[]) => void
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const toggleTime = (time: string) => {
+    setSelected((current) => {
+      const next = new Set(current)
+      if (next.has(time)) next.delete(time)
+      else next.add(time)
+      return next
+    })
+  }
+  const disabledTime = (time: string) =>
+    existingTimes.has(time) ||
+    (selectedDates.length > 0 && selectedDates.every((date) => isPastDateTime(date, time)))
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Agregar horas"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') onClose()
+      }}
+    >
+      <div className="flex max-h-[min(92dvh,44rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)]">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-3">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
+          <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar horas</h3>
+          <p className="mt-1 text-sm text-[var(--c-text-2)]">
+            Selecciona una o más horas. Sólo se permiten horas cerradas y medias horas.
+          </p>
+          <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5">
+            {HALF_HOUR_OPTIONS.map((time) => {
+              const disabled = disabledTime(time)
+              const active = selected.has(time)
+              return (
+                <button
+                  key={time}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => toggleTime(time)}
+                  className={`min-h-11 rounded-[var(--r-sm)] border text-sm font-semibold transition-colors ${
+                    disabled
+                      ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
+                      : active
+                        ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                        : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                  }`}
+                >
+                  {time}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 bg-white p-5 pt-4">
+          <button
+            type="button"
+            disabled={selected.size === 0 || busy}
+            onClick={() => onSubmit([...selected].sort())}
+            className="min-h-12 rounded-full bg-[var(--c-aqua)] font-bold text-white transition-opacity hover:opacity-90 disabled:bg-slate-400 disabled:opacity-100"
+          >
+            Agregar horas
           </button>
           <button
             type="button"

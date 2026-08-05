@@ -182,6 +182,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     [agenda?.bookings]
   )
 
+  const offeringIsGroup = agenda?.offerings?.some((item) => item.groupType === 'grupal') ?? false
+
   // Per-day hour statuses in chronological order — drives the colored bar meter
   // on each weekday chip so the bars line up with the day's hour list.
   const dayStatuses = useMemo(() => {
@@ -210,6 +212,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       if (slot.status === 'available') push(slot.date, slot.startTime, 'available')
     }
     for (const block of agenda?.blocks || []) {
+      if (offeringIsGroup) continue
       if (block.allDay || block.hidden) continue
       // A blocked hour that already has a student shows as booked, not blocked.
       if (bookedKeys.has(`${block.date}|${block.startTime || ''}`)) continue
@@ -227,7 +230,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       )
     }
     return ordered
-  }, [activeBookings, agenda?.availableSlots, agenda?.blocks])
+  }, [activeBookings, agenda?.availableSlots, agenda?.blocks, offeringIsGroup])
 
   // Month-level occupancy: class slots vs total offered, restricted to the month shown
   // in the header (the payload can bleed into adjacent months on boundary weeks).
@@ -298,7 +301,11 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const rows = useMemo(() => {
     const bookedTimes = new Set(dayBookings.map((booking) => booking.startTime))
     const available = daySlots
-      .filter((slot) => slot.status === 'available')
+      .filter(
+        (slot) =>
+          !bookedTimes.has(slot.startTime) &&
+          (slot.status === 'available' || (offeringIsGroup && slot.status === 'blocked'))
+      )
       .map((slot) => ({ kind: 'available' as const, sort: slot.startTime, slot }))
     const groupedBookings = new Map<string, Booking[]>()
     for (const booking of dayBookings) {
@@ -340,7 +347,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       blocked.push({ kind: 'blocked', sort: slot.startTime, slot, block })
     }
     return [...available, ...booked, ...blocked].sort((a, b) => a.sort.localeCompare(b.sort))
-  }, [daySlots, dayBookings, dayBlocks])
+  }, [daySlots, dayBookings, dayBlocks, offeringIsGroup])
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true)
@@ -436,6 +443,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         details: details?.title ?? offering.details,
         placeName: details?.placeName ?? offering.placeName,
         priceCents: details?.priceCents ?? offering.priceCents,
+        groupType: details?.groupType ?? offering.groupType,
       })
       setDetailsModalOpen(false)
     })
@@ -449,6 +457,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         details: details?.title || '',
         placeName: details?.placeName || '',
         priceCents: details?.priceCents ?? null,
+        groupType: details?.groupType ?? 'particular',
       }
       await saveOfferings(offeringWithHours(nextOffering, dates, times, 60))
       setAddClassModalOpen(false)
@@ -1080,6 +1089,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
             title: offering.details || '',
             placeName: offering.placeName || '',
             priceCents: offeringPriceCents(offering),
+            groupType: offering.groupType,
           }}
           busy={busy}
           detailsOnly
