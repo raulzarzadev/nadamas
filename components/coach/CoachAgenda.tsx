@@ -113,6 +113,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   }, [])
   // Editores del horario (self mode): opciones de clase y editor de horas.
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
+  const [addClassModalOpen, setAddClassModalOpen] = useState(false)
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [whatsappCopied, setWhatsappCopied] = useState(false)
@@ -437,6 +438,20 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         priceCents: details?.priceCents ?? offering.priceCents,
       })
       setDetailsModalOpen(false)
+    })
+  }
+
+  const addClass = (dates: string[], times: string[], details?: OpenHoursDetails) => {
+    if (!selfUid || dates.length === 0 || times.length === 0) return
+    run(async () => {
+      const nextOffering = {
+        ...createOffering(),
+        details: details?.title || '',
+        placeName: details?.placeName || '',
+        priceCents: details?.priceCents ?? null,
+      }
+      await saveOfferings(offeringWithHours(nextOffering, dates, times, 60))
+      setAddClassModalOpen(false)
     })
   }
 
@@ -996,6 +1011,19 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               )
             })}
         </div>
+
+        {!adminMode && (
+          <div className="border-t border-[var(--c-border)] p-4 sm:p-5">
+            <button
+              type="button"
+              onClick={() => setAddClassModalOpen(true)}
+              disabled={busy}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--c-aqua)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--c-aqua-strong)] transition-colors hover:bg-[var(--c-aqua-light)] disabled:opacity-60"
+            >
+              <FiPlus aria-hidden="true" /> Agregar clase
+            </button>
+          </div>
+        )}
       </section>
 
       {progressBooking && (
@@ -1057,6 +1085,20 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           detailsOnly
           onClose={() => setDetailsModalOpen(false)}
           onSubmit={(_dates, _times, details) => saveOfferingDetails(details)}
+        />
+      )}
+
+      {addClassModalOpen && (
+        <AgendaOpenHoursModal
+          weekDays={buildNextWeekDays()}
+          defaultDate={selectedDate}
+          busy={busy}
+          showDetails
+          title="Agregar clase"
+          description="Elige los días y horarios, y completa los datos de tu nueva clase."
+          submitLabel="Agregar clase"
+          onClose={() => setAddClassModalOpen(false)}
+          onSubmit={addClass}
         />
       )}
 
