@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { type ReactNode, useEffect, useState } from 'react'
 import {
   FiCalendar,
@@ -12,6 +11,7 @@ import {
   FiShare2,
   FiX,
 } from 'react-icons/fi'
+import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
 import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
@@ -24,6 +24,7 @@ export default function ShareScheduleButton() {
   const { user } = useUser()
   const { scheduleText } = useCoachAgendaShare()
   const [open, setOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const [feedback, setFeedback] = useState<Feedback>(null)
   const [coachSlug, setCoachSlug] = useState<string | null>(null)
 
@@ -55,6 +56,11 @@ export default function ShareScheduleButton() {
     }
   }
 
+  function closeModal() {
+    setOpen(false)
+    setCalendarOpen(false)
+  }
+
   return (
     <>
       <button
@@ -66,7 +72,7 @@ export default function ShareScheduleButton() {
         <FiShare2 aria-hidden="true" /> Compartir
       </button>
 
-      <Sheet open={open} onClose={() => setOpen(false)} label="Compartir agenda">
+      <Sheet open={open} onClose={closeModal} label="Compartir agenda" keyboardAware>
         <div className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -77,7 +83,7 @@ export default function ShareScheduleButton() {
             </div>
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={closeModal}
               aria-label="Cerrar"
               className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
             >
@@ -108,27 +114,41 @@ export default function ShareScheduleButton() {
               onClick={() => void copy(scheduleText, 'schedule')}
               disabled={!scheduleText}
             />
-            <Link
-              href="/coach/coach-profile#calendar"
-              onClick={() => setOpen(false)}
-              className="group flex min-h-16 cursor-pointer items-center gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-3 text-left transition-colors hover:border-[var(--c-aqua)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-            >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--c-aqua-light)] text-[var(--c-aqua-strong)]">
-                <FiCalendar aria-hidden="true" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-bold text-[var(--c-ocean)]">
-                  Ligar calendario
+            <div className="overflow-hidden rounded-[var(--r-sm)] border border-[var(--c-border)]">
+              <button
+                type="button"
+                aria-expanded={calendarOpen}
+                aria-controls="share-calendar-options"
+                onClick={() => setCalendarOpen((current) => !current)}
+                className="group flex min-h-16 w-full cursor-pointer items-center gap-3 bg-white p-3 text-left transition-colors hover:bg-[var(--c-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--c-aqua-strong)]"
+              >
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--c-aqua-light)] text-[var(--c-aqua-strong)]">
+                  <FiCalendar aria-hidden="true" />
                 </span>
-                <span className="mt-0.5 block text-xs text-[var(--c-text-2)]">
-                  Sincroniza tus clases con Google, Apple u Outlook.
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-[var(--c-ocean)]">
+                    Ligar calendario
+                  </span>
+                  <span className="mt-0.5 block text-xs text-[var(--c-text-2)]">
+                    Sincroniza tus clases con Google, Apple u Outlook.
+                  </span>
                 </span>
-              </span>
-              <FiChevronRight
-                aria-hidden="true"
-                className="shrink-0 text-[var(--c-text-2)] transition-transform group-hover:translate-x-0.5"
-              />
-            </Link>
+                <FiChevronRight
+                  aria-hidden="true"
+                  className={`shrink-0 text-[var(--c-text-2)] transition-transform ${
+                    calendarOpen ? 'rotate-90' : 'group-hover:translate-x-0.5'
+                  }`}
+                />
+              </button>
+              {calendarOpen && (
+                <div
+                  id="share-calendar-options"
+                  className="border-t border-[var(--c-border)] bg-[var(--c-bg)] p-2"
+                >
+                  <CalendarConnectionCard calendarRole="coach" embedded />
+                </div>
+              )}
+            </div>
           </div>
 
           {feedback === 'error' && (

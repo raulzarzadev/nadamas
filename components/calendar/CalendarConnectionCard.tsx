@@ -35,7 +35,13 @@ function webcalUrl(url: string) {
   return url.replace(/^https?:\/\//, 'webcal://')
 }
 
-export default function CalendarConnectionCard({ calendarRole }: { calendarRole: CalendarRole }) {
+export default function CalendarConnectionCard({
+  calendarRole,
+  embedded = false,
+}: {
+  calendarRole: CalendarRole
+  embedded?: boolean
+}) {
   const [connection, setConnection] = useState<CalendarConnection>(EMPTY_CONNECTION)
   const [selectedOffsets, setSelectedOffsets] = useState<ReminderOffset[]>([1440, 60, 5])
   const [isAppleCalendarPlatform, setIsAppleCalendarPlatform] = useState(false)
@@ -145,8 +151,10 @@ export default function CalendarConnectionCard({ calendarRole }: { calendarRole:
 
   return (
     <section
-      id="calendar"
-      className="scroll-mt-24 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
+      id={embedded ? undefined : 'calendar'}
+      className={`rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 ${
+        embedded ? 'shadow-none' : 'scroll-mt-24 shadow-[var(--shadow-sm)]'
+      }`}
     >
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
