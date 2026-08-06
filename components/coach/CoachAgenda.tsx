@@ -672,15 +672,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         labelClassName="text-sm font-semibold"
       />
 
-      <p className="text-center text-sm text-[var(--c-text-2)]">
-        {adminMode
-          ? 'Toca un día para ver y editar los horarios del coach.'
-          : 'Toca un día para ver y editar tus horas.'}
-        <span className="block text-xs sm:hidden">Desliza para cambiar de semana.</span>
-      </p>
-
-      {selectedDate !== today && (
-        <div className="flex justify-center">
+      <div className="flex min-h-11 justify-center">
+        {selectedDate !== today && (
           <button
             type="button"
             onClick={() => setSelectedDate(today)}
@@ -688,8 +681,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           >
             Hoy
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Week strip (flechas + swipe lateral para cambiar de semana) */}
       <div
