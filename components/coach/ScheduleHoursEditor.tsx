@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import { FiChevronLeft, FiChevronRight, FiPlus, FiX } from 'react-icons/fi'
 import {
   addDays,
   dateFromKey,
@@ -37,10 +37,9 @@ export default function ScheduleHoursEditor({
   const initialKey = defaultDate || todayKey()
   const [mode, setMode] = useState<HoursMode>('add')
   const [weekStart, setWeekStart] = useState(() => startOfWeek(dateFromKey(initialKey)))
-  const [dates, setDates] = useState<Set<string>>(
-    () => new Set(defaultDate && defaultDate >= todayKey() ? [defaultDate] : [])
-  )
+  const [dates, setDates] = useState<Set<string>>(() => new Set(defaultDate ? [defaultDate] : []))
   const [times, setTimes] = useState<Set<string>>(() => new Set())
+  const [hoursModalOpen, setHoursModalOpen] = useState(false)
 
   const visibleWeekDays = Array.from({ length: 7 }, (_, index) => {
     const date = addDays(weekStart, index)
@@ -158,21 +157,20 @@ export default function ScheduleHoursEditor({
             <div className="grid grid-cols-7 gap-1.5">
               {visibleWeekDays.map(({ key, date }) => {
                 const active = dates.has(key)
-                const disabled = key < todayKey()
+                const past = key < todayKey()
                 const isWeekend = [0, 6].includes(date.getDay())
                 const isToday = key === todayKey()
                 return (
                   <button
                     key={key}
                     type="button"
-                    disabled={disabled}
                     onClick={() => setDates((current) => toggle(current, key))}
                     className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-[var(--r-sm)] border px-1.5 py-1.5 text-center text-xs font-bold leading-tight transition-colors ${
-                      disabled
-                        ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
-                        : active
-                          ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                          : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
+                      active
+                        ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                        : past
+                          ? 'cursor-pointer border-dashed border-[var(--c-border)] bg-slate-100 text-slate-500 hover:bg-[var(--c-surface)]'
+                          : `cursor-pointer border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
                     } ${isToday ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
                   >
                     <span>{WEEKDAY_LABELS[date.getDay()]}</span>
@@ -189,24 +187,29 @@ export default function ScheduleHoursEditor({
               Horas
             </span>
             <div className="flex flex-wrap gap-2">
-              {HOUR_OPTIONS.map((time) => {
-                const active = times.has(time)
-                return (
-                  <button
-                    key={time}
-                    type="button"
-                    onClick={() => setTimes((current) => toggle(current, time))}
-                    className={`rounded-[var(--r-sm)] border px-3.5 py-2 text-sm font-semibold transition-colors ${
-                      active
-                        ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                        : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
-                    }`}
-                  >
-                    {time}
-                  </button>
-                )
-              })}
+              {[...times].sort().map((time) => (
+                <button
+                  key={time}
+                  type="button"
+                  onClick={() => setTimes((current) => toggle(current, time))}
+                  className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--c-ocean)] bg-[var(--c-ocean)] px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  aria-label={`Quitar hora ${time}`}
+                >
+                  {time} <FiX aria-hidden="true" />
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setHoursModalOpen(true)}
+                className="grid h-10 w-12 place-items-center rounded-[var(--r-sm)] border border-dashed border-[var(--c-aqua)] bg-white text-xl font-semibold text-[var(--c-aqua-strong)] transition-colors hover:bg-[var(--c-aqua-light)]"
+                aria-label="Agregar horas"
+              >
+                <FiPlus aria-hidden="true" />
+              </button>
             </div>
+            {times.size === 0 && (
+              <p className="text-xs text-[var(--c-text-2)]">Agrega una o más horas con +.</p>
+            )}
           </div>
         </div>
 
@@ -235,6 +238,105 @@ export default function ScheduleHoursEditor({
             type="button"
             onClick={onClose}
             className="min-h-11 rounded-full px-4 text-sm font-bold text-[var(--c-text-2)] hover:text-[var(--c-ocean)]"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+      {hoursModalOpen && (
+        <HourPickerModal
+          existingTimes={times}
+          busy={busy}
+          onClose={() => setHoursModalOpen(false)}
+          onSubmit={(newTimes) => {
+            setTimes((current) => new Set([...current, ...newTimes]))
+            setHoursModalOpen(false)
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function HourPickerModal({
+  existingTimes,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  existingTimes: Set<string>
+  busy: boolean
+  onClose: () => void
+  onSubmit: (times: string[]) => void
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  const toggleTime = (time: string) => {
+    setSelected((current) => {
+      const next = new Set(current)
+      if (next.has(time)) next.delete(time)
+      else next.add(time)
+      return next
+    })
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Agregar horas"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') onClose()
+      }}
+    >
+      <div className="flex max-h-[min(92dvh,44rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)]">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-3">
+          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
+          <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar horas</h3>
+          <p className="mt-1 text-sm text-[var(--c-text-2)]">
+            Selecciona una o más horas. Sólo se permiten horas cerradas y medias horas.
+          </p>
+          <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5">
+            {HOUR_OPTIONS.map((time) => {
+              const disabled = existingTimes.has(time)
+              const active = selected.has(time)
+              return (
+                <button
+                  key={time}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => toggleTime(time)}
+                  className={`min-h-11 rounded-[var(--r-sm)] border text-sm font-semibold transition-colors ${
+                    disabled
+                      ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
+                      : active
+                        ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                        : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                  }`}
+                >
+                  {time}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col gap-2 bg-white p-5 pt-4">
+          <button
+            type="button"
+            disabled={selected.size === 0 || busy}
+            onClick={() => onSubmit([...selected].sort())}
+            className="min-h-12 rounded-full bg-[var(--c-aqua-strong)] font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-100"
+          >
+            Agregar horas
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-11 rounded-full font-semibold text-[var(--c-text-2)] hover:text-[var(--c-ocean)]"
           >
             Cancelar
           </button>

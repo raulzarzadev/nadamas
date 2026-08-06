@@ -89,14 +89,7 @@ export default function AgendaOpenHoursModal({
   const initialKey = defaultDate || initialDates[0] || dateKey(new Date())
   const [weekStart, setWeekStart] = useState(() => startOfWeek(dateFromKey(initialKey)))
   const [dates, setDates] = useState<Set<string>>(
-    () =>
-      new Set(
-        initialDates.length
-          ? initialDates.filter((date) => !isPastDay(date))
-          : defaultDate && !isPastDay(defaultDate)
-            ? [defaultDate]
-            : []
-      )
+    () => new Set(initialDates.length ? initialDates : defaultDate ? [defaultDate] : [])
   )
   const [times, setTimes] = useState<Set<string>>(() => new Set(initialTimes))
   const [detailTitle, setDetailTitle] = useState(initialDetails?.title || '')
@@ -117,10 +110,7 @@ export default function AgendaOpenHoursModal({
   }
 
   const selectedDates = [...dates]
-  const timeDisabled = (time: string) =>
-    selectedDates.length > 0 && selectedDates.every((date) => isPastDateTime(date, time))
-  const validTimes = [...times].filter((time) => !timeDisabled(time))
-  const canSubmit = detailsOnly ? !busy : dates.size > 0 && validTimes.length > 0 && !busy
+  const canSubmit = detailsOnly ? !busy : dates.size > 0 && times.size > 0 && !busy
   const showDetailsForm = showDetails || detailsOnly
   const dialogClassName = `fixed inset-0 z-50 flex justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm ${
     showDetailsForm ? 'items-center overflow-y-auto' : 'items-end sm:items-center'
@@ -184,21 +174,20 @@ export default function AgendaOpenHoursModal({
                 <div className="grid grid-cols-7 gap-1.5">
                   {visibleWeekDays.map((day) => {
                     const active = dates.has(day.key)
-                    const disabled = isPastDay(day.key)
+                    const past = isPastDay(day.key)
                     const isWeekend = [0, 6].includes(dateFromKey(day.key).getDay())
                     const [weekday, dayNumber] = day.label.split('|')
                     return (
                       <button
                         key={day.key}
                         type="button"
-                        disabled={disabled}
                         onClick={() => setDates((current) => toggle(current, day.key))}
                         className={`flex min-h-12 min-w-0 flex-col items-center justify-center rounded-[var(--r-sm)] border px-1.5 py-1.5 text-center text-xs font-bold leading-tight transition-colors ${
-                          disabled
-                            ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
-                            : active
-                              ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                              : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
+                          active
+                            ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                            : past
+                              ? 'cursor-pointer border-dashed border-[var(--c-border)] bg-slate-100 text-slate-500 hover:bg-[var(--c-surface)]'
+                              : `cursor-pointer border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${isWeekend ? 'bg-[var(--c-surface)]' : 'bg-white'}`
                         }`}
                       >
                         <span>{weekday}</span>
@@ -309,7 +298,7 @@ export default function AgendaOpenHoursModal({
             onClick={() =>
               onSubmit(
                 detailsOnly ? initialDates : [...dates],
-                detailsOnly ? initialTimes : validTimes,
+                detailsOnly ? initialTimes : [...times],
                 showDetailsForm
                   ? {
                       title: detailTitle.trim(),
@@ -371,9 +360,7 @@ function HourPickerModal({
       return next
     })
   }
-  const disabledTime = (time: string) =>
-    existingTimes.has(time) ||
-    (selectedDates.length > 0 && selectedDates.every((date) => isPastDateTime(date, time)))
+  const disabledTime = (time: string) => existingTimes.has(time)
 
   return (
     <div
@@ -398,6 +385,9 @@ function HourPickerModal({
           <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5">
             {HALF_HOUR_OPTIONS.map((time) => {
               const disabled = disabledTime(time)
+              const past =
+                selectedDates.length > 0 &&
+                selectedDates.every((date) => isPastDateTime(date, time))
               const active = selected.has(time)
               return (
                 <button
@@ -410,7 +400,9 @@ function HourPickerModal({
                       ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
                       : active
                         ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                        : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                        : past
+                          ? 'cursor-pointer border-dashed border-[var(--c-border)] bg-slate-100 text-slate-500 hover:bg-[var(--c-surface)]'
+                          : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
                   }`}
                 >
                   {time}
