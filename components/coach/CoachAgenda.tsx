@@ -455,6 +455,19 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const saveOfferingList = (next: CoachClassOffering[]) =>
     postAuthed('/api/coach/offerings', { classOfferings: next })
 
+  const updateAvailableSlotGroupType = (slot: CoachAvailableSlot, checked: boolean) => {
+    if (!offerings.some((item) => item.id === slot.offeringId)) return
+    run(() =>
+      saveOfferingList(
+        offerings.map((item) =>
+          item.id === slot.offeringId
+            ? { ...item, groupType: checked ? 'grupal' : 'particular' }
+            : item
+        )
+      )
+    )
+  }
+
   // "Editar horario": solo opciones de clase. Conserva los schedules tal cual.
   const saveOfferingDetails = (details?: OpenHoursDetails) => {
     if (!selfUid || !offering) return
@@ -931,7 +944,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               }
                               disabled={busy || isClassFull}
                               aria-hidden={isClassFull}
-                              className={`col-span-full inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-3.5 text-xs font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-60 sm:w-fit ${
+                              className={`col-span-full inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-3.5 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-fit ${
                                 isClassFull ? 'invisible' : ''
                               }`}
                             >
@@ -1031,7 +1044,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               })
                             }
                             disabled={busy}
-                            className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-3"
+                            className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:px-3"
                           >
                             <FiPlus aria-hidden="true" /> Alumno
                           </button>
@@ -1064,6 +1077,16 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                     </span>
                     <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
                       {!adminMode && (
+                        <BinarySwitch
+                          leftLabel="Particular"
+                          rightLabel="Grupal"
+                          checked={offeringGroupTypes.get(row.slot.offeringId) === 'grupal'}
+                          onChange={(checked) => updateAvailableSlotGroupType(row.slot, checked)}
+                          disabled={busy}
+                          compact
+                        />
+                      )}
+                      {!adminMode && (
                         <button
                           type="button"
                           onClick={() =>
@@ -1075,7 +1098,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                             })
                           }
                           disabled={busy}
-                          className="inline-flex items-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 py-1.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:px-3"
+                          className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:px-3"
                         >
                           <FiPlus aria-hidden="true" /> Alumno
                         </button>
@@ -1083,6 +1106,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                       <RowIconButton
                         ariaLabel="Eliminar este horario"
                         onClick={() => setConfirmAction({ kind: 'delete-slot', slot: row.slot })}
+                        tone="danger"
                         disabled={
                           busy || dayBookings.some((b) => b.startTime === row.slot.startTime)
                         }
@@ -1306,12 +1330,14 @@ function BinarySwitch({
   checked,
   onChange,
   disabled,
+  compact = false,
 }: {
   leftLabel: string
   rightLabel: string
   checked: boolean
   onChange: (checked: boolean) => void
   disabled: boolean
+  compact?: boolean
 }) {
   return (
     <button
@@ -1321,7 +1347,11 @@ function BinarySwitch({
       aria-label={`Cambiar entre ${leftLabel} y ${rightLabel}. Estado actual: ${checked ? rightLabel : leftLabel}`}
       onClick={() => onChange(!checked)}
       disabled={disabled}
-      className="inline-flex min-h-11 w-full min-w-0 items-center justify-start gap-2.5 bg-transparent px-1 text-xs font-bold text-[var(--c-text-2)] transition-opacity focus-visible:rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-40 sm:px-1.5"
+      className={`inline-flex min-h-11 cursor-pointer items-center justify-start bg-transparent text-xs font-bold text-[var(--c-text-2)] transition-opacity hover:opacity-75 focus-visible:rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50 ${
+        compact
+          ? 'w-auto min-w-[7.25rem] gap-2 px-0.5'
+          : 'w-full min-w-0 gap-2.5 px-1 sm:w-auto sm:min-w-40 sm:px-1.5'
+      }`}
     >
       <span
         aria-hidden="true"
@@ -1359,10 +1389,10 @@ function RowIconButton({
       aria-label={ariaLabel}
       onClick={onClick}
       disabled={disabled}
-      className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border bg-white transition-colors disabled:opacity-50 ${
+      className={`grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full border bg-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50 ${
         tone === 'danger'
-          ? 'border-rose-200 text-rose-500 hover:bg-rose-50'
-          : 'border-[var(--c-border)] text-[var(--c-text-2)] hover:bg-[var(--c-surface)]'
+          ? 'border-rose-200 text-rose-500 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700'
+          : 'border-[var(--c-border)] text-[var(--c-text-2)] hover:border-[var(--c-aqua)] hover:bg-[var(--c-aqua-light)] hover:text-[var(--c-ocean)]'
       }`}
     >
       {children}
