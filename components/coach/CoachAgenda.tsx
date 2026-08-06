@@ -18,7 +18,7 @@ import {
 import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
-import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { deleteAuthed, getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
 import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
@@ -35,6 +35,8 @@ import {
   offeringTypeLabel,
   offeringWithHours,
   offeringWithoutHours,
+  resolveOfferingSchedules,
+  scheduleIsAvailableOn,
   startOfWeek,
 } from '@/lib/coach-offerings'
 import {
@@ -76,6 +78,19 @@ function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
 
 function activeClassSlotCount(bookings: Booking[]) {
   return new Set(bookings.map(bookingSlotKey)).size
+}
+
+function hasExistingClassAt(offerings: CoachClassOffering[], dates: string[], times: string[]) {
+  const selectedTimes = new Set(times)
+  return dates.some((date) => {
+    const selectedDate = new Date(`${date}T12:00:00`)
+    return offerings.some((offering) =>
+      resolveOfferingSchedules(offering).some(
+        (schedule) =>
+          selectedTimes.has(schedule.startTime) && scheduleIsAvailableOn(schedule, selectedDate)
+      )
+    )
+  })
 }
 
 type ActiveSlot = { date: string; startTime: string; endTime: string; locationName: string }
@@ -202,7 +217,11 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     for (const bookings of bookingsByTime.values()) {
       const booking = bookings[0]
       if (!booking) continue
-      push(booking.date, booking.startTime, bookings.length > 1 ? 'group' : 'booked')
+      push(
+        booking.date,
+        booking.startTime,
+        bookings.length > 1 || booking.groupType === 'grupal' ? 'group' : 'booked'
+      )
     }
     const bookedKeys = new Set(bookingsByTime.keys())
     const slotKeys = new Set<string>()
@@ -384,22 +403,22 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const eliminarSlot = (slot: CoachAvailableSlot) => block(slot, true)
 
   const cancelBooking = (booking: Booking) =>
-    run(async () => {
-      await deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}`)
-      // Devuelve la hora liberada a "Disponible". Si ya está en el horario es
-      // no-op; si la reserva era de una hora fuera del horario (legado), la
-      // re-publica para que no desaparezca de la agenda.
-      if (selfUid && offering) {
-        await saveOfferings(
-          offeringWithHours(
-            offering,
-            [booking.date],
-            [booking.startTime],
-            offering.durationMinutes ?? 60
-          )
-        )
-      }
-    })
+    run(() => deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}`))
+
+  const updateClassSettings = (
+    bookings: Booking[],
+    settings: { groupType?: 'particular' | 'grupal'; classFull?: boolean }
+  ) => {
+    const booking = bookings[0]
+    if (!booking) return
+    run(() =>
+      patchAuthed('/api/coach/agenda/bookings', {
+        date: booking.date,
+        startTime: booking.startTime,
+        ...settings,
+      })
+    )
+  }
 
   const unblock = (block: CoachScheduleBlock) =>
     run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${coachQuery}`))
@@ -458,6 +477,10 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     }
     if (dates.length === 0 || times.length === 0) {
       setError('Selecciona al menos un día y una hora para agregar la clase.')
+      return
+    }
+    if (hasExistingClassAt(offerings, dates, times)) {
+      setError('Ya existe una clase en uno de los días y horarios seleccionados.')
       return
     }
     run(async () => {
@@ -848,9 +871,12 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               if (row.kind === 'booked') {
                 const firstBooking = row.bookings[0]
                 if (!firstBooking) return null
-                const isGroupClass = firstBooking.groupType === 'grupal' || row.bookings.length > 1
-                const classStyle =
-                  row.bookings.length > 1 ? HOUR_STATUS_STYLE.group : HOUR_STATUS_STYLE.booked
+                const isGroupClass =
+                  row.bookings.length > 1 ||
+                  row.bookings.some((booking) => booking.groupType === 'grupal')
+                const isClassFull =
+                  isGroupClass && row.bookings.some((booking) => booking.classFull)
+                const classStyle = isGroupClass ? HOUR_STATUS_STYLE.group : HOUR_STATUS_STYLE.booked
                 return (
                   <AgendaRow
                     key={`b-${firstBooking.date}-${firstBooking.startTime}`}
@@ -861,26 +887,55 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                     >
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-xs font-bold uppercase text-[var(--c-text-2)]">
-                          {row.bookings.length > 1
+                          {isGroupClass
                             ? `Clase grupal · ${row.bookings.length} alumnos`
-                            : '1 alumno'}
+                            : 'Clase particular · 1 alumno'}
                         </span>
-                        {!adminMode && isGroupClass && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setAddStudentSlot({
-                                date: firstBooking.date,
-                                startTime: firstBooking.startTime,
-                                endTime: firstBooking.endTime,
-                                locationName: firstBooking.locationName || 'Horario abierto',
-                              })
-                            }
-                            disabled={busy}
-                            className="inline-flex min-h-11 w-fit items-center justify-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-3.5 text-xs font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-60"
-                          >
-                            <FiPlus aria-hidden="true" /> Alumno
-                          </button>
+                        {!adminMode && (
+                          <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+                            <span className="min-w-0">
+                              <BinarySwitch
+                                leftLabel="Disponible"
+                                rightLabel="Llena"
+                                checked={isClassFull}
+                                onChange={(checked) =>
+                                  updateClassSettings(row.bookings, { classFull: checked })
+                                }
+                                disabled={busy || !isGroupClass}
+                              />
+                            </span>
+                            {row.bookings.length === 1 && (
+                              <BinarySwitch
+                                leftLabel="Particular"
+                                rightLabel="Grupal"
+                                checked={isGroupClass}
+                                onChange={(checked) =>
+                                  updateClassSettings(row.bookings, {
+                                    groupType: checked ? 'grupal' : 'particular',
+                                  })
+                                }
+                                disabled={busy}
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAddStudentSlot({
+                                  date: firstBooking.date,
+                                  startTime: firstBooking.startTime,
+                                  endTime: firstBooking.endTime,
+                                  locationName: firstBooking.locationName || 'Horario abierto',
+                                })
+                              }
+                              disabled={busy || isClassFull}
+                              aria-hidden={isClassFull}
+                              className={`col-span-full inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-3.5 text-xs font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-60 sm:w-fit ${
+                                isClassFull ? 'invisible' : ''
+                              }`}
+                            >
+                              <FiPlus aria-hidden="true" /> Alumno
+                            </button>
+                          </div>
                         )}
                       </div>
 
@@ -1240,6 +1295,46 @@ function AgendaRow({ time, children }: { time: string; children: React.ReactNode
       </span>
       {children}
     </div>
+  )
+}
+
+function BinarySwitch({
+  leftLabel,
+  rightLabel,
+  checked,
+  onChange,
+  disabled,
+}: {
+  leftLabel: string
+  rightLabel: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  disabled: boolean
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={`Cambiar entre ${leftLabel} y ${rightLabel}. Estado actual: ${checked ? rightLabel : leftLabel}`}
+      onClick={() => onChange(!checked)}
+      disabled={disabled}
+      className="inline-flex min-h-11 w-full min-w-0 items-center justify-start gap-2.5 bg-transparent px-1 text-xs font-bold text-[var(--c-text-2)] transition-opacity focus-visible:rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-40 sm:px-1.5"
+    >
+      <span
+        aria-hidden="true"
+        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+          checked ? 'bg-[var(--c-aqua)]' : 'bg-slate-300'
+        }`}
+      >
+        <span
+          className={`absolute left-[3px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform ${
+            checked ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </span>
+      <span className="text-left text-[var(--c-ocean)]">{checked ? rightLabel : leftLabel}</span>
+    </button>
   )
 }
 

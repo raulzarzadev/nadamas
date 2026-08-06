@@ -42,6 +42,13 @@ type CoachBookingInput = {
   athletePhone?: string | null
 }
 
+type SlotSettingsInput = {
+  date?: string
+  startTime?: string
+  groupType?: 'particular' | 'grupal'
+  classFull?: boolean
+}
+
 async function syncCoachCreatedSlotGroupType(coachId: string, date: string, startTime: string) {
   const snapshot = await adminDb.collection('bookings').where('coachId', '==', coachId).get()
   const slotBookings = snapshot.docs.filter((doc) => {
@@ -54,13 +61,14 @@ async function syncCoachCreatedSlotGroupType(coachId: string, date: string, star
       booking.offeringId === 'open'
     )
   })
-  const nextGroupType = slotBookings.length > 1 ? 'grupal' : 'particular'
+  if (slotBookings.length <= 1) return
+
   const batch = adminDb.batch()
   let changed = false
 
   for (const doc of slotBookings) {
-    if ((doc.data() as Booking).groupType === nextGroupType) continue
-    batch.set(doc.ref, { groupType: nextGroupType, updatedAt: Date.now() }, { merge: true })
+    if ((doc.data() as Booking).groupType === 'grupal') continue
+    batch.set(doc.ref, { groupType: 'grupal', updatedAt: Date.now() }, { merge: true })
     changed = true
   }
 
@@ -101,15 +109,17 @@ export async function POST(request: Request) {
     .where('startTime', '==', startTime)
     .get()
   const normalizedName = athleteName.toLowerCase()
-  const alreadyBooked = slotSnapshot.docs
+  const activeSlotBookings = slotSnapshot.docs
     .map((doc) => doc.data() as Booking)
-    .some(
-      (existing) =>
-        existing.status !== 'cancelled' &&
-        (requestedAthleteId
-          ? existing.athleteId === requestedAthleteId
-          : existing.athleteName.trim().toLowerCase() === normalizedName)
-    )
+    .filter((existing) => existing.status !== 'cancelled')
+  if (activeSlotBookings.some((existing) => existing.classFull)) {
+    return NextResponse.json({ error: 'Esta clase está llena.' }, { status: 409 })
+  }
+  const alreadyBooked = activeSlotBookings.some((existing) =>
+    requestedAthleteId
+      ? existing.athleteId === requestedAthleteId
+      : existing.athleteName.trim().toLowerCase() === normalizedName
+  )
   if (alreadyBooked) {
     return NextResponse.json({ error: 'Este alumno ya está en esta clase.' }, { status: 409 })
   }
@@ -121,6 +131,7 @@ export async function POST(request: Request) {
     id: ref.id,
     athleteId: requestedAthleteId || `manual:${ref.id}`,
     athleteName,
+    classFull: false,
     // Firestore rejects `undefined`; only include the field when present.
     ...(athletePhone ? { athletePhone } : {}),
     athleteEmail: body.athleteEmail?.trim() || null,
@@ -185,6 +196,63 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ booking })
+}
+
+export async function PATCH(request: Request) {
+  const verification = await verifyCoach(request)
+  if (verification.error) return verification.error
+
+  const body = (await request.json()) as SlotSettingsInput
+  const date = typeof body.date === 'string' ? body.date.trim() : ''
+  const startTime = typeof body.startTime === 'string' ? body.startTime.trim() : ''
+  const hasGroupType = body.groupType === 'particular' || body.groupType === 'grupal'
+  const hasClassFull = typeof body.classFull === 'boolean'
+
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    !/^\d{2}:\d{2}$/.test(startTime) ||
+    (!hasGroupType && !hasClassFull)
+  ) {
+    return NextResponse.json({ error: 'Configuración de clase inválida.' }, { status: 400 })
+  }
+
+  const snapshot = await adminDb
+    .collection('bookings')
+    .where('coachId', '==', verification.caller.uid)
+    .where('date', '==', date)
+    .where('startTime', '==', startTime)
+    .get()
+  const activeDocs = snapshot.docs.filter((doc) => (doc.data() as Booking).status !== 'cancelled')
+  if (activeDocs.length === 0) {
+    return NextResponse.json({ error: 'No encontramos esta clase.' }, { status: 404 })
+  }
+
+  const currentIsGroup =
+    activeDocs.length > 1 ||
+    activeDocs.some((doc) => (doc.data() as Booking).groupType === 'grupal')
+  const nextGroupType = hasGroupType ? body.groupType : currentIsGroup ? 'grupal' : 'particular'
+  if (nextGroupType === 'particular' && activeDocs.length > 1) {
+    return NextResponse.json(
+      { error: 'Una clase con varios alumnos debe ser grupal.' },
+      { status: 409 }
+    )
+  }
+
+  const currentIsFull = activeDocs.some((doc) => (doc.data() as Booking).classFull)
+  const nextClassFull =
+    nextGroupType === 'grupal' ? (hasClassFull ? body.classFull : currentIsFull) : false
+  const batch = adminDb.batch()
+  const updatedAt = Date.now()
+  for (const doc of activeDocs) {
+    batch.set(
+      doc.ref,
+      { groupType: nextGroupType, classFull: nextClassFull, updatedAt },
+      { merge: true }
+    )
+  }
+  await batch.commit()
+
+  return NextResponse.json({ ok: true, groupType: nextGroupType, classFull: nextClassFull })
 }
 
 export async function DELETE(request: Request) {

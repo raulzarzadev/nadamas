@@ -385,7 +385,15 @@ export function offeringWithHours(
   times: string[],
   durationMinutes: number
 ): CoachClassOffering {
-  const schedules = resolveOfferingSchedules(offering).map((schedule) => ({ ...schedule }))
+  const schedules = resolveOfferingSchedules(offering)
+    .filter(
+      (schedule) =>
+        scheduleIsOpen(schedule) ||
+        (schedule.availabilityMode === 'dates'
+          ? (schedule.availableDates?.length ?? 0) > 0
+          : schedule.days.length > 0)
+    )
+    .map((schedule) => ({ ...schedule }))
   for (const time of times) {
     let schedule = schedules.find((s) => !scheduleIsOpen(s) && s.startTime === time)
     if (!schedule) {

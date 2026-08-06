@@ -85,11 +85,15 @@ export function buildAvailableSlots({
   endDate: Date
 }) {
   const slots: CoachAvailableSlot[] = []
+  const seenSlots = new Set<string>()
   for (const date of enumerateDates(startDate, endDate)) {
     const key = localDateKey(date)
     for (const offering of offerings) {
       for (const schedule of resolveOfferingSchedules(offering)) {
         if (!scheduleIsAvailableOn(schedule, date)) continue
+        const occurrenceKey = `${key}|${schedule.startTime}`
+        if (seenSlots.has(occurrenceKey)) continue
+        seenSlots.add(occurrenceKey)
         const slot = {
           id: [offering.id, schedule.id, key, schedule.startTime, schedule.endTime].join('::'),
           coachId,
