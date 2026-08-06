@@ -133,6 +133,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
 
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()))
+  const today = dateKey(new Date())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
@@ -678,15 +679,17 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         <span className="block text-xs sm:hidden">Desliza para cambiar de semana.</span>
       </p>
 
-      <div className="flex justify-center">
-        <button
-          type="button"
-          onClick={() => setSelectedDate(dateKey(new Date()))}
-          className="rounded-full border border-[var(--c-border)] bg-white px-4 py-1.5 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-        >
-          Hoy
-        </button>
-      </div>
+      {selectedDate !== today && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setSelectedDate(today)}
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-[var(--c-aqua-strong)] px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+          >
+            Hoy
+          </button>
+        </div>
+      )}
 
       {/* Week strip (flechas + swipe lateral para cambiar de semana) */}
       <div
