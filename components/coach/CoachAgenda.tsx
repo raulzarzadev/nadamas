@@ -202,6 +202,9 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   // on each weekday chip so the bars line up with the day's hour list.
   const dayStatuses = useMemo(() => {
     const map = new Map<string, { time: string; status: HourStatus }[]>()
+    const groupOfferingIds = new Set(
+      (agenda?.offerings || []).filter((item) => item.groupType === 'grupal').map((item) => item.id)
+    )
     const push = (date: string, time: string, status: HourStatus) => {
       const entries = map.get(date) || []
       entries.push({ time, status })
@@ -227,7 +230,13 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     const slotKeys = new Set<string>()
     for (const slot of agenda?.availableSlots || []) {
       slotKeys.add(`${slot.date}|${slot.startTime}`)
-      if (slot.status === 'available') push(slot.date, slot.startTime, 'available')
+      if (slot.status === 'available') {
+        push(
+          slot.date,
+          slot.startTime,
+          groupOfferingIds.has(slot.offeringId) ? 'group' : 'available'
+        )
+      }
     }
     for (const block of agenda?.blocks || []) {
       if (offeringIsGroup) continue
@@ -248,7 +257,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       )
     }
     return ordered
-  }, [activeBookings, agenda?.availableSlots, agenda?.blocks, offeringIsGroup])
+  }, [activeBookings, agenda?.availableSlots, agenda?.blocks, agenda?.offerings, offeringIsGroup])
 
   // Month-level occupancy: class slots vs total offered, restricted to the month shown
   // in the header (the payload can bleed into adjacent months on boundary weeks).
@@ -1063,14 +1072,18 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                   </AgendaRow>
                 )
               }
+              const isAvailableGroup = offeringGroupTypes.get(row.slot.offeringId) === 'grupal'
+              const availableStyle = isAvailableGroup
+                ? HOUR_STATUS_STYLE.group
+                : HOUR_STATUS_STYLE.available
               return (
                 <AgendaRow key={`a-${row.slot.id}`} time={row.slot.startTime}>
                   <div
-                    className={`flex flex-1 items-center justify-between gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 sm:px-3 ${HOUR_STATUS_STYLE.available.border} ${HOUR_STATUS_STYLE.available.bg}`}
+                    className={`flex flex-1 items-center justify-between gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 transition-colors sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
                   >
                     <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
                       <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${HOUR_STATUS_STYLE.available.dot}`}
+                        className={`h-2 w-2 shrink-0 rounded-full ${availableStyle.dot}`}
                         aria-hidden="true"
                       />
                       <span className="truncate">Disponible</span>
@@ -1080,7 +1093,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                         <BinarySwitch
                           leftLabel="Particular"
                           rightLabel="Grupal"
-                          checked={offeringGroupTypes.get(row.slot.offeringId) === 'grupal'}
+                          checked={isAvailableGroup}
                           onChange={(checked) => updateAvailableSlotGroupType(row.slot, checked)}
                           disabled={busy}
                           compact
