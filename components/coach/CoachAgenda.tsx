@@ -4,11 +4,9 @@ import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  FiCheck,
   FiChevronLeft,
   FiChevronRight,
   FiClock,
-  FiCopy,
   FiEdit2,
   FiLock,
   FiPlus,
@@ -19,7 +17,6 @@ import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { deleteAuthed, getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
-import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
 import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
 import type { Booking } from '@/lib/coach-booking'
@@ -50,6 +47,7 @@ import AgendaOpenHoursModal, {
   type AgendaWeekDay,
   type OpenHoursDetails,
 } from './AgendaOpenHoursModal'
+import { useCoachAgendaShare } from './CoachAgendaShareContext'
 import ScheduleHoursEditor, { type HoursMode } from './ScheduleHoursEditor'
 import StudentProgressModal from './StudentProgressModal'
 
@@ -130,6 +128,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const adminMode = Boolean(coachId)
   const coachQuery = coachId ? `&coachId=${encodeURIComponent(coachId)}` : ''
   const { user } = useUser() as { user: { uid?: string; id?: string } | null }
+  const { setScheduleText } = useCoachAgendaShare()
   const selfUid = user?.uid || user?.id
 
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
@@ -155,8 +154,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const [addClassModalOpen, setAddClassModalOpen] = useState(false)
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [whatsappCopied, setWhatsappCopied] = useState(false)
-  const [whatsappCopyFailed, setWhatsappCopyFailed] = useState(false)
 
   const monthOfSelected = selectedDate.slice(0, 7)
 
@@ -355,7 +352,10 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     return formatWhatsappScheduleText(whatsappDayRows, weekDates[0] || new Date())
   }, [whatsappDayRows, weekDates])
 
-  const canCopyWhatsappSchedule = whatsappScheduleText.length > 0
+  useEffect(() => {
+    setScheduleText(whatsappScheduleText)
+    return () => setScheduleText('')
+  }, [setScheduleText, whatsappScheduleText])
 
   const dayBookings = activeBookings.filter((booking) => booking.date === selectedDate)
   const daySlots = (agenda?.availableSlots || []).filter((slot) => slot.date === selectedDate)
@@ -645,20 +645,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     eliminarSlot(action.slot)
   }
 
-  async function copyWhatsappSchedule() {
-    if (!whatsappScheduleText) return
-
-    setWhatsappCopyFailed(false)
-    try {
-      await copyTextToClipboard(whatsappScheduleText)
-      setWhatsappCopied(true)
-      setTimeout(() => setWhatsappCopied(false), 2000)
-    } catch {
-      setWhatsappCopyFailed(true)
-      setTimeout(() => setWhatsappCopyFailed(false), 3000)
-    }
-  }
-
   if (agenda === undefined) return <Loading />
 
   return (
@@ -684,28 +670,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         onNext={() => changeWeek(1)}
         labelClassName="text-sm font-semibold"
       />
-
-      <div className="flex justify-center">
-        <button
-          type="button"
-          onClick={() => void copyWhatsappSchedule()}
-          disabled={!canCopyWhatsappSchedule}
-          aria-label="Copiar horarios para WhatsApp"
-          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-3.5 py-2 text-sm font-bold text-[var(--c-ocean)] transition-colors hover:border-[var(--c-aqua)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {whatsappCopied ? (
-            <>
-              <FiCheck aria-hidden="true" /> Copiado
-            </>
-          ) : whatsappCopyFailed ? (
-            'No se pudo copiar'
-          ) : (
-            <>
-              <FiCopy aria-hidden="true" /> Copiar para WhatsApp
-            </>
-          )}
-        </button>
-      </div>
 
       <p className="text-center text-sm text-[var(--c-text-2)]">
         {adminMode

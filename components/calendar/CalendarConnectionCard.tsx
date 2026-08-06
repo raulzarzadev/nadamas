@@ -144,7 +144,10 @@ export default function CalendarConnectionCard({ calendarRole }: { calendarRole:
       : 'Sincroniza tus próximas clases con tus calendarios.'
 
   return (
-    <section className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]">
+    <section
+      id="calendar"
+      className="scroll-mt-24 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
+    >
       <div className="flex items-start gap-3">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
           <FiCalendar aria-hidden="true" />
