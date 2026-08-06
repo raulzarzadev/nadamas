@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test'
 import { buildAvailableSlots } from '../lib/coach-agenda'
 import {
   createOffering,
+  existingOccurrenceCount,
+  existingTimesForSelectedDates,
   offeringsWithoutHours,
   offeringWithHours,
   resolveOfferingSchedules,
@@ -123,5 +125,17 @@ test.describe('horarios de la agenda del coach', () => {
 
     expect(resolveOfferingSchedules(restored)).toHaveLength(1)
     expect(slots).toHaveLength(1)
+  })
+
+  test('reúne sin duplicados las horas existentes de todos los días seleccionados', () => {
+    const existingTimesByDate = {
+      '2030-01-07': ['17:30', '18:30'],
+      '2030-01-08': ['18:30', '19:30'],
+    }
+    const dates = new Set(['2030-01-07', '2030-01-08'])
+    const times = existingTimesForSelectedDates(existingTimesByDate, dates)
+
+    expect(times).toEqual(['17:30', '18:30', '19:30'])
+    expect(existingOccurrenceCount(existingTimesByDate, dates, new Set(times))).toBe(4)
   })
 })

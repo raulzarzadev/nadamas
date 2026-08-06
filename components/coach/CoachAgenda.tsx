@@ -317,6 +317,18 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     return new Map((agenda?.offerings || []).map((item) => [item.id, item.groupType]))
   }, [agenda?.offerings])
 
+  const existingTimesByDate = useMemo(() => {
+    const result: Record<string, string[]> = {}
+    for (const slot of agenda?.availableSlots || []) {
+      if (slot.status === 'booked') continue
+      const times = result[slot.date] || []
+      if (!times.includes(slot.startTime)) times.push(slot.startTime)
+      result[slot.date] = times
+    }
+    for (const times of Object.values(result)) times.sort()
+    return result
+  }, [agenda?.availableSlots])
+
   const whatsappDayRows = useMemo<WhatsappScheduleDay[]>(() => {
     return weekDates
       .map((date) => {
@@ -1260,6 +1272,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       {hoursEditorOpen && (
         <ScheduleHoursEditor
           defaultDate={selectedDate}
+          existingTimesByDate={existingTimesByDate}
           busy={busy}
           error={error}
           onClose={() => setHoursEditorOpen(false)}

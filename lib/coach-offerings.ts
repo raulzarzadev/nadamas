@@ -440,3 +440,22 @@ export function offeringsWithoutHours(
 ): CoachClassOffering[] {
   return offerings.map((offering) => offeringWithoutHours(offering, pairs))
 }
+
+export function existingTimesForSelectedDates(
+  existingTimesByDate: Record<string, string[]>,
+  dates: Iterable<string>
+) {
+  return [...new Set([...dates].flatMap((date) => existingTimesByDate[date] || []))].sort()
+}
+
+export function existingOccurrenceCount(
+  existingTimesByDate: Record<string, string[]>,
+  dates: Iterable<string>,
+  selectedTimes: Set<string>
+) {
+  return [...dates].reduce(
+    (total, date) =>
+      total + (existingTimesByDate[date] || []).filter((time) => selectedTimes.has(time)).length,
+    0
+  )
+}

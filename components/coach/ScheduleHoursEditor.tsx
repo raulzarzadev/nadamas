@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiChevronLeft, FiChevronRight, FiPlus, FiX } from 'react-icons/fi'
 import {
   addDays,
   dateFromKey,
   dateKey,
+  existingOccurrenceCount,
+  existingTimesForSelectedDates,
   HOUR_OPTIONS,
   startOfWeek,
   WEEKDAY_LABELS,
@@ -23,12 +25,14 @@ function todayKey() {
  */
 export default function ScheduleHoursEditor({
   defaultDate,
+  existingTimesByDate,
   busy,
   error,
   onClose,
   onSubmit,
 }: {
   defaultDate?: string
+  existingTimesByDate: Record<string, string[]>
   busy: boolean
   error?: string | null
   onClose: () => void
@@ -40,6 +44,11 @@ export default function ScheduleHoursEditor({
   const [dates, setDates] = useState<Set<string>>(() => new Set(defaultDate ? [defaultDate] : []))
   const [times, setTimes] = useState<Set<string>>(() => new Set())
   const [hoursModalOpen, setHoursModalOpen] = useState(false)
+
+  useEffect(() => {
+    if (mode !== 'remove') return
+    setTimes(new Set(existingTimesForSelectedDates(existingTimesByDate, dates)))
+  }, [dates, existingTimesByDate, mode])
 
   const visibleWeekDays = Array.from({ length: 7 }, (_, index) => {
     const date = addDays(weekStart, index)
@@ -55,6 +64,7 @@ export default function ScheduleHoursEditor({
 
   const canSubmit = dates.size > 0 && times.size > 0 && !busy
   const isRemove = mode === 'remove'
+  const removalCount = existingOccurrenceCount(existingTimesByDate, dates, times)
 
   return (
     <div
@@ -84,7 +94,10 @@ export default function ScheduleHoursEditor({
           <div className="grid grid-cols-2 gap-1 rounded-full border border-[var(--c-border)] bg-[var(--c-bg)] p-1">
             <button
               type="button"
-              onClick={() => setMode('add')}
+              onClick={() => {
+                setMode('add')
+                setTimes(new Set())
+              }}
               className={`min-h-9 rounded-full text-sm font-bold transition-colors ${
                 !isRemove
                   ? 'bg-[var(--c-aqua)] text-white'
@@ -192,23 +205,29 @@ export default function ScheduleHoursEditor({
                   key={time}
                   type="button"
                   onClick={() => setTimes((current) => toggle(current, time))}
-                  className="inline-flex items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--c-ocean)] bg-[var(--c-ocean)] px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-                  aria-label={`Quitar hora ${time}`}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--c-ocean)] bg-[var(--c-ocean)] px-3 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                  aria-label={`Excluir ${time} de la selección`}
                 >
                   {time} <FiX aria-hidden="true" />
                 </button>
               ))}
-              <button
-                type="button"
-                onClick={() => setHoursModalOpen(true)}
-                className="grid h-10 w-12 place-items-center rounded-[var(--r-sm)] border border-dashed border-[var(--c-aqua)] bg-white text-xl font-semibold text-[var(--c-aqua-strong)] transition-colors hover:bg-[var(--c-aqua-light)]"
-                aria-label="Agregar horas"
-              >
-                <FiPlus aria-hidden="true" />
-              </button>
+              {!isRemove && (
+                <button
+                  type="button"
+                  onClick={() => setHoursModalOpen(true)}
+                  className="grid h-10 w-12 cursor-pointer place-items-center rounded-[var(--r-sm)] border border-dashed border-[var(--c-aqua)] bg-white text-xl font-semibold text-[var(--c-aqua-strong)] transition-colors hover:bg-[var(--c-aqua-light)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                  aria-label="Agregar horas"
+                >
+                  <FiPlus aria-hidden="true" />
+                </button>
+              )}
             </div>
             {times.size === 0 && (
-              <p className="text-xs text-[var(--c-text-2)]">Agrega una o más horas con +.</p>
+              <p className="text-xs text-[var(--c-text-2)]">
+                {isRemove
+                  ? 'No hay horarios disponibles o bloqueados en los días seleccionados.'
+                  : 'Agrega una o más horas con +.'}
+              </p>
             )}
           </div>
         </div>
@@ -217,9 +236,18 @@ export default function ScheduleHoursEditor({
           {error && <p className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">{error}</p>}
           {dates.size > 0 && times.size > 0 && (
             <p className="text-center text-sm font-semibold text-[var(--c-text-2)]">
-              {dates.size} {dates.size === 1 ? 'día' : 'días'} · {times.size}{' '}
-              {times.size === 1 ? 'clase' : 'clases'} por día ·{' '}
-              <span className="text-[var(--c-ocean)]">{dates.size * times.size} en total</span>
+              {isRemove ? (
+                <span className="text-[var(--c-ocean)]">
+                  {removalCount}{' '}
+                  {removalCount === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
+                </span>
+              ) : (
+                <>
+                  {dates.size} {dates.size === 1 ? 'día' : 'días'} · {times.size}{' '}
+                  {times.size === 1 ? 'clase' : 'clases'} por día ·{' '}
+                  <span className="text-[var(--c-ocean)]">{dates.size * times.size} en total</span>
+                </>
+              )}
             </p>
           )}
           <button
