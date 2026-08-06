@@ -108,4 +108,20 @@ test.describe('horarios de la agenda del coach', () => {
 
     expect(slots).toHaveLength(0)
   })
+
+  test('restaurar un horario oculto reutiliza su schedule sin duplicarlo', () => {
+    const offering = scheduledOffering('offering-1', 'schedule-1')
+    const restored = offeringWithHours(offering, [DATE], ['17:30'], 60)
+    const slots = buildAvailableSlots({
+      coachId: 'coach-1',
+      offerings: [restored],
+      bookings: [],
+      blocks: [],
+      startDate: new Date(2030, 0, 7),
+      endDate: new Date(2030, 0, 7),
+    })
+
+    expect(resolveOfferingSchedules(restored)).toHaveLength(1)
+    expect(slots).toHaveLength(1)
+  })
 })

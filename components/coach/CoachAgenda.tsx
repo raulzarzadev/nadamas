@@ -80,14 +80,39 @@ function activeClassSlotCount(bookings: Booking[]) {
   return new Set(bookings.map(bookingSlotKey)).size
 }
 
-function hasExistingClassAt(offerings: CoachClassOffering[], dates: string[], times: string[]) {
+function blockCoversClassAt(block: CoachScheduleBlock, date: string, time: string) {
+  if (block.date !== date) return false
+  if (block.allDay) return true
+  if (!block.startTime || !block.endTime) return false
+  return block.startTime <= time && time < block.endTime
+}
+
+function blockHidesClassAt(block: CoachScheduleBlock, date: string, time: string) {
+  return block.hidden === true && blockCoversClassAt(block, date, time)
+}
+
+function offeringHasClassAt(offering: CoachClassOffering, date: string, time: string) {
+  const selectedDate = new Date(`${date}T12:00:00`)
+  return resolveOfferingSchedules(offering).some(
+    (schedule) => schedule.startTime === time && scheduleIsAvailableOn(schedule, selectedDate)
+  )
+}
+
+function hasExistingClassAt(
+  offerings: CoachClassOffering[],
+  blocks: CoachScheduleBlock[],
+  dates: string[],
+  times: string[]
+) {
   const selectedTimes = new Set(times)
   return dates.some((date) => {
     const selectedDate = new Date(`${date}T12:00:00`)
     return offerings.some((offering) =>
       resolveOfferingSchedules(offering).some(
         (schedule) =>
-          selectedTimes.has(schedule.startTime) && scheduleIsAvailableOn(schedule, selectedDate)
+          selectedTimes.has(schedule.startTime) &&
+          scheduleIsAvailableOn(schedule, selectedDate) &&
+          !blocks.some((block) => blockHidesClassAt(block, date, schedule.startTime))
       )
     )
   })
@@ -477,6 +502,17 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     )
   }
 
+  const overlappingBlockIds = (pairs: { date: string; time: string }[]) =>
+    (agenda?.blocks || [])
+      .filter((block) => pairs.some((pair) => blockCoversClassAt(block, pair.date, pair.time)))
+      .map((block) => block.id)
+
+  const deleteBlocks = async (pairs: { date: string; time: string }[]) => {
+    for (const id of overlappingBlockIds(pairs)) {
+      await deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(id)}${coachQuery}`)
+    }
+  }
+
   // "Editar horario": solo opciones de clase. Conserva los schedules tal cual.
   const saveOfferingDetails = (details?: OpenHoursDetails) => {
     if (!selfUid || !offering) return
@@ -503,18 +539,23 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       setError('Selecciona al menos un día y una hora para agregar la clase.')
       return
     }
-    if (hasExistingClassAt(offerings, dates, times)) {
+    if (hasExistingClassAt(offerings, agenda?.blocks || [], dates, times)) {
       setError('Ya existe una clase en uno de los días y horarios seleccionados.')
       return
     }
     run(async () => {
+      const pairs = dates.flatMap((date) => times.map((time) => ({ date, time })))
+      const reusableOffering = offerings.find((item) =>
+        pairs.some((pair) => offeringHasClassAt(item, pair.date, pair.time))
+      )
       const nextOffering = {
-        ...createOffering(),
+        ...(reusableOffering ?? createOffering()),
         details: details?.title || '',
         placeName: details?.placeName || '',
         priceCents: details?.priceCents ?? null,
         groupType: details?.groupType ?? 'particular',
       }
+      await deleteBlocks(pairs)
       await saveOfferings(offeringWithHours(nextOffering, dates, times, 60))
       setAddClassModalOpen(false)
     })
@@ -533,27 +574,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       return
     }
     setNotice(null)
-    // Bloqueos (incluidos rango y ocultos) que se traslapan con los (día,hora).
-    const overlappingBlockIds = (pairs: { date: string; time: string }[]) =>
-      (agenda?.blocks || [])
-        .filter(
-          (bl) =>
-            !bl.allDay &&
-            bl.startTime &&
-            bl.endTime &&
-            pairs.some(
-              (p) =>
-                p.date === bl.date &&
-                (bl.startTime as string) <= p.time &&
-                p.time < (bl.endTime as string)
-            )
-        )
-        .map((bl) => bl.id)
-    const deleteBlocks = async (pairs: { date: string; time: string }[]) => {
-      for (const id of overlappingBlockIds(pairs)) {
-        await deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(id)}${coachQuery}`)
-      }
-    }
     run(async () => {
       if (mode === 'add') {
         const base = offering ?? createOffering()
