@@ -42,7 +42,7 @@ export const HOUR_STATUS_STYLE: Record<HourStatus, HourStatusStyle> = {
   groupAvailable: {
     bar: 'border border-purple-600 bg-transparent',
     border: 'border-purple-300',
-    bg: 'bg-purple-100/70',
+    bg: 'bg-transparent',
     dot: 'border-2 border-purple-600 bg-transparent',
   },
   group: {
