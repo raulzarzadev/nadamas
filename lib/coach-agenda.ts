@@ -105,6 +105,7 @@ export function buildAvailableSlots({
           locationName: offeringPlaceLabel(offering),
           status: 'available' as const,
         }
+        if (blocks.some((block) => block.hidden && blockOverlapsSlot(block, slot))) continue
         slots.push({
           ...slot,
           status: slotStatus(slot, bookings, blocks),
@@ -113,6 +114,19 @@ export function buildAvailableSlots({
     }
   }
   return slots.sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+}
+
+function blockOverlapsSlot(
+  block: CoachScheduleBlock,
+  slot: Pick<CoachAvailableSlot, 'date' | 'startTime' | 'endTime'>
+) {
+  return (
+    block.date === slot.date &&
+    (block.allDay ||
+      (block.startTime &&
+        block.endTime &&
+        timesOverlap(slot.startTime, slot.endTime, block.startTime, block.endTime)))
+  )
 }
 
 export function localDateKey(date: Date) {
@@ -151,16 +165,7 @@ function slotStatus(
     return 'booked'
   }
 
-  if (
-    blocks.some(
-      (block) =>
-        block.date === slot.date &&
-        (block.allDay ||
-          (block.startTime &&
-            block.endTime &&
-            timesOverlap(slot.startTime, slot.endTime, block.startTime, block.endTime)))
-    )
-  ) {
+  if (blocks.some((block) => blockOverlapsSlot(block, slot))) {
     return 'blocked'
   }
 

@@ -32,9 +32,9 @@ import {
   initialTimesForOffering,
   offeringContextLabel,
   offeringPriceCents,
+  offeringsWithoutHours,
   offeringTypeLabel,
   offeringWithHours,
-  offeringWithoutHours,
   resolveOfferingSchedules,
   scheduleIsAvailableOn,
   startOfWeek,
@@ -452,6 +452,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         ? offerings.map((item) => (item.id === next.id ? next : item))
         : [...offerings, next],
     })
+  const saveOfferingList = (next: CoachClassOffering[]) =>
+    postAuthed('/api/coach/offerings', { classOfferings: next })
 
   // "Editar horario": solo opciones de clase. Conserva los schedules tal cual.
   const saveOfferingDetails = (details?: OpenHoursDetails) => {
@@ -555,7 +557,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         }
       }
       await deleteBlocks(pairs)
-      await saveOfferings(offeringWithoutHours(offering, pairs))
+      await saveOfferingList(offeringsWithoutHours(offerings, pairs))
       setHoursEditorOpen(false)
       if (skipped > 0) {
         setNotice(`No se quitaron ${skipped} hora(s) con alumno. Cancela la clase primero.`)

@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test'
 import { buildAvailableSlots } from '../lib/coach-agenda'
-import { createOffering, offeringWithHours, resolveOfferingSchedules } from '../lib/coach-offerings'
+import {
+  createOffering,
+  offeringsWithoutHours,
+  offeringWithHours,
+  resolveOfferingSchedules,
+} from '../lib/coach-offerings'
 import type { CoachClassOffering } from '../types/coach'
 
 const DATE = '2030-01-07'
@@ -56,5 +61,51 @@ test.describe('horarios de la agenda del coach', () => {
       availableDates: [DATE],
       days: ['Lun'],
     })
+  })
+
+  test('elimina la hora de todas las ofertas que la contienen', () => {
+    const offerings = [
+      scheduledOffering('offering-1', 'schedule-1'),
+      scheduledOffering('offering-2', 'schedule-2'),
+    ]
+
+    const updated = offeringsWithoutHours(offerings, [{ date: DATE, time: '17:30' }])
+    const slots = buildAvailableSlots({
+      coachId: 'coach-1',
+      offerings: updated,
+      bookings: [],
+      blocks: [],
+      startDate: new Date(2030, 0, 7),
+      endDate: new Date(2030, 0, 7),
+    })
+
+    expect(updated.every((offering) => resolveOfferingSchedules(offering).length === 0)).toBe(true)
+    expect(slots).toHaveLength(0)
+  })
+
+  test('un horario eliminado individualmente no vuelve a mostrarse', () => {
+    const slots = buildAvailableSlots({
+      coachId: 'coach-1',
+      offerings: [scheduledOffering('offering-1', 'schedule-1')],
+      bookings: [],
+      blocks: [
+        {
+          id: 'hidden-block-1',
+          coachId: 'coach-1',
+          date: DATE,
+          startTime: '17:30',
+          endTime: '18:30',
+          allDay: false,
+          note: '',
+          hidden: true,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+      ],
+      startDate: new Date(2030, 0, 7),
+      endDate: new Date(2030, 0, 7),
+    })
+
+    expect(slots).toHaveLength(0)
   })
 })

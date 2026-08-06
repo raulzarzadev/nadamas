@@ -432,3 +432,11 @@ export function offeringWithoutHours(
     .filter((schedule) => scheduleIsOpen(schedule) || (schedule.availableDates?.length ?? 0) > 0)
   return { ...offering, schedules }
 }
+
+/** Remove (date,time) pairs from every offering that may contain them. */
+export function offeringsWithoutHours(
+  offerings: CoachClassOffering[],
+  pairs: { date: string; time: string }[]
+): CoachClassOffering[] {
+  return offerings.map((offering) => offeringWithoutHours(offering, pairs))
+}
