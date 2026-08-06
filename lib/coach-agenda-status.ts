@@ -6,7 +6,7 @@
 //   gray                  = bloqueado (blocked)
 // Classes are literal so Tailwind can detect them at build time.
 
-export type HourStatus = 'available' | 'blocked' | 'booked' | 'group'
+export type HourStatus = 'available' | 'blocked' | 'booked' | 'groupAvailable' | 'group'
 
 export interface HourStatusStyle {
   /** Thin line in the day-chip occupancy meter. */
@@ -38,6 +38,12 @@ export const HOUR_STATUS_STYLE: Record<HourStatus, HourStatusStyle> = {
     border: 'border-emerald-300',
     bg: 'bg-emerald-100/70',
     dot: 'bg-emerald-600',
+  },
+  groupAvailable: {
+    bar: 'border border-purple-600 bg-transparent',
+    border: 'border-purple-300',
+    bg: 'bg-purple-100/70',
+    dot: 'border-2 border-purple-600 bg-transparent',
   },
   group: {
     bar: 'bg-purple-600',

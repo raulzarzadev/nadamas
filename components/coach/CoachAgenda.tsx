@@ -259,7 +259,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         push(
           slot.date,
           slot.startTime,
-          groupOfferingIds.has(slot.offeringId) ? 'group' : 'available'
+          groupOfferingIds.has(slot.offeringId) ? 'groupAvailable' : 'available'
         )
       }
     }
@@ -305,7 +305,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         if (status === 'booked' || status === 'group') {
           booked += 1
           total += 1
-        } else if (status === 'available') {
+        } else if (status === 'available' || status === 'groupAvailable') {
           total += 1
         }
       }
@@ -814,7 +814,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           [
             ['available', 'Disponible'],
             ['booked', 'Ocupado'],
-            ['group', 'Grupal'],
+            ['groupAvailable', 'Grupal disponible'],
+            ['group', 'Grupal ocupada'],
             ['blocked', 'Bloqueado'],
           ] as const
         ).map(([status, label]) => (
@@ -1106,7 +1107,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               }
               const isAvailableGroup = offeringGroupTypes.get(row.slot.offeringId) === 'grupal'
               const availableStyle = isAvailableGroup
-                ? HOUR_STATUS_STYLE.group
+                ? HOUR_STATUS_STYLE.groupAvailable
                 : HOUR_STATUS_STYLE.available
               return (
                 <AgendaRow key={`a-${row.slot.id}`} time={row.slot.startTime}>
