@@ -231,7 +231,7 @@ export default function CalendarConnectionCard({
                 {isAppleCalendarPlatform ? (
                   <a
                     href={links.apple}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-(--c-ocean) px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                    className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
                   >
                     Apple / iOS
                     <FiExternalLink aria-hidden="true" />
@@ -249,7 +249,7 @@ export default function CalendarConnectionCard({
                   href={links.google}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition hover:bg-(--c-surface)"
+                  className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
                 >
                   Google
                   <FiExternalLink aria-hidden="true" />
@@ -258,7 +258,7 @@ export default function CalendarConnectionCard({
                   href={links.outlook}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition hover:bg-(--c-surface)"
+                  className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
                 >
                   Outlook
                   <FiExternalLink aria-hidden="true" />
