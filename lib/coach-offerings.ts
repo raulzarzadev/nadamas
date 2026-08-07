@@ -430,7 +430,15 @@ export function offeringWithoutHours(
       return { ...schedule, availableDates, days: dayLabelsFromDates(availableDates) }
     })
     .filter((schedule) => scheduleIsOpen(schedule) || (schedule.availableDates?.length ?? 0) > 0)
-  return { ...offering, schedules }
+  const updated = { ...offering, schedules }
+  if (schedules.length === 0) {
+    // Once the canonical schedule list is empty, remove the legacy fallback too.
+    // Otherwise old production documents recreate the deleted hour on the next read.
+    delete updated.days
+    delete updated.startTime
+    delete updated.endTime
+  }
+  return updated
 }
 
 /** Remove (date,time) pairs from every offering that may contain them. */

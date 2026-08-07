@@ -85,6 +85,23 @@ test.describe('horarios de la agenda del coach', () => {
     expect(slots).toHaveLength(0)
   })
 
+  test('un horario legacy no reaparece después de quitarlo', () => {
+    const legacyOffering: CoachClassOffering = {
+      ...createOffering(),
+      schedules: undefined,
+      days: ['Lun'],
+      startTime: '17:30',
+      endTime: '18:30',
+    }
+
+    const [updated] = offeringsWithoutHours([legacyOffering], [{ date: DATE, time: '17:30' }])
+
+    expect(resolveOfferingSchedules(updated)).toEqual([])
+    expect(updated).not.toHaveProperty('days')
+    expect(updated).not.toHaveProperty('startTime')
+    expect(updated).not.toHaveProperty('endTime')
+  })
+
   test('un horario eliminado individualmente no vuelve a mostrarse', () => {
     const slots = buildAvailableSlots({
       coachId: 'coach-1',
