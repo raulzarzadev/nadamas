@@ -11,6 +11,8 @@ import {
   FiLock,
   FiPlus,
   FiUnlock,
+  FiUser,
+  FiUsers,
   FiX,
 } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
@@ -366,12 +368,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const rows = useMemo(() => {
     const bookedTimes = new Set(dayBookings.map((booking) => booking.startTime))
     const available = daySlots
-      .filter(
-        (slot) =>
-          !bookedTimes.has(slot.startTime) &&
-          (slot.status === 'available' ||
-            (slot.groupType === 'grupal' && slot.status === 'blocked'))
-      )
+      .filter((slot) => !bookedTimes.has(slot.startTime) && slot.status === 'available')
       .map((slot) => ({ kind: 'available' as const, sort: slot.startTime, slot }))
     const groupedBookings = new Map<string, Booking[]>()
     for (const booking of dayBookings) {
@@ -921,6 +918,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               <BinarySwitch
                                 leftLabel="Disponible"
                                 rightLabel="Llena"
+                                leftIcon={<FiUnlock />}
+                                rightIcon={<FiLock />}
                                 checked={isClassFull}
                                 onChange={(checked) =>
                                   updateClassSettings(row.bookings, { classFull: checked })
@@ -932,6 +931,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               <BinarySwitch
                                 leftLabel="Particular"
                                 rightLabel="Grupal"
+                                leftIcon={<FiUser />}
+                                rightIcon={<FiUsers />}
                                 checked={isGroupClass}
                                 onChange={(checked) =>
                                   updateClassSettings(row.bookings, {
@@ -1030,18 +1031,43 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                 )
               }
               if (row.kind === 'blocked') {
+                const isBlockedGroup = row.slot.groupType === 'grupal'
                 return (
                   <AgendaRow key={`x-${row.slot.id}`} time={row.slot.startTime}>
                     <div
-                      className={`flex flex-1 items-center justify-between gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 sm:px-3 ${HOUR_STATUS_STYLE.blocked.border} ${HOUR_STATUS_STYLE.blocked.bg}`}
+                      className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-3 ${HOUR_STATUS_STYLE.blocked.border} ${HOUR_STATUS_STYLE.blocked.bg}`}
                     >
-                      <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
-                        <FiLock aria-hidden="true" className="shrink-0" />{' '}
-                        <span className="truncate">
-                          Bloqueado{row.block?.note ? ` · ${row.block.note}` : ''}
+                      {adminMode ? (
+                        <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
+                          <FiLock aria-hidden="true" /> Bloqueado
                         </span>
-                      </span>
-                      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                      ) : (
+                        <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:items-center sm:gap-2">
+                          <BinarySwitch
+                            leftLabel="Disponible"
+                            rightLabel="Bloqueado"
+                            leftIcon={<FiUnlock />}
+                            rightIcon={<FiLock />}
+                            checked
+                            onChange={(checked) => {
+                              if (!checked && row.block) unblock(row.block)
+                            }}
+                            disabled={busy || !row.block}
+                            compact
+                          />
+                          <BinarySwitch
+                            leftLabel="Particular"
+                            rightLabel="Grupal"
+                            leftIcon={<FiUser />}
+                            rightIcon={<FiUsers />}
+                            checked={isBlockedGroup}
+                            onChange={(checked) => updateAvailableSlotGroupType(row.slot, checked)}
+                            disabled={busy}
+                            compact
+                          />
+                        </div>
+                      )}
+                      <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
                         {!adminMode && (
                           <button
                             type="button"
@@ -1055,19 +1081,10 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               })
                             }
                             disabled={busy}
-                            className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:px-3"
+                            className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
                           >
                             <FiPlus aria-hidden="true" /> Alumno
                           </button>
-                        )}
-                        {row.block && (
-                          <RowIconButton
-                            ariaLabel="Desbloquear"
-                            onClick={() => unblock(row.block as CoachScheduleBlock)}
-                            disabled={busy}
-                          >
-                            <FiUnlock aria-hidden="true" />
-                          </RowIconButton>
                         )}
                       </div>
                     </div>
@@ -1081,26 +1098,43 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               return (
                 <AgendaRow key={`a-${row.slot.id}`} time={row.slot.startTime}>
                   <div
-                    className={`flex flex-1 items-center justify-between gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 transition-colors sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
+                    className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
                   >
-                    <span className="flex min-w-0 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${availableStyle.dot}`}
-                        aria-hidden="true"
-                      />
-                      <span className="truncate">Disponible</span>
-                    </span>
-                    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-                      {!adminMode && (
+                    {adminMode ? (
+                      <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
+                        <span
+                          className={`h-2 w-2 shrink-0 rounded-full ${availableStyle.dot}`}
+                          aria-hidden="true"
+                        />
+                        Disponible
+                      </span>
+                    ) : (
+                      <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:items-center sm:gap-2">
+                        <BinarySwitch
+                          leftLabel="Disponible"
+                          rightLabel="Bloqueado"
+                          leftIcon={<FiUnlock />}
+                          rightIcon={<FiLock />}
+                          checked={false}
+                          onChange={(checked) => {
+                            if (checked) bloquearSlot(row.slot)
+                          }}
+                          disabled={busy}
+                          compact
+                        />
                         <BinarySwitch
                           leftLabel="Particular"
                           rightLabel="Grupal"
+                          leftIcon={<FiUser />}
+                          rightIcon={<FiUsers />}
                           checked={isAvailableGroup}
                           onChange={(checked) => updateAvailableSlotGroupType(row.slot, checked)}
                           disabled={busy}
                           compact
                         />
-                      )}
+                      </div>
+                    )}
+                    <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
                       {!adminMode && (
                         <button
                           type="button"
@@ -1114,7 +1148,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                             })
                           }
                           disabled={busy}
-                          className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:px-3"
+                          className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
                         >
                           <FiPlus aria-hidden="true" /> Alumno
                         </button>
@@ -1128,13 +1162,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                         }
                       >
                         <FiX aria-hidden="true" />
-                      </RowIconButton>
-                      <RowIconButton
-                        ariaLabel="Bloquear este horario para los atletas"
-                        onClick={() => bloquearSlot(row.slot)}
-                        disabled={busy}
-                      >
-                        <FiLock aria-hidden="true" />
                       </RowIconButton>
                     </div>
                   </div>
@@ -1344,6 +1371,8 @@ function AgendaRow({ time, children }: { time: string; children: React.ReactNode
 function BinarySwitch({
   leftLabel,
   rightLabel,
+  leftIcon,
+  rightIcon,
   checked,
   onChange,
   disabled,
@@ -1351,6 +1380,8 @@ function BinarySwitch({
 }: {
   leftLabel: string
   rightLabel: string
+  leftIcon?: React.ReactNode
+  rightIcon?: React.ReactNode
   checked: boolean
   onChange: (checked: boolean) => void
   disabled: boolean
@@ -1366,7 +1397,7 @@ function BinarySwitch({
       disabled={disabled}
       className={`inline-flex min-h-11 cursor-pointer items-center justify-start bg-transparent text-xs font-bold text-[var(--c-text-2)] transition-opacity hover:opacity-75 focus-visible:rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50 ${
         compact
-          ? 'w-auto min-w-[7.25rem] gap-2 px-0.5'
+          ? 'w-full min-w-0 gap-1.5 px-0.5 sm:w-auto sm:min-w-[7.75rem]'
           : 'w-full min-w-0 gap-2.5 px-1 sm:w-auto sm:min-w-40 sm:px-1.5'
       }`}
     >
@@ -1382,7 +1413,12 @@ function BinarySwitch({
           }`}
         />
       </span>
-      <span className="text-left text-[var(--c-ocean)]">{checked ? rightLabel : leftLabel}</span>
+      <span className="flex min-w-0 items-center gap-1 text-left text-[var(--c-ocean)]">
+        <span aria-hidden="true" className="shrink-0 text-sm">
+          {checked ? rightIcon : leftIcon}
+        </span>
+        <span className="truncate">{checked ? rightLabel : leftLabel}</span>
+      </span>
     </button>
   )
 }
