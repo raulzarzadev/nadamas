@@ -44,10 +44,12 @@ type CoachBookingInput = {
 }
 
 type SlotSettingsInput = {
+  id?: string
   date?: string
   startTime?: string
   groupType?: 'particular' | 'grupal'
   classFull?: boolean
+  attended?: boolean
 }
 
 async function syncCoachCreatedSlotGroupType(coachId: string, date: string, startTime: string) {
@@ -134,6 +136,7 @@ export async function POST(request: Request) {
     athleteId: requestedAthleteId || `manual:${ref.id}`,
     athleteName,
     classFull: false,
+    attended: false,
     // Firestore rejects `undefined`; only include the field when present.
     ...(athletePhone ? { athletePhone } : {}),
     athleteEmail: body.athleteEmail?.trim() || null,
@@ -205,6 +208,21 @@ export async function PATCH(request: Request) {
   if (verification.error) return verification.error
 
   const body = (await request.json()) as SlotSettingsInput
+  const bookingId = typeof body.id === 'string' ? body.id.trim() : ''
+  if (bookingId && typeof body.attended === 'boolean') {
+    const bookingRef = adminDb.collection('bookings').doc(bookingId)
+    const bookingDoc = await bookingRef.get()
+    const booking = bookingDoc.data() as Booking | undefined
+    if (!bookingDoc.exists || booking?.coachId !== verification.caller.uid) {
+      return NextResponse.json({ error: 'No encontramos esta clase.' }, { status: 404 })
+    }
+    if (booking.status === 'cancelled') {
+      return NextResponse.json({ error: 'Esta clase está cancelada.' }, { status: 409 })
+    }
+    await bookingRef.set({ attended: body.attended, updatedAt: Date.now() }, { merge: true })
+    return NextResponse.json({ ok: true, attended: body.attended })
+  }
+
   const date = typeof body.date === 'string' ? body.date.trim() : ''
   const startTime = typeof body.startTime === 'string' ? body.startTime.trim() : ''
   const hasGroupType = body.groupType === 'particular' || body.groupType === 'grupal'

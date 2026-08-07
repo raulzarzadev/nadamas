@@ -465,6 +465,9 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
     )
   }
 
+  const updateAttendance = (booking: Booking, attended: boolean) =>
+    run(() => patchAuthed('/api/coach/agenda/bookings', { id: booking.id, attended }))
+
   const unblock = (block: CoachScheduleBlock) =>
     run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${coachQuery}`))
 
@@ -988,28 +991,42 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                               </span>
                             </div>
                             {!adminMode && (
-                              <div className="flex items-center gap-2 self-end sm:self-center">
-                                <button
-                                  type="button"
-                                  aria-label={
-                                    progressBookingIds.has(booking.id)
-                                      ? `Editar progreso de ${booking.athleteName}`
-                                      : `Agregar progreso de ${booking.athleteName}`
-                                  }
-                                  onClick={() => setProgressBooking(booking)}
-                                  disabled={busy}
-                                  className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3.5 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
-                                >
-                                  {progressBookingIds.has(booking.id) ? (
-                                    <>
-                                      <FiEdit2 aria-hidden="true" /> Progreso guardado
-                                    </>
-                                  ) : (
-                                    <>
-                                      <FiPlus aria-hidden="true" /> Progreso
-                                    </>
-                                  )}
-                                </button>
+                              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:self-center">
+                                <label className="col-span-2 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white/65 px-3 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--c-aqua-strong)] sm:col-auto sm:rounded-full sm:border-transparent sm:bg-transparent sm:px-2 sm:hover:bg-white/60">
+                                  <input
+                                    type="checkbox"
+                                    checked={booking.attended === true}
+                                    onChange={(event) =>
+                                      updateAttendance(booking, event.currentTarget.checked)
+                                    }
+                                    disabled={busy}
+                                    className="h-5 w-5 cursor-pointer rounded border-[var(--c-border)] accent-[var(--c-aqua-strong)] disabled:cursor-not-allowed"
+                                  />
+                                  Asistencia
+                                </label>
+                                {booking.attended === true && (
+                                  <button
+                                    type="button"
+                                    aria-label={
+                                      progressBookingIds.has(booking.id)
+                                        ? `Editar progreso de ${booking.athleteName}`
+                                        : `Agregar progreso de ${booking.athleteName}`
+                                    }
+                                    onClick={() => setProgressBooking(booking)}
+                                    disabled={busy}
+                                    className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-2 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50 sm:w-fit sm:px-3.5"
+                                  >
+                                    {progressBookingIds.has(booking.id) ? (
+                                      <>
+                                        <FiEdit2 aria-hidden="true" /> Progreso guardado
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FiPlus aria-hidden="true" /> Progreso
+                                      </>
+                                    )}
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   aria-label={`Cancelar clase de ${booking.athleteName}`}
@@ -1017,7 +1034,9 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
                                     setConfirmAction({ kind: 'cancel-booking', booking })
                                   }
                                   disabled={busy}
-                                  className="inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full border border-[var(--rose-bd)] bg-white px-3.5 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50"
+                                  className={`inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--rose-bd)] bg-white px-2 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:w-fit sm:px-3.5 ${
+                                    booking.attended === true ? '' : 'col-span-2'
+                                  }`}
                                 >
                                   <FiX aria-hidden="true" /> Cancelar
                                 </button>

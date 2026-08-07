@@ -34,6 +34,8 @@ export interface Booking extends CoachBookingSelection {
   athleteName: string
   /** Coach-controlled capacity state for this specific date and time. */
   classFull?: boolean
+  /** Coach-confirmed attendance for this athlete and class. */
+  attended?: boolean
   athletePhone?: string
   athleteEmail: string | null
   coachName: string | null
