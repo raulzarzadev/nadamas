@@ -40,6 +40,7 @@ type CoachBookingInput = {
   athleteName?: string
   athleteEmail?: string | null
   athletePhone?: string | null
+  groupType?: 'particular' | 'grupal'
 }
 
 type SlotSettingsInput = {
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
   const startTime = typeof body.startTime === 'string' ? body.startTime.trim() : ''
   const endTime = typeof body.endTime === 'string' ? body.endTime.trim() : ''
   const athleteName = typeof body.athleteName === 'string' ? body.athleteName.trim() : ''
+  const groupType = body.groupType === 'grupal' ? 'grupal' : 'particular'
 
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
@@ -141,7 +143,7 @@ export async function POST(request: Request) {
     scheduleId: `open:${date}:${startTime}`,
     locationName: body.locationName?.trim() || 'Horario abierto',
     mode: 'fixed',
-    groupType: 'particular',
+    groupType,
     days: [weekdayLabel(date)],
     date,
     startTime,

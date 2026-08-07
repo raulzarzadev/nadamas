@@ -138,4 +138,34 @@ test.describe('horarios de la agenda del coach', () => {
     expect(times).toEqual(['17:30', '18:30', '19:30'])
     expect(existingOccurrenceCount(existingTimesByDate, dates, new Set(times))).toBe(4)
   })
+
+  test('conserva un tipo de clase distinto para cada horario de una misma oferta', () => {
+    const offering = scheduledOffering('offering-1', 'schedule-1')
+    const baseSchedule = offering.schedules?.[0]
+    if (!baseSchedule) throw new Error('La oferta de prueba debe incluir un horario.')
+    offering.groupType = 'particular'
+    offering.schedules = [
+      { ...baseSchedule, groupType: 'grupal' },
+      {
+        ...baseSchedule,
+        id: 'schedule-2',
+        startTime: '18:30',
+        endTime: '19:30',
+      },
+    ]
+
+    const slots = buildAvailableSlots({
+      coachId: 'coach-1',
+      offerings: [offering],
+      bookings: [],
+      blocks: [],
+      startDate: new Date(2030, 0, 7),
+      endDate: new Date(2030, 0, 7),
+    })
+
+    expect(slots.map(({ startTime, groupType }) => ({ startTime, groupType }))).toEqual([
+      { startTime: '17:30', groupType: 'grupal' },
+      { startTime: '18:30', groupType: 'particular' },
+    ])
+  })
 })

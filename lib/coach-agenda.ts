@@ -31,6 +31,7 @@ export interface CoachAvailableSlot {
   startTime: string
   endTime: string
   locationName: string
+  groupType: 'particular' | 'grupal'
   status: 'available' | 'booked' | 'blocked'
 }
 
@@ -103,6 +104,7 @@ export function buildAvailableSlots({
           startTime: schedule.startTime,
           endTime: schedule.endTime,
           locationName: offeringPlaceLabel(offering),
+          groupType: schedule.groupType ?? offering.groupType,
           status: 'available' as const,
         }
         if (blocks.some((block) => block.hidden && blockOverlapsSlot(block, slot))) continue

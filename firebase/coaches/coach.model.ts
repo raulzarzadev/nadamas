@@ -72,6 +72,8 @@ export type CoachOfferingUnit = 'clase' | 'sesión' | 'mes' | 'paquete'
 export interface CoachOfferingSchedule {
   id: string
   timeMode?: 'fixed' | 'open'
+  /** Optional per-hour override. Legacy schedules inherit the offering type. */
+  groupType?: CoachOfferingGroup
   days: string[]
   startTime: string
   endTime: string
