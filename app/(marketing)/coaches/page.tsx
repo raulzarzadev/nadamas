@@ -5,6 +5,16 @@ export const metadata: Metadata = {
   title: 'Coaches de natación',
   description:
     'Explora coaches de natación, compara su estilo, revisa horarios publicados y reserva clases con seguimiento de progreso.',
+  alternates: { canonical: '/coaches' },
+  openGraph: {
+    title: 'Coaches de natación',
+    description:
+      'Explora coaches de natación, compara su estilo, revisa horarios publicados y reserva clases con seguimiento de progreso.',
+    url: '/coaches',
+    siteName: 'nadamas.app',
+    locale: 'es_MX',
+    type: 'website',
+  },
 }
 
 export default function CoachesPage() {

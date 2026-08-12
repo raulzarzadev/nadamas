@@ -1,7 +1,7 @@
 import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { coachDisplayPhoto } from '@/lib/coach-photo'
 import { getPublicCoachDetail } from '@/lib/server/public-coach'
 
@@ -20,11 +20,21 @@ export async function generateMetadata({ params }: CoachPublicPageProps): Promis
   const description =
     detail.coach.bio || 'Perfil de coach de natación: estilo, clases y horarios disponibles.'
   const images = [{ url: coachDisplayPhoto(detail.coach) || '/og-nadamas.png' }]
+  const canonicalPath = detail.coachSlug ? `/${detail.coachSlug}` : `/coach/${id}`
   return {
     metadataBase: new URL('https://nadamas.app'),
     title: `${title} · Coach de natación`,
     description,
-    openGraph: { title, description, type: 'profile', images },
+    alternates: { canonical: canonicalPath },
+    openGraph: {
+      title,
+      description,
+      type: 'profile',
+      siteName: 'nadamas.app',
+      locale: 'es_MX',
+      url: canonicalPath,
+      images,
+    },
     twitter: { card: 'summary_large_image', title, description, images },
   }
 }
@@ -33,6 +43,7 @@ export default async function CoachPublicPage({ params }: CoachPublicPageProps) 
   const { id } = await params
   const detail = await getPublicCoachDetail(id)
   if (!detail) notFound()
+  if (detail.coachSlug) redirect(`/${detail.coachSlug}`)
 
   return (
     <section className="mx-auto max-w-[1040px] px-5 py-12 sm:px-8 lg:py-16">

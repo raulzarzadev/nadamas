@@ -36,6 +36,12 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.nadamas.app' }],
+        destination: 'https://nadamas.app/:path*',
+        permanent: true,
+      },
       { source: '/dashboard/profile', destination: '/profile', permanent: false },
       { source: '/dashboard/events', destination: '/athlete/progress', permanent: false },
       {
