@@ -141,6 +141,22 @@ export function notifyBookingByCoach(args: {
   })
 }
 
+export function notifyStudentAddedByCoach(args: {
+  athleteId: string
+  coachId: string
+  coachName: string | null
+}) {
+  return createNotification({
+    recipientId: args.athleteId,
+    actorId: args.coachId,
+    actorName: args.coachName,
+    type: 'student_added_by_coach',
+    title: 'Tu coach te agregó como alumno',
+    body: `${args.coachName || 'Tu coach'} te agregó a su lista de alumnos en Nadamas.`,
+    link: '/athlete/home',
+  })
+}
+
 export function notifyVerificationRequested(args: {
   adminId: string
   coachId: string

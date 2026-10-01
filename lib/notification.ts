@@ -3,11 +3,17 @@ export type NotificationType =
   | 'booking_cancelled' // athlete cancelled -> coach
   | 'booking_created_by_coach' // coach added student -> athlete
   | 'booking_cancelled_by_coach' // coach cancelled -> athlete
+  | 'student_added_by_coach' // coach added a student profile -> athlete
   | 'verification_requested' // coach requested -> admins
   | 'verification_reviewed' // admin reviewed -> coach
   | 'push_test' // user requested a push delivery test
   | 'athlete_invite_accepted' // athlete accepted -> coach (future)
   | 'athlete_invite_rejected' // athlete rejected -> coach (future)
+  | 'school_invitation_sent'
+  | 'school_invitation_accepted'
+  | 'school_class_requested'
+  | 'school_class_assigned'
+  | 'school_class_cancelled'
 
 export interface AppNotification {
   id: string

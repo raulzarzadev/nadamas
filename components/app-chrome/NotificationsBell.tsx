@@ -7,15 +7,29 @@ import { useEffect, useRef, useState } from 'react'
 import { FiBell } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 import { NotificationCRUD } from '@/firebase/notifications/main'
-import { postAuthed } from '@/lib/client/authed-api'
+import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { AppNotification } from '@/lib/notification'
 
 const PREVIEW_COUNT = 8
+
+interface SchoolInvitationPreview {
+  id: string
+  schoolName: string
+  role: 'teacher' | 'guardian' | 'student'
+  status: 'pending' | 'expired'
+}
+
+const SCHOOL_ROLE_LABEL = {
+  teacher: 'Coach',
+  guardian: 'Padre, madre o tutor',
+  student: 'Alumno',
+} as const
 
 export default function NotificationsBell() {
   const { user } = useUser() as { user: { uid?: string; id?: string } | null | undefined }
   const uid = user?.uid || user?.id
   const [items, setItems] = useState<AppNotification[]>([])
+  const [schoolInvitations, setSchoolInvitations] = useState<SchoolInvitationPreview[]>([])
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -26,6 +40,29 @@ export default function NotificationsBell() {
     }
     const unsubscribe = NotificationCRUD.listenReceived(uid, setItems)
     return () => unsubscribe()
+  }, [uid])
+
+  useEffect(() => {
+    if (!uid) {
+      setSchoolInvitations([])
+      return
+    }
+    let active = true
+    getAuthed('/api/school-invitations')
+      .then((response) => response.json() as Promise<{ invitations?: SchoolInvitationPreview[] }>)
+      .then((payload) => {
+        if (active) {
+          setSchoolInvitations(
+            (payload.invitations || []).filter((invitation) => invitation.status === 'pending')
+          )
+        }
+      })
+      .catch(() => {
+        if (active) setSchoolInvitations([])
+      })
+    return () => {
+      active = false
+    }
   }, [uid])
 
   useEffect(() => {
@@ -40,6 +77,7 @@ export default function NotificationsBell() {
   if (!uid) return null
 
   const unreadCount = items.reduce((count, item) => count + (item.readAt ? 0 : 1), 0)
+  const pendingInvitationCount = schoolInvitations.length
 
   const toggle = () => {
     setOpen((wasOpen) => {
@@ -61,13 +99,17 @@ export default function NotificationsBell() {
         onClick={toggle}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={unreadCount > 0 ? `Notificaciones, ${unreadCount} sin leer` : 'Notificaciones'}
+        aria-label={
+          unreadCount + pendingInvitationCount > 0
+            ? `Notificaciones, ${unreadCount + pendingInvitationCount} pendientes`
+            : 'Notificaciones'
+        }
         className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] transition-shadow hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
       >
         <FiBell aria-hidden="true" className="h-[18px] w-[18px]" />
-        {unreadCount > 0 && (
+        {unreadCount + pendingInvitationCount > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white">
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount + pendingInvitationCount > 9 ? '9+' : unreadCount + pendingInvitationCount}
           </span>
         )}
       </button>
@@ -79,7 +121,30 @@ export default function NotificationsBell() {
             <PushNotificationsControl compact />
           </div>
           <div className="max-h-[60vh] overflow-y-auto border-t border-[var(--c-border)]">
-            {preview.length === 0 ? (
+            {schoolInvitations.length > 0 && (
+              <div className="border-b border-[var(--c-border)]">
+                <p className="px-3 pb-1 pt-3 text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
+                  Invitaciones escolares
+                </p>
+                {schoolInvitations.slice(0, 3).map((invitation) => (
+                  <Link
+                    key={invitation.id}
+                    href={`/school/invitations/${invitation.id}`}
+                    onClick={() => setOpen(false)}
+                    className="block px-3 py-3 hover:bg-[var(--c-surface)]"
+                  >
+                    <p className="text-sm font-bold text-[var(--c-ocean)]">
+                      {invitation.schoolName}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--c-text-2)]">
+                      Invitación como {SCHOOL_ROLE_LABEL[invitation.role]} ·{' '}
+                      <span className="font-bold text-[var(--c-aqua-strong)]">Revisar</span>
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            )}
+            {preview.length === 0 && schoolInvitations.length === 0 ? (
               <p className="px-3 py-8 text-center text-sm text-[var(--c-text-2)]">
                 No tienes notificaciones.
               </p>

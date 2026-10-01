@@ -30,6 +30,7 @@ export type CoachBookingSelection = {
 
 export interface Booking extends CoachBookingSelection {
   id: string
+  schoolId?: string
   athleteId: string
   athleteName: string
   /** Coach-controlled capacity state for this specific date and time. */

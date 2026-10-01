@@ -1,5 +1,58 @@
 import { sendEmail } from './brevo'
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (character) => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      "'": '&#39;',
+      '"': '&quot;',
+    }
+    return entities[character]
+  })
+}
+
+export function sendSchoolInvitationEmail({
+  email,
+  schoolName,
+  role,
+  inviteUrl,
+  studentData,
+}: {
+  email: string
+  schoolName: string
+  role: 'teacher' | 'guardian' | 'student'
+  inviteUrl: string
+  studentData?: {
+    name: string
+    birthDate: string
+    gender: string
+    guardianName?: string
+    guardianRelationship?: string
+    guardianPhone?: string
+  }
+}) {
+  const safeSchoolName = escapeHtml(schoolName)
+  const safeInviteUrl = escapeHtml(inviteUrl)
+  const roleLabel =
+    role === 'teacher' ? 'profesor' : role === 'student' ? 'alumno' : 'padre, madre o tutor'
+  const studentDataText =
+    role === 'student' && studentData
+      ? `\n\nLa escuela capturó estos datos:\nNombre: ${studentData.name}\nFecha de nacimiento: ${studentData.birthDate}\nRama / género: ${studentData.gender}${studentData.guardianName ? `\nTutor: ${studentData.guardianName}` : ''}`
+      : ''
+  const studentDataHtml =
+    role === 'student' && studentData
+      ? `<div style="margin:0 0 20px;border-radius:16px;background:#f5fbfd;padding:16px 18px"><p style="margin:0 0 8px;color:#102a43;font-size:15px"><strong>Datos capturados por la escuela</strong></p><p style="margin:0;color:#52606d;font-size:14px;line-height:1.6"><strong>Nombre:</strong> ${escapeHtml(studentData.name)}<br><strong>Fecha de nacimiento:</strong> ${escapeHtml(studentData.birthDate)}<br><strong>Rama / género:</strong> ${escapeHtml(studentData.gender)}${studentData.guardianName ? `<br><strong>Tutor:</strong> ${escapeHtml(studentData.guardianName)}` : ''}</p></div>`
+      : ''
+  return sendEmail({
+    to: [{ email }],
+    subject: `Invitación para unirte a ${schoolName}`,
+    textContent: `Te invitaron como ${roleLabel} a ${schoolName}.${studentDataText}\n\nAcepta la invitación aquí: ${inviteUrl}`,
+    htmlContent: `<div style="margin:0;background:#f5fbfd;padding:28px 12px;font-family:Arial,sans-serif;color:#102a43"><div style="margin:0 auto;max-width:520px;overflow:hidden;border:1px solid #d8edf4;border-radius:28px;background:#ffffff"><div style="padding:24px 28px;background:#eef9fc"><p style="margin:0;color:#0877ad;font-size:14px;font-weight:700">nadamas.app</p><h1 style="margin:10px 0 0;font-size:26px;line-height:1.15">Invitación a ${safeSchoolName}</h1></div><div style="padding:28px"><p style="margin:0 0 18px;color:#52606d;font-size:16px;line-height:1.5">Te invitaron como ${roleLabel}. Crea o usa tu cuenta para aceptar el acceso.</p>${studentDataHtml}<a href="${safeInviteUrl}" style="display:block;background:#0877ad;color:#ffffff;border-radius:20px;padding:18px 20px;text-align:center;font-size:18px;font-weight:700;text-decoration:none">Aceptar invitación</a><p style="margin:20px 0 0;color:#52606d;font-size:13px;line-height:1.5">Esta invitación expira en 7 días.</p></div></div></div>`,
+  })
+}
+
 export function sendOtpEmail(email: string, code: string, link: string) {
   return sendEmail({
     to: [{ email }],
@@ -163,6 +216,44 @@ export function sendBookingConfirmedEmail({
             </p>
             ${athletePhone ? `<p style="margin:0 0 14px;color:#52606d;font-size:15px"><strong>Teléfono:</strong> ${athletePhone}</p>` : ''}
             <ul style="margin:0;padding:16px 18px 16px 34px;border-radius:16px;background:#f5fbfd">${rows}</ul>
+          </div>
+        </div>
+      </div>
+    `,
+  })
+}
+
+export function sendStudentAddedEmail({
+  email,
+  coachName,
+  studentName,
+}: {
+  email: string
+  coachName: string
+  studentName: string
+}) {
+  const safeCoachName = escapeHtml(coachName)
+  const safeStudentName = escapeHtml(studentName)
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://nadamas.app').replace(/\/$/, '')
+  const loginUrl = `${siteUrl}/login?redirectTo=%2Fathlete%2Fhome`
+
+  return sendEmail({
+    to: [{ email }],
+    subject: 'Tu coach te agregó a Nadamas',
+    textContent: `Hola ${studentName},\n\n${coachName} te agregó como alumno en Nadamas. Entra a tu cuenta para ver tu espacio de atleta: ${loginUrl}`,
+    htmlContent: `
+      <div style="margin:0;background:#f5fbfd;padding:28px 12px;font-family:Arial,sans-serif;color:#102a43">
+        <div style="margin:0 auto;max-width:520px;overflow:hidden;border:1px solid #d8edf4;border-radius:28px;background:#ffffff">
+          <div style="padding:24px 28px;background:#eef9fc">
+            <p style="margin:0;color:#0877ad;font-size:14px;font-weight:700">nadamas.app</p>
+            <h1 style="margin:10px 0 0;font-size:24px;line-height:1.2">Tu coach te agregó</h1>
+          </div>
+          <div style="padding:28px">
+            <p style="margin:0 0 14px;color:#52606d;font-size:16px;line-height:1.5">Hola ${safeStudentName},</p>
+            <p style="margin:0 0 20px;color:#52606d;font-size:16px;line-height:1.5">
+              <strong>${safeCoachName}</strong> te agregó como alumno en Nadamas.
+            </p>
+            <a href="${escapeHtml(loginUrl)}" style="display:block;background:#0877ad;color:#ffffff;border-radius:20px;padding:18px 20px;text-align:center;font-size:18px;font-weight:700;text-decoration:none">Entrar a Nadamas</a>
           </div>
         </div>
       </div>

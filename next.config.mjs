@@ -25,6 +25,7 @@ const nextConfig = {
     ...(process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR ? { unoptimized: true } : {}),
     remotePatterns: [
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com' },
+      { protocol: 'https', hostname: '*.firebasestorage.app' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'img.icons8.com' },

@@ -14,6 +14,7 @@ import { connectStorageEmulator, getStorage } from 'firebase/storage'
 import { getUser } from './users'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
+const USER_PROFILE_TIMEOUT_MS = 5000
 
 export const app = initializeApp(JSON.parse(firebaseConfig))
 export const auth = getAuth(app)
@@ -21,13 +22,25 @@ export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 
-// Local development: point the SDK at the Firebase emulators. Guarded by a
-// module-level flag so hot-reload doesn't reconnect (which throws).
-if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === '1' && !globalThis.__nadamasEmulatorWired) {
-  globalThis.__nadamasEmulatorWired = true
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
-  connectFirestoreEmulator(db, '127.0.0.1', 8080)
-  connectStorageEmulator(storage, '127.0.0.1', 9199)
+// Local development: point each SDK at its emulator. Each connection is
+// guarded independently so a hot reload cannot leave Storage disconnected
+// just because Auth or Firestore was initialized first.
+if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === '1') {
+  try {
+    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
+  } catch {
+    // The auth instance was already connected during hot reload.
+  }
+  try {
+    connectFirestoreEmulator(db, '127.0.0.1', 8080)
+  } catch {
+    // The Firestore instance was already connected during hot reload.
+  }
+  try {
+    connectStorageEmulator(storage, '127.0.0.1', 9199)
+  } catch {
+    // The Storage instance was already connected during hot reload.
+  }
 }
 
 export const authStateChanged = (cb = () => {}) => {
@@ -48,7 +61,10 @@ export const authStateChanged = (cb = () => {}) => {
     }
 
     try {
-      const userData = await getUser(user.uid)
+      const userData = await Promise.race([
+        getUser(user.uid),
+        new Promise((resolve) => setTimeout(() => resolve(null), USER_PROFILE_TIMEOUT_MS)),
+      ])
       cb(userData || fallbackUser)
     } catch (err) {
       console.error('authStateChanged:getUser', err?.code || 'error')

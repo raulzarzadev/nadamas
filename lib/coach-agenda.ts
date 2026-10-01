@@ -10,6 +10,7 @@ import {
 export interface CoachScheduleBlock {
   id: string
   coachId: string
+  schoolId?: string
   date: string
   startTime: string | null
   endTime: string | null
@@ -25,6 +26,7 @@ export interface CoachScheduleBlock {
 export interface CoachAvailableSlot {
   id: string
   coachId: string
+  schoolId?: string
   offeringId: string
   scheduleId: string
   date: string

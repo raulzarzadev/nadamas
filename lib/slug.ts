@@ -20,7 +20,10 @@ export const RESERVED_SLUGS = new Set([
   'notifications',
   'privacidad',
   'profile',
+  'school',
+  'schools',
   'terminos',
+  'www',
 ])
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38})[a-z0-9]$/

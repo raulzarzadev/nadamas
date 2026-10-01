@@ -22,6 +22,7 @@ export interface AddStudentPayload {
 
 export default function AgendaAddStudentModal({
   slotLabel,
+  schoolId,
   busy,
   takenAthleteIds = [],
   takenNames = [],
@@ -29,6 +30,7 @@ export default function AgendaAddStudentModal({
   onSubmit,
 }: {
   slotLabel: string
+  schoolId?: string
   busy: boolean
   /** Students already booked in this class — cannot be added again. */
   takenAthleteIds?: string[]
@@ -45,11 +47,39 @@ export default function AgendaAddStudentModal({
 
   useEffect(() => {
     let active = true
-    getAuthed('/api/coach/students')
+    getAuthed(schoolId ? `/api/schools/${schoolId}/students` : '/api/coach/students')
       .then((response) => response.json())
-      .then((data: { students?: CoachStudent[] }) => {
-        if (active) setStudents(data.students || [])
-      })
+      .then(
+        (data: {
+          students?:
+            | CoachStudent[]
+            | Array<{ id: string; name: string; studentEmail?: string; guardianPhone?: string }>
+        }) => {
+          if (!active) return
+          if (!schoolId) {
+            setStudents((data.students as CoachStudent[]) || [])
+            return
+          }
+          setStudents(
+            (data.students || [])
+              .map((student) => {
+                const schoolStudent = student as {
+                  id?: string
+                  name: string
+                  studentEmail?: string
+                  guardianPhone?: string
+                }
+                return {
+                  athleteId: schoolStudent.id || '',
+                  name: schoolStudent.name,
+                  email: schoolStudent.studentEmail || null,
+                  phone: schoolStudent.guardianPhone || null,
+                }
+              })
+              .filter((student) => student.athleteId)
+          )
+        }
+      )
       .catch((err) => {
         reportInternalError('AGENDA_STUDENTS_LOAD', err)
         if (active) {
@@ -60,7 +90,7 @@ export default function AgendaAddStudentModal({
     return () => {
       active = false
     }
-  }, [])
+  }, [schoolId])
 
   const takenIds = new Set(takenAthleteIds)
   const takenNamesNormalized = new Set(takenNames.map((name) => name.trim().toLowerCase()))

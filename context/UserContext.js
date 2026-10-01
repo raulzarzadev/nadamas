@@ -17,9 +17,21 @@ export function UserProvider({ children }) {
   const redirectTo = searchParams?.get('redirectTo')
 
   useEffect(() => {
-    authStateChanged((res) => {
+    let settled = false
+    const bootstrapTimeout = window.setTimeout(() => {
+      if (!settled) setUser(null)
+    }, 8000)
+    const unsubscribe = authStateChanged((res) => {
+      settled = true
+      window.clearTimeout(bootstrapTimeout)
       res ? setUser(res) : setUser(null)
     })
+
+    return () => {
+      settled = true
+      window.clearTimeout(bootstrapTimeout)
+      unsubscribe?.()
+    }
   }, [])
 
   const logout = () => {

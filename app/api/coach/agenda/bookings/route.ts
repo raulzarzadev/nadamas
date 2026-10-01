@@ -3,8 +3,10 @@ import type { Booking } from '@/lib/coach-booking'
 import { DAY_TO_INDEX } from '@/lib/coach-offerings'
 import { type StudentProgress, studentProgressId } from '@/lib/coach-student-progress'
 import { publicNameFromUser } from '@/lib/public-name'
+import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingByCoach } from '@/lib/server/notifications'
+import { getSchoolMembership } from '@/lib/server/school-access'
 
 export const runtime = 'nodejs'
 
@@ -23,7 +25,7 @@ async function verifyCoach(request: Request) {
     return { error: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
   }
 
-  return { caller, callerDoc }
+  return { caller, callerDoc, isAdmin: callerDoc.data()?.roles?.admin === true }
 }
 
 function weekdayLabel(date: string) {
@@ -41,6 +43,7 @@ type CoachBookingInput = {
   athleteEmail?: string | null
   athletePhone?: string | null
   groupType?: 'particular' | 'grupal'
+  schoolId?: string
 }
 
 type SlotSettingsInput = {
@@ -50,15 +53,35 @@ type SlotSettingsInput = {
   groupType?: 'particular' | 'grupal'
   classFull?: boolean
   attended?: boolean
+  schoolId?: string
 }
 
-async function syncCoachCreatedSlotGroupType(coachId: string, date: string, startTime: string) {
+async function authorizeSchoolContext(schoolId: string | null, uid: string, isAdmin: boolean) {
+  if (!schoolId || isAdmin) return null
+  const membership = await getSchoolMembership(schoolId, uid)
+  if (
+    !membership ||
+    membership.status !== 'active' ||
+    !schoolMembershipHasRole(membership as SchoolMembership, 'teacher')
+  ) {
+    return NextResponse.json({ error: 'No autorizado para esta escuela.' }, { status: 403 })
+  }
+  return null
+}
+
+async function syncCoachCreatedSlotGroupType(
+  coachId: string,
+  date: string,
+  startTime: string,
+  schoolId: string | null
+) {
   const snapshot = await adminDb.collection('bookings').where('coachId', '==', coachId).get()
   const slotBookings = snapshot.docs.filter((doc) => {
     const booking = doc.data() as Booking
     return (
       booking.date === date &&
       booking.startTime === startTime &&
+      (schoolId ? booking.schoolId === schoolId : !booking.schoolId) &&
       booking.status !== 'cancelled' &&
       booking.source === 'coach' &&
       booking.offeringId === 'open'
@@ -84,6 +107,9 @@ export async function POST(request: Request) {
 
   const coachId = verification.caller.uid
   const body = (await request.json()) as CoachBookingInput
+  const schoolId = typeof body.schoolId === 'string' ? body.schoolId.trim() || null : null
+  const schoolError = await authorizeSchoolContext(schoolId, coachId, verification.isAdmin)
+  if (schoolError) return schoolError
   const date = typeof body.date === 'string' ? body.date.trim() : ''
   const startTime = typeof body.startTime === 'string' ? body.startTime.trim() : ''
   const endTime = typeof body.endTime === 'string' ? body.endTime.trim() : ''
@@ -115,6 +141,7 @@ export async function POST(request: Request) {
   const normalizedName = athleteName.toLowerCase()
   const activeSlotBookings = slotSnapshot.docs
     .map((doc) => doc.data() as Booking)
+    .filter((booking) => (schoolId ? booking.schoolId === schoolId : !booking.schoolId))
     .filter((existing) => existing.status !== 'cancelled')
   if (activeSlotBookings.some((existing) => existing.classFull)) {
     return NextResponse.json({ error: 'Esta clase está llena.' }, { status: 409 })
@@ -159,10 +186,11 @@ export async function POST(request: Request) {
     source: 'coach',
     createdAt: now,
     updatedAt: now,
+    ...(schoolId ? { schoolId } : {}),
   }
 
   await ref.set(booking)
-  await syncCoachCreatedSlotGroupType(coachId, date, startTime)
+  await syncCoachCreatedSlotGroupType(coachId, date, startTime, schoolId)
 
   const progressRef = adminDb
     .collection('coachStudentProgress')
@@ -208,12 +236,23 @@ export async function PATCH(request: Request) {
   if (verification.error) return verification.error
 
   const body = (await request.json()) as SlotSettingsInput
+  const schoolId = typeof body.schoolId === 'string' ? body.schoolId.trim() || null : null
+  const schoolError = await authorizeSchoolContext(
+    schoolId,
+    verification.caller.uid,
+    verification.isAdmin
+  )
+  if (schoolError) return schoolError
   const bookingId = typeof body.id === 'string' ? body.id.trim() : ''
   if (bookingId && typeof body.attended === 'boolean') {
     const bookingRef = adminDb.collection('bookings').doc(bookingId)
     const bookingDoc = await bookingRef.get()
     const booking = bookingDoc.data() as Booking | undefined
-    if (!bookingDoc.exists || booking?.coachId !== verification.caller.uid) {
+    if (
+      !bookingDoc.exists ||
+      booking?.coachId !== verification.caller.uid ||
+      (schoolId ? booking?.schoolId !== schoolId : booking?.schoolId)
+    ) {
       return NextResponse.json({ error: 'No encontramos esta clase.' }, { status: 404 })
     }
     if (booking.status === 'cancelled') {
@@ -242,7 +281,13 @@ export async function PATCH(request: Request) {
     .where('date', '==', date)
     .where('startTime', '==', startTime)
     .get()
-  const activeDocs = snapshot.docs.filter((doc) => (doc.data() as Booking).status !== 'cancelled')
+  const activeDocs = snapshot.docs.filter((doc) => {
+    const booking = doc.data() as Booking
+    return (
+      (schoolId ? booking.schoolId === schoolId : !booking.schoolId) &&
+      booking.status !== 'cancelled'
+    )
+  })
   if (activeDocs.length === 0) {
     return NextResponse.json({ error: 'No encontramos esta clase.' }, { status: 404 })
   }
@@ -279,12 +324,24 @@ export async function DELETE(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
-  const id = new URL(request.url).searchParams.get('id')
+  const url = new URL(request.url)
+  const id = url.searchParams.get('id')
+  const schoolId = url.searchParams.get('schoolId') || null
+  const schoolError = await authorizeSchoolContext(
+    schoolId,
+    verification.caller.uid,
+    verification.isAdmin
+  )
+  if (schoolError) return schoolError
   if (!id) return NextResponse.json({ error: 'Reserva inválida.' }, { status: 400 })
 
   const ref = adminDb.collection('bookings').doc(id)
   const current = await ref.get()
-  if (!current.exists || current.data()?.coachId !== verification.caller.uid) {
+  if (
+    !current.exists ||
+    current.data()?.coachId !== verification.caller.uid ||
+    (schoolId ? current.data()?.schoolId !== schoolId : current.data()?.schoolId)
+  ) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
 
@@ -292,7 +349,12 @@ export async function DELETE(request: Request) {
   await ref.set({ status: 'cancelled', cancelledAt: now, updatedAt: now }, { merge: true })
 
   const cancelled = current.data() as Booking
-  await syncCoachCreatedSlotGroupType(verification.caller.uid, cancelled.date, cancelled.startTime)
+  await syncCoachCreatedSlotGroupType(
+    verification.caller.uid,
+    cancelled.date,
+    cancelled.startTime,
+    schoolId
+  )
 
   try {
     await notifyBookingByCoach({

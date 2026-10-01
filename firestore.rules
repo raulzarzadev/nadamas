@@ -33,6 +33,46 @@ service cloud.firestore {
       allow update: if (signedIn() && request.auth.uid == uid) || isAdmin();
     }
 
+    function isSchoolMember(schoolId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/schoolMemberships/$(schoolId + '_' + request.auth.uid));
+    }
+
+    // Schools are written through authenticated server routes. Public school
+    // pages only expose documents explicitly marked as public.
+    match /schools/{schoolId} {
+      allow read: if resource.data.get('isPublic', false) == true || isSchoolMember(schoolId);
+      allow write: if false;
+    }
+
+    match /schoolSlugs/{slug} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /schoolMemberships/{membershipId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    function isLegacyCollection(collection) {
+      return ![
+        'schools',
+        'schoolSlugs',
+        'schoolMemberships',
+        'schoolInvitations',
+        'schoolProfiles',
+        'schoolStudents',
+        'schoolLocations',
+        'schoolAvailability',
+        'schoolClassSeries',
+        'schoolClassOccurrences',
+        'schoolClassRequests',
+        'schoolReviews',
+        'schoolCalendarFeeds'
+      ].hasAny([collection]);
+    }
+
     // OTP codes are server-only. API routes use Firebase Admin SDK, which
     // bypasses client rules; app clients should never read or write them.
     match /otpLoginCodes/{id} {
@@ -77,9 +117,9 @@ service cloud.firestore {
     // Any signed-in user may read (coaches view athletes/teams);
     // only the document owner may mutate.
     match /{collection}/{id} {
-      allow read: if signedIn();
-      allow create: if isOwner(request.resource);
-      allow update, delete: if isOwner(resource);
+      allow read: if isLegacyCollection(collection) && signedIn();
+      allow create: if isLegacyCollection(collection) && isOwner(request.resource);
+      allow update, delete: if isLegacyCollection(collection) && isOwner(resource);
     }
 
     // NOTE: single-segment wildcard does NOT cover subcollections

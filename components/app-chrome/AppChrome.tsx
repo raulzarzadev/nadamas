@@ -4,18 +4,18 @@ import PwaInstallPrompt from './PwaInstallPrompt'
 import ScrollToTop from './ScrollToTop'
 
 export default function AppChrome({
-  role,
+  mode,
   children,
 }: {
   // Optional: when omitted (shared pages like /notifications) the nav follows the
-  // active role from RoleContext.
-  role?: RoleName
+  // active mode from RoleContext.
+  mode?: RoleName
   children: React.ReactNode
 }) {
   return (
     <div data-theme="nadamas" className="min-h-screen bg-[var(--c-bg)] text-[var(--c-ocean)]">
       <ScrollToTop />
-      <AppNav role={role} />
+      <AppNav mode={mode} />
       <PwaInstallPrompt />
       <main className="mx-auto max-w-5xl px-2.5 pb-20 pt-4 sm:px-4 sm:pb-24 sm:pt-6">
         {children}

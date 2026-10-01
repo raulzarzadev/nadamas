@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiChevronLeft,
   FiChevronRight,
-  FiClock,
   FiEdit2,
   FiLock,
   FiPlus,
@@ -26,13 +25,10 @@ import {
   addDays,
   createOffering,
   dateKey,
-  formatPesosCompact,
   initialDatesForOffering,
   initialTimesForOffering,
-  offeringContextLabel,
   offeringPriceCents,
   offeringsWithoutHours,
-  offeringTypeLabel,
   offeringWithHours,
   resolveOfferingSchedules,
   scheduleIsAvailableOn,
@@ -129,12 +125,24 @@ type ConfirmAction =
   | { kind: 'cancel-booking'; booking: Booking }
   | { kind: 'delete-slot'; slot: CoachAvailableSlot }
 
-export default function CoachAgenda({ coachId }: { coachId?: string }) {
+export default function CoachAgenda({
+  coachId,
+  schoolId,
+  scheduleEditorOpen = false,
+  onScheduleEditorClose,
+}: {
+  coachId?: string
+  schoolId?: string
+  scheduleEditorOpen?: boolean
+  onScheduleEditorClose?: () => void
+}) {
   // When an admin opens another coach's agenda, `coachId` targets that coach and
   // booking actions (add/cancel students) are hidden — admin mode manages
   // blocks only and does not edit the coach's offering here.
   const adminMode = Boolean(coachId)
   const coachQuery = coachId ? `&coachId=${encodeURIComponent(coachId)}` : ''
+  const schoolQuery = schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''
+  const contextQuery = `${coachQuery}${schoolQuery}`
   const { user } = useUser() as { user: { uid?: string; id?: string } | null }
   const { setScheduleText } = useCoachAgendaShare()
   const selfUid = user?.uid || user?.id
@@ -166,11 +174,20 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
 
   const monthOfSelected = selectedDate.slice(0, 7)
 
+  useEffect(() => {
+    if (scheduleEditorOpen) setHoursEditorOpen(true)
+  }, [scheduleEditorOpen])
+
+  const closeScheduleEditor = () => {
+    setHoursEditorOpen(false)
+    onScheduleEditorClose?.()
+  }
+
   const loadAgenda = useCallback(
     async (month: string) => {
       setError(null)
       try {
-        const response = await getAuthed(`/api/coach/agenda?month=${month}${coachQuery}`)
+        const response = await getAuthed(`/api/coach/agenda?month=${month}${contextQuery}`)
         setAgenda((await response.json()) as CoachAgendaPayload)
       } catch (err) {
         reportInternalError('COACH_AGENDA_LOAD', err)
@@ -178,7 +195,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         setAgenda({ bookings: [], availableSlots: [], blocks: [], offerings: [] })
       }
     },
-    [coachQuery]
+    [contextQuery]
   )
 
   useEffect(() => {
@@ -436,6 +453,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         endTime: slot.endTime,
         hidden,
         ...(coachId ? { coachId } : {}),
+        ...(schoolId ? { schoolId } : {}),
       })
     )
 
@@ -448,7 +466,9 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   const eliminarSlot = (slot: CoachAvailableSlot) => block(slot, true)
 
   const cancelBooking = (booking: Booking) =>
-    run(() => deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}`))
+    run(() =>
+      deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${schoolQuery}`)
+    )
 
   const updateClassSettings = (
     bookings: Booking[],
@@ -460,21 +480,32 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       patchAuthed('/api/coach/agenda/bookings', {
         date: booking.date,
         startTime: booking.startTime,
+        ...(schoolId ? { schoolId } : {}),
         ...settings,
       })
     )
   }
 
   const updateAttendance = (booking: Booking, attended: boolean) =>
-    run(() => patchAuthed('/api/coach/agenda/bookings', { id: booking.id, attended }))
+    run(() =>
+      patchAuthed('/api/coach/agenda/bookings', {
+        id: booking.id,
+        attended,
+        ...(schoolId ? { schoolId } : {}),
+      })
+    )
 
   const unblock = (block: CoachScheduleBlock) =>
-    run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${coachQuery}`))
+    run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${contextQuery}`))
 
   const submitAddStudent = (slot: ActiveSlot, payloads: AddStudentPayload[]) =>
     run(async () => {
       for (const payload of payloads) {
-        await postAuthed('/api/coach/agenda/bookings', { ...slot, ...payload })
+        await postAuthed('/api/coach/agenda/bookings', {
+          ...slot,
+          ...payload,
+          ...(schoolId ? { schoolId } : {}),
+        })
       }
       setAddStudentSlot(null)
     })
@@ -482,26 +513,18 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
   // Single class/schedule batch the coach edits from the agenda (self mode).
   const offerings = agenda?.offerings || []
   const offering = offerings[0] || null
-  const offeringSummary = offering
-    ? [
-        offeringTypeLabel(offering),
-        offeringContextLabel(offering),
-        offeringPriceCents(offering) != null
-          ? formatPesosCompact(offeringPriceCents(offering) as number)
-          : null,
-        offering.details?.trim() || null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : null
   const saveOfferings = (next: CoachClassOffering) =>
     postAuthed('/api/coach/offerings', {
+      ...(schoolId ? { schoolId } : {}),
       classOfferings: offerings.some((item) => item.id === next.id)
         ? offerings.map((item) => (item.id === next.id ? next : item))
         : [...offerings, next],
     })
   const saveOfferingList = (next: CoachClassOffering[]) =>
-    postAuthed('/api/coach/offerings', { classOfferings: next })
+    postAuthed('/api/coach/offerings', {
+      ...(schoolId ? { schoolId } : {}),
+      classOfferings: next,
+    })
 
   const updateAvailableSlotGroupType = (slot: CoachAvailableSlot, checked: boolean) => {
     if (!offerings.some((item) => item.id === slot.offeringId)) return
@@ -529,7 +552,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
 
   const deleteBlocks = async (pairs: { date: string; time: string }[]) => {
     for (const id of overlappingBlockIds(pairs)) {
-      await deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(id)}${coachQuery}`)
+      await deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(id)}${contextQuery}`)
     }
   }
 
@@ -600,11 +623,11 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         // Quita bloqueos que tapan estas horas para que queden disponibles.
         await deleteBlocks(dates.flatMap((date) => times.map((time) => ({ date, time }))))
         await saveOfferings(offeringWithHours(base, dates, times, base.durationMinutes ?? 60))
-        setHoursEditorOpen(false)
+        closeScheduleEditor()
         return
       }
       if (!offering) {
-        setHoursEditorOpen(false)
+        closeScheduleEditor()
         return
       }
       const pairs: { date: string; time: string }[] = []
@@ -620,7 +643,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
       }
       await deleteBlocks(pairs)
       await saveOfferingList(offeringsWithoutHours(offerings, pairs))
-      setHoursEditorOpen(false)
+      closeScheduleEditor()
       if (skipped > 0) {
         setNotice(`No se quitaron ${skipped} hora(s) con alumno. Cancela la clase primero.`)
       }
@@ -679,8 +702,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         labelClassName="text-sm font-semibold"
       />
 
-      <div className="flex min-h-11 justify-center">
-        {selectedDate !== today && (
+      {selectedDate !== today && (
+        <div className="flex justify-center">
           <button
             type="button"
             onClick={() => setSelectedDate(today)}
@@ -688,8 +711,32 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           >
             Hoy
           </button>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Subtle legend for the occupancy bar colors */}
+      <ul
+        aria-label="Significado de los colores"
+        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-[var(--c-text-2)]"
+      >
+        {(
+          [
+            ['available', 'Disponible'],
+            ['booked', 'Ocupado'],
+            ['groupAvailable', 'Grupal disponible'],
+            ['group', 'Grupal ocupada'],
+            ['blocked', 'Bloqueado'],
+          ] as const
+        ).map(([status, label]) => (
+          <li key={status} className="flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className={`h-[4px] w-4 rounded-full ${HOUR_STATUS_STYLE[status].bar}`}
+            />
+            {label}
+          </li>
+        ))}
+      </ul>
 
       {/* Week strip (flechas + swipe lateral para cambiar de semana) */}
       <div
@@ -772,94 +819,8 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
         </button>
       </div>
 
-      {/* Subtle legend for the occupancy bar colors */}
-      <ul
-        aria-label="Significado de los colores"
-        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-[var(--c-text-2)]"
-      >
-        {(
-          [
-            ['available', 'Disponible'],
-            ['booked', 'Ocupado'],
-            ['groupAvailable', 'Grupal disponible'],
-            ['group', 'Grupal ocupada'],
-            ['blocked', 'Bloqueado'],
-          ] as const
-        ).map(([status, label]) => (
-          <li key={status} className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className={`h-[4px] w-4 rounded-full ${HOUR_STATUS_STYLE[status].bar}`}
-            />
-            {label}
-          </li>
-        ))}
-      </ul>
-
       {/* Day card */}
       <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
-        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
-          <div>
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-lg font-bold capitalize text-[var(--c-ocean)]">
-                {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                })}
-              </h3>
-              <span className="text-sm font-semibold text-[var(--c-text-2)]">
-                {rows.filter((row) => row.kind === 'booked').length}/
-                {rows.filter((row) => row.kind === 'booked' || row.kind === 'available').length}
-              </span>
-            </div>
-            {offeringSummary && (
-              <div className="mt-0.5 flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-                <p className="text-sm text-[var(--c-text-2)]">{offeringSummary}</p>
-                {!adminMode && offering && (
-                  <button
-                    type="button"
-                    onClick={() => setDetailsModalOpen(true)}
-                    disabled={busy}
-                    className="inline-flex min-h-8 w-fit items-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-3 text-xs font-semibold text-[var(--c-text-2)] transition-colors hover:border-[var(--c-aqua-light)] hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-60"
-                  >
-                    <FiEdit2 aria-hidden="true" /> Editar detalles
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-          {!adminMode && (
-            <div className="flex gap-2 sm:justify-end">
-              {offering ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null)
-                    setHoursEditorOpen(true)
-                  }}
-                  disabled={busy}
-                  className="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua-strong)] px-3 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none sm:px-4"
-                >
-                  <FiClock aria-hidden="true" /> Editar horas
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null)
-                    setHoursEditorOpen(true)
-                  }}
-                  disabled={busy}
-                  className="inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--c-aqua-strong)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
-                >
-                  <FiPlus aria-hidden="true" /> Crear horario
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
         {error && (
           <p className="px-4 pb-2 text-sm text-[var(--c-error,#b91c1c)] sm:px-5">{error}</p>
         )}
@@ -886,7 +847,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
 
           {!allDayBlock && rows.length === 0 && (
             <p className="px-4 py-8 text-center text-sm text-[var(--c-text-2)] sm:px-5">
-              No hay horarios este día. Publícalos abajo en “Mis horarios”.
+              {schoolId ? 'No hay horarios asignados para este día.' : 'No hay horarios este día.'}
             </p>
           )}
 
@@ -1188,22 +1149,6 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
               )
             })}
         </div>
-
-        {!adminMode && (
-          <div className="border-t border-[var(--c-border)] p-4 sm:p-5">
-            <button
-              type="button"
-              onClick={() => {
-                setError(null)
-                setAddClassModalOpen(true)
-              }}
-              disabled={busy}
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--c-aqua)] bg-white px-4 py-2.5 text-sm font-bold text-[var(--c-aqua-strong)] transition-colors hover:bg-[var(--c-aqua-light)] disabled:opacity-60"
-            >
-              <FiPlus aria-hidden="true" /> Agregar clase
-            </button>
-          </div>
-        )}
       </section>
 
       {progressBooking && (
@@ -1222,6 +1167,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
 
       {addStudentSlot && (
         <AgendaAddStudentModal
+          schoolId={schoolId}
           slotLabel={`${new Date(`${addStudentSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
             weekday: 'short',
             day: 'numeric',
@@ -1292,7 +1238,7 @@ export default function CoachAgenda({ coachId }: { coachId?: string }) {
           existingTimesByDate={existingTimesByDate}
           busy={busy}
           error={error}
-          onClose={() => setHoursEditorOpen(false)}
+          onClose={closeScheduleEditor}
           onSubmit={applyHours}
         />
       )}

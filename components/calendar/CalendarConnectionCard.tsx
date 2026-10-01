@@ -102,7 +102,7 @@ export default function CalendarConnectionCard({
       setConnection(payload)
       setSelectedOffsets(payload.reminderOffsets)
       setStatus('idle')
-      setMessage('Calendario actualizado.')
+      setMessage('Enlace listo. Abre tu aplicación de calendario para completar la suscripción.')
     } catch {
       setStatus('error')
       setMessage('No se pudo actualizar. Intenta de nuevo.')
@@ -147,7 +147,7 @@ export default function CalendarConnectionCard({
   const body =
     calendarRole === 'coach'
       ? 'Sincroniza solo tus clases reales con alumnos asignados.'
-      : 'Sincroniza tus próximas clases con tus calendarios.'
+      : 'Suscríbete una vez: las clases nuevas y los cambios de horario aparecerán en tu calendario cuando se actualice.'
 
   return (
     <section
@@ -166,7 +166,7 @@ export default function CalendarConnectionCard({
             {connection.connected && (
               <span className="inline-flex items-center gap-1 rounded-full border border-(--c-border) bg-(--c-surface) px-2 py-0.5 text-xs font-bold text-(--c-aqua-strong)">
                 <FiCheck aria-hidden="true" size={12} />
-                Ligado
+                Enlace activo
               </span>
             )}
           </div>
@@ -222,7 +222,7 @@ export default function CalendarConnectionCard({
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-(--c-ocean) px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
           >
             <FiCalendar aria-hidden="true" />
-            Ligar calendario
+            Crear enlace de suscripción
           </button>
         ) : (
           <>
@@ -298,8 +298,24 @@ export default function CalendarConnectionCard({
         )}
       </div>
 
+      <p className="mt-3 text-sm text-(--c-text-2)">
+        Elige Apple, Google u Outlook y confirma la suscripción. También puedes copiar el enlace y
+        añadirlo como calendario por URL. Importar un archivo .ics solo guarda una copia. La
+        actualización automática depende de tu aplicación y puede tardar varias horas. En Google
+        Calendar, añade la suscripción desde su versión web.
+      </p>
+      {connection.connected && (
+        <p className="mt-2 text-xs text-(--c-text-2)">
+          Tu enlace es privado: quien lo tenga podrá ver tus clases. Desligar desactiva el enlace;
+          elimina también el calendario de tu aplicación si ya no quieres verlo.
+        </p>
+      )}
+
       {message && (
-        <p className={`mt-3 text-sm ${status === 'error' ? 'text-red-600' : 'text-(--c-text-2)'}`}>
+        <p
+          role="status"
+          className={`mt-3 text-sm ${status === 'error' ? 'text-red-600' : 'text-(--c-text-2)'}`}
+        >
           {message}
         </p>
       )}

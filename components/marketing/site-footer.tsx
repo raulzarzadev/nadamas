@@ -1,4 +1,8 @@
+'use client'
+
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
+import { tenantSlugFromHost } from '@/lib/tenant-host'
 
 const COLUMNS = [
   {
@@ -27,6 +31,23 @@ const COLUMNS = [
 ]
 
 export default function SiteFooter() {
+  const [tenantHost, setTenantHost] = useState(false)
+
+  useEffect(() => {
+    setTenantHost(Boolean(tenantSlugFromHost(window.location.host)))
+  }, [])
+
+  if (tenantHost) {
+    return (
+      <footer className="mx-auto max-w-5xl px-5 pb-8 pt-2 text-center text-xs text-(--c-text-2) sm:px-8">
+        Esta es una escuela en{' '}
+        <a href="https://nadamas.app" className="font-bold text-(--c-aqua-strong) hover:underline">
+          nadamas.app
+        </a>
+      </footer>
+    )
+  }
+
   return (
     <footer
       className="mt-4"
@@ -43,8 +64,8 @@ export default function SiteFooter() {
               className="h-10 w-auto"
             />
             <p className="mt-5 text-[0.97rem] leading-relaxed" style={{ color: 'var(--c-text-2)' }}>
-              El marketplace para encontrar y reservar coaches de natación.
-              Aprende, mejora y entrena con quien de verdad sabe.
+              El marketplace para encontrar y reservar coaches de natación. Aprende, mejora y
+              entrena con quien de verdad sabe.
             </p>
           </div>
 

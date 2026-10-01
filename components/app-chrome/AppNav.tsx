@@ -1,7 +1,10 @@
 'use client'
+import CoachSchoolSwitcher from '@comps/coach/CoachSchoolSwitcher'
+import SchoolHeaderActions from '@comps/school/SchoolHeaderActions'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import {
   FiBarChart2,
   FiBell,
@@ -13,7 +16,9 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { useRole } from '@/context/RoleContext'
+import { getAuthed } from '@/lib/client/authed-api'
 import type { RoleName } from '@/lib/roles'
+import { type School, type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import NotificationsBell from './NotificationsBell'
 import { PRIMARY_NAV_BY_ROLE } from './nav-config'
 import RoleSwitcher from './RoleSwitcher'
@@ -33,11 +38,62 @@ const NAV_ICONS = {
 // segmented toggle. Rendered inside the app shell and on marketing pages for
 // logged-in users so the chrome is identical everywhere. When no `role` is
 // passed it follows the active role from RoleContext.
-export default function AppNav({ role: roleProp }: { role?: RoleName }) {
-  const { activeRole } = useRole()
-  const role = roleProp ?? activeRole
+export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
+  const { activeRole, isAdmin } = useRole()
+  const role = modeProp ?? activeRole
   const pathname = usePathname()
   const primary = PRIMARY_NAV_BY_ROLE[role]
+  const [schoolAccess, setSchoolAccess] = useState<{
+    school: School
+    membership: SchoolMembership
+  } | null>(null)
+
+  useEffect(() => {
+    if (role !== 'school') {
+      setSchoolAccess(null)
+      return
+    }
+
+    let active = true
+    const storedSchoolId = window.localStorage.getItem('nadamas.schoolId')
+    getAuthed('/api/schools')
+      .then(
+        (response) =>
+          response.json() as Promise<{
+            schools?: Array<{ school: School; membership: SchoolMembership }>
+            ownedSchool?: School | null
+          }>
+      )
+      .then((payload) => {
+        if (!active) return
+        const selected =
+          payload.schools?.find((item) => item.school.id === storedSchoolId) ||
+          payload.schools?.[0] ||
+          (payload.ownedSchool
+            ? {
+                school: payload.ownedSchool,
+                membership: {
+                  id: `${payload.ownedSchool.id}_owner`,
+                  schoolId: payload.ownedSchool.id,
+                  userId: payload.ownedSchool.directorId,
+                  role: 'director' as const,
+                  roles: ['director'] as const,
+                  status: 'active' as const,
+                  createdAt: payload.ownedSchool.createdAt,
+                  updatedAt: payload.ownedSchool.updatedAt,
+                },
+              }
+            : null)
+        setSchoolAccess(selected)
+      })
+      .catch(() => {
+        if (active) setSchoolAccess(null)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [role])
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
@@ -58,6 +114,23 @@ export default function AppNav({ role: roleProp }: { role?: RoleName }) {
             <RoleSwitcher currentRole={role} />
           </div>
         </div>
+
+        {role === 'school' && schoolAccess && (
+          <div className="flex items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-left text-sm font-bold text-[var(--c-ocean)]">
+              <span className="font-normal text-[var(--c-text-2)]">Escuela · </span>
+              {schoolAccess.school.name}
+            </p>
+            <SchoolHeaderActions
+              school={schoolAccess.school}
+              canEdit={isAdmin || schoolMembershipHasRole(schoolAccess.membership, 'director')}
+              canEditSlug={isAdmin}
+              onUpdated={(school) =>
+                setSchoolAccess((current) => (current ? { ...current, school } : current))
+              }
+            />
+          </div>
+        )}
 
         <nav aria-label="Navegación principal" className="grid grid-cols-3 gap-2">
           {primary.map((l) => {
@@ -81,6 +154,8 @@ export default function AppNav({ role: roleProp }: { role?: RoleName }) {
             )
           })}
         </nav>
+
+        {role === 'coach' && <CoachSchoolSwitcher />}
       </div>
     </header>
   )

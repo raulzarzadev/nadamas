@@ -1,8 +1,9 @@
-export type RoleName = 'athlete' | 'coach' | 'admin'
+export type RoleName = 'athlete' | 'coach' | 'school' | 'admin'
 
 export interface Roles {
   athlete: true
   coach: boolean
+  school: boolean
   admin: boolean
 }
 
@@ -22,6 +23,9 @@ export function normalizeRoles(user: RoleSource | null | undefined): Roles {
   return {
     athlete: true,
     coach: r ? r.coach === true : user?.isCoach === true,
+    // School mode is an account workspace: anyone can enter it to create a
+    // school, while the school routes enforce membership for management.
+    school: true,
     admin: r ? r.admin === true : false,
   }
 }
@@ -34,12 +38,9 @@ export function hasRole(roles: Roles, role: RoleName): boolean {
  * Resolve a safe active role: the stored value if still granted,
  * otherwise fall back to 'athlete'.
  */
-export function resolveActiveRole(
-  stored: string | null | undefined,
-  roles: Roles
-): RoleName {
+export function resolveActiveRole(stored: string | null | undefined, roles: Roles): RoleName {
   if (
-    (stored === 'athlete' || stored === 'coach' || stored === 'admin') &&
+    (stored === 'athlete' || stored === 'coach' || stored === 'school' || stored === 'admin') &&
     hasRole(roles, stored)
   ) {
     return stored

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import type { CoachClassOffering, CoachPublic } from '@/firebase/coaches/coach.model'
+import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { getSchoolMembership } from '@/lib/server/school-access'
 
 export const runtime = 'nodejs'
 
@@ -19,14 +21,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
 
-  const body = (await request.json()) as { classOfferings?: CoachClassOffering[] }
+  const body = (await request.json()) as {
+    classOfferings?: CoachClassOffering[]
+    schoolId?: string
+  }
   if (!Array.isArray(body.classOfferings)) {
     return NextResponse.json({ error: 'La configuración de clases es inválida.' }, { status: 400 })
+  }
+
+  const schoolId = typeof body.schoolId === 'string' ? body.schoolId.trim() : ''
+  if (schoolId) {
+    const membership = await getSchoolMembership(schoolId, caller.uid)
+    if (
+      !membership ||
+      membership.status !== 'active' ||
+      !schoolMembershipHasRole(membership as SchoolMembership, 'teacher')
+    ) {
+      return NextResponse.json({ error: 'No autorizado para esta escuela.' }, { status: 403 })
+    }
   }
 
   const coachRef = adminDb.collection('coaches').doc(caller.uid)
   const coachDoc = await coachRef.get()
   const now = Date.now()
+  if (schoolId) {
+    const schoolOfferingsRef = adminDb
+      .collection('schoolCoachOfferings')
+      .doc(`${schoolId}_${caller.uid}`)
+    await schoolOfferingsRef.set(
+      {
+        schoolId,
+        coachId: caller.uid,
+        classOfferings: body.classOfferings,
+        updatedAt: now,
+      },
+      { merge: true }
+    )
+    return NextResponse.json({ ok: true })
+  }
   const data: Partial<CoachPublic> = {
     classOfferings: body.classOfferings,
     userId: caller.uid,

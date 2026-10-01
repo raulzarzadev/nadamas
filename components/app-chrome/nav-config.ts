@@ -13,7 +13,12 @@ export interface NavLink {
 export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
     { href: '/athlete/find-coach', label: 'Buscar coach', mobileLabel: 'Buscar', icon: 'search' },
-    { href: '/athlete/bookings', label: 'Mis clases', mobileLabel: 'Clases', icon: 'calendar' },
+    {
+      href: '/athlete/bookings',
+      label: 'Próximas clases',
+      mobileLabel: 'Próximas',
+      icon: 'calendar',
+    },
     { href: '/athlete/progress', label: 'Mi progreso', mobileLabel: 'Progreso', icon: 'chart' },
   ],
   coach: [
@@ -25,6 +30,11 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
       mobileLabel: 'Perfil',
       icon: 'badge',
     },
+  ],
+  school: [
+    { href: '/school/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
+    { href: '/school/coaches', label: 'Coaches', mobileLabel: 'Coaches', icon: 'badge' },
+    { href: '/school/classes', label: 'Clases', mobileLabel: 'Clases', icon: 'calendar' },
   ],
   admin: [
     {
@@ -50,6 +60,11 @@ export const SECONDARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     { href: '/notifications', label: 'Notificaciones', mobileLabel: 'Avisos', icon: 'bell' },
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
+  school: [
+    { href: '/school', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
+    { href: '/notifications', label: 'Notificaciones', mobileLabel: 'Avisos', icon: 'bell' },
+    { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
+  ],
   admin: [
     { href: '/admin/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
     { href: '/notifications', label: 'Notificaciones', mobileLabel: 'Avisos', icon: 'bell' },
@@ -60,5 +75,6 @@ export const SECONDARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
 export const ROLE_LABEL: Record<RoleName, string> = {
   athlete: 'Atleta',
   coach: 'Entrenador',
+  school: 'Escuela',
   admin: 'Admin',
 }

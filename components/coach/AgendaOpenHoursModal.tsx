@@ -5,6 +5,7 @@ import { MoneyField, TextField } from '@comps/Inputs/FormFields'
 import { useState } from 'react'
 import { FiChevronLeft, FiChevronRight, FiPlus, FiX } from 'react-icons/fi'
 import { addDays, dateFromKey, dateKey, startOfWeek, WEEKDAY_LABELS } from '@/lib/coach-offerings'
+import HourPickerModal from './HourPickerModal'
 
 export interface AgendaWeekDay {
   key: string
@@ -17,13 +18,6 @@ export interface OpenHoursDetails {
   priceCents: number | null
   groupType: 'particular' | 'grupal'
 }
-
-const HALF_HOUR_OPTIONS = Array.from({ length: 32 }, (_, index) => {
-  const totalMinutes = (index + 12) * 30
-  const hour = Math.floor(totalMinutes / 60)
-  const minute = totalMinutes % 60
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
-})
 
 function buildWeekDays(start: Date): AgendaWeekDay[] {
   return Array.from({ length: 7 }, (_, index) => {
@@ -49,10 +43,6 @@ function isPastDay(key: string) {
   today.setHours(0, 0, 0, 0)
   const day = new Date(`${key}T00:00:00`)
   return day < today
-}
-
-function isPastDateTime(key: string, time: string) {
-  return new Date(`${key}T${time}:00`).getTime() <= Date.now()
 }
 
 export default function AgendaOpenHoursModal({
@@ -341,101 +331,6 @@ export default function AgendaOpenHoursModal({
           }}
         />
       )}
-    </div>
-  )
-}
-
-function HourPickerModal({
-  existingTimes,
-  selectedDates,
-  busy,
-  onClose,
-  onSubmit,
-}: {
-  existingTimes: Set<string>
-  selectedDates: string[]
-  busy: boolean
-  onClose: () => void
-  onSubmit: (times: string[]) => void
-}) {
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const toggleTime = (time: string) => {
-    setSelected((current) => {
-      const next = new Set(current)
-      if (next.has(time)) next.delete(time)
-      else next.add(time)
-      return next
-    })
-  }
-  const disabledTime = (time: string) => existingTimes.has(time)
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Agregar horas"
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') onClose()
-      }}
-    >
-      <div className="flex max-h-[min(92dvh,44rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)]">
-        <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-3">
-          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
-          <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar horas</h3>
-          <p className="mt-1 text-sm text-[var(--c-text-2)]">
-            Selecciona una o más horas. Sólo se permiten horas cerradas y medias horas.
-          </p>
-          <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-5">
-            {HALF_HOUR_OPTIONS.map((time) => {
-              const disabled = disabledTime(time)
-              const past =
-                selectedDates.length > 0 &&
-                selectedDates.every((date) => isPastDateTime(date, time))
-              const active = selected.has(time)
-              return (
-                <button
-                  key={time}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => toggleTime(time)}
-                  className={`min-h-11 rounded-[var(--r-sm)] border text-sm font-semibold transition-colors ${
-                    disabled
-                      ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
-                      : active
-                        ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                        : past
-                          ? 'cursor-pointer border-dashed border-[var(--c-border)] bg-slate-100 text-slate-500 hover:bg-[var(--c-surface)]'
-                          : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
-                  }`}
-                >
-                  {time}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-col gap-2 bg-white p-5 pt-4">
-          <button
-            type="button"
-            disabled={selected.size === 0 || busy}
-            onClick={() => onSubmit([...selected].sort())}
-            className="min-h-12 rounded-full bg-[var(--c-aqua-strong)] font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-100"
-          >
-            Agregar horas
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 rounded-full font-semibold text-[var(--c-text-2)] hover:text-[var(--c-ocean)]"
-          >
-            Cancelar
-          </button>
-        </div>
-      </div>
     </div>
   )
 }

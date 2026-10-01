@@ -12,6 +12,7 @@ import { ROLE_LABEL, SECONDARY_NAV_BY_ROLE } from './nav-config'
 const ROLE_PILL_LABEL: Record<RoleName, string> = {
   athlete: 'atleta',
   coach: 'coach',
+  school: 'escuela',
   admin: 'admin',
 }
 
@@ -37,11 +38,7 @@ function initialsFrom(
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-export default function RoleSwitcher({
-  currentRole,
-}: {
-  currentRole?: 'athlete' | 'coach' | 'admin'
-}) {
+export default function RoleSwitcher({ currentRole }: { currentRole?: RoleName }) {
   const { roles, activeRole, setActiveRole, enableCoach } = useRole()
   const { user, logout } = useUser() as {
     user: Parameters<typeof initialsFrom>[0]
@@ -184,7 +181,7 @@ export default function RoleSwitcher({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={`flex cursor-pointer items-center gap-2 rounded-full border bg-white py-1 pl-3.5 pr-1 transition-shadow hover:shadow-[var(--shadow-sm)] ${
-          displayedRole === 'coach'
+          displayedRole === 'coach' || displayedRole === 'school'
             ? 'border-[#cf9b3f] ring-1 ring-[#cf9b3f]'
             : 'border-[var(--c-border)]'
         }`}
@@ -291,6 +288,21 @@ export default function RoleSwitcher({
                 {busy ? 'Activando…' : 'Activar modo entrenador'}
               </button>
             )}
+          </div>
+          <div role="none">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setActiveRole('school')
+                setOpen(false)
+              }}
+              className={`w-full rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
+                displayedRole === 'school' ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
+              }`}
+            >
+              Modo {ROLE_LABEL.school}
+            </button>
           </div>
           {roles.admin && (
             <div role="none">

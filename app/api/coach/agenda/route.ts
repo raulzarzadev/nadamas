@@ -9,7 +9,9 @@ import {
 } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
+import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { getSchoolMembership } from '@/lib/server/school-access'
 
 export const runtime = 'nodejs'
 
@@ -40,29 +42,61 @@ function resolveCoachId(
   return verification.isAdmin && target ? target : verification.caller.uid
 }
 
+async function authorizeSchoolContext(schoolId: string | null, uid: string, isAdmin: boolean) {
+  if (!schoolId || isAdmin) return null
+  const membership = await getSchoolMembership(schoolId, uid)
+  if (
+    !membership ||
+    membership.status !== 'active' ||
+    !schoolMembershipHasRole(membership as SchoolMembership, 'teacher')
+  ) {
+    return NextResponse.json({ error: 'No autorizado para esta escuela.' }, { status: 403 })
+  }
+  return null
+}
+
 export async function GET(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
   const url = new URL(request.url)
   const coachId = resolveCoachId(verification, url.searchParams.get('coachId'))
+  const schoolId = url.searchParams.get('schoolId') || null
+  const schoolError = await authorizeSchoolContext(
+    schoolId,
+    verification.caller.uid,
+    verification.isAdmin
+  )
+  if (schoolError) return schoolError
   const range = monthRange(url.searchParams.get('month'))
-  const [coachDoc, bookingsSnapshot, blocksSnapshot] = await Promise.all([
+  const [coachDoc, bookingsSnapshot, blocksSnapshot, schoolOfferingsSnapshot] = await Promise.all([
     adminDb.collection('coaches').doc(coachId).get(),
     adminDb.collection('bookings').where('coachId', '==', coachId).get(),
     adminDb.collection('coachScheduleBlocks').where('coachId', '==', coachId).get(),
+    schoolId
+      ? adminDb.collection('schoolCoachOfferings').doc(`${schoolId}_${coachId}`).get()
+      : Promise.resolve(null),
   ])
 
   const coach = { id: coachDoc.id, ...coachDoc.data() } as CoachPublic
   const bookings = bookingsSnapshot.docs
     .map((doc) => doc.data() as Booking)
+    .filter((booking) => (schoolId ? booking.schoolId === schoolId : !booking.schoolId))
     .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
   const blocks = blocksSnapshot.docs
     .map((doc) => doc.data() as CoachScheduleBlock)
+    .filter((block) => (schoolId ? block.schoolId === schoolId : !block.schoolId))
     .sort((a, b) =>
       `${a.date} ${a.startTime || ''}`.localeCompare(`${b.date} ${b.startTime || ''}`)
     )
-  const offerings = resolveOfferings(coach)
+  const offerings = resolveOfferings(
+    schoolId
+      ? ({
+          ...coach,
+          classOfferings: schoolOfferingsSnapshot?.data()?.classOfferings || [],
+        } as CoachPublic)
+      : coach
+  )
 
   const availableSlots = buildAvailableSlots({
     coachId,
@@ -73,15 +107,25 @@ export async function GET(request: Request) {
     endDate: range.end,
   })
 
-  return NextResponse.json({ bookings, blocks, availableSlots, offerings })
+  return NextResponse.json({ bookings, blocks, availableSlots, offerings, schoolId })
 }
 
 export async function POST(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
-  const body = (await request.json()) as ScheduleBlockInput & { coachId?: string }
+  const body = (await request.json()) as ScheduleBlockInput & {
+    coachId?: string
+    schoolId?: string
+  }
   const coachId = resolveCoachId(verification, body.coachId ?? null)
+  const schoolId = typeof body.schoolId === 'string' ? body.schoolId.trim() || null : null
+  const schoolError = await authorizeSchoolContext(
+    schoolId,
+    verification.caller.uid,
+    verification.isAdmin
+  )
+  if (schoolError) return schoolError
   const input = normalizeScheduleBlockInput(body)
   if (!input) {
     return NextResponse.json({ error: 'Datos de bloqueo inválidos.' }, { status: 400 })
@@ -95,6 +139,7 @@ export async function POST(request: Request) {
     createdAt: now,
     updatedAt: now,
     ...input,
+    ...(schoolId ? { schoolId } : {}),
   }
 
   await ref.set(block)
@@ -110,9 +155,20 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ error: 'Bloqueo inválido.' }, { status: 400 })
 
   const coachId = resolveCoachId(verification, url.searchParams.get('coachId'))
+  const schoolId = url.searchParams.get('schoolId') || null
+  const schoolError = await authorizeSchoolContext(
+    schoolId,
+    verification.caller.uid,
+    verification.isAdmin
+  )
+  if (schoolError) return schoolError
   const ref = adminDb.collection('coachScheduleBlocks').doc(id)
   const current = await ref.get()
-  if (!current.exists || current.data()?.coachId !== coachId) {
+  if (
+    !current.exists ||
+    current.data()?.coachId !== coachId ||
+    (schoolId ? current.data()?.schoolId !== schoolId : current.data()?.schoolId)
+  ) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
 

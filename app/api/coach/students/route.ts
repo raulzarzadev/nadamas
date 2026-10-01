@@ -12,7 +12,10 @@ import {
   type StudentProgressInput,
   studentProgressId,
 } from '@/lib/coach-student-progress'
+import { publicNameFromUser } from '@/lib/public-name'
+import { sendStudentAddedEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { notifyStudentAddedByCoach } from '@/lib/server/notifications'
 
 export const runtime = 'nodejs'
 
@@ -46,7 +49,7 @@ async function verifyCoach(request: Request) {
     return { error: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
   }
 
-  return { caller }
+  return { caller, callerDoc }
 }
 
 export async function GET(request: Request) {
@@ -145,14 +148,23 @@ export async function POST(request: Request) {
     phone?: unknown
   }
   const name = typeof body.name === 'string' ? body.name.trim().slice(0, 120) : ''
-  const email = typeof body.email === 'string' ? body.email.trim().slice(0, 160) : ''
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase().slice(0, 160) : ''
   const phone = typeof body.phone === 'string' ? body.phone.trim().slice(0, 40) : ''
 
   if (name.length < 2) {
     return NextResponse.json({ error: 'Nombre inválido.' }, { status: 400 })
   }
 
-  const athleteId = `manual_${randomUUID()}`
+  let existingUser: Awaited<ReturnType<typeof adminAuth.getUserByEmail>> | null = null
+  if (email) {
+    try {
+      existingUser = await adminAuth.getUserByEmail(email)
+    } catch {
+      // A contact email does not need to have a Nadamas account yet.
+    }
+  }
+
+  const athleteId = existingUser?.uid || `manual_${randomUUID()}`
   const id = studentProgressId(coachId, athleteId)
   const now = Date.now()
   const progress: StudentProgress = {
@@ -170,6 +182,32 @@ export async function POST(request: Request) {
   }
 
   await adminDb.collection('coachStudentProgress').doc(id).set(progress)
+
+  const coachName = publicNameFromUser(verification.callerDoc.data())
+  const notifications: Promise<unknown>[] = []
+  if (email) {
+    notifications.push(
+      sendStudentAddedEmail({
+        email,
+        coachName,
+        studentName: name,
+      }).catch((error) => {
+        console.error('[COACH_STUDENT_EMAIL]', error)
+      })
+    )
+  }
+  if (existingUser) {
+    notifications.push(
+      notifyStudentAddedByCoach({
+        athleteId,
+        coachId,
+        coachName,
+      }).catch((error) => {
+        console.error('[COACH_STUDENT_NOTIFICATION]', error)
+      })
+    )
+  }
+  await Promise.all(notifications)
 
   return NextResponse.json({
     student: {
