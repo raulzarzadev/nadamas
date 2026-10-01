@@ -8,6 +8,7 @@ import Sheet from '@comps/ui/sheet'
 import { onAuthStateChanged, signInWithCustomToken } from 'firebase/auth'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiCheck, FiCopy } from 'react-icons/fi'
+import ClassEvaluationList from '@/components/bookings/ClassEvaluationList'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth, googleLogin } from '@/firebase/index'
@@ -629,6 +630,7 @@ export default function CoachPublicProfile({
       )}
 
       {/* Single selection summary (across all offerings). */}
+      <ClassEvaluationList coachId={coach.id} />
       {selectedCount > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--c-border)] bg-white/95 px-4 py-3 shadow-[0_-10px_30px_rgba(10,37,64,0.12)] backdrop-blur">
           <div className="mx-auto flex w-full max-w-md items-center gap-3">

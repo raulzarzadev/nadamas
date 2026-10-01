@@ -15,7 +15,9 @@ import {
   FiUser,
   FiX,
 } from 'react-icons/fi'
+import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
+import { type ClassEvaluation, canEvaluateBooking } from '@/lib/class-evaluation'
 import { deleteAuthed, getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
 import type { School, SchoolMembership } from '@/lib/school'
@@ -85,10 +87,12 @@ function BookingCard({
   booking,
   coach,
   onCancel,
+  onEvaluate,
 }: {
   booking: Booking
   coach?: CoachInfo
   onCancel?: (booking: Booking) => void
+  onEvaluate?: (booking: Booking) => void
 }) {
   const cancelled = booking.status === 'cancelled'
   const coachName = coach?.name || booking.coachName || 'Coach de natación'
@@ -123,13 +127,22 @@ function BookingCard({
           <Chip icon={<FiClock size={14} />}>{timeLabel(booking)}</Chip>
         </div>
 
-        <div className="mt-3.5 flex gap-2">
+        <div className="mt-3.5 flex flex-wrap gap-2">
           <Link
             href={`/athlete/coach/${booking.coachId}`}
             className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-[var(--c-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition hover:bg-[var(--c-surface)]"
           >
             Ver perfil <FiChevronRight aria-hidden="true" size={14} />
           </Link>
+          {onEvaluate && canEvaluateBooking(booking) && (
+            <button
+              type="button"
+              onClick={() => onEvaluate(booking)}
+              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[var(--c-ocean)] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              {booking.evaluation ? 'Editar evaluación' : 'Evaluar clase'}
+            </button>
+          )}
           {onCancel && !cancelled && (
             <button
               type="button"
@@ -148,9 +161,11 @@ function BookingCard({
 function PastBookings({
   bookings,
   coaches,
+  onEvaluate,
 }: {
   bookings: Booking[]
   coaches: Record<string, CoachInfo>
+  onEvaluate: (booking: Booking) => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -176,7 +191,12 @@ function PastBookings({
       {open && (
         <ul className="flex flex-col gap-3">
           {bookings.map((booking) => (
-            <BookingCard key={booking.id} booking={booking} coach={coaches[booking.coachId]} />
+            <BookingCard
+              key={booking.id}
+              booking={booking}
+              coach={coaches[booking.coachId]}
+              onEvaluate={onEvaluate}
+            />
           ))}
         </ul>
       )}
@@ -185,6 +205,8 @@ function PastBookings({
 }
 
 export default function BookingsPage() {
+  const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
+  const [evaluationSaved, setEvaluationSaved] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const calendarDialogRef = useRef<HTMLDialogElement>(null)
 
@@ -409,10 +431,41 @@ export default function BookingsPage() {
               No tienes clases próximas.
             </div>
           )}
-          {pastBookings.length > 0 && <PastBookings bookings={pastBookings} coaches={coaches} />}
+          {pastBookings.length > 0 && (
+            <PastBookings
+              bookings={pastBookings}
+              coaches={coaches}
+              onEvaluate={(booking) => {
+                setEvaluationSaved(false)
+                setToEvaluate(booking)
+              }}
+            />
+          )}
         </>
       )}
 
+      {evaluationSaved && (
+        <p role="status" className="text-sm text-[var(--c-ocean)]">
+          Evaluación guardada.
+        </p>
+      )}
+      {toEvaluate && (
+        <ClassEvaluationForm
+          key={toEvaluate.id}
+          booking={toEvaluate}
+          coachName={coaches[toEvaluate.coachId]?.name || toEvaluate.coachName || 'Tu coach'}
+          onClose={() => setToEvaluate(null)}
+          onSaved={(evaluation: ClassEvaluation) => {
+            setBookings((current) =>
+              current?.map((booking) =>
+                booking.id === toEvaluate.id ? { ...booking, evaluation } : booking
+              )
+            )
+            setToEvaluate(null)
+            setEvaluationSaved(true)
+          }}
+        />
+      )}
       <Sheet open={!!toCancel} onClose={() => setToCancel(null)} label="Cancelar clase">
         {toCancel && (
           <>

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
+import type { Booking } from '@/lib/coach-booking'
 import {
   type BookingInput,
   createConfirmedBookings,
   validateSelections,
 } from '@/lib/server/bookings'
+import { getClassEvaluations } from '@/lib/server/class-evaluations'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 
 export const runtime = 'nodejs'
@@ -21,10 +23,17 @@ export async function GET(request: Request) {
   }
 
   const caller = await adminAuth.verifyIdToken(token)
-  const snapshot = await adminDb.collection('bookings').where('athleteId', '==', caller.uid).get()
+  const [snapshot, evaluations] = await Promise.all([
+    adminDb.collection('bookings').where('athleteId', '==', caller.uid).get(),
+    getClassEvaluations('athleteId', caller.uid),
+  ])
 
   const bookings = snapshot.docs
-    .map((doc) => doc.data())
+    .map((doc) => ({
+      ...(doc.data() as Booking),
+      id: doc.id,
+      evaluation: evaluations.find((item) => item.id === doc.id) || null,
+    }))
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
 
   return NextResponse.json({ bookings })

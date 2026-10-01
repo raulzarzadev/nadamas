@@ -29,6 +29,7 @@ export type CoachBookingSelection = {
 }
 
 export interface Booking extends CoachBookingSelection {
+  evaluation?: import('@/lib/class-evaluation').ClassEvaluation
   id: string
   schoolId?: string
   athleteId: string

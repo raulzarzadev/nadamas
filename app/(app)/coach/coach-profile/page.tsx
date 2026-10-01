@@ -8,6 +8,7 @@ import SkillsCard from '@comps/coach/SkillsCard'
 import Loading from '@comps/Loading'
 import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import { useEffect, useState } from 'react'
+import ClassEvaluationList from '@/components/bookings/ClassEvaluationList'
 import { useUser } from '@/context/UserContext'
 import type { CoachPrivate, CoachPublic, CoachVerification } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
@@ -170,6 +171,8 @@ export default function CoachProfilePage() {
       />
 
       <PublicLinkEditor />
+
+      <ClassEvaluationList privateView />
 
       <CalendarConnectionCard calendarRole="coach" />
 
