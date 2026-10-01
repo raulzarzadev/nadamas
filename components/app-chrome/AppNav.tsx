@@ -114,7 +114,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <NotificationsBell />
-            <RoleSwitcher currentRole={role} />
+            <RoleSwitcher currentRole={role} school={schoolAccess?.school} />
           </div>
         </div>
 

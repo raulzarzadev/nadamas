@@ -1,12 +1,15 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
-import { FiCheck, FiShare2 } from 'react-icons/fi'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { FiShare2 } from 'react-icons/fi'
+import ProfileShareDialog from '@/components/profile/ProfileShareDialog'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
+import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import type { RoleName } from '@/lib/roles'
+import type { School } from '@/lib/school'
 import { ROLE_LABEL, SECONDARY_NAV_BY_ROLE } from './nav-config'
 
 const ROLE_PILL_LABEL: Record<RoleName, string> = {
@@ -38,7 +41,13 @@ function initialsFrom(
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
-export default function RoleSwitcher({ currentRole }: { currentRole?: RoleName }) {
+export default function RoleSwitcher({
+  currentRole,
+  school,
+}: {
+  currentRole?: RoleName
+  school?: Pick<School, 'name' | 'slug'> | null
+}) {
   const { roles, activeRole, setActiveRole, enableCoach } = useRole()
   const { user, logout } = useUser() as {
     user: Parameters<typeof initialsFrom>[0]
@@ -49,13 +58,16 @@ export default function RoleSwitcher({ currentRole }: { currentRole?: RoleName }
   const secondaryLinks = SECONDARY_NAV_BY_ROLE[displayedRole]
   const avatarText = displayedRole === 'athlete' ? 'TÚ' : initialsFrom(user)
   const userEmail = user?.email
+  const shareSchool = school
+  const [shareTarget, setShareTarget] = useState<{ title: string; publicUrl: string } | null>(null)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [slugs, setSlugs] = useState<{ coach?: string; athlete?: string }>({})
-  const [copiedKind, setCopiedKind] = useState<'coach' | 'athlete' | null>(null)
   const switcherRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  const focusTrigger = useCallback(() => triggerRef.current?.focus(), [])
 
   const handleEnableCoach = async () => {
     setBusy(true)
@@ -144,201 +156,223 @@ export default function RoleSwitcher({ currentRole }: { currentRole?: RoleName }
     }
   }, [open])
 
-  const shareSlug = async (kind: 'coach' | 'athlete', slug: string) => {
-    try {
-      const path = kind === 'athlete' ? `/atleta/${slug}` : `/${slug}`
-      await navigator.clipboard.writeText(`${window.location.origin}${path}`)
-      setCopiedKind(kind)
-      setTimeout(() => setCopiedKind((current) => (current === kind ? null : current)), 2000)
-    } catch {}
-  }
-
   const renderShare = (kind: 'coach' | 'athlete') => {
     const slug = slugs[kind]
     if (!slug) return null
-    const copied = copiedKind === kind
     return (
       <button
         type="button"
-        onClick={() => shareSlug(kind, slug)}
-        aria-label={`Copiar enlace de ${ROLE_LABEL[kind]}`}
+        role="menuitem"
+        onClick={() => {
+          const path = kind === 'athlete' ? `/atleta/${slug}` : `/${slug}`
+          setOpen(false)
+          setShareTarget({
+            title: `Compartir perfil de ${ROLE_LABEL[kind].toLowerCase()}`,
+            publicUrl: `${window.location.origin}${path}`,
+          })
+        }}
+        aria-label={`Compartir perfil de ${ROLE_LABEL[kind].toLowerCase()}`}
         title={kind === 'athlete' ? `nadamas.app/atleta/${slug}` : `nadamas.app/${slug}`}
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]"
       >
-        {copied ? (
-          <FiCheck aria-hidden="true" className="text-[var(--c-aqua-strong)]" />
-        ) : (
-          <FiShare2 aria-hidden="true" />
-        )}
+        <FiShare2 aria-hidden="true" />
       </button>
     )
   }
 
   return (
-    <div ref={switcherRef} className="relative">
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={`flex cursor-pointer items-center gap-2 rounded-full border bg-white py-1 pl-3.5 pr-1 transition-shadow hover:shadow-[var(--shadow-sm)] ${
-          displayedRole === 'coach' || displayedRole === 'school'
-            ? 'border-[#cf9b3f] ring-1 ring-[#cf9b3f]'
-            : 'border-[var(--c-border)]'
-        }`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-label={`Rol actual: ${ROLE_LABEL[displayedRole]}. Cambiar rol o ir a otra sección`}
-      >
-        <span className="text-sm font-semibold text-[var(--c-ocean)]">
-          {ROLE_PILL_LABEL[displayedRole]}
-        </span>
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--c-aqua)] to-[var(--c-ocean)] text-[11px] font-bold leading-none text-white">
-          {avatarText}
-        </span>
-      </button>
-      {open && (
-        <div
-          ref={menuRef}
-          role="menu"
-          onKeyDown={handleMenuKeyDown}
-          className="absolute right-0 z-20 mt-2 w-60 rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] border border-[var(--c-border)] p-2"
+    <>
+      <div ref={switcherRef} className="relative">
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className={`flex cursor-pointer items-center gap-2 rounded-full border bg-white py-1 pl-3.5 pr-1 transition-shadow hover:shadow-[var(--shadow-sm)] ${
+            displayedRole === 'coach' || displayedRole === 'school'
+              ? 'border-[#cf9b3f] ring-1 ring-[#cf9b3f]'
+              : 'border-[var(--c-border)]'
+          }`}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-label={`Rol actual: ${ROLE_LABEL[displayedRole]}. Cambiar rol o ir a otra sección`}
         >
-          {userEmail && (
-            <div role="none" className="px-3 py-2">
-              <p className="truncate text-xs font-semibold text-[var(--c-text-2)]">{userEmail}</p>
-            </div>
-          )}
+          <span className="text-sm font-semibold text-[var(--c-ocean)]">
+            {ROLE_PILL_LABEL[displayedRole]}
+          </span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--c-aqua)] to-[var(--c-ocean)] text-[11px] font-bold leading-none text-white">
+            {avatarText}
+          </span>
+        </button>
+        {open && (
+          <div
+            ref={menuRef}
+            role="menu"
+            onKeyDown={handleMenuKeyDown}
+            className="absolute right-0 z-20 mt-2 w-60 rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] border border-[var(--c-border)] p-2"
+          >
+            {userEmail && (
+              <div role="none" className="px-3 py-2">
+                <p className="truncate text-xs font-semibold text-[var(--c-text-2)]">{userEmail}</p>
+              </div>
+            )}
 
-          {userEmail && (
+            {userEmail && (
+              <div role="none" aria-hidden="true">
+                <div className="my-1 border-t border-[var(--c-border)]" />
+              </div>
+            )}
+
+            {secondaryLinks.map((link) => {
+              const active = pathname.startsWith(link.href)
+              return (
+                <div role="none" key={link.href}>
+                  <Link
+                    role="menuitem"
+                    href={link.href}
+                    aria-current={active ? 'page' : undefined}
+                    onClick={() => setOpen(false)}
+                    className={`block w-full rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
+                      active ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                </div>
+              )
+            })}
+
             <div role="none" aria-hidden="true">
               <div className="my-1 border-t border-[var(--c-border)]" />
             </div>
-          )}
 
-          {secondaryLinks.map((link) => {
-            const active = pathname.startsWith(link.href)
-            return (
-              <div role="none" key={link.href}>
-                <Link
+            {(slugs.athlete || slugs.coach) && (
+              <p
+                role="none"
+                className="px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--c-text-2)]"
+              >
+                Compartir perfil
+              </p>
+            )}
+
+            <div role="none" className="flex items-center gap-1 pr-1">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setActiveRole('athlete')
+                  setOpen(false)
+                }}
+                className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+              >
+                Modo {ROLE_LABEL.athlete}
+              </button>
+              {renderShare('athlete')}
+            </div>
+            <div role="none" className="flex items-center gap-1 pr-1">
+              {roles.coach ? (
+                <>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setActiveRole('coach')
+                      setOpen(false)
+                    }}
+                    className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+                  >
+                    Modo {ROLE_LABEL.coach}
+                  </button>
+                  {renderShare('coach')}
+                </>
+              ) : (
+                <button
+                  type="button"
                   role="menuitem"
-                  href={link.href}
-                  aria-current={active ? 'page' : undefined}
-                  onClick={() => setOpen(false)}
-                  className={`block w-full rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
-                    active ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
-                  }`}
+                  disabled={busy}
+                  onClick={handleEnableCoach}
+                  className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-[var(--c-aqua-strong)] font-semibold hover:bg-[var(--c-surface)] disabled:opacity-50 cursor-pointer"
                 >
-                  {link.label}
-                </Link>
-              </div>
-            )
-          })}
-
-          <div role="none" aria-hidden="true">
-            <div className="my-1 border-t border-[var(--c-border)]" />
-          </div>
-
-          {(slugs.athlete || slugs.coach) && (
-            <p
-              role="none"
-              className="px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--c-text-2)]"
-            >
-              Compartir perfil
-            </p>
-          )}
-
-          <div role="none" className="flex items-center gap-1 pr-1">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setActiveRole('athlete')
-                setOpen(false)
-              }}
-              className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
-            >
-              Modo {ROLE_LABEL.athlete}
-            </button>
-            {renderShare('athlete')}
-          </div>
-          <div role="none" className="flex items-center gap-1 pr-1">
-            {roles.coach ? (
-              <>
+                  {busy ? 'Activando…' : 'Activar modo entrenador'}
+                </button>
+              )}
+            </div>
+            <div role="none" className="flex items-center gap-1 pr-1">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setActiveRole('school')
+                  setOpen(false)
+                }}
+                className={`flex-1 rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
+                  displayedRole === 'school' ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
+                }`}
+              >
+                Modo {ROLE_LABEL.school}
+              </button>
+              {shareSchool && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  aria-label="Compartir escuela"
+                  title={`Compartir ${shareSchool.name}`}
+                  onClick={() => {
+                    setOpen(false)
+                    setShareTarget({
+                      title: `Compartir ${shareSchool.name}`,
+                      publicUrl: getPublicSchoolUrl(shareSchool.slug),
+                    })
+                  }}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                >
+                  <FiShare2 aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            {roles.admin && (
+              <div role="none">
                 <button
                   type="button"
                   role="menuitem"
                   onClick={() => {
-                    setActiveRole('coach')
+                    setActiveRole('admin')
                     setOpen(false)
                   }}
-                  className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+                  className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
                 >
-                  Modo {ROLE_LABEL.coach}
+                  Modo {ROLE_LABEL.admin}
                 </button>
-                {renderShare('coach')}
-              </>
-            ) : (
-              <button
-                type="button"
-                role="menuitem"
-                disabled={busy}
-                onClick={handleEnableCoach}
-                className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-[var(--c-aqua-strong)] font-semibold hover:bg-[var(--c-surface)] disabled:opacity-50 cursor-pointer"
-              >
-                {busy ? 'Activando…' : 'Activar modo entrenador'}
-              </button>
+              </div>
             )}
-          </div>
-          <div role="none">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setActiveRole('school')
-                setOpen(false)
-              }}
-              className={`w-full rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
-                displayedRole === 'school' ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
-              }`}
-            >
-              Modo {ROLE_LABEL.school}
-            </button>
-          </div>
-          {roles.admin && (
+
+            <div role="none" aria-hidden="true">
+              <div className="my-1 border-t border-[var(--c-border)]" />
+            </div>
+
             <div role="none">
               <button
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  setActiveRole('admin')
+                  logout()
                   setOpen(false)
                 }}
-                className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+                className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-red-600 hover:bg-[var(--c-surface)] cursor-pointer"
               >
-                Modo {ROLE_LABEL.admin}
+                Cerrar sesión
               </button>
             </div>
-          )}
-
-          <div role="none" aria-hidden="true">
-            <div className="my-1 border-t border-[var(--c-border)]" />
           </div>
-
-          <div role="none">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                logout()
-                setOpen(false)
-              }}
-              className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-red-600 hover:bg-[var(--c-surface)] cursor-pointer"
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
+        )}
+      </div>
+      {shareTarget && (
+        <ProfileShareDialog
+          title={shareTarget.title}
+          publicUrl={shareTarget.publicUrl}
+          onClose={() => setShareTarget(null)}
+          returnFocus={focusTrigger}
+        />
       )}
-    </div>
+    </>
   )
 }

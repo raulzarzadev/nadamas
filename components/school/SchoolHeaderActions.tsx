@@ -1,12 +1,12 @@
 'use client'
 
-import { QRCodeCanvas } from 'qrcode.react'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiCheck, FiCopy, FiEdit3, FiShare2, FiX } from 'react-icons/fi'
+import { FiEdit3, FiX } from 'react-icons/fi'
 import SchoolLogoInput from '@/components/school/SchoolLogoInput'
 import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { patchAuthed } from '@/lib/client/authed-api'
+import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import {
   DEFAULT_SCHOOL_PALETTE,
   SCHOOL_PALETTES,
@@ -27,7 +27,6 @@ export default function SchoolHeaderActions({
   onUpdated: (school: School) => void
 }) {
   const [editOpen, setEditOpen] = useState(false)
-  const [shareOpen, setShareOpen] = useState(false)
   const [name, setName] = useState(school.name)
   const [description, setDescription] = useState(school.description)
   const [slug, setSlug] = useState(school.slug)
@@ -42,9 +41,6 @@ export default function SchoolHeaderActions({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-
-  const publicUrl = getPublicSchoolUrl(school.slug)
 
   function openEdit() {
     setName(school.name)
@@ -121,17 +117,6 @@ export default function SchoolHeaderActions({
     }
   }
 
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(publicUrl)
-      setCopied(true)
-      setMessage('Enlace copiado.')
-      window.setTimeout(() => setCopied(false), 2000)
-    } catch {
-      setMessage('No se pudo copiar el enlace.')
-    }
-  }
-
   return (
     <>
       <div className="flex shrink-0 items-center gap-1">
@@ -144,16 +129,6 @@ export default function SchoolHeaderActions({
             <FiEdit3 aria-hidden="true" /> Editar
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => {
-            setMessage(null)
-            setShareOpen(true)
-          }}
-          className="inline-flex min-h-8 items-center gap-1 rounded-full px-2.5 text-xs font-bold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean)"
-        >
-          <FiShare2 aria-hidden="true" /> Compartir
-        </button>
       </div>
 
       {editOpen && (
@@ -293,31 +268,6 @@ export default function SchoolHeaderActions({
           </form>
         </ModalPortal>
       )}
-
-      {shareOpen && (
-        <ModalPortal title={`Compartir ${school.name}`} onClose={() => setShareOpen(false)}>
-          <div className="grid justify-items-center gap-4">
-            <div className="rounded-[var(--r-sm)] border border-(--c-border) bg-white p-3">
-              <QRCodeCanvas value={publicUrl} size={210} includeMargin />
-            </div>
-            <p className="w-full break-all rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-center text-sm text-(--c-text-2)">
-              {publicUrl}
-            </p>
-            {message && (
-              <p className="flex items-center gap-1 text-sm font-semibold text-(--c-aqua-strong)">
-                {copied && <FiCheck aria-hidden="true" />} {message}
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={() => void copyLink()}
-              className="btn btn-primary min-h-11"
-            >
-              <FiCopy aria-hidden="true" /> Copiar enlace
-            </button>
-          </div>
-        </ModalPortal>
-      )}
     </>
   )
 }
@@ -338,17 +288,6 @@ function ModalPortal({
     </Modal>,
     document.body
   )
-}
-
-function getPublicSchoolUrl(slug: string) {
-  if (typeof window === 'undefined') return `https://${slug}.nadamas.app/`
-  const { hostname, origin, port, protocol } = window.location
-  if (hostname.endsWith('.localhost'))
-    return `${protocol}//${slug}.localhost${port ? `:${port}` : ''}/`
-  if (hostname === 'nadamas.app' || hostname.endsWith('.nadamas.app')) {
-    return `${protocol}//${slug}.nadamas.app/`
-  }
-  return `${origin}/school/${slug}`
 }
 
 function Modal({
