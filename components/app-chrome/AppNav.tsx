@@ -1,7 +1,6 @@
 'use client'
 import CoachSchoolSwitcher from '@comps/coach/CoachSchoolSwitcher'
 import AthleteSchoolSwitcher from '@comps/school/AthleteSchoolSwitcher'
-import SchoolHeaderActions from '@comps/school/SchoolHeaderActions'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -12,6 +11,7 @@ import {
   FiCalendar,
   FiHome,
   FiSearch,
+  FiSettings,
   FiShield,
   FiUser,
   FiUsers,
@@ -20,7 +20,7 @@ import { useRole } from '@/context/RoleContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { RoleName } from '@/lib/roles'
-import { type School, type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
+import type { School, SchoolMembership } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
 import NotificationsBell from './NotificationsBell'
 import { PRIMARY_NAV_BY_ROLE } from './nav-config'
@@ -43,7 +43,7 @@ const NAV_ICONS = {
 // passed it follows the active role from RoleContext.
 export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const tenant = useTenantSchool()
-  const { activeRole, isAdmin } = useRole()
+  const { activeRole } = useRole()
   const role = modeProp ?? activeRole
   const pathname = usePathname()
   const primary = PRIMARY_NAV_BY_ROLE[role]
@@ -152,18 +152,13 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
               <span className="font-normal text-[var(--c-text-2)]">Escuela · </span>
               {schoolAccess.school.name}
             </p>
-            <SchoolHeaderActions
-              school={schoolAccess.school}
-              canEdit={isAdmin || schoolMembershipHasRole(schoolAccess.membership, 'director')}
-              canEditSlug={isAdmin}
-              onUpdated={(school) =>
-                setSchoolAccess((current) => (current ? { ...current, school } : current))
-              }
-            />
           </div>
         )}
 
-        <nav aria-label="Navegación principal" className="grid grid-cols-3 gap-2">
+        <nav
+          aria-label="Navegación principal"
+          className={`grid gap-2 ${role === 'school' ? 'grid-cols-[repeat(3,minmax(0,1fr))_3rem]' : 'grid-cols-3'}`}
+        >
           {primary.map((l) => {
             const active = pathname.startsWith(l.href)
             const Icon = NAV_ICONS[l.icon]
@@ -184,6 +179,16 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
               </Link>
             )
           })}
+          {role === 'school' && (
+            <Link
+              href="/school/settings"
+              aria-label="Configuración de escuela"
+              aria-current={pathname.startsWith('/school/settings') ? 'page' : undefined}
+              className={`flex min-h-12 items-center justify-center rounded-[var(--r-sm)] border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${pathname.startsWith('/school/settings') ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'}`}
+            >
+              <FiSettings aria-hidden="true" className="size-5" />
+            </Link>
+          )}
         </nav>
 
         {role === 'coach' && <CoachSchoolSwitcher />}

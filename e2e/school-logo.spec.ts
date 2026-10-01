@@ -121,7 +121,15 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     await expect(page.getByRole('button', { name: 'Guardar alumno', exact: true })).toBeInViewport()
     await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
 
-    await page.getByRole('button', { name: 'Editar', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Reservas de alumnos' })).toHaveCount(0)
+    await page.getByRole('link', { name: 'Configuración de escuela', exact: true }).click()
+    await expect(page).toHaveURL(/\/school\/settings$/, { timeout: 30000 })
+    await expect(page.getByRole('heading', { name: 'Reservas de alumnos' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Sincronizar calendario' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Instalaciones' })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
+    await expect(page.getByRole('heading', { name: 'Datos de la escuela' })).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await page.locator('input[type=file]').setInputFiles(file)
     await dragImage(1)
     await page.getByRole('button', { name: 'Usar imagen', exact: true }).click()
@@ -136,7 +144,7 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     const { school: edited } = await updated.json()
     uploaded.push(edited.logoUrl)
     expect(edited.logoUrl).not.toBe(school.logoUrl)
-    await expect(page.getByRole('heading', { name: 'Editar escuela', exact: true })).toHaveCount(0)
+    await expect(page.getByText('Cambios guardados.', { exact: true })).toBeVisible()
   } finally {
     for (const url of uploaded) {
       const parsed = new URL(url)

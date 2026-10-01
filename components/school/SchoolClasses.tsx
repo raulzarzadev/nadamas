@@ -14,9 +14,6 @@ import {
   type SchoolStudent,
   schoolMembershipHasRole,
 } from '@/lib/school'
-import SchoolBookingSettingsCard from './SchoolBookingSettingsCard'
-import SchoolCalendarCard from './SchoolCalendarCard'
-import SchoolLocationsCard from './SchoolLocationsCard'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolReviewForm from './SchoolReviewForm'
 import SchoolSelector from './SchoolSelector'
@@ -417,15 +414,6 @@ export default function SchoolClasses() {
             </div>
           </details>
         ) : null}
-        {isDirector && (
-          <SchoolBookingSettingsCard
-            schoolId={selected.school.id}
-            mode={bookingMode}
-            onChange={setBookingMode}
-          />
-        )}
-        <SchoolCalendarCard schoolId={selected.school.id} />
-        <SchoolLocationsCard schoolId={selected.school.id} canManage={isDirector} />
       </section>
       {showCreate &&
         (isDirector ? (
