@@ -15,12 +15,12 @@ export default function SchoolWorkspaceTabs({
 }) {
   if (!schools.length) return null
   return (
-    <section className="-mx-1 flex items-center gap-4 px-1">
-      <div className="max-w-40 shrink-0 sm:max-w-none">
+    <section className="-mx-1 px-1">
+      <div className="flex items-baseline gap-2 overflow-x-auto whitespace-nowrap">
         <h2 className="text-sm font-extrabold text-(--c-ocean)">Escuelas</h2>
         <p className="text-[11px] text-(--c-text-2)">{description}</p>
       </div>
-      <nav aria-label="Seleccionar escuela" className="flex min-w-0 gap-2 overflow-x-auto py-1">
+      <nav aria-label="Seleccionar escuela" className="mt-2 flex gap-2 overflow-x-auto py-1">
         {[{ id: null, name: personalLabel }, ...schools].map(({ id, name }) => (
           <button
             key={id || 'personal'}
