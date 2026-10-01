@@ -129,6 +129,13 @@ export function schoolMembershipHasRole(
   )
 }
 
+export function schoolMembershipHasExplicitRole(
+  membership: Pick<SchoolMembership, 'role' | 'roles'> | null | undefined,
+  role: SchoolRole
+) {
+  return Boolean(membership && (membership.role === role || membership.roles?.includes(role)))
+}
+
 export function isSafeSchoolUrl(value: string) {
   if (!value) return true
   try {

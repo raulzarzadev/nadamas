@@ -1,5 +1,5 @@
-import SchoolWorkspace from '@comps/school/SchoolWorkspace'
+import { redirect } from 'next/navigation'
 
 export default function SchoolHomePage() {
-  return <SchoolWorkspace />
+  redirect('/school/classes')
 }

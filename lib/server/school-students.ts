@@ -56,7 +56,20 @@ export async function createSchoolStudent(args: {
   additionalProfileId?: string
 }) {
   const now = Date.now()
-  const ref = adminDb.collection('schoolStudents').doc()
+  const ref = args.additionalProfileId
+    ? adminDb.collection('schoolStudents').doc(`${args.schoolId}_${args.additionalProfileId}`)
+    : adminDb.collection('schoolStudents').doc()
+  if (args.additionalProfileId) {
+    const current = await ref.get()
+    if (current.exists) {
+      const student = current.data() as SchoolStudent
+      const managedBy = [...(student.managerIds || []), ...(student.guardianIds || [])]
+      if (student.schoolId !== args.schoolId || !managedBy.includes(args.guardianId || '')) {
+        throw new Error('SCHOOL_STUDENT_ALREADY_LINKED')
+      }
+      return { ...student, id: ref.id }
+    }
+  }
   const student: SchoolStudent = {
     id: ref.id,
     schoolId: args.schoolId,

@@ -277,23 +277,25 @@ export async function acceptSchoolInvitation(args: {
         roles,
         updatedAt: now,
       })
-      transaction.set(
-        profileRef,
-        {
-          schoolId: invitation.schoolId,
-          userId: args.caller.uid,
-          role: invitation.role,
-          name: studentValues.name?.trim() || args.caller.name || '',
-          phone: args.profile?.phone?.trim() || '',
-          relationship: args.profile?.relationship?.trim() || '',
-          bio: args.profile?.bio?.trim() || '',
-          birthDate: studentValues.birthDate || '',
-          gender: studentValues.gender || null,
-          profileComplete: Boolean(studentValues.name?.trim() || args.caller.name),
-          updatedAt: now,
-        },
-        { merge: true }
-      )
+      if (!additional) {
+        transaction.set(
+          profileRef,
+          {
+            schoolId: invitation.schoolId,
+            userId: args.caller.uid,
+            role: invitation.role,
+            name: studentValues.name?.trim() || args.caller.name || '',
+            phone: args.profile?.phone?.trim() || '',
+            relationship: args.profile?.relationship?.trim() || '',
+            bio: args.profile?.bio?.trim() || '',
+            birthDate: studentValues.birthDate || '',
+            gender: studentValues.gender || null,
+            profileComplete: Boolean(studentValues.name?.trim() || args.caller.name),
+            updatedAt: now,
+          },
+          { merge: true }
+        )
+      }
       if (studentRef) {
         if (studentSnapshot?.exists) {
           transaction.update(studentRef, studentDocument)
@@ -319,24 +321,26 @@ export async function acceptSchoolInvitation(args: {
       createdAt: now,
       updatedAt: now,
     })
-    transaction.set(
-      profileRef,
-      {
-        schoolId: invitation.schoolId,
-        userId: args.caller.uid,
-        role: invitation.role,
-        name: studentValues.name?.trim() || args.caller.name || '',
-        phone: args.profile?.phone?.trim() || '',
-        relationship: args.profile?.relationship?.trim() || '',
-        bio: args.profile?.bio?.trim() || '',
-        birthDate: studentValues.birthDate || '',
-        gender: studentValues.gender || null,
-        profileComplete: Boolean(studentValues.name?.trim() || args.caller.name),
-        createdAt: now,
-        updatedAt: now,
-      },
-      { merge: true }
-    )
+    if (!additional) {
+      transaction.set(
+        profileRef,
+        {
+          schoolId: invitation.schoolId,
+          userId: args.caller.uid,
+          role: invitation.role,
+          name: studentValues.name?.trim() || args.caller.name || '',
+          phone: args.profile?.phone?.trim() || '',
+          relationship: args.profile?.relationship?.trim() || '',
+          bio: args.profile?.bio?.trim() || '',
+          birthDate: studentValues.birthDate || '',
+          gender: studentValues.gender || null,
+          profileComplete: Boolean(studentValues.name?.trim() || args.caller.name),
+          createdAt: now,
+          updatedAt: now,
+        },
+        { merge: true }
+      )
+    }
     if (studentRef) {
       transaction.set(studentRef, { ...studentDocument, createdAt: now })
     }

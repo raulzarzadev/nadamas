@@ -2,19 +2,10 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import {
-  FiArrowLeft,
-  FiChevronDown,
-  FiChevronUp,
-  FiClock,
-  FiEdit2,
-  FiPhone,
-  FiPlus,
-  FiSend,
-  FiShield,
-} from 'react-icons/fi'
-import { getAuthed, postAuthed, putAuthed } from '@/lib/client/authed-api'
+import { FiClock, FiEdit2, FiPhone, FiSend, FiShield } from 'react-icons/fi'
+import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
+import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
 import { useSchoolSelection } from './useSchoolSelection'
 
@@ -27,14 +18,11 @@ interface Teacher {
   availability: Array<{ day: number; start: string; end: string }>
 }
 
-const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-
 export default function SchoolCoaches() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [showInvite, setShowInvite] = useState(false)
-  const [expandedTeacherId, setExpandedTeacherId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -60,28 +48,17 @@ export default function SchoolCoaches() {
       .finally(() => setLoading(false))
   }, [selectedId, selected?.membership])
 
-  if (schoolStatus === 'loading' || !selected)
+  if (schoolStatus === 'loading')
     return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando coaches…</div>
   if (schoolStatus === 'error')
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
+  if (!selected) return <SchoolNoSelection />
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
 
   return (
     <section className="flex flex-col gap-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Link
-            href="/school"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-(--c-ocean-mid)"
-          >
-            <FiArrowLeft aria-hidden="true" /> Panel de escuela
-          </Link>
-          <p className="mt-5 text-sm font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
-            Equipo de profesores
-          </p>
-          <h1 className="mt-2 text-3xl font-extrabold text-(--c-ocean)">Profes</h1>
-          <p className="mt-1 text-(--c-text-2)">{selected.school.name}</p>
-        </div>
+      <h1 className="sr-only">Profes</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-col gap-2 sm:items-end">
           <SchoolSelector
             schools={schools}
@@ -111,7 +88,6 @@ export default function SchoolCoaches() {
           {teachers.map((teacher) =>
             (() => {
               const isOwnTeacher = teacher.id === selected.membership.userId
-              const expanded = expandedTeacherId === teacher.id
               return (
                 <article
                   key={teacher.id}
@@ -141,20 +117,15 @@ export default function SchoolCoaches() {
                   )}
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      aria-expanded={expanded}
-                      aria-controls={`teacher-schedule-${teacher.id}`}
-                      onClick={() => setExpandedTeacherId(expanded ? null : teacher.id)}
-                      className="btn btn-outline min-h-10 gap-2 text-(--c-ocean)"
+                    <Link
+                      href="/school/classes"
+                      onClick={() => {
+                        window.localStorage.setItem('nadamas.schoolId', selected.school.id)
+                      }}
+                      className="btn btn-outline min-h-11 gap-2 text-(--c-ocean)"
                     >
-                      {expanded ? (
-                        <FiChevronUp aria-hidden="true" />
-                      ) : (
-                        <FiChevronDown aria-hidden="true" />
-                      )}
-                      {expanded ? 'Ocultar horarios' : 'Ver horarios'}
-                    </button>
+                      <FiClock aria-hidden="true" /> Ver horarios
+                    </Link>
                     {isOwnTeacher && (
                       <Link
                         href="/profile"
@@ -164,66 +135,6 @@ export default function SchoolCoaches() {
                       </Link>
                     )}
                   </div>
-
-                  {expanded && (
-                    <div
-                      id={`teacher-schedule-${teacher.id}`}
-                      className="mt-4 rounded-[var(--r-sm)] bg-(--c-surface) p-4"
-                    >
-                      <p className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
-                        Horarios en esta escuela
-                      </p>
-                      {teacher.availability.length ? (
-                        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                          {teacher.availability.map((slot) => (
-                            <li
-                              key={`${slot.day}-${slot.start}-${slot.end}`}
-                              className="flex items-center justify-between rounded-[var(--r-sm)] bg-white px-3 py-2 text-sm"
-                            >
-                              <span className="font-semibold text-(--c-ocean)">
-                                {DAY_NAMES[slot.day] || 'Día'}
-                              </span>
-                              <span className="text-(--c-text-2)">
-                                {slot.start} – {slot.end}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="mt-3 text-sm text-(--c-text-2)">
-                          Este coach todavía no ha publicado horarios para la escuela.
-                        </p>
-                      )}
-                      {isOwnTeacher && (
-                        <div className="mt-4 flex flex-wrap items-center gap-2">
-                          <Link
-                            href="/coach/agenda"
-                            onClick={() => {
-                              window.localStorage.setItem('nadamas.schoolId', selected.school.id)
-                              window.localStorage.setItem(
-                                'nadamas.coachSelection',
-                                selected.school.id
-                              )
-                            }}
-                            className="text-sm font-bold text-(--c-ocean-mid) underline underline-offset-4"
-                          >
-                            Editar horarios en la agenda
-                          </Link>
-                          <AvailabilityEditor
-                            schoolId={selected.school.id}
-                            teacher={teacher}
-                            onSaved={(availability) =>
-                              setTeachers((current) =>
-                                current.map((item) =>
-                                  item.id === teacher.id ? { ...item, availability } : item
-                                )
-                              )
-                            }
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </article>
               )
             })()
@@ -339,113 +250,6 @@ function InviteCoach({
           </button>
         </div>
       </form>
-    </div>
-  )
-}
-
-function AvailabilityEditor({
-  schoolId,
-  teacher,
-  onSaved,
-}: {
-  schoolId: string
-  teacher: Teacher
-  onSaved: (availability: Teacher['availability']) => void
-}) {
-  const [slots, setSlots] = useState(teacher.availability)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
-  async function save() {
-    setSaving(true)
-    setError(null)
-    try {
-      await putAuthed(`/api/schools/${schoolId}/availability`, {
-        teacherId: teacher.id,
-        weeklySlots: slots,
-      })
-      onSaved(slots)
-    } catch {
-      setError('No se pudo guardar tu disponibilidad.')
-    } finally {
-      setSaving(false)
-    }
-  }
-  return (
-    <div className="mt-4 border-t border-(--c-border) pt-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
-        Mi disponibilidad
-      </p>
-      {error && <p className="mt-2 text-xs text-(--c-error,#b91c1c)">{error}</p>}
-      <div className="mt-2 grid gap-2">
-        {slots.map((slot, index) => (
-          <div
-            key={`${slot.day}-${slot.start}-${slot.end}`}
-            className="grid grid-cols-[1fr_1fr_1fr] gap-2"
-          >
-            <select
-              value={slot.day}
-              onChange={(event) =>
-                setSlots((current) =>
-                  current.map((item, itemIndex) =>
-                    itemIndex === index ? { ...item, day: Number(event.target.value) } : item
-                  )
-                )
-              }
-              className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-2 text-xs"
-            >
-              {days.map((day, value) => (
-                <option key={day} value={value}>
-                  {day}
-                </option>
-              ))}
-            </select>
-            <input
-              type="time"
-              value={slot.start}
-              onChange={(event) =>
-                setSlots((current) =>
-                  current.map((item, itemIndex) =>
-                    itemIndex === index ? { ...item, start: event.target.value } : item
-                  )
-                )
-              }
-              className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-2 text-xs"
-            />
-            <input
-              type="time"
-              value={slot.end}
-              onChange={(event) =>
-                setSlots((current) =>
-                  current.map((item, itemIndex) =>
-                    itemIndex === index ? { ...item, end: event.target.value } : item
-                  )
-                )
-              }
-              className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-2 text-xs"
-            />
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 flex gap-2">
-        <button
-          type="button"
-          onClick={() =>
-            setSlots((current) => [...current, { day: 1, start: '16:00', end: '19:00' }])
-          }
-          className="btn btn-outline btn-sm gap-1"
-        >
-          <FiPlus aria-hidden="true" /> Agregar
-        </button>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => void save()}
-          className="btn btn-primary btn-sm"
-        >
-          {saving ? 'Guardando…' : 'Guardar'}
-        </button>
-      </div>
     </div>
   )
 }

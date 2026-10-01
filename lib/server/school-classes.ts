@@ -157,6 +157,7 @@ export async function listSchoolClasses(args: {
   teacherId?: string
   studentIds?: string[]
 }) {
+  if (args.studentIds && args.studentIds.length === 0) return []
   let snapshots: QuerySnapshot
   if (args.teacherId) {
     snapshots = await adminDb

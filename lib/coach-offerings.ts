@@ -280,15 +280,6 @@ export function formatPesos(cents: number) {
   }).format(cents / 100)
 }
 
-export function formatPesosCompact(cents: number) {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-    maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
-    minimumFractionDigits: 0,
-  }).format(cents / 100)
-}
-
 export const DAY_TO_INDEX: Record<string, number> = {
   Dom: 0,
   Lun: 1,

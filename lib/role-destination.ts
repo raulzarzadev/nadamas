@@ -9,7 +9,7 @@ export function entryRoleForSession(roles: Roles, activeRole?: RoleName): RoleNa
 
 export function destinationForRole(role: RoleName): string {
   if (role === 'coach') return '/coach/agenda'
-  if (role === 'school') return '/school'
+  if (role === 'school') return '/school/classes'
   if (role === 'admin') return '/admin/home'
   return '/athlete/bookings'
 }

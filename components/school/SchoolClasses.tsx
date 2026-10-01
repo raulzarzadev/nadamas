@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiArrowLeft, FiCalendar, FiCheck, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
+import { FiCalendar, FiCheck, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
+import { useUser } from '@/context/UserContext'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import {
   type SchoolBookingMode,
@@ -16,6 +16,7 @@ import {
 import SchoolBookingSettingsCard from './SchoolBookingSettingsCard'
 import SchoolCalendarCard from './SchoolCalendarCard'
 import SchoolLocationsCard from './SchoolLocationsCard'
+import SchoolNoSelection from './SchoolNoSelection'
 import SchoolReviewForm from './SchoolReviewForm'
 import SchoolSelector from './SchoolSelector'
 import { useSchoolSelection } from './useSchoolSelection'
@@ -35,7 +36,18 @@ function today() {
 
 export default function SchoolClasses() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
+  const { user } = useUser() as {
+    user: {
+      uid?: string
+      id?: string
+      nickname?: string
+      displayName?: string
+      name?: string
+      email?: string
+    } | null
+  }
   const [scheduleCoachId, setScheduleCoachId] = useState('')
+  const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
   const [students, setStudents] = useState<SchoolStudent[]>([])
   const [teachers, setTeachers] = useState<Teacher[]>([])
@@ -50,10 +62,13 @@ export default function SchoolClasses() {
   useEffect(() => {
     if (!selectedId) return
     setScheduleCoachId('')
+    setScheduleEditorOpen(false)
     setLoading(true)
     setBookingMode(selected?.school.bookingMode || 'request')
     const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
     const isStudentAccount = schoolMembershipHasRole(selected?.membership, 'student')
+    const directorId = isDirector ? selected?.membership.userId : undefined
+    setScheduleCoachId(directorId || '')
     const load = async () => {
       const [classResponse, studentResponse, teacherResponse, locationResponse] = await Promise.all(
         [
@@ -80,22 +95,47 @@ export default function SchoolClasses() {
       .then(({ classPayload, studentPayload, teacherPayload, locationPayload, requestPayload }) => {
         setClasses(classPayload.classes || [])
         setStudents(studentPayload.students || [])
-        setTeachers(teacherPayload.teachers || [])
+        const nextTeachers = teacherPayload.teachers || []
+        setTeachers(nextTeachers)
+        const firstActiveTeacher = nextTeachers.find(
+          (teacher) => teacher.status === 'active' && teacher.id !== directorId
+        )
+        setScheduleCoachId(isDirector && !firstActiveTeacher ? directorId || '' : '')
         setLocations(locationPayload.locations || [])
         setRequests(requestPayload.requests || [])
       })
-      .catch(() => setMessage('No se pudo cargar la agenda escolar.'))
+      .catch(() => {
+        setScheduleCoachId(directorId || '')
+        setMessage('No se pudo cargar la agenda escolar.')
+      })
       .finally(() => setLoading(false))
   }, [selectedId, selected?.membership, selected?.school.bookingMode])
 
-  if (schoolStatus === 'loading' || !selected)
+  if (schoolStatus === 'loading')
     return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando clases…</div>
   if (schoolStatus === 'error')
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
+  if (!selected) return <SchoolNoSelection />
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
   const isTeacher = schoolMembershipHasRole(selected.membership, 'teacher')
+  const directorId = isDirector ? selected.membership.userId : undefined
+  const directorTeacher = teachers.find((teacher) => teacher.id === directorId)
+  const directorName =
+    directorTeacher?.name ||
+    (user && (user.uid === directorId || user.id === directorId)
+      ? user.nickname || user.displayName || user.name || user.email?.split('@')[0]
+      : undefined) ||
+    'Mi horario'
+  const activeTeachers = teachers.filter(
+    (teacher) => teacher.status === 'active' && teacher.id !== directorId
+  )
+  const scheduleCoachOptions = activeTeachers.length
+    ? activeTeachers.map(({ id, name }) => ({ id, name }))
+    : isDirector
+      ? [{ id: selected.membership.userId, name: directorName }]
+      : []
   const visibleClasses = classes.filter(
     (item) => item.status !== 'cancelled' || item.date >= today()
   )
@@ -111,106 +151,85 @@ export default function SchoolClasses() {
 
   return (
     <section className="flex flex-col gap-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Link
-            href="/school"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-(--c-ocean-mid)"
-          >
-            <FiArrowLeft aria-hidden="true" /> Panel de escuela
-          </Link>
-          <p className="mt-5 text-sm font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
-            Horarios de la escuela
-          </p>
-          <h1 className="mt-2 text-3xl font-extrabold text-(--c-ocean)">Horarios</h1>
-          <p className="mt-1 text-(--c-text-2)">{selected.school.name}</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:items-end">
+      <h1 className="sr-only">Horarios</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <SchoolSelector
             schools={schools}
             selectedId={selected.school.id}
             onChange={selectSchool}
           />
-          {isDirector ? (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedRequest(null)
-                setShowCreate(true)
-              }}
-              className="btn btn-primary min-h-11 gap-2"
-            >
-              <FiPlus aria-hidden="true" /> Crear clase
-            </button>
-          ) : isStudentAccount ? (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedRequest(null)
-                setShowCreate(true)
-              }}
-              className="btn btn-primary min-h-11 gap-2"
-            >
-              <FiPlus aria-hidden="true" /> Solicitar horario
-            </button>
-          ) : null}
+          {isDirector && (
+            <div className="flex flex-col gap-2 sm:w-64">
+              <label htmlFor="schedule-coach" className="text-sm font-bold text-(--c-ocean)">
+                Administrar horarios de un profe
+              </label>
+              <select
+                id="schedule-coach"
+                className="select select-bordered min-h-11 w-full"
+                value={scheduleCoachId}
+                disabled={loading}
+                onChange={(event) => setScheduleCoachId(event.target.value)}
+              >
+                {activeTeachers.length > 0 && (
+                  <option value="">Todos los profes · Solo consulta</option>
+                )}
+                {scheduleCoachOptions.map((coach) => (
+                  <option key={coach.id} value={coach.id}>
+                    {coach.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+        {isDirector && (
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => setScheduleEditorOpen(true)}
+            className="btn btn-primary min-h-11 gap-2 self-start sm:self-auto"
+          >
+            <FiPlus aria-hidden="true" /> Agregar o quitar horas
+          </button>
+        )}
+        {!isDirector && isStudentAccount && (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedRequest(null)
+              setShowCreate(true)
+            }}
+            className="btn btn-primary min-h-11 gap-2"
+          >
+            <FiPlus aria-hidden="true" /> Solicitar horario
+          </button>
+        )}
       </div>
       {message && (
         <p className="rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
           {message}
         </p>
       )}
-      <section aria-labelledby="school-schedule-heading" className="flex flex-col gap-4">
-        <div>
-          <h2 id="school-schedule-heading" className="text-xl font-extrabold text-(--c-ocean)">
-            Horarios de todos los coaches
-          </h2>
-          <p className="mt-1 text-sm text-(--c-text-2)">
-            Consulta en una sola agenda la disponibilidad y las clases de cada profesor.
-          </p>
-        </div>
-        {isDirector && (
-          <div className="flex flex-col gap-2">
-            <label htmlFor="schedule-coach" className="text-sm font-bold text-(--c-ocean)">
-              Administrar horarios de un profe
-            </label>
-            <select
-              id="schedule-coach"
-              className="select select-bordered min-h-11 w-full sm:max-w-sm"
-              value={scheduleCoachId}
-              disabled={loading}
-              onChange={(event) => setScheduleCoachId(event.target.value)}
-            >
-              <option value="">Todos los profes · Solo consulta</option>
-              {teachers
-                .filter((teacher) => teacher.status === 'active')
-                .map((teacher) => (
-                  <option key={teacher.id} value={teacher.id}>
-                    {teacher.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-        )}
+      <section aria-label="Agenda de la escuela" className="flex flex-col gap-4">
         <CoachAgenda
-          key={`${selected.school.id}-${isDirector ? scheduleCoachId : ''}`}
+          key={selected.school.id}
           schoolId={selected.school.id}
           coachId={isDirector && scheduleCoachId ? scheduleCoachId : undefined}
           aggregateSchool
           readOnly={!isDirector || !scheduleCoachId}
           manageSchoolSchedule={isDirector && !!scheduleCoachId}
+          allowSchoolScheduleEdit={isDirector}
+          scheduleEditorOpen={scheduleEditorOpen}
+          onScheduleEditorClose={() => setScheduleEditorOpen(false)}
+          scheduleCoachOptions={scheduleCoachOptions}
+          onScheduleCoachChange={setScheduleCoachId}
         />
       </section>
-      <section aria-labelledby="school-classes-heading" className="flex flex-col gap-4">
-        <div>
-          <h2 id="school-classes-heading" className="text-xl font-extrabold text-(--c-ocean)">
-            Clases programadas
-          </h2>
-          <p className="mt-1 text-sm text-(--c-text-2)">
-            Asignaciones, solicitudes y clases de la escuela.
-          </p>
-        </div>
+      <section
+        aria-label="Solicitudes y configuración de la escuela"
+        className="flex flex-col gap-4"
+      >
         {isDirector && requests.filter((item) => item.status === 'pending').length > 0 && (
           <div className="rounded-[var(--r-md)] border border-[#f4d59a] bg-[#fffaf0] p-5">
             <h2 className="font-bold text-(--c-ocean)">Solicitudes pendientes</h2>
@@ -277,109 +296,102 @@ export default function SchoolClasses() {
         {loading ? (
           <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
         ) : visibleClasses.length ? (
-          <div className="grid gap-3">
-            {visibleClasses.map((item) => (
-              <article
-                key={item.id}
-                className={`rounded-[var(--r-md)] border bg-white p-5 shadow-[var(--shadow-sm)] ${item.status === 'completed' ? 'border-[#b9dfc9]' : 'border-(--c-border)'}`}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-bold text-(--c-ocean)">{item.title}</h2>
-                      <span className="rounded-full bg-(--c-surface) px-2 py-1 text-xs font-bold text-(--c-text-2)">
-                        {item.type === 'group' ? 'Grupal' : 'Particular'}
-                      </span>
+          <details className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-4">
+            <summary className="cursor-pointer font-bold text-(--c-ocean)">
+              Administrar clases ({visibleClasses.length})
+            </summary>
+            <div className="mt-4 grid gap-3">
+              {visibleClasses.map((item) => (
+                <article
+                  key={item.id}
+                  className={`rounded-[var(--r-md)] border bg-white p-5 shadow-[var(--shadow-sm)] ${item.status === 'completed' ? 'border-[#b9dfc9]' : 'border-(--c-border)'}`}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="font-bold text-(--c-ocean)">{item.title}</h2>
+                        <span className="rounded-full bg-(--c-surface) px-2 py-1 text-xs font-bold text-(--c-text-2)">
+                          {item.type === 'group' ? 'Grupal' : 'Particular'}
+                        </span>
+                      </div>
+                      <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
+                        <FiCalendar aria-hidden="true" /> {item.date} · {item.startTime}–
+                        {item.endTime}
+                      </p>
+                      <p className="mt-1 flex items-center gap-2 text-sm text-(--c-text-2)">
+                        <FiMapPin aria-hidden="true" /> {item.location || 'Lugar por confirmar'}
+                        {item.locationUrl && (
+                          <a
+                            href={item.locationUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-semibold text-(--c-ocean-mid)"
+                          >
+                            Ver mapa
+                          </a>
+                        )}
+                      </p>
                     </div>
-                    <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
-                      <FiCalendar aria-hidden="true" /> {item.date} · {item.startTime}–
-                      {item.endTime}
-                    </p>
-                    <p className="mt-1 flex items-center gap-2 text-sm text-(--c-text-2)">
-                      <FiMapPin aria-hidden="true" /> {item.location || 'Lugar por confirmar'}
-                      {item.locationUrl && (
-                        <a
-                          href={item.locationUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-semibold text-(--c-ocean-mid)"
-                        >
-                          Ver mapa
-                        </a>
-                      )}
-                    </p>
+                    <span className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
+                      {item.status === 'completed'
+                        ? 'Completada'
+                        : item.status === 'cancelled'
+                          ? 'Cancelada'
+                          : 'Programada'}
+                    </span>
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
-                    {item.status === 'completed'
-                      ? 'Completada'
-                      : item.status === 'cancelled'
-                        ? 'Cancelada'
-                        : 'Programada'}
-                  </span>
-                </div>
-                {(isDirector || isTeacher) && item.status === 'scheduled' && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void updateClass(item.id, 'completed')}
-                      className="btn btn-outline btn-sm gap-1"
-                    >
-                      <FiCheck aria-hidden="true" /> Marcar completada
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void updateClass(item.id, 'cancelled')}
-                      className="btn btn-ghost btn-sm gap-1 text-(--c-error,#b91c1c)"
-                    >
-                      <FiX aria-hidden="true" /> Cancelar
-                    </button>
-                  </div>
-                )}
-                {item.status === 'completed' && isTeacher && item.studentIds[0] && (
-                  <SchoolReviewForm
-                    schoolId={selected.school.id}
-                    occurrenceId={item.id}
-                    reviewerRole="teacher"
-                    teacherId={item.teacherIds[0]}
-                    studentId={item.studentIds[0]}
-                    subjectName={
-                      students.find((student) => student.id === item.studentIds[0])?.name ||
-                      'alumno'
-                    }
-                  />
-                )}
-                {item.status === 'completed' &&
-                  isStudentAccount &&
-                  item.teacherIds[0] &&
-                  item.studentIds[0] && (
+                  {(isDirector || isTeacher) && item.status === 'scheduled' && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void updateClass(item.id, 'completed')}
+                        className="btn btn-outline btn-sm gap-1"
+                      >
+                        <FiCheck aria-hidden="true" /> Marcar completada
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void updateClass(item.id, 'cancelled')}
+                        className="btn btn-ghost btn-sm gap-1 text-(--c-error,#b91c1c)"
+                      >
+                        <FiX aria-hidden="true" /> Cancelar
+                      </button>
+                    </div>
+                  )}
+                  {item.status === 'completed' && isTeacher && item.studentIds[0] && (
                     <SchoolReviewForm
                       schoolId={selected.school.id}
                       occurrenceId={item.id}
-                      reviewerRole="student"
+                      reviewerRole="teacher"
                       teacherId={item.teacherIds[0]}
                       studentId={item.studentIds[0]}
                       subjectName={
-                        teachers.find((teacher) => teacher.id === item.teacherIds[0])?.name ||
-                        'coach'
+                        students.find((student) => student.id === item.studentIds[0])?.name ||
+                        'alumno'
                       }
                     />
                   )}
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
-            <FiCalendar className="text-3xl text-(--c-ocean-mid)" aria-hidden="true" />
-            <h2 className="font-bold text-(--c-ocean)">
-              {isDirector ? 'Crea la primera clase' : 'Aún no tienes clases programadas'}
-            </h2>
-            <p className="max-w-md text-sm text-(--c-text-2)">
-              {isDirector
-                ? 'Puedes asignar varios coaches y alumnos, y repetir la clase durante un periodo.'
-                : 'Cuando la dirección confirme tu horario aparecerá aquí.'}
-            </p>
-          </div>
-        )}
+                  {item.status === 'completed' &&
+                    isStudentAccount &&
+                    item.teacherIds[0] &&
+                    item.studentIds[0] && (
+                      <SchoolReviewForm
+                        schoolId={selected.school.id}
+                        occurrenceId={item.id}
+                        reviewerRole="student"
+                        teacherId={item.teacherIds[0]}
+                        studentId={item.studentIds[0]}
+                        subjectName={
+                          teachers.find((teacher) => teacher.id === item.teacherIds[0])?.name ||
+                          'coach'
+                        }
+                      />
+                    )}
+                </article>
+              ))}
+            </div>
+          </details>
+        ) : null}
         {isDirector && (
           <SchoolBookingSettingsCard
             schoolId={selected.school.id}

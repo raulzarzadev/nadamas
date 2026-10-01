@@ -88,7 +88,3 @@ export async function requireSchoolAccess(
 
   return { caller, membership, globalAdmin }
 }
-
-export function isExpired(timestamp: number) {
-  return timestamp <= Date.now()
-}

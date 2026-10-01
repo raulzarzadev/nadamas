@@ -61,7 +61,6 @@ export const SECONDARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
   school: [
-    { href: '/school', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
     { href: '/notifications', label: 'Notificaciones', mobileLabel: 'Avisos', icon: 'bell' },
     { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],

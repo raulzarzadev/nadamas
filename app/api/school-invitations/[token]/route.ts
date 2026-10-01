@@ -106,7 +106,7 @@ export async function POST(request: Request, { params }: RouteProps) {
       type: 'school_invitation_accepted',
       title: 'Invitación aceptada',
       body: `${caller.name || caller.email || 'Una persona'} se unió a ${school.name}.`,
-      link: '/school',
+      link: '/school/classes',
     }).catch(() => {})
   }
   return NextResponse.json(result)

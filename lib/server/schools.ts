@@ -143,15 +143,6 @@ export async function getOwnedSchool(userId: string) {
   return getSchoolById(createdSchoolId)
 }
 
-export async function getSchoolMembership(schoolId: string, userId: string) {
-  const snapshot = await adminDb.collection('schoolMemberships').doc(`${schoolId}_${userId}`).get()
-  if (!snapshot.exists) return null
-  return normalizeSchoolMembership({
-    id: snapshot.id,
-    ...(snapshot.data() as Omit<SchoolMembership, 'id'>),
-  })
-}
-
 export async function updateSchoolProfile(
   schoolId: string,
   input: Pick<

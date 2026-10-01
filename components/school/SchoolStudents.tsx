@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiArrowLeft, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiClock, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import {
@@ -11,7 +11,9 @@ import {
   type SchoolStudent,
   schoolMembershipHasRole,
 } from '@/lib/school'
+import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
+import SchoolStudentHistory from './SchoolStudentHistory'
 import { useSchoolSelection } from './useSchoolSelection'
 
 export default function SchoolStudents() {
@@ -21,10 +23,12 @@ export default function SchoolStudents() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
   const [showStudent, setShowStudent] = useState(false)
+  const [historyStudent, setHistoryStudent] = useState<SchoolStudent | null>(null)
   const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!selectedId) return
+    setHistoryStudent(null)
     setLoading(true)
     async function load() {
       const studentResponse = await getAuthed(`/api/schools/${selectedId}/students`)
@@ -47,10 +51,11 @@ export default function SchoolStudents() {
       .finally(() => setLoading(false))
   }, [selectedId, selected?.membership])
 
-  if (schoolStatus === 'loading' || !selected)
+  if (schoolStatus === 'loading')
     return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando alumnos…</div>
   if (schoolStatus === 'error')
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
+  if (!selected) return <SchoolNoSelection />
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
@@ -72,20 +77,8 @@ export default function SchoolStudents() {
 
   return (
     <section className="flex flex-col gap-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Link
-            href="/school"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-(--c-ocean-mid)"
-          >
-            <FiArrowLeft aria-hidden="true" /> Panel de escuela
-          </Link>
-          <p className="mt-5 text-sm font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
-            Comunidad escolar
-          </p>
-          <h1 className="mt-2 text-3xl font-extrabold text-(--c-ocean)">Alumnos</h1>
-          <p className="mt-1 text-(--c-text-2)">{selected.school.name}</p>
-        </div>
+      <h1 className="sr-only">Alumnos</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-col gap-2 sm:items-end">
           <SchoolSelector
             schools={schools}
@@ -122,7 +115,7 @@ export default function SchoolStudents() {
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
                 <FiUsers aria-hidden="true" />
               </span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h2 className="font-bold text-(--c-ocean)">{student.name}</h2>
                 {student.additionalProfileId && (
                   <span className="badge badge-outline mt-1">Adicional</span>
@@ -134,6 +127,13 @@ export default function SchoolStudents() {
                   <FiMail aria-hidden="true" />{' '}
                   {student.studentEmail || student.guardianEmail || 'Sin correo'}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setHistoryStudent(student)}
+                  className="btn btn-outline mt-3 min-h-11 gap-2"
+                >
+                  <FiClock aria-hidden="true" /> Ver historial
+                </button>
               </div>
             </article>
           ))}
@@ -193,6 +193,14 @@ export default function SchoolStudents() {
             ))}
           </div>
         </div>
+      )}
+      {historyStudent && (
+        <SchoolStudentHistory
+          key={`${selected.school.id}-${historyStudent.id}`}
+          schoolId={selected.school.id}
+          student={historyStudent}
+          onClose={() => setHistoryStudent(null)}
+        />
       )}
       {showStudent && (
         <StudentForm

@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { normalizeScheduleBlockInput, type ScheduleBlockInput } from '@/lib/coach-agenda'
-import { schoolMembershipHasRole } from '@/lib/school'
+import {
+  type SchoolMembership,
+  schoolMembershipHasExplicitRole,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
+import { schoolScheduleOwners } from '@/lib/server/school-agenda'
 
 export const runtime = 'nodejs'
 
@@ -13,8 +18,22 @@ async function authorize(request: Request, params: RouteProps['params']) {
   const { schoolId, teacherId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return { response: access.response }
-  const teacher = await getSchoolMembership(schoolId, teacherId)
-  if (!teacher || teacher.status !== 'active' || !schoolMembershipHasRole(teacher, 'teacher')) {
+  const target = await getSchoolMembership(schoolId, teacherId)
+  const activeTarget = target?.status === 'active'
+  const isTeacher = activeTarget && schoolMembershipHasExplicitRole(target, 'teacher')
+  const isDirector = activeTarget && schoolMembershipHasRole(target, 'director')
+  let isDirectorFallback = false
+  if (!isTeacher && isDirector) {
+    const memberships = await adminDb
+      .collection('schoolMemberships')
+      .where('schoolId', '==', schoolId)
+      .get()
+    const scheduleOwners = schoolScheduleOwners(
+      memberships.docs.map((doc) => doc.data() as SchoolMembership)
+    )
+    isDirectorFallback = scheduleOwners.some((membership) => membership.userId === teacherId)
+  }
+  if (!isTeacher && !isDirectorFallback) {
     return {
       response: NextResponse.json(
         { error: 'El profe no está activo en esta escuela.' },

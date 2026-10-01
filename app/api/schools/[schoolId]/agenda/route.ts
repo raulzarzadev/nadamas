@@ -2,10 +2,19 @@ import { NextResponse } from 'next/server'
 import { buildAvailableSlots, type CoachScheduleBlock, monthRange } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
-import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
+import {
+  type SchoolClassOccurrence,
+  type SchoolMembership,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
-import { legacySchoolOfferings } from '@/lib/server/school-agenda'
+import {
+  legacySchoolOfferings,
+  schoolClassAgendaBooking,
+  schoolClassCoachIds,
+  schoolScheduleOwners,
+} from '@/lib/server/school-agenda'
 
 export const runtime = 'nodejs'
 
@@ -24,11 +33,7 @@ function publicUserName(user: Record<string, unknown>, fallback: string) {
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
 
   const url = new URL(request.url)
@@ -40,20 +45,24 @@ export async function GET(request: Request, { params }: RouteProps) {
   ) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
+  const canManage = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   const range = monthRange(url.searchParams.get('month'))
   const [membershipSnapshot, bookingsSnapshot, blocksSnapshot] = await Promise.all([
     adminDb.collection('schoolMemberships').where('schoolId', '==', schoolId).get(),
     adminDb.collection('bookings').where('schoolId', '==', schoolId).get(),
     adminDb.collection('coachScheduleBlocks').where('schoolId', '==', schoolId).get(),
   ])
+  const [schoolClassesSnapshot, studentsSnapshot] = await Promise.all([
+    adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get(),
+    adminDb.collection('schoolStudents').where('schoolId', '==', schoolId).get(),
+  ])
 
-  const teacherMemberships = membershipSnapshot.docs.filter((doc) => {
-    const membership = doc.data() as SchoolMembership
-    return membership.status === 'active' && schoolMembershipHasRole(membership, 'teacher')
-  })
+  const scheduleMemberships = schoolScheduleOwners(
+    membershipSnapshot.docs.map((doc) => doc.data() as SchoolMembership)
+  )
   const teacherIds = new Set(
-    teacherMemberships
-      .map((doc) => doc.data().userId)
+    scheduleMemberships
+      .map((membership) => membership.userId)
       .filter(
         (userId): userId is string =>
           typeof userId === 'string' &&
@@ -94,6 +103,29 @@ export async function GET(request: Request, { params }: RouteProps) {
       coachName: booking.coachName || names[booking.coachId] || 'Coach',
     }))
     .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+  const studentNames = new Map(
+    studentsSnapshot.docs.map((doc) => [doc.id, String(doc.data().name || 'Alumno')])
+  )
+  const startDate = range.start.toISOString().slice(0, 10)
+  const endDate = range.end.toISOString().slice(0, 10)
+  const schoolClassBookings = schoolClassesSnapshot.docs.flatMap((doc) => {
+    const occurrence = doc.data() as SchoolClassOccurrence
+    if (!occurrence.date || occurrence.date < startDate || occurrence.date > endDate) return []
+    const coachIds = schoolClassCoachIds({
+      assignedCoachIds: Array.isArray(occurrence.teacherIds) ? occurrence.teacherIds : [],
+      allowedCoachIds: teacherIds,
+      targetCoachId,
+    })
+    return coachIds.map((coachId) =>
+      schoolClassAgendaBooking({
+        schoolId,
+        occurrence,
+        coachId,
+        coachName: names[coachId] || 'Coach',
+        studentNames: canManage ? studentNames : undefined,
+      })
+    )
+  })
   const blocks = blocksSnapshot.docs
     .map((doc) => ({ id: doc.id, ...(doc.data() as Omit<CoachScheduleBlock, 'id'>) }))
     .filter((block) => teacherIds.has(block.coachId))
@@ -101,12 +133,15 @@ export async function GET(request: Request, { params }: RouteProps) {
       `${a.date} ${a.startTime || ''}`.localeCompare(`${b.date} ${b.startTime || ''}`)
     )
 
+  const agendaBookings = [...bookings, ...schoolClassBookings].sort((a, b) =>
+    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+  )
   const availableSlots = teacherData
     .flatMap(({ teacherId, name, offerings }) =>
       buildAvailableSlots({
         coachId: teacherId,
         offerings,
-        bookings: bookings.filter((booking) => booking.coachId === teacherId),
+        bookings: agendaBookings.filter((booking) => booking.coachId === teacherId),
         blocks: blocks.filter((block) => block.coachId === teacherId),
         startDate: range.start,
         endDate: range.end,
@@ -118,26 +153,27 @@ export async function GET(request: Request, { params }: RouteProps) {
       )
     )
 
-  const canManage = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   return NextResponse.json({
-    bookings: canManage
-      ? bookings
-      : bookings.map((booking, index) => ({
-          id: `school-slot-${index}`,
-          coachId: booking.coachId,
-          coachName: booking.coachName,
-          date: booking.date,
-          startTime: booking.startTime,
-          endTime: booking.endTime,
-          offeringId: booking.offeringId,
-          scheduleId: booking.scheduleId,
-          locationName: booking.locationName,
-          groupType: booking.groupType,
-          status: booking.status,
-          classFull: booking.classFull === true,
-          athleteId: '',
-          athleteName: 'Alumno',
-        })),
+    bookings: [
+      ...(canManage
+        ? agendaBookings
+        : agendaBookings.map((booking, index) => ({
+            id: `school-slot-${index}`,
+            coachId: booking.coachId,
+            coachName: booking.coachName,
+            date: booking.date,
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            offeringId: booking.offeringId,
+            scheduleId: booking.scheduleId,
+            locationName: booking.locationName,
+            groupType: booking.groupType,
+            status: booking.status,
+            classFull: booking.classFull === true,
+            athleteId: '',
+            athleteName: 'Alumno',
+          }))),
+    ],
     blocks: canManage ? blocks : blocks.map(({ note: _note, ...block }) => block),
     availableSlots,
     offerings: targetCoachId ? teacherData[0]?.offerings || [] : [],

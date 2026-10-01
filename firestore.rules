@@ -72,7 +72,9 @@ service cloud.firestore {
         'schoolClassOccurrences',
         'schoolClassRequests',
         'schoolReviews',
-        'schoolCalendarFeeds'
+        'schoolCalendarFeeds',
+        'schoolCoachOfferings',
+        'coachScheduleBlocks'
       ].hasAny([collection]);
     }
 

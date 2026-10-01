@@ -14,6 +14,10 @@ import {
 import HourPickerModal from './HourPickerModal'
 
 export type HoursMode = 'add' | 'remove'
+export interface ScheduleCoachOption {
+  id: string
+  name: string
+}
 
 function todayKey() {
   return dateKey(new Date())
@@ -30,6 +34,9 @@ export default function ScheduleHoursEditor({
   error,
   onClose,
   onSubmit,
+  coachOptions = [],
+  selectedCoachId,
+  onCoachChange,
 }: {
   defaultDate?: string
   existingTimesByDate: Record<string, string[]>
@@ -37,6 +44,9 @@ export default function ScheduleHoursEditor({
   error?: string | null
   onClose: () => void
   onSubmit: (mode: HoursMode, dates: string[], times: string[]) => void
+  coachOptions?: ScheduleCoachOption[]
+  selectedCoachId?: string
+  onCoachChange?: (coachId: string) => void
 }) {
   const initialKey = defaultDate || todayKey()
   const [mode, setMode] = useState<HoursMode>('add')
@@ -62,7 +72,8 @@ export default function ScheduleHoursEditor({
     return next
   }
 
-  const canSubmit = dates.size > 0 && times.size > 0 && !busy
+  const coachSelectionRequired = coachOptions.length > 0 && !selectedCoachId
+  const canSubmit = dates.size > 0 && times.size > 0 && !busy && !coachSelectionRequired
   const isRemove = mode === 'remove'
   const removalCount = existingOccurrenceCount(existingTimesByDate, dates, times)
 
@@ -89,6 +100,40 @@ export default function ScheduleHoursEditor({
               días de otras semanas para repetir los mismos horarios.
             </p>
           </div>
+
+          {coachOptions.length > 0 && (
+            <fieldset className="flex flex-col gap-2">
+              <legend className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
+                Coach
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {coachOptions.map((coach) => {
+                  const selected = coach.id === selectedCoachId
+                  return (
+                    <button
+                      key={coach.id}
+                      type="button"
+                      aria-pressed={selected}
+                      disabled={busy || !onCoachChange}
+                      onClick={() => onCoachChange?.(coach.id)}
+                      className={`min-h-11 rounded-full border px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 ${
+                        selected
+                          ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                          : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
+                      }`}
+                    >
+                      {coach.name}
+                    </button>
+                  )
+                })}
+              </div>
+              {coachSelectionRequired && (
+                <p className="text-xs text-[var(--c-text-2)]">
+                  Elige un profe para editar sus horarios.
+                </p>
+              )}
+            </fieldset>
+          )}
 
           {/* Quitar / Agregar toggle */}
           <div className="grid grid-cols-2 gap-1 rounded-full border border-[var(--c-border)] bg-[var(--c-bg)] p-1">

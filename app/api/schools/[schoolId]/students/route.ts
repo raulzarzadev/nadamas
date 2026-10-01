@@ -25,7 +25,10 @@ export async function GET(request: Request, { params }: RouteProps) {
   if (access.response) return access.response
 
   try {
-    const staff = access.globalAdmin || schoolMembershipHasRole(access.membership, 'teacher')
+    const staff =
+      access.globalAdmin ||
+      schoolMembershipHasRole(access.membership, 'director') ||
+      schoolMembershipHasRole(access.membership, 'teacher')
     const students = await listSchoolStudents(
       schoolId,
       undefined,

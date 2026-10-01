@@ -142,10 +142,6 @@ export function localDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-export function dateFromKey(date: string) {
-  return new Date(`${date}T12:00:00`)
-}
-
 export function monthRange(month: string | null) {
   const base = month && /^\d{4}-\d{2}$/.test(month) ? new Date(`${month}-01T12:00:00`) : new Date()
   const first = new Date(base.getFullYear(), base.getMonth(), 1)

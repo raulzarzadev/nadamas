@@ -23,7 +23,7 @@ export default function SchoolPublicActions() {
   const isSchoolMode = activeRole === 'school'
   return (
     <Link
-      href={isSchoolMode ? '/school' : '/athlete/bookings'}
+      href={isSchoolMode ? '/school/classes' : '/athlete/bookings'}
       className="btn min-h-12 border-0 px-7 text-white"
       style={{ backgroundColor: 'var(--school-primary)' }}
     >

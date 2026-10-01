@@ -26,13 +26,9 @@ import {
   addDays,
   createOffering,
   dateKey,
-  initialDatesForOffering,
-  initialTimesForOffering,
-  offeringPriceCents,
   offeringsWithoutHours,
   offeringWithHours,
   resolveOfferingSchedules,
-  scheduleIsAvailableOn,
   startOfWeek,
 } from '@/lib/coach-offerings'
 import {
@@ -42,12 +38,11 @@ import {
 } from '@/lib/coach-whatsapp-schedule'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
-import AgendaOpenHoursModal, {
-  type AgendaWeekDay,
-  type OpenHoursDetails,
-} from './AgendaOpenHoursModal'
 import { useCoachAgendaShare } from './CoachAgendaShareContext'
-import ScheduleHoursEditor, { type HoursMode } from './ScheduleHoursEditor'
+import ScheduleHoursEditor, {
+  type HoursMode,
+  type ScheduleCoachOption,
+} from './ScheduleHoursEditor'
 import StudentProgressModal from './StudentProgressModal'
 
 const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
@@ -88,37 +83,6 @@ function blockCoversClassAt(block: CoachScheduleBlock, date: string, time: strin
   return block.startTime <= time && time < block.endTime
 }
 
-function blockHidesClassAt(block: CoachScheduleBlock, date: string, time: string) {
-  return block.hidden === true && blockCoversClassAt(block, date, time)
-}
-
-function offeringHasClassAt(offering: CoachClassOffering, date: string, time: string) {
-  const selectedDate = new Date(`${date}T12:00:00`)
-  return resolveOfferingSchedules(offering).some(
-    (schedule) => schedule.startTime === time && scheduleIsAvailableOn(schedule, selectedDate)
-  )
-}
-
-function hasExistingClassAt(
-  offerings: CoachClassOffering[],
-  blocks: CoachScheduleBlock[],
-  dates: string[],
-  times: string[]
-) {
-  const selectedTimes = new Set(times)
-  return dates.some((date) => {
-    const selectedDate = new Date(`${date}T12:00:00`)
-    return offerings.some((offering) =>
-      resolveOfferingSchedules(offering).some(
-        (schedule) =>
-          selectedTimes.has(schedule.startTime) &&
-          scheduleIsAvailableOn(schedule, selectedDate) &&
-          !blocks.some((block) => blockHidesClassAt(block, date, schedule.startTime))
-      )
-    )
-  })
-}
-
 type ActiveSlot = {
   date: string
   startTime: string
@@ -136,8 +100,11 @@ export default function CoachAgenda({
   aggregateSchool = false,
   readOnly = false,
   manageSchoolSchedule = false,
+  allowSchoolScheduleEdit = false,
   scheduleEditorOpen = false,
   onScheduleEditorClose,
+  scheduleCoachOptions = [],
+  onScheduleCoachChange,
 }: {
   coachId?: string
   schoolId?: string
@@ -146,8 +113,12 @@ export default function CoachAgenda({
   /** Hide booking, block, and schedule-editing controls. */
   readOnly?: boolean
   manageSchoolSchedule?: boolean
+  /** A school director may open the hours editor while viewing all coaches. */
+  allowSchoolScheduleEdit?: boolean
   scheduleEditorOpen?: boolean
   onScheduleEditorClose?: () => void
+  scheduleCoachOptions?: ScheduleCoachOption[]
+  onScheduleCoachChange?: (coachId: string) => void
 }) {
   // When an admin opens another coach's agenda, `coachId` targets that coach and
   // booking actions (add/cancel students) are hidden — admin mode manages
@@ -167,6 +138,7 @@ export default function CoachAgenda({
   const selfUid = user?.uid || user?.id
 
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
+  const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()))
   const today = dateKey(new Date())
   const [busy, setBusy] = useState(false)
@@ -186,12 +158,11 @@ export default function CoachAgenda({
       )
       .catch((err) => reportInternalError('COACH_PROGRESS_IDS_LOAD', err))
   }, [hideBookingActions, manageSchoolSchedule])
-  // Editores del horario (self mode): opciones de clase y editor de horas.
-  const [detailsModalOpen, setDetailsModalOpen] = useState(false)
-  const [addClassModalOpen, setAddClassModalOpen] = useState(false)
+  // The school editor manages availability hours only.
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
   const [reassignBooking, setReassignBooking] = useState<Booking | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const agendaRequestRef = useRef(0)
 
   const monthOfSelected = selectedDate.slice(0, 7)
 
@@ -206,6 +177,7 @@ export default function CoachAgenda({
 
   const loadAgenda = useCallback(
     async (month: string) => {
+      const requestId = ++agendaRequestRef.current
       setError(null)
       try {
         const endpoint =
@@ -213,14 +185,19 @@ export default function CoachAgenda({
             ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}${manageSchoolSchedule ? coachQuery : ''}`
             : `/api/coach/agenda?month=${month}${contextQuery}`
         const response = await getAuthed(endpoint)
-        setAgenda((await response.json()) as CoachAgendaPayload)
+        const nextAgenda = (await response.json()) as CoachAgendaPayload
+        if (requestId !== agendaRequestRef.current) return
+        setAgenda(nextAgenda)
+        setLoadedCoachId(coachId)
       } catch (err) {
+        if (requestId !== agendaRequestRef.current) return
         reportInternalError('COACH_AGENDA_LOAD', err)
         setError(GENERIC_USER_ERROR)
         setAgenda({ bookings: [], availableSlots: [], blocks: [], offerings: [] })
+        setLoadedCoachId(undefined)
       }
     },
-    [aggregateSchool, manageSchoolSchedule, coachQuery, contextQuery, schoolId]
+    [aggregateSchool, manageSchoolSchedule, coachQuery, contextQuery, schoolId, coachId]
   )
 
   useEffect(() => {
@@ -562,7 +539,7 @@ export default function CoachAgenda({
       setAddStudentSlot(null)
     })
 
-  // Single class/schedule batch the coach edits from the agenda (self mode).
+  // Single offering updated by the school hours editor.
   const offerings = agenda?.offerings || []
   const offering = offerings[0] || null
   const saveOfferings = (next: CoachClassOffering) =>
@@ -606,54 +583,6 @@ export default function CoachAgenda({
     for (const id of overlappingBlockIds(pairs)) {
       await deleteAuthed(`${scheduleEndpoint}?id=${encodeURIComponent(id)}${contextQuery}`)
     }
-  }
-
-  // "Editar horario": solo opciones de clase. Conserva los schedules tal cual.
-  const saveOfferingDetails = (details?: OpenHoursDetails) => {
-    if (!selfUid || !offering) return
-    run(async () => {
-      await saveOfferings({
-        ...offering,
-        details: details?.title ?? offering.details,
-        placeName: details?.placeName ?? offering.placeName,
-        priceCents: details?.priceCents ?? offering.priceCents,
-        groupType: details?.groupType ?? offering.groupType,
-      })
-      setDetailsModalOpen(false)
-    })
-  }
-
-  const addClass = (dates: string[], times: string[], details?: OpenHoursDetails) => {
-    if (!selfUid) {
-      setError(
-        'No se pudo identificar tu cuenta. Cierra sesión, vuelve a entrar e inténtalo de nuevo.'
-      )
-      return
-    }
-    if (dates.length === 0 || times.length === 0) {
-      setError('Selecciona al menos un día y una hora para agregar la clase.')
-      return
-    }
-    if (hasExistingClassAt(offerings, agenda?.blocks || [], dates, times)) {
-      setError('Ya existe una clase en uno de los días y horarios seleccionados.')
-      return
-    }
-    run(async () => {
-      const pairs = dates.flatMap((date) => times.map((time) => ({ date, time })))
-      const reusableOffering = offerings.find((item) =>
-        pairs.some((pair) => offeringHasClassAt(item, pair.date, pair.time))
-      )
-      const nextOffering = {
-        ...(reusableOffering ?? createOffering()),
-        details: details?.title || '',
-        placeName: details?.placeName || '',
-        priceCents: details?.priceCents ?? null,
-        groupType: details?.groupType ?? 'particular',
-      }
-      await deleteBlocks(pairs)
-      await saveOfferings(offeringWithHours(nextOffering, dates, times, 60))
-      setAddClassModalOpen(false)
-    })
   }
 
   // Editor de horas (Quitar/Agregar): agrega o quita (día × hora) del offering.
@@ -732,36 +661,6 @@ export default function CoachAgenda({
 
   return (
     <div className="flex flex-col gap-4">
-      {manageSchoolSchedule && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="btn btn-primary min-h-11"
-            disabled={busy}
-            onClick={() => setHoursEditorOpen(true)}
-          >
-            Agregar o quitar horas
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline min-h-11"
-            disabled={busy}
-            onClick={() => setAddClassModalOpen(true)}
-          >
-            Agregar horario
-          </button>
-          {offering && (
-            <button
-              type="button"
-              className="btn btn-outline min-h-11"
-              disabled={busy}
-              onClick={() => setDetailsModalOpen(true)}
-            >
-              Editar detalles
-            </button>
-          )}
-        </div>
-      )}
       {/* Month nav: ‹ Junio › + conteo del mes */}
       <NavStepper
         label={new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', { month: 'long' })}
@@ -940,6 +839,9 @@ export default function CoachAgenda({
               if (row.kind === 'booked') {
                 const firstBooking = row.bookings[0]
                 if (!firstBooking) return null
+                const hasSchoolClass = row.bookings.some((booking) =>
+                  Boolean(booking.schoolClassId)
+                )
                 const isGroupClass =
                   row.bookings.length > 1 ||
                   row.bookings.some((booking) => booking.groupType === 'grupal')
@@ -957,7 +859,7 @@ export default function CoachAgenda({
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-xs font-bold uppercase text-[var(--c-text-2)]">
                           {isGroupClass
-                            ? `Clase grupal · ${row.bookings.length} alumnos`
+                            ? `Clase grupal · ${firstBooking.schoolClassStudentCount ?? row.bookings.length} alumnos`
                             : 'Clase particular · 1 alumno'}
                         </span>
                         {readOnlyAgenda && (
@@ -967,7 +869,7 @@ export default function CoachAgenda({
                               'Coach'}
                           </span>
                         )}
-                        {manageSchoolSchedule && (
+                        {manageSchoolSchedule && !hasSchoolClass && (
                           <button
                             type="button"
                             className="btn btn-outline btn-sm min-h-11"
@@ -993,7 +895,7 @@ export default function CoachAgenda({
                               : 'Bloquear horario'}
                           </button>
                         )}
-                        {!hideBookingActions && (
+                        {!hideBookingActions && !hasSchoolClass && (
                           <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
                             <span className="min-w-0">
                               <BinarySwitch
@@ -1057,20 +959,27 @@ export default function CoachAgenda({
                                 {initials(booking.athleteName)}
                               </span>
                               <span className="min-w-0 flex-1">
+                                {booking.schoolClassTitle && (
+                                  <span className="block text-xs font-semibold text-[var(--c-text-2)]">
+                                    {booking.schoolClassTitle}
+                                  </span>
+                                )}
                                 <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
                                   {booking.athleteName}
                                 </span>
-                                {!hideBookingActions && !manageSchoolSchedule && (
-                                  <Link
-                                    href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
-                                    className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                                  >
-                                    ver perfil ›
-                                  </Link>
-                                )}
+                                {!hideBookingActions &&
+                                  !manageSchoolSchedule &&
+                                  !booking.schoolClassId && (
+                                    <Link
+                                      href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
+                                      className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                                    >
+                                      ver perfil ›
+                                    </Link>
+                                  )}
                               </span>
                             </div>
-                            {!hideBookingActions && (
+                            {!hideBookingActions && !booking.schoolClassId && (
                               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:self-center">
                                 <label className="col-span-2 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white/65 px-3 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--c-aqua-strong)] sm:col-auto sm:rounded-full sm:border-transparent sm:bg-transparent sm:px-2 sm:hover:bg-white/60">
                                   <input
@@ -1343,51 +1252,16 @@ export default function CoachAgenda({
         />
       )}
 
-      {/* Editar detalles: solo opciones de clase */}
-      {detailsModalOpen && offering && (
-        <AgendaOpenHoursModal
-          weekDays={buildNextWeekDays()}
-          title="Editar detalles"
-          description="Edita los datos de tu clase."
-          submitLabel="Guardar cambios"
-          error={error}
-          initialDates={initialDatesForOffering(offering)}
-          initialTimes={initialTimesForOffering(offering)}
-          initialDetails={{
-            title: offering.details || '',
-            placeName: offering.placeName || '',
-            priceCents: offeringPriceCents(offering),
-            groupType: offering.groupType,
-          }}
-          busy={busy}
-          detailsOnly
-          onClose={() => setDetailsModalOpen(false)}
-          onSubmit={(_dates, _times, details) => saveOfferingDetails(details)}
-        />
-      )}
-
-      {addClassModalOpen && (
-        <AgendaOpenHoursModal
-          weekDays={buildNextWeekDays()}
-          defaultDate={selectedDate}
-          busy={busy}
-          showDetails
-          title="Agregar clase"
-          description="Elige los días y horarios, y completa los datos de tu nueva clase."
-          submitLabel="Agregar clase"
-          error={error}
-          onClose={() => setAddClassModalOpen(false)}
-          onSubmit={addClass}
-        />
-      )}
-
       {/* Editor de horas: Quitar / Agregar */}
       {hoursEditorOpen && (
         <ScheduleHoursEditor
           defaultDate={selectedDate}
           existingTimesByDate={existingTimesByDate}
-          busy={busy}
+          busy={busy || (manageSchoolSchedule && loadedCoachId !== coachId)}
           error={error}
+          coachOptions={allowSchoolScheduleEdit ? scheduleCoachOptions : []}
+          selectedCoachId={coachId}
+          onCoachChange={onScheduleCoachChange}
           onClose={closeScheduleEditor}
           onSubmit={applyHours}
         />
@@ -1586,13 +1460,4 @@ function whatsappDayKey(date: Date) {
 
 function slotHasPassed(slot: Pick<CoachAvailableSlot, 'date' | 'startTime'>) {
   return new Date(`${slot.date}T${slot.startTime}:00`).getTime() <= Date.now()
-}
-
-// Next 7 days as selectable chips for the offering editor modal.
-function buildNextWeekDays(): AgendaWeekDay[] {
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date()
-    date.setDate(date.getDate() + index)
-    return { key: dateKey(date), label: weekdayChipLabel(date) }
-  })
 }

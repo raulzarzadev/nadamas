@@ -92,7 +92,7 @@ export default function SchoolInvitationPage() {
     )
 
   if (accepted) {
-    const destination = invitation.role === 'student' ? '/athlete/bookings' : '/school'
+    const destination = invitation.role === 'student' ? '/athlete/bookings' : '/school/classes'
     return (
       <section className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-8 text-center shadow-[var(--shadow-sm)]">
         <span className="grid h-14 w-14 place-items-center rounded-full bg-(--c-surface) text-2xl text-(--c-aqua-strong)">
@@ -176,7 +176,7 @@ export default function SchoolInvitationPage() {
   return (
     <section className="mx-auto flex max-w-xl flex-col gap-5">
       <Link
-        href="/school"
+        href="/school/classes"
         className="inline-flex items-center gap-2 text-sm font-semibold text-(--c-ocean-mid)"
       >
         <FiArrowLeft aria-hidden="true" /> Regresar

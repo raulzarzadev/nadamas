@@ -9,9 +9,14 @@ import {
 } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
-import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
+import {
+  type SchoolClassOccurrence,
+  type SchoolMembership,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership } from '@/lib/server/school-access'
+import { schoolClassAgendaBooking } from '@/lib/server/school-agenda'
 
 export const runtime = 'nodejs'
 
@@ -69,20 +74,60 @@ export async function GET(request: Request) {
   )
   if (schoolError) return schoolError
   const range = monthRange(url.searchParams.get('month'))
-  const [coachDoc, bookingsSnapshot, blocksSnapshot, schoolOfferingsSnapshot] = await Promise.all([
+  const [
+    coachDoc,
+    bookingsSnapshot,
+    blocksSnapshot,
+    schoolOfferingsSnapshot,
+    schoolClassesSnapshot,
+    schoolStudentsSnapshot,
+  ] = await Promise.all([
     adminDb.collection('coaches').doc(coachId).get(),
     adminDb.collection('bookings').where('coachId', '==', coachId).get(),
     adminDb.collection('coachScheduleBlocks').where('coachId', '==', coachId).get(),
     schoolId
       ? adminDb.collection('schoolCoachOfferings').doc(`${schoolId}_${coachId}`).get()
       : Promise.resolve(null),
+    schoolId
+      ? adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get()
+      : Promise.resolve(null),
+    schoolId
+      ? adminDb.collection('schoolStudents').where('schoolId', '==', schoolId).get()
+      : Promise.resolve(null),
   ])
 
   const coach = { id: coachDoc.id, ...coachDoc.data() } as CoachPublic
-  const bookings = bookingsSnapshot.docs
+  const regularBookings = bookingsSnapshot.docs
     .map((doc) => doc.data() as Booking)
     .filter((booking) => (schoolId ? booking.schoolId === schoolId : !booking.schoolId))
-    .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+  const studentNames = new Map(
+    (schoolStudentsSnapshot?.docs || []).map((doc) => [doc.id, String(doc.data().name || 'Alumno')])
+  )
+  const startDate = range.start.toISOString().slice(0, 10)
+  const endDate = range.end.toISOString().slice(0, 10)
+  const schoolClassBookings = (schoolClassesSnapshot?.docs || []).flatMap((doc) => {
+    const occurrence = doc.data() as SchoolClassOccurrence
+    if (
+      !occurrence.date ||
+      occurrence.date < startDate ||
+      occurrence.date > endDate ||
+      !Array.isArray(occurrence.teacherIds) ||
+      !occurrence.teacherIds.includes(coachId)
+    )
+      return []
+    return [
+      schoolClassAgendaBooking({
+        schoolId: schoolId as string,
+        occurrence,
+        coachId,
+        coachName: null,
+        studentNames,
+      }),
+    ]
+  })
+  const bookings = [...regularBookings, ...schoolClassBookings].sort((a, b) =>
+    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+  )
   const blocks = blocksSnapshot.docs
     .map((doc) => doc.data() as CoachScheduleBlock)
     .filter((block) => (schoolId ? block.schoolId === schoolId : !block.schoolId))
