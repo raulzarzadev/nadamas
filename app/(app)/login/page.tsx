@@ -7,10 +7,33 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import { useRole } from '@/context/RoleContext'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
 import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 
 function LoginHeader() {
+  const tenant = useTenantSchool()
+  if (tenant)
+    return (
+      <header className="flex justify-center px-3 pb-6 pt-4">
+        <Link href="/" className="flex items-center gap-3 text-(--c-ocean)">
+          {tenant.logoUrl ? (
+            <Image
+              src={tenant.logoUrl}
+              alt={tenant.name}
+              width={48}
+              height={48}
+              className="size-12 rounded-lg object-contain"
+            />
+          ) : (
+            <span className="grid size-12 place-items-center rounded-lg bg-(--c-surface) text-xl font-extrabold">
+              {tenant.name[0]}
+            </span>
+          )}
+          <span className="text-lg font-extrabold">{tenant.name}</span>
+        </Link>
+      </header>
+    )
   return (
     <header className="flex justify-center px-3 pb-6 pt-4">
       <Link href="/" aria-label="nadamas.app inicio">

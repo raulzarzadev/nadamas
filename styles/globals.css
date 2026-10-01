@@ -104,3 +104,22 @@ button:not(:disabled),
 .metric-range.is-bumping::-moz-range-thumb {
   animation: metric-thumb-pulse 320ms ease;
 }
+
+/* A school subdomain owns the brand throughout its workspace. */
+[data-tenant-school], [data-tenant-school] [data-theme], [data-tenant-school] .marketing {
+  --c-ocean: var(--tenant-primary);
+  --c-ocean-mid: var(--tenant-primary);
+  --c-aqua: var(--tenant-secondary);
+  --c-aqua-strong: var(--tenant-primary);
+  --c-aqua-light: var(--tenant-accent);
+  --c-bg: var(--tenant-surface);
+  --c-surface: var(--tenant-surface);
+  --c-border: var(--tenant-accent);
+  --color-primary: var(--tenant-primary);
+  --color-secondary: var(--tenant-primary);
+  --color-accent: var(--tenant-secondary);
+  --color-base-200: var(--tenant-surface);
+  --color-base-300: var(--tenant-accent);
+  --color-base-content: var(--tenant-primary);
+  --grad-brand: linear-gradient(135deg, var(--tenant-primary), var(--tenant-secondary));
+}

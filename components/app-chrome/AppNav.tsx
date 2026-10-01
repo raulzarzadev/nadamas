@@ -17,6 +17,7 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { useRole } from '@/context/RoleContext'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { RoleName } from '@/lib/roles'
 import { type School, type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
@@ -41,6 +42,7 @@ const NAV_ICONS = {
 // logged-in users so the chrome is identical everywhere. When no `role` is
 // passed it follows the active role from RoleContext.
 export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
+  const tenant = useTenantSchool()
   const { activeRole, isAdmin } = useRole()
   const role = modeProp ?? activeRole
   const pathname = usePathname()
@@ -68,7 +70,9 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
       )
       .then((payload) => {
         if (!active) return
-        const schools = schoolsForWorkspace(payload.schools || [], false)
+        const schools = schoolsForWorkspace(payload.schools || [], false).filter(
+          (item) => !tenant || item.school.id === tenant.id
+        )
         const selected =
           schools.find((item) => item.school.id === storedSchoolId) ||
           schools[0] ||
@@ -96,21 +100,45 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
     return () => {
       active = false
     }
-  }, [role])
+  }, [role, tenant])
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
         <div className="flex items-center gap-4">
-          <Link href="/" className="relative block h-7 w-24 shrink-0 sm:w-28">
-            <Image
-              src="/logo-nadamas.webp"
-              fill
-              sizes="112px"
-              priority
-              style={{ objectFit: 'contain', objectPosition: 'left' }}
-              alt="Nadamas logo"
-            />
+          <Link
+            href="/"
+            className={tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'}
+          >
+            {tenant ? (
+              <span className="flex min-w-0 items-center gap-2">
+                {tenant.logoUrl ? (
+                  <Image
+                    src={tenant.logoUrl}
+                    alt={tenant.name}
+                    width={40}
+                    height={40}
+                    className="size-10 shrink-0 rounded-lg object-contain"
+                  />
+                ) : (
+                  <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-(--c-surface) text-lg font-extrabold">
+                    {tenant.name[0]}
+                  </span>
+                )}
+                <span className="max-w-32 truncate text-sm font-extrabold sm:max-w-64">
+                  {tenant.name}
+                </span>
+              </span>
+            ) : (
+              <Image
+                src="/logo-nadamas.webp"
+                fill
+                sizes="112px"
+                priority
+                style={{ objectFit: 'contain', objectPosition: 'left' }}
+                alt="Nadamas logo"
+              />
+            )}
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <NotificationsBell />

@@ -8,6 +8,7 @@ import type { SchoolClassOccurrence } from '@/lib/school'
 import { SCHOOL_PALETTES } from '@/lib/school'
 import { listPublicSchoolClasses } from '@/lib/server/school-classes'
 import { getSchoolBySlug } from '@/lib/server/schools'
+import { getTenantSchool } from '@/lib/server/tenant-school'
 
 interface SchoolPublicPageProps {
   params: Promise<{ slug: string }>
@@ -47,7 +48,7 @@ export async function generateMetadata({ params }: SchoolPublicPageProps): Promi
   const school = await getSchoolBySlug(slug)
   if (!school) return { title: 'Escuela no disponible' }
   return {
-    title: school.name,
+    title: (await getTenantSchool()) ? { absolute: school.name } : school.name,
     description: school.description || `Conoce ${school.name} en Nadamas.`,
     openGraph: {
       title: school.name,

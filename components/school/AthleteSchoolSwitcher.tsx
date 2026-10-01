@@ -1,9 +1,16 @@
 'use client'
 
+import { useTenantSchool } from '@/context/TenantSchoolContext'
+
 import SchoolWorkspaceTabs from './SchoolWorkspaceTabs'
 import { useSchoolSelection } from './useSchoolSelection'
 
 export default function AthleteSchoolSwitcher() {
+  const tenant = useTenantSchool()
+  return tenant ? null : <GlobalAthleteSchoolSwitcher />
+}
+
+function GlobalAthleteSchoolSwitcher() {
   const { schools, selectedId, status, selectSchool, selectPersonal } = useSchoolSelection({
     includePersonal: true,
     athleteMode: true,

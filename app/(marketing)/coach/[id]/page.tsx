@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { coachDisplayPhoto } from '@/lib/coach-photo'
 import { getPublicCoachDetail } from '@/lib/server/public-coach'
+import { getTenantSchool } from '@/lib/server/tenant-school'
 
 interface CoachPublicPageProps {
   params: Promise<{ id: string }>
@@ -11,6 +12,9 @@ interface CoachPublicPageProps {
 
 export async function generateMetadata({ params }: CoachPublicPageProps): Promise<Metadata> {
   const { id } = await params
+  const tenant = await getTenantSchool()
+  if (tenant)
+    redirect(`/athlete/coach/${encodeURIComponent(id)}?schoolId=${encodeURIComponent(tenant.id)}`)
   const detail = await getPublicCoachDetail(id)
   if (!detail) {
     return { title: 'Perfil no disponible' }
@@ -41,6 +45,9 @@ export async function generateMetadata({ params }: CoachPublicPageProps): Promis
 
 export default async function CoachPublicPage({ params }: CoachPublicPageProps) {
   const { id } = await params
+  const tenant = await getTenantSchool()
+  if (tenant)
+    redirect(`/athlete/coach/${encodeURIComponent(id)}?schoolId=${encodeURIComponent(tenant.id)}`)
   const detail = await getPublicCoachDetail(id)
   if (!detail) notFound()
   if (detail.coachSlug) redirect(`/${detail.coachSlug}`)

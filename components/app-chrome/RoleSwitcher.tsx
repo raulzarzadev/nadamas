@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiShare2 } from 'react-icons/fi'
 import ProfileShareDialog from '@/components/profile/ProfileShareDialog'
 import { useRole } from '@/context/RoleContext'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
@@ -48,6 +49,7 @@ export default function RoleSwitcher({
   currentRole?: RoleName
   school?: Pick<School, 'name' | 'slug'> | null
 }) {
+  const tenant = useTenantSchool()
   const { roles, activeRole, setActiveRole, enableCoach } = useRole()
   const { user, logout } = useUser() as {
     user: Parameters<typeof initialsFrom>[0]
@@ -58,7 +60,7 @@ export default function RoleSwitcher({
   const secondaryLinks = SECONDARY_NAV_BY_ROLE[displayedRole]
   const avatarText = displayedRole === 'athlete' ? 'TÚ' : initialsFrom(user)
   const userEmail = user?.email
-  const shareSchool = school
+  const shareSchool = tenant || school
   const [shareTarget, setShareTarget] = useState<{ title: string; publicUrl: string } | null>(null)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -245,7 +247,7 @@ export default function RoleSwitcher({
               <div className="my-1 border-t border-[var(--c-border)]" />
             </div>
 
-            {(slugs.athlete || slugs.coach) && (
+            {!tenant && (slugs.athlete || slugs.coach) && (
               <p
                 role="none"
                 className="px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--c-text-2)]"
@@ -266,7 +268,7 @@ export default function RoleSwitcher({
               >
                 Modo {ROLE_LABEL.athlete}
               </button>
-              {renderShare('athlete')}
+              {!tenant && renderShare('athlete')}
             </div>
             <div role="none" className="flex items-center gap-1 pr-1">
               {roles.coach ? (
@@ -282,7 +284,7 @@ export default function RoleSwitcher({
                   >
                     Modo {ROLE_LABEL.coach}
                   </button>
-                  {renderShare('coach')}
+                  {!tenant && renderShare('coach')}
                 </>
               ) : (
                 <button
@@ -329,7 +331,7 @@ export default function RoleSwitcher({
                 </button>
               )}
             </div>
-            {roles.admin && (
+            {roles.admin && !tenant && (
               <div role="none">
                 <button
                   type="button"

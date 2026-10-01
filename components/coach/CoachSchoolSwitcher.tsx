@@ -3,9 +3,15 @@
 import { useEffect, useMemo } from 'react'
 import SchoolWorkspaceTabs from '@/components/school/SchoolWorkspaceTabs'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { schoolMembershipHasRole } from '@/lib/school'
 
 export default function CoachSchoolSwitcher() {
+  const tenant = useTenantSchool()
+  return tenant ? null : <GlobalCoachSchoolSwitcher />
+}
+
+function GlobalCoachSchoolSwitcher() {
   const { schools, selectedId, isPersonal, status, selectSchool, selectPersonal } =
     useSchoolSelection({ includePersonal: true })
   const coachSchools = useMemo(

@@ -19,6 +19,8 @@ export function proxy(request: NextRequest) {
     !slug ||
     isAppRoute ||
     pathname.startsWith('/api/') ||
+    pathname === '/tenant-icon' ||
+    pathname === '/tenant-manifest' ||
     pathname === '/school' ||
     pathname.startsWith('/school/')
   ) {

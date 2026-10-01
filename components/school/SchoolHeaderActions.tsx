@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiEdit3, FiX } from 'react-icons/fi'
@@ -26,6 +27,7 @@ export default function SchoolHeaderActions({
   canEditSlug: boolean
   onUpdated: (school: School) => void
 }) {
+  const router = useRouter()
   const [editOpen, setEditOpen] = useState(false)
   const [name, setName] = useState(school.name)
   const [description, setDescription] = useState(school.description)
@@ -94,6 +96,7 @@ export default function SchoolHeaderActions({
       })
       const payload = (await response.json()) as { school: School }
       onUpdated(payload.school)
+      router.refresh()
       setLogoFile(null)
       setEditOpen(false)
     } catch (error) {

@@ -6,6 +6,7 @@ import {
   getSchoolsForUser,
   validateSchoolInput,
 } from '@/lib/server/schools'
+import { tenantSlugFromHost } from '@/lib/tenant-host'
 
 export const runtime = 'nodejs'
 
@@ -33,7 +34,11 @@ export async function GET(request: Request) {
       getSchoolsForUser(caller.uid),
       getOwnedSchool(caller.uid),
     ])
-    return NextResponse.json({ schools, ownedSchool })
+    const slug = tenantSlugFromHost(request.headers.get('host'))
+    return NextResponse.json({
+      schools: slug ? schools.filter((item) => item.school.slug === slug) : schools,
+      ownedSchool: slug && ownedSchool?.slug !== slug ? null : ownedSchool,
+    })
   } catch {
     return NextResponse.json({ error: 'No se pudieron cargar tus escuelas.' }, { status: 500 })
   }

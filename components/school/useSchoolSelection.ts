@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { School, SchoolMembership } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
@@ -19,6 +20,7 @@ export function useSchoolSelection({
   includePersonal?: boolean
   athleteMode?: boolean
 } = {}) {
+  const tenant = useTenantSchool()
   const selectionKey = athleteMode
     ? 'nadamas.athleteSelection'
     : includePersonal
@@ -44,6 +46,14 @@ export function useSchoolSelection({
         const next = athleteMode
           ? (payload.schools || []).filter(({ membership }) => membership.status === 'active')
           : schoolsForWorkspace(payload.schools || [], includePersonal)
+        if (tenant) {
+          const scoped = next.filter((item) => item.school.id === tenant.id)
+          setSchools(scoped)
+          setSelectedId(scoped[0]?.school.id || null)
+          setIsPersonal(false)
+          setStatus('ready')
+          return
+        }
         setSchools(next)
         if (includePersonal && storedCoachSelection !== null) {
           if (storedCoachSelection === 'personal') {
@@ -77,10 +87,11 @@ export function useSchoolSelection({
         setStatus('ready')
       })
       .catch(() => setStatus('error'))
-  }, [athleteMode, includePersonal, selectionKey])
+  }, [athleteMode, includePersonal, selectionKey, tenant])
 
   useEffect(() => {
     function handleSelectionChange(event: Event) {
+      if (tenant) return
       const detail = (event as CustomEvent<{ schoolId: string | null; selectionKey: string }>)
         .detail
       if (detail.selectionKey !== selectionKey) return
@@ -95,7 +106,7 @@ export function useSchoolSelection({
     }
     window.addEventListener(SCHOOL_SELECTION_EVENT, handleSelectionChange)
     return () => window.removeEventListener(SCHOOL_SELECTION_EVENT, handleSelectionChange)
-  }, [includePersonal, selectionKey])
+  }, [includePersonal, selectionKey, tenant])
 
   const selected = useMemo(
     () =>
@@ -109,6 +120,7 @@ export function useSchoolSelection({
 
   const selectSchool = useCallback(
     (schoolId: string) => {
+      if (tenant) return
       if (!schools.some((item) => item.school.id === schoolId)) return
       setIsPersonal(false)
       setSelectedId(schoolId)
@@ -117,17 +129,18 @@ export function useSchoolSelection({
         new CustomEvent(SCHOOL_SELECTION_EVENT, { detail: { schoolId, selectionKey } })
       )
     },
-    [schools, selectionKey]
+    [schools, selectionKey, tenant]
   )
 
   const selectPersonal = useCallback(() => {
+    if (tenant) return
     setIsPersonal(true)
     setSelectedId(null)
     window.localStorage.setItem(selectionKey, 'personal')
     window.dispatchEvent(
       new CustomEvent(SCHOOL_SELECTION_EVENT, { detail: { schoolId: null, selectionKey } })
     )
-  }, [selectionKey])
+  }, [selectionKey, tenant])
 
   return {
     schools,

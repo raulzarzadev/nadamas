@@ -7,6 +7,7 @@ import SchoolLogoInput from '@/components/school/SchoolLogoInput'
 import { useUser } from '@/context/UserContext'
 import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import { DEFAULT_SCHOOL_TIMEZONE, SCHOOL_TIMEZONE_OPTIONS, type School } from '@/lib/school'
 import { slugify } from '@/lib/slug'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
@@ -138,13 +139,12 @@ export default function CreateSchoolPage() {
                 <p className="text-sm text-(--c-text-2)">{ownedSchool.slug}.nadamas.app</p>
               </div>
             </div>
-            <Link href={`/school/${ownedSchool.slug}`} className="btn btn-primary min-h-11 w-full">
+            <Link
+              href={getPublicSchoolUrl(ownedSchool.slug)}
+              className="btn btn-primary min-h-11 w-full"
+            >
               Ver página pública
             </Link>
-            <p className="text-center text-xs text-(--c-text-2)">
-              Cuando el dominio esté configurado también estará disponible en{' '}
-              <strong>{ownedSchool.slug}.nadamas.app</strong>.
-            </p>
           </div>
         </div>
       </section>
