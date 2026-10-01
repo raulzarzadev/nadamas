@@ -55,5 +55,8 @@ screenshots/
 firebase-debug.log
 firestore-debug.log
 
+# Firebase exports (may contain user data)
+/firebase-export-*/
+
 # Local codebase-memory index
 .codebase-memory/
