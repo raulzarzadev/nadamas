@@ -16,7 +16,8 @@
     "emu:kill": "node scripts/kill-emulator.mjs",
     "seed": "FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 GCLOUD_PROJECT=nadamas-b1ecf node scripts/seed-emulator.mjs",
     "dev:emu": "node scripts/dev-emulator.mjs",
-    "dev:emu:app": "NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 GCLOUD_PROJECT=nadamas-b1ecf next dev"
+    "dev:emu:app": "NEXT_PUBLIC_USE_FIREBASE_EMULATOR=1 FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIREBASE_STORAGE_EMULATOR_HOST=127.0.0.1:9199 GCLOUD_PROJECT=nadamas-b1ecf next dev",
+    "deploy:pro": "node scripts/deploy-pro.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
