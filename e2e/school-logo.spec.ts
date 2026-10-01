@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('recorta y sube el logo al crear y editar una escuela', async ({ page, request }) => {
   test.setTimeout(60000)
-  await page.setViewportSize({ width: 390, height: 844 })
+  await page.setViewportSize({ width: 320, height: 568 })
   let available = false
   try {
     available = (await fetch('http://127.0.0.1:8080')).ok
@@ -23,6 +23,7 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     await page.waitForURL((url) => !url.pathname.includes('/login'))
     await page.goto('/school/create')
     await page.getByLabel('Nombre de la escuela').fill(schoolName)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
     const image = await page.evaluate(() => {
       const canvas = document.createElement('canvas')
       canvas.width = 400
@@ -89,6 +90,37 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     }, school.logoUrl)
     expect(dimensions).toEqual([512, 512])
     await page.goto(`/school/classes?schoolId=${schoolId}`)
+    await page.getByRole('button', { name: 'Agregar o quitar horas', exact: true }).click()
+    const nextWeek = page
+      .getByRole('dialog', { name: 'Editar horas' })
+      .getByRole('button', { name: 'Semana siguiente', exact: true })
+    const dialogBounds = await page
+      .getByRole('dialog', { name: 'Editar horas' })
+      .locator('div')
+      .first()
+      .boundingBox()
+    const nextBounds = await nextWeek.boundingBox()
+    expect(dialogBounds).not.toBeNull()
+    expect(nextBounds).not.toBeNull()
+    if (dialogBounds && nextBounds)
+      expect(nextBounds.x + nextBounds.width).toBeLessThanOrEqual(
+        dialogBounds.x + dialogBounds.width
+      )
+    await nextWeek.click()
+    await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
+    await page.goto('/school/students')
+    await page.getByRole('button', { name: 'Agregar alumno', exact: true }).click()
+    const studentPanel = page.getByRole('dialog').locator(':scope > div').first()
+    const studentBounds = await studentPanel.boundingBox()
+    expect(studentBounds).not.toBeNull()
+    if (studentBounds) {
+      expect(studentBounds.y).toBeGreaterThanOrEqual(0)
+      expect(studentBounds.y + studentBounds.height).toBeLessThanOrEqual(568)
+    }
+    await page.getByRole('button', { name: 'Guardar alumno', exact: true }).scrollIntoViewIfNeeded()
+    await expect(page.getByRole('button', { name: 'Guardar alumno', exact: true })).toBeInViewport()
+    await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
+
     await page.getByRole('button', { name: 'Editar', exact: true }).click()
     await page.locator('input[type=file]').setInputFiles(file)
     await dragImage(1)

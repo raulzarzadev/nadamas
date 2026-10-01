@@ -173,7 +173,7 @@ export default function CreateSchoolPage() {
         onSubmit={submit}
         className="flex flex-col gap-5 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-7"
       >
-        <label className="grid gap-1.5 text-sm font-semibold text-(--c-ocean)">
+        <label className="grid min-w-0 gap-1.5 text-sm font-semibold text-(--c-ocean)">
           Nombre de la escuela
           <input
             required
@@ -181,13 +181,13 @@ export default function CreateSchoolPage() {
             onChange={(event) => updateName(event.target.value)}
             maxLength={100}
             placeholder="Ej. Escuela de Natación Coyoacán"
-            className="min-h-12 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-base font-normal outline-none transition focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-light)"
+            className="min-h-12 w-full min-w-0 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-base font-normal outline-none transition focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-light)"
           />
         </label>
 
-        <label className="grid gap-1.5 text-sm font-semibold text-(--c-ocean)">
+        <label className="grid min-w-0 gap-1.5 text-sm font-semibold text-(--c-ocean)">
           Slug de la escuela
-          <span className="flex min-h-12 items-center rounded-[var(--r-sm)] border border-(--c-border) bg-(--c-surface) px-3 text-sm font-normal text-(--c-text-2)">
+          <span className="flex min-h-12 min-w-0 items-center rounded-[var(--r-sm)] border border-(--c-border) bg-(--c-surface) px-3 text-sm font-normal text-(--c-text-2)">
             <input
               required
               value={form.slug}
@@ -206,7 +206,7 @@ export default function CreateSchoolPage() {
           </span>
         </label>
 
-        <label className="grid gap-1.5 text-sm font-semibold text-(--c-ocean)">
+        <label className="grid min-w-0 gap-1.5 text-sm font-semibold text-(--c-ocean)">
           Descripción
           <textarea
             value={form.description}
@@ -218,12 +218,12 @@ export default function CreateSchoolPage() {
           />
         </label>
 
-        <label className="grid gap-1.5 text-sm font-semibold text-(--c-ocean)">
+        <label className="grid min-w-0 gap-1.5 text-sm font-semibold text-(--c-ocean)">
           Zona horaria
           <select
             value={form.timezone}
             onChange={(event) => updateField('timezone', event.target.value)}
-            className="min-h-12 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-base font-normal outline-none transition focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-light)"
+            className="min-h-12 w-full min-w-0 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-base font-normal outline-none transition focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-light)"
           >
             {SCHOOL_TIMEZONE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -233,7 +233,7 @@ export default function CreateSchoolPage() {
           </select>
         </label>
 
-        <div className="grid gap-1.5 text-sm font-semibold text-(--c-ocean)">
+        <div className="grid min-w-0 gap-1.5 text-sm font-semibold text-(--c-ocean)">
           <span>Logo</span>
           <SchoolLogoInput
             value={logoFile}

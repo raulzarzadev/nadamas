@@ -224,7 +224,7 @@ function InviteCoach({
     >
       <form
         onSubmit={submit}
-        className="w-full max-w-md rounded-[var(--r-md)] bg-white p-6 shadow-[var(--shadow-md)]"
+        className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto max-w-md rounded-[var(--r-md)] bg-white p-6 shadow-[var(--shadow-md)]"
       >
         <h2 className="text-xl font-extrabold text-(--c-ocean)">Invitar coach</h2>
         <p className="mt-1 text-sm text-(--c-text-2)">

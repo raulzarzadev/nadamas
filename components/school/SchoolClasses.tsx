@@ -963,7 +963,7 @@ function Modal({
       aria-modal="true"
       className="fixed inset-0 z-50 grid place-items-center bg-[rgba(10,37,64,0.55)] p-4"
     >
-      <div className="w-full max-w-xl rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)] sm:p-7">
+      <div className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto max-w-xl rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)] sm:p-7">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-extrabold text-(--c-ocean)">{title}</h2>
           <button
