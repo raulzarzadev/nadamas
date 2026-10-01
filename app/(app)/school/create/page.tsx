@@ -1,11 +1,11 @@
 'use client'
 
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiArrowLeft, FiCheck, FiImage, FiMapPin } from 'react-icons/fi'
+import { FiArrowLeft, FiCheck, FiMapPin } from 'react-icons/fi'
+import SchoolLogoInput from '@/components/school/SchoolLogoInput'
 import { useUser } from '@/context/UserContext'
-import { storage } from '@/firebase'
+import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { DEFAULT_SCHOOL_TIMEZONE, SCHOOL_TIMEZONE_OPTIONS, type School } from '@/lib/school'
 import { slugify } from '@/lib/slug'
@@ -29,7 +29,8 @@ export default function CreateSchoolPage() {
   const { user } = useUser() as { user: { uid?: string; id?: string } | null }
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [logoError, setLogoError] = useState<string | null>(null)
+  const [editingLogo, setEditingLogo] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [ownedSchool, setOwnedSchool] = useState<School | null>(null)
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<'idle' | 'saving' | 'error' | 'success'>('idle')
@@ -56,27 +57,6 @@ export default function CreateSchoolPage() {
     }))
   }
 
-  function selectLogo(file: File | undefined) {
-    setLogoError(null)
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      setLogoError('Selecciona una imagen válida.')
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setLogoError('El logo debe pesar menos de 5 MB.')
-      return
-    }
-    setLogoFile(file)
-  }
-
-  async function uploadLogo(uid: string) {
-    if (!logoFile) return null
-    const logoRef = ref(storage, `school-logos/${uid}/${crypto.randomUUID()}`)
-    const snapshot = await uploadBytes(logoRef, logoFile, { contentType: logoFile.type })
-    return getDownloadURL(snapshot.ref)
-  }
-
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (status === 'saving') return
@@ -92,12 +72,17 @@ export default function CreateSchoolPage() {
     setMessage(null)
     let logoUrl: string | null = null
     try {
-      logoUrl = await uploadLogo(uid)
+      if (logoFile) {
+        setUploadProgress(0)
+        logoUrl = await uploadSchoolLogo(logoFile, setUploadProgress)
+      }
     } catch (error) {
       reportInternalError('SCHOOL_LOGO_UPLOAD', error)
       setStatus('error')
       setMessage('No se pudo subir el logo. Inténtalo de nuevo.')
       return
+    } finally {
+      setUploadProgress(null)
     }
 
     try {
@@ -250,20 +235,13 @@ export default function CreateSchoolPage() {
 
         <div className="grid gap-1.5 text-sm font-semibold text-(--c-ocean)">
           <span>Logo</span>
-          <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-[var(--r-sm)] border border-dashed border-(--c-ocean-mid) bg-(--c-surface) px-4 text-center transition hover:bg-(--c-aqua-light)">
-            <FiImage aria-hidden="true" className="text-2xl text-(--c-ocean-mid)" />
-            <span>{logoFile ? logoFile.name : 'Selecciona una imagen'}</span>
-            <span className="font-normal text-xs text-(--c-text-2)">
-              PNG, JPG o WEBP · máximo 5 MB
-            </span>
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="sr-only"
-              onChange={(event) => selectLogo(event.target.files?.[0])}
-            />
-          </label>
-          {logoError && <p className="font-normal text-sm text-(--c-error,#b91c1c)">{logoError}</p>}
+          <SchoolLogoInput
+            value={logoFile}
+            onChange={setLogoFile}
+            disabled={status === 'saving'}
+            progress={uploadProgress}
+            onEditingChange={setEditingLogo}
+          />
         </div>
 
         {message && (
@@ -277,10 +255,17 @@ export default function CreateSchoolPage() {
 
         <button
           type="submit"
-          disabled={status === 'saving'}
+          disabled={status === 'saving' || editingLogo}
           className="btn btn-primary min-h-12 w-full text-base disabled:opacity-60"
         >
-          {status === 'saving' ? 'Creando escuela…' : 'Crear escuela'}
+          {status === 'saving' && (
+            <span aria-hidden="true" className="loading loading-spinner loading-sm" />
+          )}
+          {status === 'saving'
+            ? uploadProgress != null
+              ? 'Subiendo logo…'
+              : 'Creando escuela…'
+            : 'Crear escuela'}
         </button>
       </form>
     </section>

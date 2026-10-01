@@ -1,13 +1,11 @@
 'use client'
 
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
-import Image from 'next/image'
 import { QRCodeCanvas } from 'qrcode.react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiCheck, FiCopy, FiEdit3, FiImage, FiShare2, FiX } from 'react-icons/fi'
-import { useUser } from '@/context/UserContext'
-import { storage } from '@/firebase'
+import { FiCheck, FiCopy, FiEdit3, FiShare2, FiX } from 'react-icons/fi'
+import SchoolLogoInput from '@/components/school/SchoolLogoInput'
+import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { patchAuthed } from '@/lib/client/authed-api'
 import {
   DEFAULT_SCHOOL_PALETTE,
@@ -28,7 +26,6 @@ export default function SchoolHeaderActions({
   canEditSlug: boolean
   onUpdated: (school: School) => void
 }) {
-  const { user } = useUser() as { user: { uid?: string; id?: string } | null }
   const [editOpen, setEditOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [name, setName] = useState(school.name)
@@ -41,19 +38,13 @@ export default function SchoolHeaderActions({
   )
   const [showStudents, setShowStudents] = useState(school.showStudents === true)
   const [logoFile, setLogoFile] = useState<File | null>(null)
-  const [logoPreview, setLogoPreview] = useState<string | null>(null)
-  const [logoError, setLogoError] = useState<string | null>(null)
+  const [editingLogo, setEditingLogo] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
   const publicUrl = getPublicSchoolUrl(school.slug)
-
-  useEffect(() => {
-    return () => {
-      if (logoPreview) URL.revokeObjectURL(logoPreview)
-    }
-  }, [logoPreview])
 
   function openEdit() {
     setName(school.name)
@@ -64,34 +55,18 @@ export default function SchoolHeaderActions({
     setShowCoachesSchedules(school.showCoachesSchedules === true)
     setShowStudents(school.showStudents === true)
     setLogoFile(null)
-    setLogoPreview(null)
-    setLogoError(null)
     setMessage(null)
     setEditOpen(true)
   }
 
-  function selectLogo(file: File | undefined) {
-    setLogoError(null)
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      setLogoError('Selecciona una imagen válida.')
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setLogoError('El logo debe pesar menos de 5 MB.')
-      return
-    }
-    setLogoFile(file)
-    setLogoPreview(URL.createObjectURL(file))
-  }
-
   async function uploadLogo() {
-    const uid = user?.uid || user?.id
     if (!logoFile) return school.logoUrl || null
-    if (!uid) throw new Error('SCHOOL_SESSION_MISSING')
-    const logoRef = ref(storage, `school-logos/${uid}/${school.id}/${crypto.randomUUID()}`)
-    const snapshot = await uploadBytes(logoRef, logoFile, { contentType: logoFile.type })
-    return getDownloadURL(snapshot.ref)
+    setUploadProgress(0)
+    try {
+      return await uploadSchoolLogo(logoFile, setUploadProgress)
+    } finally {
+      setUploadProgress(null)
+    }
   }
 
   function getSaveErrorMessage(error: unknown) {
@@ -206,36 +181,14 @@ export default function SchoolHeaderActions({
             </label>
             <div className="grid gap-2 text-sm font-semibold text-(--c-ocean)">
               <span>Logo de la escuela</span>
-              <div className="flex items-center gap-3 rounded-[var(--r-sm)] border border-dashed border-(--c-ocean-mid) bg-(--c-surface) p-3">
-                <div className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl bg-white text-(--c-ocean-mid)">
-                  {logoPreview || school.logoUrl ? (
-                    <Image
-                      fill
-                      src={logoPreview || school.logoUrl || ''}
-                      alt={`Logo de ${school.name}`}
-                      unoptimized={Boolean(logoPreview)}
-                      className="h-full w-full object-contain p-1"
-                    />
-                  ) : (
-                    <FiImage aria-hidden="true" className="text-2xl" />
-                  )}
-                </div>
-                <label className="flex min-h-11 cursor-pointer items-center rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-sm font-bold text-(--c-ocean) hover:bg-(--c-aqua-light)">
-                  {logoFile ? 'Cambiar logo' : 'Subir logo'}
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    className="sr-only"
-                    onChange={(event) => selectLogo(event.target.files?.[0])}
-                  />
-                </label>
-              </div>
-              <span className="text-xs font-normal text-(--c-text-2)">
-                PNG, JPG o WEBP · máximo 5 MB
-              </span>
-              {logoError && (
-                <p className="text-sm font-normal text-(--c-error,#b91c1c)">{logoError}</p>
-              )}
+              <SchoolLogoInput
+                value={logoFile}
+                onChange={setLogoFile}
+                currentUrl={school.logoUrl}
+                disabled={saving}
+                progress={uploadProgress}
+                onEditingChange={setEditingLogo}
+              />
             </div>
             <fieldset className="grid gap-2 text-sm font-semibold text-(--c-ocean)">
               <legend>Paleta de marca</legend>
@@ -325,8 +278,17 @@ export default function SchoolHeaderActions({
               </p>
             </div>
             {message && <p className="text-sm text-(--c-error,#b91c1c)">{message}</p>}
-            <button type="submit" disabled={saving} className="btn btn-primary min-h-11">
-              {saving ? 'Guardando…' : 'Guardar cambios'}
+            <button
+              type="submit"
+              disabled={saving || editingLogo}
+              className="btn btn-primary min-h-11"
+            >
+              {saving && <span aria-hidden="true" className="loading loading-spinner loading-sm" />}
+              {saving
+                ? uploadProgress != null
+                  ? 'Subiendo logo…'
+                  : 'Guardando…'
+                : 'Guardar cambios'}
             </button>
           </form>
         </ModalPortal>
