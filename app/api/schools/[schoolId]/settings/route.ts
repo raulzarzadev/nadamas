@@ -11,12 +11,7 @@ interface RouteProps {
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'guardian',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   const snapshot = await adminDb.collection('schools').doc(schoolId).get()
   if (!snapshot.exists)

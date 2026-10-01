@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiUsers } from 'react-icons/fi'
+import AdditionalProfileSelector from '@/components/profile/AdditionalProfileSelector'
+import type { AdditionalProfile } from '@/lib/additional-profile'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { SchoolInvitationStudentData } from '@/lib/school'
 import { GENERIC_USER_ERROR } from '@/lib/user-facing-error'
@@ -12,7 +14,7 @@ interface InvitationPayload {
   schoolId: string
   schoolName: string
   schoolLogoUrl: string | null
-  role: 'teacher' | 'guardian' | 'student'
+  role: 'teacher' | 'student'
   email: string
   status: string
   expiresAt: number
@@ -28,7 +30,8 @@ export default function SchoolInvitationPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [accepted, setAccepted] = useState(false)
-  const [studentCreated, setStudentCreated] = useState(false)
+  const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
+  const [additionalProfileId, setAdditionalProfileId] = useState('')
   const [useInvitationData, setUseInvitationData] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [profile, setProfile] = useState({
@@ -39,16 +42,11 @@ export default function SchoolInvitationPage() {
     birthDate: '',
     gender: 'varonil',
   })
-  const [student, setStudent] = useState({
-    name: '',
-    birthDate: '',
-    gender: 'varonil',
-    guardianName: '',
-    guardianRelationship: '',
-    guardianPhone: '',
-  })
-
   useEffect(() => {
+    getAuthed('/api/additional-profiles')
+      .then((r) => r.json())
+      .then((p) => setAdditionalProfiles(p.profiles || []))
+      .catch(() => setError('No se pudieron cargar tus Adicionales.'))
     getAuthed(`/api/school-invitations/${token}`)
       .then((response) => response.json() as Promise<{ invitation: InvitationPayload }>)
       .then((payload) => {
@@ -73,35 +71,12 @@ export default function SchoolInvitationPage() {
     try {
       await postAuthed(`/api/school-invitations/${token}`, {
         ...profile,
+        additionalProfileId,
         useInvitationData: takeInvitationData,
       })
-      setStudent((current) => ({
-        ...current,
-        guardianName: profile.name,
-        guardianRelationship: profile.relationship,
-        guardianPhone: profile.phone,
-      }))
       setAccepted(true)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : GENERIC_USER_ERROR)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function createStudent(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!invitation || saving) return
-    setSaving(true)
-    setError(null)
-    try {
-      await postAuthed(`/api/schools/${invitation.schoolId}/students`, {
-        ...student,
-        gender: student.gender,
-      })
-      setStudentCreated(true)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : GENERIC_USER_ERROR)
+    } catch {
+      setError(GENERIC_USER_ERROR)
     } finally {
       setSaving(false)
     }
@@ -116,73 +91,7 @@ export default function SchoolInvitationPage() {
       </div>
     )
 
-  if (accepted && invitation.role === 'guardian' && !studentCreated) {
-    return (
-      <section className="mx-auto flex max-w-xl flex-col gap-5">
-        <div className="rounded-[var(--r-md)] bg-(--c-ocean) p-6 text-white">
-          <p className="text-sm font-semibold text-(--c-aqua-light)">Acceso confirmado</p>
-          <h1 className="mt-2 text-2xl font-extrabold">Registra al primer alumno</h1>
-          <p className="mt-2 text-white/75">Puedes agregar más hijos después desde tu escuela.</p>
-        </div>
-        <form
-          onSubmit={createStudent}
-          className="flex flex-col gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-7"
-        >
-          <Field
-            label="Nombre completo del alumno"
-            value={student.name}
-            onChange={(value) => setStudent({ ...student, name: value })}
-            required
-          />
-          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Fecha de nacimiento
-            <input
-              required
-              type="date"
-              value={student.birthDate}
-              onChange={(event) => setStudent({ ...student, birthDate: event.target.value })}
-              className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Rama / género
-            <select
-              value={student.gender}
-              onChange={(event) => setStudent({ ...student, gender: event.target.value })}
-              className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-            >
-              <option value="varonil">Varonil</option>
-              <option value="femenil">Femenil</option>
-              <option value="otro">Otro</option>
-            </select>
-          </label>
-          <Field
-            label="Nombre del tutor"
-            value={student.guardianName}
-            onChange={(value) => setStudent({ ...student, guardianName: value })}
-          />
-          <Field
-            label="Parentesco"
-            value={student.guardianRelationship}
-            onChange={(value) => setStudent({ ...student, guardianRelationship: value })}
-            placeholder="Mamá, papá, tutor…"
-          />
-          <Field
-            label="Teléfono del tutor"
-            value={student.guardianPhone}
-            onChange={(value) => setStudent({ ...student, guardianPhone: value })}
-            type="tel"
-          />
-          {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
-          <button type="submit" disabled={saving} className="btn btn-primary min-h-12">
-            {saving ? 'Guardando…' : 'Agregar alumno'}
-          </button>
-        </form>
-      </section>
-    )
-  }
-
-  if (studentCreated || accepted) {
+  if (accepted) {
     const destination = invitation.role === 'student' ? '/athlete/bookings' : '/school'
     return (
       <section className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-8 text-center shadow-[var(--shadow-sm)]">
@@ -224,12 +133,15 @@ export default function SchoolInvitationPage() {
             <DataRow label="Nombre" value={data.name} />
             <DataRow label="Fecha de nacimiento" value={data.birthDate} />
             <DataRow label="Rama / género" value={data.gender} />
-            {data.guardianName && <DataRow label="Tutor" value={data.guardianName} />}
-            {data.guardianRelationship && (
-              <DataRow label="Parentesco" value={data.guardianRelationship} />
-            )}
           </dl>
         </div>
+        {invitation.role === 'student' && (
+          <AdditionalProfileSelector
+            profiles={additionalProfiles}
+            value={additionalProfileId}
+            onChange={setAdditionalProfileId}
+          />
+        )}
         {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
         <div className="grid gap-3 sm:grid-cols-2">
           <button
@@ -281,64 +193,68 @@ export default function SchoolInvitationPage() {
             ? 'coach'
             : invitation.role === 'student'
               ? 'alumno'
-              : 'padre, madre o tutor'}
+              : 'alumno'}
           .
         </p>
       </div>
       <div className="flex flex-col gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-7">
-        <Field
-          label="Nombre completo"
-          value={profile.name}
-          onChange={(value) => setProfile({ ...profile, name: value })}
-          required
-        />
-        <Field
-          label="Teléfono"
-          value={profile.phone}
-          onChange={(value) => setProfile({ ...profile, phone: value })}
-          type="tel"
-        />
         {invitation.role === 'student' && (
+          <AdditionalProfileSelector
+            profiles={additionalProfiles}
+            value={additionalProfileId}
+            onChange={setAdditionalProfileId}
+          />
+        )}
+        {!additionalProfileId && (
           <>
             <Field
-              label="Fecha de nacimiento"
-              value={profile.birthDate}
-              onChange={(value) => setProfile({ ...profile, birthDate: value })}
-              type="date"
+              label="Nombre completo"
+              value={profile.name}
+              onChange={(value) => setProfile({ ...profile, name: value })}
               required
             />
-            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-              Rama / género
-              <select
-                value={profile.gender}
-                onChange={(event) => setProfile({ ...profile, gender: event.target.value })}
-                className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-              >
-                <option value="varonil">Varonil</option>
-                <option value="femenil">Femenil</option>
-                <option value="otro">Otro</option>
-              </select>
-            </label>
+            <Field
+              label="Teléfono"
+              value={profile.phone}
+              onChange={(value) => setProfile({ ...profile, phone: value })}
+              type="tel"
+            />
+            {invitation.role === 'student' && (
+              <>
+                <Field
+                  label="Fecha de nacimiento"
+                  value={profile.birthDate}
+                  onChange={(value) => setProfile({ ...profile, birthDate: value })}
+                  type="date"
+                  required
+                />
+                <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+                  Rama / género
+                  <select
+                    value={profile.gender}
+                    onChange={(event) => setProfile({ ...profile, gender: event.target.value })}
+                    className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+                  >
+                    <option value="varonil">Varonil</option>
+                    <option value="femenil">Femenil</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </label>
+              </>
+            )}
+            {invitation.role === 'teacher' ? (
+              <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+                Presentación
+                <textarea
+                  value={profile.bio}
+                  onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
+                  rows={3}
+                  className="rounded-[var(--r-sm)] border border-(--c-border) px-3 py-2 font-normal"
+                />
+              </label>
+            ) : null}
           </>
         )}
-        {invitation.role === 'guardian' ? (
-          <Field
-            label="Parentesco"
-            value={profile.relationship}
-            onChange={(value) => setProfile({ ...profile, relationship: value })}
-            placeholder="Mamá, papá, tutor…"
-          />
-        ) : invitation.role === 'teacher' ? (
-          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Presentación
-            <textarea
-              value={profile.bio}
-              onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
-              rows={3}
-              className="rounded-[var(--r-sm)] border border-(--c-border) px-3 py-2 font-normal"
-            />
-          </label>
-        ) : null}
         {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
         {invitation.role === 'student' && useInvitationData === false && (
           <p className="rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">

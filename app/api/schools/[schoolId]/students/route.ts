@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server'
+import { validProfileBirthDate } from '@/lib/additional-profile'
 import {
   type SchoolGender,
   type SchoolInvitationStudentData,
   schoolMembershipHasRole,
 } from '@/lib/school'
+import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 import { sendSchoolInvitationEmail } from '@/lib/server/emails'
 import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { createSchoolInvitation } from '@/lib/server/school-invitations'
-import { createSchoolStudent, isMinor, listSchoolStudents } from '@/lib/server/school-students'
+import { createSchoolStudent, listSchoolStudents } from '@/lib/server/school-students'
 import { getSchoolById } from '@/lib/server/schools'
 
 export const runtime = 'nodejs'
@@ -19,19 +21,15 @@ interface RouteProps {
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'guardian',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
 
   try {
+    const staff = access.globalAdmin || schoolMembershipHasRole(access.membership, 'teacher')
     const students = await listSchoolStudents(
       schoolId,
-      schoolMembershipHasRole(access.membership, 'guardian') ? access.caller.uid : undefined,
-      schoolMembershipHasRole(access.membership, 'student') ? access.caller.uid : undefined
+      undefined,
+      staff ? undefined : access.caller.uid
     )
     return NextResponse.json({ students })
   } catch {
@@ -41,7 +39,7 @@ export async function GET(request: Request, { params }: RouteProps) {
 
 export async function POST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director', 'guardian'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'student'])
   if (access.response) return access.response
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
@@ -61,13 +59,20 @@ export async function POST(request: Request, { params }: RouteProps) {
   if (name.length < 2 || !birthDate || !gender) {
     return NextResponse.json({ error: 'Completa los datos del alumno.' }, { status: 400 })
   }
-  const isGuardian = schoolMembershipHasRole(access.membership, 'guardian')
-  if (isGuardian && !isMinor(birthDate)) {
+  const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
+  const additionalId = typeof body.additionalProfileId === 'string' ? body.additionalProfileId : ''
+  const additional = additionalId
+    ? await getAdditionalProfile(access.caller.uid, additionalId)
+    : null
+  if (!isDirector && !additional)
+    return NextResponse.json({ error: 'Selecciona uno de tus Adicionales.' }, { status: 400 })
+  if (!validProfileBirthDate(birthDate))
+    return NextResponse.json({ error: 'Revisa la fecha de nacimiento.' }, { status: 400 })
+  if (!isDirector && sendInvitation)
     return NextResponse.json(
-      { error: 'Los alumnos mayores de 18 años deben crear su propia cuenta.' },
-      { status: 400 }
+      { error: 'Solo la escuela puede enviar invitaciones.' },
+      { status: 403 }
     )
-  }
   if (studentEmail && !/^\S+@\S+\.\S+$/.test(studentEmail)) {
     return NextResponse.json({ error: 'Escribe un correo válido para el alumno.' }, { status: 400 })
   }
@@ -77,26 +82,14 @@ export async function POST(request: Request, { params }: RouteProps) {
       { status: 400 }
     )
   }
-  if (sendInvitation && isMinor(birthDate)) {
-    return NextResponse.json(
-      { error: 'Los menores de 18 años deben registrarse con un tutor.' },
-      { status: 400 }
-    )
-  }
-  if (isMinor(birthDate) && (!guardianName || !guardianRelationship || !guardianPhone)) {
-    return NextResponse.json(
-      { error: 'Agrega los datos del padre o tutor del menor.' },
-      { status: 400 }
-    )
-  }
-
   const student = await createSchoolStudent({
     schoolId,
-    guardianId: isGuardian ? access.caller.uid : undefined,
-    guardianEmail: isGuardian ? access.caller.email || '' : '',
-    name,
-    birthDate,
-    gender: gender as SchoolGender,
+    guardianId: !isDirector ? access.caller.uid : undefined,
+    additionalProfileId: additional?.id,
+    guardianEmail: !isDirector ? access.caller.email || '' : '',
+    name: additional?.name || name,
+    birthDate: additional?.birthDate || birthDate,
+    gender: additional?.gender || (gender as SchoolGender),
     guardianName,
     guardianRelationship,
     guardianPhone,
@@ -140,7 +133,7 @@ export async function POST(request: Request, { params }: RouteProps) {
       console.error('[SCHOOL_INVITATION_EMAIL]', error)
     }
   }
-  if (school && isGuardian) {
+  if (school && !isDirector) {
     void createNotification({
       recipientId: school.directorId,
       actorId: access.caller.uid,

@@ -69,7 +69,7 @@ export function isSchoolPalette(value: unknown): value is SchoolPalette {
 
 export type SchoolBookingMode = 'request' | 'direct'
 
-export const SCHOOL_ROLES = ['director', 'teacher', 'student', 'guardian'] as const
+export const SCHOOL_ROLES = ['director', 'teacher', 'student'] as const
 export type SchoolRole = (typeof SCHOOL_ROLES)[number]
 
 export interface School {
@@ -103,6 +103,16 @@ export interface SchoolMembership {
   updatedAt: number
 }
 
+export function normalizeSchoolMembership(membership: SchoolMembership): SchoolMembership {
+  const normalize = (role: SchoolRole): SchoolRole =>
+    (role as string) === 'guardian' ? 'student' : role
+  return {
+    ...membership,
+    role: normalize(membership.role),
+    roles: membership.roles ? [...new Set(membership.roles.map(normalize))] : undefined,
+  }
+}
+
 export function schoolMembershipHasRole(
   membership: Pick<SchoolMembership, 'role' | 'roles'> | null | undefined,
   role: SchoolRole
@@ -110,6 +120,9 @@ export function schoolMembershipHasRole(
   return Boolean(
     membership &&
       (membership.role === role ||
+        (role === 'student' &&
+          ((membership.role as string) === 'guardian' ||
+            (membership.roles as string[] | undefined)?.includes('guardian'))) ||
         membership.roles?.includes(role) ||
         (role === 'teacher' &&
           (membership.role === 'director' || membership.roles?.includes('director'))))
@@ -126,7 +139,7 @@ export function isSafeSchoolUrl(value: string) {
   }
 }
 
-export type SchoolInvitationRole = 'teacher' | 'guardian' | 'student'
+export type SchoolInvitationRole = 'teacher' | 'student'
 
 export interface SchoolInvitation {
   id: string
@@ -161,6 +174,8 @@ export interface SchoolStudent {
   name: string
   birthDate: string
   gender: SchoolGender
+  additionalProfileId?: string
+  managerIds?: string[]
   guardianIds: string[]
   guardianName: string
   guardianRelationship: string

@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiArrowLeft, FiMail, FiPlus, FiSend, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiArrowLeft, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import type { AdditionalProfile } from '@/lib/additional-profile'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import {
   type SchoolGender,
@@ -19,7 +20,6 @@ export default function SchoolStudents() {
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
-  const [showInvite, setShowInvite] = useState(false)
   const [showStudent, setShowStudent] = useState(false)
   const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null)
 
@@ -53,7 +53,7 @@ export default function SchoolStudents() {
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
-  const isGuardian = schoolMembershipHasRole(selected.membership, 'guardian')
+  const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
 
   async function deleteInvitation(invitation: SchoolInvitation) {
     const action = invitation.status === 'pending' ? 'cancelar' : 'eliminar'
@@ -63,8 +63,8 @@ export default function SchoolStudents() {
     try {
       await deleteAuthed(`/api/schools/${activeSchool.school.id}/invitations/${invitation.id}`)
       setInvitations((current) => current.filter((item) => item.id !== invitation.id))
-    } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : 'No se pudo eliminar la invitación.')
+    } catch {
+      setMessage('No se pudo eliminar la invitación.')
     } finally {
       setDeletingInvitationId(null)
     }
@@ -93,22 +93,13 @@ export default function SchoolStudents() {
             onChange={selectSchool}
           />
           <div className="flex flex-wrap gap-2">
-            {(isDirector || isGuardian) && (
+            {(isDirector || isStudentAccount) && (
               <button
                 type="button"
                 onClick={() => setShowStudent(true)}
-                className="btn btn-outline min-h-11 gap-2"
-              >
-                <FiPlus aria-hidden="true" /> Agregar alumno
-              </button>
-            )}
-            {isDirector && (
-              <button
-                type="button"
-                onClick={() => setShowInvite(true)}
                 className="btn btn-primary min-h-11 gap-2"
               >
-                <FiSend aria-hidden="true" /> Invitar tutor
+                <FiPlus aria-hidden="true" /> {isDirector ? 'Agregar alumno' : 'Agregar Adicional'}
               </button>
             )}
           </div>
@@ -133,6 +124,9 @@ export default function SchoolStudents() {
               </span>
               <div className="min-w-0">
                 <h2 className="font-bold text-(--c-ocean)">{student.name}</h2>
+                {student.additionalProfileId && (
+                  <span className="badge badge-outline mt-1">Adicional</span>
+                )}
                 <p className="mt-1 text-sm text-(--c-text-2)">
                   {student.gender} · Nacimiento: {student.birthDate}
                 </p>
@@ -148,12 +142,12 @@ export default function SchoolStudents() {
         <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
           <FiUsers className="text-3xl text-(--c-ocean-mid)" aria-hidden="true" />
           <h2 className="font-bold text-(--c-ocean)">
-            {isDirector ? 'Invita al primer tutor' : 'Agrega al primer alumno'}
+            {isDirector ? 'Invita o agrega al primer alumno' : 'Tus alumnos adicionales'}
           </h2>
           <p className="max-w-md text-sm text-(--c-text-2)">
             {isDirector
-              ? 'El tutor aceptará la invitación y registrará los datos del menor.'
-              : 'Registra a los menores que estarán bajo tu cuenta.'}
+              ? 'Invita por correo o registra los datos del alumno.'
+              : 'Gestiona personas adultas o menores mediante perfiles Adicionales.'}
           </p>
         </div>
       )}
@@ -167,7 +161,7 @@ export default function SchoolStudents() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-sm"
               >
                 <span className="min-w-0 truncate">
-                  {invite.email} · {invite.role === 'student' ? 'Alumno' : 'Tutor'}
+                  {invite.email} · {invite.role === 'student' ? 'Alumno' : 'Coach'}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="font-semibold text-(--c-text-2)">
@@ -200,16 +194,6 @@ export default function SchoolStudents() {
           </div>
         </div>
       )}
-      {showInvite && (
-        <InviteTutor
-          schoolId={selected.school.id}
-          onClose={() => setShowInvite(false)}
-          onCreated={(invite) => {
-            setInvitations((current) => [invite, ...current])
-            setShowInvite(false)
-          }}
-        />
-      )}
       {showStudent && (
         <StudentForm
           schoolId={selected.school.id}
@@ -227,60 +211,6 @@ export default function SchoolStudents() {
         />
       )}
     </section>
-  )
-}
-
-function InviteTutor({
-  schoolId,
-  onClose,
-  onCreated,
-}: {
-  schoolId: string
-  onClose: () => void
-  onCreated: (invite: SchoolInvitation) => void
-}) {
-  const [email, setEmail] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  async function submit(event: React.FormEvent) {
-    event.preventDefault()
-    setSaving(true)
-    setError(null)
-    try {
-      const response = await postAuthed(`/api/schools/${schoolId}/invitations`, {
-        email,
-        role: 'guardian',
-      })
-      const payload = (await response.json()) as { invitation: SchoolInvitation }
-      onCreated(payload.invitation)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se pudo enviar la invitación.')
-    } finally {
-      setSaving(false)
-    }
-  }
-  return (
-    <Modal title="Invitar tutor" onClose={onClose}>
-      <form onSubmit={submit} className="grid gap-4">
-        <p className="text-sm text-(--c-text-2)">
-          El tutor creará su cuenta y registrará los datos de uno o varios menores.
-        </p>
-        <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-          Correo electrónico
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-          />
-        </label>
-        {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
-        <button type="submit" disabled={saving} className="btn btn-primary min-h-11">
-          {saving ? 'Enviando…' : 'Enviar invitación'}
-        </button>
-      </form>
-    </Modal>
   )
 }
 
@@ -306,9 +236,15 @@ function StudentForm({
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [guardianExpanded, setGuardianExpanded] = useState(false)
-  const minor = isMinorBirthDate(form.birthDate)
-  const guardianVisible = minor || guardianExpanded
+  const [profiles, setProfiles] = useState<AdditionalProfile[]>([])
+  const [additionalProfileId, setAdditionalProfileId] = useState('')
+  useEffect(() => {
+    if (canInvite) return
+    getAuthed('/api/additional-profiles')
+      .then((r) => r.json())
+      .then((p) => setProfiles(p.profiles || []))
+      .catch(() => setError('No se pudieron cargar tus Adicionales.'))
+  }, [canInvite])
 
   const validEmail = /^\S+@\S+\.\S+$/.test(form.studentEmail.trim())
 
@@ -322,6 +258,7 @@ function StudentForm({
     try {
       const response = await postAuthed(`/api/schools/${schoolId}/students`, {
         ...form,
+        additionalProfileId,
         sendInvitation,
       })
       const payload = (await response.json()) as {
@@ -329,8 +266,8 @@ function StudentForm({
         invitation?: SchoolInvitation | null
       }
       onCreated(payload.student, payload.invitation)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se pudo guardar el alumno.')
+    } catch {
+      setError('No se pudo guardar el alumno.')
     } finally {
       setSaving(false)
     }
@@ -343,10 +280,6 @@ function StudentForm({
   async function sendInvitationOnly() {
     if (!validEmail) {
       setError('Escribe un correo válido para enviar la invitación.')
-      return
-    }
-    if (minor) {
-      setError('Los menores de 18 años deben registrarse con un padre o tutor.')
       return
     }
     const hasStudentData = form.name.trim().length >= 2 && form.birthDate && form.gender
@@ -363,119 +296,111 @@ function StudentForm({
       })
       const payload = (await response.json()) as { invitation: SchoolInvitation }
       onCreated(null, payload.invitation)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se pudo enviar la invitación.')
+    } catch {
+      setError('No se pudo enviar la invitación.')
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title="Agregar alumno" onClose={onClose}>
+    <Modal title={canInvite ? 'Agregar alumno' : 'Agregar Adicional'} onClose={onClose}>
       <form onSubmit={submit} className="grid max-h-[70vh] gap-3 overflow-y-auto">
-        <Text
-          label="Correo del alumno (opcional)"
-          value={form.studentEmail}
-          onChange={(value) => setForm({ ...form, studentEmail: value })}
-          type="email"
-        />
-        {canInvite && form.studentEmail.trim() && (
-          <button
-            type="button"
-            disabled={saving || !validEmail}
-            onClick={() => void sendInvitationOnly()}
-            className="btn btn-outline min-h-11"
-          >
-            {saving ? 'Enviando…' : 'Enviar invitación'}
-          </button>
+        {!canInvite && (
+          <>
+            <label className="grid gap-1 text-sm font-semibold">
+              Adicional
+              <select
+                required
+                className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
+                value={additionalProfileId}
+                onChange={(event) => {
+                  const profile = profiles.find((p) => p.id === event.target.value)
+                  setAdditionalProfileId(event.target.value)
+                  if (profile)
+                    setForm((current) => ({
+                      ...current,
+                      name: profile.name,
+                      birthDate: profile.birthDate,
+                      gender: profile.gender,
+                    }))
+                }}
+              >
+                <option value="">Selecciona un Adicional</option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Link href="/profile" className="font-semibold underline">
+              Crear Adicional en Mi perfil
+            </Link>
+          </>
         )}
-        <p className="-mt-1 text-xs text-(--c-text-2)">
-          Puedes enviar la invitación ahora y el alumno completará sus propios datos.
-        </p>
-        <Text
-          label="Nombre completo"
-          value={form.name}
-          onChange={(value) => setForm({ ...form, name: value })}
-          required
-        />
-        <Text
-          label="Fecha de nacimiento"
-          type="date"
-          value={form.birthDate}
-          onChange={(value) => setForm({ ...form, birthDate: value })}
-          required
-        />
-        <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-          Rama / género
-          <select
-            value={form.gender}
-            onChange={(event) => setForm({ ...form, gender: event.target.value as SchoolGender })}
-            className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-          >
-            <option value="varonil">Varonil</option>
-            <option value="femenil">Femenil</option>
-            <option value="otro">Otro</option>
-          </select>
-        </label>
-        <div className="rounded-[var(--r-sm)] border border-(--c-border) bg-(--c-surface) p-4">
-          <label className="flex items-start gap-3 text-sm font-semibold text-(--c-ocean)">
-            <input
-              type="checkbox"
-              checked={guardianVisible}
-              disabled={minor}
-              onChange={(event) => setGuardianExpanded(event.target.checked)}
-              className="mt-0.5 h-5 w-5 shrink-0 accent-(--c-ocean)"
+        {canInvite && (
+          <>
+            <Text
+              label="Correo del alumno (opcional)"
+              value={form.studentEmail}
+              onChange={(value) => setForm({ ...form, studentEmail: value })}
+              type="email"
             />
-            <span>
-              Agregar padre o tutor{' '}
-              <span className="font-normal text-(--c-text-2)">
-                ({minor ? 'obligatorio' : 'opcional'})
-              </span>
-            </span>
-          </label>
-          {guardianVisible && (
-            <div className="mt-4 grid gap-3 border-t border-(--c-border) pt-4">
-              <Text
-                label="Nombre del tutor"
-                value={form.guardianName}
-                onChange={(value) => setForm({ ...form, guardianName: value })}
-                required={minor}
-              />
-              <Text
-                label="Parentesco"
-                value={form.guardianRelationship}
-                onChange={(value) => setForm({ ...form, guardianRelationship: value })}
-                required={minor}
-              />
-              <Text
-                label="Teléfono del tutor"
-                value={form.guardianPhone}
-                onChange={(value) => setForm({ ...form, guardianPhone: value })}
-                type="tel"
-                required={minor}
-              />
-            </div>
-          )}
-        </div>
+            {canInvite && (
+              <button
+                type="button"
+                disabled={saving || !validEmail}
+                onClick={() => void sendInvitationOnly()}
+                className="btn btn-outline min-h-11"
+              >
+                {saving ? 'Enviando…' : 'Enviar invitación'}
+              </button>
+            )}
+            <p className="-mt-1 text-xs text-(--c-text-2)">
+              Invita solo con el correo para que el alumno complete sus datos, o llena el formulario
+              y guarda su registro.
+            </p>
+            <Text
+              label="Nombre completo"
+              value={form.name}
+              onChange={(value) => setForm({ ...form, name: value })}
+              required
+            />
+            <Text
+              label="Fecha de nacimiento"
+              type="date"
+              value={form.birthDate}
+              onChange={(value) => setForm({ ...form, birthDate: value })}
+              required
+            />
+            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+              Rama / género
+              <select
+                value={form.gender}
+                onChange={(event) =>
+                  setForm({ ...form, gender: event.target.value as SchoolGender })
+                }
+                className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+              >
+                <option value="varonil">Varonil</option>
+                <option value="femenil">Femenil</option>
+                <option value="otro">Otro</option>
+              </select>
+            </label>
+          </>
+        )}
         {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
-        <button type="submit" disabled={saving} className="btn btn-primary min-h-11">
+        <button
+          type="submit"
+          disabled={saving || (!canInvite && !additionalProfileId)}
+          className="btn btn-primary min-h-11"
+        >
           {saving ? 'Guardando…' : 'Guardar alumno'}
         </button>
       </form>
     </Modal>
   )
-}
-
-function isMinorBirthDate(value: string) {
-  const birthDate = new Date(`${value}T00:00:00Z`)
-  if (!value || Number.isNaN(birthDate.getTime()) || birthDate.getTime() > Date.now()) return false
-  const today = new Date()
-  let age = today.getUTCFullYear() - birthDate.getUTCFullYear()
-  const beforeBirthday =
-    today.getUTCMonth() < birthDate.getUTCMonth() ||
-    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() < birthDate.getUTCDate())
-  if (beforeBirthday) age -= 1
-  return age < 18
 }
 
 function Text({

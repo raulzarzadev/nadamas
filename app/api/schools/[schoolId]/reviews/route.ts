@@ -26,12 +26,7 @@ interface SchoolReviewRecord {
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'guardian',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   const snapshot = await adminDb.collection('schoolReviews').where('schoolId', '==', schoolId).get()
   let reviews = snapshot.docs.map((doc) => ({
@@ -42,7 +37,7 @@ export async function GET(request: Request, { params }: RouteProps) {
     reviews = reviews.filter(
       (review) => review.reviewerId === access.caller.uid || review.teacherId === access.caller.uid
     )
-  if (!access.globalAdmin && schoolMembershipHasRole(access.membership, 'guardian')) {
+  if (!access.globalAdmin && schoolMembershipHasRole(access.membership, 'student')) {
     const students = await listSchoolStudents(schoolId, access.caller.uid)
     const studentIds = new Set(students.map((student) => student.id))
     reviews = reviews.filter(
@@ -50,19 +45,12 @@ export async function GET(request: Request, { params }: RouteProps) {
         review.reviewerId === access.caller.uid || studentIds.has(review.studentId as string)
     )
   }
-  if (!access.globalAdmin && schoolMembershipHasRole(access.membership, 'student')) {
-    const students = await listSchoolStudents(schoolId, undefined, access.caller.uid)
-    const studentIds = new Set(students.map((student) => student.id))
-    reviews = reviews.filter(
-      (review) => review.reviewerId === access.caller.uid || studentIds.has(review.studentId)
-    )
-  }
   return NextResponse.json({ reviews })
 }
 
 export async function POST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['teacher', 'guardian', 'student'])
+  const access = await requireSchoolAccess(request, schoolId, ['teacher', 'student'])
   if (access.response) return access.response
   const body = (await request.json().catch(() => ({}))) as {
     occurrenceId?: unknown
@@ -93,7 +81,7 @@ export async function POST(request: Request, { params }: RouteProps) {
       return NextResponse.json({ error: 'No puedes evaluar a este alumno.' }, { status: 403 })
     teacherId = access.caller.uid
   } else {
-    const students = schoolMembershipHasRole(access.membership, 'guardian')
+    const students = schoolMembershipHasRole(access.membership, 'student')
       ? await listSchoolStudents(schoolId, access.caller.uid)
       : await listSchoolStudents(schoolId, undefined, access.caller.uid)
     if (
@@ -115,8 +103,8 @@ export async function POST(request: Request, { params }: RouteProps) {
     reviewerId: access.caller.uid,
     reviewerRole: schoolMembershipHasRole(access.membership, 'teacher')
       ? 'teacher'
-      : schoolMembershipHasRole(access.membership, 'guardian')
-        ? 'guardian'
+      : schoolMembershipHasRole(access.membership, 'student')
+        ? 'student'
         : 'student',
     teacherId,
     studentId,

@@ -56,6 +56,7 @@ export async function POST(request: Request, { params }: RouteProps) {
     guardianName?: unknown
     guardianRelationship?: unknown
     guardianPhone?: unknown
+    additionalProfileId?: unknown
     useInvitationData?: unknown
   }
   const result = await acceptSchoolInvitation({
@@ -75,6 +76,8 @@ export async function POST(request: Request, { params }: RouteProps) {
       guardianRelationship:
         typeof body.guardianRelationship === 'string' ? body.guardianRelationship.slice(0, 60) : '',
       guardianPhone: typeof body.guardianPhone === 'string' ? body.guardianPhone.slice(0, 40) : '',
+      additionalProfileId:
+        typeof body.additionalProfileId === 'string' ? body.additionalProfileId : '',
       useInvitationData: body.useInvitationData === true,
     },
   })
@@ -86,7 +89,8 @@ export async function POST(request: Request, { params }: RouteProps) {
       revoked: 'Esta invitación fue cancelada.',
       email_mismatch: 'Inicia sesión con el correo al que se envió la invitación.',
       student_profile: 'Completa tu nombre, fecha de nacimiento y rama / género.',
-      minor_requires_guardian: 'Los menores de 18 años deben registrarse con un tutor.',
+      minor_requires_additional: 'Para un menor, crea y selecciona un Adicional desde Mi perfil.',
+      additional_not_found: 'Selecciona un Adicional de tu cuenta.',
       student_not_found: 'El registro del alumno ya no está disponible.',
       student_already_linked: 'Este registro ya está ligado a otra cuenta.',
     } as const

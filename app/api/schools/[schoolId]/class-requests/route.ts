@@ -19,19 +19,21 @@ interface RouteProps {
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director', 'guardian'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'student'])
   if (access.response) return access.response
   return NextResponse.json({
     requests: await listClassRequests(
       schoolId,
-      schoolMembershipHasRole(access.membership, 'guardian') ? access.caller.uid : undefined
+      !access.globalAdmin && !schoolMembershipHasRole(access.membership, 'director')
+        ? access.caller.uid
+        : undefined
     ),
   })
 }
 
 export async function POST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['guardian'])
+  const access = await requireSchoolAccess(request, schoolId, ['student'])
   if (access.response) return access.response
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
   const students = await listSchoolStudents(schoolId, access.caller.uid)
@@ -90,7 +92,7 @@ export async function POST(request: Request, { params }: RouteProps) {
       actorName: access.caller.name || access.caller.email,
       type: 'school_class_requested',
       title: 'Nueva reserva directa',
-      body: 'Un tutor reservó una clase directamente.',
+      body: 'Un alumno reservó una clase directamente.',
       link: '/school/classes',
     }).catch(() => {})
     return NextResponse.json({ direct: true, ...classResult }, { status: 201 })
@@ -119,7 +121,7 @@ export async function POST(request: Request, { params }: RouteProps) {
       actorName: access.caller.name || access.caller.email,
       type: 'school_class_requested',
       title: 'Nueva solicitud de clase',
-      body: 'Un tutor solicitó un horario para un alumno.',
+      body: 'Un alumno solicitó un horario para un alumno.',
       link: '/school/classes',
     }).catch(() => {})
   return NextResponse.json({ request: requestRecord }, { status: 201 })

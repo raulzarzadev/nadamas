@@ -8,14 +8,13 @@ import { getAuthed } from '@/lib/client/authed-api'
 interface SchoolInvitationItem {
   id: string
   schoolName: string
-  role: 'teacher' | 'guardian' | 'student'
+  role: 'teacher' | 'student'
   status: 'pending' | 'expired'
   expiresAt: number
 }
 
 const ROLE_LABEL = {
   teacher: 'Coach',
-  guardian: 'Padre, madre o tutor',
   student: 'Alumno',
 } as const
 

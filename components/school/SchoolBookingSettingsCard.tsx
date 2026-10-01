@@ -32,7 +32,7 @@ export default function SchoolBookingSettingsCard({
     <section className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]">
       <h2 className="font-bold text-(--c-ocean)">Reservas de alumnos</h2>
       <p className="mt-1 text-sm text-(--c-text-2)">
-        Define si los tutores solicitan un horario o pueden reservar directamente.
+        Define si los alumnos solicitan un horario o pueden reservar directamente.
       </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <button
@@ -51,7 +51,7 @@ export default function SchoolBookingSettingsCard({
           className={`rounded-[var(--r-sm)] border p-3 text-left text-sm ${mode === 'direct' ? 'border-(--c-ocean) bg-(--c-surface)' : 'border-(--c-border)'}`}
         >
           <strong className="block text-(--c-ocean)">Reservar directamente</strong>
-          <span className="mt-1 block text-(--c-text-2)">El tutor elige coach y horario.</span>
+          <span className="mt-1 block text-(--c-text-2)">El alumno elige coach y horario.</span>
         </button>
       </div>
       {message && <p className="mt-3 text-xs text-(--c-text-2)">{message}</p>}

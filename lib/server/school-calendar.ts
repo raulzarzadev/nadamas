@@ -6,7 +6,7 @@ import { adminDb } from './firebase-admin'
 import { listSchoolClasses } from './school-classes'
 import { listSchoolStudents } from './school-students'
 
-export type SchoolCalendarRole = 'director' | 'teacher' | 'guardian' | 'student'
+export type SchoolCalendarRole = 'director' | 'teacher' | 'student'
 
 export interface SchoolCalendarFeed {
   id: string

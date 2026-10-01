@@ -57,6 +57,7 @@ service cloud.firestore {
 
     function isLegacyCollection(collection) {
       return ![
+        'additionalProfiles',
         'classEvaluations',
         'privateClassEvaluations',
         'schools',

@@ -25,12 +25,7 @@ function payload(request: Request, feed: Awaited<ReturnType<typeof getSchoolCale
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'guardian',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   return NextResponse.json(
     payload(request, await getSchoolCalendarFeed(schoolId, access.caller.uid))
@@ -39,19 +34,14 @@ export async function GET(request: Request, { params }: RouteProps) {
 
 export async function POST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'guardian',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   const role = schoolMembershipHasRole(access.membership, 'director')
     ? 'director'
     : schoolMembershipHasRole(access.membership, 'teacher')
       ? 'teacher'
-      : schoolMembershipHasRole(access.membership, 'guardian')
-        ? 'guardian'
+      : schoolMembershipHasRole(access.membership, 'student')
+        ? 'student'
         : access.globalAdmin
           ? 'director'
           : 'student'
@@ -62,12 +52,7 @@ export async function POST(request: Request, { params }: RouteProps) {
 
 export async function DELETE(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'guardian',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   await revokeSchoolCalendarFeed(schoolId, access.caller.uid)
   return NextResponse.json({ connected: false, calendarUrl: null })

@@ -35,6 +35,7 @@ export interface CoachAvailableSlot {
   locationName: string
   groupType: 'particular' | 'grupal'
   status: 'available' | 'booked' | 'blocked'
+  coachName?: string
 }
 
 export interface CoachAgendaPayload {
@@ -42,6 +43,7 @@ export interface CoachAgendaPayload {
   availableSlots: CoachAvailableSlot[]
   blocks: CoachScheduleBlock[]
   offerings: CoachClassOffering[]
+  coachNames?: Record<string, string>
 }
 
 export type ScheduleBlockInput = {

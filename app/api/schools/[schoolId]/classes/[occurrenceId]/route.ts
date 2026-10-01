@@ -14,13 +14,14 @@ interface RouteProps {
 
 export async function PATCH(request: Request, { params }: RouteProps) {
   const { schoolId, occurrenceId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'guardian'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   const occurrence = await getSchoolClassOccurrence(schoolId, occurrenceId)
   if (!occurrence) return NextResponse.json({ error: 'Clase no encontrada.' }, { status: 404 })
-  const isDirector = schoolMembershipHasRole(access.membership, 'director')
+  const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   const isTeacher = occurrence.teacherIds.includes(access.caller.uid)
-  const isGuardian = schoolMembershipHasRole(access.membership, 'guardian')
+  const isStudentAccount =
+    !isDirector && !isTeacher && schoolMembershipHasRole(access.membership, 'student')
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
   const status =
     body.status === 'cancelled' || body.status === 'completed' || body.status === 'scheduled'
@@ -30,10 +31,10 @@ export async function PATCH(request: Request, { params }: RouteProps) {
     schoolMembershipHasRole(access.membership, 'teacher') &&
     !isTeacher &&
     !isDirector &&
-    !isGuardian
+    !isStudentAccount
   )
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-  if (isGuardian) {
+  if (isStudentAccount) {
     const students = await listSchoolStudents(schoolId, access.caller.uid)
     const canCancel = students.some((student) => occurrence.studentIds.includes(student.id))
     if (!canCancel || status !== 'cancelled')
@@ -41,14 +42,15 @@ export async function PATCH(request: Request, { params }: RouteProps) {
   }
   if (!status && !isDirector && !access.globalAdmin)
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  const editable = isStudentAccount ? {} : body
   const update = {
     ...(status ? { status } : {}),
-    ...(typeof body.date === 'string' ? { date: body.date } : {}),
-    ...(typeof body.startTime === 'string' ? { startTime: body.startTime } : {}),
-    ...(typeof body.endTime === 'string' ? { endTime: body.endTime } : {}),
-    ...(typeof body.location === 'string' ? { location: body.location.slice(0, 200) } : {}),
-    ...(typeof body.locationUrl === 'string'
-      ? { locationUrl: body.locationUrl.slice(0, 500) }
+    ...(typeof editable.date === 'string' ? { date: editable.date } : {}),
+    ...(typeof editable.startTime === 'string' ? { startTime: editable.startTime } : {}),
+    ...(typeof editable.endTime === 'string' ? { endTime: editable.endTime } : {}),
+    ...(typeof editable.location === 'string' ? { location: editable.location.slice(0, 200) } : {}),
+    ...(typeof editable.locationUrl === 'string'
+      ? { locationUrl: editable.locationUrl.slice(0, 500) }
       : {}),
     updatedAt: Date.now(),
   }

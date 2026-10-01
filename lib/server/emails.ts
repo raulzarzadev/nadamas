@@ -22,7 +22,7 @@ export function sendSchoolInvitationEmail({
 }: {
   email: string
   schoolName: string
-  role: 'teacher' | 'guardian' | 'student'
+  role: 'teacher' | 'student'
   inviteUrl: string
   studentData?: {
     name: string
@@ -35,15 +35,14 @@ export function sendSchoolInvitationEmail({
 }) {
   const safeSchoolName = escapeHtml(schoolName)
   const safeInviteUrl = escapeHtml(inviteUrl)
-  const roleLabel =
-    role === 'teacher' ? 'profesor' : role === 'student' ? 'alumno' : 'padre, madre o tutor'
+  const roleLabel = role === 'teacher' ? 'profesor' : 'alumno'
   const studentDataText =
     role === 'student' && studentData
-      ? `\n\nLa escuela capturó estos datos:\nNombre: ${studentData.name}\nFecha de nacimiento: ${studentData.birthDate}\nRama / género: ${studentData.gender}${studentData.guardianName ? `\nTutor: ${studentData.guardianName}` : ''}`
+      ? `\n\nLa escuela capturó estos datos:\nNombre: ${studentData.name}\nFecha de nacimiento: ${studentData.birthDate}\nRama / género: ${studentData.gender}`
       : ''
   const studentDataHtml =
     role === 'student' && studentData
-      ? `<div style="margin:0 0 20px;border-radius:16px;background:#f5fbfd;padding:16px 18px"><p style="margin:0 0 8px;color:#102a43;font-size:15px"><strong>Datos capturados por la escuela</strong></p><p style="margin:0;color:#52606d;font-size:14px;line-height:1.6"><strong>Nombre:</strong> ${escapeHtml(studentData.name)}<br><strong>Fecha de nacimiento:</strong> ${escapeHtml(studentData.birthDate)}<br><strong>Rama / género:</strong> ${escapeHtml(studentData.gender)}${studentData.guardianName ? `<br><strong>Tutor:</strong> ${escapeHtml(studentData.guardianName)}` : ''}</p></div>`
+      ? `<div style="margin:0 0 20px;border-radius:16px;background:#f5fbfd;padding:16px 18px"><p style="margin:0 0 8px;color:#102a43;font-size:15px"><strong>Datos capturados por la escuela</strong></p><p style="margin:0;color:#52606d;font-size:14px;line-height:1.6"><strong>Nombre:</strong> ${escapeHtml(studentData.name)}<br><strong>Fecha de nacimiento:</strong> ${escapeHtml(studentData.birthDate)}<br><strong>Rama / género:</strong> ${escapeHtml(studentData.gender)}</p></div>`
       : ''
   return sendEmail({
     to: [{ email }],

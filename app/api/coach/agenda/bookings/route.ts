@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server'
 import type { Booking } from '@/lib/coach-booking'
-import { DAY_TO_INDEX } from '@/lib/coach-offerings'
+import {
+  DAY_TO_INDEX,
+  resolveOfferingSchedules,
+  resolveOfferings,
+  scheduleIsAvailableOn,
+} from '@/lib/coach-offerings'
 import { type StudentProgress, studentProgressId } from '@/lib/coach-student-progress'
 import { publicNameFromUser } from '@/lib/public-name'
 import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingByCoach } from '@/lib/server/notifications'
 import { getSchoolMembership } from '@/lib/server/school-access'
+import { legacySchoolOfferings } from '@/lib/server/school-agenda'
 
 export const runtime = 'nodejs'
 
@@ -19,13 +25,52 @@ async function verifyCoach(request: Request) {
   const token = getBearerToken(request)
   if (!token) return { error: NextResponse.json({ error: 'No autenticado.' }, { status: 401 }) }
 
-  const caller = await adminAuth.verifyIdToken(token)
+  const authenticatedCaller = await adminAuth.verifyIdToken(token)
+  const input =
+    request.method === 'DELETE'
+      ? Object.fromEntries(new URL(request.url).searchParams)
+      : await request
+          .clone()
+          .json()
+          .catch(() => ({}))
+  if (!input || typeof input !== 'object')
+    return { error: NextResponse.json({ error: 'Revisa los datos de la clase.' }, { status: 400 }) }
+  const schoolId = typeof input.schoolId === 'string' ? input.schoolId.trim() : ''
+  const targetCoachId = typeof input.coachId === 'string' ? input.coachId.trim() : ''
+  if (targetCoachId) {
+    if (!schoolId) return { error: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
+    const actor = await getSchoolMembership(schoolId, authenticatedCaller.uid)
+    const target = await getSchoolMembership(schoolId, targetCoachId)
+    if (
+      !actor ||
+      actor.status !== 'active' ||
+      !schoolMembershipHasRole(actor, 'director') ||
+      !target ||
+      target.status !== 'active' ||
+      !schoolMembershipHasRole(target, 'teacher')
+    ) {
+      return { error: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
+    }
+    const callerDoc = await adminDb.collection('users').doc(targetCoachId).get()
+    return {
+      caller: { ...authenticatedCaller, uid: targetCoachId },
+      callerDoc,
+      isAdmin: false,
+      directorMode: true,
+    }
+  }
+  const caller = authenticatedCaller
   const callerDoc = await adminDb.collection('users').doc(caller.uid).get()
   if (callerDoc.data()?.roles?.coach !== true && callerDoc.data()?.roles?.admin !== true) {
     return { error: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
   }
 
-  return { caller, callerDoc, isAdmin: callerDoc.data()?.roles?.admin === true }
+  return {
+    caller,
+    callerDoc,
+    isAdmin: callerDoc.data()?.roles?.admin === true,
+    directorMode: false,
+  }
 }
 
 function weekdayLabel(date: string) {
@@ -34,6 +79,7 @@ function weekdayLabel(date: string) {
 }
 
 type CoachBookingInput = {
+  coachId?: string
   date?: string
   startTime?: string
   endTime?: string
@@ -47,6 +93,7 @@ type CoachBookingInput = {
 }
 
 type SlotSettingsInput = {
+  coachId?: string
   id?: string
   date?: string
   startTime?: string
@@ -250,6 +297,7 @@ export async function PATCH(request: Request) {
     const booking = bookingDoc.data() as Booking | undefined
     if (
       !bookingDoc.exists ||
+      !booking ||
       booking?.coachId !== verification.caller.uid ||
       (schoolId ? booking?.schoolId !== schoolId : booking?.schoolId)
     ) {
@@ -312,6 +360,32 @@ export async function PATCH(request: Request) {
     batch.set(
       doc.ref,
       { groupType: nextGroupType, classFull: nextClassFull, updatedAt },
+      { merge: true }
+    )
+  }
+  if (verification.directorMode && schoolId && hasGroupType) {
+    const ref = adminDb
+      .collection('schoolCoachOfferings')
+      .doc(`${schoolId}_${verification.caller.uid}`)
+    const [current, legacy] = await Promise.all([
+      ref.get(),
+      adminDb.collection('schoolAvailability').doc(`${schoolId}_${verification.caller.uid}`).get(),
+    ])
+    const offerings = current.exists
+      ? resolveOfferings({ classOfferings: current.data()?.classOfferings || [] })
+      : legacySchoolOfferings(legacy.data()?.weeklySlots)
+    const classOfferings = offerings.map((offering) => ({
+      ...offering,
+      schedules: resolveOfferingSchedules(offering).map((schedule) =>
+        schedule.startTime === startTime &&
+        scheduleIsAvailableOn(schedule, new Date(`${date}T12:00:00`))
+          ? { ...schedule, groupType: nextGroupType }
+          : schedule
+      ),
+    }))
+    batch.set(
+      ref,
+      { schoolId, coachId: verification.caller.uid, classOfferings, updatedAt },
       { merge: true }
     )
   }

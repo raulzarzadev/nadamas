@@ -79,7 +79,7 @@ export default function SchoolCoaches() {
           <p className="mt-5 text-sm font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
             Equipo de profesores
           </p>
-          <h1 className="mt-2 text-3xl font-extrabold text-(--c-ocean)">Coaches</h1>
+          <h1 className="mt-2 text-3xl font-extrabold text-(--c-ocean)">Profes</h1>
           <p className="mt-1 text-(--c-text-2)">{selected.school.name}</p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">

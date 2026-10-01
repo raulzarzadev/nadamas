@@ -37,7 +37,6 @@ const SCHOOL_ROLE_LABEL: Record<string, string> = {
   director: 'Director',
   teacher: 'Coach',
   student: 'Alumno',
-  guardian: 'Padre, madre o tutor',
 }
 
 const STATUS_STYLE: Record<string, { label: string; className: string }> = {
@@ -305,7 +304,7 @@ export default function BookingsPage() {
           <div>
             <h1 className="text-3xl font-extrabold text-[var(--c-ocean)]">Mis escuelas</h1>
             <p className="mt-1 text-sm text-[var(--c-text-2)]">
-              Escuelas de las que formas parte como alumno, coach o tutor.
+              Escuelas de las que formas parte como alumno o coach.
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-2">

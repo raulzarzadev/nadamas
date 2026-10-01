@@ -33,8 +33,11 @@ export async function listSchoolStudents(
     }))
     .filter(
       (student) =>
-        (!guardianId || student.guardianIds.includes(guardianId)) &&
-        (!studentUserId || student.studentUserId === studentUserId)
+        (!guardianId && !studentUserId) ||
+        student.studentUserId === (studentUserId || guardianId) ||
+        (student.managerIds || student.guardianIds || []).includes(
+          studentUserId || guardianId || ''
+        )
     )
     .sort((a, b) => a.name.localeCompare(b.name))
 }
@@ -50,6 +53,7 @@ export async function createSchoolStudent(args: {
   guardianRelationship: string
   guardianPhone: string
   studentEmail?: string
+  additionalProfileId?: string
 }) {
   const now = Date.now()
   const ref = adminDb.collection('schoolStudents').doc()
@@ -59,6 +63,8 @@ export async function createSchoolStudent(args: {
     name: args.name.trim().slice(0, 120),
     birthDate: args.birthDate,
     gender: args.gender,
+    managerIds: args.guardianId ? [args.guardianId] : [],
+    ...(args.additionalProfileId ? { additionalProfileId: args.additionalProfileId } : {}),
     guardianIds: args.guardianId ? [args.guardianId] : [],
     guardianName: args.guardianName.trim().slice(0, 120),
     guardianRelationship: args.guardianRelationship.trim().slice(0, 60),

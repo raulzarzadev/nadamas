@@ -7,6 +7,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import AdditionalProfiles from '@/components/profile/AdditionalProfiles'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
 import { useAutosave } from '@/hooks/useAutosave'
@@ -164,6 +165,8 @@ export default function ProfilePage() {
           savedLabel="Datos guardados"
         />
       </div>
+
+      <AdditionalProfiles />
 
       <PublicLinkEditor />
 

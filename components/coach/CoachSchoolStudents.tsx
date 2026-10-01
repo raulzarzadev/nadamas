@@ -129,7 +129,7 @@ export default function CoachSchoolStudents() {
               )}
               {student.guardianName && (
                 <p className="mt-2 text-sm text-(--c-text-2)">
-                  Tutor: <span className="font-semibold">{student.guardianName}</span>
+                  Contacto: <span className="font-semibold">{student.guardianName}</span>
                 </p>
               )}
               {student.guardianPhone && (

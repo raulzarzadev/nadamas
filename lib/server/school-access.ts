@@ -1,3 +1,4 @@
+import { normalizeSchoolMembership } from '@/lib/school'
 import 'server-only'
 
 import { NextResponse } from 'next/server'
@@ -22,7 +23,10 @@ export async function getSchoolCaller(request: Request) {
 export async function getSchoolMembership(schoolId: string, userId: string) {
   const snapshot = await adminDb.collection('schoolMemberships').doc(`${schoolId}_${userId}`).get()
   if (!snapshot.exists) return null
-  return { id: snapshot.id, ...(snapshot.data() as Omit<SchoolMembership, 'id'>) }
+  return normalizeSchoolMembership({
+    id: snapshot.id,
+    ...(snapshot.data() as Omit<SchoolMembership, 'id'>),
+  })
 }
 
 export async function isGlobalAdmin(userId: string) {

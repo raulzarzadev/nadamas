@@ -39,12 +39,7 @@ function availabilityFromOfferings(classOfferings: CoachClassOffering[]) {
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'guardian',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
 
   const membershipSnapshot = await adminDb
@@ -84,6 +79,7 @@ export async function GET(request: Request, { params }: RouteProps) {
       )
       return {
         id: userId,
+        status: membership.data().status,
         name: profile?.name || user.nickname || user.displayName || user.name || 'Coach',
         phone: profile?.phone || user.phone || user.contact?.phone || '',
         bio: profile?.bio || '',

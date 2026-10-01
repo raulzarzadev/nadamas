@@ -29,10 +29,7 @@ export async function POST(request: Request, { params }: RouteProps) {
 
   const body = (await request.json().catch(() => ({}))) as { email?: unknown; role?: unknown }
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
-  const role =
-    body.role === 'teacher' || body.role === 'guardian' || body.role === 'student'
-      ? body.role
-      : null
+  const role = body.role === 'teacher' || body.role === 'student' ? body.role : null
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     return NextResponse.json({ error: 'Escribe un correo válido.' }, { status: 400 })
   }

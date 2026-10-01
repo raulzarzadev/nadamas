@@ -18,22 +18,19 @@ interface RouteProps {
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, [
-    'director',
-    'teacher',
-    'guardian',
-    'student',
-  ])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
-  const isDirector = schoolMembershipHasRole(access.membership, 'director')
-  const isGuardian = schoolMembershipHasRole(access.membership, 'guardian')
-  const isStudent = schoolMembershipHasRole(access.membership, 'student')
+  const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
+  const isStudentAccount =
+    !isDirector &&
+    !schoolMembershipHasRole(access.membership, 'teacher') &&
+    schoolMembershipHasRole(access.membership, 'student')
   const students =
-    !isDirector && (isGuardian || isStudent)
+    !isDirector && isStudentAccount
       ? await listSchoolStudents(
           schoolId,
-          isGuardian ? access.caller.uid : undefined,
-          isStudent ? access.caller.uid : undefined
+          isStudentAccount ? access.caller.uid : undefined,
+          undefined
         )
       : []
   const classes = await listSchoolClasses({
@@ -42,8 +39,7 @@ export async function GET(request: Request, { params }: RouteProps) {
       !isDirector && schoolMembershipHasRole(access.membership, 'teacher')
         ? access.caller.uid
         : undefined,
-    studentIds:
-      !isDirector && (isGuardian || isStudent) ? students.map((student) => student.id) : undefined,
+    studentIds: !isDirector && isStudentAccount ? students.map((student) => student.id) : undefined,
   })
   return NextResponse.json({ classes })
 }

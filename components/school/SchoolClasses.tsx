@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FiArrowLeft, FiCalendar, FiCheck, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
+import CoachAgenda from '@/components/coach/CoachAgenda'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import {
   type SchoolBookingMode,
@@ -20,6 +21,7 @@ import SchoolSelector from './SchoolSelector'
 import { useSchoolSelection } from './useSchoolSelection'
 
 interface Teacher {
+  status?: string
   id: string
   name: string
   availability: Array<{ day: number; start: string; end: string }>
@@ -33,6 +35,7 @@ function today() {
 
 export default function SchoolClasses() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
+  const [scheduleCoachId, setScheduleCoachId] = useState('')
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
   const [students, setStudents] = useState<SchoolStudent[]>([])
   const [teachers, setTeachers] = useState<Teacher[]>([])
@@ -46,10 +49,11 @@ export default function SchoolClasses() {
 
   useEffect(() => {
     if (!selectedId) return
+    setScheduleCoachId('')
     setLoading(true)
     setBookingMode(selected?.school.bookingMode || 'request')
     const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
-    const isGuardian = schoolMembershipHasRole(selected?.membership, 'guardian')
+    const isStudentAccount = schoolMembershipHasRole(selected?.membership, 'student')
     const load = async () => {
       const [classResponse, studentResponse, teacherResponse, locationResponse] = await Promise.all(
         [
@@ -66,7 +70,7 @@ export default function SchoolClasses() {
         locationResponse.json() as Promise<{ locations?: SchoolLocation[] }>,
       ])
       let requestPayload: { requests?: SchoolClassRequest[] } = {}
-      if (isDirector || isGuardian) {
+      if (isDirector || isStudentAccount) {
         const requestResponse = await getAuthed(`/api/schools/${selectedId}/class-requests`)
         requestPayload = (await requestResponse.json()) as { requests?: SchoolClassRequest[] }
       }
@@ -90,9 +94,8 @@ export default function SchoolClasses() {
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
-  const isGuardian = schoolMembershipHasRole(selected.membership, 'guardian')
+  const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
   const isTeacher = schoolMembershipHasRole(selected.membership, 'teacher')
-  const isStudent = schoolMembershipHasRole(selected.membership, 'student')
   const visibleClasses = classes.filter(
     (item) => item.status !== 'cancelled' || item.date >= today()
   )
@@ -117,9 +120,9 @@ export default function SchoolClasses() {
             <FiArrowLeft aria-hidden="true" /> Panel de escuela
           </Link>
           <p className="mt-5 text-sm font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
-            Agenda escolar
+            Horarios de la escuela
           </p>
-          <h1 className="mt-2 text-3xl font-extrabold text-(--c-ocean)">Clases</h1>
+          <h1 className="mt-2 text-3xl font-extrabold text-(--c-ocean)">Horarios</h1>
           <p className="mt-1 text-(--c-text-2)">{selected.school.name}</p>
         </div>
         <div className="flex flex-col gap-2 sm:items-end">
@@ -139,7 +142,7 @@ export default function SchoolClasses() {
             >
               <FiPlus aria-hidden="true" /> Crear clase
             </button>
-          ) : isGuardian ? (
+          ) : isStudentAccount ? (
             <button
               type="button"
               onClick={() => {
@@ -158,181 +161,235 @@ export default function SchoolClasses() {
           {message}
         </p>
       )}
-      {isDirector && requests.filter((item) => item.status === 'pending').length > 0 && (
-        <div className="rounded-[var(--r-md)] border border-[#f4d59a] bg-[#fffaf0] p-5">
-          <h2 className="font-bold text-(--c-ocean)">Solicitudes pendientes</h2>
-          <div className="mt-3 grid gap-2">
-            {requests
-              .filter((item) => item.status === 'pending')
-              .map((request) => (
+      <section aria-labelledby="school-schedule-heading" className="flex flex-col gap-4">
+        <div>
+          <h2 id="school-schedule-heading" className="text-xl font-extrabold text-(--c-ocean)">
+            Horarios de todos los coaches
+          </h2>
+          <p className="mt-1 text-sm text-(--c-text-2)">
+            Consulta en una sola agenda la disponibilidad y las clases de cada profesor.
+          </p>
+        </div>
+        {isDirector && (
+          <div className="flex flex-col gap-2">
+            <label htmlFor="schedule-coach" className="text-sm font-bold text-(--c-ocean)">
+              Administrar horarios de un profe
+            </label>
+            <select
+              id="schedule-coach"
+              className="select select-bordered min-h-11 w-full sm:max-w-sm"
+              value={scheduleCoachId}
+              disabled={loading}
+              onChange={(event) => setScheduleCoachId(event.target.value)}
+            >
+              <option value="">Todos los profes · Solo consulta</option>
+              {teachers
+                .filter((teacher) => teacher.status === 'active')
+                .map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+        <CoachAgenda
+          key={`${selected.school.id}-${isDirector ? scheduleCoachId : ''}`}
+          schoolId={selected.school.id}
+          coachId={isDirector && scheduleCoachId ? scheduleCoachId : undefined}
+          aggregateSchool
+          readOnly={!isDirector || !scheduleCoachId}
+          manageSchoolSchedule={isDirector && !!scheduleCoachId}
+        />
+      </section>
+      <section aria-labelledby="school-classes-heading" className="flex flex-col gap-4">
+        <div>
+          <h2 id="school-classes-heading" className="text-xl font-extrabold text-(--c-ocean)">
+            Clases programadas
+          </h2>
+          <p className="mt-1 text-sm text-(--c-text-2)">
+            Asignaciones, solicitudes y clases de la escuela.
+          </p>
+        </div>
+        {isDirector && requests.filter((item) => item.status === 'pending').length > 0 && (
+          <div className="rounded-[var(--r-md)] border border-[#f4d59a] bg-[#fffaf0] p-5">
+            <h2 className="font-bold text-(--c-ocean)">Solicitudes pendientes</h2>
+            <div className="mt-3 grid gap-2">
+              {requests
+                .filter((item) => item.status === 'pending')
+                .map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-sm)] bg-white p-3"
+                  >
+                    <div>
+                      <p className="font-semibold text-(--c-ocean)">
+                        {students.find((student) => student.id === request.studentId)?.name ||
+                          'Alumno'}
+                      </p>
+                      <p className="text-xs text-(--c-text-2)">
+                        {request.type === 'group' ? 'Grupal' : 'Individual'} ·{' '}
+                        {request.preferredStartTime}–{request.preferredEndTime}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRequest(request)
+                        setShowCreate(true)
+                      }}
+                      className="btn btn-sm btn-primary"
+                    >
+                      Asignar
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+        {isStudentAccount && requests.length > 0 && (
+          <div className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5">
+            <h2 className="font-bold text-(--c-ocean)">Mis solicitudes</h2>
+            <div className="mt-3 grid gap-2">
+              {requests.map((request) => (
                 <div
                   key={request.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-sm)] bg-white p-3"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-sm"
                 >
-                  <div>
-                    <p className="font-semibold text-(--c-ocean)">
-                      {students.find((student) => student.id === request.studentId)?.name ||
-                        'Alumno'}
-                    </p>
-                    <p className="text-xs text-(--c-text-2)">
-                      {request.type === 'group' ? 'Grupal' : 'Individual'} ·{' '}
-                      {request.preferredStartTime}–{request.preferredEndTime}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedRequest(request)
-                      setShowCreate(true)
-                    }}
-                    className="btn btn-sm btn-primary"
-                  >
-                    Asignar
-                  </button>
+                  <span>
+                    {students.find((student) => student.id === request.studentId)?.name || 'Alumno'}{' '}
+                    · {request.preferredStartTime}–{request.preferredEndTime}
+                  </span>
+                  <span className="font-semibold text-(--c-text-2)">
+                    {request.status === 'pending'
+                      ? 'Pendiente'
+                      : request.status === 'approved'
+                        ? 'Aprobada'
+                        : request.status === 'rejected'
+                          ? 'Rechazada'
+                          : 'Cancelada'}
+                  </span>
                 </div>
               ))}
+            </div>
           </div>
-        </div>
-      )}
-      {isGuardian && requests.length > 0 && (
-        <div className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5">
-          <h2 className="font-bold text-(--c-ocean)">Mis solicitudes</h2>
-          <div className="mt-3 grid gap-2">
-            {requests.map((request) => (
-              <div
-                key={request.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-sm"
+        )}
+        {loading ? (
+          <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
+        ) : visibleClasses.length ? (
+          <div className="grid gap-3">
+            {visibleClasses.map((item) => (
+              <article
+                key={item.id}
+                className={`rounded-[var(--r-md)] border bg-white p-5 shadow-[var(--shadow-sm)] ${item.status === 'completed' ? 'border-[#b9dfc9]' : 'border-(--c-border)'}`}
               >
-                <span>
-                  {students.find((student) => student.id === request.studentId)?.name || 'Alumno'} ·{' '}
-                  {request.preferredStartTime}–{request.preferredEndTime}
-                </span>
-                <span className="font-semibold text-(--c-text-2)">
-                  {request.status === 'pending'
-                    ? 'Pendiente'
-                    : request.status === 'approved'
-                      ? 'Aprobada'
-                      : request.status === 'rejected'
-                        ? 'Rechazada'
-                        : 'Cancelada'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {loading ? (
-        <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
-      ) : visibleClasses.length ? (
-        <div className="grid gap-3">
-          {visibleClasses.map((item) => (
-            <article
-              key={item.id}
-              className={`rounded-[var(--r-md)] border bg-white p-5 shadow-[var(--shadow-sm)] ${item.status === 'completed' ? 'border-[#b9dfc9]' : 'border-(--c-border)'}`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-bold text-(--c-ocean)">{item.title}</h2>
-                    <span className="rounded-full bg-(--c-surface) px-2 py-1 text-xs font-bold text-(--c-text-2)">
-                      {item.type === 'group' ? 'Grupal' : 'Particular'}
-                    </span>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="font-bold text-(--c-ocean)">{item.title}</h2>
+                      <span className="rounded-full bg-(--c-surface) px-2 py-1 text-xs font-bold text-(--c-text-2)">
+                        {item.type === 'group' ? 'Grupal' : 'Particular'}
+                      </span>
+                    </div>
+                    <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
+                      <FiCalendar aria-hidden="true" /> {item.date} · {item.startTime}–
+                      {item.endTime}
+                    </p>
+                    <p className="mt-1 flex items-center gap-2 text-sm text-(--c-text-2)">
+                      <FiMapPin aria-hidden="true" /> {item.location || 'Lugar por confirmar'}
+                      {item.locationUrl && (
+                        <a
+                          href={item.locationUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-(--c-ocean-mid)"
+                        >
+                          Ver mapa
+                        </a>
+                      )}
+                    </p>
                   </div>
-                  <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
-                    <FiCalendar aria-hidden="true" /> {item.date} · {item.startTime}–{item.endTime}
-                  </p>
-                  <p className="mt-1 flex items-center gap-2 text-sm text-(--c-text-2)">
-                    <FiMapPin aria-hidden="true" /> {item.location || 'Lugar por confirmar'}
-                    {item.locationUrl && (
-                      <a
-                        href={item.locationUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-semibold text-(--c-ocean-mid)"
-                      >
-                        Ver mapa
-                      </a>
-                    )}
-                  </p>
+                  <span className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
+                    {item.status === 'completed'
+                      ? 'Completada'
+                      : item.status === 'cancelled'
+                        ? 'Cancelada'
+                        : 'Programada'}
+                  </span>
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
-                  {item.status === 'completed'
-                    ? 'Completada'
-                    : item.status === 'cancelled'
-                      ? 'Cancelada'
-                      : 'Programada'}
-                </span>
-              </div>
-              {(isDirector || isTeacher) && item.status === 'scheduled' && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void updateClass(item.id, 'completed')}
-                    className="btn btn-outline btn-sm gap-1"
-                  >
-                    <FiCheck aria-hidden="true" /> Marcar completada
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void updateClass(item.id, 'cancelled')}
-                    className="btn btn-ghost btn-sm gap-1 text-(--c-error,#b91c1c)"
-                  >
-                    <FiX aria-hidden="true" /> Cancelar
-                  </button>
-                </div>
-              )}
-              {item.status === 'completed' && isTeacher && item.studentIds[0] && (
-                <SchoolReviewForm
-                  schoolId={selected.school.id}
-                  occurrenceId={item.id}
-                  reviewerRole="teacher"
-                  teacherId={item.teacherIds[0]}
-                  studentId={item.studentIds[0]}
-                  subjectName={
-                    students.find((student) => student.id === item.studentIds[0])?.name || 'alumno'
-                  }
-                />
-              )}
-              {item.status === 'completed' &&
-                (isGuardian || isStudent) &&
-                item.teacherIds[0] &&
-                item.studentIds[0] && (
+                {(isDirector || isTeacher) && item.status === 'scheduled' && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void updateClass(item.id, 'completed')}
+                      className="btn btn-outline btn-sm gap-1"
+                    >
+                      <FiCheck aria-hidden="true" /> Marcar completada
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void updateClass(item.id, 'cancelled')}
+                      className="btn btn-ghost btn-sm gap-1 text-(--c-error,#b91c1c)"
+                    >
+                      <FiX aria-hidden="true" /> Cancelar
+                    </button>
+                  </div>
+                )}
+                {item.status === 'completed' && isTeacher && item.studentIds[0] && (
                   <SchoolReviewForm
                     schoolId={selected.school.id}
                     occurrenceId={item.id}
-                    reviewerRole={isGuardian ? 'guardian' : 'student'}
+                    reviewerRole="teacher"
                     teacherId={item.teacherIds[0]}
                     studentId={item.studentIds[0]}
                     subjectName={
-                      teachers.find((teacher) => teacher.id === item.teacherIds[0])?.name || 'coach'
+                      students.find((student) => student.id === item.studentIds[0])?.name ||
+                      'alumno'
                     }
                   />
                 )}
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
-          <FiCalendar className="text-3xl text-(--c-ocean-mid)" aria-hidden="true" />
-          <h2 className="font-bold text-(--c-ocean)">
-            {isDirector ? 'Crea la primera clase' : 'Aún no tienes clases programadas'}
-          </h2>
-          <p className="max-w-md text-sm text-(--c-text-2)">
-            {isDirector
-              ? 'Puedes asignar varios coaches y alumnos, y repetir la clase durante un periodo.'
-              : 'Cuando la dirección confirme tu horario aparecerá aquí.'}
-          </p>
-        </div>
-      )}
-      {isDirector && (
-        <SchoolBookingSettingsCard
-          schoolId={selected.school.id}
-          mode={bookingMode}
-          onChange={setBookingMode}
-        />
-      )}
-      <SchoolCalendarCard schoolId={selected.school.id} />
-      <SchoolLocationsCard schoolId={selected.school.id} canManage={isDirector} />
+                {item.status === 'completed' &&
+                  isStudentAccount &&
+                  item.teacherIds[0] &&
+                  item.studentIds[0] && (
+                    <SchoolReviewForm
+                      schoolId={selected.school.id}
+                      occurrenceId={item.id}
+                      reviewerRole="student"
+                      teacherId={item.teacherIds[0]}
+                      studentId={item.studentIds[0]}
+                      subjectName={
+                        teachers.find((teacher) => teacher.id === item.teacherIds[0])?.name ||
+                        'coach'
+                      }
+                    />
+                  )}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
+            <FiCalendar className="text-3xl text-(--c-ocean-mid)" aria-hidden="true" />
+            <h2 className="font-bold text-(--c-ocean)">
+              {isDirector ? 'Crea la primera clase' : 'Aún no tienes clases programadas'}
+            </h2>
+            <p className="max-w-md text-sm text-(--c-text-2)">
+              {isDirector
+                ? 'Puedes asignar varios coaches y alumnos, y repetir la clase durante un periodo.'
+                : 'Cuando la dirección confirme tu horario aparecerá aquí.'}
+            </p>
+          </div>
+        )}
+        {isDirector && (
+          <SchoolBookingSettingsCard
+            schoolId={selected.school.id}
+            mode={bookingMode}
+            onChange={setBookingMode}
+          />
+        )}
+        <SchoolCalendarCard schoolId={selected.school.id} />
+        <SchoolLocationsCard schoolId={selected.school.id} canManage={isDirector} />
+      </section>
       {showCreate &&
         (isDirector ? (
           <CreateClassModal

@@ -14,6 +14,7 @@ import {
   FiUsers,
   FiX,
 } from 'react-icons/fi'
+import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
@@ -72,8 +73,12 @@ function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
   return `${booking.date}|${booking.startTime}`
 }
 
-function activeClassSlotCount(bookings: Booking[]) {
-  return new Set(bookings.map(bookingSlotKey)).size
+function activeClassSlotCount(bookings: Booking[], separateByCoach = false) {
+  return new Set(
+    bookings.map((booking) =>
+      separateByCoach ? `${booking.coachId}|${bookingSlotKey(booking)}` : bookingSlotKey(booking)
+    )
+  ).size
 }
 
 function blockCoversClassAt(block: CoachScheduleBlock, date: string, time: string) {
@@ -128,11 +133,19 @@ type ConfirmAction =
 export default function CoachAgenda({
   coachId,
   schoolId,
+  aggregateSchool = false,
+  readOnly = false,
+  manageSchoolSchedule = false,
   scheduleEditorOpen = false,
   onScheduleEditorClose,
 }: {
   coachId?: string
   schoolId?: string
+  /** Load every active school's coach into the same agenda. */
+  aggregateSchool?: boolean
+  /** Hide booking, block, and schedule-editing controls. */
+  readOnly?: boolean
+  manageSchoolSchedule?: boolean
   scheduleEditorOpen?: boolean
   onScheduleEditorClose?: () => void
 }) {
@@ -140,6 +153,12 @@ export default function CoachAgenda({
   // booking actions (add/cancel students) are hidden — admin mode manages
   // blocks only and does not edit the coach's offering here.
   const adminMode = Boolean(coachId)
+  const readOnlyAgenda = readOnly || (aggregateSchool && !manageSchoolSchedule)
+  const hideBookingActions = readOnlyAgenda || (adminMode && !manageSchoolSchedule)
+  const scheduleEndpoint =
+    manageSchoolSchedule && schoolId && coachId
+      ? `/api/schools/${encodeURIComponent(schoolId)}/teachers/${encodeURIComponent(coachId)}/schedule`
+      : '/api/coach/agenda'
   const coachQuery = coachId ? `&coachId=${encodeURIComponent(coachId)}` : ''
   const schoolQuery = schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''
   const contextQuery = `${coachQuery}${schoolQuery}`
@@ -159,17 +178,19 @@ export default function CoachAgenda({
   const [progressBookingIds, setProgressBookingIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
+    if (hideBookingActions || manageSchoolSchedule) return
     getAuthed('/api/coach/progress-entries')
       .then((response) => response.json())
       .then((payload: { bookingIds?: string[] }) =>
         setProgressBookingIds(new Set(payload.bookingIds || []))
       )
       .catch((err) => reportInternalError('COACH_PROGRESS_IDS_LOAD', err))
-  }, [])
+  }, [hideBookingActions, manageSchoolSchedule])
   // Editores del horario (self mode): opciones de clase y editor de horas.
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [addClassModalOpen, setAddClassModalOpen] = useState(false)
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
+  const [reassignBooking, setReassignBooking] = useState<Booking | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   const monthOfSelected = selectedDate.slice(0, 7)
@@ -187,7 +208,11 @@ export default function CoachAgenda({
     async (month: string) => {
       setError(null)
       try {
-        const response = await getAuthed(`/api/coach/agenda?month=${month}${contextQuery}`)
+        const endpoint =
+          (aggregateSchool || manageSchoolSchedule) && schoolId
+            ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}${manageSchoolSchedule ? coachQuery : ''}`
+            : `/api/coach/agenda?month=${month}${contextQuery}`
+        const response = await getAuthed(endpoint)
         setAgenda((await response.json()) as CoachAgendaPayload)
       } catch (err) {
         reportInternalError('COACH_AGENDA_LOAD', err)
@@ -195,7 +220,7 @@ export default function CoachAgenda({
         setAgenda({ bookings: [], availableSlots: [], blocks: [], offerings: [] })
       }
     },
-    [contextQuery]
+    [aggregateSchool, manageSchoolSchedule, coachQuery, contextQuery, schoolId]
   )
 
   useEffect(() => {
@@ -255,7 +280,9 @@ export default function CoachAgenda({
     }
     const bookingsByTime = new Map<string, Booking[]>()
     for (const booking of activeBookings) {
-      const key = bookingSlotKey(booking)
+      const key = readOnlyAgenda
+        ? `${booking.coachId}|${booking.date}|${booking.startTime}`
+        : bookingSlotKey(booking)
       const bookings = bookingsByTime.get(key) || []
       bookings.push(booking)
       bookingsByTime.set(key, bookings)
@@ -269,11 +296,19 @@ export default function CoachAgenda({
         bookings.length > 1 || booking.groupType === 'grupal' ? 'group' : 'booked'
       )
     }
-    const bookedKeys = new Set(bookingsByTime.keys())
+    const bookedKeys = new Set(
+      activeBookings.map((booking) =>
+        readOnlyAgenda
+          ? `${booking.coachId}|${booking.date}|${booking.startTime}`
+          : bookingSlotKey(booking)
+      )
+    )
     const slotKeys = new Set<string>()
     const groupSlotKeys = new Set<string>()
     for (const slot of agenda?.availableSlots || []) {
-      const key = `${slot.date}|${slot.startTime}`
+      const key = readOnlyAgenda
+        ? `${slot.coachId}|${slot.date}|${slot.startTime}`
+        : `${slot.date}|${slot.startTime}`
       slotKeys.add(key)
       if (slot.groupType === 'grupal') groupSlotKeys.add(key)
       if (slot.status === 'available') {
@@ -286,12 +321,15 @@ export default function CoachAgenda({
     }
     for (const block of agenda?.blocks || []) {
       if (block.allDay || block.hidden) continue
-      if (groupSlotKeys.has(`${block.date}|${block.startTime || ''}`)) continue
+      const blockKey = readOnlyAgenda
+        ? `${block.coachId}|${block.date}|${block.startTime || ''}`
+        : `${block.date}|${block.startTime || ''}`
+      if (groupSlotKeys.has(blockKey)) continue
       // A blocked hour that already has a student shows as booked, not blocked.
-      if (bookedKeys.has(`${block.date}|${block.startTime || ''}`)) continue
+      if (bookedKeys.has(blockKey)) continue
       // Skip orphan blocks: a block whose underlying slot no longer exists
       // (offering changed / open hour deleted) must not paint a phantom bar.
-      if (!slotKeys.has(`${block.date}|${block.startTime || ''}`)) continue
+      if (!slotKeys.has(blockKey)) continue
       push(block.date, block.startTime || '', 'blocked')
     }
     const ordered = new Map<string, HourStatus[]>()
@@ -303,18 +341,21 @@ export default function CoachAgenda({
       )
     }
     return ordered
-  }, [activeBookings, agenda?.availableSlots, agenda?.blocks])
+  }, [activeBookings, agenda?.availableSlots, agenda?.blocks, readOnlyAgenda])
 
   // Month-level occupancy: class slots vs total offered, restricted to the month shown
   // in the header (the payload can bleed into adjacent months on boundary weeks).
   const monthStats = useMemo(() => {
     const inMonth = (date: string) => date.startsWith(monthOfSelected)
-    const booked = activeClassSlotCount(activeBookings.filter((booking) => inMonth(booking.date)))
+    const booked = activeClassSlotCount(
+      activeBookings.filter((booking) => inMonth(booking.date)),
+      readOnlyAgenda
+    )
     const available = (agenda?.availableSlots || []).filter(
       (slot) => slot.status === 'available' && inMonth(slot.date)
     ).length
     return { booked, total: booked + available }
-  }, [activeBookings, agenda?.availableSlots, monthOfSelected])
+  }, [activeBookings, agenda?.availableSlots, monthOfSelected, readOnlyAgenda])
 
   // Week-level occupancy: sum booked/total across the 7 visible days.
   const weekStats = useMemo(() => {
@@ -380,22 +421,32 @@ export default function CoachAgenda({
   const dayBookings = activeBookings.filter((booking) => booking.date === selectedDate)
   const daySlots = (agenda?.availableSlots || []).filter((slot) => slot.date === selectedDate)
   const dayBlocks = (agenda?.blocks || []).filter((block) => block.date === selectedDate)
-  const allDayBlock = dayBlocks.find((block) => block.allDay)
+  // In a school-wide view, one coach blocking a full day must not hide every
+  // other coach's schedule. The individual slots already carry the blocked state.
+  const allDayBlock = readOnlyAgenda ? undefined : dayBlocks.find((block) => block.allDay)
 
   const rows = useMemo(() => {
-    const bookedTimes = new Set(dayBookings.map((booking) => booking.startTime))
+    const slotKey = (coachId: string, startTime: string) =>
+      readOnlyAgenda ? `${coachId}|${startTime}` : startTime
+    const bookedTimes = new Set(
+      dayBookings.map((booking) => slotKey(booking.coachId, booking.startTime))
+    )
     const available = daySlots
-      .filter((slot) => !bookedTimes.has(slot.startTime) && slot.status === 'available')
+      .filter(
+        (slot) =>
+          !bookedTimes.has(slotKey(slot.coachId, slot.startTime)) && slot.status === 'available'
+      )
       .map((slot) => ({ kind: 'available' as const, sort: slot.startTime, slot }))
     const groupedBookings = new Map<string, Booking[]>()
     for (const booking of dayBookings) {
-      const group = groupedBookings.get(booking.startTime) || []
+      const key = slotKey(booking.coachId, booking.startTime)
+      const group = groupedBookings.get(key) || []
       group.push(booking)
-      groupedBookings.set(booking.startTime, group)
+      groupedBookings.set(key, group)
     }
-    const booked = Array.from(groupedBookings.entries()).map(([startTime, bookings]) => ({
+    const booked = Array.from(groupedBookings.entries()).map(([key, bookings]) => ({
       kind: 'booked' as const,
-      sort: startTime,
+      sort: bookings[0]?.startTime || key,
       bookings: bookings.sort((a, b) => a.athleteName.localeCompare(b.athleteName)),
     }))
     // Render one blocked row per blocked hour (derived from the slots), not per
@@ -411,23 +462,22 @@ export default function CoachAgenda({
     }[] = []
     for (const slot of daySlots) {
       if (slot.status !== 'blocked') continue
-      if (bookedTimes.has(slot.startTime) || seen.has(slot.startTime)) continue
-      seen.add(slot.startTime)
+      const key = slotKey(slot.coachId, slot.startTime)
+      if (bookedTimes.has(key) || seen.has(key)) continue
+      seen.add(key)
       const block = dayBlocks.find(
         (b) =>
-          !b.allDay &&
+          (!readOnlyAgenda || b.coachId === slot.coachId) &&
           !b.hidden &&
-          b.startTime &&
-          b.endTime &&
-          b.startTime < slot.endTime &&
-          slot.startTime < b.endTime
+          (b.allDay ||
+            (b.startTime && b.endTime && b.startTime < slot.endTime && slot.startTime < b.endTime))
       )
       // Hidden blocks (removed entirely) have no visible row.
       if (!block) continue
       blocked.push({ kind: 'blocked', sort: slot.startTime, slot, block })
     }
     return [...available, ...booked, ...blocked].sort((a, b) => a.sort.localeCompare(b.sort))
-  }, [daySlots, dayBookings, dayBlocks])
+  }, [daySlots, dayBookings, dayBlocks, readOnlyAgenda])
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true)
@@ -437,8 +487,7 @@ export default function CoachAgenda({
       await loadAgenda(monthOfSelected)
     } catch (err) {
       reportInternalError('COACH_AGENDA_ACTION', err)
-      const message = err instanceof Error ? err.message : ''
-      setError(message && !message.startsWith('request_failed:') ? message : GENERIC_USER_ERROR)
+      setError(GENERIC_USER_ERROR)
     } finally {
       setBusy(false)
     }
@@ -446,7 +495,7 @@ export default function CoachAgenda({
 
   const block = (slot: CoachAvailableSlot, hidden: boolean) =>
     run(() =>
-      postAuthed('/api/coach/agenda', {
+      postAuthed(scheduleEndpoint, {
         date: slot.date,
         allDay: false,
         startTime: slot.startTime,
@@ -467,7 +516,7 @@ export default function CoachAgenda({
 
   const cancelBooking = (booking: Booking) =>
     run(() =>
-      deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${schoolQuery}`)
+      deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${contextQuery}`)
     )
 
   const updateClassSettings = (
@@ -478,6 +527,7 @@ export default function CoachAgenda({
     if (!booking) return
     run(() =>
       patchAuthed('/api/coach/agenda/bookings', {
+        ...(manageSchoolSchedule && coachId ? { coachId } : {}),
         date: booking.date,
         startTime: booking.startTime,
         ...(schoolId ? { schoolId } : {}),
@@ -489,6 +539,7 @@ export default function CoachAgenda({
   const updateAttendance = (booking: Booking, attended: boolean) =>
     run(() =>
       patchAuthed('/api/coach/agenda/bookings', {
+        ...(manageSchoolSchedule && coachId ? { coachId } : {}),
         id: booking.id,
         attended,
         ...(schoolId ? { schoolId } : {}),
@@ -496,12 +547,13 @@ export default function CoachAgenda({
     )
 
   const unblock = (block: CoachScheduleBlock) =>
-    run(() => deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(block.id)}${contextQuery}`))
+    run(() => deleteAuthed(`${scheduleEndpoint}?id=${encodeURIComponent(block.id)}${contextQuery}`))
 
   const submitAddStudent = (slot: ActiveSlot, payloads: AddStudentPayload[]) =>
     run(async () => {
       for (const payload of payloads) {
         await postAuthed('/api/coach/agenda/bookings', {
+          ...(manageSchoolSchedule && coachId ? { coachId } : {}),
           ...slot,
           ...payload,
           ...(schoolId ? { schoolId } : {}),
@@ -514,14 +566,14 @@ export default function CoachAgenda({
   const offerings = agenda?.offerings || []
   const offering = offerings[0] || null
   const saveOfferings = (next: CoachClassOffering) =>
-    postAuthed('/api/coach/offerings', {
+    postAuthed(manageSchoolSchedule ? scheduleEndpoint : '/api/coach/offerings', {
       ...(schoolId ? { schoolId } : {}),
       classOfferings: offerings.some((item) => item.id === next.id)
         ? offerings.map((item) => (item.id === next.id ? next : item))
         : [...offerings, next],
     })
   const saveOfferingList = (next: CoachClassOffering[]) =>
-    postAuthed('/api/coach/offerings', {
+    postAuthed(manageSchoolSchedule ? scheduleEndpoint : '/api/coach/offerings', {
       ...(schoolId ? { schoolId } : {}),
       classOfferings: next,
     })
@@ -552,7 +604,7 @@ export default function CoachAgenda({
 
   const deleteBlocks = async (pairs: { date: string; time: string }[]) => {
     for (const id of overlappingBlockIds(pairs)) {
-      await deleteAuthed(`/api/coach/agenda?id=${encodeURIComponent(id)}${contextQuery}`)
+      await deleteAuthed(`${scheduleEndpoint}?id=${encodeURIComponent(id)}${contextQuery}`)
     }
   }
 
@@ -680,6 +732,36 @@ export default function CoachAgenda({
 
   return (
     <div className="flex flex-col gap-4">
+      {manageSchoolSchedule && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-primary min-h-11"
+            disabled={busy}
+            onClick={() => setHoursEditorOpen(true)}
+          >
+            Agregar o quitar horas
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline min-h-11"
+            disabled={busy}
+            onClick={() => setAddClassModalOpen(true)}
+          >
+            Agregar horario
+          </button>
+          {offering && (
+            <button
+              type="button"
+              className="btn btn-outline min-h-11"
+              disabled={busy}
+              onClick={() => setDetailsModalOpen(true)}
+            >
+              Editar detalles
+            </button>
+          )}
+        </div>
+      )}
       {/* Month nav: ‹ Junio › + conteo del mes */}
       <NavStepper
         label={new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', { month: 'long' })}
@@ -835,13 +917,15 @@ export default function CoachAgenda({
                 <FiLock aria-hidden="true" /> Día bloqueado
                 {allDayBlock.note ? ` · ${allDayBlock.note}` : ''}
               </span>
-              <RowIconButton
-                ariaLabel="Desbloquear día"
-                onClick={() => unblock(allDayBlock)}
-                disabled={busy}
-              >
-                <FiUnlock aria-hidden="true" />
-              </RowIconButton>
+              {!readOnlyAgenda && (
+                <RowIconButton
+                  ariaLabel="Desbloquear día"
+                  onClick={() => unblock(allDayBlock)}
+                  disabled={busy}
+                >
+                  <FiUnlock aria-hidden="true" />
+                </RowIconButton>
+              )}
             </div>
           )}
 
@@ -864,7 +948,7 @@ export default function CoachAgenda({
                 const classStyle = isGroupClass ? HOUR_STATUS_STYLE.group : HOUR_STATUS_STYLE.booked
                 return (
                   <AgendaRow
-                    key={`b-${firstBooking.date}-${firstBooking.startTime}`}
+                    key={`b-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
                     time={row.sort}
                   >
                     <div
@@ -876,7 +960,40 @@ export default function CoachAgenda({
                             ? `Clase grupal · ${row.bookings.length} alumnos`
                             : 'Clase particular · 1 alumno'}
                         </span>
-                        {!adminMode && (
+                        {readOnlyAgenda && (
+                          <span className="text-sm font-extrabold text-[var(--c-ocean)]">
+                            {firstBooking.coachName ||
+                              agenda.coachNames?.[firstBooking.coachId] ||
+                              'Coach'}
+                          </span>
+                        )}
+                        {manageSchoolSchedule && (
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm min-h-11"
+                            disabled={busy}
+                            onClick={() => {
+                              const existingBlock = dayBlocks.find((block) =>
+                                blockCoversClassAt(block, firstBooking.date, firstBooking.startTime)
+                              )
+                              if (existingBlock) unblock(existingBlock)
+                              else
+                                bloquearSlot({
+                                  ...firstBooking,
+                                  id: firstBooking.id,
+                                  coachName: firstBooking.coachName || undefined,
+                                  status: 'booked',
+                                })
+                            }}
+                          >
+                            {dayBlocks.some((block) =>
+                              blockCoversClassAt(block, firstBooking.date, firstBooking.startTime)
+                            )
+                              ? 'Desbloquear horario'
+                              : 'Bloquear horario'}
+                          </button>
+                        )}
+                        {!hideBookingActions && (
                           <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
                             <span className="min-w-0">
                               <BinarySwitch
@@ -943,15 +1060,17 @@ export default function CoachAgenda({
                                 <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
                                   {booking.athleteName}
                                 </span>
-                                <Link
-                                  href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
-                                  className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                                >
-                                  ver perfil ›
-                                </Link>
+                                {!hideBookingActions && !manageSchoolSchedule && (
+                                  <Link
+                                    href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
+                                    className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                                  >
+                                    ver perfil ›
+                                  </Link>
+                                )}
                               </span>
                             </div>
-                            {!adminMode && (
+                            {!hideBookingActions && (
                               <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:self-center">
                                 <label className="col-span-2 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white/65 px-3 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--c-aqua-strong)] sm:col-auto sm:rounded-full sm:border-transparent sm:bg-transparent sm:px-2 sm:hover:bg-white/60">
                                   <input
@@ -965,7 +1084,7 @@ export default function CoachAgenda({
                                   />
                                   Asistencia
                                 </label>
-                                {booking.attended === true && (
+                                {!manageSchoolSchedule && booking.attended === true && (
                                   <button
                                     type="button"
                                     aria-label={
@@ -986,6 +1105,16 @@ export default function CoachAgenda({
                                         <FiPlus aria-hidden="true" /> Progreso
                                       </>
                                     )}
+                                  </button>
+                                )}
+                                {manageSchoolSchedule && (
+                                  <button
+                                    type="button"
+                                    className="btn btn-outline btn-sm min-h-11"
+                                    disabled={busy}
+                                    onClick={() => setReassignBooking(booking)}
+                                  >
+                                    Reasignar alumno
                                   </button>
                                 )}
                                 <button
@@ -1013,13 +1142,17 @@ export default function CoachAgenda({
               if (row.kind === 'blocked') {
                 const isBlockedGroup = row.slot.groupType === 'grupal'
                 return (
-                  <AgendaRow key={`x-${row.slot.id}`} time={row.slot.startTime}>
+                  <AgendaRow key={`x-${row.slot.coachId}-${row.slot.id}`} time={row.slot.startTime}>
                     <div
                       className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-3 ${HOUR_STATUS_STYLE.blocked.border} ${HOUR_STATUS_STYLE.blocked.bg}`}
                     >
-                      {adminMode ? (
+                      {readOnlyAgenda || (adminMode && !manageSchoolSchedule) ? (
                         <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
                           <FiLock aria-hidden="true" /> Bloqueado
+                          <span className="font-normal text-[var(--c-text-2)]">
+                            ·{' '}
+                            {row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || 'Coach'}
+                          </span>
                         </span>
                       ) : (
                         <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:items-center sm:gap-2">
@@ -1048,7 +1181,7 @@ export default function CoachAgenda({
                         </div>
                       )}
                       <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
-                        {!adminMode && (
+                        {!hideBookingActions && (
                           <button
                             type="button"
                             onClick={() =>
@@ -1076,17 +1209,20 @@ export default function CoachAgenda({
                 ? HOUR_STATUS_STYLE.groupAvailable
                 : HOUR_STATUS_STYLE.available
               return (
-                <AgendaRow key={`a-${row.slot.id}`} time={row.slot.startTime}>
+                <AgendaRow key={`a-${row.slot.coachId}-${row.slot.id}`} time={row.slot.startTime}>
                   <div
                     className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
                   >
-                    {adminMode ? (
+                    {readOnlyAgenda || (adminMode && !manageSchoolSchedule) ? (
                       <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
                         <span
                           className={`h-2 w-2 shrink-0 rounded-full ${availableStyle.dot}`}
                           aria-hidden="true"
                         />
                         Disponible
+                        <span className="font-normal text-[var(--c-text-2)]">
+                          · {row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || 'Coach'}
+                        </span>
                       </span>
                     ) : (
                       <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:items-center sm:gap-2">
@@ -1115,7 +1251,7 @@ export default function CoachAgenda({
                       </div>
                     )}
                     <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
-                      {!adminMode && (
+                      {!hideBookingActions && (
                         <button
                           type="button"
                           onClick={() =>
@@ -1133,16 +1269,18 @@ export default function CoachAgenda({
                           <FiPlus aria-hidden="true" /> Alumno
                         </button>
                       )}
-                      <RowIconButton
-                        ariaLabel="Eliminar este horario"
-                        onClick={() => setConfirmAction({ kind: 'delete-slot', slot: row.slot })}
-                        tone="danger"
-                        disabled={
-                          busy || dayBookings.some((b) => b.startTime === row.slot.startTime)
-                        }
-                      >
-                        <FiX aria-hidden="true" />
-                      </RowIconButton>
+                      {!readOnlyAgenda && (
+                        <RowIconButton
+                          ariaLabel="Eliminar este horario"
+                          onClick={() => setConfirmAction({ kind: 'delete-slot', slot: row.slot })}
+                          tone="danger"
+                          disabled={
+                            busy || dayBookings.some((b) => b.startTime === row.slot.startTime)
+                          }
+                        >
+                          <FiX aria-hidden="true" />
+                        </RowIconButton>
+                      )}
                     </div>
                   </div>
                 </AgendaRow>
@@ -1151,6 +1289,18 @@ export default function CoachAgenda({
         </div>
       </section>
 
+      {reassignBooking && schoolId && (
+        <SchoolReassignStudent
+          schoolId={schoolId}
+          booking={reassignBooking}
+          onClose={() => setReassignBooking(null)}
+          onSaved={() => {
+            setReassignBooking(null)
+            setNotice('Alumno reasignado.')
+            void loadAgenda(monthOfSelected)
+          }}
+        />
+      )}
       {progressBooking && (
         <StudentProgressModal
           athleteId={progressBooking.athleteId}

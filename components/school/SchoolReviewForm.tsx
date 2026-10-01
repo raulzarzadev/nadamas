@@ -13,7 +13,7 @@ export default function SchoolReviewForm({
 }: {
   schoolId: string
   occurrenceId: string
-  reviewerRole: 'teacher' | 'guardian' | 'student'
+  reviewerRole: 'teacher' | 'student'
   teacherId: string
   studentId: string
   subjectName: string

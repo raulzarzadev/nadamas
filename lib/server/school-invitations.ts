@@ -1,3 +1,5 @@
+import { validProfileBirthDate } from '@/lib/additional-profile'
+import { normalizeSchoolMembership } from '@/lib/school'
 import 'server-only'
 
 import { createHash, randomBytes } from 'node:crypto'
@@ -10,6 +12,7 @@ import type {
   SchoolMembership,
   SchoolRole,
 } from '@/lib/school'
+import { getAdditionalProfile } from './additional-profiles'
 import { adminDb } from './firebase-admin'
 import { isMinor } from './school-students'
 
@@ -159,6 +162,7 @@ export async function acceptSchoolInvitation(args: {
     guardianName?: string
     guardianRelationship?: string
     guardianPhone?: string
+    additionalProfileId?: string
     useInvitationData?: boolean
   }
 }) {
@@ -166,6 +170,8 @@ export async function acceptSchoolInvitation(args: {
     (await getInvitationByToken(args.token)) ||
     (await getInvitationByIdForEmail(args.token, args.caller.email || ''))
   if (!invitation) return { ok: false as const, reason: 'not_found' as const }
+  if ((invitation.role as string) === 'guardian')
+    return { ok: false as const, reason: 'revoked' as const }
   if (invitation.status !== 'pending')
     return {
       ok: false as const,
@@ -180,10 +186,16 @@ export async function acceptSchoolInvitation(args: {
   if (!callerEmail || callerEmail !== invitation.email) {
     return { ok: false as const, reason: 'email_mismatch' as const }
   }
+  const additional = args.profile?.additionalProfileId
+    ? await getAdditionalProfile(args.caller.uid, args.profile.additionalProfileId)
+    : null
+  if (args.profile?.additionalProfileId && !additional)
+    return { ok: false as const, reason: 'additional_not_found' as const }
   const studentProfile =
-    invitation.role === 'student' && args.profile?.useInvitationData && invitation.studentData
+    additional ||
+    (invitation.role === 'student' && args.profile?.useInvitationData && invitation.studentData
       ? invitation.studentData
-      : args.profile
+      : args.profile)
   if (invitation.role === 'student') {
     if (
       !studentProfile?.name?.trim() ||
@@ -192,11 +204,10 @@ export async function acceptSchoolInvitation(args: {
       !['varonil', 'femenil', 'otro'].includes(studentProfile.gender)
     )
       return { ok: false as const, reason: 'student_profile' as const }
-    const birthDate = new Date(`${studentProfile.birthDate}T00:00:00Z`)
-    if (Number.isNaN(birthDate.getTime()) || birthDate.getTime() > Date.now())
+    if (!validProfileBirthDate(studentProfile.birthDate))
       return { ok: false as const, reason: 'student_profile' as const }
-    if (isMinor(studentProfile.birthDate))
-      return { ok: false as const, reason: 'minor_requires_guardian' as const }
+    if (!additional && isMinor(studentProfile.birthDate))
+      return { ok: false as const, reason: 'minor_requires_additional' as const }
   }
 
   const now = Date.now()
@@ -210,10 +221,18 @@ export async function acceptSchoolInvitation(args: {
     invitation.role === 'student'
       ? adminDb
           .collection('schoolStudents')
-          .doc(invitation.studentId || `${invitation.schoolId}_${args.caller.uid}`)
+          .doc(
+            invitation.studentId || `${invitation.schoolId}_${additional?.id || args.caller.uid}`
+          )
       : null
 
   const transactionResult = await adminDb.runTransaction(async (transaction) => {
+    const invitationSnapshot = await transaction.get(invitation.ref)
+    if (
+      invitationSnapshot.data()?.status !== 'pending' ||
+      invitationSnapshot.data()?.expiresAt <= Date.now()
+    )
+      return { ok: false as const, reason: 'expired' as const }
     const membershipSnapshot = await transaction.get(membershipRef)
     const studentSnapshot = studentRef ? await transaction.get(studentRef) : null
     if (invitation.studentId && !studentSnapshot?.exists)
@@ -227,24 +246,31 @@ export async function acceptSchoolInvitation(args: {
     )
       return { ok: false as const, reason: 'student_already_linked' as const }
 
+    if (
+      studentSnapshot?.data()?.managerIds?.length &&
+      !studentSnapshot.data()?.managerIds.includes(args.caller.uid)
+    )
+      return { ok: false as const, reason: 'student_already_linked' as const }
     const studentValues = studentProfile || {}
     const studentDocument = {
       id: studentRef?.id,
       schoolId: invitation.schoolId,
-      studentUserId: args.caller.uid,
+      studentUserId: additional ? '' : args.caller.uid,
+      managerIds: additional ? [args.caller.uid] : [],
+      additionalProfileId: additional?.id || '',
       name: studentValues.name?.trim() || args.caller.name || '',
       birthDate: studentValues.birthDate || '',
       gender: studentValues.gender,
       guardianIds: [],
-      guardianName: studentValues.guardianName?.trim() || '',
-      guardianRelationship: studentValues.guardianRelationship?.trim() || '',
-      guardianPhone: studentValues.guardianPhone?.trim() || '',
+      guardianName: args.profile?.guardianName?.trim() || '',
+      guardianRelationship: args.profile?.guardianRelationship?.trim() || '',
+      guardianPhone: args.profile?.guardianPhone?.trim() || '',
       guardianEmail: '',
       status: 'active' as const,
       updatedAt: now,
     }
     if (membershipSnapshot.exists) {
-      const existing = membershipSnapshot.data() as SchoolMembership
+      const existing = normalizeSchoolMembership(membershipSnapshot.data() as SchoolMembership)
       const existingRoles = existing.roles?.length ? existing.roles : [existing.role]
       const roles = [...new Set([...existingRoles, invitation.role] as SchoolRole[])]
       transaction.update(membershipRef, {
