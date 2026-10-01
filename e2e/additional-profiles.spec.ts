@@ -12,7 +12,9 @@ test('valida nacimientos de adultos y menores sin aceptar fechas imposibles', ()
 test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol tutor', async ({
   request,
   page,
+  browser,
 }) => {
+  test.setTimeout(60000)
   let available = false
   try {
     available = (await fetch('http://127.0.0.1:8080')).ok
@@ -98,6 +100,7 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
       (await (await request.get('/api/additional-profiles', { headers: otherHeaders })).json())
         .profiles
     ).toHaveLength(0)
+    created.push(['schoolAgendaUpdates', schoolId])
     await seed('schools', schoolId, {
       name: 'Escuela prueba',
       directorId: outsider.localId,
@@ -421,21 +424,164 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
     await expect(section.getByText('Persona adulta', { exact: true })).toBeVisible()
     await expect(section.getByText('Persona menor', { exact: true })).toBeVisible()
     await page.screenshot({ path: '/tmp/nadamas-additional-mobile.png', fullPage: true })
-    await page.evaluate((id) => window.localStorage.setItem('nadamas.schoolId', id), schoolId)
     await page.goto('/school/students')
-    const historyButton = page
+    await expect(page.getByRole('heading', { name: 'Configura tu escuela' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Ver historial' })).toHaveCount(0)
+    expect(
+      (await request.post('/api/auth/otp/request', { data: { email: outsider.email } })).ok()
+    ).toBe(true)
+    const directorOtp = await (
+      await fetch(`${root}/otpLoginCodes/${encodeURIComponent(outsider.email)}`, {
+        headers: { authorization: 'Bearer owner' },
+      })
+    ).json()
+    created.push(['otpLoginCodes', encodeURIComponent(outsider.email)], ['users', outsider.localId])
+    const directorPage = await browser.newPage({ viewport: { width: 390, height: 844 } })
+    await directorPage.goto(
+      `/auth/link?email=${encodeURIComponent(outsider.email)}&token=${directorOtp.fields.devLinkToken.stringValue}`
+    )
+    await directorPage.getByRole('button', { name: 'Confirmar', exact: true }).click()
+    await directorPage.waitForURL('**/athlete/bookings')
+    await directorPage.evaluate(
+      (id) => window.localStorage.setItem('nadamas.schoolId', id),
+      schoolId
+    )
+    await directorPage.goto('/school/students')
+    const historyButton = directorPage
       .locator('article')
-      .filter({ has: page.getByRole('heading', { name: 'Persona adulta', exact: true }) })
+      .filter({ has: directorPage.getByRole('heading', { name: 'Persona adulta', exact: true }) })
       .getByRole('button', { name: 'Ver historial' })
     await historyButton.click()
-    const historyDialog = page.getByRole('dialog', { name: 'Historial de Persona adulta' })
+    const historyDialog = directorPage.getByRole('dialog', { name: 'Historial de Persona adulta' })
     await expect(historyDialog.getByText('2 clases tomadas · 1 coach')).toBeVisible()
     await expect(historyDialog.getByText('Buen avance', { exact: true })).toBeVisible()
     await expect(historyDialog.getByText('Explicación clara', { exact: true })).toBeVisible()
-    await page.screenshot({ path: '/tmp/nadamas-student-history-mobile.png', fullPage: true })
-    await page.keyboard.press('Escape')
+    await directorPage.screenshot({
+      path: '/tmp/nadamas-student-history-mobile.png',
+      fullPage: true,
+    })
+    await directorPage.keyboard.press('Escape')
     await expect(historyDialog).toHaveCount(0)
     await expect(historyButton).toBeFocused()
+    const availableDate = new Date().toISOString().slice(0, 10)
+    const offeringId = `hours-${schoolId}`
+    await seed('schoolCoachOfferings', `${schoolId}_${teacher.localId}`, {
+      schoolId,
+      coachId: teacher.localId,
+      classOfferings: [
+        {
+          id: offeringId,
+          mode: 'fixed',
+          groupType: 'particular',
+          placeName: 'Alberca',
+          currency: 'MXN',
+          unit: 'clase',
+          schedules: [
+            {
+              id: 'editable-hour',
+              timeMode: 'fixed',
+              startTime: '14:00',
+              endTime: '15:00',
+              availabilityMode: 'dates',
+              days: [
+                ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][
+                  new Date(`${availableDate}T12:00:00`).getDay()
+                ],
+              ],
+              availableDates: [availableDate],
+            },
+          ],
+        },
+      ],
+    })
+    await directorPage.goto('/school/classes')
+    await directorPage.getByLabel('Administrar horarios de un profe').selectOption('')
+    const groupSwitch = directorPage.getByRole('switch', {
+      name: /Cambiar entre Particular y Grupal/,
+    })
+    await expect(groupSwitch).toHaveCount(1)
+    await groupSwitch.click()
+    await expect(groupSwitch).toHaveAttribute('aria-checked', 'true')
+    const blockSwitch = directorPage.getByRole('switch', {
+      name: /Cambiar entre Disponible y Bloqueado/,
+    })
+    const blockResponse = directorPage.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' && r.url().includes(`/teachers/${teacher.localId}/schedule`)
+    )
+    await blockSwitch.click()
+    const blockPayload = await (await blockResponse).json()
+    expect(blockPayload.block.coachId).toBe(teacher.localId)
+    created.push(['coachScheduleBlocks', blockPayload.block.id])
+    await expect(blockSwitch).toHaveAttribute('aria-checked', 'true')
+    await blockSwitch.click()
+    await expect(blockSwitch).toHaveAttribute('aria-checked', 'false')
+    // A change from another client must reach the open director agenda.
+    const remoteBlockResponse = await request.post(
+      `/api/schools/${schoolId}/teachers/${teacher.localId}/schedule`,
+      {
+        headers: otherHeaders,
+        data: {
+          date: availableDate,
+          allDay: false,
+          startTime: '14:00',
+          endTime: '15:00',
+          hidden: false,
+        },
+      }
+    )
+    expect(remoteBlockResponse.status()).toBe(200)
+    const remoteBlock = (await remoteBlockResponse.json()).block
+    created.push(['coachScheduleBlocks', remoteBlock.id])
+    await expect(blockSwitch).toHaveAttribute('aria-checked', 'true')
+    expect(
+      (
+        await request.delete(
+          `/api/schools/${schoolId}/teachers/${teacher.localId}/schedule?id=${remoteBlock.id}`,
+          { headers: otherHeaders }
+        )
+      ).status()
+    ).toBe(200)
+    await expect(blockSwitch).toHaveAttribute('aria-checked', 'false')
+    const signalUrl = `${root}/schoolAgendaUpdates/${schoolId}`
+    const signal = await (
+      await fetch(signalUrl, { headers: { authorization: `Bearer ${owner.idToken}` } })
+    ).json()
+    expect(signal.fields.revision.stringValue).toBeTruthy()
+    expect(signal.fields.lastUpdate.timestampValue).toBeTruthy()
+    expect(
+      (
+        await fetch(signalUrl, {
+          method: 'PATCH',
+          headers: { authorization: `Bearer ${owner.idToken}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ fields: { revision: { stringValue: 'forged' } } }),
+        })
+      ).status
+    ).toBe(403)
+
+    await expect(directorPage.getByRole('button', { name: 'Alumno', exact: true })).toBeVisible()
+    await expect(
+      directorPage.getByRole('button', { name: 'Eliminar este horario', exact: true })
+    ).toBeEnabled()
+    await directorPage.getByRole('button', { name: 'Alumno', exact: true }).click()
+    const addStudentDialog = directorPage.getByRole('dialog', {
+      name: 'Agregar alumnos',
+      exact: true,
+    })
+    await expect(addStudentDialog).toBeVisible()
+    await addStudentDialog.getByRole('button', { name: 'Cancelar', exact: true }).click()
+    await directorPage.getByRole('button', { name: 'Eliminar este horario', exact: true }).click()
+    const deletionResponse = directorPage.waitForResponse(
+      (r) =>
+        r.request().method() === 'POST' && r.url().includes(`/teachers/${teacher.localId}/schedule`)
+    )
+    await directorPage.getByRole('button', { name: 'Eliminar horario', exact: true }).click()
+    const deletionPayload = await (await deletionResponse).json()
+    expect(deletionPayload.block.coachId).toBe(teacher.localId)
+    expect(deletionPayload.block.hidden).toBe(true)
+    created.push(['coachScheduleBlocks', deletionPayload.block.id])
+    await expect(groupSwitch).toHaveCount(0)
+    await directorPage.close()
     created.push(['otpLoginCodes', encodeURIComponent(owner.email)], ['users', owner.localId])
     const ownToken = `minor-${schoolId}`
     await seed('schoolInvitations', ownToken, {
@@ -460,6 +606,125 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
     await expect(page.getByLabel('Nombre completo', { exact: true })).toHaveCount(0)
     await page.getByRole('button', { name: 'Aceptar invitación', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Todo listo', exact: true })).toBeVisible()
+    const coachToken = `coach-${schoolId}`
+    await seed('schoolInvitations', coachToken, {
+      id: coachToken,
+      schoolId,
+      email: unassignedStudent.email,
+      role: 'teacher',
+      status: 'pending',
+      expiresAt: Date.now() + 60000,
+      tokenHash: createHash('sha256').update(coachToken).digest('hex'),
+    })
+    expect(
+      (
+        await request.post('/api/auth/otp/request', { data: { email: unassignedStudent.email } })
+      ).ok()
+    ).toBe(true)
+    const coachOtp = await (
+      await fetch(`${root}/otpLoginCodes/${encodeURIComponent(unassignedStudent.email)}`, {
+        headers: { authorization: 'Bearer owner' },
+      })
+    ).json()
+    created.push(
+      ['otpLoginCodes', encodeURIComponent(unassignedStudent.email)],
+      ['users', unassignedStudent.localId],
+      ['schoolProfiles', `${schoolId}_${unassignedStudent.localId}`]
+    )
+    const coachPage = await browser.newPage()
+    await coachPage.goto(
+      `/auth/link?email=${encodeURIComponent(unassignedStudent.email)}&token=${coachOtp.fields.devLinkToken.stringValue}`
+    )
+    await coachPage.getByRole('button', { name: 'Confirmar', exact: true }).click()
+    await coachPage.waitForURL('**/athlete/bookings')
+    await coachPage.goto(`/school/invitations/${coachToken}`)
+    await coachPage.getByLabel('Nombre completo', { exact: true }).fill('Coach invitado')
+    await coachPage.getByRole('button', { name: 'Aceptar invitación', exact: true }).click()
+    await coachPage.getByRole('button', { name: 'Ir al modo entrenador', exact: true }).click()
+    await expect(coachPage).toHaveURL(/\/coach\/agenda/)
+    await expect(
+      coachPage.getByRole('button', { name: 'Escuela prueba', exact: true })
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      await coachPage.evaluate(() => window.localStorage.getItem('nadamas.coachSelection'))
+    ).toBe(schoolId)
+
+    created.push(['schoolCoachOfferings', `${schoolId}_${unassignedStudent.localId}`])
+    const remoteOffering = {
+      id: `realtime-${schoolId}`,
+      mode: 'fixed',
+      placeName: 'Alberca',
+      groupType: 'particular',
+      currency: 'MXN',
+      unit: 'clase',
+      schedules: [
+        {
+          id: 'realtime-hour',
+          startTime: '16:00',
+          endTime: '17:00',
+          timeMode: 'fixed',
+          days: [
+            ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][
+              new Date(`${availableDate}T12:00:00`).getDay()
+            ],
+          ],
+          availabilityMode: 'dates',
+          availableDates: [availableDate],
+        },
+      ],
+    }
+    expect(
+      (
+        await request.post(
+          `/api/schools/${schoolId}/teachers/${unassignedStudent.localId}/schedule`,
+          { headers: otherHeaders, data: { classOfferings: [remoteOffering] } }
+        )
+      ).status()
+    ).toBe(200)
+    await expect(coachPage.getByText('16:00', { exact: true })).toBeVisible()
+    await page.goto('/athlete/bookings')
+    await page.getByRole('button', { name: 'Escuela prueba', exact: true }).click()
+    const bookingResponse = await request.post('/api/coach/agenda/bookings', {
+      headers: otherHeaders,
+      data: {
+        schoolId,
+        coachId: unassignedStudent.localId,
+        date: availableDate,
+        startTime: '16:00',
+        endTime: '17:00',
+        athleteId: owner.localId,
+        athleteName: 'Alumno sincronizado',
+        groupType: 'particular',
+        locationName: 'Alberca',
+      },
+    })
+    expect(bookingResponse.status()).toBe(200)
+    const syncedBooking = (await bookingResponse.json()).booking
+    created.push(['bookings', syncedBooking.id])
+    await expect(page.getByText(/16:00 · 60 min/)).toBeVisible()
+    await expect(coachPage.getByText('Alumno sincronizado', { exact: true })).toBeVisible()
+    const directoryResponse = await request.get(`/api/schools/${schoolId}/coaches`, { headers })
+    expect(directoryResponse.ok()).toBe(true)
+    const directory = await directoryResponse.json()
+    expect(directory.coaches.map((coach: { id: string }) => coach.id).sort()).toEqual(
+      [teacher.localId, unassignedStudent.localId].sort()
+    )
+    await page.goto('/athlete/find-coach')
+    const schoolCoachLink = page.locator(
+      `a[href="/athlete/coach/${unassignedStudent.localId}?schoolId=${schoolId}"]`
+    )
+    await expect(schoolCoachLink).toBeVisible()
+    await schoolCoachLink.click()
+    await expect(page.getByText('16:00', { exact: true })).toBeVisible()
+    await expect(page.getByText('Alumno sincronizado', { exact: true })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Todos', exact: true }).click()
+    await expect(page).toHaveURL(/\/athlete\/find-coach$/)
+
+    await coachPage.goto('/coach/students')
+    await expect(
+      coachPage.getByRole('button', { name: 'Escuela prueba', exact: true })
+    ).toHaveAttribute('aria-pressed', 'true')
+    await coachPage.close()
     const teacherProfile = await request.post('/api/additional-profiles', {
       headers: { authorization: `Bearer ${teacher.idToken}` },
       data: { name: 'Hijo del profe', birthDate: '2020-01-01', gender: 'otro' },

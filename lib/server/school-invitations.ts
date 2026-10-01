@@ -269,6 +269,13 @@ export async function acceptSchoolInvitation(args: {
       status: 'active' as const,
       updatedAt: now,
     }
+    if (invitation.role === 'teacher') {
+      transaction.set(
+        adminDb.collection('users').doc(args.caller.uid),
+        { roles: { coach: true }, updatedAt: now },
+        { merge: true }
+      )
+    }
     if (membershipSnapshot.exists) {
       const existing = normalizeSchoolMembership(membershipSnapshot.data() as SchoolMembership)
       const existingRoles = existing.roles?.length ? existing.roles : [existing.role]

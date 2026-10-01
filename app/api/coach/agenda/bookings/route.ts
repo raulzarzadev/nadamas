@@ -13,6 +13,7 @@ import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingByCoach } from '@/lib/server/notifications'
 import { getSchoolMembership } from '@/lib/server/school-access'
 import { legacySchoolOfferings } from '@/lib/server/school-agenda'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
@@ -148,7 +149,7 @@ async function syncCoachCreatedSlotGroupType(
   if (changed) await batch.commit()
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
@@ -278,7 +279,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ booking })
 }
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
@@ -394,7 +395,7 @@ export async function PATCH(request: Request) {
   return NextResponse.json({ ok: true, groupType: nextGroupType, classFull: nextClassFull })
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   const verification = await verifyCoach(request)
   if (verification.error) return verification.error
 
@@ -447,3 +448,7 @@ export async function DELETE(request: Request) {
 
   return NextResponse.json({ ok: true, status: 'cancelled' })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)
+export const PATCH = withSchoolAgendaUpdate(handlePATCH)
+export const DELETE = withSchoolAgendaUpdate(handleDELETE)

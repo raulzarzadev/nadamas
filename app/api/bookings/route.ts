@@ -7,6 +7,7 @@ import {
 } from '@/lib/server/bookings'
 import { getClassEvaluations } from '@/lib/server/class-evaluations'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
   return NextResponse.json({ bookings })
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const token = getBearerToken(request)
   if (!token) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
@@ -73,3 +74,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, bookings })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { SchoolBookingMode } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
@@ -21,7 +22,7 @@ export async function GET(request: Request, { params }: RouteProps) {
   })
 }
 
-export async function PATCH(request: Request, { params }: RouteProps) {
+async function handlePATCH(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
@@ -32,3 +33,5 @@ export async function PATCH(request: Request, { params }: RouteProps) {
   await adminDb.collection('schools').doc(schoolId).update({ bookingMode, updatedAt: Date.now() })
   return NextResponse.json({ bookingMode })
 }
+
+export const PATCH = withSchoolAgendaUpdate(handlePATCH)

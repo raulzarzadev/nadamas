@@ -1,5 +1,6 @@
 'use client'
 import CoachSchoolSwitcher from '@comps/coach/CoachSchoolSwitcher'
+import AthleteSchoolSwitcher from '@comps/school/AthleteSchoolSwitcher'
 import SchoolHeaderActions from '@comps/school/SchoolHeaderActions'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -19,6 +20,7 @@ import { useRole } from '@/context/RoleContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { RoleName } from '@/lib/roles'
 import { type School, type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
+import { schoolsForWorkspace } from '@/lib/school-workspace'
 import NotificationsBell from './NotificationsBell'
 import { PRIMARY_NAV_BY_ROLE } from './nav-config'
 import RoleSwitcher from './RoleSwitcher'
@@ -66,9 +68,10 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
       )
       .then((payload) => {
         if (!active) return
+        const schools = schoolsForWorkspace(payload.schools || [], false)
         const selected =
-          payload.schools?.find((item) => item.school.id === storedSchoolId) ||
-          payload.schools?.[0] ||
+          schools.find((item) => item.school.id === storedSchoolId) ||
+          schools[0] ||
           (payload.ownedSchool
             ? {
                 school: payload.ownedSchool,
@@ -156,6 +159,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
         </nav>
 
         {role === 'coach' && <CoachSchoolSwitcher />}
+        {role === 'athlete' && <AthleteSchoolSwitcher />}
       </div>
     </header>
   )

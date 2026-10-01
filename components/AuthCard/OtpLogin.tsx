@@ -27,6 +27,8 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
         body: JSON.stringify({ email }),
       })
       if (!response.ok) throw new Error('request_failed')
+      const payload = (await response.json()) as { devCode?: string }
+      setCode(/^\d{6}$/.test(payload.devCode || '') ? payload.devCode || '' : '')
       setManualEntry(false)
       setStep('code')
       setMessage('Te enviamos un correo con un botón para entrar y un código de 6 dígitos.')

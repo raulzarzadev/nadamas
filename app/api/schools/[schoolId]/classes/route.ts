@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import {
   type CreateSchoolClassInput,
   createSchoolClass,
@@ -44,7 +45,7 @@ export async function GET(request: Request, { params }: RouteProps) {
   return NextResponse.json({ classes })
 }
 
-export async function POST(request: Request, { params }: RouteProps) {
+async function handlePOST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
@@ -91,3 +92,5 @@ export async function POST(request: Request, { params }: RouteProps) {
   }
   return NextResponse.json(result, { status: 201 })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)

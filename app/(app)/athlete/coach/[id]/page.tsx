@@ -1,14 +1,18 @@
 import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 import { notFound, redirect } from 'next/navigation'
+import AthleteSchoolCoachSchedule from '@/components/school/AthleteSchoolCoachSchedule'
 import { getPublicCoachDetail } from '@/lib/server/public-coach'
 import { resolveSlug } from '@/lib/server/slugs'
 
 interface AthleteCoachViewProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ schoolId?: string }>
 }
 
-export default async function AthleteCoachView({ params }: AthleteCoachViewProps) {
+export default async function AthleteCoachView({ params, searchParams }: AthleteCoachViewProps) {
   const { id } = await params
+  const { schoolId } = await searchParams
+  if (schoolId) return <AthleteSchoolCoachSchedule schoolId={schoolId} coachId={id} />
   const target = await resolveSlug(id, 'coach')
   if (!target) notFound()
 

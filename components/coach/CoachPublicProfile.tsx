@@ -400,6 +400,8 @@ export default function CoachPublicProfile({
         }),
       })
       if (!response.ok) throw new Error('otp_request_failed')
+      const payload = (await response.json()) as { devCode?: string }
+      setOtpCode(/^\d{6}$/.test(payload.devCode || '') ? payload.devCode || '' : '')
       setBookingStep('otp')
       setBookingMessage('Te enviamos un correo con un botón para entrar y un código.')
     } catch {

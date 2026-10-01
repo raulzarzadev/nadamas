@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FiCalendar, FiCheck, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import { useUser } from '@/context/UserContext'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
+import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import {
   type SchoolBookingMode,
   type SchoolClassOccurrence,
@@ -46,6 +47,9 @@ export default function SchoolClasses() {
       email?: string
     } | null
   }
+  const previousSchoolId = useRef<string | null>(null)
+  const [agendaRevision, setAgendaRevision] = useState(0)
+  useSchoolAgendaUpdates(selectedId, () => setAgendaRevision((revision) => revision + 1))
   const [scheduleCoachId, setScheduleCoachId] = useState('')
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
@@ -59,16 +63,21 @@ export default function SchoolClasses() {
   const [message, setMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: agendaRevision reloads school requests and configuration after a remote mutation.
   useEffect(() => {
     if (!selectedId) return
-    setScheduleCoachId('')
-    setScheduleEditorOpen(false)
-    setLoading(true)
+    const resetSelection = previousSchoolId.current !== selectedId
+    previousSchoolId.current = selectedId
+    let active = true
+    if (resetSelection) {
+      setScheduleEditorOpen(false)
+      setLoading(true)
+    }
     setBookingMode(selected?.school.bookingMode || 'request')
     const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
     const isStudentAccount = schoolMembershipHasRole(selected?.membership, 'student')
     const directorId = isDirector ? selected?.membership.userId : undefined
-    setScheduleCoachId(directorId || '')
+    if (resetSelection) setScheduleCoachId(directorId || '')
     const load = async () => {
       const [classResponse, studentResponse, teacherResponse, locationResponse] = await Promise.all(
         [
@@ -93,6 +102,7 @@ export default function SchoolClasses() {
     }
     load()
       .then(({ classPayload, studentPayload, teacherPayload, locationPayload, requestPayload }) => {
+        if (!active) return
         setClasses(classPayload.classes || [])
         setStudents(studentPayload.students || [])
         const nextTeachers = teacherPayload.teachers || []
@@ -100,16 +110,33 @@ export default function SchoolClasses() {
         const firstActiveTeacher = nextTeachers.find(
           (teacher) => teacher.status === 'active' && teacher.id !== directorId
         )
-        setScheduleCoachId(isDirector && !firstActiveTeacher ? directorId || '' : '')
+        setScheduleCoachId((current) => {
+          if (!isDirector || firstActiveTeacher) {
+            return current &&
+              nextTeachers.some(
+                (teacher) =>
+                  teacher.id === current && teacher.status === 'active' && teacher.id !== directorId
+              )
+              ? current
+              : ''
+          }
+          return directorId || ''
+        })
         setLocations(locationPayload.locations || [])
         setRequests(requestPayload.requests || [])
       })
       .catch(() => {
-        setScheduleCoachId(directorId || '')
+        if (!active) return
+        if (resetSelection) setScheduleCoachId(directorId || '')
         setMessage('No se pudo cargar la agenda escolar.')
       })
-      .finally(() => setLoading(false))
-  }, [selectedId, selected?.membership, selected?.school.bookingMode])
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [agendaRevision, selectedId, selected?.membership, selected?.school.bookingMode])
 
   if (schoolStatus === 'loading')
     return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando clases…</div>
@@ -171,9 +198,7 @@ export default function SchoolClasses() {
                 disabled={loading}
                 onChange={(event) => setScheduleCoachId(event.target.value)}
               >
-                {activeTeachers.length > 0 && (
-                  <option value="">Todos los profes · Solo consulta</option>
-                )}
+                {activeTeachers.length > 0 && <option value="">Todos los profes</option>}
                 {scheduleCoachOptions.map((coach) => (
                   <option key={coach.id} value={coach.id}>
                     {coach.name}
@@ -217,8 +242,8 @@ export default function SchoolClasses() {
           schoolId={selected.school.id}
           coachId={isDirector && scheduleCoachId ? scheduleCoachId : undefined}
           aggregateSchool
-          readOnly={!isDirector || !scheduleCoachId}
-          manageSchoolSchedule={isDirector && !!scheduleCoachId}
+          readOnly={!isDirector}
+          manageSchoolSchedule={isDirector}
           allowSchoolScheduleEdit={isDirector}
           scheduleEditorOpen={scheduleEditorOpen}
           onScheduleEditorClose={() => setScheduleEditorOpen(false)}

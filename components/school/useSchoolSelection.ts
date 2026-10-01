@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { School, SchoolMembership } from '@/lib/school'
+import { schoolsForWorkspace } from '@/lib/school-workspace'
 
 export const SCHOOL_SELECTION_EVENT = 'nadamas:school-selection-changed'
 
@@ -13,9 +14,16 @@ export interface SchoolAccessClient {
 
 export function useSchoolSelection({
   includePersonal = false,
+  athleteMode = false,
 }: {
   includePersonal?: boolean
+  athleteMode?: boolean
 } = {}) {
+  const selectionKey = athleteMode
+    ? 'nadamas.athleteSelection'
+    : includePersonal
+      ? 'nadamas.coachSelection'
+      : 'nadamas.schoolId'
   const [schools, setSchools] = useState<SchoolAccessClient[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [isPersonal, setIsPersonal] = useState(false)
@@ -23,7 +31,6 @@ export function useSchoolSelection({
 
   useEffect(() => {
     const stored = window.localStorage.getItem('nadamas.schoolId')
-    const storedCoachSelection = window.localStorage.getItem('nadamas.coachSelection')
     getAuthed('/api/schools')
       .then(
         (response) =>
@@ -33,7 +40,10 @@ export function useSchoolSelection({
           }>
       )
       .then((payload) => {
-        const next = payload.schools || []
+        const storedCoachSelection = window.localStorage.getItem(selectionKey)
+        const next = athleteMode
+          ? (payload.schools || []).filter(({ membership }) => membership.status === 'active')
+          : schoolsForWorkspace(payload.schools || [], includePersonal)
         setSchools(next)
         if (includePersonal && storedCoachSelection !== null) {
           if (storedCoachSelection === 'personal') {
@@ -45,7 +55,6 @@ export function useSchoolSelection({
           if (next.some((item) => item.school.id === storedCoachSelection)) {
             setSelectedId(storedCoachSelection)
             setIsPersonal(false)
-            window.localStorage.setItem('nadamas.schoolId', storedCoachSelection)
             setStatus('ready')
             return
           }
@@ -59,18 +68,23 @@ export function useSchoolSelection({
         const preferred =
           stored && next.some((item) => item.school.id === stored)
             ? stored
-            : payload.ownedSchool?.id || next[0]?.school.id || null
+            : next.find((item) => item.school.id === payload.ownedSchool?.id)?.school.id ||
+              next[0]?.school.id ||
+              null
         setSelectedId(preferred)
         setIsPersonal(false)
         if (preferred) window.localStorage.setItem('nadamas.schoolId', preferred)
         setStatus('ready')
       })
       .catch(() => setStatus('error'))
-  }, [includePersonal])
+  }, [athleteMode, includePersonal, selectionKey])
 
   useEffect(() => {
     function handleSelectionChange(event: Event) {
-      const selection = (event as CustomEvent<string | null>).detail
+      const detail = (event as CustomEvent<{ schoolId: string | null; selectionKey: string }>)
+        .detail
+      if (detail.selectionKey !== selectionKey) return
+      const selection = detail.schoolId
       if (selection === null && includePersonal) {
         setSelectedId(null)
         setIsPersonal(true)
@@ -81,7 +95,7 @@ export function useSchoolSelection({
     }
     window.addEventListener(SCHOOL_SELECTION_EVENT, handleSelectionChange)
     return () => window.removeEventListener(SCHOOL_SELECTION_EVENT, handleSelectionChange)
-  }, [includePersonal])
+  }, [includePersonal, selectionKey])
 
   const selected = useMemo(
     () =>
@@ -93,22 +107,27 @@ export function useSchoolSelection({
     [includePersonal, isPersonal, schools, selectedId]
   )
 
-  const selectSchool = useCallback((schoolId: string) => {
-    setIsPersonal(false)
-    setSelectedId(schoolId)
-    window.localStorage.setItem('nadamas.schoolId', schoolId)
-    window.localStorage.setItem('nadamas.coachSelection', schoolId)
-    window.dispatchEvent(
-      new CustomEvent<string | null>(SCHOOL_SELECTION_EVENT, { detail: schoolId })
-    )
-  }, [])
+  const selectSchool = useCallback(
+    (schoolId: string) => {
+      if (!schools.some((item) => item.school.id === schoolId)) return
+      setIsPersonal(false)
+      setSelectedId(schoolId)
+      window.localStorage.setItem(selectionKey, schoolId)
+      window.dispatchEvent(
+        new CustomEvent(SCHOOL_SELECTION_EVENT, { detail: { schoolId, selectionKey } })
+      )
+    },
+    [schools, selectionKey]
+  )
 
   const selectPersonal = useCallback(() => {
     setIsPersonal(true)
     setSelectedId(null)
-    window.localStorage.setItem('nadamas.coachSelection', 'personal')
-    window.dispatchEvent(new CustomEvent<string | null>(SCHOOL_SELECTION_EVENT, { detail: null }))
-  }, [])
+    window.localStorage.setItem(selectionKey, 'personal')
+    window.dispatchEvent(
+      new CustomEvent(SCHOOL_SELECTION_EVENT, { detail: { schoolId: null, selectionKey } })
+    )
+  }, [selectionKey])
 
   return {
     schools,

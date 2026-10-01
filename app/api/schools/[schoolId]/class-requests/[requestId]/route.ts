@@ -3,6 +3,7 @@ import type { SchoolClassRequest } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { createSchoolClass, validateClassInput } from '@/lib/server/school-classes'
 
 export const runtime = 'nodejs'
@@ -11,7 +12,7 @@ interface RouteProps {
   params: Promise<{ schoolId: string; requestId: string }>
 }
 
-export async function PATCH(request: Request, { params }: RouteProps) {
+async function handlePATCH(request: Request, { params }: RouteProps) {
   const { schoolId, requestId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
@@ -99,3 +100,5 @@ export async function PATCH(request: Request, { params }: RouteProps) {
   }
   return NextResponse.json({ status, ...classResult })
 }
+
+export const PATCH = withSchoolAgendaUpdate(handlePATCH)

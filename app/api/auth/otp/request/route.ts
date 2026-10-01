@@ -45,7 +45,9 @@ export async function POST(request: Request) {
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
   const linkToken = randomBytes(32).toString('hex')
   const now = Date.now()
-  const isEmulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST)
+  const isEmulator =
+    process.env.NODE_ENV !== 'production' &&
+    Boolean(process.env.FIRESTORE_EMULATOR_HOST && process.env.FIREBASE_AUTH_EMULATOR_HOST)
   await adminDb
     .collection('otpLoginCodes')
     .doc(email)
@@ -64,5 +66,5 @@ export async function POST(request: Request) {
 
   const link = `${siteUrl()}/auth/link?email=${encodeURIComponent(email)}&token=${linkToken}`
   await sendOtpEmail(email, code, link)
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, ...(isEmulator ? { devCode: code } : {}) })
 }

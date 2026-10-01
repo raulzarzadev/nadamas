@@ -139,7 +139,7 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
                 Horarios y clases coordinados por la dirección de la escuela.
               </p>
             </div>
-            <SchoolPublicActions />
+            <SchoolPublicActions schoolId={school.id} />
           </div>
         </div>
 

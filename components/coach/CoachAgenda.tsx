@@ -19,6 +19,7 @@ import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { deleteAuthed, getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
+import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
 import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
 import type { Booking } from '@/lib/coach-booking'
@@ -84,6 +85,7 @@ function blockCoversClassAt(block: CoachScheduleBlock, date: string, time: strin
 }
 
 type ActiveSlot = {
+  coachId?: string
   date: string
   startTime: string
   endTime: string
@@ -125,6 +127,7 @@ export default function CoachAgenda({
   // blocks only and does not edit the coach's offering here.
   const adminMode = Boolean(coachId)
   const readOnlyAgenda = readOnly || (aggregateSchool && !manageSchoolSchedule)
+  const multiCoachAgenda = readOnlyAgenda || (aggregateSchool && !coachId)
   const hideBookingActions = readOnlyAgenda || (adminMode && !manageSchoolSchedule)
   const scheduleEndpoint =
     manageSchoolSchedule && schoolId && coachId
@@ -182,7 +185,7 @@ export default function CoachAgenda({
       try {
         const endpoint =
           (aggregateSchool || manageSchoolSchedule) && schoolId
-            ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}${manageSchoolSchedule ? coachQuery : ''}`
+            ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}${coachQuery}${readOnly ? '&view=public' : ''}`
             : `/api/coach/agenda?month=${month}${contextQuery}`
         const response = await getAuthed(endpoint)
         const nextAgenda = (await response.json()) as CoachAgendaPayload
@@ -197,12 +200,16 @@ export default function CoachAgenda({
         setLoadedCoachId(undefined)
       }
     },
-    [aggregateSchool, manageSchoolSchedule, coachQuery, contextQuery, schoolId, coachId]
+    [aggregateSchool, manageSchoolSchedule, coachQuery, contextQuery, schoolId, coachId, readOnly]
   )
 
   useEffect(() => {
     loadAgenda(monthOfSelected)
   }, [loadAgenda, monthOfSelected])
+
+  useSchoolAgendaUpdates(schoolId, () => {
+    void loadAgenda(monthOfSelected)
+  })
 
   const weekDates = useMemo(() => {
     const start = startOfWeek(new Date(`${selectedDate}T12:00:00`))
@@ -257,7 +264,7 @@ export default function CoachAgenda({
     }
     const bookingsByTime = new Map<string, Booking[]>()
     for (const booking of activeBookings) {
-      const key = readOnlyAgenda
+      const key = multiCoachAgenda
         ? `${booking.coachId}|${booking.date}|${booking.startTime}`
         : bookingSlotKey(booking)
       const bookings = bookingsByTime.get(key) || []
@@ -275,7 +282,7 @@ export default function CoachAgenda({
     }
     const bookedKeys = new Set(
       activeBookings.map((booking) =>
-        readOnlyAgenda
+        multiCoachAgenda
           ? `${booking.coachId}|${booking.date}|${booking.startTime}`
           : bookingSlotKey(booking)
       )
@@ -283,7 +290,7 @@ export default function CoachAgenda({
     const slotKeys = new Set<string>()
     const groupSlotKeys = new Set<string>()
     for (const slot of agenda?.availableSlots || []) {
-      const key = readOnlyAgenda
+      const key = multiCoachAgenda
         ? `${slot.coachId}|${slot.date}|${slot.startTime}`
         : `${slot.date}|${slot.startTime}`
       slotKeys.add(key)
@@ -298,7 +305,7 @@ export default function CoachAgenda({
     }
     for (const block of agenda?.blocks || []) {
       if (block.allDay || block.hidden) continue
-      const blockKey = readOnlyAgenda
+      const blockKey = multiCoachAgenda
         ? `${block.coachId}|${block.date}|${block.startTime || ''}`
         : `${block.date}|${block.startTime || ''}`
       if (groupSlotKeys.has(blockKey)) continue
@@ -318,7 +325,7 @@ export default function CoachAgenda({
       )
     }
     return ordered
-  }, [activeBookings, agenda?.availableSlots, agenda?.blocks, readOnlyAgenda])
+  }, [activeBookings, agenda?.availableSlots, agenda?.blocks, multiCoachAgenda])
 
   // Month-level occupancy: class slots vs total offered, restricted to the month shown
   // in the header (the payload can bleed into adjacent months on boundary weeks).
@@ -326,13 +333,13 @@ export default function CoachAgenda({
     const inMonth = (date: string) => date.startsWith(monthOfSelected)
     const booked = activeClassSlotCount(
       activeBookings.filter((booking) => inMonth(booking.date)),
-      readOnlyAgenda
+      multiCoachAgenda
     )
     const available = (agenda?.availableSlots || []).filter(
       (slot) => slot.status === 'available' && inMonth(slot.date)
     ).length
     return { booked, total: booked + available }
-  }, [activeBookings, agenda?.availableSlots, monthOfSelected, readOnlyAgenda])
+  }, [activeBookings, agenda?.availableSlots, monthOfSelected, multiCoachAgenda])
 
   // Week-level occupancy: sum booked/total across the 7 visible days.
   const weekStats = useMemo(() => {
@@ -400,11 +407,11 @@ export default function CoachAgenda({
   const dayBlocks = (agenda?.blocks || []).filter((block) => block.date === selectedDate)
   // In a school-wide view, one coach blocking a full day must not hide every
   // other coach's schedule. The individual slots already carry the blocked state.
-  const allDayBlock = readOnlyAgenda ? undefined : dayBlocks.find((block) => block.allDay)
+  const allDayBlock = multiCoachAgenda ? undefined : dayBlocks.find((block) => block.allDay)
 
   const rows = useMemo(() => {
     const slotKey = (coachId: string, startTime: string) =>
-      readOnlyAgenda ? `${coachId}|${startTime}` : startTime
+      multiCoachAgenda ? `${coachId}|${startTime}` : startTime
     const bookedTimes = new Set(
       dayBookings.map((booking) => slotKey(booking.coachId, booking.startTime))
     )
@@ -444,7 +451,7 @@ export default function CoachAgenda({
       seen.add(key)
       const block = dayBlocks.find(
         (b) =>
-          (!readOnlyAgenda || b.coachId === slot.coachId) &&
+          (!multiCoachAgenda || b.coachId === slot.coachId) &&
           !b.hidden &&
           (b.allDay ||
             (b.startTime && b.endTime && b.startTime < slot.endTime && slot.startTime < b.endTime))
@@ -454,7 +461,7 @@ export default function CoachAgenda({
       blocked.push({ kind: 'blocked', sort: slot.startTime, slot, block })
     }
     return [...available, ...booked, ...blocked].sort((a, b) => a.sort.localeCompare(b.sort))
-  }, [daySlots, dayBookings, dayBlocks, readOnlyAgenda])
+  }, [daySlots, dayBookings, dayBlocks, multiCoachAgenda])
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true)
@@ -470,9 +477,14 @@ export default function CoachAgenda({
     }
   }
 
+  const scheduleEndpointFor = (targetCoachId?: string) =>
+    manageSchoolSchedule && schoolId && targetCoachId
+      ? `/api/schools/${encodeURIComponent(schoolId)}/teachers/${encodeURIComponent(targetCoachId)}/schedule`
+      : scheduleEndpoint
+
   const block = (slot: CoachAvailableSlot, hidden: boolean) =>
     run(() =>
-      postAuthed(scheduleEndpoint, {
+      postAuthed(scheduleEndpointFor(slot.coachId), {
         date: slot.date,
         allDay: false,
         startTime: slot.startTime,
@@ -493,7 +505,9 @@ export default function CoachAgenda({
 
   const cancelBooking = (booking: Booking) =>
     run(() =>
-      deleteAuthed(`/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${contextQuery}`)
+      deleteAuthed(
+        `/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${schoolQuery}${manageSchoolSchedule ? `&coachId=${encodeURIComponent(booking.coachId)}` : coachQuery}`
+      )
     )
 
   const updateClassSettings = (
@@ -504,7 +518,7 @@ export default function CoachAgenda({
     if (!booking) return
     run(() =>
       patchAuthed('/api/coach/agenda/bookings', {
-        ...(manageSchoolSchedule && coachId ? { coachId } : {}),
+        ...(manageSchoolSchedule ? { coachId: booking.coachId } : {}),
         date: booking.date,
         startTime: booking.startTime,
         ...(schoolId ? { schoolId } : {}),
@@ -516,7 +530,7 @@ export default function CoachAgenda({
   const updateAttendance = (booking: Booking, attended: boolean) =>
     run(() =>
       patchAuthed('/api/coach/agenda/bookings', {
-        ...(manageSchoolSchedule && coachId ? { coachId } : {}),
+        ...(manageSchoolSchedule ? { coachId: booking.coachId } : {}),
         id: booking.id,
         attended,
         ...(schoolId ? { schoolId } : {}),
@@ -524,7 +538,11 @@ export default function CoachAgenda({
     )
 
   const unblock = (block: CoachScheduleBlock) =>
-    run(() => deleteAuthed(`${scheduleEndpoint}?id=${encodeURIComponent(block.id)}${contextQuery}`))
+    run(() =>
+      deleteAuthed(
+        `${scheduleEndpointFor(block.coachId)}?id=${encodeURIComponent(block.id)}${schoolQuery}`
+      )
+    )
 
   const submitAddStudent = (slot: ActiveSlot, payloads: AddStudentPayload[]) =>
     run(async () => {
@@ -556,22 +574,35 @@ export default function CoachAgenda({
     })
 
   const updateAvailableSlotGroupType = (slot: CoachAvailableSlot, checked: boolean) => {
-    if (!offerings.some((item) => item.id === slot.offeringId)) return
-    run(() =>
-      saveOfferingList(
-        offerings.map((item) => {
-          if (item.id !== slot.offeringId) return item
-          return {
-            ...item,
-            schedules: resolveOfferingSchedules(item).map((schedule) =>
-              schedule.id === slot.scheduleId
-                ? { ...schedule, groupType: checked ? 'grupal' : 'particular' }
-                : schedule
-            ),
-          }
-        })
+    run(async () => {
+      let targetOfferings = offerings
+      if (manageSchoolSchedule && schoolId && !coachId) {
+        const response = await getAuthed(
+          `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(slot.coachId)}`
+        )
+        targetOfferings = ((await response.json()) as CoachAgendaPayload).offerings || []
+      }
+      if (!targetOfferings.some((item) => item.id === slot.offeringId))
+        throw new Error('SCHEDULE_NOT_FOUND')
+      const next = targetOfferings.map((item) =>
+        item.id !== slot.offeringId
+          ? item
+          : {
+              ...item,
+              schedules: resolveOfferingSchedules(item).map((schedule) =>
+                schedule.id === slot.scheduleId
+                  ? {
+                      ...schedule,
+                      groupType: checked ? ('grupal' as const) : ('particular' as const),
+                    }
+                  : schedule
+              ),
+            }
       )
-    )
+      if (manageSchoolSchedule)
+        await postAuthed(scheduleEndpointFor(slot.coachId), { classOfferings: next })
+      else await saveOfferingList(next)
+    })
   }
 
   const overlappingBlockIds = (pairs: { date: string; time: string }[]) =>
@@ -862,7 +893,7 @@ export default function CoachAgenda({
                             ? `Clase grupal · ${firstBooking.schoolClassStudentCount ?? row.bookings.length} alumnos`
                             : 'Clase particular · 1 alumno'}
                         </span>
-                        {readOnlyAgenda && (
+                        {multiCoachAgenda && (
                           <span className="text-sm font-extrabold text-[var(--c-ocean)]">
                             {firstBooking.coachName ||
                               agenda.coachNames?.[firstBooking.coachId] ||
@@ -875,8 +906,14 @@ export default function CoachAgenda({
                             className="btn btn-outline btn-sm min-h-11"
                             disabled={busy}
                             onClick={() => {
-                              const existingBlock = dayBlocks.find((block) =>
-                                blockCoversClassAt(block, firstBooking.date, firstBooking.startTime)
+                              const existingBlock = dayBlocks.find(
+                                (block) =>
+                                  block.coachId === firstBooking.coachId &&
+                                  blockCoversClassAt(
+                                    block,
+                                    firstBooking.date,
+                                    firstBooking.startTime
+                                  )
                               )
                               if (existingBlock) unblock(existingBlock)
                               else
@@ -888,8 +925,10 @@ export default function CoachAgenda({
                                 })
                             }}
                           >
-                            {dayBlocks.some((block) =>
-                              blockCoversClassAt(block, firstBooking.date, firstBooking.startTime)
+                            {dayBlocks.some(
+                              (block) =>
+                                block.coachId === firstBooking.coachId &&
+                                blockCoversClassAt(block, firstBooking.date, firstBooking.startTime)
                             )
                               ? 'Desbloquear horario'
                               : 'Bloquear horario'}
@@ -929,6 +968,7 @@ export default function CoachAgenda({
                               type="button"
                               onClick={() =>
                                 setAddStudentSlot({
+                                  coachId: firstBooking.coachId,
                                   date: firstBooking.date,
                                   startTime: firstBooking.startTime,
                                   endTime: firstBooking.endTime,
@@ -1064,7 +1104,14 @@ export default function CoachAgenda({
                           </span>
                         </span>
                       ) : (
-                        <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:items-center sm:gap-2">
+                        <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+                          {multiCoachAgenda && (
+                            <span className="col-span-2 text-xs font-bold">
+                              {row.slot.coachName ||
+                                agenda.coachNames?.[row.slot.coachId] ||
+                                'Coach'}
+                            </span>
+                          )}
                           <BinarySwitch
                             leftLabel="Disponible"
                             rightLabel="Bloqueado"
@@ -1095,6 +1142,7 @@ export default function CoachAgenda({
                             type="button"
                             onClick={() =>
                               setAddStudentSlot({
+                                coachId: row.slot.coachId,
                                 date: row.slot.date,
                                 startTime: row.slot.startTime,
                                 endTime: row.slot.endTime,
@@ -1134,7 +1182,12 @@ export default function CoachAgenda({
                         </span>
                       </span>
                     ) : (
-                      <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:items-center sm:gap-2">
+                      <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+                        {multiCoachAgenda && (
+                          <span className="col-span-2 text-xs font-bold">
+                            {row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || 'Coach'}
+                          </span>
+                        )}
                         <BinarySwitch
                           leftLabel="Disponible"
                           rightLabel="Bloqueado"
@@ -1165,6 +1218,7 @@ export default function CoachAgenda({
                           type="button"
                           onClick={() =>
                             setAddStudentSlot({
+                              coachId: row.slot.coachId,
                               date: row.slot.date,
                               startTime: row.slot.startTime,
                               endTime: row.slot.endTime,
@@ -1184,7 +1238,11 @@ export default function CoachAgenda({
                           onClick={() => setConfirmAction({ kind: 'delete-slot', slot: row.slot })}
                           tone="danger"
                           disabled={
-                            busy || dayBookings.some((b) => b.startTime === row.slot.startTime)
+                            busy ||
+                            dayBookings.some(
+                              (b) =>
+                                b.coachId === row.slot.coachId && b.startTime === row.slot.startTime
+                            )
                           }
                         >
                           <FiX aria-hidden="true" />
@@ -1237,6 +1295,7 @@ export default function CoachAgenda({
             .filter(
               (booking) =>
                 booking.date === addStudentSlot.date &&
+                (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
                 booking.startTime === addStudentSlot.startTime
             )
             .map((booking) => booking.athleteId)}
@@ -1244,6 +1303,7 @@ export default function CoachAgenda({
             .filter(
               (booking) =>
                 booking.date === addStudentSlot.date &&
+                (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
                 booking.startTime === addStudentSlot.startTime
             )
             .map((booking) => booking.athleteName)}

@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server'
 import { isSafeSchoolUrl } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 interface RouteProps {
   params: Promise<{ schoolId: string; locationId: string }>
 }
 
-export async function PATCH(request: Request, { params }: RouteProps) {
+async function handlePATCH(request: Request, { params }: RouteProps) {
   const { schoolId, locationId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
@@ -30,7 +31,7 @@ export async function PATCH(request: Request, { params }: RouteProps) {
   return NextResponse.json({ location: { id: locationId, ...current.data(), ...update } })
 }
 
-export async function DELETE(request: Request, { params }: RouteProps) {
+async function handleDELETE(request: Request, { params }: RouteProps) {
   const { schoolId, locationId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
@@ -41,3 +42,6 @@ export async function DELETE(request: Request, { params }: RouteProps) {
   await ref.delete()
   return NextResponse.json({ ok: true })
 }
+
+export const PATCH = withSchoolAgendaUpdate(handlePATCH)
+export const DELETE = withSchoolAgendaUpdate(handleDELETE)

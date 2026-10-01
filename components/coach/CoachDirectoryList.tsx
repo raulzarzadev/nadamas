@@ -8,7 +8,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { FiChevronRight } from 'react-icons/fi'
 import COACH_SKILLS from '@/CONSTANTS/COACH_SKILLS'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
+import { getAuthed } from '@/lib/client/authed-api'
 import { cacheCoachProfile } from '@/lib/client/coach-profile-cache'
+import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import {
   offeringContextLabel,
   offeringPlaceLabel,
@@ -51,7 +53,9 @@ export default function CoachDirectoryList({
   limit,
   showSearch = true,
   viewAllHref,
+  schoolId,
 }: {
+  schoolId?: string | null
   coachHrefBase?: string
   /** Cap the number of coaches shown (teaser mode). */
   limit?: number
@@ -62,9 +66,18 @@ export default function CoachDirectoryList({
   const [coaches, setCoaches] = useState<DirectoryCoach[] | undefined>(undefined)
   const [query, setQuery] = useState('')
 
+  const [revision, setRevision] = useState(0)
+  useSchoolAgendaUpdates(schoolId, () => setRevision((value) => value + 1))
+
+  // The signal invalidates school availability without polling.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: revision invalidates the fetched directory.
   useEffect(() => {
     let active = true
-    fetch('/api/public/coaches')
+    setCoaches(undefined)
+    const request = schoolId
+      ? getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/coaches`)
+      : fetch('/api/public/coaches')
+    request
       .then((response) => response.json())
       .then((payload: { coaches?: DirectoryCoach[] }) => {
         if (active) setCoaches(payload.coaches || [])
@@ -75,7 +88,7 @@ export default function CoachDirectoryList({
     return () => {
       active = false
     }
-  }, [])
+  }, [schoolId, revision])
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -114,7 +127,11 @@ export default function CoachDirectoryList({
           {visible.map((coach) => {
             const tag = skillTag(coach)
             const availability = offeringsAvailabilitySummary(resolveOfferings(coach))
-            const coachHref = coach.slug ? `/${coach.slug}` : `${coachHrefBase}/${coach.id}`
+            const coachHref = schoolId
+              ? `/athlete/coach/${coach.id}?schoolId=${encodeURIComponent(schoolId)}`
+              : coach.slug
+                ? `/${coach.slug}`
+                : `${coachHrefBase}/${coach.id}`
             return (
               <li
                 key={coach.id}
@@ -141,7 +158,9 @@ export default function CoachDirectoryList({
                 </div>
                 <Link
                   href={coachHref}
-                  onClick={() => cacheCoachProfile(coach)}
+                  onClick={() => {
+                    if (!schoolId) cacheCoachProfile(coach)
+                  }}
                   className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--c-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
                 >
                   Ver horarios <FiChevronRight aria-hidden="true" size={14} />

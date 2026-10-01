@@ -3,6 +3,7 @@ import { schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { getSchoolClassOccurrence } from '@/lib/server/school-classes'
 import { listSchoolStudents } from '@/lib/server/school-students'
 
@@ -12,7 +13,7 @@ interface RouteProps {
   params: Promise<{ schoolId: string; occurrenceId: string }>
 }
 
-export async function PATCH(request: Request, { params }: RouteProps) {
+async function handlePATCH(request: Request, { params }: RouteProps) {
   const { schoolId, occurrenceId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
@@ -70,3 +71,5 @@ export async function PATCH(request: Request, { params }: RouteProps) {
     }).catch(() => {})
   return NextResponse.json({ occurrence: { ...occurrence, ...update } })
 }
+
+export const PATCH = withSchoolAgendaUpdate(handlePATCH)

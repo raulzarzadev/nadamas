@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
@@ -27,7 +28,7 @@ export async function GET(request: Request, { params }: RouteProps) {
   })
 }
 
-export async function PUT(request: Request, { params }: RouteProps) {
+async function handlePUT(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
   if (access.response) return access.response
@@ -64,3 +65,5 @@ export async function PUT(request: Request, { params }: RouteProps) {
     .set(payload, { merge: true })
   return NextResponse.json({ availability: payload })
 }
+
+export const PUT = withSchoolAgendaUpdate(handlePUT)

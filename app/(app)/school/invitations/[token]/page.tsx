@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiUsers } from 'react-icons/fi'
 import AdditionalProfileSelector from '@/components/profile/AdditionalProfileSelector'
+import { useRole } from '@/context/RoleContext'
+import { useUser } from '@/context/UserContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { SchoolInvitationStudentData } from '@/lib/school'
@@ -25,6 +27,8 @@ interface InvitationPayload {
 export default function SchoolInvitationPage() {
   const params = useParams<{ token: string }>()
   const router = useRouter()
+  const { setActiveRole } = useRole()
+  const { refreshUser } = useUser()
   const token = params.token
   const [invitation, setInvitation] = useState<InvitationPayload | null>(null)
   const [loading, setLoading] = useState(true)
@@ -74,6 +78,7 @@ export default function SchoolInvitationPage() {
         additionalProfileId,
         useInvitationData: takeInvitationData,
       })
+      if (invitation.role === 'teacher') await refreshUser()
       setAccepted(true)
     } catch {
       setError(GENERIC_USER_ERROR)
@@ -92,7 +97,6 @@ export default function SchoolInvitationPage() {
     )
 
   if (accepted) {
-    const destination = invitation.role === 'student' ? '/athlete/bookings' : '/school/classes'
     return (
       <section className="mx-auto flex max-w-xl flex-col items-center gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-8 text-center shadow-[var(--shadow-sm)]">
         <span className="grid h-14 w-14 place-items-center rounded-full bg-(--c-surface) text-2xl text-(--c-aqua-strong)">
@@ -108,10 +112,17 @@ export default function SchoolInvitationPage() {
         </p>
         <button
           type="button"
-          onClick={() => router.push(destination)}
+          onClick={() => {
+            if (invitation.role === 'teacher') {
+              window.localStorage.setItem('nadamas.coachSelection', invitation.schoolId)
+              setActiveRole('coach')
+            } else {
+              router.push('/athlete/bookings')
+            }
+          }}
           className="btn btn-primary min-h-11"
         >
-          {invitation.role === 'student' ? 'Ver mis próximas clases' : 'Ir al modo escuela'}
+          {invitation.role === 'student' ? 'Ver mis próximas clases' : 'Ir al modo entrenador'}
         </button>
       </section>
     )

@@ -77,3 +77,31 @@ test('a used link shows the error state with manual code fallback', async ({ pag
   await expect(page.getByLabel('Código')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Pedir un código nuevo' })).toBeVisible()
 })
+
+test('el login rellena el código del emulador sin iniciar sesión automáticamente', async ({
+  page,
+}) => {
+  test.skip(!(await emulatorAvailable()), 'requires the Firestore emulator')
+  const email = `otp-autofill-${Date.now()}@test.com`
+  await page.goto('/login')
+  await page.getByRole('button', { name: 'Aceptar política y continuar' }).click()
+  await page.getByLabel('Correo', { exact: true }).fill(email)
+  const responsePromise = page.waitForResponse('/api/auth/otp/request')
+  await page.getByRole('button', { name: 'Recibir código', exact: true }).click()
+  const payload = await (await responsePromise).json()
+  expect(payload.devCode).toMatch(/^\d{6}$/)
+  await expect(page.getByLabel(`Código enviado a ${email}`)).toHaveValue(payload.devCode)
+  expect((await readOtpDoc(email))?.devCode?.stringValue).toBe(payload.devCode)
+  await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeEnabled()
+  await expect(page).toHaveURL(/\/login/)
+  await page.getByRole('button', { name: 'Cambiar correo', exact: true }).click()
+  await page.getByRole('button', { name: '¿Ya tienes un código?', exact: true }).click()
+  await expect(page.getByLabel('Código', { exact: true })).toHaveValue('')
+  await fetch(
+    `${FIRESTORE_EMULATOR}/v1/projects/${PROJECT_ID}/databases/(default)/documents/otpLoginCodes/${encodeURIComponent(email)}`,
+    {
+      method: 'DELETE',
+      headers: { authorization: 'Bearer owner' },
+    }
+  )
+})

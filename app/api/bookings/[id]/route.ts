@@ -4,6 +4,7 @@ import { publicNameFromUser } from '@/lib/public-name'
 import { sendBookingCancelledEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingCancelled } from '@/lib/server/notifications'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
@@ -12,7 +13,7 @@ function getBearerToken(request: Request) {
   return match?.[1] || null
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handleDELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const token = getBearerToken(request)
   if (!token) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
@@ -85,3 +86,5 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
   return NextResponse.json({ ok: true, status: 'cancelled' })
 }
+
+export const DELETE = withSchoolAgendaUpdate(handleDELETE)

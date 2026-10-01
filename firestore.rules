@@ -55,6 +55,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /schoolAgendaUpdates/{schoolId} {
+      allow get: if isAdmin() || (
+        isSchoolMember(schoolId) &&
+        get(/databases/$(database)/documents/schoolMemberships/$(schoolId + '_' + request.auth.uid)).data.status == 'active'
+      ) || get(/databases/$(database)/documents/schools/$(schoolId)).data.get('isPublic', false) == true;
+      allow list, write: if false;
+    }
+
     function isLegacyCollection(collection) {
       return ![
         'additionalProfiles',
@@ -74,6 +82,7 @@ service cloud.firestore {
         'schoolReviews',
         'schoolCalendarFeeds',
         'schoolCoachOfferings',
+        'schoolAgendaUpdates',
         'coachScheduleBlocks'
       ].hasAny([collection]);
     }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { isSafeSchoolUrl, type SchoolLocation } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 interface RouteProps {
@@ -22,7 +23,7 @@ export async function GET(request: Request, { params }: RouteProps) {
   return NextResponse.json({ locations })
 }
 
-export async function POST(request: Request, { params }: RouteProps) {
+async function handlePOST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
@@ -46,3 +47,5 @@ export async function POST(request: Request, { params }: RouteProps) {
   await ref.set(location)
   return NextResponse.json({ location }, { status: 201 })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)

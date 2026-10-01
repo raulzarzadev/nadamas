@@ -6,10 +6,11 @@ import { schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
 import { legacySchoolOfferings } from '@/lib/server/school-agenda'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 type RouteProps = { params: Promise<{ schoolId: string }> }
 
-export async function POST(request: Request, { params }: RouteProps) {
+async function handlePOST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
@@ -153,3 +154,5 @@ export async function POST(request: Request, { params }: RouteProps) {
   }
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)

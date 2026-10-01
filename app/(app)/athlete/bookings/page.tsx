@@ -6,37 +6,19 @@ import Chip from '@comps/ui/chip'
 import Sheet from '@comps/ui/sheet'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  FiArrowUpRight,
-  FiCalendar,
-  FiChevronRight,
-  FiClock,
-  FiSearch,
-  FiUser,
-  FiX,
-} from 'react-icons/fi'
+import { FiCalendar, FiChevronRight, FiClock, FiSearch, FiUser, FiX } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
+import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { type ClassEvaluation, canEvaluateBooking } from '@/lib/class-evaluation'
 import { deleteAuthed, getAuthed } from '@/lib/client/authed-api'
+import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { Booking } from '@/lib/coach-booking'
-import type { School, SchoolMembership } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 interface CoachInfo {
   name: string
   avatarUrl: string | null
-}
-
-interface SchoolAccess {
-  school: School
-  membership: SchoolMembership
-}
-
-const SCHOOL_ROLE_LABEL: Record<string, string> = {
-  director: 'Director',
-  teacher: 'Coach',
-  student: 'Alumno',
 }
 
 const STATUS_STYLE: Record<string, { label: string; className: string }> = {
@@ -226,7 +208,10 @@ export default function BookingsPage() {
   }, [calendarOpen])
   const [bookings, setBookings] = useState<Booking[] | undefined>(undefined)
   const [coaches, setCoaches] = useState<Record<string, CoachInfo>>({})
-  const [schools, setSchools] = useState<SchoolAccess[]>([])
+  const { selectedId: selectedSchoolId } = useSchoolSelection({
+    includePersonal: true,
+    athleteMode: true,
+  })
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [toCancel, setToCancel] = useState<Booking | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -264,20 +249,9 @@ export default function BookingsPage() {
     void load()
   }, [load])
 
-  useEffect(() => {
-    let active = true
-    getAuthed('/api/schools')
-      .then((response) => response.json() as Promise<{ schools?: SchoolAccess[] }>)
-      .then((payload) => {
-        if (active) setSchools(payload.schools || [])
-      })
-      .catch(() => {
-        if (active) setSchools([])
-      })
-    return () => {
-      active = false
-    }
-  }, [])
+  useSchoolAgendaUpdates(selectedSchoolId, () => {
+    void load()
+  })
 
   async function cancelBooking(booking: Booking) {
     setCancellingId(booking.id)
@@ -293,50 +267,16 @@ export default function BookingsPage() {
     }
   }
 
-  const upcomingBookings = bookings?.filter((booking) => !isPastBooking(booking)) ?? []
-  const pastBookings = bookings?.filter(isPastBooking) ?? []
+  const selectedBookings =
+    bookings?.filter((booking) =>
+      selectedSchoolId ? booking.schoolId === selectedSchoolId : !booking.schoolId
+    ) ?? []
+  const upcomingBookings = selectedBookings.filter((booking) => !isPastBooking(booking))
+  const pastBookings = selectedBookings.filter(isPastBooking)
   const activeCount = upcomingBookings.length
 
   return (
     <div className="flex flex-col gap-5">
-      {schools.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <div>
-            <h1 className="text-3xl font-extrabold text-[var(--c-ocean)]">Mis escuelas</h1>
-            <p className="mt-1 text-sm text-[var(--c-text-2)]">
-              Escuelas de las que formas parte como alumno o coach.
-            </p>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {schools.map(({ school, membership }) => {
-              const roles = membership.roles?.length ? membership.roles : [membership.role]
-              return (
-                <article
-                  key={school.id}
-                  className="flex items-center gap-3 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-4 shadow-[var(--shadow-sm)]"
-                >
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-[var(--c-surface)] text-lg font-extrabold text-[var(--c-ocean-mid)]">
-                    {school.name.slice(0, 1).toUpperCase()}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="truncate font-bold text-[var(--c-ocean)]">{school.name}</h2>
-                    <p className="mt-1 text-xs text-[var(--c-text-2)]">
-                      {roles.map((role) => SCHOOL_ROLE_LABEL[role] || role).join(' · ')}
-                    </p>
-                  </div>
-                  <Link
-                    href={`/school/${school.slug}`}
-                    className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-[var(--c-aqua-strong)] hover:underline"
-                  >
-                    Ver escuela <FiArrowUpRight aria-hidden="true" />
-                  </Link>
-                </article>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-extrabold text-[var(--c-ocean)]">Próximas clases</h1>

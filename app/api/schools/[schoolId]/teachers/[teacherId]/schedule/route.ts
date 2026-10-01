@@ -9,6 +9,7 @@ import {
 import { adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
 import { schoolScheduleOwners } from '@/lib/server/school-agenda'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
@@ -44,7 +45,7 @@ async function authorize(request: Request, params: RouteProps['params']) {
   return { schoolId, teacherId }
 }
 
-export async function POST(request: Request, { params }: RouteProps) {
+async function handlePOST(request: Request, { params }: RouteProps) {
   const access = await authorize(request, params)
   if (access.response) return access.response
   const { schoolId, teacherId } = access
@@ -85,7 +86,7 @@ export async function POST(request: Request, { params }: RouteProps) {
   return NextResponse.json({ block })
 }
 
-export async function DELETE(request: Request, { params }: RouteProps) {
+async function handleDELETE(request: Request, { params }: RouteProps) {
   const access = await authorize(request, params)
   if (access.response) return access.response
   const id = new URL(request.url).searchParams.get('id')
@@ -102,3 +103,6 @@ export async function DELETE(request: Request, { params }: RouteProps) {
   await ref.delete()
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)
+export const DELETE = withSchoolAgendaUpdate(handleDELETE)

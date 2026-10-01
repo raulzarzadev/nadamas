@@ -1,10 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
+import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 
-export default function SchoolPublicActions() {
+export default function SchoolPublicActions({ schoolId }: { schoolId: string }) {
+  const router = useRouter()
+  useSchoolAgendaUpdates(schoolId, () => router.refresh())
   const { user } = useUser() as { user: unknown }
   const { activeRole } = useRole()
 

@@ -3,6 +3,7 @@ import type { CoachClassOffering, CoachPublic } from '@/firebase/coaches/coach.m
 import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
@@ -11,7 +12,7 @@ function getBearerToken(request: Request) {
   return match?.[1] || null
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const token = getBearerToken(request)
   if (!token) return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
 
@@ -69,3 +70,5 @@ export async function POST(request: Request) {
   await coachRef.set(data, { merge: true })
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)

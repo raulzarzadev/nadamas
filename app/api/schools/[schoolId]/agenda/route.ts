@@ -38,14 +38,9 @@ export async function GET(request: Request, { params }: RouteProps) {
 
   const url = new URL(request.url)
   const targetCoachId = url.searchParams.get('coachId')
-  if (
-    targetCoachId &&
-    !access.globalAdmin &&
-    !schoolMembershipHasRole(access.membership, 'director')
-  ) {
-    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-  }
-  const canManage = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
+  const canManage =
+    url.searchParams.get('view') !== 'public' &&
+    (access.globalAdmin || schoolMembershipHasRole(access.membership, 'director'))
   const range = monthRange(url.searchParams.get('month'))
   const [membershipSnapshot, bookingsSnapshot, blocksSnapshot] = await Promise.all([
     adminDb.collection('schoolMemberships').where('schoolId', '==', schoolId).get(),
