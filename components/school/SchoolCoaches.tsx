@@ -2,7 +2,17 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiArrowLeft, FiClock, FiMail, FiPlus, FiSend, FiShield } from 'react-icons/fi'
+import {
+  FiArrowLeft,
+  FiChevronDown,
+  FiChevronUp,
+  FiClock,
+  FiEdit2,
+  FiPhone,
+  FiPlus,
+  FiSend,
+  FiShield,
+} from 'react-icons/fi'
 import { getAuthed, postAuthed, putAuthed } from '@/lib/client/authed-api'
 import { type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
 import SchoolSelector from './SchoolSelector'
@@ -17,11 +27,14 @@ interface Teacher {
   availability: Array<{ day: number; start: string; end: string }>
 }
 
+const DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+
 export default function SchoolCoaches() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [showInvite, setShowInvite] = useState(false)
+  const [expandedTeacherId, setExpandedTeacherId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -95,48 +108,126 @@ export default function SchoolCoaches() {
         <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
       ) : teachers.length ? (
         <div className="grid gap-3 md:grid-cols-2">
-          {teachers.map((teacher) => (
-            <article
-              key={teacher.id}
-              className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
-            >
-              <div className="flex items-start gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#fff7e8] text-[#9a6b16]">
-                  <FiShield aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="font-bold text-(--c-ocean)">{teacher.name}</h2>
-                  <p className="mt-1 flex items-center gap-1 text-sm text-(--c-text-2)">
-                    <FiMail aria-hidden="true" /> {teacher.phone || 'Sin teléfono'}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-sm text-(--c-text-2)">
-                <FiClock aria-hidden="true" />{' '}
-                {teacher.availability.length
-                  ? `${teacher.availability.length} horarios disponibles`
-                  : 'Disponibilidad pendiente'}
-              </div>
-              {!teacher.profileComplete && (
-                <p className="mt-3 text-xs font-semibold text-[#9a6b16]">
-                  Perfil pendiente de completar
-                </p>
-              )}
-              {!isDirector && teacher.id === selected.membership.userId && (
-                <AvailabilityEditor
-                  schoolId={selected.school.id}
-                  teacher={teacher}
-                  onSaved={(availability) =>
-                    setTeachers((current) =>
-                      current.map((item) =>
-                        item.id === teacher.id ? { ...item, availability } : item
-                      )
-                    )
-                  }
-                />
-              )}
-            </article>
-          ))}
+          {teachers.map((teacher) =>
+            (() => {
+              const isOwnTeacher = teacher.id === selected.membership.userId
+              const expanded = expandedTeacherId === teacher.id
+              return (
+                <article
+                  key={teacher.id}
+                  className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#fff7e8] text-[#9a6b16]">
+                      <FiShield aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <h2 className="font-bold text-(--c-ocean)">{teacher.name}</h2>
+                      <p className="mt-1 flex items-center gap-1 text-sm text-(--c-text-2)">
+                        <FiPhone aria-hidden="true" /> {teacher.phone || 'Sin teléfono'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2 text-sm text-(--c-text-2)">
+                    <FiClock aria-hidden="true" />{' '}
+                    {teacher.availability.length
+                      ? `${teacher.availability.length} horarios disponibles`
+                      : 'Disponibilidad pendiente'}
+                  </div>
+                  {!teacher.profileComplete && (
+                    <p className="mt-3 text-xs font-semibold text-[#9a6b16]">
+                      Perfil pendiente de completar
+                    </p>
+                  )}
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={`teacher-schedule-${teacher.id}`}
+                      onClick={() => setExpandedTeacherId(expanded ? null : teacher.id)}
+                      className="btn btn-outline min-h-10 gap-2 text-(--c-ocean)"
+                    >
+                      {expanded ? (
+                        <FiChevronUp aria-hidden="true" />
+                      ) : (
+                        <FiChevronDown aria-hidden="true" />
+                      )}
+                      {expanded ? 'Ocultar horarios' : 'Ver horarios'}
+                    </button>
+                    {isOwnTeacher && (
+                      <Link
+                        href="/profile"
+                        className="btn btn-ghost min-h-10 gap-2 text-(--c-ocean-mid)"
+                      >
+                        <FiEdit2 aria-hidden="true" /> Actualizar datos
+                      </Link>
+                    )}
+                  </div>
+
+                  {expanded && (
+                    <div
+                      id={`teacher-schedule-${teacher.id}`}
+                      className="mt-4 rounded-[var(--r-sm)] bg-(--c-surface) p-4"
+                    >
+                      <p className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
+                        Horarios en esta escuela
+                      </p>
+                      {teacher.availability.length ? (
+                        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {teacher.availability.map((slot) => (
+                            <li
+                              key={`${slot.day}-${slot.start}-${slot.end}`}
+                              className="flex items-center justify-between rounded-[var(--r-sm)] bg-white px-3 py-2 text-sm"
+                            >
+                              <span className="font-semibold text-(--c-ocean)">
+                                {DAY_NAMES[slot.day] || 'Día'}
+                              </span>
+                              <span className="text-(--c-text-2)">
+                                {slot.start} – {slot.end}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-3 text-sm text-(--c-text-2)">
+                          Este coach todavía no ha publicado horarios para la escuela.
+                        </p>
+                      )}
+                      {isOwnTeacher && (
+                        <div className="mt-4 flex flex-wrap items-center gap-2">
+                          <Link
+                            href="/coach/agenda"
+                            onClick={() => {
+                              window.localStorage.setItem('nadamas.schoolId', selected.school.id)
+                              window.localStorage.setItem(
+                                'nadamas.coachSelection',
+                                selected.school.id
+                              )
+                            }}
+                            className="text-sm font-bold text-(--c-ocean-mid) underline underline-offset-4"
+                          >
+                            Editar horarios en la agenda
+                          </Link>
+                          <AvailabilityEditor
+                            schoolId={selected.school.id}
+                            teacher={teacher}
+                            onSaved={(availability) =>
+                              setTeachers((current) =>
+                                current.map((item) =>
+                                  item.id === teacher.id ? { ...item, availability } : item
+                                )
+                              )
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </article>
+              )
+            })()
+          )}
         </div>
       ) : (
         <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">

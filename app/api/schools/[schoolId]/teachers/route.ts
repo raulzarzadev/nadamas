@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server'
+import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
+import { DAY_TO_INDEX, resolveOfferingSchedules } from '@/lib/coach-offerings'
 import {
   type SchoolMembership,
   type SchoolTeacherProfile,
@@ -11,6 +13,28 @@ export const runtime = 'nodejs'
 
 interface RouteProps {
   params: Promise<{ schoolId: string }>
+}
+
+function availabilityFromOfferings(classOfferings: CoachClassOffering[]) {
+  const today = new Date().toISOString().slice(0, 10)
+  const slots = classOfferings.flatMap((offering) =>
+    resolveOfferingSchedules(offering).flatMap((schedule) => {
+      if (schedule.timeMode === 'open' || !schedule.startTime || !schedule.endTime) return []
+      if (
+        schedule.availabilityMode === 'dates' &&
+        !(schedule.availableDates || []).some((date) => date >= today)
+      ) {
+        return []
+      }
+      return schedule.days.flatMap((day) => {
+        const dayIndex = DAY_TO_INDEX[day]
+        return dayIndex === undefined
+          ? []
+          : [{ day: dayIndex, start: schedule.startTime, end: schedule.endTime }]
+      })
+    })
+  )
+  return [...new Map(slots.map((slot) => [`${slot.day}|${slot.start}|${slot.end}`, slot])).values()]
 }
 
 export async function GET(request: Request, { params }: RouteProps) {
@@ -33,28 +57,40 @@ export async function GET(request: Request, { params }: RouteProps) {
   const teachers = await Promise.all(
     memberships.map(async (membership) => {
       const userId = membership.data().userId as string
-      const profileSnapshot = await adminDb
-        .collection('schoolProfiles')
-        .doc(`${schoolId}_${userId}`)
-        .get()
-      const userSnapshot = await adminDb.collection('users').doc(userId).get()
+      const [profileSnapshot, userSnapshot, availabilitySnapshot, offeringsSnapshot] =
+        await Promise.all([
+          adminDb.collection('schoolProfiles').doc(`${schoolId}_${userId}`).get(),
+          adminDb.collection('users').doc(userId).get(),
+          adminDb.collection('schoolAvailability').doc(`${schoolId}_${userId}`).get(),
+          adminDb.collection('schoolCoachOfferings').doc(`${schoolId}_${userId}`).get(),
+        ])
       const profile = profileSnapshot.exists
         ? (profileSnapshot.data() as Omit<SchoolTeacherProfile, 'id'>)
         : null
       const user = userSnapshot.data() || {}
-      const availabilitySnapshot = await adminDb
-        .collection('schoolAvailability')
-        .doc(`${schoolId}_${userId}`)
-        .get()
+      const legacyAvailability = availabilitySnapshot.exists
+        ? availabilitySnapshot.data()?.weeklySlots || []
+        : []
+      const offeringAvailability = offeringsSnapshot.exists
+        ? availabilityFromOfferings(
+            (offeringsSnapshot.data()?.classOfferings || []) as CoachClassOffering[]
+          )
+        : []
+      const availability = [...legacyAvailability, ...offeringAvailability].filter(
+        (slot, index, all) =>
+          all.findIndex(
+            (item) => item.day === slot.day && item.start === slot.start && item.end === slot.end
+          ) === index
+      )
       return {
         id: userId,
         name: profile?.name || user.nickname || user.displayName || user.name || 'Coach',
-        phone: profile?.phone || user.phone || '',
+        phone: profile?.phone || user.phone || user.contact?.phone || '',
         bio: profile?.bio || '',
-        profileComplete: profile?.profileComplete || false,
-        availability: availabilitySnapshot.exists
-          ? availabilitySnapshot.data()?.weeklySlots || []
-          : [],
+        profileComplete:
+          profile?.profileComplete === true ||
+          Boolean(user.nickname || user.displayName || user.name),
+        availability,
       }
     })
   )
