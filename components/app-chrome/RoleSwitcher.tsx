@@ -18,7 +18,7 @@ import { ROLE_LABEL, SECONDARY_NAV_BY_ROLE } from './nav-config'
 const ROLE_PILL_LABEL: Record<RoleName, string> = {
   athlete: 'atleta',
   coach: 'coach',
-  school: 'escuela',
+  school: 'director',
   admin: 'admin',
 }
 
@@ -47,9 +47,11 @@ function initialsFrom(
 export default function RoleSwitcher({
   currentRole,
   school,
+  canAccessDirectorMode = false,
 }: {
   currentRole?: RoleName
   school?: Pick<School, 'name' | 'slug'> | null
+  canAccessDirectorMode?: boolean
 }) {
   const tenant = useTenantSchool()
   const terminology = useSchoolTerminology()
@@ -311,7 +313,7 @@ export default function RoleSwitcher({
                 </button>
               )}
             </div>
-            {!tenant && (
+            {(!tenant || canAccessDirectorMode) && (
               <div role="none" className="flex items-center gap-1 pr-1">
                 <button
                   type="button"

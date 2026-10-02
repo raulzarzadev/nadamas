@@ -68,6 +68,6 @@ export const SECONDARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
 export const ROLE_LABEL: Record<RoleName, string> = {
   athlete: 'Atleta',
   coach: 'Entrenador',
-  school: 'Escuela',
+  school: 'Director',
   admin: 'Admin',
 }

@@ -77,7 +77,7 @@ export default function SchoolClasses() {
     const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
     const isStudentAccount = schoolMembershipHasRole(selected?.membership, 'student')
     const directorId = isDirector ? selected?.membership.userId : undefined
-    if (resetSelection) setScheduleCoachId(directorId || '')
+    if (resetSelection) setScheduleCoachId('')
     const load = async () => {
       const [classResponse, studentResponse, teacherResponse, locationResponse] = await Promise.all(
         [
@@ -108,21 +108,22 @@ export default function SchoolClasses() {
         const nextTeachers = teacherPayload.teachers || []
         setTeachers(nextTeachers)
         setScheduleCoachId((current) => {
-          if (!resetSelection && current === '') return current
+          if (resetSelection) return ''
+          if (current === '') return current
           if (isDirector && current === directorId) return current
           if (
             current &&
             nextTeachers.some((teacher) => teacher.id === current && teacher.status === 'active')
           )
             return current
-          return isDirector ? directorId || '' : ''
+          return ''
         })
         setLocations(locationPayload.locations || [])
         setRequests(requestPayload.requests || [])
       })
       .catch(() => {
         if (!active) return
-        if (resetSelection) setScheduleCoachId(directorId || '')
+        if (resetSelection) setScheduleCoachId('')
         setMessage('No se pudo cargar la agenda escolar.')
       })
       .finally(() => {

@@ -118,6 +118,7 @@ export default function CoachAgenda({
   const adminMode = Boolean(coachId)
   const readOnlyAgenda = readOnly || (aggregateSchool && !manageSchoolSchedule)
   const multiCoachAgenda = readOnlyAgenda || (aggregateSchool && !coachId)
+  const showCoachName = multiCoachAgenda || (aggregateSchool && manageSchoolSchedule)
   const hideBookingActions = readOnlyAgenda || (adminMode && !manageSchoolSchedule)
   const scheduleEndpoint =
     manageSchoolSchedule && schoolId && coachId
@@ -1006,6 +1007,11 @@ export default function CoachAgenda({
                 const isGroupClass =
                   row.bookings.length > 1 ||
                   row.bookings.some((booking) => booking.groupType === 'grupal')
+                const classStudentCount = isGroupClass
+                  ? (firstBooking.schoolClassStudentCount ?? row.bookings.length)
+                  : 1
+                const classStudentLabel =
+                  classStudentCount === 1 ? participantSingular : participantPlural
                 const isClassFull =
                   isGroupClass && row.bookings.some((booking) => booking.classFull)
                 const classStyle =
@@ -1023,28 +1029,29 @@ export default function CoachAgenda({
                       className={`flex min-w-0 flex-1 flex-col gap-3 rounded-[var(--r-md)] border px-3 py-3 ${classStyle.border} ${classStyle.bg}`}
                     >
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-xs font-bold uppercase text-[var(--c-text-2)]">
-                          {isGroupClass
-                            ? `Clase grupal · ${firstBooking.schoolClassStudentCount ?? row.bookings.length} ${participantPlural}`
-                            : `Clase particular · 1 ${participantSingular}`}
-                          {row.bookings.some((booking) => booking.schoolRequestId) && (
-                            <span className="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-900">
-                              Pendiente de aprobación
-                            </span>
-                          )}
-                        </span>
-                        {combinedSources && firstBooking.agendaLabel && (
-                          <span className="w-fit rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
-                            {firstBooking.agendaLabel}
-                          </span>
-                        )}
-                        {multiCoachAgenda && (
+                        {showCoachName && (
                           <span className="text-sm font-extrabold text-[var(--c-ocean)]">
                             {firstBooking.coachName ||
                               agenda.coachNames?.[firstBooking.coachId] ||
                               coachFallback}
                           </span>
                         )}
+                        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                          <span className="text-right text-xs font-bold uppercase text-[var(--c-text-2)]">
+                            {isGroupClass ? 'Clase grupal' : 'Clase particular'} ·{' '}
+                            {classStudentCount} {classStudentLabel}
+                            {row.bookings.some((booking) => booking.schoolRequestId) && (
+                              <span className="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-900">
+                                Pendiente de aprobación
+                              </span>
+                            )}
+                          </span>
+                          {combinedSources && firstBooking.agendaLabel && (
+                            <span className="w-fit rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
+                              {firstBooking.agendaLabel}
+                            </span>
+                          )}
+                        </div>
                         {!hideBookingActions &&
                           !manageSchoolSchedule &&
                           !hasSchoolClass &&
@@ -1326,7 +1333,7 @@ export default function CoachAgenda({
                         </span>
                       ) : (
                         <div className="flex min-w-0 flex-wrap items-center gap-2 opacity-60">
-                          {multiCoachAgenda && (
+                          {showCoachName && (
                             <span className="text-xs font-bold">
                               {row.slot.coachName ||
                                 agenda.coachNames?.[row.slot.coachId] ||
@@ -1419,7 +1426,7 @@ export default function CoachAgenda({
                       </span>
                     ) : (
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        {multiCoachAgenda && (
+                        {showCoachName && (
                           <span className="text-xs font-bold">
                             {row.slot.coachName ||
                               agenda.coachNames?.[row.slot.coachId] ||

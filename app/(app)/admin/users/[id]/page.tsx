@@ -8,6 +8,7 @@ import type { CoachPrivate, CoachPublic } from '@/firebase/coaches/coach.model'
 import { deleteAuthed, getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import Loading from '@comps/Loading'
+import AdminCoachOfferingEditor from '@/components/admin/AdminCoachOfferingEditor'
 import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 
 interface UserSummary {
@@ -26,11 +27,7 @@ interface UserSummary {
   }
 }
 
-export default function AdminUserDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [summary, setSummary] = useState<UserSummary | null | undefined>(undefined)
   const [busy, setBusy] = useState(false)
@@ -118,10 +115,8 @@ export default function AdminUserDetailPage({
               <span className="rounded-full bg-[var(--c-surface)] px-3 py-1">
                 Cuenta {summary.auth?.disabled ? 'deshabilitada' : 'activa'}
               </span>
-      {!!summary.coach && (
-                <span className="rounded-full bg-[var(--c-surface)] px-3 py-1">
-                  Coach
-                </span>
+              {!!summary.coach && (
+                <span className="rounded-full bg-[var(--c-surface)] px-3 py-1">Coach</span>
               )}
               {identity?.status && (
                 <span className="rounded-full bg-[var(--c-surface)] px-3 py-1">
@@ -188,7 +183,9 @@ export default function AdminUserDetailPage({
           <p className="mt-2 text-3xl font-extrabold">{summary.athleteSummary.classesTaken}</p>
         </article>
         <article className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)] md:col-span-2">
-          <p className="text-sm font-semibold text-[var(--c-text-2)]">Coaches con quienes entrenó</p>
+          <p className="text-sm font-semibold text-[var(--c-text-2)]">
+            Coaches con quienes entrenó
+          </p>
           {summary.athleteSummary.coaches.length ? (
             <ul className="mt-3 flex flex-wrap gap-2">
               {summary.athleteSummary.coaches.map((coach) => (
@@ -213,26 +210,33 @@ export default function AdminUserDetailPage({
             <p>Estado: {identity.status}</p>
             <p>Solicitud enviada: {identity.notificationSentAt ? 'Sí' : 'No registrada'}</p>
             <p>Documento: {identity.document?.name || 'Sin documento'}</p>
-            <p>Resultado notificado: {identity.reviewNotificationSentAt ? 'Sí' : 'No registrado'}</p>
+            <p>
+              Resultado notificado: {identity.reviewNotificationSentAt ? 'Sí' : 'No registrado'}
+            </p>
           </div>
         ) : (
-          <p className="text-sm text-[var(--c-text-2)]">No ha solicitado verificación como coach.</p>
+          <p className="text-sm text-[var(--c-text-2)]">
+            No ha solicitado verificación como coach.
+          </p>
         )}
       </section>
 
       {!!summary.coach && (
-        <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)]">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-bold">Perfil público de coach</h2>
-            <Link
-              href={`/admin/coaches/${id}/schedule`}
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--c-aqua)] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
-            >
-              Ver y editar horarios
-            </Link>
-          </div>
-          <CoachPublicProfile coach={summary.coach} />
-        </section>
+        <>
+          <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)]">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-xl font-bold">Perfil público de coach</h2>
+              <Link
+                href={`/admin/coaches/${id}/schedule`}
+                className="inline-flex items-center gap-2 rounded-full bg-[var(--c-aqua)] px-4 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90"
+              >
+                Ver y editar horarios
+              </Link>
+            </div>
+            <CoachPublicProfile coach={summary.coach} />
+          </section>
+          <AdminCoachOfferingEditor coachId={id} coach={summary.coach} />
+        </>
       )}
     </div>
   )

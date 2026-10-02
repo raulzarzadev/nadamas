@@ -64,12 +64,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     disabled?: boolean
     publicProfileVisible?: boolean
     coachVerified?: boolean
+    classOfferings?: unknown
   }
   const hasDisabled = typeof body.disabled === 'boolean'
   const hasVisibility = typeof body.publicProfileVisible === 'boolean'
   const hasCoachVerified = typeof body.coachVerified === 'boolean'
+  const hasClassOfferings = Array.isArray(body.classOfferings)
 
-  if (!hasDisabled && !hasVisibility && !hasCoachVerified) {
+  if (!hasDisabled && !hasVisibility && !hasCoachVerified && !hasClassOfferings) {
     return NextResponse.json({ error: 'Datos incompletos.' }, { status: 400 })
   }
 
@@ -91,7 +93,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       )
   }
 
-  if (hasVisibility || hasCoachVerified) {
+  if (hasVisibility || hasCoachVerified || hasClassOfferings) {
     const coachRef = adminDb.collection('coaches').doc(id)
     const privateCoachRef = coachRef.collection('private').doc('profile')
     const [coachDoc, privateCoachDoc] = await Promise.all([coachRef.get(), privateCoachRef.get()])
@@ -109,6 +111,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
               },
             }
           : {}),
+        ...(hasClassOfferings ? { classOfferings: body.classOfferings } : {}),
         userId: id,
         updatedAt: now,
         ...(coachDoc.exists ? {} : { createdAt: now }),
@@ -137,6 +140,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     ...(hasDisabled ? { disabled: body.disabled } : {}),
     ...(hasVisibility ? { publicProfileVisible: body.publicProfileVisible } : {}),
     ...(hasCoachVerified ? { coachVerified: body.coachVerified } : {}),
+    ...(hasClassOfferings ? { classOfferingsUpdated: true } : {}),
   })
 }
 

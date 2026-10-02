@@ -78,7 +78,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   } | null>(null)
 
   useEffect(() => {
-    if (role !== 'school') {
+    if (role !== 'school' && !tenant) {
       setSchoolAccess(null)
       return
     }
@@ -167,7 +167,15 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <NotificationsBell />
-            <RoleSwitcher currentRole={role} school={schoolAccess?.school} />
+            <RoleSwitcher
+              currentRole={role}
+              school={schoolAccess?.school}
+              canAccessDirectorMode={Boolean(
+                schoolAccess?.membership.status === 'active' &&
+                  (schoolAccess.membership.roles?.includes('director') ||
+                    schoolAccess.membership.role === 'director')
+              )}
+            />
           </div>
         </div>
 
