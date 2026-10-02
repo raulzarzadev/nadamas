@@ -28,12 +28,16 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   const occurrence = await getSchoolClassOccurrence(schoolId, occurrenceId)
   if (!occurrence) return NextResponse.json({ error: 'Clase no encontrada.' }, { status: 404 })
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
+  const canManageBookings = isDirector || access.membership?.canManageSchoolBookings === true
   const isTeacher = occurrence.teacherIds.includes(access.caller.uid)
   const isStudentAccount =
     !isDirector && !isTeacher && schoolMembershipHasRole(access.membership, 'student')
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
   const status =
-    body.status === 'cancelled' || body.status === 'completed' || body.status === 'scheduled'
+    body.status === 'cancelled' ||
+    body.status === 'completed' ||
+    body.status === 'scheduled' ||
+    body.status === 'pending'
       ? body.status
       : null
   if (
@@ -51,6 +55,14 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   }
   if (!status && !isDirector && !access.globalAdmin)
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  if (
+    (status === 'pending' || (occurrence.status === 'pending' && status === 'scheduled')) &&
+    !canManageBookings
+  )
+    return NextResponse.json(
+      { error: 'No tienes permiso para revisar reservas de esta escuela.' },
+      { status: 403 }
+    )
   const teacherIds = Array.isArray(body.teacherIds)
     ? [...new Set(body.teacherIds.filter((id): id is string => typeof id === 'string'))]
     : null
@@ -121,7 +133,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       if (doc.id === occurrenceId) continue
       const item = doc.data() as SchoolClassOccurrence
       if (
-        item.status === 'scheduled' &&
+        (item.status === 'scheduled' || item.status === 'pending') &&
         item.teacherIds.includes(coachId) &&
         item.date === destinationDate
       ) {
@@ -213,11 +225,18 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       actorId: access.caller.uid,
       actorName: access.caller.name || null,
       type: status === 'cancelled' ? 'school_class_cancelled' : 'school_class_assigned',
-      title: status === 'cancelled' ? 'Clase cancelada' : 'Clase actualizada',
+      title:
+        status === 'cancelled'
+          ? 'Clase cancelada'
+          : status === 'pending'
+            ? 'Clase pendiente de aprobación'
+            : 'Clase actualizada',
       body:
         status === 'cancelled'
           ? `La clase ${occurrence.title} fue cancelada.`
-          : `La clase ${occurrence.title} fue actualizada.`,
+          : status === 'pending'
+            ? `La clase ${occurrence.title} quedó pendiente de aprobación.`
+            : `La clase ${occurrence.title} fue actualizada.`,
       link: '/school/classes',
     }).catch(() => {})
   return NextResponse.json({ occurrence: { ...occurrence, ...update } })

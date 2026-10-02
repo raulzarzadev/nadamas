@@ -139,7 +139,12 @@ export function buildSchoolCalendarIcs(
     'X-PUBLISHED-TTL:PT1H',
   ]
   for (const occurrence of occurrences) {
-    const status = occurrence.status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED'
+    const status =
+      occurrence.status === 'cancelled'
+        ? 'CANCELLED'
+        : occurrence.status === 'pending'
+          ? 'TENTATIVE'
+          : 'CONFIRMED'
     lines.push(
       'BEGIN:VEVENT',
       `UID:${escapeIcsText(`${occurrence.id}@nadamas.app`)}`,

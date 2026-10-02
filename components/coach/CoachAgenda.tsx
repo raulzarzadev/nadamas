@@ -548,6 +548,18 @@ export default function CoachAgenda({
     })
   }
 
+  const updateSchoolClassStatus = (booking: Booking, status: 'pending' | 'scheduled') => {
+    if (!schoolId || !booking.schoolClassId) return
+    run(async () => {
+      await patchAuthed(
+        `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(booking.schoolClassId as string)}`,
+        { status }
+      )
+      setSchoolClassToEdit(null)
+      setNotice(status === 'pending' ? 'Clase pendiente de aprobación.' : 'Clase aprobada.')
+    })
+  }
+
   const openSchoolRequestEditor = async (booking: Booking) => {
     if (!schoolId) return
     setBusy(true)
@@ -807,8 +819,8 @@ export default function CoachAgenda({
                 const hasSchoolClass = row.bookings.some((booking) =>
                   Boolean(booking.schoolClassId)
                 )
-                const hasPendingRequest = row.bookings.some((booking) =>
-                  Boolean(booking.schoolRequestId)
+                const hasPendingRequest = row.bookings.some(
+                  (booking) => Boolean(booking.schoolRequestId) || booking.status === 'pending'
                 )
                 const isGroupClass =
                   row.bookings.length > 1 ||
@@ -947,7 +959,7 @@ export default function CoachAgenda({
                                 <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
                                   {booking.athleteName}
                                 </span>
-                                {booking.schoolRequestId && (
+                                {(booking.schoolRequestId || booking.status === 'pending') && (
                                   <span className="mt-1 block text-xs font-semibold text-amber-800">
                                     Pendiente de aprobación
                                   </span>
@@ -1566,6 +1578,23 @@ export default function CoachAgenda({
               className="min-h-12 rounded-full bg-[var(--c-ocean)] px-5 text-sm font-bold text-white"
             >
               Cambiar clase
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                updateSchoolClassStatus(
+                  schoolClassToEdit,
+                  schoolClassToEdit.status === 'pending' ? 'scheduled' : 'pending'
+                )
+              }
+              disabled={busy}
+              className="min-h-12 rounded-full border border-[var(--c-border)] px-5 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] disabled:opacity-50"
+            >
+              {busy
+                ? 'Guardando…'
+                : schoolClassToEdit.status === 'pending'
+                  ? 'Aprobar clase'
+                  : 'Cambiar a pendiente'}
             </button>
             <button
               type="button"

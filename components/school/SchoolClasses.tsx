@@ -140,6 +140,7 @@ export default function SchoolClasses() {
   if (!selected) return <SchoolNoSelection />
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
+  const canManageBookings = isDirector || selected.membership?.canManageSchoolBookings === true
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
   const isTeacher = schoolMembershipHasRole(selected.membership, 'teacher')
   const directorId = isDirector ? selected.membership.userId : undefined
@@ -164,7 +165,10 @@ export default function SchoolClasses() {
     (item) => item.status !== 'cancelled' || item.date >= today()
   )
 
-  async function updateClass(id: string, status: 'cancelled' | 'completed') {
+  async function updateClass(
+    id: string,
+    status: 'cancelled' | 'completed' | 'pending' | 'scheduled'
+  ) {
     try {
       await patchAuthed(`/api/schools/${activeSchool.school.id}/classes/${id}`, { status })
       setClasses((current) => current.map((item) => (item.id === id ? { ...item, status } : item)))
@@ -325,7 +329,9 @@ export default function SchoolClasses() {
                         ? 'Completada'
                         : item.status === 'cancelled'
                           ? 'Cancelada'
-                          : 'Programada'}
+                          : item.status === 'pending'
+                            ? 'Pendiente de aprobación'
+                            : 'Programada'}
                     </span>
                   </div>
                   {(isDirector || isTeacher) && item.status === 'scheduled' && (
@@ -343,6 +349,24 @@ export default function SchoolClasses() {
                         className="btn btn-ghost btn-sm gap-1 text-(--c-error,#b91c1c)"
                       >
                         <FiX aria-hidden="true" /> Cancelar
+                      </button>
+                    </div>
+                  )}
+                  {canManageBookings && item.status === 'pending' && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void updateClass(item.id, 'scheduled')}
+                        className="btn btn-primary btn-sm"
+                      >
+                        Aprobar clase
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void updateClass(item.id, 'cancelled')}
+                        className="btn btn-ghost btn-sm gap-1 text-(--c-error,#b91c1c)"
+                      >
+                        <FiX aria-hidden="true" /> Rechazar
                       </button>
                     </div>
                   )}

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import type { SchoolStudent } from '@/lib/school'
+import type { SchoolClassOccurrence, SchoolStudent } from '@/lib/school'
 import { type SchoolGender, schoolMembershipHasRole } from '@/lib/school'
 import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 import { adminDb } from '@/lib/server/firebase-admin'
@@ -14,6 +14,7 @@ import {
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import {
   createClassRequest,
+  createSchoolClass,
   listClassRequests,
   validateClassInput,
 } from '@/lib/server/school-classes'
@@ -184,6 +185,99 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   })
   if (!classValidation.ok)
     return NextResponse.json({ error: 'Revisa la fecha y el horario.' }, { status: 400 })
+  if (school.bookingMode === 'direct') {
+    const endDate =
+      typeof body.endDate === 'string' && body.endDate >= requestedDate
+        ? body.endDate
+        : requestedDate
+    const directClassValidation = validateClassInput({
+      ...classValidation.value,
+      endDate,
+      daysOfWeek:
+        endDate === requestedDate
+          ? [new Date(`${requestedDate}T00:00:00Z`).getUTCDay()]
+          : preferredDays,
+      recurring: endDate !== requestedDate,
+    })
+    if (!directClassValidation.ok)
+      return NextResponse.json({ error: 'Revisa la fecha y el horario.' }, { status: 400 })
+    let classResult: Awaited<ReturnType<typeof createSchoolClass>>
+    if (directClassValidation.value.type === 'group') {
+      const occurrencesSnapshot = await adminDb
+        .collection('schoolClassOccurrences')
+        .where('schoolId', '==', schoolId)
+        .get()
+      const existingGroup = occurrencesSnapshot.docs.find((doc) => {
+        const occurrence = doc.data() as SchoolClassOccurrence
+        return (
+          occurrence.status === 'scheduled' &&
+          occurrence.type === 'group' &&
+          occurrence.date === directClassValidation.value.startDate &&
+          occurrence.startTime === directClassValidation.value.startTime &&
+          occurrence.endTime === directClassValidation.value.endTime &&
+          occurrence.teacherIds.includes(teacherId)
+        )
+      })
+      if (existingGroup) {
+        const result = await adminDb.runTransaction(async (transaction) => {
+          const snapshot = await transaction.get(existingGroup.ref)
+          if (!snapshot.exists) return { kind: 'missing' as const }
+          const occurrence = snapshot.data() as SchoolClassOccurrence
+          if (occurrence.status !== 'scheduled') return { kind: 'changed' as const }
+          if (occurrence.studentIds.includes(studentId)) return { kind: 'duplicate' as const }
+          const studentIds = [...occurrence.studentIds, studentId]
+          const updatedAt = Date.now()
+          transaction.update(existingGroup.ref, { studentIds, updatedAt })
+          return {
+            kind: 'updated' as const,
+            occurrence: { ...occurrence, studentIds, updatedAt },
+          }
+        })
+        if (result.kind === 'duplicate')
+          return NextResponse.json(
+            { error: 'Esta persona ya está inscrita en esta clase grupal.' },
+            { status: 409 }
+          )
+        if (result.kind !== 'updated')
+          return NextResponse.json(
+            { error: 'El horario cambió. Actualiza la agenda e inténtalo de nuevo.' },
+            { status: 409 }
+          )
+        classResult = {
+          seriesId: result.occurrence.seriesId,
+          occurrences: [result.occurrence],
+        }
+      } else {
+        classResult = await createSchoolClass(directClassValidation.value)
+      }
+    } else {
+      classResult = await createSchoolClass(directClassValidation.value)
+    }
+    void createNotification({
+      recipientId: student.studentUserId || caller.uid,
+      actorId: caller.uid,
+      actorName: caller.name || caller.email,
+      type: 'school_class_assigned',
+      title: 'Reserva confirmada',
+      body: 'La clase se agregó directamente a tu agenda.',
+      link: '/athlete/progress',
+    }).catch(() => {})
+    for (const assignedTeacherId of directClassValidation.value.teacherIds) {
+      void createNotification({
+        recipientId: assignedTeacherId,
+        actorId: caller.uid,
+        actorName: caller.name || caller.email,
+        type: 'school_class_assigned',
+        title: 'Nueva clase agendada',
+        body: `${student.name} reservó una clase directamente.`,
+        link: '/coach/agenda',
+      }).catch(() => {})
+    }
+    return NextResponse.json(
+      { direct: true, pendingApproval: false, ...classResult },
+      { status: 201 }
+    )
+  }
   const requestRecord = await createClassRequest({
     schoolId,
     studentId,

@@ -339,7 +339,7 @@ export interface SchoolClassOccurrence {
   location: string
   locationUrl: string
   visibility?: 'public' | 'private'
-  status: 'scheduled' | 'completed' | 'cancelled'
+  status: 'scheduled' | 'pending' | 'completed' | 'cancelled'
   createdAt: number
   updatedAt: number
 }

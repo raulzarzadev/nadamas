@@ -114,6 +114,7 @@ export async function GET(request: Request, { params }: RouteProps) {
             const student = doc.data()
             return (
               student.studentUserId === viewerId ||
+              student.guardianId === viewerId ||
               (Array.isArray(student.managerIds) && student.managerIds.includes(viewerId)) ||
               (Array.isArray(student.guardianIds) && student.guardianIds.includes(viewerId))
             )
@@ -128,7 +129,13 @@ export async function GET(request: Request, { params }: RouteProps) {
   const endDate = range.end.toISOString().slice(0, 10)
   const schoolClassBookings = schoolClassesSnapshot.docs.flatMap((doc) => {
     const occurrence = doc.data() as SchoolClassOccurrence
-    if (!occurrence.date || occurrence.date < startDate || occurrence.date > endDate) return []
+    if (
+      occurrence.status === 'cancelled' ||
+      !occurrence.date ||
+      occurrence.date < startDate ||
+      occurrence.date > endDate
+    )
+      return []
     const coachIds = schoolClassCoachIds({
       assignedCoachIds: Array.isArray(occurrence.teacherIds) ? occurrence.teacherIds : [],
       allowedCoachIds: teacherIds,
@@ -166,6 +173,7 @@ export async function GET(request: Request, { params }: RouteProps) {
           const occurrence = doc.data() as SchoolClassOccurrence
           if (
             !occurrence.date ||
+            occurrence.status === 'cancelled' ||
             occurrence.date < startDate ||
             occurrence.date > endDate ||
             !occurrence.studentIds?.some((studentId) => viewerStudentIds.has(studentId))

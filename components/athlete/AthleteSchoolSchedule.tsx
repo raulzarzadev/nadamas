@@ -454,6 +454,7 @@ export default function AthleteSchoolSchedule({
     .filter(
       (reservation) =>
         reservation.date === selectedDate &&
+        reservation.status !== 'cancelled' &&
         (!schoolId || reservation.schoolId === schoolId) &&
         (coachFilter === 'all' || reservation.coachId === coachFilter)
     )
