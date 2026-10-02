@@ -168,6 +168,7 @@ export async function GET(request: Request, { params }: RouteProps) {
             status: booking.status,
             groupType: booking.groupType,
             studentIds: [],
+            studentNames: [booking.athleteName || 'Mi perfil'],
           })),
         ...schoolClassesSnapshot.docs.flatMap((doc) => {
           const occurrence = doc.data() as SchoolClassOccurrence
@@ -194,6 +195,9 @@ export async function GET(request: Request, { params }: RouteProps) {
             studentIds: occurrence.studentIds.filter((studentId) =>
               viewerStudentIds.has(studentId)
             ),
+            studentNames: occurrence.studentIds
+              .filter((studentId) => viewerStudentIds.has(studentId))
+              .map((studentId) => studentNames.get(studentId) || 'Alumno'),
           }))
         }),
         ...requestsSnapshot.docs.flatMap((doc) => {
@@ -223,6 +227,8 @@ export async function GET(request: Request, { params }: RouteProps) {
               groupType: requestRecord.type === 'group' ? 'grupal' : 'particular',
               studentIds:
                 typeof requestRecord.studentId === 'string' ? [requestRecord.studentId] : [],
+              studentNames:
+                typeof requestRecord.studentName === 'string' ? [requestRecord.studentName] : [],
             },
           ]
         }),

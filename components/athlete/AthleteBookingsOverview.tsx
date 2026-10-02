@@ -1,12 +1,10 @@
 'use client'
 
 import Loading from '@comps/Loading'
-import Avatar from '@comps/ui/avatar'
-import Chip from '@comps/ui/chip'
 import Sheet from '@comps/ui/sheet'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FiCalendar, FiChevronRight, FiClock, FiSearch, FiUser, FiX } from 'react-icons/fi'
+import { FiCalendar, FiChevronRight, FiSearch, FiUser, FiX } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
@@ -65,131 +63,115 @@ function isPastBooking(booking: Booking) {
   return Number.isFinite(endTimestamp) && endTimestamp < Date.now()
 }
 
-function BookingCard({
-  booking,
+function BookingGroupRow({
+  bookings,
   coach,
   onCancel,
   onEvaluate,
-  compact = false,
 }: {
-  booking: Booking
+  bookings: Booking[]
   coach?: CoachInfo
   onCancel?: (booking: Booking) => void
   onEvaluate?: (booking: Booking) => void
-  compact?: boolean
 }) {
-  const cancelled = booking.status === 'cancelled'
+  const booking = bookings[0]
   const terminology = useSchoolTerminology()
   const coachName =
     coach?.name ||
     booking.coachName ||
     `${terminology.schoolId ? terminology.coachSingular : 'coach'} de natación`
-  const status = STATUS_STYLE[booking.status] || {
-    label: booking.status,
-    className: 'border-[var(--c-border)] bg-[var(--c-surface)] text-[var(--c-text-2)]',
-  }
-
-  if (compact) {
-    return (
-      <li
-        className={`rounded-[var(--r-md)] border border-[var(--c-border)] bg-white ${cancelled ? 'opacity-70' : ''}`}
-      >
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
-          <Avatar name={coachName} src={coach?.avatarUrl} size={32} />
-          <div className="min-w-36 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <p className="truncate text-sm font-bold leading-tight text-[var(--c-ocean)]">
-                {coachName}
-              </p>
-              <span
-                className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${status.className}`}
-              >
-                {status.label}
+  const studentCount = bookings.reduce(
+    (total, item) => total + (item.schoolClassStudentCount || 1),
+    0
+  )
+  return (
+    <li className="rounded-xl border border-[var(--c-border)] bg-white px-3 py-3 sm:px-4">
+      <div className="flex items-start gap-3 sm:items-center">
+        <div className="w-24 shrink-0 border-r border-[var(--c-border)] pr-3">
+          <p className="text-sm font-bold capitalize text-[var(--c-text-2)]">{dayLabel(booking)}</p>
+          <p className="text-lg font-extrabold leading-tight text-[var(--c-ocean)]">
+            {booking.startTime}
+          </p>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-2">
+            <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+              <p className="truncate font-bold text-[var(--c-ocean)]">{coachName}</p>
+              <span className="text-sm text-[var(--c-text-2)]">
+                · {timeLabel(booking).split(' · ')[1] || 'Clase'}
               </span>
             </div>
-            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] leading-tight text-[var(--c-text-2)]">
-              <span>{modalityLabel(booking)}</span>
-              <span>{dayLabel(booking)}</span>
-              <span>{timeLabel(booking)}</span>
-            </p>
-          </div>
-          <div className="ml-auto flex flex-wrap gap-1.5">
             <Link
               href={`/athlete/coach/${booking.coachId}`}
-              className="inline-flex min-h-8 items-center justify-center gap-1 rounded-lg border border-[var(--c-border)] px-2.5 text-xs font-semibold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+              className="inline-flex min-h-9 shrink-0 items-center gap-1 text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
             >
-              Ver perfil <FiChevronRight aria-hidden="true" size={12} />
+              Ver perfil <FiChevronRight aria-hidden="true" size={14} />
             </Link>
-            {onEvaluate && canEvaluateBooking(booking) && (
-              <button
-                type="button"
-                onClick={() => onEvaluate(booking)}
-                className="inline-flex min-h-8 items-center justify-center rounded-lg bg-[var(--c-ocean)] px-2.5 text-xs font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-              >
-                {booking.evaluation ? 'Editar evaluación' : 'Evaluar clase'}
-              </button>
-            )}
           </div>
-        </div>
-      </li>
-    )
-  }
-
-  return (
-    <li
-      className={`overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)] ${cancelled ? 'opacity-70' : ''}`}
-    >
-      <div className="h-1 bg-[image:var(--grad-brand)]" />
-      <div className="p-4">
-        <div className="flex items-center gap-3">
-          <Avatar name={coachName} src={coach?.avatarUrl} size={42} />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-bold text-[var(--c-ocean)]">{coachName}</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--c-text-2)]">
-              <FiUser aria-hidden="true" /> {modalityLabel(booking)}
-            </p>
-          </div>
-          <span
-            className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${status.className}`}
-          >
-            {status.label}
-          </span>
-        </div>
-
-        <div className="mt-3.5 flex flex-wrap gap-2">
-          <Chip icon={<FiCalendar size={14} />}>{dayLabel(booking)}</Chip>
-          <Chip icon={<FiClock size={14} />}>{timeLabel(booking)}</Chip>
-        </div>
-
-        <div className="mt-3.5 flex flex-wrap gap-2">
-          <Link
-            href={`/athlete/coach/${booking.coachId}`}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded-xl border border-[var(--c-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition hover:bg-[var(--c-surface)]"
-          >
-            Ver perfil <FiChevronRight aria-hidden="true" size={14} />
-          </Link>
-          {onEvaluate && canEvaluateBooking(booking) && (
-            <button
-              type="button"
-              onClick={() => onEvaluate(booking)}
-              className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-[var(--c-ocean)] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              {booking.evaluation ? 'Editar evaluación' : 'Evaluar clase'}
-            </button>
-          )}
-          {onCancel && !cancelled && (
-            <button
-              type="button"
-              onClick={() => onCancel(booking)}
-              className="inline-flex flex-1 items-center justify-center rounded-xl border border-[var(--rose-bd)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--rose-tx)] transition hover:bg-[var(--rose-bg)]"
-            >
-              Cancelar
-            </button>
-          )}
+          <p className="flex items-center gap-1 text-sm text-[var(--c-text-2)]">
+            <FiUser aria-hidden="true" size={14} /> {modalityLabel(booking)}
+            {studentCount > 1 && <span>· {studentCount} alumnos</span>}
+          </p>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {bookings.map((item) => {
+              const status = STATUS_STYLE[item.status] || {
+                label: item.status,
+                className: 'border-[var(--c-border)] bg-[var(--c-surface)] text-[var(--c-text-2)]',
+              }
+              return (
+                <li key={item.id} className="flex min-h-9 items-center gap-2 text-sm">
+                  <span className="min-w-0 flex-1 truncate font-medium text-[var(--c-ocean)]">
+                    {item.athleteName}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${status.className}`}
+                  >
+                    {status.label}
+                  </span>
+                  {onCancel && (
+                    <button
+                      type="button"
+                      onClick={() => onCancel(item)}
+                      aria-label={`Cancelar clase de ${item.athleteName}`}
+                      className="inline-flex min-h-9 items-center rounded-lg px-2 text-sm font-semibold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                  {onEvaluate && canEvaluateBooking(item) && (
+                    <button
+                      type="button"
+                      onClick={() => onEvaluate(item)}
+                      className="inline-flex min-h-9 items-center rounded-lg px-2 text-sm font-semibold text-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                    >
+                      {item.evaluation ? 'Editar evaluación' : 'Evaluar'}
+                    </button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
         </div>
       </div>
     </li>
   )
+}
+
+function groupByClassTime(bookings: Booking[]) {
+  const groups = new Map<string, Booking[]>()
+  for (const booking of bookings) {
+    const key = [
+      booking.schoolId || '',
+      booking.coachId,
+      booking.date,
+      booking.startTime,
+      booking.endTime,
+      booking.groupType,
+      booking.locationName,
+    ].join('::')
+    groups.set(key, [...(groups.get(key) || []), booking])
+  }
+  return [...groups.values()]
 }
 
 function PastBookings({
@@ -224,13 +206,12 @@ function PastBookings({
       </button>
       {open && (
         <ul className="flex flex-col gap-1.5">
-          {bookings.map((booking) => (
-            <BookingCard
-              key={booking.id}
-              booking={booking}
-              coach={coaches[booking.coachId]}
+          {groupByClassTime(bookings).map((group) => (
+            <BookingGroupRow
+              key={group[0].id}
+              bookings={group}
+              coach={coaches[group[0].coachId]}
               onEvaluate={onEvaluate}
-              compact
             />
           ))}
         </ul>
@@ -326,6 +307,7 @@ export default function AthleteBookingsOverview() {
     bookings?.filter((booking) => !selectedSchoolId || booking.schoolId === selectedSchoolId) ?? []
   const upcomingBookings = selectedBookings.filter((booking) => !isPastBooking(booking))
   const pastBookings = selectedBookings.filter(isPastBooking)
+  const upcomingGroups = groupByClassTime(upcomingBookings)
   const activeCount = upcomingBookings.length
 
   return (
@@ -411,13 +393,13 @@ export default function AthleteBookingsOverview() {
       ) : (
         <>
           {upcomingBookings.length > 0 ? (
-            <ul className="flex flex-col gap-3">
-              {upcomingBookings.map((booking) => (
-                <BookingCard
-                  key={booking.id}
-                  booking={booking}
-                  coach={coaches[booking.coachId]}
-                  onCancel={(nextBooking) => setToCancel(nextBooking)}
+            <ul className="flex flex-col gap-2">
+              {upcomingGroups.map((group) => (
+                <BookingGroupRow
+                  key={group[0].id}
+                  bookings={group}
+                  coach={coaches[group[0].coachId]}
+                  onCancel={setToCancel}
                 />
               ))}
             </ul>

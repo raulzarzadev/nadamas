@@ -46,6 +46,7 @@ type SchoolReservation = {
   status: string
   groupType: 'particular' | 'grupal'
   studentIds?: string[]
+  studentNames?: string[]
 }
 const slotIsFuture = (slot: Pick<CoachAvailableSlot, 'date' | 'startTime'>) =>
   new Date(`${slot.date}T${slot.startTime}:00`).getTime() > Date.now()
@@ -56,6 +57,20 @@ const slotDurationMinutes = (slot: Pick<CoachAvailableSlot, 'startTime' | 'endTi
   }
   const duration = toMinutes(slot.endTime) - toMinutes(slot.startTime)
   return duration > 0 ? duration : duration + 24 * 60
+}
+const groupReservationsByClass = (reservations: SchoolReservation[]) => {
+  const groups = new Map<string, SchoolReservation[]>()
+  for (const reservation of reservations) {
+    const key = [
+      reservation.schoolId || '',
+      reservation.coachId,
+      reservation.startTime,
+      reservation.endTime,
+      reservation.groupType,
+    ].join('|')
+    groups.set(key, [...(groups.get(key) || []), reservation])
+  }
+  return [...groups.values()]
 }
 
 export default function AthleteSchoolSchedule({
@@ -631,27 +646,68 @@ export default function AthleteSchoolSchedule({
                 {row.startTime}
               </span>
               <div className="grid min-w-0 grid-cols-1 gap-2">
-                {row.reservations.map((reservation) => (
-                  <div
-                    key={reservation.id}
-                    className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-2 ${reservation.status !== 'pending' ? 'border-emerald-300 bg-emerald-100/70' : reservation.groupType === 'grupal' ? 'border-violet-300 bg-violet-50' : 'border-[var(--c-border)] bg-[var(--c-surface)]'}`}
-                  >
-                    <span className="min-w-0 truncate text-xs font-semibold text-[var(--c-ocean)]">
-                      {reservation.coachName} · {slotDurationMinutes(reservation)} min
-                    </span>
-                    {reservation.groupType === 'grupal' && (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-1 text-[10px] font-bold text-violet-800">
-                        <FiUsers aria-hidden="true" />
-                        Grupal
-                      </span>
-                    )}
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${reservation.status === 'pending' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'}`}
+                {groupReservationsByClass(row.reservations).map((reservations) => {
+                  const reservation = reservations[0]
+                  if (!reservation) return null
+                  const participants = new Map<string, { name: string; statuses: Set<string> }>()
+                  for (const item of reservations) {
+                    const names = item.studentNames?.length
+                      ? item.studentNames
+                      : [accountName || 'Mi perfil']
+                    for (const name of names) {
+                      const participantKey = name.trim().toLocaleLowerCase()
+                      const participant = participants.get(participantKey) || {
+                        name,
+                        statuses: new Set<string>(),
+                      }
+                      participant.statuses.add(item.status)
+                      participants.set(participantKey, participant)
+                    }
+                  }
+                  const participantList = [...participants.values()]
+                  const hasPending = reservations.some((item) => item.status === 'pending')
+                  return (
+                    <div
+                      key={`${reservation.schoolId || ''}-${reservation.coachId}-${reservation.startTime}-${reservation.endTime}-${reservation.groupType}`}
+                      className={`min-w-0 rounded-xl border-l-4 px-3 py-2.5 ${hasPending ? 'border-amber-400 bg-amber-50' : 'border-emerald-500 bg-emerald-50'}`}
                     >
-                      {reservation.status === 'pending' ? 'Pendiente' : 'Confirmada'}
-                    </span>
-                  </div>
-                ))}
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="min-w-0 flex-1 truncate text-sm font-bold text-[var(--c-ocean)]">
+                          {reservation.coachName} · {slotDurationMinutes(reservation)} min
+                        </span>
+                        {reservation.groupType === 'grupal' && (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-1 text-xs font-bold text-violet-800">
+                            <FiUsers aria-hidden="true" /> Grupal
+                          </span>
+                        )}
+                      </div>
+                      <ul className="mt-1 flex flex-wrap gap-1.5">
+                        {participantList.map((participant) => (
+                          <li
+                            key={participant.name}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-white/80 px-2 py-1 text-sm"
+                          >
+                            <FiUser
+                              aria-hidden="true"
+                              className="shrink-0 text-[var(--c-text-2)]"
+                            />
+                            <span className="font-semibold text-[var(--c-ocean)]">
+                              {participant.name}
+                            </span>
+                            {[...participant.statuses].map((status) => (
+                              <span
+                                key={status}
+                                className={`rounded-full px-2 py-0.5 text-xs font-bold ${status === 'pending' ? 'bg-amber-200 text-amber-950' : 'bg-emerald-200 text-emerald-950'}`}
+                              >
+                                {status === 'pending' ? 'Pendiente' : 'Inscrito'}
+                              </span>
+                            ))}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                })}
                 {row.slots.map((slot) => (
                   <button
                     key={`${slot.coachId}-${slot.id}`}
