@@ -21,7 +21,7 @@ function GlobalAthleteSchoolSwitcher() {
       schools={schools.map(({ school }) => ({ id: school.id, name: school.name }))}
       selectedId={selectedId}
       personalLabel="Todos"
-      description="Escuelas de las que formas parte."
+      description="Horarios de tus escuelas o coaches disponibles."
       onChange={(id) => (id ? selectSchool(id) : selectPersonal())}
     />
   )

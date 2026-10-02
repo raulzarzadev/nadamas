@@ -12,14 +12,8 @@ export interface NavLink {
 // actions, not frequent navigation.
 export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
-    { href: '/athlete/find-coach', label: 'Buscar coach', mobileLabel: 'Buscar', icon: 'search' },
-    {
-      href: '/athlete/bookings',
-      label: 'Próximas clases',
-      mobileLabel: 'Próximas',
-      icon: 'calendar',
-    },
-    { href: '/athlete/progress', label: 'Mi progreso', mobileLabel: 'Progreso', icon: 'chart' },
+    { href: '/athlete/find-coach', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
+    { href: '/athlete/progress', label: 'Progreso', mobileLabel: 'Progreso', icon: 'chart' },
   ],
   coach: [
     { href: '/coach/agenda', label: 'Mis horarios', mobileLabel: 'Horarios', icon: 'calendar' },

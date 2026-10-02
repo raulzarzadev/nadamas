@@ -27,7 +27,7 @@ export default function ConfirmLink() {
     setBookingCompleted(completed)
     await signInWithCustomToken(auth, customToken)
     setStatus('success')
-    router.replace('/athlete/bookings')
+    router.replace('/athlete/progress')
   }
 
   async function confirmLink() {

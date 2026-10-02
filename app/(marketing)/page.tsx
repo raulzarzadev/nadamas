@@ -1,3 +1,4 @@
+import AuthenticatedLandingGate from '@comps/marketing/AuthenticatedLandingGate'
 import CoachesTeaser from '@comps/marketing/coaches-teaser'
 import Faq from '@comps/marketing/faq'
 import Features from '@comps/marketing/features'
@@ -174,7 +175,7 @@ const jsonLd = {
 
 export default function LandingPage() {
   return (
-    <>
+    <AuthenticatedLandingGate>
       <script
         type="application/ld+json"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD is serialized from a static server-side object.
@@ -189,6 +190,6 @@ export default function LandingPage() {
       <ProductShots />
       <Faq />
       <FinalCta />
-    </>
+    </AuthenticatedLandingGate>
   )
 }

@@ -3,6 +3,6 @@ import { redirect } from 'next/navigation'
 import { getTenantSchool } from '@/lib/server/tenant-school'
 
 export default async function AthleteHome() {
-  if (await getTenantSchool()) redirect('/athlete/bookings')
+  if (await getTenantSchool()) redirect('/athlete/find-coach')
   return <AthleteHomeDashboard />
 }

@@ -13,6 +13,7 @@ import { getAuthed } from '@/lib/client/authed-api'
 import { cacheCoachProfile } from '@/lib/client/coach-profile-cache'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import {
+  hasPublishedOfferingSchedules,
   offeringContextLabel,
   offeringPlaceLabel,
   offeringsAvailabilitySummary,
@@ -55,8 +56,10 @@ export default function CoachDirectoryList({
   showSearch = true,
   viewAllHref,
   schoolId,
+  availableOnly = false,
 }: {
   schoolId?: string | null
+  availableOnly?: boolean
   coachHrefBase?: string
   /** Cap the number of coaches shown (teaser mode). */
   limit?: number
@@ -94,16 +97,24 @@ export default function CoachDirectoryList({
     }
   }, [schoolId, revision])
 
+  const availableCoaches = useMemo(
+    () =>
+      availableOnly
+        ? (coaches || []).filter((coach) => hasPublishedOfferingSchedules(resolveOfferings(coach)))
+        : coaches || [],
+    [availableOnly, coaches]
+  )
+
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase()
-    if (!normalized) return coaches || []
-    return (coaches || []).filter((coach) =>
+    if (!normalized) return availableCoaches
+    return availableCoaches.filter((coach) =>
       [coach.name, skillTag(coach), locationLabel(coach)]
         .join(' ')
         .toLowerCase()
         .includes(normalized)
     )
-  }, [coaches, query])
+  }, [availableCoaches, query])
 
   const visible = limit ? filtered.slice(0, limit) : filtered
 
@@ -124,7 +135,9 @@ export default function CoachDirectoryList({
         <p className="py-8 text-center text-sm text-[var(--c-text-2)]">Cargando {coachPlural}…</p>
       ) : filtered.length === 0 ? (
         <p className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-8 text-center text-sm text-[var(--c-text-2)]">
-          No encontramos {coachPlural} con esa búsqueda.
+          {availableOnly
+            ? `No hay ${coachPlural} con horarios disponibles${schoolId ? ' en esta escuela' : ''}.`
+            : `No encontramos ${coachPlural} con esa búsqueda.`}
         </p>
       ) : (
         <ul className="flex flex-col gap-3">

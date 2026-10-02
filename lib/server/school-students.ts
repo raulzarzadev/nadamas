@@ -1,6 +1,11 @@
 import 'server-only'
 
-import type { SchoolGender, SchoolStudent } from '@/lib/school'
+import {
+  type SchoolGender,
+  type SchoolMembership,
+  type SchoolStudent,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import { adminDb } from './firebase-admin'
 
 export function isMinor(birthDate: string) {
@@ -25,7 +30,7 @@ export async function listSchoolStudents(
     .collection('schoolStudents')
     .where('schoolId', '==', schoolId)
     .get()
-  return snapshot.docs
+  const students = snapshot.docs
     .map((doc) => ({
       id: doc.id,
       studentEmail: '',
@@ -40,6 +45,52 @@ export async function listSchoolStudents(
         )
     )
     .sort((a, b) => a.name.localeCompare(b.name))
+
+  const accountId = studentUserId || guardianId
+  if (!students.length && accountId) {
+    const membershipRef = adminDb.collection('schoolMemberships').doc(`${schoolId}_${accountId}`)
+    const [membershipSnapshot, userSnapshot] = await Promise.all([
+      membershipRef.get(),
+      adminDb.collection('users').doc(accountId).get(),
+    ])
+    const membership = membershipSnapshot.data()
+    if (
+      membershipSnapshot.exists &&
+      membership?.status === 'active' &&
+      schoolMembershipHasRole(membership as SchoolMembership, 'student')
+    ) {
+      const user = userSnapshot.data() || {}
+      const name =
+        [user.firstName, user.lastName]
+          .filter((part) => typeof part === 'string' && part)
+          .join(' ') ||
+        (typeof user.nickname === 'string' && user.nickname.trim()) ||
+        (typeof user.displayName === 'string' && user.displayName.trim()) ||
+        (typeof user.name === 'string' && user.name.trim()) ||
+        'Atleta'
+      return [
+        {
+          id: accountId,
+          schoolId,
+          name,
+          birthDate: '',
+          gender: 'otro',
+          guardianIds: [],
+          managerIds: [],
+          guardianName: '',
+          guardianRelationship: '',
+          guardianPhone: '',
+          guardianEmail: '',
+          studentUserId: accountId,
+          status: 'active',
+          createdAt: 0,
+          updatedAt: 0,
+          accountParticipant: true,
+        } satisfies SchoolStudent,
+      ]
+    }
+  }
+  return students
 }
 
 export async function createSchoolStudent(args: {

@@ -34,10 +34,14 @@ export async function GET(request: Request, { params }: RouteProps) {
 
 async function handlePOST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['student'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
   const students = await listSchoolStudents(schoolId, access.caller.uid)
+  const canRequestForParticipant =
+    schoolMembershipHasRole(access.membership, 'student') || students.length > 0
+  if (!canRequestForParticipant)
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   const studentId = typeof body.studentId === 'string' ? body.studentId : ''
   if (!students.some((student) => student.id === studentId))
     return NextResponse.json({ error: 'Alumno inválido.' }, { status: 400 })
@@ -101,6 +105,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   const requestRecord = await createClassRequest({
     schoolId,
     studentId,
+    studentName: students.find((student) => student.id === studentId)?.name,
     requestedBy: access.caller.uid,
     type: body.type === 'group' ? 'group' : 'individual',
     preferredDays,

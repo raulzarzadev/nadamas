@@ -294,6 +294,7 @@ export interface SchoolStudent {
   guardianEmail: string
   studentEmail?: string
   studentUserId?: string
+  accountParticipant?: boolean
   status: 'active' | 'inactive'
   createdAt: number
   updatedAt: number
@@ -345,6 +346,7 @@ export interface SchoolClassRequest {
   id: string
   schoolId: string
   studentId: string
+  studentName?: string
   requestedBy: string
   type: 'individual' | 'group'
   preferredDays: number[]

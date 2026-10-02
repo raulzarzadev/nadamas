@@ -11,5 +11,5 @@ export function destinationForRole(role: RoleName): string {
   if (role === 'coach') return '/coach/agenda'
   if (role === 'school') return '/school/classes'
   if (role === 'admin') return '/admin/home'
-  return '/athlete/bookings'
+  return '/athlete/find-coach'
 }

@@ -10,7 +10,7 @@ import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 export default function DashboardEntryPage() {
   const router = useRouter()
   const { user } = useUser()
-  const { roles, activeRole } = useRole()
+  const { roles, activeRole, activeRolePreferenceReady, hasActiveRolePreference } = useRole()
 
   useEffect(() => {
     if (user === undefined) return
@@ -20,8 +20,11 @@ export default function DashboardEntryPage() {
       return
     }
 
-    router.replace(destinationForRole(entryRoleForSession(roles, activeRole)))
-  }, [user, roles, activeRole, router])
+    if (!activeRolePreferenceReady) return
+
+    const role = hasActiveRolePreference ? activeRole : entryRoleForSession(roles)
+    router.replace(destinationForRole(role))
+  }, [user, roles, activeRole, activeRolePreferenceReady, hasActiveRolePreference, router])
 
   return <Loading size="lg" fullScreen />
 }

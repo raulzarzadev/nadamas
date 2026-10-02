@@ -3,17 +3,7 @@
 import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  FiChevronLeft,
-  FiChevronRight,
-  FiEdit2,
-  FiLock,
-  FiPlus,
-  FiUnlock,
-  FiUser,
-  FiUsers,
-  FiX,
-} from 'react-icons/fi'
+import { FiEdit2, FiLock, FiPlus, FiUnlock, FiUser, FiUsers, FiX } from 'react-icons/fi'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -41,31 +31,13 @@ import {
 import { capitalizeSchoolTerm } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
+import CoachAgendaDateSelector from './CoachAgendaDateSelector'
 import { useCoachAgendaShare } from './CoachAgendaShareContext'
 import ScheduleHoursEditor, {
   type HoursMode,
   type ScheduleCoachOption,
 } from './ScheduleHoursEditor'
 import StudentProgressModal from './StudentProgressModal'
-
-const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
-const OCCUPANCY_BAR_KEYS = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6'] as const
-const OCCUPANCY_MAX_BARS = OCCUPANCY_BAR_KEYS.length
-
-// One thick line per hour, colored by status, in the SAME chronological order as
-// the day's hour list (earliest at top). When a day has more hours than
-// OCCUPANCY_MAX_BARS, evenly downsample while preserving order.
-function occupancyBars(statuses: HourStatus[]): string[] {
-  if (statuses.length === 0) return []
-  let picked = statuses
-  if (statuses.length > OCCUPANCY_MAX_BARS) {
-    picked = Array.from(
-      { length: OCCUPANCY_MAX_BARS },
-      (_, index) => statuses[Math.floor((index * statuses.length) / OCCUPANCY_MAX_BARS)]
-    )
-  }
-  return picked.map((status) => HOUR_STATUS_STYLE[status].bar)
-}
 
 function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
   return `${booking.date}|${booking.startTime}`
@@ -152,7 +124,6 @@ export default function CoachAgenda({
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
   const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()))
-  const today = dateKey(new Date())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
@@ -231,30 +202,6 @@ export default function CoachAgenda({
   const changeMonth = (delta: number) => {
     const base = new Date(`${selectedDate}T12:00:00`)
     setSelectedDate(dateKey(new Date(base.getFullYear(), base.getMonth() + delta, 1)))
-  }
-
-  // Swipe lateral sobre la tira de días para cambiar de semana. La tira sigue el
-  // dedo (dragX) y rebota al soltar para que se note que es deslizable.
-  const touchStartX = useRef<number | null>(null)
-  const [dragX, setDragX] = useState(0)
-  const [dragging, setDragging] = useState(false)
-  const onStripTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0]?.clientX ?? null
-    setDragging(true)
-    setDragX(0)
-  }
-  const onStripTouchMove = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return
-    const dx = (e.touches[0]?.clientX ?? touchStartX.current) - touchStartX.current
-    setDragX(Math.max(-100, Math.min(100, dx)))
-  }
-  const onStripTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return
-    const dx = (e.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current
-    touchStartX.current = null
-    setDragging(false)
-    setDragX(0)
-    if (Math.abs(dx) > 40) changeWeek(dx < 0 ? 1 : -1)
   }
 
   const activeBookings = useMemo(
@@ -703,144 +650,16 @@ export default function CoachAgenda({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Month nav: ‹ Junio › + conteo del mes */}
-      <NavStepper
-        label={new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', { month: 'long' })}
-        count={`${monthStats.booked}/${monthStats.total}`}
-        prevLabel="Mes anterior"
-        nextLabel="Mes siguiente"
-        onPrev={() => changeMonth(-1)}
-        onNext={() => changeMonth(1)}
-        labelClassName="text-xl font-extrabold capitalize"
+      <CoachAgendaDateSelector
+        selectedDate={selectedDate}
+        weekDates={weekDates}
+        dayStatuses={dayStatuses}
+        monthCount={`${monthStats.booked}/${monthStats.total}`}
+        weekCount={`${weekStats.booked}/${weekStats.total}`}
+        onSelectDate={setSelectedDate}
+        onChangeMonth={changeMonth}
+        onChangeWeek={changeWeek}
       />
-
-      {/* Week nav: ‹ 22 jun - 28 jun › + conteo de la semana */}
-      <NavStepper
-        label={`${weekDates[0].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} - ${weekDates[6].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}`}
-        count={`${weekStats.booked}/${weekStats.total}`}
-        prevLabel="Semana anterior"
-        nextLabel="Semana siguiente"
-        onPrev={() => changeWeek(-1)}
-        onNext={() => changeWeek(1)}
-        labelClassName="text-sm font-semibold"
-      />
-
-      {selectedDate !== today && (
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={() => setSelectedDate(today)}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-[var(--c-aqua-strong)] px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[var(--c-ocean-mid)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-          >
-            Hoy
-          </button>
-        </div>
-      )}
-
-      {/* Subtle legend for the occupancy bar colors */}
-      <ul
-        aria-label="Significado de los colores"
-        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-[var(--c-text-2)]"
-      >
-        {(
-          [
-            ['available', 'Disponible'],
-            ['booked', 'Ocupado'],
-            ['groupAvailable', 'Grupal disponible'],
-            ['group', 'Grupal ocupada'],
-            ['blocked', 'Bloqueado'],
-          ] as const
-        ).map(([status, label]) => (
-          <li key={status} className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className={`h-[4px] w-4 rounded-full ${HOUR_STATUS_STYLE[status].bar}`}
-            />
-            {label}
-          </li>
-        ))}
-      </ul>
-
-      {/* Week strip (flechas + swipe lateral para cambiar de semana) */}
-      <div
-        className="flex touch-pan-y items-stretch gap-1"
-        onTouchStart={onStripTouchStart}
-        onTouchMove={onStripTouchMove}
-        onTouchEnd={onStripTouchEnd}
-      >
-        <button
-          type="button"
-          aria-label="Semana anterior"
-          onClick={() => changeWeek(-1)}
-          className="grid w-6 shrink-0 place-items-center rounded-[var(--r-md)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-        >
-          <FiChevronLeft aria-hidden="true" />
-        </button>
-        <div
-          className="grid flex-1 grid-cols-7 gap-1.5"
-          style={{
-            transform: `translateX(${dragX}px)`,
-            opacity: dragging ? 0.85 : 1,
-            transition: dragging ? 'none' : 'transform 200ms ease, opacity 200ms ease',
-          }}
-        >
-          {weekDates.map((date) => {
-            const key = dateKey(date)
-            const selected = key === selectedDate
-            const isToday = key === dateKey(new Date())
-            const statuses = dayStatuses.get(key) || []
-            // Colored lines in chronological order: green=disponible, blue=bloqueado,
-            // red=ocupado individual, lime=grupal.
-            const bars = occupancyBars(statuses)
-            const count = (status: HourStatus) => statuses.filter((s) => s === status).length
-            const bookedCount = count('booked')
-            const groupCount = count('group')
-            return (
-              <button
-                type="button"
-                key={key}
-                onClick={() => setSelectedDate(key)}
-                aria-label={
-                  statuses.length
-                    ? `${weekdayChipLabel(date)}: ${bookedCount} ocupadas, ${groupCount} grupales, ${count('available')} disponibles, ${count('blocked')} bloqueadas`
-                    : weekdayChipLabel(date)
-                }
-                className={`flex flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${
-                  selected
-                    ? 'border-[var(--c-aqua)] bg-gradient-to-b from-[var(--c-aqua)] to-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]'
-                    : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${[0, 6].includes(date.getDay()) ? 'bg-[var(--c-surface)]' : 'bg-white'}`
-                } ${isToday ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
-              >
-                <span
-                  className={`text-[10px] font-bold ${selected ? 'text-white/80' : 'text-[var(--c-text-2)]'}`}
-                >
-                  {WEEKDAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]}
-                </span>
-                <span className="text-lg font-extrabold leading-none">{date.getDate()}</span>
-                <span
-                  aria-hidden="true"
-                  className="flex min-h-[14px] flex-col items-center justify-center gap-[2px] pt-0.5"
-                >
-                  {bars.map((color, index) => (
-                    <span
-                      key={OCCUPANCY_BAR_KEYS[index]}
-                      className={`h-[4px] w-4 rounded-full ${color}`}
-                    />
-                  ))}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-        <button
-          type="button"
-          aria-label="Semana siguiente"
-          onClick={() => changeWeek(1)}
-          className="grid w-6 shrink-0 place-items-center rounded-[var(--r-md)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-        >
-          <FiChevronRight aria-hidden="true" />
-        </button>
-      </div>
 
       {/* Day card */}
       <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
@@ -1454,50 +1273,6 @@ export default function CoachAgenda({
   )
 }
 
-// Centered ‹ label › stepper with a count below — month/week navigation.
-function NavStepper({
-  label,
-  count,
-  prevLabel,
-  nextLabel,
-  onPrev,
-  onNext,
-  labelClassName = '',
-}: {
-  label: string
-  count: string
-  prevLabel: string
-  nextLabel: string
-  onPrev: () => void
-  onNext: () => void
-  labelClassName?: string
-}) {
-  return (
-    <div className="flex items-center justify-center gap-3">
-      <button
-        type="button"
-        aria-label={prevLabel}
-        onClick={onPrev}
-        className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-      >
-        <FiChevronLeft aria-hidden="true" />
-      </button>
-      <span className="inline-flex items-baseline justify-center gap-2 text-center">
-        <span className={`text-[var(--c-ocean)] ${labelClassName}`}>{label}</span>
-        <span className="text-xs font-semibold text-[var(--c-text-2)]">{count}</span>
-      </span>
-      <button
-        type="button"
-        aria-label={nextLabel}
-        onClick={onNext}
-        className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-      >
-        <FiChevronRight aria-hidden="true" />
-      </button>
-    </div>
-  )
-}
-
 function AgendaRow({
   time,
   showTime = true,
@@ -1613,11 +1388,6 @@ function initials(name: string) {
   if (!parts.length) return '··'
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
-
-function weekdayChipLabel(date: Date) {
-  const weekday = date.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')
-  return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)} ${date.getDate()}`
 }
 
 function whatsappDayKey(date: Date) {

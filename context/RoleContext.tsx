@@ -15,6 +15,8 @@ import {
 interface RoleContextValue {
   roles: Roles
   activeRole: RoleName
+  activeRolePreferenceReady: boolean
+  hasActiveRolePreference: boolean
   isAdmin: boolean
   setActiveRole: (role: RoleName) => void
   enableCoach: () => Promise<void>
@@ -38,12 +40,18 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   const roles = useMemo(() => normalizeRoles(user), [user])
 
   const [stored, setStored] = useState<string | null>(null)
+  const [activeRolePreferenceReady, setActiveRolePreferenceReady] = useState(false)
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (typeof window === 'undefined') {
+      setActiveRolePreferenceReady(true)
+      return
+    }
     setStored(localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY))
+    setActiveRolePreferenceReady(true)
   }, [])
 
   const activeRole = useMemo(() => resolveActiveRole(stored, roles), [stored, roles])
+  const hasActiveRolePreference = stored === activeRole
 
   const setActiveRole = useCallback(
     (role: RoleName) => {
@@ -67,11 +75,20 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     () => ({
       roles,
       activeRole,
+      activeRolePreferenceReady,
+      hasActiveRolePreference,
       isAdmin: roles.admin,
       setActiveRole,
       enableCoach,
     }),
-    [roles, activeRole, setActiveRole, enableCoach]
+    [
+      roles,
+      activeRole,
+      activeRolePreferenceReady,
+      hasActiveRolePreference,
+      setActiveRole,
+      enableCoach,
+    ]
   )
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>

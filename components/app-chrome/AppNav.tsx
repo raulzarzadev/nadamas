@@ -60,10 +60,6 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
       const label = capitalizeSchoolTerm(terminology.coachPlural)
       return { ...item, label, mobileLabel: label }
     }
-    if (terminology.schoolId && item.href === '/athlete/find-coach') {
-      const label = `Buscar ${terminology.coachSingular}`
-      return { ...item, label, mobileLabel: 'Buscar' }
-    }
     return item
   })
   const [schoolAccess, setSchoolAccess] = useState<{
@@ -176,7 +172,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
 
         <nav
           aria-label="Navegación principal"
-          className={`grid gap-2 ${role === 'school' ? 'grid-cols-[repeat(3,minmax(0,1fr))_3rem]' : 'grid-cols-3'}`}
+          className={`grid gap-2 ${role === 'school' ? 'grid-cols-[repeat(3,minmax(0,1fr))_3rem]' : role === 'athlete' ? 'grid-cols-2' : 'grid-cols-3'}`}
         >
           {primary.map((l) => {
             const active = pathname.startsWith(l.href)

@@ -265,7 +265,8 @@ export default function SchoolClasses() {
                   >
                     <div>
                       <p className="font-semibold text-(--c-ocean)">
-                        {students.find((student) => student.id === request.studentId)?.name ||
+                        {request.studentName ||
+                          students.find((student) => student.id === request.studentId)?.name ||
                           capitalizeSchoolTerm(participantSingular)}
                       </p>
                       <p className="text-xs text-(--c-text-2)">
@@ -298,7 +299,8 @@ export default function SchoolClasses() {
                   className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-sm"
                 >
                   <span>
-                    {students.find((student) => student.id === request.studentId)?.name ||
+                    {request.studentName ||
+                      students.find((student) => student.id === request.studentId)?.name ||
                       capitalizeSchoolTerm(participantSingular)}{' '}
                     · {request.preferredStartTime}–{request.preferredEndTime}
                   </span>

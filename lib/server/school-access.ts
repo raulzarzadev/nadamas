@@ -46,9 +46,14 @@ export async function schoolPeopleAreValid(
       )
     ),
     Promise.all(
-      [...new Set(studentIds)].map((studentId) =>
-        adminDb.collection('schoolStudents').doc(studentId).get()
-      )
+      [...new Set(studentIds)].map(async (studentId) => {
+        const studentRef = adminDb.collection('schoolStudents').doc(studentId)
+        const membershipRef = adminDb
+          .collection('schoolMemberships')
+          .doc(`${schoolId}_${studentId}`)
+        const [student, membership] = await Promise.all([studentRef.get(), membershipRef.get()])
+        return { student, membership }
+      })
     ),
   ])
 
@@ -59,8 +64,13 @@ export async function schoolPeopleAreValid(
       schoolMembershipHasRole(snapshot.data() as SchoolMembership, 'teacher') &&
       snapshot.data()?.status === 'active'
   )
-  const studentsValid = studentSnapshots.every(
-    (snapshot) => snapshot.exists && snapshot.data()?.schoolId === schoolId
+  const studentsValid = studentSnapshots.every(({ student, membership }) =>
+    student.exists
+      ? student.data()?.schoolId === schoolId
+      : membership.exists &&
+        membership.data()?.schoolId === schoolId &&
+        membership.data()?.status === 'active' &&
+        schoolMembershipHasRole(membership.data() as SchoolMembership, 'student')
   )
   return teachersValid && studentsValid
 }

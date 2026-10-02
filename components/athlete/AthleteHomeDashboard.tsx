@@ -22,14 +22,8 @@ import { capitalizeSchoolTerm } from '@/lib/school'
 const ACTION_CARDS = [
   {
     href: '/athlete/find-coach',
-    title: 'Buscar coach',
-    body: 'Encuentra coaches verificados por especialidad y disponibilidad.',
-    icon: FiSearch,
-  },
-  {
-    href: '/athlete/bookings',
-    title: 'Mis clases',
-    body: 'Clases agendadas, estado y datos del coach.',
+    title: 'Horarios',
+    body: 'Consulta horarios disponibles en tus escuelas y con coaches abiertos.',
     icon: FiCalendar,
   },
   {
@@ -91,7 +85,7 @@ export default function AthleteHomeDashboard() {
 
       {nextClass ? (
         <Link
-          href="/athlete/bookings"
+          href="/athlete/progress"
           className="flex items-center gap-4 rounded-[var(--r-md)] border border-(--c-aqua-light) bg-gradient-to-br from-(--c-aqua-light)/40 to-white p-5 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]"
         >
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-(--c-aqua) to-(--c-ocean) text-white">
@@ -150,7 +144,7 @@ export default function AthleteHomeDashboard() {
 
       <CalendarConnectionCard calendarRole="athlete" />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         {ACTION_CARDS.map((card) => {
           const Icon = card.icon
           return (
@@ -164,9 +158,7 @@ export default function AthleteHomeDashboard() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1 font-bold text-(--c-ocean)">
-                  {card.href === '/athlete/find-coach' && terminology.schoolId
-                    ? `Buscar ${coachSingular}`
-                    : card.title}
+                  {card.title}
                   <FiChevronRight
                     aria-hidden="true"
                     className="text-(--c-text-2) transition-transform group-hover:translate-x-0.5"
@@ -174,7 +166,7 @@ export default function AthleteHomeDashboard() {
                 </span>
                 <span className="mt-1 block text-sm text-(--c-text-2)">
                   {card.href === '/athlete/find-coach' && terminology.schoolId
-                    ? `Encuentra ${coachPlural} verificados por especialidad y disponibilidad.`
+                    ? `Consulta horarios de tus ${coachPlural} de la escuela o filtra otra escuela.`
                     : card.body}
                 </span>
               </span>

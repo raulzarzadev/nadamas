@@ -21,7 +21,7 @@ export interface HourStatusStyle {
 
 export const HOUR_STATUS_STYLE: Record<HourStatus, HourStatusStyle> = {
   available: {
-    // Hollow everywhere: an available hour is an empty (outlined) container.
+    // Available hours are hollow; occupied hours use a solid fill.
     bar: 'border border-emerald-500 bg-transparent',
     border: 'border-emerald-400',
     bg: 'bg-white',
