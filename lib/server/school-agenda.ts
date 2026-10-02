@@ -77,7 +77,7 @@ export function schoolClassAgendaBooking(args: {
     source: 'school-class',
     createdAt: occurrence.createdAt || 0,
     updatedAt: occurrence.updatedAt || 0,
-    classFull: false,
+    classFull: occurrence.classFull === true,
   }
 }
 

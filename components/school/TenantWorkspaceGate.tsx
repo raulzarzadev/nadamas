@@ -15,8 +15,12 @@ export default function TenantWorkspaceGate({
   const tenant = useTenantSchool()
   const pathname = usePathname()
   if (!tenant) return children
-  // The school schedule is public to prospective athletes, even before they join.
-  if (mode === 'athlete' && pathname === '/athlete/find-coach') return children
+  // Public entry points remain available before an athlete joins the tenant.
+  if (
+    mode === 'athlete' &&
+    (pathname === '/athlete/find-coach' || pathname.startsWith('/athlete/invitations/'))
+  )
+    return children
   return <ScopedWorkspaceGate mode={mode}>{children}</ScopedWorkspaceGate>
 }
 

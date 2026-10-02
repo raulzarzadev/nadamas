@@ -1,5 +1,5 @@
 import SchoolInvitationPage from '@/components/school/SchoolInvitationPage'
 
-export default function SchoolInvitationRoute() {
+export default function AthleteInvitationRoute() {
   return <SchoolInvitationPage />
 }

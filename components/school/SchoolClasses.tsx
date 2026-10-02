@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { FiCalendar, FiCheck, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
+import { FiCalendar, FiCheck, FiEdit2, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
@@ -181,45 +181,46 @@ export default function SchoolClasses() {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">Horarios</h1>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
           <SchoolSelector
             schools={schools}
             selectedId={selected.school.id}
             onChange={selectSchool}
           />
           {isDirector && (
-            <div className="flex flex-col gap-2 sm:w-64">
-              <label htmlFor="schedule-coach" className="text-sm font-bold text-(--c-ocean)">
-                Administrar horarios de {coachSingular}
-              </label>
-              <select
-                id="schedule-coach"
-                className="select select-bordered min-h-11 w-full"
-                value={scheduleCoachId}
-                disabled={loading}
-                onChange={(event) => setScheduleCoachId(event.target.value)}
+            <div className="flex w-full min-w-0 flex-1 items-end gap-2">
+              <label
+                htmlFor="schedule-coach"
+                className="grid min-w-0 flex-1 gap-2 text-sm font-bold text-(--c-ocean)"
               >
-                {activeTeachers.length > 0 && <option value="">Todos los {coachPlural}</option>}
-                {scheduleCoachOptions.map((coach) => (
-                  <option key={coach.id} value={coach.id}>
-                    {coach.name}
-                  </option>
-                ))}
-              </select>
+                Administrar horarios de {coachSingular}
+                <select
+                  id="schedule-coach"
+                  className="select select-bordered min-h-11 w-full min-w-0"
+                  value={scheduleCoachId}
+                  disabled={loading}
+                  onChange={(event) => setScheduleCoachId(event.target.value)}
+                >
+                  {activeTeachers.length > 0 && <option value="">Todos los {coachPlural}</option>}
+                  {scheduleCoachOptions.map((coach) => (
+                    <option key={coach.id} value={coach.id}>
+                      {coach.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => setScheduleEditorOpen(true)}
+                className="btn btn-primary min-h-11 shrink-0 gap-1.5 px-3 text-xs sm:gap-2 sm:px-4 sm:text-sm"
+              >
+                <FiEdit2 aria-hidden="true" /> Editar horario
+              </button>
             </div>
           )}
         </div>
-        {isDirector && (
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => setScheduleEditorOpen(true)}
-            className="btn btn-primary min-h-11 gap-2 self-start sm:self-auto"
-          >
-            <FiPlus aria-hidden="true" /> Agregar o quitar horas
-          </button>
-        )}
         {!isDirector && isStudentAccount && (
           <button
             type="button"

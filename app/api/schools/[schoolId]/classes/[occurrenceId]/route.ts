@@ -79,8 +79,18 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   const requestedType = body.type === 'group' || body.type === 'individual' ? body.type : null
   if (body.type !== undefined && !requestedType)
     return NextResponse.json({ error: 'Tipo de clase inválido.' }, { status: 400 })
-  const hasScheduleChange = Boolean(teacherIds || date || startTime || endTime || requestedType)
-  if (!isDirector && hasScheduleChange)
+  const requestedClassFull = typeof body.classFull === 'boolean' ? body.classFull : null
+  if (body.classFull !== undefined && requestedClassFull === null)
+    return NextResponse.json({ error: 'Cupo de clase inválido.' }, { status: 400 })
+  if (requestedType === 'individual' && occurrence.studentIds.length > 1)
+    return NextResponse.json(
+      { error: 'Una clase con varios alumnos debe ser grupal.' },
+      { status: 409 }
+    )
+  if (requestedClassFull === true && (requestedType || occurrence.type) !== 'group')
+    return NextResponse.json({ error: 'El cupo solo aplica a clases grupales.' }, { status: 400 })
+  const hasScheduleChange = Boolean(teacherIds || date || startTime || endTime)
+  if (!isDirector && (hasScheduleChange || requestedType || requestedClassFull !== null))
     return NextResponse.json(
       { error: 'Solo la dirección puede cambiar el horario o el entrenador.' },
       { status: 403 }
@@ -211,6 +221,9 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     ...(typeof editable.startTime === 'string' ? { startTime: editable.startTime } : {}),
     ...(typeof editable.endTime === 'string' ? { endTime: editable.endTime } : {}),
     ...(requestedType ? { type: requestedType } : {}),
+    ...(requestedClassFull !== null || requestedType === 'individual'
+      ? { classFull: requestedType === 'individual' ? false : requestedClassFull }
+      : {}),
     ...(teacherIds ? { teacherIds } : {}),
     ...(typeof editable.location === 'string' ? { location: editable.location.slice(0, 200) } : {}),
     ...(typeof editable.locationUrl === 'string'

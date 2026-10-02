@@ -336,6 +336,7 @@ export interface SchoolClassOccurrence {
   timezone: string
   teacherIds: string[]
   studentIds: string[]
+  classFull?: boolean
   location: string
   locationUrl: string
   visibility?: 'public' | 'private'

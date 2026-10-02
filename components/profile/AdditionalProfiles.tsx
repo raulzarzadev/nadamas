@@ -1,14 +1,29 @@
 'use client'
+
 import { useEffect, useState } from 'react'
+import { FiEdit2, FiPlus } from 'react-icons/fi'
+import Sheet from '@/components/ui/sheet'
 import type { AdditionalProfile } from '@/lib/additional-profile'
-import { getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
+
+type AdditionalProfileForm = {
+  name: string
+  birthDate: string
+  gender: AdditionalProfile['gender']
+}
+
+const EMPTY_FORM: AdditionalProfileForm = { name: '', birthDate: '', gender: 'varonil' }
 
 export default function AdditionalProfiles() {
   const [profiles, setProfiles] = useState<AdditionalProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
-  const [form, setForm] = useState({ name: '', birthDate: '', gender: 'varonil' })
+  const [formError, setFormError] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingProfile, setEditingProfile] = useState<AdditionalProfile | null>(null)
+  const [form, setForm] = useState<AdditionalProfileForm>(EMPTY_FORM)
+
   useEffect(() => {
     getAuthed('/api/additional-profiles')
       .then((r) => r.json())
@@ -16,44 +31,107 @@ export default function AdditionalProfiles() {
       .catch(() => setMessage('No se pudieron cargar tus Adicionales.'))
       .finally(() => setLoading(false))
   }, [])
+
+  function openCreateModal() {
+    setEditingProfile(null)
+    setForm(EMPTY_FORM)
+    setMessage('')
+    setFormError('')
+    setModalOpen(true)
+  }
+
+  function openEditModal(profile: AdditionalProfile) {
+    setEditingProfile(profile)
+    setForm({ name: profile.name, birthDate: profile.birthDate || '', gender: profile.gender })
+    setMessage('')
+    setFormError('')
+    setModalOpen(true)
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     setSaving(true)
     setMessage('')
+    setFormError('')
     try {
-      const response = await postAuthed('/api/additional-profiles', form)
-      const { profile } = await response.json()
-      setProfiles((current) => [...current, profile])
-      setForm({ name: '', birthDate: '', gender: 'varonil' })
-      setMessage('Adicional creado. Puedes seleccionarlo al aceptar una invitación de escuela.')
+      const response = editingProfile
+        ? await patchAuthed(
+            `/api/additional-profiles/${encodeURIComponent(editingProfile.id)}`,
+            form
+          )
+        : await postAuthed('/api/additional-profiles', form)
+      const { profile } = (await response.json()) as { profile: AdditionalProfile }
+      setProfiles((current) =>
+        editingProfile
+          ? current.map((item) => (item.id === profile.id ? profile : item))
+          : [...current, profile].sort((a, b) => a.name.localeCompare(b.name))
+      )
+      setModalOpen(false)
+      setEditingProfile(null)
+      setForm(EMPTY_FORM)
+      setMessage(
+        editingProfile
+          ? 'Adicional actualizado.'
+          : 'Adicional creado. Puedes seleccionarlo al aceptar una invitación de escuela.'
+      )
     } catch {
-      setMessage('No se pudo crear el Adicional. Revisa los datos e inténtalo de nuevo.')
+      setFormError(
+        editingProfile
+          ? 'No se pudo actualizar el Adicional. Revisa los datos e inténtalo de nuevo.'
+          : 'No se pudo crear el Adicional. Revisa los datos e inténtalo de nuevo.'
+      )
     } finally {
       setSaving(false)
     }
   }
+
   return (
     <section
       className="grid gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5"
       aria-labelledby="additional-title"
     >
-      <div>
-        <h2 id="additional-title" className="text-lg font-bold">
-          Adicionales
-        </h2>
-        <p className="mt-1 text-sm text-(--c-text-2)">
-          Crea perfiles para gestionar personas adultas o menores desde tu cuenta. Cada Adicional
-          tiene sus propios datos y clases.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="additional-title" className="text-lg font-bold">
+            Adicionales
+          </h2>
+          <p className="mt-1 text-sm text-(--c-text-2)">
+            Crea perfiles para gestionar personas adultas o menores desde tu cuenta. Cada Adicional
+            tiene sus propios datos y clases.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={openCreateModal}
+          disabled={loading}
+          className="btn btn-primary min-h-11"
+        >
+          <FiPlus aria-hidden="true" /> Agregar Adicional
+        </button>
       </div>
+
       {loading ? (
         <p>Cargando Adicionales…</p>
       ) : profiles.length ? (
         <ul className="grid gap-2">
-          {profiles.map((p) => (
-            <li key={p.id} className="rounded-[var(--r-sm)] bg-(--c-surface) p-3">
-              <strong>{p.name}</strong>
-              <span className="block text-sm text-(--c-text-2)">Adicional · {p.birthDate}</span>
+          {profiles.map((profile) => (
+            <li
+              key={profile.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-3"
+            >
+              <div>
+                <strong>{profile.name}</strong>
+                <span className="block text-sm text-(--c-text-2)">
+                  Adicional · {profile.birthDate || 'Fecha de nacimiento no registrada'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => openEditModal(profile)}
+                className="btn btn-outline min-h-11"
+              >
+                <FiEdit2 aria-hidden="true" /> Editar Adicional
+              </button>
             </li>
           ))}
         </ul>
@@ -62,49 +140,88 @@ export default function AdditionalProfiles() {
           Aún no tienes Adicionales. Agrega a la primera persona.
         </p>
       )}
-      <form onSubmit={submit} className="grid gap-3">
-        <label className="grid gap-1 text-sm font-semibold">
-          Nombre completo
-          <input
-            required
-            minLength={2}
-            maxLength={120}
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-          />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          Fecha de nacimiento
-          <input
-            required
-            type="date"
-            value={form.birthDate}
-            onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-            className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-          />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          Rama / género
-          <select
-            value={form.gender}
-            onChange={(e) => setForm({ ...form, gender: e.target.value })}
-            className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-          >
-            <option value="varonil">Varonil</option>
-            <option value="femenil">Femenil</option>
-            <option value="otro">Otro</option>
-          </select>
-        </label>
-        <button disabled={saving || loading} className="btn btn-primary min-h-11" type="submit">
-          {saving ? 'Creando…' : 'Crear Adicional'}
-        </button>
-      </form>
+
       {message && (
         <p role="status" className="text-sm text-(--c-text-2)">
           {message}
         </p>
       )}
+
+      <Sheet
+        open={modalOpen}
+        onClose={() => {
+          if (!saving) setModalOpen(false)
+        }}
+        label={editingProfile ? 'Editar Adicional' : 'Agregar Adicional'}
+        keyboardAware
+        fullBleedMobile
+      >
+        <form onSubmit={submit} className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
+          <div>
+            <h3 className="text-xl font-bold text-(--c-ocean)">
+              {editingProfile ? 'Editar Adicional' : 'Agregar Adicional'}
+            </h3>
+            <p className="mt-1 text-sm text-(--c-text-2)">
+              {editingProfile
+                ? 'Actualiza sus datos. La fecha de nacimiento es opcional.'
+                : 'Agrega los datos de la persona que administrarás desde tu cuenta.'}
+            </p>
+          </div>
+          <label className="grid gap-1 text-sm font-semibold">
+            Nombre completo
+            <input
+              required
+              minLength={2}
+              maxLength={120}
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-semibold">
+            Fecha de nacimiento{editingProfile ? ' (opcional)' : ''}
+            <input
+              required={!editingProfile}
+              type="date"
+              value={form.birthDate}
+              onChange={(event) => setForm({ ...form, birthDate: event.target.value })}
+              className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
+            />
+          </label>
+          <label className="grid gap-1 text-sm font-semibold">
+            Rama / género
+            <select
+              value={form.gender}
+              onChange={(event) =>
+                setForm({ ...form, gender: event.target.value as AdditionalProfile['gender'] })
+              }
+              className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
+            >
+              <option value="varonil">Varonil</option>
+              <option value="femenil">Femenil</option>
+              <option value="otro">Otro</option>
+            </select>
+          </label>
+          {formError && (
+            <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
+              {formError}
+            </p>
+          )}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              disabled={saving}
+              className="btn btn-outline min-h-11"
+            >
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving} className="btn btn-primary min-h-11">
+              {saving ? 'Guardando…' : editingProfile ? 'Guardar cambios' : 'Crear Adicional'}
+            </button>
+          </div>
+        </form>
+      </Sheet>
     </section>
   )
 }

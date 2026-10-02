@@ -50,7 +50,9 @@ export async function POST(request: Request, { params }: RouteProps) {
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin
         : new URL(request.url).origin
-    const inviteUrl = `${siteUrl}/school/invitations/${token}`
+    const invitationPath =
+      role === 'student' ? `/athlete/invitations/${token}` : `/school/invitations/${token}`
+    const inviteUrl = `${siteUrl}${invitationPath}`
 
     try {
       await sendSchoolInvitationEmail({ email, schoolName: school.name, role, inviteUrl })

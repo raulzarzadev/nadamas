@@ -65,7 +65,7 @@ export default function SchoolInvitations() {
               </div>
               {invitation.status === 'pending' && (
                 <Link
-                  href={`/school/invitations/${invitation.id}`}
+                  href={`${invitation.role === 'student' ? '/athlete' : '/school'}/invitations/${invitation.id}`}
                   className="inline-flex items-center gap-1 text-sm font-bold text-[var(--c-aqua-strong)] hover:underline"
                 >
                   Revisar <FiArrowRight aria-hidden="true" />

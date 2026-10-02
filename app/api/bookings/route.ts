@@ -112,7 +112,7 @@ export async function GET(request: Request) {
             source: 'school-class',
             createdAt: item.createdAt || 0,
             updatedAt: item.updatedAt || 0,
-            classFull: false,
+            classFull: item.classFull === true,
           } as Booking,
         ]
       })

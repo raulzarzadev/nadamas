@@ -35,3 +35,17 @@ export async function createAdditionalProfile(
   await ref.set(profile)
   return profile
 }
+
+export async function updateAdditionalProfile(
+  ownerId: string,
+  id: string,
+  values: Pick<AdditionalProfile, 'name' | 'birthDate' | 'gender'>
+) {
+  if (!id || id.includes('/')) return null
+  const ref = adminDb.collection('additionalProfiles').doc(id)
+  const snapshot = await ref.get()
+  if (!snapshot.exists || snapshot.data()?.ownerId !== ownerId) return null
+  const updatedAt = Date.now()
+  await ref.update({ ...values, updatedAt })
+  return { ...snapshot.data(), ...values, id: snapshot.id, updatedAt } as AdditionalProfile
+}

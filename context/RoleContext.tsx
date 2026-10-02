@@ -18,7 +18,7 @@ interface RoleContextValue {
   activeRolePreferenceReady: boolean
   hasActiveRolePreference: boolean
   isAdmin: boolean
-  setActiveRole: (role: RoleName) => void
+  setActiveRole: (role: RoleName, options?: { navigate?: boolean }) => void
   enableCoach: () => Promise<void>
 }
 
@@ -54,12 +54,12 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   const hasActiveRolePreference = stored === activeRole
 
   const setActiveRole = useCallback(
-    (role: RoleName) => {
+    (role: RoleName, options?: { navigate?: boolean }) => {
       if (typeof window !== 'undefined') {
         localStorage.setItem(ACTIVE_ROLE_STORAGE_KEY, role)
       }
       setStored(role)
-      router.push(destinationForRole(role))
+      if (options?.navigate !== false) router.push(destinationForRole(role))
     },
     [router]
   )

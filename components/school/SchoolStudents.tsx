@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FiClock, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
@@ -334,11 +335,17 @@ function StudentForm({
   }
 
   return (
-    <Modal
-      title={canInvite ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
+    <Sheet
+      open
       onClose={onClose}
+      label={canInvite ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
+      keyboardAware
+      fullBleedMobile
     >
-      <form onSubmit={submit} className="grid max-h-[70vh] gap-3 overflow-y-auto">
+      <form onSubmit={submit} className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
+        <h2 className="text-xl font-bold text-(--c-ocean)">
+          {canInvite ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
+        </h2>
         {!canInvite && (
           <>
             <label className="grid gap-1 text-sm font-semibold">
@@ -432,7 +439,7 @@ function StudentForm({
           {saving ? 'Guardando…' : `Guardar ${participantSingular}`}
         </button>
       </form>
-    </Modal>
+    </Sheet>
   )
 }
 
@@ -460,36 +467,5 @@ function Text({
         className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
       />
     </label>
-  )
-}
-function Modal({
-  title,
-  onClose,
-  children,
-}: {
-  title: string
-  onClose: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,37,64,0.55)] p-4"
-    >
-      <div className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto max-w-lg rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)] sm:p-7">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-extrabold text-(--c-ocean)">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-sm font-semibold text-(--c-text-2)"
-          >
-            Cerrar
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
   )
 }

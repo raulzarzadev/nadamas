@@ -100,6 +100,17 @@ export function buildAvailableSlots({
         const occurrenceKey = `${key}|${schedule.startTime}`
         if (seenSlots.has(occurrenceKey)) continue
         seenSlots.add(occurrenceKey)
+        const matchingBooking = bookings.find(
+          (booking) =>
+            booking.status !== 'cancelled' &&
+            booking.date === key &&
+            timesOverlap(
+              schedule.startTime,
+              schedule.endTime,
+              booking.startTime,
+              booking.endTime
+            )
+        )
         const slot = {
           id: [offering.id, schedule.id, key, schedule.startTime, schedule.endTime].join('::'),
           coachId,
@@ -109,7 +120,7 @@ export function buildAvailableSlots({
           startTime: schedule.startTime,
           endTime: schedule.endTime,
           locationName: offeringPlaceLabel(offering),
-          groupType: schedule.groupType ?? offering.groupType,
+          groupType: matchingBooking?.groupType ?? schedule.groupType ?? offering.groupType,
           status: 'available' as const,
         }
         if (blocks.some((block) => block.hidden && blockOverlapsSlot(block, slot))) continue
