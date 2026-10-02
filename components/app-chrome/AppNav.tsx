@@ -220,6 +220,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
 
         {canShowWorkspaceNavigation && role === 'coach' && <CoachSchoolSwitcher />}
         {canShowWorkspaceNavigation && role === 'athlete' && <AthleteSchoolSwitcher />}
+        {publicAthleteSchedule && <div id="athlete-coach-filters" className="min-w-0" />}
       </div>
     </header>
   )

@@ -2,6 +2,7 @@
 
 import Sheet from '@comps/ui/sheet'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FiUser, FiUsers, FiX } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
 import type { SchoolAccessClient } from '@/components/school/useSchoolSelection'
@@ -76,11 +77,15 @@ const groupReservationsByClass = (reservations: SchoolReservation[]) => {
 export default function AthleteSchoolSchedule({
   schoolId,
   schoolName,
+  title = 'Horarios',
+  description = '',
   bookingMode,
   schools = EMPTY_SCHOOLS,
 }: {
   schoolId: string | null
   schoolName?: string
+  title?: string
+  description?: string
   bookingMode: SchoolBookingMode
   schools?: SchoolAccessClient[]
 }) {
@@ -115,6 +120,7 @@ export default function AthleteSchoolSchedule({
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
   const [coachFilter, setCoachFilter] = useState('all')
+  const [coachFiltersTarget, setCoachFiltersTarget] = useState<HTMLElement | null>(null)
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
     () => new Set(HOUR_STATUSES)
   )
@@ -129,6 +135,10 @@ export default function AthleteSchoolSchedule({
   useEffect(() => {
     if (accountName) setBookerName(accountName)
   }, [accountName])
+
+  useEffect(() => {
+    setCoachFiltersTarget(document.getElementById('athlete-coach-filters'))
+  }, [])
 
   const load = useCallback(async () => {
     setError('')
@@ -320,13 +330,17 @@ export default function AthleteSchoolSchedule({
         !fullGroupSlotKeys.has(reservationSlotKey(slot)))
   )
   const eligibleSlots = selectableSlots.filter(
-    (slot) => slotIsFuture(slot) && (coachFilter === 'all' || slot.coachId === coachFilter)
+    (slot) =>
+      slotIsFuture(slot) &&
+      (coachFilter === 'all' || (slot.coachId === coachFilter && !slot.schoolId))
   )
   const visibleSlots = eligibleSlots.filter((slot) =>
     selectedStatuses.has(slot.groupType === 'grupal' ? 'groupAvailable' : 'available')
   )
   const coachIdsWithSlots = new Set(
-    selectableSlots.filter((slot) => slotIsFuture(slot)).map((slot) => slot.coachId)
+    selectableSlots
+      .filter((slot) => slotIsFuture(slot) && !slot.schoolId)
+      .map((slot) => slot.coachId)
   )
   const coaches = Object.entries(coachNames)
     .filter(([id]) => coachIdsWithSlots.has(id))
@@ -590,26 +604,41 @@ export default function AthleteSchoolSchedule({
 
   return (
     <section className="flex flex-col gap-4">
-      <fieldset className="flex flex-wrap items-center gap-2" aria-label="Filtrar por entrenador">
-        <legend className="sr-only">Filtrar por entrenador</legend>
-        <button
-          type="button"
-          onClick={() => setCoachFilter('all')}
-          className={`rounded-full border px-4 py-2 text-sm font-bold ${coachFilter === 'all' ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white' : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)]'}`}
-        >
-          Todos
-        </button>
-        {coaches.map(([id, name]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setCoachFilter(id)}
-            className={`rounded-full border px-4 py-2 text-sm font-bold ${coachFilter === id ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white' : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)]'}`}
-          >
-            {name}
-          </button>
-        ))}
-      </fieldset>
+      {!schoolId &&
+        coachFiltersTarget &&
+        createPortal(
+          <section className="-mx-1 min-w-0 px-1">
+            <div className="flex items-baseline gap-2 overflow-x-auto whitespace-nowrap">
+              <h2 className="text-sm font-extrabold text-[var(--c-ocean)]">{title}</h2>
+              {description && <p className="text-[11px] text-[var(--c-text-2)]">{description}</p>}
+            </div>
+            <nav
+              aria-label="Filtrar por coach independiente"
+              className="mt-2 flex gap-2 overflow-x-auto py-1"
+            >
+              <button
+                type="button"
+                onClick={() => setCoachFilter('all')}
+                aria-pressed={coachFilter === 'all'}
+                className={`min-h-11 shrink-0 rounded-[var(--r-sm)] border px-5 py-2 text-sm font-bold transition ${coachFilter === 'all' ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]' : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]'}`}
+              >
+                Todos
+              </button>
+              {coaches.map(([id, name]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCoachFilter(id)}
+                  aria-pressed={coachFilter === id}
+                  className={`min-h-11 shrink-0 rounded-[var(--r-sm)] border px-5 py-2 text-sm font-bold transition ${coachFilter === id ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]' : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]'}`}
+                >
+                  {name}
+                </button>
+              ))}
+            </nav>
+          </section>,
+          coachFiltersTarget
+        )}
       <CoachAgendaDateSelector
         selectedDate={selectedDate}
         weekDates={week}
