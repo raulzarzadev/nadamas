@@ -68,6 +68,8 @@ export default function CoachAgendaDateSelector({
         nextLabel="Semana siguiente"
         onPrev={() => changeWeek(-1)}
         onNext={() => changeWeek(1)}
+        onToday={() => onSelectDate(today)}
+        isToday={selectedDate === today}
         labelClassName="text-sm font-semibold capitalize"
       />
       {weekStatuses.size > 0 && (
@@ -200,6 +202,8 @@ function NavStepper({
   nextLabel,
   onPrev,
   onNext,
+  onToday,
+  isToday,
   labelClassName = '',
 }: {
   label: ReactNode
@@ -207,6 +211,8 @@ function NavStepper({
   nextLabel: string
   onPrev: () => void
   onNext: () => void
+  onToday: () => void
+  isToday: boolean
   labelClassName?: string
 }) {
   return (
@@ -229,6 +235,16 @@ function NavStepper({
         className="grid h-6 w-6 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
       >
         <FiChevronRight aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        aria-label={isToday ? 'Hoy' : 'Volver a hoy'}
+        aria-current={isToday ? 'date' : undefined}
+        disabled={isToday}
+        onClick={onToday}
+        className="min-h-7 rounded-full border border-[var(--c-border)] bg-white px-2.5 text-xs font-bold text-[var(--c-ocean)] transition hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] disabled:border-[var(--c-aqua)] disabled:bg-[var(--c-surface)] disabled:opacity-70"
+      >
+        Hoy
       </button>
     </div>
   )

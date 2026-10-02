@@ -982,7 +982,11 @@ export default function CoachAgenda({
 
           {!allDayBlock && rows.length === 0 && (
             <p className="px-4 py-8 text-center text-sm text-[var(--c-text-2)] sm:px-5">
-              {schoolId ? 'No hay horarios asignados para este día.' : 'No hay horarios este día.'}
+              {selectedDate < dateKey(new Date())
+                ? 'No hay clases registradas para este día.'
+                : schoolId
+                  ? 'No hay horarios asignados para este día.'
+                  : 'No hay horarios este día.'}
             </p>
           )}
 

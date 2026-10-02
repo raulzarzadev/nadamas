@@ -276,8 +276,6 @@ export default function AthleteSchoolSchedule({
         coachNames: names,
         schoolLabels,
       } as CoachAgendaPayload)
-      setMyReservations([])
-      setStudents([])
     } catch {
       setError('No se pudieron cargar los horarios. Inténtalo de nuevo.')
     }
@@ -458,14 +456,29 @@ export default function AthleteSchoolSchedule({
   )
   const dayStatuses = useMemo(() => {
     const result = new Map<string, HourStatus[]>()
+    const seenReservations = new Set<string>()
     for (const slot of eligibleSlots) {
       const statuses = result.get(slot.date) || []
       statuses.push(slot.groupType === 'grupal' ? 'groupAvailable' : 'available')
       result.set(slot.date, statuses)
     }
+    for (const reservation of myReservations) {
+      if (
+        reservation.status === 'cancelled' ||
+        (schoolId && reservation.schoolId !== schoolId) ||
+        (coachFilter !== 'all' && reservation.coachId !== coachFilter)
+      )
+        continue
+      const classKey = `${reservation.schoolId || ''}|${reservation.coachId}|${reservation.date}|${reservation.startTime}|${reservation.groupType}`
+      if (seenReservations.has(classKey)) continue
+      seenReservations.add(classKey)
+      const statuses = result.get(reservation.date) || []
+      statuses.push(reservation.groupType === 'grupal' ? 'group' : 'booked')
+      result.set(reservation.date, statuses)
+    }
     for (const statuses of result.values()) statuses.sort()
     return result
-  }, [eligibleSlots])
+  }, [eligibleSlots, myReservations, schoolId, coachFilter])
   const toggleStatus = (status: HourStatus) => {
     setSelectedStatuses((current) => {
       const next = new Set(current)
