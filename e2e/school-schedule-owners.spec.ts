@@ -19,17 +19,17 @@ function membership(
 }
 
 test.describe('responsables de horarios escolares', () => {
-  test('prefiere coaches activos cuando la escuela ya tiene coaches', () => {
+  test('incluye al director junto a los coaches activos', () => {
     const owners = schoolScheduleOwners([
       membership('director-1', 'director'),
       membership('coach-1', 'teacher'),
       membership('coach-2', 'teacher'),
     ])
 
-    expect(owners.map(({ userId }) => userId)).toEqual(['coach-1', 'coach-2'])
+    expect(owners.map(({ userId }) => userId)).toEqual(['director-1', 'coach-1', 'coach-2'])
   })
 
-  test('usa al director activo cuando todavía no hay coaches activos', () => {
+  test('excluye los miembros pendientes y suspendidos', () => {
     const owners = schoolScheduleOwners([
       membership('director-1', 'director'),
       membership('coach-pending', 'teacher', 'pending'),

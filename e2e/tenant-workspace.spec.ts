@@ -64,6 +64,9 @@ test('el subdominio fija la escuela, su marca y los permisos de cada modo', asyn
     await page.getByRole('button', { name: 'Entrar', exact: true }).click()
     await page.waitForURL((url) => !url.pathname.includes('/login'))
   }
+  const selectDayWithAvailability = async () => {
+    await page.getByRole('button', { name: /1 disponibles/ }).first().click()
+  }
   try {
     await seed('users', uid, {
       email,
@@ -131,8 +134,18 @@ test('el subdominio fija la escuela, su marca y los permisos de cada modo', asyn
     }, ids[1])
     await page.goto(`${origin}/coach/agenda`)
     await expect(page.getByRole('heading', { name: 'Horarios', exact: true })).toBeVisible()
+    await selectDayWithAvailability()
     await expect(page.getByText('16:00', { exact: true })).toBeVisible()
     await expect(page.getByText('19:00', { exact: true })).toHaveCount(0)
+    const schoolCoachFilter = page.getByRole('combobox', { name: 'Ver horarios de un profe' })
+    await expect(schoolCoachFilter).toHaveValue('mine')
+    await schoolCoachFilter.selectOption('')
+    await selectDayWithAvailability()
+    await expect(page.getByText('16:00', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Agregar horarios', exact: true })).toHaveCount(0)
+    await schoolCoachFilter.selectOption('mine')
+    await expect(page.getByRole('button', { name: 'Agregar horarios', exact: true })).toBeVisible()
+
     await expect(page.getByRole('navigation', { name: 'Seleccionar escuela' })).toHaveCount(0)
     await expect(page.locator('header').getByText('Escuela Zeta', { exact: true })).toBeVisible()
     await expect(page).toHaveTitle('Escuela Zeta')
@@ -158,6 +171,7 @@ test('el subdominio fija la escuela, su marca y los permisos de cada modo', asyn
     )
     await page.goto(`${origin}/coach/${uid}`)
     await expect(page).toHaveURL(new RegExp(`/athlete/coach/${uid}`))
+    await selectDayWithAvailability()
     await expect(page.getByText('16:00', { exact: true })).toBeVisible()
     await page.goto(`${origin}/school/classes`)
     await expect(page.getByText('No tienes acceso a este modo en esta escuela.')).toBeVisible()
@@ -167,6 +181,7 @@ test('el subdominio fija la escuela, su marca y los permisos de cada modo', asyn
     await expect(page.getByRole('navigation', { name: 'Seleccionar escuela' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Míos', exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Escuela Zeta', exact: true }).click()
+    await selectDayWithAvailability()
     await expect(page.getByText('16:00', { exact: true })).toBeVisible()
   } finally {
     docs.push(`otpLoginCodes/${encodeURIComponent(email)}`)

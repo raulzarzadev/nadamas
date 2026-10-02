@@ -7,14 +7,11 @@ import {
 } from '@/lib/school'
 
 export function schoolScheduleOwners(memberships: readonly SchoolMembership[]) {
-  const activeTeachers = memberships.filter(
-    (membership) =>
-      membership.status === 'active' && schoolMembershipHasExplicitRole(membership, 'teacher')
-  )
-  if (activeTeachers.length) return activeTeachers
   return memberships.filter(
     (membership) =>
-      membership.status === 'active' && schoolMembershipHasExplicitRole(membership, 'director')
+      membership.status === 'active' &&
+      (schoolMembershipHasExplicitRole(membership, 'teacher') ||
+        schoolMembershipHasExplicitRole(membership, 'director'))
   )
 }
 

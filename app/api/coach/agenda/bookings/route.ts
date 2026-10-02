@@ -98,6 +98,8 @@ type SlotSettingsInput = {
   id?: string
   date?: string
   startTime?: string
+  offeringId?: string
+  scheduleId?: string
   groupType?: 'particular' | 'grupal'
   classFull?: boolean
   attended?: boolean
@@ -313,6 +315,8 @@ async function handlePATCH(request: Request) {
 
   const date = typeof body.date === 'string' ? body.date.trim() : ''
   const startTime = typeof body.startTime === 'string' ? body.startTime.trim() : ''
+  const offeringId = typeof body.offeringId === 'string' ? body.offeringId.trim() : ''
+  const scheduleId = typeof body.scheduleId === 'string' ? body.scheduleId.trim() : ''
   const hasGroupType = body.groupType === 'particular' || body.groupType === 'grupal'
   const hasClassFull = typeof body.classFull === 'boolean'
 
@@ -334,6 +338,8 @@ async function handlePATCH(request: Request) {
     const booking = doc.data() as Booking
     return (
       (schoolId ? booking.schoolId === schoolId : !booking.schoolId) &&
+      (!offeringId || booking.offeringId === offeringId) &&
+      (!scheduleId || booking.scheduleId === scheduleId) &&
       booking.status !== 'cancelled'
     )
   })
@@ -378,6 +384,8 @@ async function handlePATCH(request: Request) {
     const classOfferings = offerings.map((offering) => ({
       ...offering,
       schedules: resolveOfferingSchedules(offering).map((schedule) =>
+        (!offeringId || offering.id === offeringId) &&
+        (!scheduleId || schedule.id === scheduleId) &&
         schedule.startTime === startTime &&
         scheduleIsAvailableOn(schedule, new Date(`${date}T12:00:00`))
           ? { ...schedule, groupType: nextGroupType }

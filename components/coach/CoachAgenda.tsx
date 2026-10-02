@@ -521,6 +521,8 @@ export default function CoachAgenda({
         ...(manageSchoolSchedule ? { coachId: booking.coachId } : {}),
         date: booking.date,
         startTime: booking.startTime,
+        offeringId: booking.offeringId,
+        scheduleId: booking.scheduleId,
         ...(schoolId ? { schoolId } : {}),
         ...settings,
       })
@@ -866,7 +868,9 @@ export default function CoachAgenda({
           )}
 
           {!allDayBlock &&
-            rows.map((row) => {
+            rows.map((row, rowIndex) => {
+              const showTime = rowIndex === 0 || rows[rowIndex - 1]?.sort !== row.sort
+              const showSeparator = rows[rowIndex + 1]?.sort !== row.sort
               if (row.kind === 'booked') {
                 const firstBooking = row.bookings[0]
                 if (!firstBooking) return null
@@ -883,6 +887,8 @@ export default function CoachAgenda({
                   <AgendaRow
                     key={`b-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
                     time={row.sort}
+                    showTime={showTime}
+                    showSeparator={showSeparator}
                   >
                     <div
                       className={`flex min-w-0 flex-1 flex-col gap-3 rounded-[var(--r-md)] border px-3 py-3 ${classStyle.border} ${classStyle.bg}`}
@@ -985,6 +991,21 @@ export default function CoachAgenda({
                               <FiPlus aria-hidden="true" /> Alumno
                             </button>
                           </div>
+                        )}
+                        {!readOnlyAgenda && (
+                          <span
+                            className="group relative"
+                            title="No se puede eliminar porque hay una clase asignada."
+                          >
+                            <RowIconButton
+                              ariaLabel="No se puede eliminar: hay una clase asignada"
+                              onClick={() => {}}
+                              disabled
+                              tone="danger"
+                            >
+                              <FiX aria-hidden="true" />
+                            </RowIconButton>
+                          </span>
                         )}
                       </div>
 
@@ -1091,9 +1112,14 @@ export default function CoachAgenda({
               if (row.kind === 'blocked') {
                 const isBlockedGroup = row.slot.groupType === 'grupal'
                 return (
-                  <AgendaRow key={`x-${row.slot.coachId}-${row.slot.id}`} time={row.slot.startTime}>
+                  <AgendaRow
+                    key={`x-${row.slot.coachId}-${row.slot.id}`}
+                    time={row.slot.startTime}
+                    showTime={showTime}
+                    showSeparator={showSeparator}
+                  >
                     <div
-                      className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-3 ${HOUR_STATUS_STYLE.blocked.border} ${HOUR_STATUS_STYLE.blocked.bg}`}
+                      className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 sm:flex-row sm:items-center sm:justify-between sm:px-3 ${HOUR_STATUS_STYLE.blocked.border} ${HOUR_STATUS_STYLE.blocked.bg}`}
                     >
                       {readOnlyAgenda || (adminMode && !manageSchoolSchedule) ? (
                         <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
@@ -1156,6 +1182,25 @@ export default function CoachAgenda({
                             <FiPlus aria-hidden="true" /> Alumno
                           </button>
                         )}
+                        {!readOnlyAgenda && (
+                          <RowIconButton
+                            ariaLabel="Eliminar este horario bloqueado"
+                            onClick={() =>
+                              setConfirmAction({ kind: 'delete-slot', slot: row.slot })
+                            }
+                            disabled={
+                              busy ||
+                              dayBookings.some(
+                                (booking) =>
+                                  booking.coachId === row.slot.coachId &&
+                                  booking.startTime === row.slot.startTime
+                              )
+                            }
+                            tone="danger"
+                          >
+                            <FiX aria-hidden="true" />
+                          </RowIconButton>
+                        )}
                       </div>
                     </div>
                   </AgendaRow>
@@ -1166,9 +1211,14 @@ export default function CoachAgenda({
                 ? HOUR_STATUS_STYLE.groupAvailable
                 : HOUR_STATUS_STYLE.available
               return (
-                <AgendaRow key={`a-${row.slot.coachId}-${row.slot.id}`} time={row.slot.startTime}>
+                <AgendaRow
+                  key={`a-${row.slot.coachId}-${row.slot.id}`}
+                  time={row.slot.startTime}
+                  showTime={showTime}
+                  showSeparator={showSeparator}
+                >
                   <div
-                    className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
+                    className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
                   >
                     {readOnlyAgenda || (adminMode && !manageSchoolSchedule) ? (
                       <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
@@ -1233,20 +1283,44 @@ export default function CoachAgenda({
                         </button>
                       )}
                       {!readOnlyAgenda && (
-                        <RowIconButton
-                          ariaLabel="Eliminar este horario"
-                          onClick={() => setConfirmAction({ kind: 'delete-slot', slot: row.slot })}
-                          tone="danger"
-                          disabled={
-                            busy ||
+                        <span
+                          className="group relative"
+                          title={
                             dayBookings.some(
-                              (b) =>
-                                b.coachId === row.slot.coachId && b.startTime === row.slot.startTime
+                              (booking) =>
+                                booking.coachId === row.slot.coachId &&
+                                booking.startTime === row.slot.startTime
                             )
+                              ? 'No se puede eliminar porque hay una clase asignada.'
+                              : undefined
                           }
                         >
-                          <FiX aria-hidden="true" />
-                        </RowIconButton>
+                          <RowIconButton
+                            ariaLabel={
+                              dayBookings.some(
+                                (booking) =>
+                                  booking.coachId === row.slot.coachId &&
+                                  booking.startTime === row.slot.startTime
+                              )
+                                ? 'No se puede eliminar: hay una clase asignada'
+                                : 'Eliminar este horario'
+                            }
+                            onClick={() =>
+                              setConfirmAction({ kind: 'delete-slot', slot: row.slot })
+                            }
+                            tone="danger"
+                            disabled={
+                              busy ||
+                              dayBookings.some(
+                                (booking) =>
+                                  booking.coachId === row.slot.coachId &&
+                                  booking.startTime === row.slot.startTime
+                              )
+                            }
+                          >
+                            <FiX aria-hidden="true" />
+                          </RowIconButton>
+                        </span>
                       )}
                     </div>
                   </div>
@@ -1406,11 +1480,25 @@ function NavStepper({
   )
 }
 
-function AgendaRow({ time, children }: { time: string; children: React.ReactNode }) {
+function AgendaRow({
+  time,
+  showTime = true,
+  showSeparator = true,
+  children,
+}: {
+  time: string
+  showTime?: boolean
+  showSeparator?: boolean
+  children: React.ReactNode
+}) {
   return (
-    <div className="flex items-center gap-2 border-b border-[var(--c-border)] px-3 py-2.5 last:border-b-0 sm:gap-3 sm:px-5">
+    <div
+      className={`flex items-center gap-2 px-3 py-1.5 sm:gap-3 sm:px-5 ${
+        showSeparator ? 'border-b border-[var(--c-border)]' : ''
+      }`}
+    >
       <span className="w-9 shrink-0 text-xs font-semibold text-[var(--c-text-2)] sm:w-12 sm:text-sm">
-        {time}
+        {showTime ? time : <span className="sr-only">{time}</span>}
       </span>
       {children}
     </div>

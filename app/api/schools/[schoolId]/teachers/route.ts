@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { DAY_TO_INDEX, resolveOfferingSchedules } from '@/lib/coach-offerings'
-import {
-  type SchoolMembership,
-  type SchoolTeacherProfile,
-  schoolMembershipHasRole,
-} from '@/lib/school'
+import type { SchoolMembership, SchoolTeacherProfile } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { schoolScheduleOwners } from '@/lib/server/school-agenda'
 
 export const runtime = 'nodejs'
 
@@ -46,12 +43,12 @@ export async function GET(request: Request, { params }: RouteProps) {
     .collection('schoolMemberships')
     .where('schoolId', '==', schoolId)
     .get()
-  const memberships = membershipSnapshot.docs.filter((doc) => {
-    return schoolMembershipHasRole(doc.data() as SchoolMembership, 'teacher')
-  })
+  const memberships = schoolScheduleOwners(
+    membershipSnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }) as SchoolMembership)
+  )
   const teachers = await Promise.all(
     memberships.map(async (membership) => {
-      const userId = membership.data().userId as string
+      const userId = membership.userId as string
       const [profileSnapshot, userSnapshot, availabilitySnapshot, offeringsSnapshot] =
         await Promise.all([
           adminDb.collection('schoolProfiles').doc(`${schoolId}_${userId}`).get(),
@@ -79,7 +76,7 @@ export async function GET(request: Request, { params }: RouteProps) {
       )
       return {
         id: userId,
-        status: membership.data().status,
+        status: membership.status,
         name: profile?.name || user.nickname || user.displayName || user.name || 'Coach',
         phone: profile?.phone || user.phone || user.contact?.phone || '',
         bio: profile?.bio || '',

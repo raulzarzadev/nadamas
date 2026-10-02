@@ -104,20 +104,15 @@ export default function SchoolClasses() {
         setStudents(studentPayload.students || [])
         const nextTeachers = teacherPayload.teachers || []
         setTeachers(nextTeachers)
-        const firstActiveTeacher = nextTeachers.find(
-          (teacher) => teacher.status === 'active' && teacher.id !== directorId
-        )
         setScheduleCoachId((current) => {
-          if (!isDirector || firstActiveTeacher) {
-            return current &&
-              nextTeachers.some(
-                (teacher) =>
-                  teacher.id === current && teacher.status === 'active' && teacher.id !== directorId
-              )
-              ? current
-              : ''
-          }
-          return directorId || ''
+          if (!resetSelection && current === '') return current
+          if (isDirector && current === directorId) return current
+          if (
+            current &&
+            nextTeachers.some((teacher) => teacher.id === current && teacher.status === 'active')
+          )
+            return current
+          return isDirector ? directorId || '' : ''
         })
         setLocations(locationPayload.locations || [])
         setRequests(requestPayload.requests || [])
@@ -155,11 +150,10 @@ export default function SchoolClasses() {
   const activeTeachers = teachers.filter(
     (teacher) => teacher.status === 'active' && teacher.id !== directorId
   )
-  const scheduleCoachOptions = activeTeachers.length
-    ? activeTeachers.map(({ id, name }) => ({ id, name }))
-    : isDirector
-      ? [{ id: selected.membership.userId, name: directorName }]
-      : []
+  const scheduleCoachOptions = [
+    ...(isDirector && directorId ? [{ id: directorId, name: directorName }] : []),
+    ...activeTeachers.map(({ id, name }) => ({ id, name })),
+  ]
   const visibleClasses = classes.filter(
     (item) => item.status !== 'cancelled' || item.date >= today()
   )
