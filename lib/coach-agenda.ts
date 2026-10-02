@@ -36,6 +36,7 @@ export interface CoachAvailableSlot {
   groupType: 'particular' | 'grupal'
   status: 'available' | 'booked' | 'blocked'
   coachName?: string
+  agendaLabel?: string
 }
 
 export interface CoachAgendaPayload {

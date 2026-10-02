@@ -35,6 +35,8 @@ export interface Booking extends CoachBookingSelection {
   schoolRequestId?: string
   schoolClassTitle?: string
   schoolClassStudentCount?: number
+  /** Origin label used when personal and school schedules share one agenda. */
+  agendaLabel?: string
   id: string
   schoolId?: string
   athleteId: string

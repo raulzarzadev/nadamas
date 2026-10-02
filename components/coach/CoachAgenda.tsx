@@ -3,7 +3,7 @@
 import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FiEdit2, FiLock, FiPlus, FiUnlock, FiUser, FiUsers, FiX } from 'react-icons/fi'
+import { FiEdit2, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers, FiX } from 'react-icons/fi'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -43,10 +43,15 @@ function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
   return `${booking.date}|${booking.startTime}`
 }
 
-function activeClassSlotCount(bookings: Booking[], separateByCoach = false) {
+function activeClassSlotCount(
+  bookings: Booking[],
+  separateByCoach = false,
+  separateBySchool = false
+) {
   return new Set(
-    bookings.map((booking) =>
-      separateByCoach ? `${booking.coachId}|${bookingSlotKey(booking)}` : bookingSlotKey(booking)
+    bookings.map(
+      (booking) =>
+        `${separateBySchool ? `${booking.schoolId || 'personal'}|` : ''}${separateByCoach ? `${booking.coachId}|` : ''}${bookingSlotKey(booking)}`
     )
   ).size
 }
@@ -60,6 +65,7 @@ function blockCoversClassAt(block: CoachScheduleBlock, date: string, time: strin
 
 type ActiveSlot = {
   coachId?: string
+  schoolId?: string
   date: string
   startTime: string
   endTime: string
@@ -76,10 +82,12 @@ type SchoolRequestDraft = {
 type ConfirmAction =
   | { kind: 'cancel-booking'; booking: Booking }
   | { kind: 'delete-slot'; slot: CoachAvailableSlot }
+type SlotEditorState = { slot: CoachAvailableSlot; block?: CoachScheduleBlock }
 
 export default function CoachAgenda({
   coachId,
   schoolId,
+  agendaSources,
   aggregateSchool = false,
   readOnly = false,
   manageSchoolSchedule = false,
@@ -91,6 +99,7 @@ export default function CoachAgenda({
 }: {
   coachId?: string
   schoolId?: string
+  agendaSources?: Array<{ schoolId?: string; label: string }>
   /** Load every active school's coach into the same agenda. */
   aggregateSchool?: boolean
   /** Hide booking, block, and schedule-editing controls. */
@@ -117,6 +126,11 @@ export default function CoachAgenda({
   const coachQuery = coachId ? `&coachId=${encodeURIComponent(coachId)}` : ''
   const schoolQuery = schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''
   const contextQuery = `${coachQuery}${schoolQuery}`
+  const combinedSources = agendaSources !== undefined
+  const agendaUpdateSchoolIds = useMemo(
+    () => agendaSources?.flatMap((source) => (source.schoolId ? [source.schoolId] : [])) || [],
+    [agendaSources]
+  )
   const { user } = useUser() as { user: { uid?: string; id?: string } | null }
   const terminology = useSchoolTerminology()
   const { setScheduleText } = useCoachAgendaShare()
@@ -138,6 +152,7 @@ export default function CoachAgenda({
   const [error, setError] = useState<string | null>(null)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [slotEditor, setSlotEditor] = useState<SlotEditorState | null>(null)
   const [progressBooking, setProgressBooking] = useState<Booking | null>(null)
   // Classes that already have a saved progress entry (labels the row button).
   const [progressBookingIds, setProgressBookingIds] = useState<Set<string>>(new Set())
@@ -162,6 +177,34 @@ export default function CoachAgenda({
   const [notice, setNotice] = useState<string | null>(null)
   const agendaRequestRef = useRef(0)
 
+  useEffect(() => {
+    if (!slotEditor || !agenda) return
+    const current = slotEditor.slot
+    const updatedSlot = agenda.availableSlots.find(
+      (slot) =>
+        slot.id === current.id &&
+        slot.date === current.date &&
+        slot.startTime === current.startTime &&
+        slot.coachId === current.coachId &&
+        (!combinedSources || slot.schoolId === current.schoolId)
+    )
+    if (!updatedSlot) return
+    const updatedBlock = agenda.blocks.find(
+      (block) =>
+        block.date === current.date &&
+        block.coachId === current.coachId &&
+        (!combinedSources || block.schoolId === current.schoolId) &&
+        !block.hidden &&
+        (block.allDay ||
+          (block.startTime === current.startTime && block.endTime === current.endTime))
+    )
+    setSlotEditor((previous) => {
+      if (!previous || previous.slot.id !== current.id) return previous
+      if (previous.slot === updatedSlot && previous.block?.id === updatedBlock?.id) return previous
+      return { slot: updatedSlot, block: updatedBlock }
+    })
+  }, [agenda, combinedSources, slotEditor])
+
   const monthOfSelected = selectedDate.slice(0, 7)
   useEffect(() => {
     if (scheduleEditorOpen) setHoursEditorOpen(true)
@@ -177,6 +220,44 @@ export default function CoachAgenda({
       const requestId = ++agendaRequestRef.current
       setError(null)
       try {
+        if (agendaSources) {
+          const sourceAgendas = await Promise.all(
+            agendaSources.map(async (source) => {
+              const sourceQuery = source.schoolId
+                ? `&schoolId=${encodeURIComponent(source.schoolId)}`
+                : ''
+              const response = await getAuthed(`/api/coach/agenda?month=${month}${sourceQuery}`)
+              const payload = (await response.json()) as CoachAgendaPayload
+              return {
+                ...payload,
+                bookings: payload.bookings.map((booking) => ({
+                  ...booking,
+                  schoolId: source.schoolId,
+                  agendaLabel: source.label,
+                })),
+                availableSlots: payload.availableSlots.map((slot) => ({
+                  ...slot,
+                  schoolId: source.schoolId,
+                  agendaLabel: source.label,
+                })),
+                blocks: payload.blocks.map((block) => ({
+                  ...block,
+                  schoolId: source.schoolId,
+                })),
+              }
+            })
+          )
+          if (requestId !== agendaRequestRef.current) return
+          setAgenda({
+            bookings: sourceAgendas.flatMap((payload) => payload.bookings),
+            availableSlots: sourceAgendas.flatMap((payload) => payload.availableSlots),
+            blocks: sourceAgendas.flatMap((payload) => payload.blocks),
+            offerings: [],
+            coachNames: Object.assign({}, ...sourceAgendas.map((payload) => payload.coachNames)),
+          })
+          setLoadedCoachId(coachId)
+          return
+        }
         const endpoint =
           (aggregateSchool || manageSchoolSchedule) && schoolId
             ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}${coachQuery}${readOnly ? '&view=public' : ''}`
@@ -194,14 +275,23 @@ export default function CoachAgenda({
         setLoadedCoachId(undefined)
       }
     },
-    [aggregateSchool, manageSchoolSchedule, coachQuery, contextQuery, schoolId, coachId, readOnly]
+    [
+      aggregateSchool,
+      manageSchoolSchedule,
+      coachQuery,
+      contextQuery,
+      schoolId,
+      coachId,
+      readOnly,
+      agendaSources,
+    ]
   )
 
   useEffect(() => {
     loadAgenda(monthOfSelected)
   }, [loadAgenda, monthOfSelected])
 
-  useSchoolAgendaUpdates(schoolId, () => {
+  useSchoolAgendaUpdates(combinedSources ? agendaUpdateSchoolIds : schoolId, () => {
     void loadAgenda(monthOfSelected)
   })
 
@@ -229,9 +319,11 @@ export default function CoachAgenda({
     }
     const bookingsByTime = new Map<string, Booking[]>()
     for (const booking of activeBookings) {
-      const key = multiCoachAgenda
-        ? `${booking.coachId}|${booking.date}|${booking.startTime}`
-        : bookingSlotKey(booking)
+      const key = combinedSources
+        ? `${booking.schoolId || 'personal'}|${booking.coachId}|${booking.date}|${booking.startTime}`
+        : multiCoachAgenda
+          ? `${booking.coachId}|${booking.date}|${booking.startTime}`
+          : bookingSlotKey(booking)
       const bookings = bookingsByTime.get(key) || []
       bookings.push(booking)
       bookingsByTime.set(key, bookings)
@@ -247,17 +339,21 @@ export default function CoachAgenda({
     }
     const bookedKeys = new Set(
       activeBookings.map((booking) =>
-        multiCoachAgenda
-          ? `${booking.coachId}|${booking.date}|${booking.startTime}`
-          : bookingSlotKey(booking)
+        combinedSources
+          ? `${booking.schoolId || 'personal'}|${booking.coachId}|${booking.date}|${booking.startTime}`
+          : multiCoachAgenda
+            ? `${booking.coachId}|${booking.date}|${booking.startTime}`
+            : bookingSlotKey(booking)
       )
     )
     const slotKeys = new Set<string>()
     const groupSlotKeys = new Set<string>()
     for (const slot of agenda?.availableSlots || []) {
-      const key = multiCoachAgenda
-        ? `${slot.coachId}|${slot.date}|${slot.startTime}`
-        : `${slot.date}|${slot.startTime}`
+      const key = combinedSources
+        ? `${slot.schoolId || 'personal'}|${slot.coachId}|${slot.date}|${slot.startTime}`
+        : multiCoachAgenda
+          ? `${slot.coachId}|${slot.date}|${slot.startTime}`
+          : `${slot.date}|${slot.startTime}`
       slotKeys.add(key)
       if (slot.groupType === 'grupal') groupSlotKeys.add(key)
       if (slot.status === 'available') {
@@ -270,9 +366,11 @@ export default function CoachAgenda({
     }
     for (const block of agenda?.blocks || []) {
       if (block.allDay || block.hidden) continue
-      const blockKey = multiCoachAgenda
-        ? `${block.coachId}|${block.date}|${block.startTime || ''}`
-        : `${block.date}|${block.startTime || ''}`
+      const blockKey = combinedSources
+        ? `${block.schoolId || 'personal'}|${block.coachId}|${block.date}|${block.startTime || ''}`
+        : multiCoachAgenda
+          ? `${block.coachId}|${block.date}|${block.startTime || ''}`
+          : `${block.date}|${block.startTime || ''}`
       if (groupSlotKeys.has(blockKey)) continue
       // A blocked hour that already has a student shows as booked, not blocked.
       if (bookedKeys.has(blockKey)) continue
@@ -290,19 +388,20 @@ export default function CoachAgenda({
       )
     }
     return ordered
-  }, [activeBookings, agenda?.availableSlots, agenda?.blocks, multiCoachAgenda])
+  }, [activeBookings, agenda?.availableSlots, agenda?.blocks, multiCoachAgenda, combinedSources])
 
   const monthStats = useMemo(() => {
     const inMonth = (date: string) => date.startsWith(monthOfSelected)
     const booked = activeClassSlotCount(
       activeBookings.filter((booking) => inMonth(booking.date)),
-      multiCoachAgenda
+      multiCoachAgenda,
+      combinedSources
     )
     const available = (agenda?.availableSlots || []).filter(
       (slot) => slot.status === 'available' && inMonth(slot.date)
     ).length
     return { booked, total: booked + available }
-  }, [activeBookings, agenda?.availableSlots, monthOfSelected, multiCoachAgenda])
+  }, [activeBookings, agenda?.availableSlots, monthOfSelected, multiCoachAgenda, combinedSources])
 
   const weekStats = useMemo(() => {
     let booked = 0
@@ -368,23 +467,29 @@ export default function CoachAgenda({
   const dayBlocks = (agenda?.blocks || []).filter((block) => block.date === selectedDate)
   // In a school-wide view, one coach blocking a full day must not hide every
   // other coach's schedule. The individual slots already carry the blocked state.
-  const allDayBlock = multiCoachAgenda ? undefined : dayBlocks.find((block) => block.allDay)
+  const allDayBlock =
+    multiCoachAgenda || combinedSources ? undefined : dayBlocks.find((block) => block.allDay)
 
   const rows = useMemo(() => {
-    const slotKey = (coachId: string, startTime: string) =>
-      multiCoachAgenda ? `${coachId}|${startTime}` : startTime
+    const slotKey = (coachId: string, startTime: string, sourceId?: string) =>
+      combinedSources
+        ? `${sourceId || 'personal'}|${coachId}|${startTime}`
+        : multiCoachAgenda
+          ? `${coachId}|${startTime}`
+          : startTime
     const bookedTimes = new Set(
-      dayBookings.map((booking) => slotKey(booking.coachId, booking.startTime))
+      dayBookings.map((booking) => slotKey(booking.coachId, booking.startTime, booking.schoolId))
     )
     const available = daySlots
       .filter(
         (slot) =>
-          !bookedTimes.has(slotKey(slot.coachId, slot.startTime)) && slot.status === 'available'
+          !bookedTimes.has(slotKey(slot.coachId, slot.startTime, slot.schoolId)) &&
+          slot.status === 'available'
       )
       .map((slot) => ({ kind: 'available' as const, sort: slot.startTime, slot }))
     const groupedBookings = new Map<string, Booking[]>()
     for (const booking of dayBookings) {
-      const key = slotKey(booking.coachId, booking.startTime)
+      const key = slotKey(booking.coachId, booking.startTime, booking.schoolId)
       const group = groupedBookings.get(key) || []
       group.push(booking)
       groupedBookings.set(key, group)
@@ -407,12 +512,13 @@ export default function CoachAgenda({
     }[] = []
     for (const slot of daySlots) {
       if (slot.status !== 'blocked') continue
-      const key = slotKey(slot.coachId, slot.startTime)
+      const key = slotKey(slot.coachId, slot.startTime, slot.schoolId)
       if (bookedTimes.has(key) || seen.has(key)) continue
       seen.add(key)
       const block = dayBlocks.find(
         (b) =>
           (!multiCoachAgenda || b.coachId === slot.coachId) &&
+          (!combinedSources || b.schoolId === slot.schoolId) &&
           !b.hidden &&
           (b.allDay ||
             (b.startTime && b.endTime && b.startTime < slot.endTime && slot.startTime < b.endTime))
@@ -420,6 +526,12 @@ export default function CoachAgenda({
       // Hidden blocks (removed entirely) have no visible row.
       if (!block) continue
       blocked.push({ kind: 'blocked', sort: slot.startTime, slot, block })
+    }
+    const sourceOrder = (
+      row: (typeof available)[number] | (typeof booked)[number] | (typeof blocked)[number]
+    ) => {
+      const label = row.kind === 'booked' ? row.bookings[0]?.agendaLabel : row.slot.agendaLabel
+      return agendaSources?.findIndex((source) => source.label === label) ?? 0
     }
     return [...available, ...booked, ...blocked]
       .filter((row) => {
@@ -436,8 +548,16 @@ export default function CoachAgenda({
                 : 'booked'
         return selectedStatuses.has(status)
       })
-      .sort((a, b) => a.sort.localeCompare(b.sort))
-  }, [daySlots, dayBookings, dayBlocks, multiCoachAgenda, selectedStatuses])
+      .sort((a, b) => a.sort.localeCompare(b.sort) || sourceOrder(a) - sourceOrder(b))
+  }, [
+    daySlots,
+    dayBookings,
+    dayBlocks,
+    multiCoachAgenda,
+    combinedSources,
+    selectedStatuses,
+    agendaSources,
+  ])
 
   const toggleStatus = (status: HourStatus) => {
     setSelectedStatuses((current) => {
@@ -466,9 +586,16 @@ export default function CoachAgenda({
     manageSchoolSchedule && schoolId && targetCoachId
       ? `/api/schools/${encodeURIComponent(schoolId)}/teachers/${encodeURIComponent(targetCoachId)}/schedule`
       : scheduleEndpoint
+  const schoolIdForSlot = (slot: Pick<CoachAvailableSlot, 'schoolId'>) =>
+    combinedSources ? slot.schoolId : schoolId
+  const schoolIdForBooking = (booking: Pick<Booking, 'schoolId'>) =>
+    combinedSources ? booking.schoolId : schoolId
+  const schoolQueryFor = (targetSchoolId?: string) =>
+    targetSchoolId ? `&schoolId=${encodeURIComponent(targetSchoolId)}` : ''
 
-  const block = (slot: CoachAvailableSlot, hidden: boolean) =>
-    run(() =>
+  const block = (slot: CoachAvailableSlot, hidden: boolean) => {
+    const targetSchoolId = schoolIdForSlot(slot)
+    return run(() =>
       postAuthed(scheduleEndpointFor(slot.coachId), {
         date: slot.date,
         allDay: false,
@@ -476,9 +603,10 @@ export default function CoachAgenda({
         endTime: slot.endTime,
         hidden,
         ...(coachId ? { coachId } : {}),
-        ...(schoolId ? { schoolId } : {}),
+        ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
       })
     )
+  }
 
   // Bloquear: hide from athletes but keep visible to the coach (Bloqueado row,
   // can still add a student).
@@ -488,12 +616,14 @@ export default function CoachAgenda({
   // day (creates a hidden block). El horario base se edita en "Mis horarios".
   const eliminarSlot = (slot: CoachAvailableSlot) => block(slot, true)
 
-  const cancelBooking = (booking: Booking) =>
-    run(() =>
+  const cancelBooking = (booking: Booking) => {
+    const targetSchoolId = schoolIdForBooking(booking)
+    return run(() =>
       deleteAuthed(
-        `/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${schoolQuery}${manageSchoolSchedule ? `&coachId=${encodeURIComponent(booking.coachId)}` : coachQuery}`
+        `/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${schoolQueryFor(targetSchoolId)}${manageSchoolSchedule ? `&coachId=${encodeURIComponent(booking.coachId)}` : coachQuery}`
       )
     )
+  }
 
   const updateClassSettings = (
     bookings: Booking[],
@@ -501,6 +631,7 @@ export default function CoachAgenda({
   ) => {
     const booking = bookings[0]
     if (!booking) return
+    const targetSchoolId = schoolIdForBooking(booking)
     run(() =>
       patchAuthed('/api/coach/agenda/bookings', {
         ...(manageSchoolSchedule ? { coachId: booking.coachId } : {}),
@@ -508,27 +639,30 @@ export default function CoachAgenda({
         startTime: booking.startTime,
         offeringId: booking.offeringId,
         scheduleId: booking.scheduleId,
-        ...(schoolId ? { schoolId } : {}),
+        ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
         ...settings,
       })
     )
   }
 
-  const updateAttendance = (booking: Booking, attended: boolean) =>
-    run(() =>
+  const updateAttendance = (booking: Booking, attended: boolean) => {
+    const targetSchoolId = schoolIdForBooking(booking)
+    return run(() =>
       patchAuthed('/api/coach/agenda/bookings', {
         ...(manageSchoolSchedule ? { coachId: booking.coachId } : {}),
         id: booking.id,
         attended,
-        ...(schoolId ? { schoolId } : {}),
+        ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
       })
     )
+  }
 
   const handleSchoolRequest = (booking: Booking, status: 'approved' | 'rejected') => {
-    if (!schoolId || !booking.schoolRequestId) return
+    const targetSchoolId = schoolIdForBooking(booking)
+    if (!targetSchoolId || !booking.schoolRequestId) return
     run(() =>
       patchAuthed(
-        `/api/schools/${encodeURIComponent(schoolId)}/class-requests/${encodeURIComponent(booking.schoolRequestId as string)}`,
+        `/api/schools/${encodeURIComponent(targetSchoolId)}/class-requests/${encodeURIComponent(booking.schoolRequestId as string)}`,
         { status }
       )
     )
@@ -537,10 +671,11 @@ export default function CoachAgenda({
   const openSchoolClassEditor = (booking: Booking) => setSchoolClassToEdit(booking)
 
   const cancelSchoolClass = (booking: Booking) => {
-    if (!schoolId || !booking.schoolClassId) return
+    const targetSchoolId = schoolIdForBooking(booking)
+    if (!targetSchoolId || !booking.schoolClassId) return
     run(async () => {
       await patchAuthed(
-        `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(booking.schoolClassId as string)}`,
+        `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(booking.schoolClassId as string)}`,
         { status: 'cancelled' }
       )
       setSchoolClassToEdit(null)
@@ -549,10 +684,11 @@ export default function CoachAgenda({
   }
 
   const updateSchoolClassStatus = (booking: Booking, status: 'pending' | 'scheduled') => {
-    if (!schoolId || !booking.schoolClassId) return
+    const targetSchoolId = schoolIdForBooking(booking)
+    if (!targetSchoolId || !booking.schoolClassId) return
     run(async () => {
       await patchAuthed(
-        `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(booking.schoolClassId as string)}`,
+        `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(booking.schoolClassId as string)}`,
         { status }
       )
       setSchoolClassToEdit(null)
@@ -561,11 +697,14 @@ export default function CoachAgenda({
   }
 
   const openSchoolRequestEditor = async (booking: Booking) => {
-    if (!schoolId) return
+    const targetSchoolId = schoolIdForBooking(booking)
+    if (!targetSchoolId) return
     setBusy(true)
     setError(null)
     try {
-      const response = await getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/teachers`)
+      const response = await getAuthed(
+        `/api/schools/${encodeURIComponent(targetSchoolId)}/teachers`
+      )
       if (!response.ok) throw new Error('teachers')
       const payload = (await response.json()) as {
         teachers?: Array<{ id: string; name: string; status?: string }>
@@ -588,12 +727,15 @@ export default function CoachAgenda({
   }
 
   const approveSchoolRequestWithChanges = () => {
-    if (!schoolId || !schoolRequestDraft?.booking.schoolRequestId) return
+    const bookingSchoolId = schoolRequestDraft
+      ? schoolIdForBooking(schoolRequestDraft.booking)
+      : undefined
+    if (!bookingSchoolId || !schoolRequestDraft?.booking.schoolRequestId) return
     const { booking, date, startTime, endTime, coachId: nextCoachId } = schoolRequestDraft
     const day = new Date(`${date}T12:00:00`).getDay()
     run(async () => {
       await patchAuthed(
-        `/api/schools/${encodeURIComponent(schoolId)}/class-requests/${encodeURIComponent(booking.schoolRequestId as string)}`,
+        `/api/schools/${encodeURIComponent(bookingSchoolId)}/class-requests/${encodeURIComponent(booking.schoolRequestId as string)}`,
         {
           status: 'approved',
           teacherIds: [nextCoachId],
@@ -608,12 +750,36 @@ export default function CoachAgenda({
     })
   }
 
-  const unblock = (block: CoachScheduleBlock) =>
-    run(() =>
+  const unblock = (block: CoachScheduleBlock) => {
+    const targetSchoolId = combinedSources ? block.schoolId : schoolId
+    return run(() =>
       deleteAuthed(
-        `${scheduleEndpointFor(block.coachId)}?id=${encodeURIComponent(block.id)}${schoolQuery}`
+        `${scheduleEndpointFor(block.coachId)}?id=${encodeURIComponent(block.id)}${schoolQueryFor(targetSchoolId)}`
       )
     )
+  }
+
+  const openSlotEditor = (slot: CoachAvailableSlot, block?: CoachScheduleBlock) =>
+    setSlotEditor({ slot, block })
+
+  const updateSlotAvailability = (checked: boolean) => {
+    if (!slotEditor) return
+    const { slot, block: slotBlock } = slotEditor
+    if (checked) bloquearSlot(slot)
+    else if (slotBlock) unblock(slotBlock)
+  }
+
+  const updateSlotType = (checked: boolean) => {
+    if (!slotEditor) return
+    const { slot } = slotEditor
+    updateAvailableSlotGroupType(slot, checked)
+  }
+
+  const requestSlotDeletion = () => {
+    if (!slotEditor) return
+    setConfirmAction({ kind: 'delete-slot', slot: slotEditor.slot })
+    setSlotEditor(null)
+  }
 
   const submitAddStudent = (slot: ActiveSlot, payloads: AddStudentPayload[]) =>
     run(async () => {
@@ -622,7 +788,7 @@ export default function CoachAgenda({
           ...(manageSchoolSchedule && coachId ? { coachId } : {}),
           ...slot,
           ...payload,
-          ...(schoolId ? { schoolId } : {}),
+          ...(slot.schoolId || schoolId ? { schoolId: slot.schoolId || schoolId } : {}),
         })
       }
       setAddStudentSlot(null)
@@ -647,7 +813,13 @@ export default function CoachAgenda({
   const updateAvailableSlotGroupType = (slot: CoachAvailableSlot, checked: boolean) => {
     run(async () => {
       let targetOfferings = offerings
-      if (manageSchoolSchedule && schoolId && !coachId) {
+      const targetSchoolId = schoolIdForSlot(slot)
+      if (combinedSources) {
+        const response = await getAuthed(
+          `/api/coach/agenda?month=${monthOfSelected}${schoolQueryFor(targetSchoolId)}`
+        )
+        targetOfferings = ((await response.json()) as CoachAgendaPayload).offerings || []
+      } else if (manageSchoolSchedule && schoolId && !coachId) {
         const response = await getAuthed(
           `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(slot.coachId)}`
         )
@@ -672,6 +844,11 @@ export default function CoachAgenda({
       )
       if (manageSchoolSchedule)
         await postAuthed(scheduleEndpointFor(slot.coachId), { classOfferings: next })
+      else if (combinedSources)
+        await postAuthed('/api/coach/offerings', {
+          ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
+          classOfferings: next,
+        })
       else await saveOfferingList(next)
     })
   }
@@ -833,7 +1010,7 @@ export default function CoachAgenda({
                     : HOUR_STATUS_STYLE.booked
                 return (
                   <AgendaRow
-                    key={`b-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
+                    key={`b-${firstBooking.schoolId || 'personal'}-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
                     time={row.sort}
                     showTime={showTime}
                     showSeparator={showSeparator}
@@ -852,6 +1029,11 @@ export default function CoachAgenda({
                             </span>
                           )}
                         </span>
+                        {combinedSources && firstBooking.agendaLabel && (
+                          <span className="w-fit rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
+                            {firstBooking.agendaLabel}
+                          </span>
+                        )}
                         {multiCoachAgenda && (
                           <span className="text-sm font-extrabold text-[var(--c-ocean)]">
                             {firstBooking.coachName ||
@@ -897,6 +1079,7 @@ export default function CoachAgenda({
                                 onClick={() =>
                                   setAddStudentSlot({
                                     coachId: firstBooking.coachId,
+                                    schoolId: firstBooking.schoolId,
                                     date: firstBooking.date,
                                     startTime: firstBooking.startTime,
                                     endTime: firstBooking.endTime,
@@ -1119,7 +1302,7 @@ export default function CoachAgenda({
                 const isBlockedGroup = row.slot.groupType === 'grupal'
                 return (
                   <AgendaRow
-                    key={`x-${row.slot.coachId}-${row.slot.id}`}
+                    key={`x-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
                     time={row.slot.startTime}
                     showTime={showTime}
                     showSeparator={showSeparator}
@@ -1138,54 +1321,43 @@ export default function CoachAgenda({
                           </span>
                         </span>
                       ) : (
-                        <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2 opacity-60">
                           {multiCoachAgenda && (
-                            <span className="col-span-2 text-xs font-bold">
+                            <span className="text-xs font-bold">
                               {row.slot.coachName ||
                                 agenda.coachNames?.[row.slot.coachId] ||
                                 coachFallback}
                             </span>
                           )}
-                          <BinarySwitch
-                            leftLabel="Disponible"
-                            rightLabel="Bloqueado"
-                            leftIcon={<FiUnlock />}
-                            rightIcon={<FiLock />}
-                            checked
-                            onChange={(checked) => {
-                              if (!checked && row.block) unblock(row.block)
-                            }}
-                            disabled={busy || !row.block}
-                            compact
-                          />
-                          <BinarySwitch
-                            leftLabel="Particular"
-                            rightLabel="Grupal"
-                            leftIcon={<FiUser />}
-                            rightIcon={<FiUsers />}
-                            checked={isBlockedGroup}
-                            onChange={(checked) => updateAvailableSlotGroupType(row.slot, checked)}
-                            disabled={busy}
-                            compact
-                          />
+                          <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600">
+                            <span className="inline-flex items-center gap-1">
+                              <FiLock aria-hidden="true" className="h-3.5 w-3.5" /> Bloqueado
+                            </span>
+                            <span aria-hidden="true">·</span>
+                            <span className="inline-flex items-center gap-1">
+                              {isBlockedGroup ? (
+                                <FiUsers aria-hidden="true" className="h-3.5 w-3.5" />
+                              ) : (
+                                <FiUser aria-hidden="true" className="h-3.5 w-3.5" />
+                              )}
+                              {isBlockedGroup ? 'Grupal' : 'Particular'}
+                            </span>
+                          </span>
                         </div>
                       )}
                       <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
+                        {combinedSources && row.slot.agendaLabel && (
+                          <span className="w-fit shrink-0 rounded-full border border-gray-300 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-500">
+                            {row.slot.agendaLabel}
+                          </span>
+                        )}
                         {!hideBookingActions && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setAddStudentSlot({
-                                coachId: row.slot.coachId,
-                                date: row.slot.date,
-                                startTime: row.slot.startTime,
-                                endTime: row.slot.endTime,
-                                locationName: row.slot.locationName || 'Horario abierto',
-                                groupType: row.slot.groupType,
-                              })
-                            }
-                            disabled={busy}
-                            className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
+                            disabled
+                            aria-label={`No se puede agregar ${participantSingular} a un horario bloqueado`}
+                            title="Desbloquea el horario para agregar alumnos."
+                            className="inline-flex min-h-11 cursor-not-allowed items-center justify-center gap-1 rounded-full bg-slate-200 px-3 text-xs font-bold text-slate-500 opacity-70 sm:flex-none"
                           >
                             <FiPlus aria-hidden="true" />{' '}
                             {capitalizeSchoolTerm(participantSingular)}
@@ -1193,21 +1365,19 @@ export default function CoachAgenda({
                         )}
                         {!readOnlyAgenda && (
                           <RowIconButton
-                            ariaLabel="Eliminar este horario bloqueado"
-                            onClick={() =>
-                              setConfirmAction({ kind: 'delete-slot', slot: row.slot })
-                            }
+                            ariaLabel="Configurar este horario"
+                            onClick={() => openSlotEditor(row.slot, row.block)}
                             disabled={
                               busy ||
                               dayBookings.some(
                                 (booking) =>
+                                  (!combinedSources || booking.schoolId === row.slot.schoolId) &&
                                   booking.coachId === row.slot.coachId &&
                                   booking.startTime === row.slot.startTime
                               )
                             }
-                            tone="danger"
                           >
-                            <FiX aria-hidden="true" />
+                            <FiSettings aria-hidden="true" />
                           </RowIconButton>
                         )}
                       </div>
@@ -1221,7 +1391,7 @@ export default function CoachAgenda({
                 : HOUR_STATUS_STYLE.available
               return (
                 <AgendaRow
-                  key={`a-${row.slot.coachId}-${row.slot.id}`}
+                  key={`a-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
                   time={row.slot.startTime}
                   showTime={showTime}
                   showSeparator={showSeparator}
@@ -1244,45 +1414,43 @@ export default function CoachAgenda({
                         </span>
                       </span>
                     ) : (
-                      <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {multiCoachAgenda && (
-                          <span className="col-span-2 text-xs font-bold">
+                          <span className="text-xs font-bold">
                             {row.slot.coachName ||
                               agenda.coachNames?.[row.slot.coachId] ||
                               coachFallback}
                           </span>
                         )}
-                        <BinarySwitch
-                          leftLabel="Disponible"
-                          rightLabel="Bloqueado"
-                          leftIcon={<FiUnlock />}
-                          rightIcon={<FiLock />}
-                          checked={false}
-                          onChange={(checked) => {
-                            if (checked) bloquearSlot(row.slot)
-                          }}
-                          disabled={busy}
-                          compact
-                        />
-                        <BinarySwitch
-                          leftLabel="Particular"
-                          rightLabel="Grupal"
-                          leftIcon={<FiUser />}
-                          rightIcon={<FiUsers />}
-                          checked={isAvailableGroup}
-                          onChange={(checked) => updateAvailableSlotGroupType(row.slot, checked)}
-                          disabled={busy}
-                          compact
-                        />
+                        <span className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--c-text-2)]">
+                          <span className="inline-flex items-center gap-1">
+                            <FiUnlock aria-hidden="true" className="h-3.5 w-3.5" /> Disponible
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span className="inline-flex items-center gap-1">
+                            {isAvailableGroup ? (
+                              <FiUsers aria-hidden="true" className="h-3.5 w-3.5" />
+                            ) : (
+                              <FiUser aria-hidden="true" className="h-3.5 w-3.5" />
+                            )}
+                            {isAvailableGroup ? 'Grupal' : 'Particular'}
+                          </span>
+                        </span>
                       </div>
                     )}
                     <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
+                      {combinedSources && row.slot.agendaLabel && (
+                        <span className="w-fit shrink-0 rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
+                          {row.slot.agendaLabel}
+                        </span>
+                      )}
                       {!hideBookingActions && (
                         <button
                           type="button"
                           onClick={() =>
                             setAddStudentSlot({
                               coachId: row.slot.coachId,
+                              schoolId: row.slot.schoolId,
                               date: row.slot.date,
                               startTime: row.slot.startTime,
                               endTime: row.slot.endTime,
@@ -1302,6 +1470,7 @@ export default function CoachAgenda({
                           title={
                             dayBookings.some(
                               (booking) =>
+                                (!combinedSources || booking.schoolId === row.slot.schoolId) &&
                                 booking.coachId === row.slot.coachId &&
                                 booking.startTime === row.slot.startTime
                             )
@@ -1310,29 +1479,19 @@ export default function CoachAgenda({
                           }
                         >
                           <RowIconButton
-                            ariaLabel={
-                              dayBookings.some(
-                                (booking) =>
-                                  booking.coachId === row.slot.coachId &&
-                                  booking.startTime === row.slot.startTime
-                              )
-                                ? 'No se puede eliminar: hay una clase asignada'
-                                : 'Eliminar este horario'
-                            }
-                            onClick={() =>
-                              setConfirmAction({ kind: 'delete-slot', slot: row.slot })
-                            }
-                            tone="danger"
+                            ariaLabel="Configurar este horario"
+                            onClick={() => openSlotEditor(row.slot)}
                             disabled={
                               busy ||
                               dayBookings.some(
                                 (booking) =>
+                                  (!combinedSources || booking.schoolId === row.slot.schoolId) &&
                                   booking.coachId === row.slot.coachId &&
                                   booking.startTime === row.slot.startTime
                               )
                             }
                           >
-                            <FiX aria-hidden="true" />
+                            <FiSettings aria-hidden="true" />
                           </RowIconButton>
                         </span>
                       )}
@@ -1472,6 +1631,7 @@ export default function CoachAgenda({
                 onClick={() => {
                   setAddStudentSlot({
                     coachId: bookingToEdit.coachId,
+                    schoolId: bookingToEdit.schoolId,
                     date: bookingToEdit.date,
                     startTime: bookingToEdit.startTime,
                     endTime: bookingToEdit.endTime,
@@ -1501,6 +1661,7 @@ export default function CoachAgenda({
                 onClick={() => {
                   const existingBlock = dayBlocks.find(
                     (block) =>
+                      (!combinedSources || block.schoolId === bookingToEdit.schoolId) &&
                       block.coachId === bookingToEdit.coachId &&
                       blockCoversClassAt(block, bookingToEdit.date, bookingToEdit.startTime)
                   )
@@ -1519,6 +1680,7 @@ export default function CoachAgenda({
               >
                 {dayBlocks.some(
                   (block) =>
+                    (!combinedSources || block.schoolId === bookingToEdit.schoolId) &&
                     block.coachId === bookingToEdit.coachId &&
                     blockCoversClassAt(block, bookingToEdit.date, bookingToEdit.startTime)
                 )
@@ -1616,9 +1778,9 @@ export default function CoachAgenda({
         )}
       </Sheet>
 
-      {reassignBooking && schoolId && (
+      {reassignBooking && schoolIdForBooking(reassignBooking) && (
         <SchoolReassignStudent
-          schoolId={schoolId}
+          schoolId={schoolIdForBooking(reassignBooking) as string}
           booking={reassignBooking}
           onClose={() => setReassignBooking(null)}
           onSaved={() => {
@@ -1628,9 +1790,9 @@ export default function CoachAgenda({
           }}
         />
       )}
-      {schoolClassToReassign && schoolId && (
+      {schoolClassToReassign && schoolIdForBooking(schoolClassToReassign) && (
         <SchoolReassignStudent
-          schoolId={schoolId}
+          schoolId={schoolIdForBooking(schoolClassToReassign) as string}
           booking={schoolClassToReassign}
           schoolClassId={schoolClassToReassign.schoolClassId}
           onClose={() => setSchoolClassToReassign(null)}
@@ -1657,7 +1819,7 @@ export default function CoachAgenda({
 
       {addStudentSlot && (
         <AgendaAddStudentModal
-          schoolId={schoolId}
+          schoolId={addStudentSlot.schoolId || schoolId}
           slotLabel={`${new Date(`${addStudentSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
             weekday: 'short',
             day: 'numeric',
@@ -1668,6 +1830,7 @@ export default function CoachAgenda({
             .filter(
               (booking) =>
                 booking.date === addStudentSlot.date &&
+                (!combinedSources || booking.schoolId === addStudentSlot.schoolId) &&
                 (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
                 booking.startTime === addStudentSlot.startTime
             )
@@ -1676,6 +1839,7 @@ export default function CoachAgenda({
             .filter(
               (booking) =>
                 booking.date === addStudentSlot.date &&
+                (!combinedSources || booking.schoolId === addStudentSlot.schoolId) &&
                 (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
                 booking.startTime === addStudentSlot.startTime
             )
@@ -1699,6 +1863,52 @@ export default function CoachAgenda({
           onSubmit={applyHours}
         />
       )}
+
+      <Sheet
+        open={Boolean(slotEditor)}
+        onClose={() => setSlotEditor(null)}
+        label="Configurar horario"
+      >
+        {slotEditor && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <h3 className="text-xl font-bold text-[var(--c-ocean)]">Configurar horario</h3>
+              <p className="mt-1 text-sm text-[var(--c-text-2)]">
+                {slotEditor.slot.agendaLabel ? `${slotEditor.slot.agendaLabel} · ` : ''}
+                {slotEditor.slot.startTime}–{slotEditor.slot.endTime}
+              </p>
+            </div>
+            <div className="rounded-[var(--r-md)] border border-[var(--c-border)] px-3 py-2">
+              <BinarySwitch
+                leftLabel="Disponible"
+                rightLabel="Bloqueada"
+                leftIcon={<FiUnlock />}
+                rightIcon={<FiLock />}
+                checked={slotEditor.slot.status === 'blocked'}
+                onChange={updateSlotAvailability}
+                disabled={busy || (slotEditor.slot.status === 'blocked' && !slotEditor.block)}
+              />
+              <BinarySwitch
+                leftLabel="Particular"
+                rightLabel="Grupal"
+                leftIcon={<FiUser />}
+                rightIcon={<FiUsers />}
+                checked={slotEditor.slot.groupType === 'grupal'}
+                onChange={updateSlotType}
+                disabled={busy}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={requestSlotDeletion}
+              disabled={busy}
+              className="min-h-11 rounded-full border border-rose-200 px-4 text-sm font-bold text-rose-600 transition-colors hover:bg-rose-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Eliminar horario
+            </button>
+          </div>
+        )}
+      </Sheet>
 
       <Sheet
         open={!!confirmAction}
@@ -1834,7 +2044,7 @@ function RowIconButton({
       aria-label={ariaLabel}
       onClick={onClick}
       disabled={disabled}
-      className={`grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full border bg-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50 ${
+      className={`grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full border bg-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50 ${
         tone === 'danger'
           ? 'border-rose-200 text-rose-500 hover:border-rose-400 hover:bg-rose-50 hover:text-rose-700'
           : 'border-[var(--c-border)] text-[var(--c-text-2)] hover:border-[var(--c-aqua)] hover:bg-[var(--c-aqua-light)] hover:text-[var(--c-ocean)]'

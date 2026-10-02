@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
 import SchoolWorkspaceTabs from '@/components/school/SchoolWorkspaceTabs'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
@@ -8,7 +9,8 @@ import { schoolMembershipHasRole } from '@/lib/school'
 
 export default function CoachSchoolSwitcher() {
   const tenant = useTenantSchool()
-  return tenant ? null : <GlobalCoachSchoolSwitcher />
+  const pathname = usePathname()
+  return tenant || pathname.startsWith('/coach/agenda') ? null : <GlobalCoachSchoolSwitcher />
 }
 
 function GlobalCoachSchoolSwitcher() {

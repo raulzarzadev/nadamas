@@ -1,48 +1,101 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { FiPlus } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
-import { useUser } from '@/context/UserContext'
-import { getAuthed } from '@/lib/client/authed-api'
 import { schoolMembershipHasRole } from '@/lib/school'
 import CoachAgenda from './CoachAgenda'
 import ShareScheduleButton from './ShareScheduleButton'
 
+const ALL_VIEW = 'all'
+const PERSONAL_VIEW = 'personal'
+
 export default function CoachAgendaWorkspace() {
-  const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
-  const { schools, selectedId, isPersonal, status } = useSchoolSelection({ includePersonal: true })
+  const { schools, status } = useSchoolSelection({ includePersonal: true })
   const terminology = useSchoolTerminology()
-  const hasSchoolSelection = useMemo(
+  const coachSchools = useMemo(
     () =>
-      schools.some(
-        ({ school, membership }) =>
-          school.id === selectedId &&
-          membership.status === 'active' &&
-          schoolMembershipHasRole(membership, 'teacher')
+      schools.filter(
+        ({ membership }) =>
+          membership.status === 'active' && schoolMembershipHasRole(membership, 'teacher')
       ),
-    [schools, selectedId]
+    [schools]
   )
-  const hasActiveSchool = !isPersonal && hasSchoolSelection
-  const activeSchool = schools.find((item) => item.school.id === selectedId)
+  const [view, setView] = useState(ALL_VIEW)
+  const agendaSources = useMemo(
+    () => [
+      { label: 'Míos' },
+      ...coachSchools.map(({ school }) => ({ schoolId: school.id, label: school.name })),
+    ],
+    [coachSchools]
+  )
 
   if (status !== 'ready') return null
 
-  if (hasActiveSchool) {
-    return (
-      <SchoolCoachAgenda
-        key={selectedId}
-        schoolId={selectedId || ''}
-        schoolName={activeSchool?.school.name || 'la escuela'}
-      />
-    )
-  }
+  return (
+    <div className="flex flex-col gap-4">
+      <nav aria-label="Filtrar mis horarios" className="flex gap-2 overflow-x-auto pb-1">
+        {[
+          { id: ALL_VIEW, label: 'Todos' },
+          { id: PERSONAL_VIEW, label: 'Míos' },
+          ...coachSchools.map(({ school }) => ({ id: `school:${school.id}`, label: school.name })),
+        ].map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={view === option.id}
+            onClick={() => setView(option.id)}
+            className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${view === option.id ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:border-(--c-aqua-strong) hover:bg-(--c-surface)'}`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </nav>
+
+      {view === ALL_VIEW && (
+        <section className="flex flex-col gap-3">
+          <header>
+            <h1 className="text-2xl font-extrabold sm:text-3xl">Todos mis horarios</h1>
+            <p className="mt-1 text-sm text-(--c-text-2)">
+              Horarios personales y de tus escuelas. Cada fila indica dónde corresponde.
+            </p>
+          </header>
+          <CoachAgenda key="all" agendaSources={agendaSources} />
+        </section>
+      )}
+
+      {view === PERSONAL_VIEW && <PersonalAgendaSection terminology={terminology} />}
+
+      {view.startsWith('school:') && (
+        <SchoolAgendaSection
+          schoolId={view.slice('school:'.length)}
+          schoolName={
+            coachSchools.find(({ school }) => school.id === view.slice('school:'.length))?.school
+              .name || ''
+          }
+        />
+      )}
+    </div>
+  )
+}
+
+function PersonalAgendaSection({
+  terminology,
+}: {
+  terminology: ReturnType<typeof useSchoolTerminology>
+}) {
+  const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold sm:text-3xl">Mis horarios</h1>
+    <section className="flex flex-col gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold sm:text-3xl">Mis horarios personales</h1>
+          <p className="mt-1 text-sm text-(--c-text-2)">
+            Horarios publicados y clases agendadas como {terminology.coachSingular}.
+          </p>
+        </div>
         <div className="flex flex-wrap justify-end gap-2">
           <button
             type="button"
@@ -53,92 +106,39 @@ export default function CoachAgendaWorkspace() {
           </button>
           <ShareScheduleButton />
         </div>
-      </div>
-      <p className="text-[var(--c-text-2)] text-xs">
-        Como {terminology.schoolId ? terminology.coachSingular : 'coach'}, aquí ves tus horarios
-        publicados y clases agendadas.
-      </p>
+      </header>
       <CoachAgenda
         scheduleEditorOpen={scheduleEditorOpen}
         onScheduleEditorClose={() => setScheduleEditorOpen(false)}
       />
-    </div>
+    </section>
   )
 }
 
-function SchoolCoachAgenda({ schoolId, schoolName }: { schoolId: string; schoolName: string }) {
-  const { user } = useUser() as { user: { uid?: string; id?: string } | null }
-  const terminology = useSchoolTerminology()
-  const selfId = user?.uid || user?.id
-  const [coachFilter, setCoachFilter] = useState('mine')
-  const [teachers, setTeachers] = useState<Array<{ id: string; name: string; status: string }>>([])
-  const [message, setMessage] = useState<string | null>(null)
+function SchoolAgendaSection({ schoolId, schoolName }: { schoolId: string; schoolName: string }) {
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
-  const ownSchedule = coachFilter === 'mine' || coachFilter === selfId
-
-  useEffect(() => {
-    let active = true
-    getAuthed(`/api/schools/${schoolId}/teachers`)
-      .then((response) => response.json())
-      .then((payload) => {
-        if (active) setTeachers(payload.teachers || [])
-      })
-      .catch(() => {
-        if (active) setMessage('No se pudo cargar la lista de responsables. Inténtalo de nuevo.')
-      })
-    return () => {
-      active = false
-    }
-  }, [schoolId])
 
   return (
-    <div className="flex flex-col gap-3">
-      <div>
-        <h1 className="text-2xl font-extrabold sm:text-3xl">Horarios</h1>
-        <p className="mt-1 text-sm text-(--c-text-2)">Horarios y clases de {schoolName}.</p>
-      </div>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <label className="grid gap-2 text-sm font-bold text-(--c-ocean)">
-          Ver horarios de {terminology.coachSingular}
-          <select
-            className="select select-bordered min-h-11 w-full sm:w-64"
-            value={coachFilter}
-            onChange={(event) => {
-              setCoachFilter(event.target.value)
-              setScheduleEditorOpen(false)
-            }}
-          >
-            <option value="">Todos los {terminology.coachPlural}</option>
-            <option value="mine">Mis horarios</option>
-            {teachers
-              .filter((teacher) => teacher.status === 'active' && teacher.id !== selfId)
-              .map((teacher) => (
-                <option key={teacher.id} value={teacher.id}>
-                  {teacher.name}
-                </option>
-              ))}
-          </select>
-        </label>
-        {ownSchedule && (
-          <button
-            type="button"
-            onClick={() => setScheduleEditorOpen(true)}
-            className="btn btn-primary min-h-11 gap-2"
-          >
-            <FiPlus aria-hidden="true" /> Agregar horarios
-          </button>
-        )}
-      </div>
-      {message && <p className="text-sm text-(--c-text-2)">{message}</p>}
+    <section className="flex flex-col gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold sm:text-3xl">Mis horarios · {schoolName}</h1>
+          <p className="mt-1 text-sm text-(--c-text-2)">Tus horarios y clases asignadas.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setScheduleEditorOpen(true)}
+          className="btn btn-primary min-h-11 gap-2"
+        >
+          <FiPlus aria-hidden="true" /> Agregar horarios
+        </button>
+      </header>
       <CoachAgenda
-        key={coachFilter}
+        key={schoolId}
         schoolId={schoolId}
-        coachId={ownSchedule ? undefined : coachFilter || undefined}
-        aggregateSchool={!ownSchedule}
-        readOnly={!ownSchedule}
-        scheduleEditorOpen={ownSchedule && scheduleEditorOpen}
+        scheduleEditorOpen={scheduleEditorOpen}
         onScheduleEditorClose={() => setScheduleEditorOpen(false)}
       />
-    </div>
+    </section>
   )
 }

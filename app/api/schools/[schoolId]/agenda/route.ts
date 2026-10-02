@@ -40,12 +40,17 @@ export async function GET(request: Request, { params }: RouteProps) {
   if (access.response && !(publicView && access.response.status === 403)) return access.response
   if (access.response && !(await getSchoolById(schoolId)))
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-  const targetCoachId = url.searchParams.get('coachId')
   const viewerId = access.response ? (await getSchoolCaller(request))?.uid : access.caller.uid
   const canManage =
     url.searchParams.get('view') !== 'public' &&
     !access.response &&
     (access.globalAdmin || schoolMembershipHasRole(access.membership, 'director'))
+  const teacherOwnScheduleOnly =
+    !access.response &&
+    !access.globalAdmin &&
+    schoolMembershipHasRole(access.membership, 'teacher') &&
+    !schoolMembershipHasRole(access.membership, 'director')
+  const targetCoachId = teacherOwnScheduleOnly ? access.caller.uid : url.searchParams.get('coachId')
   const range = monthRange(url.searchParams.get('month'))
   const [membershipSnapshot, bookingsSnapshot, blocksSnapshot] = await Promise.all([
     adminDb.collection('schoolMemberships').where('schoolId', '==', schoolId).get(),

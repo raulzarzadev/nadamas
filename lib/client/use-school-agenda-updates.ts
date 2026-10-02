@@ -3,25 +3,33 @@
 import { useEffect, useRef } from 'react'
 import { AgendaUpdatesCRUD } from '@/firebase/agenda-updates/main'
 
-export function useSchoolAgendaUpdates(schoolId: string | null | undefined, onChange: () => void) {
+export function useSchoolAgendaUpdates(
+  schoolId: string | string[] | null | undefined,
+  onChange: () => void
+) {
   const callback = useRef(onChange)
   useEffect(() => {
     callback.current = onChange
   }, [onChange])
   useEffect(() => {
-    if (!schoolId) return
-    let unsubscribe: (() => void) | undefined
+    const schoolIds = [...new Set(Array.isArray(schoolId) ? schoolId : schoolId ? [schoolId] : [])]
+    if (!schoolIds.length) return
+    let unsubscribes: Array<() => void> = []
     const update = () => callback.current()
     const syncVisibility = () => {
-      unsubscribe?.()
-      unsubscribe = undefined
+      unsubscribes.forEach((unsubscribe) => {
+        unsubscribe()
+      })
+      unsubscribes = []
       if (document.visibilityState === 'visible')
-        unsubscribe = AgendaUpdatesCRUD.listen(schoolId, update)
+        unsubscribes = schoolIds.map((id) => AgendaUpdatesCRUD.listen(id, update))
     }
     syncVisibility()
     document.addEventListener('visibilitychange', syncVisibility)
     return () => {
-      unsubscribe?.()
+      unsubscribes.forEach((unsubscribe) => {
+        unsubscribe()
+      })
       document.removeEventListener('visibilitychange', syncVisibility)
     }
   }, [schoolId])
