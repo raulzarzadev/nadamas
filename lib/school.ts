@@ -203,6 +203,8 @@ export interface SchoolMembership {
   /** New memberships can carry several school roles; role remains the primary legacy role. */
   roles?: SchoolRole[]
   status: 'active' | 'pending' | 'suspended'
+  /** Allows this teacher to review school booking requests from their personal agenda. */
+  canManageSchoolBookings?: boolean
   createdAt: number
   updatedAt: number
 }

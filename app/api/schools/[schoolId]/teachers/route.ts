@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { DAY_TO_INDEX, resolveOfferingSchedules } from '@/lib/coach-offerings'
-import type { SchoolMembership, SchoolTeacherProfile } from '@/lib/school'
+import {
+  type SchoolMembership,
+  type SchoolTeacherProfile,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { schoolScheduleOwners } from '@/lib/server/school-agenda'
@@ -84,8 +88,41 @@ export async function GET(request: Request, { params }: RouteProps) {
           profile?.profileComplete === true ||
           Boolean(user.nickname || user.displayName || user.name),
         availability,
+        canManageSchoolBookings: membership.canManageSchoolBookings === true,
       }
     })
   )
   return NextResponse.json({ teachers: teachers.sort((a, b) => a.name.localeCompare(b.name)) })
+}
+
+export async function PATCH(request: Request, { params }: RouteProps) {
+  const { schoolId } = await params
+  const access = await requireSchoolAccess(request, schoolId, ['director'])
+  if (access.response) return access.response
+  const body = (await request.json().catch(() => ({}))) as {
+    teacherId?: unknown
+    canManageSchoolBookings?: unknown
+  }
+  if (typeof body.teacherId !== 'string' || typeof body.canManageSchoolBookings !== 'boolean') {
+    return NextResponse.json({ error: 'Permiso inválido.' }, { status: 400 })
+  }
+  const membershipRef = adminDb.collection('schoolMemberships').doc(`${schoolId}_${body.teacherId}`)
+  const membershipSnapshot = await membershipRef.get()
+  const membership = membershipSnapshot.data() as SchoolMembership | undefined
+  if (
+    !membershipSnapshot.exists ||
+    membership?.schoolId !== schoolId ||
+    membership.status !== 'active' ||
+    !schoolMembershipHasRole(membership, 'teacher')
+  ) {
+    return NextResponse.json(
+      { error: 'Entrenador no encontrado en esta escuela.' },
+      { status: 404 }
+    )
+  }
+  await membershipRef.update({
+    canManageSchoolBookings: body.canManageSchoolBookings,
+    updatedAt: Date.now(),
+  })
+  return NextResponse.json({ canManageSchoolBookings: body.canManageSchoolBookings })
 }

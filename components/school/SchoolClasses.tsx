@@ -252,43 +252,6 @@ export default function SchoolClasses() {
         aria-label="Solicitudes y configuración de la escuela"
         className="flex flex-col gap-4"
       >
-        {isDirector && requests.filter((item) => item.status === 'pending').length > 0 && (
-          <div className="rounded-[var(--r-md)] border border-[#f4d59a] bg-[#fffaf0] p-5">
-            <h2 className="font-bold text-(--c-ocean)">Solicitudes pendientes</h2>
-            <div className="mt-3 grid gap-2">
-              {requests
-                .filter((item) => item.status === 'pending')
-                .map((request) => (
-                  <div
-                    key={request.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-sm)] bg-white p-3"
-                  >
-                    <div>
-                      <p className="font-semibold text-(--c-ocean)">
-                        {request.studentName ||
-                          students.find((student) => student.id === request.studentId)?.name ||
-                          capitalizeSchoolTerm(participantSingular)}
-                      </p>
-                      <p className="text-xs text-(--c-text-2)">
-                        {request.type === 'group' ? 'Grupal' : 'Individual'} ·{' '}
-                        {request.preferredStartTime}–{request.preferredEndTime}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedRequest(request)
-                        setShowCreate(true)
-                      }}
-                      className="btn btn-sm btn-primary"
-                    >
-                      Asignar
-                    </button>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
         {isStudentAccount && requests.length > 0 && (
           <div className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5">
             <h2 className="font-bold text-(--c-ocean)">Mis solicitudes</h2>

@@ -8,14 +8,14 @@ import {
   schoolMembershipHasRole,
 } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
-import { getSchoolById } from '@/lib/server/schools'
-import { requireSchoolAccess } from '@/lib/server/school-access'
+import { getSchoolCaller, requireSchoolAccess } from '@/lib/server/school-access'
 import {
   legacySchoolOfferings,
   schoolClassAgendaBooking,
   schoolClassCoachIds,
   schoolScheduleOwners,
 } from '@/lib/server/school-agenda'
+import { getSchoolById } from '@/lib/server/schools'
 
 export const runtime = 'nodejs'
 
@@ -41,6 +41,7 @@ export async function GET(request: Request, { params }: RouteProps) {
   if (access.response && !(await getSchoolById(schoolId)))
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   const targetCoachId = url.searchParams.get('coachId')
+  const viewerId = access.response ? (await getSchoolCaller(request))?.uid : access.caller.uid
   const canManage =
     url.searchParams.get('view') !== 'public' &&
     !access.response &&
@@ -51,9 +52,10 @@ export async function GET(request: Request, { params }: RouteProps) {
     adminDb.collection('bookings').where('schoolId', '==', schoolId).get(),
     adminDb.collection('coachScheduleBlocks').where('schoolId', '==', schoolId).get(),
   ])
-  const [schoolClassesSnapshot, studentsSnapshot] = await Promise.all([
+  const [schoolClassesSnapshot, studentsSnapshot, requestsSnapshot] = await Promise.all([
     adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get(),
     adminDb.collection('schoolStudents').where('schoolId', '==', schoolId).get(),
+    adminDb.collection('schoolClassRequests').where('schoolId', '==', schoolId).get(),
   ])
 
   const scheduleMemberships = schoolScheduleOwners(
@@ -105,6 +107,23 @@ export async function GET(request: Request, { params }: RouteProps) {
   const studentNames = new Map(
     studentsSnapshot.docs.map((doc) => [doc.id, String(doc.data().name || 'Alumno')])
   )
+  const viewerStudentIds = new Set(
+    viewerId
+      ? studentsSnapshot.docs
+          .filter((doc) => {
+            const student = doc.data()
+            return (
+              student.studentUserId === viewerId ||
+              (Array.isArray(student.managerIds) && student.managerIds.includes(viewerId)) ||
+              (Array.isArray(student.guardianIds) && student.guardianIds.includes(viewerId))
+            )
+          })
+          .map((doc) => doc.id)
+      : []
+  )
+  if (viewerId && !access.response && schoolMembershipHasRole(access.membership, 'student')) {
+    viewerStudentIds.add(viewerId)
+  }
   const startDate = range.start.toISOString().slice(0, 10)
   const endDate = range.end.toISOString().slice(0, 10)
   const schoolClassBookings = schoolClassesSnapshot.docs.flatMap((doc) => {
@@ -125,6 +144,102 @@ export async function GET(request: Request, { params }: RouteProps) {
       })
     )
   })
+  const myReservations = viewerId
+    ? [
+        ...schoolClassesSnapshot.docs.flatMap((doc) => {
+          const occurrence = doc.data() as SchoolClassOccurrence
+          if (
+            !occurrence.date ||
+            occurrence.date < startDate ||
+            occurrence.date > endDate ||
+            !occurrence.studentIds?.some((studentId) => viewerStudentIds.has(studentId))
+          )
+            return []
+          return schoolClassCoachIds({
+            assignedCoachIds: occurrence.teacherIds,
+            allowedCoachIds: teacherIds,
+          }).map((coachId) => ({
+            id: `class-${occurrence.id}-${coachId}`,
+            coachId,
+            coachName: names[coachId] || 'Entrenador',
+            date: occurrence.date,
+            startTime: occurrence.startTime,
+            endTime: occurrence.endTime,
+            status: occurrence.status === 'scheduled' ? 'confirmed' : occurrence.status,
+            groupType: occurrence.type === 'group' ? 'grupal' : 'particular',
+          }))
+        }),
+        ...requestsSnapshot.docs.flatMap((doc) => {
+          const requestRecord = doc.data()
+          const coachId =
+            typeof requestRecord.preferredTeacherId === 'string'
+              ? requestRecord.preferredTeacherId
+              : ''
+          if (
+            requestRecord.requestedBy !== viewerId ||
+            requestRecord.status !== 'pending' ||
+            !coachId ||
+            !requestRecord.startDate ||
+            requestRecord.startDate < startDate ||
+            requestRecord.startDate > endDate
+          )
+            return []
+          return [
+            {
+              id: `request-${doc.id}`,
+              coachId,
+              coachName: names[coachId] || 'Entrenador',
+              date: requestRecord.startDate,
+              startTime: requestRecord.preferredStartTime,
+              endTime: requestRecord.preferredEndTime,
+              status: 'pending',
+              groupType: requestRecord.type === 'group' ? 'grupal' : 'particular',
+            },
+          ]
+        }),
+      ]
+    : []
+  const pendingRequestBookings = requestsSnapshot.docs.flatMap((doc) => {
+    const record = doc.data()
+    const teacherId = typeof record.preferredTeacherId === 'string' ? record.preferredTeacherId : ''
+    if (
+      record.status !== 'pending' ||
+      !teacherIds.has(teacherId) ||
+      typeof record.startDate !== 'string' ||
+      record.startDate < startDate ||
+      record.startDate > endDate
+    )
+      return []
+    return [
+      {
+        id: `school-request-${doc.id}`,
+        schoolRequestId: doc.id,
+        schoolId,
+        coachId: teacherId,
+        coachName: names[teacherId] || 'Entrenador',
+        athleteId: record.requestedBy || '',
+        athleteName: record.studentName || 'Alumno',
+        athleteEmail: null,
+        date: record.startDate,
+        startTime: record.preferredStartTime || '16:00',
+        endTime: record.preferredEndTime || '17:00',
+        offeringId: `school-request:${doc.id}`,
+        scheduleId: `school-request:${doc.id}`,
+        locationName: record.location || '',
+        mode: 'fixed' as const,
+        groupType: record.type === 'group' ? ('grupal' as const) : ('particular' as const),
+        days: [],
+        priceCents: null,
+        currency: 'MXN' as const,
+        unit: 'clase' as const,
+        status: 'pending',
+        source: 'school-request',
+        createdAt: record.createdAt || 0,
+        updatedAt: record.updatedAt || 0,
+        classFull: false,
+      },
+    ]
+  })
   const blocks = blocksSnapshot.docs
     .map((doc) => ({ id: doc.id, ...(doc.data() as Omit<CoachScheduleBlock, 'id'>) }))
     .filter((block) => teacherIds.has(block.coachId))
@@ -132,8 +247,8 @@ export async function GET(request: Request, { params }: RouteProps) {
       `${a.date} ${a.startTime || ''}`.localeCompare(`${b.date} ${b.startTime || ''}`)
     )
 
-  const agendaBookings = [...bookings, ...schoolClassBookings].sort((a, b) =>
-    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+  const agendaBookings = [...bookings, ...schoolClassBookings, ...pendingRequestBookings].sort(
+    (a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
   )
   const availableSlots = teacherData
     .flatMap(({ teacherId, name, offerings }) =>
@@ -175,6 +290,7 @@ export async function GET(request: Request, { params }: RouteProps) {
     ],
     blocks: canManage ? blocks : blocks.map(({ note: _note, ...block }) => block),
     availableSlots,
+    myReservations,
     offerings: targetCoachId ? teacherData[0]?.offerings || [] : [],
     coachNames: names,
     schoolId,

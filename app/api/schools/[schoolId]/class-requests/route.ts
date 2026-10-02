@@ -14,7 +14,6 @@ import {
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import {
   createClassRequest,
-  createSchoolClass,
   listClassRequests,
   validateClassInput,
 } from '@/lib/server/school-classes'
@@ -150,68 +149,52 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     : []
   if (!preferredDays.length)
     return NextResponse.json({ error: 'Selecciona al menos un día.' }, { status: 400 })
-  if (school.bookingMode === 'direct' && body.directBooking === true) {
-    const teacherId = typeof body.teacherId === 'string' ? body.teacherId : ''
-    if (!teacherId) return NextResponse.json({ error: 'Selecciona un coach.' }, { status: 400 })
-    if (!(await schoolPeopleAreValid(schoolId, [teacherId], [studentId])))
-      return NextResponse.json(
-        { error: 'Selecciona un coach que pertenezca a la escuela.' },
-        { status: 400 }
-      )
-    const startDate = typeof body.startDate === 'string' ? body.startDate : ''
-    const classValidation = validateClassInput({
-      schoolId,
-      title: typeof body.title === 'string' && body.title.trim() ? body.title : 'Clase escolar',
-      type: body.type === 'group' ? 'group' : 'individual',
-      teacherIds: [teacherId],
-      studentIds: [studentId],
-      startDate,
-      endDate: startDate,
-      daysOfWeek: preferredDays,
-      startTime: typeof body.preferredStartTime === 'string' ? body.preferredStartTime : '',
-      endTime: typeof body.preferredEndTime === 'string' ? body.preferredEndTime : '',
-      timezone: typeof body.timezone === 'string' ? body.timezone : school.timezone,
-      location: typeof body.location === 'string' ? body.location.slice(0, 200) : '',
-      locationUrl: typeof body.locationUrl === 'string' ? body.locationUrl.slice(0, 500) : '',
-      recurring: false,
-    })
-    if (!classValidation.ok)
-      return NextResponse.json({ error: 'Revisa la fecha y el horario.' }, { status: 400 })
-    const classResult = await createSchoolClass(classValidation.value)
-    void createNotification({
-      recipientId: teacherId,
-      actorId: caller.uid,
-      actorName: caller.name || null,
-      type: 'school_class_assigned',
-      title: 'Nueva reserva',
-      body: `${classValidation.value.title} fue agregada a tu agenda.`,
-      link: '/school/classes',
-    }).catch(() => {})
-    void createNotification({
-      recipientId: school.directorId,
-      actorId: caller.uid,
-      actorName: caller.name || caller.email,
-      type: 'school_class_requested',
-      title: 'Nueva reserva directa',
-      body: 'Un alumno reservó una clase directamente.',
-      link: '/school/classes',
-    }).catch(() => {})
-    return NextResponse.json({ direct: true, ...classResult }, { status: 201 })
-  }
+  const teacherId =
+    typeof body.preferredTeacherId === 'string'
+      ? body.preferredTeacherId
+      : typeof body.teacherId === 'string'
+        ? body.teacherId
+        : ''
+  if (!teacherId) return NextResponse.json({ error: 'Selecciona un entrenador.' }, { status: 400 })
+  if (!(await schoolPeopleAreValid(schoolId, [teacherId], [studentId])))
+    return NextResponse.json(
+      { error: 'Selecciona un entrenador que pertenezca a la escuela.' },
+      { status: 400 }
+    )
+  const requestedDate =
+    typeof body.startDate === 'string' ? body.startDate : new Date().toISOString().slice(0, 10)
+  const requestedStart =
+    typeof body.preferredStartTime === 'string' ? body.preferredStartTime : '16:00'
+  const requestedEnd = typeof body.preferredEndTime === 'string' ? body.preferredEndTime : '17:00'
+  const classValidation = validateClassInput({
+    schoolId,
+    title: typeof body.title === 'string' && body.title.trim() ? body.title : 'Clase escolar',
+    type: body.type === 'group' ? 'group' : 'individual',
+    teacherIds: [teacherId],
+    studentIds: [studentId],
+    startDate: requestedDate,
+    endDate: requestedDate,
+    daysOfWeek: preferredDays,
+    startTime: requestedStart,
+    endTime: requestedEnd,
+    timezone: typeof body.timezone === 'string' ? body.timezone : school.timezone,
+    location: typeof body.location === 'string' ? body.location.slice(0, 200) : '',
+    locationUrl: typeof body.locationUrl === 'string' ? body.locationUrl.slice(0, 500) : '',
+    recurring: false,
+  })
+  if (!classValidation.ok)
+    return NextResponse.json({ error: 'Revisa la fecha y el horario.' }, { status: 400 })
   const requestRecord = await createClassRequest({
     schoolId,
     studentId,
     studentName: student.name,
     requestedBy: caller.uid,
-    preferredTeacherId:
-      typeof body.preferredTeacherId === 'string' ? body.preferredTeacherId : undefined,
+    preferredTeacherId: teacherId,
     type: body.type === 'group' ? 'group' : 'individual',
     preferredDays,
-    preferredStartTime:
-      typeof body.preferredStartTime === 'string' ? body.preferredStartTime : '16:00',
-    preferredEndTime: typeof body.preferredEndTime === 'string' ? body.preferredEndTime : '19:00',
-    startDate:
-      typeof body.startDate === 'string' ? body.startDate : new Date().toISOString().slice(0, 10),
+    preferredStartTime: classValidation.value.startTime,
+    preferredEndTime: classValidation.value.endTime,
+    startDate: requestedDate,
     endDate: typeof body.endDate === 'string' ? body.endDate : '',
     durationMinutes: typeof body.durationMinutes === 'number' ? body.durationMinutes : 60,
     location: typeof body.location === 'string' ? body.location.slice(0, 200) : '',
@@ -228,7 +211,16 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       body: 'Un alumno solicitó un horario para un alumno.',
       link: '/school/classes',
     }).catch(() => {})
-  return NextResponse.json({ request: requestRecord }, { status: 201 })
+  void createNotification({
+    recipientId: teacherId,
+    actorId: caller.uid,
+    actorName: caller.name || caller.email,
+    type: 'school_class_requested',
+    title: 'Reserva pendiente de aprobación',
+    body: `${student.name} solicitó una clase para el ${requestRecord.startDate} a las ${requestRecord.preferredStartTime}.`,
+    link: '/coach/agenda',
+  }).catch(() => {})
+  return NextResponse.json({ request: requestRecord, pendingApproval: true }, { status: 201 })
 }
 
 export const POST = withSchoolAgendaUpdate(handlePOST)

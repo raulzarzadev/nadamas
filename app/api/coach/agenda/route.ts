@@ -11,6 +11,7 @@ import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
 import {
   type SchoolClassOccurrence,
+  type SchoolClassRequest,
   type SchoolMembership,
   schoolMembershipHasRole,
 } from '@/lib/school'
@@ -74,6 +75,9 @@ export async function GET(request: Request) {
     verification.isAdmin
   )
   if (schoolError) return schoolError
+  const schoolMembership = schoolId ? await getSchoolMembership(schoolId, coachId) : null
+  const canReviewSchoolBookings =
+    verification.isAdmin || schoolMembership?.canManageSchoolBookings === true
   const range = monthRange(url.searchParams.get('month'))
   const [
     coachDoc,
@@ -82,6 +86,7 @@ export async function GET(request: Request) {
     schoolOfferingsSnapshot,
     schoolClassesSnapshot,
     schoolStudentsSnapshot,
+    schoolRequestsSnapshot,
   ] = await Promise.all([
     adminDb.collection('coaches').doc(coachId).get(),
     adminDb.collection('bookings').where('coachId', '==', coachId).get(),
@@ -94,6 +99,9 @@ export async function GET(request: Request) {
       : Promise.resolve(null),
     schoolId
       ? adminDb.collection('schoolStudents').where('schoolId', '==', schoolId).get()
+      : Promise.resolve(null),
+    schoolId
+      ? adminDb.collection('schoolClassRequests').where('schoolId', '==', schoolId).get()
       : Promise.resolve(null),
   ])
 
@@ -126,8 +134,49 @@ export async function GET(request: Request) {
       }),
     ]
   })
-  const bookings = [...regularBookings, ...schoolClassBookings].sort((a, b) =>
-    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+  const schoolRequestBookings = canReviewSchoolBookings
+    ? (schoolRequestsSnapshot?.docs || []).flatMap((doc) => {
+        const record = doc.data() as SchoolClassRequest
+        if (
+          record.status !== 'pending' ||
+          record.preferredTeacherId !== coachId ||
+          record.startDate < startDate ||
+          record.startDate > endDate
+        )
+          return []
+        return [
+          {
+            id: `school-request-${doc.id}`,
+            schoolRequestId: doc.id,
+            schoolId: schoolId as string,
+            coachId,
+            coachName: null,
+            athleteId: record.requestedBy,
+            athleteName: record.studentName || 'Alumno',
+            athleteEmail: null,
+            date: record.startDate,
+            startTime: record.preferredStartTime,
+            endTime: record.preferredEndTime,
+            offeringId: `school-request:${doc.id}`,
+            scheduleId: `school-request:${doc.id}`,
+            locationName: record.location || '',
+            mode: 'fixed' as const,
+            groupType: record.type === 'group' ? ('grupal' as const) : ('particular' as const),
+            days: [],
+            priceCents: null,
+            currency: 'MXN' as const,
+            unit: 'clase' as const,
+            status: 'pending',
+            source: 'school-request',
+            createdAt: record.createdAt || 0,
+            updatedAt: record.updatedAt || 0,
+            classFull: false,
+          },
+        ]
+      })
+    : []
+  const bookings = [...regularBookings, ...schoolClassBookings, ...schoolRequestBookings].sort(
+    (a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
   )
   const blocks = blocksSnapshot.docs
     .map((doc) => doc.data() as CoachScheduleBlock)

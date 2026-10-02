@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server'
-import { schoolMembershipHasRole } from '@/lib/school'
+import { buildAvailableSlots, type CoachScheduleBlock } from '@/lib/coach-agenda'
+import type { Booking } from '@/lib/coach-booking'
+import { resolveOfferings } from '@/lib/coach-offerings'
+import {
+  type SchoolClassOccurrence,
+  type SchoolClassRequest,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
-import { requireSchoolAccess } from '@/lib/server/school-access'
+import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
+import { legacySchoolOfferings, schoolClassAgendaBooking } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { getSchoolClassOccurrence } from '@/lib/server/school-classes'
 import { listSchoolStudents } from '@/lib/server/school-students'
@@ -43,12 +51,155 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   }
   if (!status && !isDirector && !access.globalAdmin)
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  const teacherIds = Array.isArray(body.teacherIds)
+    ? [...new Set(body.teacherIds.filter((id): id is string => typeof id === 'string'))]
+    : null
+  if (teacherIds && !teacherIds.length)
+    return NextResponse.json({ error: 'Asigna al menos un entrenador.' }, { status: 400 })
+  if (teacherIds && !(await schoolPeopleAreValid(schoolId, teacherIds, occurrence.studentIds)))
+    return NextResponse.json(
+      { error: 'Selecciona entrenadores activos de esta escuela.' },
+      { status: 400 }
+    )
+  const date = typeof body.date === 'string' ? body.date : null
+  const startTime = typeof body.startTime === 'string' ? body.startTime : null
+  const endTime = typeof body.endTime === 'string' ? body.endTime : null
+  const requestedType = body.type === 'group' || body.type === 'individual' ? body.type : null
+  if (body.type !== undefined && !requestedType)
+    return NextResponse.json({ error: 'Tipo de clase inválido.' }, { status: 400 })
+  const hasScheduleChange = Boolean(teacherIds || date || startTime || endTime || requestedType)
+  if (!isDirector && hasScheduleChange)
+    return NextResponse.json(
+      { error: 'Solo la dirección puede cambiar el horario o el entrenador.' },
+      { status: 403 }
+    )
+  if (
+    (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) ||
+    (startTime && !/^\d{2}:\d{2}$/.test(startTime)) ||
+    (endTime && !/^\d{2}:\d{2}$/.test(endTime)) ||
+    ((startTime || endTime) &&
+      (startTime || occurrence.startTime) >= (endTime || occurrence.endTime))
+  )
+    return NextResponse.json({ error: 'Revisa la fecha y el horario.' }, { status: 400 })
+  if (hasScheduleChange) {
+    const destinationTeachers = teacherIds || occurrence.teacherIds
+    if (destinationTeachers.length !== 1)
+      return NextResponse.json(
+        { error: 'Selecciona un entrenador para validar el horario disponible.' },
+        { status: 400 }
+      )
+    const coachId = destinationTeachers[0]
+    const destinationType = requestedType || occurrence.type
+    const destinationDate = date || occurrence.date
+    const destinationStartTime = startTime || occurrence.startTime
+    const destinationEndTime = endTime || occurrence.endTime
+    const [
+      offeringsSnapshot,
+      legacySnapshot,
+      bookingsSnapshot,
+      blocksSnapshot,
+      classesSnapshot,
+      requestsSnapshot,
+    ] = await Promise.all([
+      adminDb.collection('schoolCoachOfferings').doc(`${schoolId}_${coachId}`).get(),
+      adminDb.collection('schoolAvailability').doc(`${schoolId}_${coachId}`).get(),
+      adminDb.collection('bookings').where('schoolId', '==', schoolId).get(),
+      adminDb.collection('coachScheduleBlocks').where('schoolId', '==', schoolId).get(),
+      adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get(),
+      adminDb.collection('schoolClassRequests').where('schoolId', '==', schoolId).get(),
+    ])
+    const offerings = offeringsSnapshot.exists
+      ? resolveOfferings({ classOfferings: offeringsSnapshot.data()?.classOfferings || [] })
+      : legacySchoolOfferings(legacySnapshot.data()?.weeklySlots)
+    const bookings: Booking[] = bookingsSnapshot.docs
+      .map((doc) => ({ id: doc.id, ...(doc.data() as Omit<Booking, 'id'>) }))
+      .filter((booking) => booking.coachId === coachId && booking.status !== 'cancelled')
+    const blocks = blocksSnapshot.docs
+      .map((doc) => doc.data() as CoachScheduleBlock)
+      .filter((block) => block.coachId === coachId)
+    for (const doc of classesSnapshot.docs) {
+      if (doc.id === occurrenceId) continue
+      const item = doc.data() as SchoolClassOccurrence
+      if (
+        item.status === 'scheduled' &&
+        item.teacherIds.includes(coachId) &&
+        item.date === destinationDate
+      ) {
+        bookings.push(
+          schoolClassAgendaBooking({
+            schoolId,
+            occurrence: { ...item, id: doc.id },
+            coachId,
+            coachName: null,
+          })
+        )
+      }
+    }
+    for (const doc of requestsSnapshot.docs) {
+      const item = doc.data() as SchoolClassRequest
+      if (
+        item.status === 'pending' &&
+        item.preferredTeacherId === coachId &&
+        item.startDate === destinationDate
+      ) {
+        bookings.push({
+          id: `school-request-${doc.id}`,
+          schoolId,
+          coachId,
+          coachName: null,
+          athleteId: item.studentId,
+          athleteName: item.studentName || 'Alumno',
+          athleteEmail: null,
+          date: destinationDate,
+          startTime: item.preferredStartTime,
+          endTime: item.preferredEndTime,
+          offeringId: `school-request:${doc.id}`,
+          scheduleId: `school-request:${doc.id}`,
+          locationName: item.location || '',
+          mode: 'fixed',
+          groupType: item.type === 'group' ? 'grupal' : 'particular',
+          days: [],
+          priceCents: null,
+          currency: 'MXN',
+          unit: 'clase',
+          status: 'pending',
+          source: 'school-request',
+          createdAt: item.createdAt || 0,
+          updatedAt: item.updatedAt || 0,
+          classFull: false,
+        })
+      }
+    }
+    const targetDate = new Date(`${destinationDate}T12:00:00`)
+    const slot = buildAvailableSlots({
+      coachId,
+      offerings,
+      bookings,
+      blocks,
+      startDate: targetDate,
+      endDate: targetDate,
+    }).find(
+      (candidate) =>
+        candidate.date === destinationDate &&
+        candidate.startTime === destinationStartTime &&
+        candidate.endTime === destinationEndTime &&
+        candidate.status === 'available' &&
+        candidate.groupType === (destinationType === 'group' ? 'grupal' : 'particular')
+    )
+    if (!slot)
+      return NextResponse.json(
+        { error: 'Ese entrenador no tiene disponible el horario seleccionado.' },
+        { status: 409 }
+      )
+  }
   const editable = isStudentAccount ? {} : body
   const update = {
     ...(status ? { status } : {}),
     ...(typeof editable.date === 'string' ? { date: editable.date } : {}),
     ...(typeof editable.startTime === 'string' ? { startTime: editable.startTime } : {}),
     ...(typeof editable.endTime === 'string' ? { endTime: editable.endTime } : {}),
+    ...(requestedType ? { type: requestedType } : {}),
+    ...(teacherIds ? { teacherIds } : {}),
     ...(typeof editable.location === 'string' ? { location: editable.location.slice(0, 200) } : {}),
     ...(typeof editable.locationUrl === 'string'
       ? { locationUrl: editable.locationUrl.slice(0, 500) }
@@ -56,7 +207,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     updatedAt: Date.now(),
   }
   await adminDb.collection('schoolClassOccurrences').doc(occurrenceId).update(update)
-  for (const teacherId of occurrence.teacherIds)
+  for (const teacherId of new Set([...occurrence.teacherIds, ...(teacherIds || [])]))
     void createNotification({
       recipientId: teacherId,
       actorId: access.caller.uid,

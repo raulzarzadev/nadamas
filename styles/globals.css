@@ -33,21 +33,40 @@
 /* Every enabled button is visibly interactive; disabled controls keep the
    explicit not-allowed cursor from their component styles. */
 button:not(:disabled),
-[role='button']:not([aria-disabled='true']) {
+[role="button"]:not([aria-disabled="true"]) {
   cursor: pointer;
 }
 
 /* Bottom sheet enter animation (components/ui/sheet.tsx). */
 @keyframes sheet-slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-slide-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
 }
 
 /* Coach metric slider: neutral preference rail + reactive thumb. */
 @keyframes metric-thumb-pulse {
-  0% { transform: scale(1); }
-  45% { transform: scale(1.35); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .metric-range {
@@ -69,7 +88,9 @@ button:not(:disabled),
   background: var(--c-aqua, #00b4d8);
   border: 3px solid #fff;
   box-shadow: 0 2px 8px rgba(0, 119, 182, 0.35);
-  transition: transform 160ms var(--ease-expo, ease), box-shadow 160ms ease;
+  transition:
+    transform 160ms var(--ease-expo, ease),
+    box-shadow 160ms ease;
 }
 .metric-range::-moz-range-thumb {
   width: 26px;
@@ -78,7 +99,9 @@ button:not(:disabled),
   background: var(--c-aqua, #00b4d8);
   border: 3px solid #fff;
   box-shadow: 0 2px 8px rgba(0, 119, 182, 0.35);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .metric-range:hover::-webkit-slider-thumb,
@@ -106,7 +129,9 @@ button:not(:disabled),
 }
 
 /* A school subdomain owns the brand throughout its workspace. */
-[data-tenant-school], [data-tenant-school] [data-theme], [data-tenant-school] .marketing {
+[data-tenant-school],
+[data-tenant-school] [data-theme],
+[data-tenant-school] .marketing {
   --c-ocean: var(--tenant-primary);
   --c-ocean-mid: var(--tenant-primary);
   --c-aqua: var(--tenant-secondary);

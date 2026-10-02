@@ -66,6 +66,13 @@ type ActiveSlot = {
   locationName: string
   groupType: 'particular' | 'grupal'
 }
+type SchoolRequestDraft = {
+  booking: Booking
+  date: string
+  startTime: string
+  endTime: string
+  coachId: string
+}
 type ConfirmAction =
   | { kind: 'cancel-booking'; booking: Booking }
   | { kind: 'delete-slot'; slot: CoachAvailableSlot }
@@ -147,11 +154,14 @@ export default function CoachAgenda({
   // The school editor manages availability hours only.
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
   const [reassignBooking, setReassignBooking] = useState<Booking | null>(null)
+  const [schoolRequestDraft, setSchoolRequestDraft] = useState<SchoolRequestDraft | null>(null)
+  const [schoolClassToEdit, setSchoolClassToEdit] = useState<Booking | null>(null)
+  const [schoolClassToReassign, setSchoolClassToReassign] = useState<Booking | null>(null)
+  const [schoolTeachers, setSchoolTeachers] = useState<Array<{ id: string; name: string }>>([])
   const [notice, setNotice] = useState<string | null>(null)
   const agendaRequestRef = useRef(0)
 
   const monthOfSelected = selectedDate.slice(0, 7)
-
   useEffect(() => {
     if (scheduleEditorOpen) setHoursEditorOpen(true)
   }, [scheduleEditorOpen])
@@ -513,6 +523,78 @@ export default function CoachAgenda({
       })
     )
 
+  const handleSchoolRequest = (booking: Booking, status: 'approved' | 'rejected') => {
+    if (!schoolId || !booking.schoolRequestId) return
+    run(() =>
+      patchAuthed(
+        `/api/schools/${encodeURIComponent(schoolId)}/class-requests/${encodeURIComponent(booking.schoolRequestId as string)}`,
+        { status }
+      )
+    )
+  }
+
+  const openSchoolClassEditor = (booking: Booking) => setSchoolClassToEdit(booking)
+
+  const cancelSchoolClass = (booking: Booking) => {
+    if (!schoolId || !booking.schoolClassId) return
+    run(async () => {
+      await patchAuthed(
+        `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(booking.schoolClassId as string)}`,
+        { status: 'cancelled' }
+      )
+      setSchoolClassToEdit(null)
+      setNotice('Clase cancelada.')
+    })
+  }
+
+  const openSchoolRequestEditor = async (booking: Booking) => {
+    if (!schoolId) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/teachers`)
+      if (!response.ok) throw new Error('teachers')
+      const payload = (await response.json()) as {
+        teachers?: Array<{ id: string; name: string; status?: string }>
+      }
+      const teachers = (payload.teachers || []).filter((teacher) => teacher.status === 'active')
+      setSchoolTeachers(teachers)
+      setSchoolRequestDraft({
+        booking,
+        date: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        coachId: booking.coachId,
+      })
+    } catch (err) {
+      reportInternalError('COACH_SCHOOL_REQUEST_EDIT', err)
+      setError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const approveSchoolRequestWithChanges = () => {
+    if (!schoolId || !schoolRequestDraft?.booking.schoolRequestId) return
+    const { booking, date, startTime, endTime, coachId: nextCoachId } = schoolRequestDraft
+    const day = new Date(`${date}T12:00:00`).getDay()
+    run(async () => {
+      await patchAuthed(
+        `/api/schools/${encodeURIComponent(schoolId)}/class-requests/${encodeURIComponent(booking.schoolRequestId as string)}`,
+        {
+          status: 'approved',
+          teacherIds: [nextCoachId],
+          startDate: date,
+          endDate: date,
+          startTime,
+          endTime,
+          daysOfWeek: [day],
+        }
+      )
+      setSchoolRequestDraft(null)
+    })
+  }
+
   const unblock = (block: CoachScheduleBlock) =>
     run(() =>
       deleteAuthed(
@@ -724,6 +806,9 @@ export default function CoachAgenda({
                 const hasSchoolClass = row.bookings.some((booking) =>
                   Boolean(booking.schoolClassId)
                 )
+                const hasPendingRequest = row.bookings.some((booking) =>
+                  Boolean(booking.schoolRequestId)
+                )
                 const isGroupClass =
                   row.bookings.length > 1 ||
                   row.bookings.some((booking) => booking.groupType === 'grupal')
@@ -745,6 +830,11 @@ export default function CoachAgenda({
                           {isGroupClass
                             ? `Clase grupal · ${firstBooking.schoolClassStudentCount ?? row.bookings.length} ${participantPlural}`
                             : `Clase particular · 1 ${participantSingular}`}
+                          {row.bookings.some((booking) => booking.schoolRequestId) && (
+                            <span className="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-900">
+                              Pendiente de aprobación
+                            </span>
+                          )}
                         </span>
                         {multiCoachAgenda && (
                           <span className="text-sm font-extrabold text-[var(--c-ocean)]">
@@ -753,7 +843,7 @@ export default function CoachAgenda({
                               coachFallback}
                           </span>
                         )}
-                        {manageSchoolSchedule && !hasSchoolClass && (
+                        {manageSchoolSchedule && !hasSchoolClass && !hasPendingRequest && (
                           <button
                             type="button"
                             className="btn btn-outline btn-sm min-h-11"
@@ -787,7 +877,7 @@ export default function CoachAgenda({
                               : 'Bloquear horario'}
                           </button>
                         )}
-                        {!hideBookingActions && !hasSchoolClass && (
+                        {!hideBookingActions && !hasSchoolClass && !hasPendingRequest && (
                           <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
                             <span className="min-w-0">
                               <BinarySwitch
@@ -843,10 +933,18 @@ export default function CoachAgenda({
                         {!readOnlyAgenda && (
                           <span
                             className="group relative"
-                            title="No se puede eliminar porque hay una clase asignada."
+                            title={
+                              hasPendingRequest
+                                ? 'Atiende la reserva pendiente antes de quitar este horario.'
+                                : 'No se puede eliminar porque hay una clase asignada.'
+                            }
                           >
                             <RowIconButton
-                              ariaLabel="No se puede eliminar: hay una clase asignada"
+                              ariaLabel={
+                                hasPendingRequest
+                                  ? 'No se puede eliminar: hay una reserva pendiente'
+                                  : 'No se puede eliminar: hay una clase asignada'
+                              }
                               onClick={() => {}}
                               disabled
                               tone="danger"
@@ -876,9 +974,15 @@ export default function CoachAgenda({
                                 <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
                                   {booking.athleteName}
                                 </span>
+                                {booking.schoolRequestId && (
+                                  <span className="mt-1 block text-xs font-semibold text-amber-800">
+                                    Pendiente de aprobación
+                                  </span>
+                                )}
                                 {!hideBookingActions &&
                                   !manageSchoolSchedule &&
-                                  !booking.schoolClassId && (
+                                  !booking.schoolClassId &&
+                                  !booking.schoolRequestId && (
                                     <Link
                                       href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
                                       className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
@@ -888,68 +992,110 @@ export default function CoachAgenda({
                                   )}
                               </span>
                             </div>
-                            {!hideBookingActions && !booking.schoolClassId && (
-                              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:self-center">
-                                <label className="col-span-2 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white/65 px-3 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--c-aqua-strong)] sm:col-auto sm:rounded-full sm:border-transparent sm:bg-transparent sm:px-2 sm:hover:bg-white/60">
-                                  <input
-                                    type="checkbox"
-                                    checked={booking.attended === true}
-                                    onChange={(event) =>
-                                      updateAttendance(booking, event.currentTarget.checked)
-                                    }
-                                    disabled={busy}
-                                    className="h-5 w-5 cursor-pointer rounded border-[var(--c-border)] accent-[var(--c-aqua-strong)] disabled:cursor-not-allowed"
-                                  />
-                                  Asistencia
-                                </label>
-                                {!manageSchoolSchedule && booking.attended === true && (
-                                  <button
-                                    type="button"
-                                    aria-label={
-                                      progressBookingIds.has(booking.id)
-                                        ? `Editar progreso de ${booking.athleteName}`
-                                        : `Agregar progreso de ${booking.athleteName}`
-                                    }
-                                    onClick={() => setProgressBooking(booking)}
-                                    disabled={busy}
-                                    className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-2 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50 sm:w-fit sm:px-3.5"
-                                  >
-                                    {progressBookingIds.has(booking.id) ? (
-                                      <>
-                                        <FiEdit2 aria-hidden="true" /> Progreso guardado
-                                      </>
-                                    ) : (
-                                      <>
-                                        <FiPlus aria-hidden="true" /> Progreso
-                                      </>
-                                    )}
-                                  </button>
-                                )}
-                                {manageSchoolSchedule && (
-                                  <button
-                                    type="button"
-                                    className="btn btn-outline btn-sm min-h-11"
-                                    disabled={busy}
-                                    onClick={() => setReassignBooking(booking)}
-                                  >
-                                    Reasignar {participantSingular}
-                                  </button>
-                                )}
+                            {manageSchoolSchedule && booking.schoolClassId && (
+                              <div className="flex w-full flex-wrap gap-2 sm:w-auto">
                                 <button
                                   type="button"
-                                  aria-label={`Cancelar clase de ${booking.athleteName}`}
-                                  onClick={() =>
-                                    setConfirmAction({ kind: 'cancel-booking', booking })
-                                  }
+                                  onClick={() => openSchoolClassEditor(booking)}
                                   disabled={busy}
-                                  className={`inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--rose-bd)] bg-white px-2 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:w-fit sm:px-3.5 ${
-                                    booking.attended === true ? '' : 'col-span-2'
-                                  }`}
+                                  className="min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50"
                                 >
-                                  <FiX aria-hidden="true" /> Cancelar
+                                  Editar
                                 </button>
                               </div>
                             )}
+                            {booking.schoolRequestId && !hideBookingActions && (
+                              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSchoolRequest(booking, 'approved')}
+                                  disabled={busy}
+                                  className="min-h-10 rounded-full bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+                                >
+                                  Aprobar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSchoolRequest(booking, 'rejected')}
+                                  disabled={busy}
+                                  className="min-h-10 rounded-full border border-[var(--rose-bd)] px-3 text-xs font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50"
+                                >
+                                  Rechazar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void openSchoolRequestEditor(booking)}
+                                  disabled={busy}
+                                  className="col-span-2 min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50 sm:col-span-1"
+                                >
+                                  Cambiar hora o entrenador
+                                </button>
+                              </div>
+                            )}
+                            {!hideBookingActions &&
+                              !booking.schoolClassId &&
+                              !booking.schoolRequestId && (
+                                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:self-center">
+                                  <label className="col-span-2 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white/65 px-3 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--c-aqua-strong)] sm:col-auto sm:rounded-full sm:border-transparent sm:bg-transparent sm:px-2 sm:hover:bg-white/60">
+                                    <input
+                                      type="checkbox"
+                                      checked={booking.attended === true}
+                                      onChange={(event) =>
+                                        updateAttendance(booking, event.currentTarget.checked)
+                                      }
+                                      disabled={busy}
+                                      className="h-5 w-5 cursor-pointer rounded border-[var(--c-border)] accent-[var(--c-aqua-strong)] disabled:cursor-not-allowed"
+                                    />
+                                    Asistencia
+                                  </label>
+                                  {!manageSchoolSchedule && booking.attended === true && (
+                                    <button
+                                      type="button"
+                                      aria-label={
+                                        progressBookingIds.has(booking.id)
+                                          ? `Editar progreso de ${booking.athleteName}`
+                                          : `Agregar progreso de ${booking.athleteName}`
+                                      }
+                                      onClick={() => setProgressBooking(booking)}
+                                      disabled={busy}
+                                      className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-2 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50 sm:w-fit sm:px-3.5"
+                                    >
+                                      {progressBookingIds.has(booking.id) ? (
+                                        <>
+                                          <FiEdit2 aria-hidden="true" /> Progreso guardado
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FiPlus aria-hidden="true" /> Progreso
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                  {manageSchoolSchedule && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline btn-sm min-h-11"
+                                      disabled={busy}
+                                      onClick={() => setReassignBooking(booking)}
+                                    >
+                                      Reasignar {participantSingular}
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    aria-label={`Cancelar clase de ${booking.athleteName}`}
+                                    onClick={() =>
+                                      setConfirmAction({ kind: 'cancel-booking', booking })
+                                    }
+                                    disabled={busy}
+                                    className={`inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--rose-bd)] bg-white px-2 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:w-fit sm:px-3.5 ${
+                                      booking.attended === true ? '' : 'col-span-2'
+                                    }`}
+                                  >
+                                    <FiX aria-hidden="true" /> Cancelar
+                                  </button>
+                                </div>
+                              )}
                           </li>
                         ))}
                       </ul>
@@ -1186,6 +1332,159 @@ export default function CoachAgenda({
         </div>
       </section>
 
+      <Sheet
+        open={Boolean(schoolRequestDraft)}
+        onClose={() => {
+          if (!busy) setSchoolRequestDraft(null)
+        }}
+        label="Cambiar hora o entrenador"
+        keyboardAware
+      >
+        {schoolRequestDraft && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">
+                Ajustar y aprobar reserva
+              </h2>
+              <p className="mt-1 text-sm text-[var(--c-text-2)]">
+                Reserva de {schoolRequestDraft.booking.athleteName}. Al confirmar, quedará agendada.
+              </p>
+            </div>
+            <label className="grid gap-1.5 text-sm font-semibold text-[var(--c-ocean)]">
+              Fecha
+              <input
+                type="date"
+                value={schoolRequestDraft.date}
+                onChange={(event) =>
+                  setSchoolRequestDraft((current) =>
+                    current ? { ...current, date: event.target.value } : current
+                  )
+                }
+                className="min-h-11 rounded-xl border border-[var(--c-border)] bg-white px-3"
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="grid gap-1.5 text-sm font-semibold text-[var(--c-ocean)]">
+                Desde
+                <input
+                  type="time"
+                  value={schoolRequestDraft.startTime}
+                  onChange={(event) =>
+                    setSchoolRequestDraft((current) =>
+                      current ? { ...current, startTime: event.target.value } : current
+                    )
+                  }
+                  className="min-h-11 rounded-xl border border-[var(--c-border)] bg-white px-3"
+                />
+              </label>
+              <label className="grid gap-1.5 text-sm font-semibold text-[var(--c-ocean)]">
+                Hasta
+                <input
+                  type="time"
+                  value={schoolRequestDraft.endTime}
+                  onChange={(event) =>
+                    setSchoolRequestDraft((current) =>
+                      current ? { ...current, endTime: event.target.value } : current
+                    )
+                  }
+                  className="min-h-11 rounded-xl border border-[var(--c-border)] bg-white px-3"
+                />
+              </label>
+            </div>
+            <label className="grid gap-1.5 text-sm font-semibold text-[var(--c-ocean)]">
+              Entrenador
+              <select
+                value={schoolRequestDraft.coachId}
+                onChange={(event) =>
+                  setSchoolRequestDraft((current) =>
+                    current ? { ...current, coachId: event.target.value } : current
+                  )
+                }
+                className="min-h-11 rounded-xl border border-[var(--c-border)] bg-white px-3"
+              >
+                {schoolTeachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <footer className="flex justify-end gap-2 border-t border-[var(--c-border)] pt-3">
+              <button
+                type="button"
+                onClick={() => setSchoolRequestDraft(null)}
+                disabled={busy}
+                className="min-h-10 rounded-full px-4 text-sm font-bold text-[var(--c-ocean)]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={approveSchoolRequestWithChanges}
+                disabled={
+                  busy ||
+                  !schoolRequestDraft.date ||
+                  !schoolRequestDraft.startTime ||
+                  schoolRequestDraft.endTime <= schoolRequestDraft.startTime ||
+                  !schoolRequestDraft.coachId
+                }
+                className="min-h-10 rounded-full bg-[var(--c-ocean)] px-5 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {busy ? 'Guardando…' : 'Aprobar con cambios'}
+              </button>
+            </footer>
+          </div>
+        )}
+      </Sheet>
+
+      <Sheet
+        open={Boolean(schoolClassToEdit)}
+        onClose={() => {
+          if (!busy) setSchoolClassToEdit(null)
+        }}
+        label="Editar clase"
+        modalTopGap
+      >
+        {schoolClassToEdit && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">Editar clase</h2>
+              <p className="mt-1 text-sm text-[var(--c-text-2)]">
+                {schoolClassToEdit.athleteName} · {schoolClassToEdit.date} ·{' '}
+                {schoolClassToEdit.startTime}–{schoolClassToEdit.endTime}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSchoolClassToReassign(schoolClassToEdit)
+                setSchoolClassToEdit(null)
+              }}
+              disabled={busy}
+              className="min-h-12 rounded-full bg-[var(--c-ocean)] px-5 text-sm font-bold text-white"
+            >
+              Cambiar clase
+            </button>
+            <button
+              type="button"
+              onClick={() => cancelSchoolClass(schoolClassToEdit)}
+              disabled={busy}
+              className="min-h-12 rounded-full border border-[var(--rose-bd)] px-5 text-sm font-bold text-[var(--rose-tx)]"
+            >
+              {busy ? 'Cancelando…' : 'Cancelar clase'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSchoolClassToEdit(null)}
+              disabled={busy}
+              className="min-h-11 rounded-full px-4 text-sm font-bold text-[var(--c-text-2)]"
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
+      </Sheet>
+
       {reassignBooking && schoolId && (
         <SchoolReassignStudent
           schoolId={schoolId}
@@ -1194,6 +1493,19 @@ export default function CoachAgenda({
           onSaved={() => {
             setReassignBooking(null)
             setNotice(`${capitalizeSchoolTerm(participantSingular)} reasignado.`)
+            void loadAgenda(monthOfSelected)
+          }}
+        />
+      )}
+      {schoolClassToReassign && schoolId && (
+        <SchoolReassignStudent
+          schoolId={schoolId}
+          booking={schoolClassToReassign}
+          schoolClassId={schoolClassToReassign.schoolClassId}
+          onClose={() => setSchoolClassToReassign(null)}
+          onSaved={() => {
+            setSchoolClassToReassign(null)
+            setNotice('Se cambió la clase de sus alumnos.')
             void loadAgenda(monthOfSelected)
           }}
         />

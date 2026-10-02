@@ -32,6 +32,7 @@ export interface Booking extends CoachBookingSelection {
   evaluation?: import('@/lib/class-evaluation').ClassEvaluation
   /** Set when this row mirrors an occurrence from the school's class scheduler. */
   schoolClassId?: string
+  schoolRequestId?: string
   schoolClassTitle?: string
   schoolClassStudentCount?: number
   id: string

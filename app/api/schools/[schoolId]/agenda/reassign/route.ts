@@ -16,6 +16,71 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   if (access.response) return access.response
   const body = await request.json().catch(() => null)
   if (
+    body &&
+    typeof body.schoolClassId === 'string' &&
+    typeof body.destinationSchoolClassId === 'string' &&
+    typeof body.coachId === 'string' &&
+    typeof body.date === 'string' &&
+    typeof body.startTime === 'string'
+  ) {
+    const membership = await getSchoolMembership(schoolId, body.coachId)
+    if (
+      !membership ||
+      membership.status !== 'active' ||
+      !schoolMembershipHasRole(membership, 'teacher')
+    )
+      return NextResponse.json(
+        { error: 'El entrenador no está activo en esta escuela.' },
+        { status: 403 }
+      )
+    const sourceRef = adminDb.collection('schoolClassOccurrences').doc(body.schoolClassId)
+    const destinationRef = adminDb
+      .collection('schoolClassOccurrences')
+      .doc(body.destinationSchoolClassId)
+    const result = await adminDb.runTransaction(async (transaction) => {
+      const [sourceSnapshot, destinationSnapshot] = await Promise.all([
+        transaction.get(sourceRef),
+        transaction.get(destinationRef),
+      ])
+      if (!sourceSnapshot.exists || !destinationSnapshot.exists) return 'missing'
+      const source = sourceSnapshot.data()
+      const destination = destinationSnapshot.data()
+      if (!source || !destination) return 'missing'
+      if (
+        source.schoolId !== schoolId ||
+        destination.schoolId !== schoolId ||
+        source.status !== 'scheduled' ||
+        destination.status !== 'scheduled' ||
+        destination.type !== 'group' ||
+        !Array.isArray(destination.teacherIds) ||
+        !destination.teacherIds.includes(body.coachId) ||
+        destination.date !== body.date ||
+        destination.startTime !== body.startTime
+      )
+        return 'invalid'
+      const studentIds = [
+        ...new Set([
+          ...(Array.isArray(destination.studentIds) ? destination.studentIds : []),
+          ...(Array.isArray(source.studentIds) ? source.studentIds : []),
+        ]),
+      ]
+      transaction.update(destinationRef, { studentIds, updatedAt: Date.now() })
+      transaction.update(sourceRef, { status: 'cancelled', updatedAt: Date.now() })
+      return 'ok'
+    })
+    if (result !== 'ok')
+      return NextResponse.json(
+        {
+          error:
+            result === 'missing'
+              ? 'No encontramos una de las clases.'
+              : 'La clase de destino ya no está disponible.',
+        },
+        { status: result === 'missing' ? 404 : 409 }
+      )
+    return NextResponse.json({ ok: true })
+  }
+  if (
     !body ||
     typeof body.bookingId !== 'string' ||
     typeof body.coachId !== 'string' ||

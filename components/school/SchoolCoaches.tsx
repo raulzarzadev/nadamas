@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FiClock, FiEdit2, FiPhone, FiSend, FiShield } from 'react-icons/fi'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
-import { getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { capitalizeSchoolTerm, type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
@@ -17,6 +17,7 @@ interface Teacher {
   bio: string
   profileComplete: boolean
   availability: Array<{ day: number; start: string; end: string }>
+  canManageSchoolBookings: boolean
 }
 
 export default function SchoolCoaches() {
@@ -27,6 +28,7 @@ export default function SchoolCoaches() {
   const [showInvite, setShowInvite] = useState(false)
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
+  const [savingPermission, setSavingPermission] = useState<string | null>(null)
 
   useEffect(() => {
     if (!selectedId) return
@@ -67,6 +69,27 @@ export default function SchoolCoaches() {
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
   const CoachPlural = capitalizeSchoolTerm(coachPlural)
+  const schoolId = selected.school.id
+
+  async function setBookingPermission(teacher: Teacher, enabled: boolean) {
+    setSavingPermission(teacher.id)
+    setMessage(null)
+    try {
+      await patchAuthed(`/api/schools/${schoolId}/teachers`, {
+        teacherId: teacher.id,
+        canManageSchoolBookings: enabled,
+      })
+      setTeachers((current) =>
+        current.map((item) =>
+          item.id === teacher.id ? { ...item, canManageSchoolBookings: enabled } : item
+        )
+      )
+    } catch {
+      setMessage('No se pudo actualizar el permiso de reservas.')
+    } finally {
+      setSavingPermission(null)
+    }
+  }
 
   return (
     <section className="flex flex-col gap-5">
@@ -127,6 +150,27 @@ export default function SchoolCoaches() {
                     <p className="mt-3 text-xs font-semibold text-[#9a6b16]">
                       Perfil pendiente de completar
                     </p>
+                  )}
+
+                  {isDirector && (
+                    <label className="mt-4 flex items-start gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
+                      <input
+                        type="checkbox"
+                        className="checkbox checkbox-sm mt-0.5"
+                        checked={teacher.canManageSchoolBookings}
+                        disabled={savingPermission === teacher.id}
+                        onChange={(event) =>
+                          void setBookingPermission(teacher, event.currentTarget.checked)
+                        }
+                      />
+                      <span>
+                        <span className="block font-semibold text-(--c-ocean)">
+                          Puede aprobar reservas de la escuela
+                        </span>
+                        Verá las solicitudes pendientes en su agenda personal y podrá aprobarlas,
+                        rechazarlas o proponer otro horario.
+                      </span>
+                    </label>
                   )}
 
                   <div className="mt-4 flex flex-wrap gap-2">

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import type { SchoolClassRequest } from '@/lib/school'
+import { type SchoolClassRequest, schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
@@ -14,13 +14,25 @@ interface RouteProps {
 
 async function handlePATCH(request: Request, { params }: RouteProps) {
   const { schoolId, requestId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
   if (access.response) return access.response
   const requestRef = adminDb.collection('schoolClassRequests').doc(requestId)
   const snapshot = await requestRef.get()
   if (!snapshot.exists || snapshot.data()?.schoolId !== schoolId)
     return NextResponse.json({ error: 'Solicitud no encontrada.' }, { status: 404 })
   const record = snapshot.data() as SchoolClassRequest
+  const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
+  const canReviewAsTeacher = access.membership?.canManageSchoolBookings === true
+  if (!isDirector && !canReviewAsTeacher)
+    return NextResponse.json(
+      { error: 'No tienes permiso para aprobar reservas de esta escuela.' },
+      { status: 403 }
+    )
+  if (!isDirector && record.preferredTeacherId !== access.caller.uid)
+    return NextResponse.json(
+      { error: 'No autorizado para atender esta solicitud.' },
+      { status: 403 }
+    )
   if (record.status !== 'pending')
     return NextResponse.json({ error: 'Esta solicitud ya fue atendida.' }, { status: 409 })
   const body = (await request.json().catch(() => ({}))) as {
@@ -41,6 +53,15 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   if (!status) return NextResponse.json({ error: 'Estado inválido.' }, { status: 400 })
   if (status === 'rejected') {
     await requestRef.update({ status, updatedAt: Date.now() })
+    void createNotification({
+      recipientId: record.requestedBy,
+      actorId: access.caller.uid,
+      actorName: null,
+      type: 'school_class_requested',
+      title: 'Reserva rechazada',
+      body: 'El entrenador no pudo aceptar el horario solicitado.',
+      link: '/athlete/progress',
+    }).catch(() => {})
     return NextResponse.json({ status })
   }
   const teacherIds = Array.isArray(body.teacherIds)
