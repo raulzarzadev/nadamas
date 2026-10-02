@@ -8,7 +8,6 @@ import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { patchAuthed } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import {
-  capitalizeSchoolTerm,
   DEFAULT_SCHOOL_PALETTE,
   normalizeSchoolTerminology,
   SCHOOL_PALETTES,
@@ -16,7 +15,6 @@ import {
   type SchoolCoachTerm,
   type SchoolPalette,
   type SchoolParticipantTerm,
-  schoolTerminologyLabels,
 } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
@@ -34,11 +32,6 @@ export default function SchoolSettingsForm({
   const [description, setDescription] = useState(school.description)
   const [slug, setSlug] = useState(school.slug)
   const [palette, setPalette] = useState<SchoolPalette>(school.palette || DEFAULT_SCHOOL_PALETTE)
-  const [showCoaches, setShowCoaches] = useState(school.showCoaches === true)
-  const [showCoachesSchedules, setShowCoachesSchedules] = useState(
-    school.showCoachesSchedules === true
-  )
-  const [showStudents, setShowStudents] = useState(school.showStudents === true)
   const [terminology, setTerminology] = useState(() =>
     normalizeSchoolTerminology(school.terminology)
   )
@@ -47,7 +40,6 @@ export default function SchoolSettingsForm({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const terminologyLabels = schoolTerminologyLabels(terminology)
 
   async function uploadLogo() {
     if (!logoFile) return school.logoUrl || null
@@ -82,9 +74,6 @@ export default function SchoolSettingsForm({
         slug: canEditSlug ? slug : school.slug,
         logoUrl,
         palette,
-        showCoaches,
-        showCoachesSchedules,
-        showStudents,
         terminology,
       })
       const payload = (await response.json()) as { school: School }
@@ -308,36 +297,6 @@ export default function SchoolSettingsForm({
             )}
           </fieldset>
         </section>
-        <fieldset className="grid gap-2 text-sm font-semibold text-(--c-ocean)">
-          <legend>Mostrar en la página pública</legend>
-          <label className="flex min-h-11 items-center gap-3 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal">
-            <input
-              type="checkbox"
-              checked={showCoaches}
-              onChange={(event) => setShowCoaches(event.target.checked)}
-              className="checkbox checkbox-sm"
-            />
-            {capitalizeSchoolTerm(terminologyLabels.coachPlural)}
-          </label>
-          <label className="flex min-h-11 items-center gap-3 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal">
-            <input
-              type="checkbox"
-              checked={showCoachesSchedules}
-              onChange={(event) => setShowCoachesSchedules(event.target.checked)}
-              className="checkbox checkbox-sm"
-            />
-            Horarios de {terminologyLabels.coachPlural}
-          </label>
-          <label className="flex min-h-11 items-center gap-3 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal">
-            <input
-              type="checkbox"
-              checked={showStudents}
-              onChange={(event) => setShowStudents(event.target.checked)}
-              className="checkbox checkbox-sm"
-            />
-            {capitalizeSchoolTerm(terminologyLabels.participantPlural)}
-          </label>
-        </fieldset>
         <div className="grid gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-3">
           <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
             Enlace público

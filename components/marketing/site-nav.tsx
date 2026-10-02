@@ -3,6 +3,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import NotificationsBell from '@comps/app-chrome/NotificationsBell'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 
 const LINKS = [
   { href: '/#inicio', label: 'Inicio' },
@@ -13,6 +15,7 @@ const LINKS = [
 ]
 
 export default function SiteNav() {
+  const tenant = useTenantSchool()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
 
@@ -40,158 +43,197 @@ export default function SiteNav() {
         <Link
           href="/"
           className="flex items-center gap-2.5"
-          aria-label="nadamas.app inicio"
+          aria-label={tenant ? `${tenant.name} inicio` : 'nadamas.app inicio'}
           onClick={() => setOpen(false)}
         >
-          <Image
-            src="/logo-nadamas.webp"
-            alt=""
-            width={293}
-            height={100}
-            priority
-            className="h-9 w-auto"
-          />
+          {tenant ? (
+            <>
+              {tenant.logoUrl ? (
+                <Image
+                  src={tenant.logoUrl}
+                  alt=""
+                  width={40}
+                  height={40}
+                  priority
+                  className="size-10 rounded-lg object-contain"
+                />
+              ) : (
+                <span className="grid size-10 place-items-center rounded-lg bg-(--c-surface) font-bold text-(--c-ocean)">
+                  {tenant.name.slice(0, 1).toUpperCase()}
+                </span>
+              )}
+              <span className="max-w-48 truncate font-bold text-(--c-ocean)">{tenant.name}</span>
+            </>
+          ) : (
+            <Image
+              src="/logo-nadamas.webp"
+              alt=""
+              width={293}
+              height={100}
+              priority
+              className="h-9 w-auto"
+            />
+          )}
         </Link>
 
-        <ul className="hidden items-center gap-9 lg:flex">
-          {LINKS.map((l) => (
-            <li key={l.href}>
-              <a
-                href={l.href}
-                className="text-[0.95rem] font-medium"
-                style={{ color: 'var(--c-text-2)', transition: 'color 220ms var(--ease-expo)' }}
-              >
-                {l.label}
-              </a>
-            </li>
-          ))}
-        </ul>
+        {!tenant && (
+          <ul className="hidden items-center gap-9 lg:flex">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  className="text-[0.95rem] font-medium"
+                  style={{ color: 'var(--c-text-2)', transition: 'color 220ms var(--ease-expo)' }}
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
 
-        <div className="hidden items-center gap-3 lg:flex">
-          <Link
-            href="/login"
-            className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
-            style={{ color: 'var(--c-ocean)' }}
-          >
-            Ingresar
-          </Link>
-          <a
-            href="/login?intent=coach"
-            className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
-            style={{ color: 'var(--c-ocean)' }}
-          >
-            Soy coach
-          </a>
-          <Link
-            href="/coaches"
-            className="rounded-full px-5 py-2.5 text-[0.92rem] font-semibold text-white"
-            style={{
-              background: 'var(--c-aqua-strong)',
-              boxShadow: 'var(--shadow-aqua)',
-              transition: 'transform 280ms var(--ease-expo), filter 280ms var(--ease-expo)',
-            }}
-          >
-            Encontrar coach
-          </Link>
-        </div>
-
-        <button
-          type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full lg:hidden"
-          style={{ background: 'var(--c-surface)', color: 'var(--c-ocean)' }}
-          aria-expanded={open}
-          aria-controls="mobile-menu"
-          aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-          onClick={() => setOpen((v) => !v)}
-        >
-          <span aria-hidden className="relative block h-3.5 w-5">
-            <span
-              className="absolute left-0 block h-[2px] w-5 rounded-full"
-              style={{
-                background: 'currentColor',
-                top: open ? '6px' : '0',
-                transform: open ? 'rotate(45deg)' : 'none',
-                transition: 'top 260ms var(--ease-expo), transform 260ms var(--ease-expo)',
-              }}
-            />
-            <span
-              className="absolute left-0 top-[6px] block h-[2px] w-5 rounded-full"
-              style={{
-                background: 'currentColor',
-                opacity: open ? 0 : 1,
-                transition: 'opacity 180ms var(--ease-expo)',
-              }}
-            />
-            <span
-              className="absolute left-0 block h-[2px] w-5 rounded-full"
-              style={{
-                background: 'currentColor',
-                top: open ? '6px' : '12px',
-                transform: open ? 'rotate(-45deg)' : 'none',
-                transition: 'top 260ms var(--ease-expo), transform 260ms var(--ease-expo)',
-              }}
-            />
-          </span>
-        </button>
-      </nav>
-
-      <div
-        id="mobile-menu"
-        className="overflow-hidden lg:hidden"
-        aria-hidden={!open}
-        inert={!open || undefined}
-        style={{
-          maxHeight: open ? '36rem' : '0',
-          opacity: open ? 1 : 0,
-          transition: 'max-height 460ms var(--ease-expo), opacity 320ms var(--ease-expo)',
-          background: 'var(--c-bg)',
-          borderBottom: open ? '1px solid var(--c-border)' : '1px solid transparent',
-        }}
-      >
-        <ul className="mx-auto flex max-w-[1180px] flex-col gap-1 px-5 py-4 sm:px-8">
-          {LINKS.map((l) => (
-            <li key={l.href}>
-              <a
-                href={l.href}
-                onClick={() => setOpen(false)}
-                className="block rounded-2xl px-4 py-3 text-base font-medium"
-                style={{ color: 'var(--c-ocean)' }}
-              >
-                {l.label}
-              </a>
-            </li>
-          ))}
-          <li className="mt-2 pb-2">
+        {tenant ? (
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationsBell />
             <Link
               href="/login"
-              onClick={() => setOpen(false)}
-              className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
-              style={{
-                color: 'var(--c-ocean)',
-                border: '1px solid var(--c-border)',
-              }}
+              className="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              style={{ background: 'var(--c-aqua-strong)' }}
+            >
+              Iniciar sesión
+            </Link>
+          </div>
+        ) : (
+          <div className="hidden items-center gap-3 lg:flex">
+            <Link
+              href="/login"
+              className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
+              style={{ color: 'var(--c-ocean)' }}
             >
               Ingresar
             </Link>
             <a
               href="/login?intent=coach"
-              onClick={() => setOpen(false)}
-              className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
-              style={{ color: 'var(--c-ocean)', border: '1px solid var(--c-border)' }}
+              className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
+              style={{ color: 'var(--c-ocean)' }}
             >
               Soy coach
             </a>
             <Link
               href="/coaches"
-              onClick={() => setOpen(false)}
-              className="block rounded-full px-5 py-3 text-center text-base font-semibold text-white"
-              style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
+              className="rounded-full px-5 py-2.5 text-[0.92rem] font-semibold text-white"
+              style={{
+                background: 'var(--c-aqua-strong)',
+                boxShadow: 'var(--shadow-aqua)',
+                transition: 'transform 280ms var(--ease-expo), filter 280ms var(--ease-expo)',
+              }}
             >
               Encontrar coach
             </Link>
-          </li>
-        </ul>
-      </div>
+          </div>
+        )}
+
+        {!tenant && (
+          <button
+            type="button"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full lg:hidden"
+            style={{ background: 'var(--c-surface)', color: 'var(--c-ocean)' }}
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span aria-hidden className="relative block h-3.5 w-5">
+              <span
+                className="absolute left-0 block h-[2px] w-5 rounded-full"
+                style={{
+                  background: 'currentColor',
+                  top: open ? '6px' : '0',
+                  transform: open ? 'rotate(45deg)' : 'none',
+                  transition: 'top 260ms var(--ease-expo), transform 260ms var(--ease-expo)',
+                }}
+              />
+              <span
+                className="absolute left-0 top-[6px] block h-[2px] w-5 rounded-full"
+                style={{
+                  background: 'currentColor',
+                  opacity: open ? 0 : 1,
+                  transition: 'opacity 180ms var(--ease-expo)',
+                }}
+              />
+              <span
+                className="absolute left-0 block h-[2px] w-5 rounded-full"
+                style={{
+                  background: 'currentColor',
+                  top: open ? '6px' : '12px',
+                  transform: open ? 'rotate(-45deg)' : 'none',
+                  transition: 'top 260ms var(--ease-expo), transform 260ms var(--ease-expo)',
+                }}
+              />
+            </span>
+          </button>
+        )}
+      </nav>
+
+      {!tenant && (
+        <div
+          id="mobile-menu"
+          className="overflow-hidden lg:hidden"
+          aria-hidden={!open}
+          inert={!open || undefined}
+          style={{
+            maxHeight: open ? '36rem' : '0',
+            opacity: open ? 1 : 0,
+            transition: 'max-height 460ms var(--ease-expo), opacity 320ms var(--ease-expo)',
+            background: 'var(--c-bg)',
+            borderBottom: open ? '1px solid var(--c-border)' : '1px solid transparent',
+          }}
+        >
+          <ul className="mx-auto flex max-w-[1180px] flex-col gap-1 px-5 py-4 sm:px-8">
+            {LINKS.map((l) => (
+              <li key={l.href}>
+                <a
+                  href={l.href}
+                  onClick={() => setOpen(false)}
+                  className="block rounded-2xl px-4 py-3 text-base font-medium"
+                  style={{ color: 'var(--c-ocean)' }}
+                >
+                  {l.label}
+                </a>
+              </li>
+            ))}
+            <li className="mt-2 pb-2">
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
+                style={{
+                  color: 'var(--c-ocean)',
+                  border: '1px solid var(--c-border)',
+                }}
+              >
+                Ingresar
+              </Link>
+              <a
+                href="/login?intent=coach"
+                onClick={() => setOpen(false)}
+                className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
+                style={{ color: 'var(--c-ocean)', border: '1px solid var(--c-border)' }}
+              >
+                Soy coach
+              </a>
+              <Link
+                href="/coaches"
+                onClick={() => setOpen(false)}
+                className="block rounded-full px-5 py-3 text-center text-base font-semibold text-white"
+                style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
+              >
+                Encontrar coach
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
     </header>
   )
 }

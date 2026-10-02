@@ -1,9 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { patchAuthed } from '@/lib/client/authed-api'
-import { capitalizeSchoolTerm, type SchoolBookingMode } from '@/lib/school'
+import type { SchoolBookingMode } from '@/lib/school'
 
 export default function SchoolBookingSettingsCard({
   schoolId,
@@ -16,9 +15,6 @@ export default function SchoolBookingSettingsCard({
 }) {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const terminology = useSchoolTerminology()
-  const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
-  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   async function change(nextMode: SchoolBookingMode) {
     setSaving(true)
     setMessage(null)
@@ -34,22 +30,11 @@ export default function SchoolBookingSettingsCard({
   }
   return (
     <section className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]">
-      <h2 className="font-bold text-(--c-ocean)">
-        Reservas de {terminology.schoolId ? terminology.participantPlural : 'alumnos'}
-      </h2>
+      <h2 className="font-bold text-(--c-ocean)">Configuración de reservas</h2>
       <p className="mt-1 text-sm text-(--c-text-2)">
-        Define si se solicita un horario o se puede reservar directamente.
+        Define cómo se confirman las reservas de la escuela.
       </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => void change('request')}
-          className={`rounded-[var(--r-sm)] border p-3 text-left text-sm ${mode === 'request' ? 'border-(--c-ocean) bg-(--c-surface)' : 'border-(--c-border)'}`}
-        >
-          <strong className="block text-(--c-ocean)">Solicitar horario</strong>
-          <span className="mt-1 block text-(--c-text-2)">La dirección confirma y asigna.</span>
-        </button>
         <button
           type="button"
           disabled={saving}
@@ -58,7 +43,18 @@ export default function SchoolBookingSettingsCard({
         >
           <strong className="block text-(--c-ocean)">Reservar directamente</strong>
           <span className="mt-1 block text-(--c-text-2)">
-            {capitalizeSchoolTerm(participantSingular)} elige {coachSingular} y horario.
+            La reserva se agrega al horario de inmediato.
+          </span>
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={() => void change('request')}
+          className={`rounded-[var(--r-sm)] border p-3 text-left text-sm ${mode === 'request' ? 'border-(--c-ocean) bg-(--c-surface)' : 'border-(--c-border)'}`}
+        >
+          <strong className="block text-(--c-ocean)">Esperar confirmación para reservar</strong>
+          <span className="mt-1 block text-(--c-text-2)">
+            La escuela revisa la solicitud antes de confirmar el horario.
           </span>
         </button>
       </div>

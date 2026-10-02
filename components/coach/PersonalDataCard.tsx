@@ -166,7 +166,7 @@ export default function PersonalDataCard({
     <ProfileSection
       id="coach-verification-documents"
       title="Datos personales"
-      description="El nombre visible es lo que ven los atletas. Tus nombre(s) y apellido(s) se cotejan con tu documento de identidad y nunca se muestran públicamente."
+      description="Administra los datos de tu perfil y tus documentos de verificación."
       summary={summary}
       surface="tinted"
     >
@@ -181,7 +181,7 @@ export default function PersonalDataCard({
         label="Nombre(s)"
         value={firstName}
         onChange={(event) => setFirstName(event.target.value)}
-        placeholder="Como aparece en tu documento"
+        placeholder="Escribe tus nombre(s)"
         autoComplete="given-name"
       />
 
@@ -189,7 +189,7 @@ export default function PersonalDataCard({
         label="Apellido(s)"
         value={lastName}
         onChange={(event) => setLastName(event.target.value)}
-        placeholder="Como aparece en tu documento"
+        placeholder="Escribe tus apellido(s)"
         autoComplete="family-name"
       />
 

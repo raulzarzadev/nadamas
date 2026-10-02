@@ -45,7 +45,9 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   }
   const teacherIds = Array.isArray(body.teacherIds)
     ? body.teacherIds.filter((id): id is string => typeof id === 'string')
-    : []
+    : record.preferredTeacherId
+      ? [record.preferredTeacherId]
+      : []
   if (!teacherIds.length)
     return NextResponse.json({ error: 'Asigna al menos un coach.' }, { status: 400 })
   if (!(await schoolPeopleAreValid(schoolId, teacherIds, [record.studentId])))

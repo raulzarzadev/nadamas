@@ -5,10 +5,12 @@ import {
   type SchoolInvitationStudentData,
   schoolMembershipHasRole,
 } from '@/lib/school'
+import { coachVisibleSchoolStudentIds } from '@/lib/school-coach-students'
 import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 import { sendSchoolInvitationEmail } from '@/lib/server/emails'
 import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { listSchoolClasses } from '@/lib/server/school-classes'
 import { createSchoolInvitation } from '@/lib/server/school-invitations'
 import { createSchoolStudent, listSchoolStudents } from '@/lib/server/school-students'
 import { getSchoolById } from '@/lib/server/schools'
@@ -25,15 +27,21 @@ export async function GET(request: Request, { params }: RouteProps) {
   if (access.response) return access.response
 
   try {
-    const staff =
-      access.globalAdmin ||
-      schoolMembershipHasRole(access.membership, 'director') ||
-      schoolMembershipHasRole(access.membership, 'teacher')
-    const students = await listSchoolStudents(
+    const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
+    const isTeacher = schoolMembershipHasRole(access.membership, 'teacher')
+    let students = await listSchoolStudents(
       schoolId,
       undefined,
-      staff ? undefined : access.caller.uid
+      isDirector || isTeacher ? undefined : access.caller.uid
     )
+    if (!isDirector && isTeacher) {
+      const [classes, school] = await Promise.all([
+        listSchoolClasses({ schoolId, teacherId: access.caller.uid }),
+        getSchoolById(schoolId),
+      ])
+      const visibleIds = coachVisibleSchoolStudentIds(classes, school?.timezone || 'UTC')
+      students = students.filter((student) => visibleIds.has(student.id))
+    }
     return NextResponse.json({ students })
   } catch {
     return NextResponse.json({ error: 'No se pudieron cargar los alumnos.' }, { status: 500 })

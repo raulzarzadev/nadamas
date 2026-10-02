@@ -5,7 +5,7 @@ import type { School } from '@/lib/school'
 
 export type TenantSchool = Pick<
   School,
-  'id' | 'name' | 'slug' | 'logoUrl' | 'palette' | 'description'
+  'id' | 'name' | 'slug' | 'logoUrl' | 'palette' | 'description' | 'bookingMode'
 >
 const TenantSchoolContext = createContext<TenantSchool | null>(null)
 export function TenantSchoolProvider({

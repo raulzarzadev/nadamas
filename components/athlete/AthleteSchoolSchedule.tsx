@@ -8,6 +8,7 @@ import type { SchoolAccessClient } from '@/components/school/useSchoolSelection'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
+import type { AdditionalProfile } from '@/lib/additional-profile'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
 import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
@@ -65,6 +66,8 @@ export default function AthleteSchoolSchedule({
           firstName?: string
           lastName?: string
           email?: string
+          uid?: string
+          id?: string
         }
       | null
       | undefined
@@ -78,9 +81,11 @@ export default function AthleteSchoolSchedule({
     auth.currentUser?.email?.split('@')[0] ||
     ''
   ).trim()
+  const accountId = user?.uid || user?.id || auth.currentUser?.uid || ''
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()))
   const [agenda, setAgenda] = useState<CoachAgendaPayload | null>(null)
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
+  const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
   const [coachFilter, setCoachFilter] = useState('all')
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
     () => new Set(HOUR_STATUSES)
@@ -101,22 +106,28 @@ export default function AthleteSchoolSchedule({
     setError('')
     try {
       if (schoolId) {
-        const [agendaResponse, studentsResponse] = await Promise.all([
+        const [agendaResponse, studentsResponse, profilesResponse] = await Promise.all([
           getAuthed(
             `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}&view=public`
           ),
-          getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/students`),
+          getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/students`).catch(() => null),
+          getAuthed('/api/additional-profiles').catch(() => null),
         ])
-        const [agendaPayload, studentsPayload] = await Promise.all([
-          agendaResponse.json() as Promise<CoachAgendaPayload>,
-          studentsResponse.json() as Promise<{ students?: SchoolStudent[] }>,
-        ])
+        if (!agendaResponse.ok) throw new Error('agenda')
+        const agendaPayload = (await agendaResponse.json()) as CoachAgendaPayload
         setAgenda(agendaPayload)
+        const studentsPayload = studentsResponse?.ok
+          ? ((await studentsResponse.json()) as { students?: SchoolStudent[] })
+          : {}
+        const profilesPayload = profilesResponse?.ok
+          ? ((await profilesResponse.json()) as { profiles?: AdditionalProfile[] })
+          : {}
         setStudents((studentsPayload.students || []).map((student) => ({ ...student, schoolId })))
+        setAdditionalProfiles(profilesPayload.profiles || [])
         return
       }
 
-      const [schoolsData, directoryResponse] = await Promise.all([
+      const [schoolsData, directoryResponse, profilesResponse] = await Promise.all([
         Promise.all(
           schools.map(async ({ school }) => {
             const [response, studentResponse] = await Promise.all([
@@ -133,7 +144,12 @@ export default function AthleteSchoolSchedule({
           })
         ),
         fetch('/api/public/coaches'),
+        getAuthed('/api/additional-profiles').catch(() => null),
       ])
+      const profilesPayload = profilesResponse?.ok
+        ? ((await profilesResponse.json()) as { profiles?: AdditionalProfile[] })
+        : {}
+      setAdditionalProfiles(profilesPayload.profiles || [])
       const directory = (await directoryResponse.json()) as {
         coaches?: Array<CoachPublic & { id: string; name?: string }>
       }
@@ -227,7 +243,10 @@ export default function AthleteSchoolSchedule({
   const schoolLabels =
     (agenda as (CoachAgendaPayload & { schoolLabels?: Record<string, string> }) | null)
       ?.schoolLabels || {}
-  const eligibleSlots = (agenda?.availableSlots || []).filter(
+  const schoolSlots = (agenda?.availableSlots || []).filter(
+    (slot) => !schoolId || slot.schoolId === schoolId
+  )
+  const eligibleSlots = schoolSlots.filter(
     (slot) =>
       slot.status === 'available' &&
       slotIsFuture(slot) &&
@@ -237,7 +256,7 @@ export default function AthleteSchoolSchedule({
     selectedStatuses.has(slot.groupType === 'grupal' ? 'groupAvailable' : 'available')
   )
   const coachIdsWithSlots = new Set(
-    (agenda?.availableSlots || [])
+    schoolSlots
       .filter((slot) => slot.status === 'available' && slotIsFuture(slot))
       .map((slot) => slot.coachId)
   )
@@ -250,9 +269,63 @@ export default function AthleteSchoolSchedule({
       ? schools.find(({ school }) => school.id === selectedSlot.schoolId)?.school.bookingMode ||
         'request'
       : 'direct'
-  const slotStudents = selectedSlot?.schoolId
-    ? students.filter((student) => student.schoolId === selectedSlot.schoolId)
-    : []
+  const bookingParticipants = useMemo(() => {
+    if (!selectedSlot?.schoolId) return []
+    const relatedStudents = students.filter(
+      (student) =>
+        student.schoolId === selectedSlot.schoolId &&
+        student.status === 'active' &&
+        (student.studentUserId === accountId ||
+          student.id === accountId ||
+          student.accountParticipant ||
+          student.managerIds?.includes(accountId) ||
+          student.guardianIds?.includes(accountId))
+    )
+    const participants: Array<{
+      value: string
+      name: string
+      schoolStudentId?: string
+      additionalProfileId?: string
+      registered: boolean
+      account: boolean
+    }> = relatedStudents.map((student) => ({
+      value: student.id,
+      name: student.name,
+      schoolStudentId: student.id,
+      additionalProfileId: student.additionalProfileId,
+      registered: true,
+      account: student.studentUserId === accountId || student.id === accountId,
+    }))
+    const hasAccount = relatedStudents.some(
+      (student) =>
+        student.studentUserId === accountId ||
+        student.id === accountId ||
+        student.accountParticipant
+    )
+    if (accountId && !hasAccount) {
+      participants.unshift({
+        value: `profile:${accountId}`,
+        name: accountName || 'Mi perfil',
+        schoolStudentId: undefined,
+        additionalProfileId: undefined,
+        registered: false,
+        account: true,
+      })
+    }
+    for (const profile of additionalProfiles) {
+      const linked = relatedStudents.find((student) => student.additionalProfileId === profile.id)
+      participants.push({
+        value: linked?.id || `additional:${profile.id}`,
+        name: profile.name,
+        schoolStudentId: linked?.id,
+        additionalProfileId: profile.id,
+        registered: Boolean(linked),
+        account: false,
+      })
+    }
+    return participants
+  }, [accountId, accountName, additionalProfiles, selectedSlot?.schoolId, students])
+  const selectedParticipant = bookingParticipants.find((item) => item.value === studentId)
   const dayStatuses = useMemo(() => {
     const result = new Map<string, HourStatus[]>()
     for (const slot of eligibleSlots) {
@@ -290,7 +363,7 @@ export default function AthleteSchoolSchedule({
   )
 
   async function submitBooking() {
-    if (!selectedSlot || !studentId) return
+    if (!selectedSlot || (selectedSlot.schoolId && !selectedParticipant)) return
     setBusy(true)
     setError('')
     try {
@@ -317,8 +390,18 @@ export default function AthleteSchoolSchedule({
       const result = await postAuthed(
         `/api/schools/${encodeURIComponent(selectedSlot.schoolId)}/class-requests`,
         {
-          studentId,
+          ...(selectedParticipant?.schoolStudentId
+            ? { studentId: selectedParticipant.schoolStudentId }
+            : {
+                participant: selectedParticipant?.additionalProfileId
+                  ? {
+                      type: 'additional',
+                      additionalProfileId: selectedParticipant.additionalProfileId,
+                    }
+                  : { type: 'self' },
+              }),
           teacherId: selectedSlot.coachId,
+          preferredTeacherId: selectedSlot.coachId,
           title: selectedSlot.locationName || 'Clase escolar',
           type: selectedSlot.groupType === 'grupal' ? 'group' : 'individual',
           preferredDays: [day],
@@ -334,10 +417,11 @@ export default function AthleteSchoolSchedule({
               .bookingMode || bookingMode) === 'direct',
         }
       )
+      if (!result.ok) throw new Error('No se pudo completar la reserva. Inténtalo de nuevo.')
+      const resultPayload = (await result.json()) as { direct?: boolean }
       setSelectedSlot(null)
       setMessage(
-        (schools.find(({ school }) => school.id === selectedSlot.schoolId)?.school.bookingMode ||
-          bookingMode) === 'direct'
+        resultPayload.direct
           ? 'Clase reservada. Ya aparece en Mis clases.'
           : 'Solicitud enviada. La escuela te confirmará el horario.'
       )
@@ -414,9 +498,14 @@ export default function AthleteSchoolSchedule({
                     aria-label={`Elegir ${coachNames[slot.coachId] || 'Coach'}, ${slot.startTime}–${slot.endTime}${slot.groupType === 'grupal' ? ', clase grupal' : ''}`}
                     onClick={() => {
                       setSelectedSlot(slot)
-                      setStudentId(
-                        students.find((student) => student.schoolId === slot.schoolId)?.id || ''
+                      const accountStudent = students.find(
+                        (student) =>
+                          student.schoolId === slot.schoolId &&
+                          (student.studentUserId === accountId ||
+                            student.id === accountId ||
+                            student.accountParticipant)
                       )
+                      setStudentId(accountStudent?.id || (accountId ? `profile:${accountId}` : ''))
                       setBookerName(accountName)
                     }}
                     className={`flex min-h-10 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition hover:brightness-[0.98] ${slot.groupType === 'grupal' ? 'border-violet-400 bg-violet-50' : 'border-emerald-400 bg-white'}`}
@@ -452,16 +541,9 @@ export default function AthleteSchoolSchedule({
         {selectedSlot && (
           <div className="flex flex-col gap-4">
             <header className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">
-                  {selectedBookingMode === 'direct' ? 'Reservar horario' : 'Solicitar horario'}
-                </h2>
-                <p className="mt-1 text-sm text-[var(--c-text-2)]">
-                  {coachNames[selectedSlot.coachId] || 'Coach'} · {selectedSlot.date} ·{' '}
-                  {selectedSlot.startTime}–{selectedSlot.endTime}
-                  {selectedSlot.groupType === 'grupal' ? ' · Grupal' : ''}
-                </p>
-              </div>
+              <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">
+                {selectedBookingMode === 'direct' ? 'Reservar horario' : 'Solicitar horario'}
+              </h2>
               <button
                 type="button"
                 disabled={busy}
@@ -472,24 +554,62 @@ export default function AthleteSchoolSchedule({
                 <FiX aria-hidden="true" />
               </button>
             </header>
-            {selectedSlot.schoolId && (
-              <p className="w-fit rounded-full bg-[var(--c-surface)] px-3 py-1 text-xs font-bold text-[var(--c-ocean)]">
-                Escuela: {schoolName || schoolLabels[selectedSlot.schoolId] || 'Escuela'}
-              </p>
-            )}
+            <section
+              aria-label="Resumen del horario"
+              className="overflow-hidden rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)]"
+            >
+              <dl className="grid grid-cols-2 divide-x divide-[var(--c-border)]">
+                <div className="px-4 py-3">
+                  <dt className="text-xs font-bold uppercase tracking-wider text-[var(--c-text-2)]">
+                    Fecha
+                  </dt>
+                  <dd className="mt-1 text-lg font-extrabold text-[var(--c-ocean)]">
+                    {new Date(`${selectedSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                  </dd>
+                </div>
+                <div className="px-4 py-3">
+                  <dt className="text-xs font-bold uppercase tracking-wider text-[var(--c-text-2)]">
+                    Hora
+                  </dt>
+                  <dd className="mt-1 text-lg font-extrabold tabular-nums text-[var(--c-ocean)]">
+                    {selectedSlot.startTime}–{selectedSlot.endTime}
+                  </dd>
+                </div>
+              </dl>
+              <dl className="grid gap-2 border-t border-[var(--c-border)] bg-white/70 px-4 py-3 text-sm sm:grid-cols-2">
+                {selectedSlot.schoolId && (
+                  <div className="min-w-0">
+                    <dt className="text-xs font-semibold text-[var(--c-text-2)]">Escuela</dt>
+                    <dd className="truncate font-bold text-[var(--c-ocean)]">
+                      {schoolName || schoolLabels[selectedSlot.schoolId] || 'Escuela'}
+                    </dd>
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <dt className="text-xs font-semibold text-[var(--c-text-2)]">Entrenador</dt>
+                  <dd className="truncate font-bold text-[var(--c-ocean)]">
+                    {coachNames[selectedSlot.coachId] || 'Coach'}
+                    {selectedSlot.groupType === 'grupal' ? ' · Grupal' : ''}
+                  </dd>
+                </div>
+              </dl>
+            </section>
             {selectedSlot.schoolId ? (
               <label htmlFor="booking-student" className="grid gap-1.5 text-sm font-semibold">
-                Alumno
+                Persona
                 <select
                   id="booking-student"
                   value={studentId}
                   onChange={(event) => setStudentId(event.target.value)}
                   className="min-h-11 rounded-xl border border-[var(--c-border)] bg-white px-3 text-[var(--c-ocean)] outline-none focus:border-[var(--c-aqua-strong)] focus:ring-2 focus:ring-[var(--c-aqua)]"
                 >
-                  {slotStudents.map((student) => (
-                    <option key={student.id} value={student.id}>
-                      {student.name}
-                      {student.accountParticipant ? ' (tú)' : ''}
+                  {bookingParticipants.map((participant) => (
+                    <option key={participant.value} value={participant.value}>
+                      {participant.name}
+                      {participant.account ? ' (tú)' : ''}
                     </option>
                   ))}
                 </select>
@@ -512,9 +632,10 @@ export default function AthleteSchoolSchedule({
                 />
               </label>
             )}
-            {selectedSlot.schoolId && slotStudents.length === 0 && (
-              <p className="mt-2 text-sm text-rose-600">
-                Necesitas tener un alumno registrado en esta escuela.
+            {selectedSlot.schoolId && selectedParticipant && !selectedParticipant.registered && (
+              <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+                Es la primera clase para esta persona en esta escuela, esta reservación está sujeta
+                a cambios sin previo aviso.
               </p>
             )}
             <p className="text-sm leading-relaxed text-[var(--c-text-2)]">
@@ -534,7 +655,9 @@ export default function AthleteSchoolSchedule({
               </button>
               <button
                 type="button"
-                disabled={busy || (selectedSlot.schoolId ? !studentId : !bookerName.trim())}
+                disabled={
+                  busy || (selectedSlot.schoolId ? !selectedParticipant : !bookerName.trim())
+                }
                 onClick={() => void submitBooking()}
                 className="min-h-10 rounded-full bg-[var(--c-ocean)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50"
               >

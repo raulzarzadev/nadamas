@@ -106,14 +106,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="flex flex-col gap-4 rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-5 shadow-[var(--shadow-sm)] sm:p-6">
-        <div>
-          <h2 className="text-lg font-bold">Tus datos</h2>
-          <p className="mt-1 text-sm text-[var(--c-text-2)]">
-            El <strong>nombre visible</strong> es lo que ven otros. Tus{' '}
-            <strong>nombre(s) y apellido(s)</strong> se cotejan con tu INE para validar tu identidad
-            y no se muestran públicamente.
-          </p>
-        </div>
+        <h2 className="text-lg font-bold">Tus datos</h2>
 
         <TextField
           label="Nombre visible (nickname)"
@@ -126,7 +119,7 @@ export default function ProfilePage() {
           label="Nombre(s)"
           value={firstName}
           onChange={(event) => setFirstName(event.target.value)}
-          placeholder="Como aparece en tu INE"
+          placeholder="Escribe tus nombre(s)"
           autoComplete="given-name"
         />
 
@@ -134,7 +127,7 @@ export default function ProfilePage() {
           label="Apellido(s)"
           value={lastName}
           onChange={(event) => setLastName(event.target.value)}
-          placeholder="Como aparece en tu INE"
+          placeholder="Escribe tus apellido(s)"
           autoComplete="family-name"
         />
 

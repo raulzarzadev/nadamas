@@ -8,6 +8,7 @@ import {
   schoolMembershipHasRole,
 } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
+import { getSchoolById } from '@/lib/server/schools'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import {
   legacySchoolOfferings,
@@ -33,13 +34,16 @@ function publicUserName(user: Record<string, unknown>, fallback: string) {
 
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
-  if (access.response) return access.response
-
   const url = new URL(request.url)
+  const publicView = url.searchParams.get('view') === 'public'
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
+  if (access.response && !(publicView && access.response.status === 403)) return access.response
+  if (access.response && !(await getSchoolById(schoolId)))
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   const targetCoachId = url.searchParams.get('coachId')
   const canManage =
     url.searchParams.get('view') !== 'public' &&
+    !access.response &&
     (access.globalAdmin || schoolMembershipHasRole(access.membership, 'director'))
   const range = monthRange(url.searchParams.get('month'))
   const [membershipSnapshot, bookingsSnapshot, blocksSnapshot] = await Promise.all([

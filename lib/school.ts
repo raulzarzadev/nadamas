@@ -348,6 +348,7 @@ export interface SchoolClassRequest {
   studentId: string
   studentName?: string
   requestedBy: string
+  preferredTeacherId?: string
   type: 'individual' | 'group'
   preferredDays: number[]
   preferredStartTime: string

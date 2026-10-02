@@ -99,6 +99,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         logoUrl: school.logoUrl || null,
         palette: school.palette,
         description: school.description,
+        bookingMode: school.bookingMode || 'request',
       }
     : null
   return (

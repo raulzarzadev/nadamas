@@ -73,6 +73,7 @@ export async function listSchoolStudents(
           id: accountId,
           schoolId,
           name,
+          studentEmail: '',
           birthDate: '',
           gender: 'otro',
           guardianIds: [],
@@ -105,17 +106,23 @@ export async function createSchoolStudent(args: {
   guardianPhone: string
   studentEmail?: string
   additionalProfileId?: string
+  studentUserId?: string
 }) {
   const now = Date.now()
-  const ref = args.additionalProfileId
-    ? adminDb.collection('schoolStudents').doc(`${args.schoolId}_${args.additionalProfileId}`)
+  const linkedId = args.additionalProfileId || args.studentUserId
+  const ref = linkedId
+    ? adminDb.collection('schoolStudents').doc(`${args.schoolId}_${linkedId}`)
     : adminDb.collection('schoolStudents').doc()
-  if (args.additionalProfileId) {
+  if (linkedId) {
     const current = await ref.get()
     if (current.exists) {
       const student = current.data() as SchoolStudent
       const managedBy = [...(student.managerIds || []), ...(student.guardianIds || [])]
-      if (student.schoolId !== args.schoolId || !managedBy.includes(args.guardianId || '')) {
+      const sameAccount = args.studentUserId && student.studentUserId === args.studentUserId
+      if (
+        student.schoolId !== args.schoolId ||
+        (!sameAccount && !managedBy.includes(args.guardianId || ''))
+      ) {
         throw new Error('SCHOOL_STUDENT_ALREADY_LINKED')
       }
       return { ...student, id: ref.id }
@@ -129,6 +136,7 @@ export async function createSchoolStudent(args: {
     gender: args.gender,
     managerIds: args.guardianId ? [args.guardianId] : [],
     ...(args.additionalProfileId ? { additionalProfileId: args.additionalProfileId } : {}),
+    ...(args.studentUserId ? { studentUserId: args.studentUserId, accountParticipant: true } : {}),
     guardianIds: args.guardianId ? [args.guardianId] : [],
     guardianName: args.guardianName.trim().slice(0, 120),
     guardianRelationship: args.guardianRelationship.trim().slice(0, 60),

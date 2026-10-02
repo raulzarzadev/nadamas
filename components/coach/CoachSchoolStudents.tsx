@@ -7,6 +7,7 @@ import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { SchoolClassOccurrence, SchoolStudent } from '@/lib/school'
 import { capitalizeSchoolTerm, schoolMembershipHasRole } from '@/lib/school'
+import { coachVisibleSchoolStudentIds } from '@/lib/school-coach-students'
 
 export default function CoachSchoolStudents() {
   const { schools, selectedId, status } = useSchoolSelection({ includePersonal: true })
@@ -62,6 +63,7 @@ export default function CoachSchoolStudents() {
 
   if (status === 'loading' || !selected) return null
 
+  const includedStudentIds = coachVisibleSchoolStudentIds(classes, selected.school.timezone)
   const normalizedQuery = query.trim().toLowerCase()
   const classesByStudent = new Map<string, number>()
   for (const item of classes) {
@@ -69,11 +71,13 @@ export default function CoachSchoolStudents() {
       classesByStudent.set(studentId, (classesByStudent.get(studentId) || 0) + 1)
     }
   }
-  const visibleStudents = students.filter((student) =>
-    [student.name, student.studentEmail || '', student.guardianName, student.guardianEmail || '']
-      .join(' ')
-      .toLowerCase()
-      .includes(normalizedQuery)
+  const visibleStudents = students.filter(
+    (student) =>
+      includedStudentIds.has(student.id) &&
+      [student.name, student.studentEmail || '', student.guardianName, student.guardianEmail || '']
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery)
   )
 
   return (
@@ -156,12 +160,12 @@ export default function CoachSchoolStudents() {
         <div className="mt-5 rounded-[var(--r-sm)] border border-dashed border-(--c-border) bg-(--c-surface) p-8 text-center">
           <FiUser className="mx-auto text-3xl text-(--c-aqua-strong)" aria-hidden="true" />
           <p className="mt-3 font-bold text-(--c-ocean)">
-            {students.length ? 'No hay coincidencias' : `Aún no hay ${participantPlural}`}
+            {normalizedQuery ? 'No hay coincidencias' : 'No hay alumnos dentro de este criterio'}
           </p>
           <p className="mt-1 text-sm text-(--c-text-2)">
-            {students.length
+            {normalizedQuery
               ? 'Prueba con otro nombre o correo.'
-              : `Cuando la escuela registre ${participantPlural}, aparecerán aquí.`}
+              : 'Aquí aparecen alumnos con una clase próxima y los últimos tres alumnos a quienes diste clase.'}
           </p>
         </div>
       )}

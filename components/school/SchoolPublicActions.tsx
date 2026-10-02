@@ -12,17 +12,7 @@ export default function SchoolPublicActions({ schoolId }: { schoolId: string }) 
   const { user } = useUser() as { user: unknown }
   const { activeRole } = useRole()
 
-  if (!user) {
-    return (
-      <Link
-        href="/login"
-        className="btn min-h-12 border-0 px-7 text-white"
-        style={{ backgroundColor: 'var(--school-primary)' }}
-      >
-        Iniciar sesión
-      </Link>
-    )
-  }
+  if (!user) return null
 
   const isSchoolMode = activeRole === 'school'
   return (

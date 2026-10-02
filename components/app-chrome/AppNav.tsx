@@ -19,6 +19,7 @@ import {
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { RoleName } from '@/lib/roles'
 import { capitalizeSchoolTerm, type School, type SchoolMembership } from '@/lib/school'
@@ -48,6 +49,15 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const terminology = useSchoolTerminology()
   const role = modeProp ?? activeRole
   const pathname = usePathname()
+  const { selected: selectedSchool, status: schoolSelectionStatus } = useSchoolSelection({
+    includePersonal: role === 'coach' || role === 'athlete',
+    athleteMode: role === 'athlete',
+  })
+  const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/find-coach'
+  const canShowWorkspaceNavigation =
+    !tenant ||
+    publicAthleteSchedule ||
+    (schoolSelectionStatus === 'ready' && selectedSchool !== null)
   const primary = PRIMARY_NAV_BY_ROLE[role].map((item) => {
     if (
       terminology.schoolId &&
@@ -170,44 +180,46 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
           </div>
         )}
 
-        <nav
-          aria-label="Navegación principal"
-          className={`grid gap-2 ${role === 'school' ? 'grid-cols-[repeat(3,minmax(0,1fr))_3rem]' : role === 'athlete' ? 'grid-cols-2' : 'grid-cols-3'}`}
-        >
-          {primary.map((l) => {
-            const active = pathname.startsWith(l.href)
-            const Icon = NAV_ICONS[l.icon]
-            return (
+        {canShowWorkspaceNavigation && (
+          <nav
+            aria-label="Navegación principal"
+            className={`grid gap-2 ${role === 'school' ? 'grid-cols-[repeat(3,minmax(0,1fr))_3rem]' : role === 'athlete' ? 'grid-cols-2' : 'grid-cols-3'}`}
+          >
+            {primary.map((l) => {
+              const active = pathname.startsWith(l.href)
+              const Icon = NAV_ICONS[l.icon]
+              return (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border px-1.5 py-3 text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:px-4 sm:text-sm ${
+                    active
+                      ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                      : 'border-[var(--c-border)] bg-white text-[var(--c-text-2)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]'
+                  }`}
+                >
+                  <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                  <span className="min-w-0 truncate sm:hidden">{l.mobileLabel}</span>
+                  <span className="hidden min-w-0 truncate sm:inline">{l.label}</span>
+                </Link>
+              )
+            })}
+            {role === 'school' && (
               <Link
-                key={l.href}
-                href={l.href}
-                aria-current={active ? 'page' : undefined}
-                className={`flex min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border px-1.5 py-3 text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:px-4 sm:text-sm ${
-                  active
-                    ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                    : 'border-[var(--c-border)] bg-white text-[var(--c-text-2)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]'
-                }`}
+                href="/school/settings"
+                aria-label="Configuración de escuela"
+                aria-current={pathname.startsWith('/school/settings') ? 'page' : undefined}
+                className={`flex min-h-12 items-center justify-center rounded-[var(--r-sm)] border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${pathname.startsWith('/school/settings') ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'}`}
               >
-                <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-                <span className="min-w-0 truncate sm:hidden">{l.mobileLabel}</span>
-                <span className="hidden min-w-0 truncate sm:inline">{l.label}</span>
+                <FiSettings aria-hidden="true" className="size-5" />
               </Link>
-            )
-          })}
-          {role === 'school' && (
-            <Link
-              href="/school/settings"
-              aria-label="Configuración de escuela"
-              aria-current={pathname.startsWith('/school/settings') ? 'page' : undefined}
-              className={`flex min-h-12 items-center justify-center rounded-[var(--r-sm)] border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${pathname.startsWith('/school/settings') ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'}`}
-            >
-              <FiSettings aria-hidden="true" className="size-5" />
-            </Link>
-          )}
-        </nav>
+            )}
+          </nav>
+        )}
 
-        {role === 'coach' && <CoachSchoolSwitcher />}
-        {role === 'athlete' && <AthleteSchoolSwitcher />}
+        {canShowWorkspaceNavigation && role === 'coach' && <CoachSchoolSwitcher />}
+        {canShowWorkspaceNavigation && role === 'athlete' && <AthleteSchoolSwitcher />}
       </div>
     </header>
   )
