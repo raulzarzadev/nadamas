@@ -2,7 +2,7 @@
 
 import Sheet from '@comps/ui/sheet'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FiUsers, FiX } from 'react-icons/fi'
+import { FiUser, FiUsers, FiX } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
 import type { SchoolAccessClient } from '@/components/school/useSchoolSelection'
 import { useUser } from '@/context/UserContext'
@@ -45,6 +45,7 @@ type SchoolReservation = {
   endTime: string
   status: string
   groupType: 'particular' | 'grupal'
+  studentIds?: string[]
 }
 const slotIsFuture = (slot: Pick<CoachAvailableSlot, 'date' | 'startTime'>) =>
   new Date(`${slot.date}T${slot.startTime}:00`).getTime() > Date.now()
@@ -277,19 +278,40 @@ export default function AthleteSchoolSchedule({
   const schoolSlots = (agenda?.availableSlots || []).filter(
     (slot) => !schoolId || slot.schoolId === schoolId
   )
-  const eligibleSlots = schoolSlots.filter(
+  const reservationSlotKey = (slot: {
+    schoolId?: string
+    coachId: string
+    date: string
+    startTime: string
+  }) => `${slot.schoolId || ''}|${slot.coachId}|${slot.date}|${slot.startTime}`
+  const myGroupReservationKeys = new Set(
+    myReservations
+      .filter(
+        (reservation) => reservation.groupType === 'grupal' && reservation.status !== 'cancelled'
+      )
+      .map(reservationSlotKey)
+  )
+  const fullGroupSlotKeys = new Set(
+    (agenda?.bookings || [])
+      .filter((booking) => booking.groupType === 'grupal' && booking.classFull)
+      .map(reservationSlotKey)
+  )
+  const selectableSlots = schoolSlots.filter(
     (slot) =>
-      slot.status === 'available' &&
-      slotIsFuture(slot) &&
-      (coachFilter === 'all' || slot.coachId === coachFilter)
+      slot.status === 'available' ||
+      (slot.status === 'booked' &&
+        slot.groupType === 'grupal' &&
+        myGroupReservationKeys.has(reservationSlotKey(slot)) &&
+        !fullGroupSlotKeys.has(reservationSlotKey(slot)))
+  )
+  const eligibleSlots = selectableSlots.filter(
+    (slot) => slotIsFuture(slot) && (coachFilter === 'all' || slot.coachId === coachFilter)
   )
   const visibleSlots = eligibleSlots.filter((slot) =>
     selectedStatuses.has(slot.groupType === 'grupal' ? 'groupAvailable' : 'available')
   )
   const coachIdsWithSlots = new Set(
-    schoolSlots
-      .filter((slot) => slot.status === 'available' && slotIsFuture(slot))
-      .map((slot) => slot.coachId)
+    selectableSlots.filter((slot) => slotIsFuture(slot)).map((slot) => slot.coachId)
   )
   const coaches = Object.entries(coachNames)
     .filter(([id]) => coachIdsWithSlots.has(id))
@@ -357,6 +379,54 @@ export default function AthleteSchoolSchedule({
     return participants
   }, [accountId, accountName, additionalProfiles, selectedSlot?.schoolId, students])
   const selectedParticipant = bookingParticipants.find((item) => item.value === studentId)
+  const participantReservationsAtSchool = selectedParticipant
+    ? myReservations.filter(
+        (reservation) =>
+          reservation.schoolId === selectedSlot?.schoolId &&
+          reservation.status !== 'cancelled' &&
+          (selectedParticipant.schoolStudentId
+            ? reservation.studentIds?.includes(selectedParticipant.schoolStudentId) ||
+              (selectedParticipant.account && !reservation.studentIds?.length)
+            : selectedParticipant.account)
+      )
+    : []
+  const alreadyBookedGroupStudentIds = new Set(
+    selectedSlot?.groupType === 'grupal'
+      ? myReservations
+          .filter(
+            (reservation) =>
+              reservation.schoolId === selectedSlot.schoolId &&
+              reservation.coachId === selectedSlot.coachId &&
+              reservation.date === selectedSlot.date &&
+              reservation.startTime === selectedSlot.startTime &&
+              reservation.groupType === 'grupal' &&
+              reservation.status !== 'cancelled'
+          )
+          .flatMap((reservation) => reservation.studentIds || [])
+      : []
+  )
+  const participantAlreadyBookedInGroup = Boolean(
+    selectedParticipant &&
+      selectedSlot?.groupType === 'grupal' &&
+      (selectedParticipant.schoolStudentId
+        ? alreadyBookedGroupStudentIds.has(selectedParticipant.schoolStudentId) ||
+          (selectedParticipant.account &&
+            participantReservationsAtSchool.some(
+              (reservation) =>
+                reservation.coachId === selectedSlot.coachId &&
+                reservation.date === selectedSlot.date &&
+                reservation.startTime === selectedSlot.startTime &&
+                reservation.groupType === 'grupal'
+            ))
+        : selectedParticipant.account &&
+          participantReservationsAtSchool.some(
+            (reservation) =>
+              reservation.coachId === selectedSlot.coachId &&
+              reservation.date === selectedSlot.date &&
+              reservation.startTime === selectedSlot.startTime &&
+              reservation.groupType === 'grupal'
+          ))
+  )
   const dayStatuses = useMemo(() => {
     const result = new Map<string, HourStatus[]>()
     for (const slot of eligibleSlots) {
@@ -394,36 +464,42 @@ export default function AthleteSchoolSchedule({
         `${reservation.schoolId || ''}|${reservation.coachId}|${reservation.date}|${reservation.startTime}`
     )
   )
+  const reusableGroupReservationKeys = new Set(
+    personalReservations
+      .filter((reservation) => reservation.groupType === 'grupal')
+      .map(
+        (reservation) =>
+          `${reservation.schoolId || ''}|${reservation.coachId}|${reservation.date}|${reservation.startTime}`
+      )
+  )
   const slots = visibleSlots
     .filter((slot) => slot.date === selectedDate)
     .filter(
       (slot) =>
         !personalReservationKeys.has(
           `${slot.schoolId || ''}|${slot.coachId}|${slot.date}|${slot.startTime}`
-        )
+        ) ||
+        (slot.groupType === 'grupal' &&
+          reusableGroupReservationKeys.has(
+            `${slot.schoolId || ''}|${slot.coachId}|${slot.date}|${slot.startTime}`
+          ))
     )
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
-  const slotGroups = slots.reduce<Array<{ startTime: string; slots: CoachAvailableSlot[] }>>(
-    (groups, slot) => {
-      const group = groups.find((item) => item.startTime === slot.startTime)
-      if (group) group.slots.push(slot)
-      else groups.push({ startTime: slot.startTime, slots: [slot] })
-      return groups
-    },
-    []
+  const rowsByTime = new Map<
+    string,
+    { startTime: string; reservations: SchoolReservation[]; slots: CoachAvailableSlot[] }
+  >()
+  const rowForTime = (startTime: string) => {
+    const row = rowsByTime.get(startTime) || { startTime, reservations: [], slots: [] }
+    rowsByTime.set(startTime, row)
+    return row
+  }
+  for (const reservation of personalReservations)
+    rowForTime(reservation.startTime).reservations.push(reservation)
+  for (const slot of slots) rowForTime(slot.startTime).slots.push(slot)
+  const scheduleRows = [...rowsByTime.values()].sort((a, b) =>
+    a.startTime.localeCompare(b.startTime)
   )
-  const scheduleRows = [
-    ...personalReservations.map((reservation) => ({
-      type: 'reservation' as const,
-      startTime: reservation.startTime,
-      reservation,
-    })),
-    ...slotGroups.map((group) => ({
-      type: 'available' as const,
-      startTime: group.startTime,
-      group,
-    })),
-  ].sort((a, b) => a.startTime.localeCompare(b.startTime))
 
   async function submitBooking() {
     if (!selectedSlot || (selectedSlot.schoolId && !selectedParticipant)) return
@@ -545,75 +621,94 @@ export default function AthleteSchoolSchedule({
         </p>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-[var(--c-border)] bg-white">
-          {scheduleRows.map((row) =>
-            row.type === 'reservation' ? (
-              <div
-                key={row.reservation.id}
-                className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-3 border-b border-[var(--c-border)] bg-[var(--c-surface)] px-4 py-2.5 last:border-b-0"
-              >
-                <span className="w-14 text-sm font-bold text-[var(--c-ocean)]">
-                  {row.reservation.startTime}
-                </span>
-                <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-[var(--c-border)] bg-white px-3 py-2">
-                  <span className="min-w-0 truncate text-xs font-semibold text-[var(--c-ocean)]">
-                    {row.reservation.coachName} · {slotDurationMinutes(row.reservation)} min
-                  </span>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${row.reservation.status === 'pending' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'}`}
+          {scheduleRows.map((row) => (
+            <div
+              key={row.startTime}
+              className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-3 border-b border-[var(--c-border)] px-4 py-2.5 last:border-b-0"
+            >
+              <span className="w-14 shrink-0 text-sm font-bold text-[var(--c-ocean)]">
+                {row.startTime}
+              </span>
+              <div className="grid min-w-0 grid-cols-1 gap-2">
+                {row.reservations.map((reservation) => (
+                  <div
+                    key={reservation.id}
+                    className={`flex min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-2 ${reservation.status !== 'pending' ? 'border-emerald-300 bg-emerald-100/70' : reservation.groupType === 'grupal' ? 'border-violet-300 bg-violet-50' : 'border-[var(--c-border)] bg-[var(--c-surface)]'}`}
                   >
-                    {row.reservation.status === 'pending' ? 'Pendiente' : 'Confirmada'}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div
-                key={row.startTime}
-                className="grid grid-cols-[3.5rem_minmax(0,1fr)] items-start gap-3 border-b border-[var(--c-border)] px-4 py-2.5 last:border-b-0"
-              >
-                <span className="w-14 shrink-0 pt-2 text-sm font-bold text-[var(--c-ocean)]">
-                  {row.startTime}
-                </span>
-                <div className="grid min-w-0 grid-cols-1 gap-2">
-                  {row.group.slots.map((slot) => (
-                    <button
-                      key={`${slot.coachId}-${slot.id}`}
-                      type="button"
-                      aria-label={`Elegir ${coachNames[slot.coachId] || 'Coach'}, ${slot.startTime}–${slot.endTime}${slot.groupType === 'grupal' ? ', clase grupal' : ''}`}
-                      onClick={() => {
-                        setSelectedSlot(slot)
-                        const accountStudent = students.find(
-                          (student) =>
-                            student.schoolId === slot.schoolId &&
-                            (student.studentUserId === accountId ||
-                              student.id === accountId ||
-                              student.accountParticipant)
-                        )
-                        setStudentId(
-                          accountStudent?.id || (accountId ? `profile:${accountId}` : '')
-                        )
-                        setBookerName(accountName)
-                      }}
-                      className={`flex min-h-10 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition hover:brightness-[0.98] ${slot.groupType === 'grupal' ? 'border-violet-400 bg-violet-50' : 'border-emerald-400 bg-white'}`}
-                    >
-                      <span className="min-w-0 flex-1 truncate">
-                        {[
-                          coachNames[slot.coachId] || 'Coach',
-                          slot.schoolId ? schoolLabels[slot.schoolId] : '',
-                          `${slotDurationMinutes(slot)} min`,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
+                    <span className="min-w-0 truncate text-xs font-semibold text-[var(--c-ocean)]">
+                      {reservation.coachName} · {slotDurationMinutes(reservation)} min
+                    </span>
+                    {reservation.groupType === 'grupal' && (
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2 py-1 text-[10px] font-bold text-violet-800">
+                        <FiUsers aria-hidden="true" />
+                        Grupal
                       </span>
-                      {slot.groupType === 'grupal' && (
-                        <FiUsers className="shrink-0 text-violet-600" aria-hidden="true" />
-                      )}
-                      <span className="shrink-0 text-xs font-bold text-cyan-700">Elegir</span>
-                    </button>
-                  ))}
-                </div>
+                    )}
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${reservation.status === 'pending' ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'}`}
+                    >
+                      {reservation.status === 'pending' ? 'Pendiente' : 'Confirmada'}
+                    </span>
+                  </div>
+                ))}
+                {row.slots.map((slot) => (
+                  <button
+                    key={`${slot.coachId}-${slot.id}`}
+                    type="button"
+                    aria-label={`Elegir ${coachNames[slot.coachId] || 'Coach'}, ${slot.startTime}–${slot.endTime}${slot.groupType === 'grupal' ? ', clase grupal' : ''}`}
+                    onClick={() => {
+                      setSelectedSlot(slot)
+                      const accountStudent = students.find(
+                        (student) =>
+                          student.schoolId === slot.schoolId &&
+                          (student.studentUserId === accountId ||
+                            student.id === accountId ||
+                            student.accountParticipant)
+                      )
+                      setStudentId(
+                        bookingParticipants.find((participant) => {
+                          const participantId = participant.schoolStudentId
+                          return (
+                            !participantId ||
+                            !myReservations.some(
+                              (reservation) =>
+                                reservation.schoolId === slot.schoolId &&
+                                reservation.coachId === slot.coachId &&
+                                reservation.date === slot.date &&
+                                reservation.startTime === slot.startTime &&
+                                reservation.groupType === 'grupal' &&
+                                reservation.status !== 'cancelled' &&
+                                reservation.studentIds?.includes(participantId)
+                            )
+                          )
+                        })?.value ||
+                          accountStudent?.id ||
+                          (accountId ? `profile:${accountId}` : '')
+                      )
+                      setBookerName(accountName)
+                    }}
+                    className={`flex min-h-10 w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition hover:brightness-[0.98] ${slot.groupType === 'grupal' ? 'border-violet-400 bg-transparent' : 'border-emerald-400 bg-white'}`}
+                  >
+                    {slot.groupType === 'grupal' ? (
+                      <FiUsers className="shrink-0 text-violet-600" aria-hidden="true" />
+                    ) : (
+                      <FiUser className="shrink-0 text-[var(--c-ocean)]" aria-hidden="true" />
+                    )}
+                    <span className="min-w-0 flex-1 truncate">
+                      {[
+                        coachNames[slot.coachId] || 'Coach',
+                        slot.schoolId ? schoolLabels[slot.schoolId] : '',
+                        `${slotDurationMinutes(slot)} min`,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                    <span className="shrink-0 text-xs font-bold text-cyan-700">Elegir</span>
+                  </button>
+                ))}
               </div>
-            )
-          )}
+            </div>
+          ))}
         </div>
       )}
       <Sheet
@@ -693,9 +788,20 @@ export default function AthleteSchoolSchedule({
                   className="min-h-11 rounded-xl border border-[var(--c-border)] bg-white px-3 text-[var(--c-ocean)] outline-none focus:border-[var(--c-aqua-strong)] focus:ring-2 focus:ring-[var(--c-aqua)]"
                 >
                   {bookingParticipants.map((participant) => (
-                    <option key={participant.value} value={participant.value}>
+                    <option
+                      key={participant.value}
+                      value={participant.value}
+                      disabled={Boolean(
+                        participant.schoolStudentId &&
+                          alreadyBookedGroupStudentIds.has(participant.schoolStudentId)
+                      )}
+                    >
                       {participant.name}
                       {participant.account ? ' (tú)' : ''}
+                      {participant.schoolStudentId &&
+                      alreadyBookedGroupStudentIds.has(participant.schoolStudentId)
+                        ? ' · Ya inscrito'
+                        : ''}
                     </option>
                   ))}
                 </select>
@@ -718,12 +824,21 @@ export default function AthleteSchoolSchedule({
                 />
               </label>
             )}
-            {selectedSlot.schoolId && selectedParticipant && !selectedParticipant.registered && (
-              <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-                Es la primera clase para esta persona en esta escuela, esta reservación está sujeta
-                a cambios sin previo aviso.
+            {participantAlreadyBookedInGroup && selectedParticipant && (
+              <p role="status" className="rounded-xl bg-violet-50 p-3 text-sm text-violet-900">
+                {selectedParticipant.name} ya está inscrito en esta clase grupal. Elige otra persona
+                para agregarla al grupo.
               </p>
             )}
+            {selectedSlot.schoolId &&
+              selectedParticipant &&
+              !selectedParticipant.registered &&
+              participantReservationsAtSchool.length === 0 && (
+                <p role="status" className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+                  Es la primera clase para esta persona en esta escuela, esta reservación está
+                  sujeta a cambios sin previo aviso.
+                </p>
+              )}
             <p className="text-sm leading-relaxed text-[var(--c-text-2)]">
               {!selectedSlot.schoolId || selectedBookingMode === 'direct'
                 ? 'La clase se agregará directamente a tu agenda.'
@@ -742,7 +857,9 @@ export default function AthleteSchoolSchedule({
               <button
                 type="button"
                 disabled={
-                  busy || (selectedSlot.schoolId ? !selectedParticipant : !bookerName.trim())
+                  busy ||
+                  participantAlreadyBookedInGroup ||
+                  (selectedSlot.schoolId ? !selectedParticipant : !bookerName.trim())
                 }
                 onClick={() => void submitBooking()}
                 className="min-h-10 rounded-full bg-[var(--c-ocean)] px-5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50"

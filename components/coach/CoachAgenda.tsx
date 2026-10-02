@@ -154,6 +154,7 @@ export default function CoachAgenda({
   // The school editor manages availability hours only.
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
   const [reassignBooking, setReassignBooking] = useState<Booking | null>(null)
+  const [bookingToEdit, setBookingToEdit] = useState<Booking | null>(null)
   const [schoolRequestDraft, setSchoolRequestDraft] = useState<SchoolRequestDraft | null>(null)
   const [schoolClassToEdit, setSchoolClassToEdit] = useState<Booking | null>(null)
   const [schoolClassToReassign, setSchoolClassToReassign] = useState<Booking | null>(null)
@@ -814,7 +815,10 @@ export default function CoachAgenda({
                   row.bookings.some((booking) => booking.groupType === 'grupal')
                 const isClassFull =
                   isGroupClass && row.bookings.some((booking) => booking.classFull)
-                const classStyle = isGroupClass ? HOUR_STATUS_STYLE.group : HOUR_STATUS_STYLE.booked
+                const classStyle =
+                  hasPendingRequest && isGroupClass
+                    ? HOUR_STATUS_STYLE.group
+                    : HOUR_STATUS_STYLE.booked
                 return (
                   <AgendaRow
                     key={`b-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
@@ -843,94 +847,63 @@ export default function CoachAgenda({
                               coachFallback}
                           </span>
                         )}
-                        {manageSchoolSchedule && !hasSchoolClass && !hasPendingRequest && (
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm min-h-11"
-                            disabled={busy}
-                            onClick={() => {
-                              const existingBlock = dayBlocks.find(
-                                (block) =>
-                                  block.coachId === firstBooking.coachId &&
-                                  blockCoversClassAt(
-                                    block,
-                                    firstBooking.date,
-                                    firstBooking.startTime
-                                  )
-                              )
-                              if (existingBlock) unblock(existingBlock)
-                              else
-                                bloquearSlot({
-                                  ...firstBooking,
-                                  id: firstBooking.id,
-                                  coachName: firstBooking.coachName || undefined,
-                                  status: 'booked',
-                                })
-                            }}
-                          >
-                            {dayBlocks.some(
-                              (block) =>
-                                block.coachId === firstBooking.coachId &&
-                                blockCoversClassAt(block, firstBooking.date, firstBooking.startTime)
-                            )
-                              ? 'Desbloquear horario'
-                              : 'Bloquear horario'}
-                          </button>
-                        )}
-                        {!hideBookingActions && !hasSchoolClass && !hasPendingRequest && (
-                          <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
-                            <span className="min-w-0">
-                              <BinarySwitch
-                                leftLabel="Disponible"
-                                rightLabel="Llena"
-                                leftIcon={<FiUnlock />}
-                                rightIcon={<FiLock />}
-                                checked={isClassFull}
-                                onChange={(checked) =>
-                                  updateClassSettings(row.bookings, { classFull: checked })
-                                }
-                                disabled={busy || !isGroupClass}
-                              />
-                            </span>
-                            {row.bookings.length === 1 && (
-                              <BinarySwitch
-                                leftLabel="Particular"
-                                rightLabel="Grupal"
-                                leftIcon={<FiUser />}
-                                rightIcon={<FiUsers />}
-                                checked={isGroupClass}
-                                onChange={(checked) =>
-                                  updateClassSettings(row.bookings, {
-                                    groupType: checked ? 'grupal' : 'particular',
+                        {!hideBookingActions &&
+                          !manageSchoolSchedule &&
+                          !hasSchoolClass &&
+                          !hasPendingRequest && (
+                            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+                              <span className="min-w-0">
+                                <BinarySwitch
+                                  leftLabel="Disponible"
+                                  rightLabel="Llena"
+                                  leftIcon={<FiUnlock />}
+                                  rightIcon={<FiLock />}
+                                  checked={isClassFull}
+                                  onChange={(checked) =>
+                                    updateClassSettings(row.bookings, { classFull: checked })
+                                  }
+                                  disabled={busy || !isGroupClass}
+                                />
+                              </span>
+                              {row.bookings.length === 1 && (
+                                <BinarySwitch
+                                  leftLabel="Particular"
+                                  rightLabel="Grupal"
+                                  leftIcon={<FiUser />}
+                                  rightIcon={<FiUsers />}
+                                  checked={isGroupClass}
+                                  onChange={(checked) =>
+                                    updateClassSettings(row.bookings, {
+                                      groupType: checked ? 'grupal' : 'particular',
+                                    })
+                                  }
+                                  disabled={busy}
+                                />
+                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setAddStudentSlot({
+                                    coachId: firstBooking.coachId,
+                                    date: firstBooking.date,
+                                    startTime: firstBooking.startTime,
+                                    endTime: firstBooking.endTime,
+                                    locationName: firstBooking.locationName || 'Horario abierto',
+                                    groupType: isGroupClass ? 'grupal' : 'particular',
                                   })
                                 }
-                                disabled={busy}
-                              />
-                            )}
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setAddStudentSlot({
-                                  coachId: firstBooking.coachId,
-                                  date: firstBooking.date,
-                                  startTime: firstBooking.startTime,
-                                  endTime: firstBooking.endTime,
-                                  locationName: firstBooking.locationName || 'Horario abierto',
-                                  groupType: isGroupClass ? 'grupal' : 'particular',
-                                })
-                              }
-                              disabled={busy || isClassFull}
-                              aria-hidden={isClassFull}
-                              className={`col-span-full inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-3.5 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-fit ${
-                                isClassFull ? 'invisible' : ''
-                              }`}
-                            >
-                              <FiPlus aria-hidden="true" />{' '}
-                              {capitalizeSchoolTerm(participantSingular)}
-                            </button>
-                          </div>
-                        )}
-                        {!readOnlyAgenda && (
+                                disabled={busy || isClassFull}
+                                aria-hidden={isClassFull}
+                                className={`col-span-full inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-full bg-[var(--c-aqua)] px-3.5 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-fit ${
+                                  isClassFull ? 'invisible' : ''
+                                }`}
+                              >
+                                <FiPlus aria-hidden="true" />{' '}
+                                {capitalizeSchoolTerm(participantSingular)}
+                              </button>
+                            </div>
+                          )}
+                        {!readOnlyAgenda && !manageSchoolSchedule && (
                           <span
                             className="group relative"
                             title={
@@ -1032,7 +1005,34 @@ export default function CoachAgenda({
                                 </button>
                               </div>
                             )}
+                            {manageSchoolSchedule &&
+                              !booking.schoolClassId &&
+                              !booking.schoolRequestId && (
+                                <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
+                                  <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-2 text-xs font-bold text-[var(--c-ocean)] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--c-aqua-strong)]">
+                                    <input
+                                      type="checkbox"
+                                      checked={booking.attended === true}
+                                      onChange={(event) =>
+                                        updateAttendance(booking, event.currentTarget.checked)
+                                      }
+                                      disabled={busy}
+                                      className="h-5 w-5 cursor-pointer rounded border-[var(--c-border)] accent-[var(--c-aqua-strong)] disabled:cursor-not-allowed"
+                                    />
+                                    Asistencia
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setBookingToEdit(booking)}
+                                    disabled={busy}
+                                    className="min-h-10 rounded-full border border-[var(--c-border)] px-4 text-sm font-bold text-[var(--c-ocean)] transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+                                  >
+                                    Editar
+                                  </button>
+                                </div>
+                              )}
                             {!hideBookingActions &&
+                              !manageSchoolSchedule &&
                               !booking.schoolClassId &&
                               !booking.schoolRequestId && (
                                 <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:self-center">
@@ -1431,6 +1431,108 @@ export default function CoachAgenda({
                 className="min-h-10 rounded-full bg-[var(--c-ocean)] px-5 text-sm font-bold text-white disabled:opacity-50"
               >
                 {busy ? 'Guardando…' : 'Aprobar con cambios'}
+              </button>
+            </footer>
+          </div>
+        )}
+      </Sheet>
+
+      <Sheet
+        open={Boolean(bookingToEdit)}
+        onClose={() => {
+          if (!busy) setBookingToEdit(null)
+        }}
+        label="Editar clase"
+        modalTopGap
+      >
+        {bookingToEdit && (
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">Editar clase</h2>
+              <p className="mt-1 text-sm text-[var(--c-text-2)]">
+                {bookingToEdit.athleteName} · {bookingToEdit.date} · {bookingToEdit.startTime}–
+                {bookingToEdit.endTime}
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setAddStudentSlot({
+                    coachId: bookingToEdit.coachId,
+                    date: bookingToEdit.date,
+                    startTime: bookingToEdit.startTime,
+                    endTime: bookingToEdit.endTime,
+                    locationName: bookingToEdit.locationName || 'Horario abierto',
+                    groupType: bookingToEdit.groupType,
+                  })
+                  setBookingToEdit(null)
+                }}
+                disabled={busy || (bookingToEdit.groupType === 'grupal' && bookingToEdit.classFull)}
+                className="min-h-11 rounded-full bg-[var(--c-aqua)] px-4 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] disabled:opacity-50"
+              >
+                + {capitalizeSchoolTerm(participantSingular)}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReassignBooking(bookingToEdit)
+                  setBookingToEdit(null)
+                }}
+                disabled={busy}
+                className="min-h-11 rounded-full border border-[var(--c-border)] px-4 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] disabled:opacity-50"
+              >
+                Reasignar {participantSingular}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const existingBlock = dayBlocks.find(
+                    (block) =>
+                      block.coachId === bookingToEdit.coachId &&
+                      blockCoversClassAt(block, bookingToEdit.date, bookingToEdit.startTime)
+                  )
+                  if (existingBlock) unblock(existingBlock)
+                  else
+                    bloquearSlot({
+                      ...bookingToEdit,
+                      id: bookingToEdit.id,
+                      coachName: bookingToEdit.coachName || undefined,
+                      status: 'booked',
+                    })
+                  setBookingToEdit(null)
+                }}
+                disabled={busy}
+                className="min-h-11 rounded-full border border-[var(--c-border)] px-4 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] disabled:opacity-50"
+              >
+                {dayBlocks.some(
+                  (block) =>
+                    block.coachId === bookingToEdit.coachId &&
+                    blockCoversClassAt(block, bookingToEdit.date, bookingToEdit.startTime)
+                )
+                  ? 'Desbloquear horario'
+                  : 'Bloquear horario'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmAction({ kind: 'cancel-booking', booking: bookingToEdit })
+                  setBookingToEdit(null)
+                }}
+                disabled={busy}
+                className="min-h-11 rounded-full border border-[var(--rose-bd)] px-4 text-sm font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50 sm:col-span-2"
+              >
+                Cancelar clase
+              </button>
+            </div>
+            <footer className="flex justify-end border-t border-[var(--c-border)] pt-3">
+              <button
+                type="button"
+                onClick={() => setBookingToEdit(null)}
+                disabled={busy}
+                className="min-h-10 rounded-full px-4 text-sm font-bold text-[var(--c-text-2)]"
+              >
+                Cerrar
               </button>
             </footer>
           </div>

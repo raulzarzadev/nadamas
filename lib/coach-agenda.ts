@@ -114,7 +114,7 @@ export function buildAvailableSlots({
         if (blocks.some((block) => block.hidden && blockOverlapsSlot(block, slot))) continue
         slots.push({
           ...slot,
-          status: slotStatus(slot, bookings, blocks),
+          status: slotStatus(slot, bookings, blocks, offering.maxPeople),
         })
       }
     }
@@ -152,18 +152,30 @@ export function monthRange(month: string | null) {
 }
 
 function slotStatus(
-  slot: Pick<CoachAvailableSlot, 'date' | 'startTime' | 'endTime'>,
+  slot: Pick<CoachAvailableSlot, 'date' | 'startTime' | 'endTime' | 'groupType'>,
   bookings: Booking[],
-  blocks: CoachScheduleBlock[]
+  blocks: CoachScheduleBlock[],
+  maxPeople?: number | null
 ) {
-  if (
-    bookings.some(
-      (booking) =>
-        booking.status !== 'cancelled' &&
-        booking.date === slot.date &&
-        timesOverlap(slot.startTime, slot.endTime, booking.startTime, booking.endTime)
-    )
-  ) {
+  const matchingBookings = bookings.filter(
+    (booking) =>
+      booking.status !== 'cancelled' &&
+      booking.date === slot.date &&
+      timesOverlap(slot.startTime, slot.endTime, booking.startTime, booking.endTime)
+  )
+  const groupOccupancy = matchingBookings.reduce(
+    (count, booking) => count + Math.max(1, booking.schoolClassStudentCount || 1),
+    0
+  )
+  const groupCapacity =
+    typeof maxPeople === 'number' && maxPeople > 0 ? Math.max(2, maxPeople) : Infinity
+  const canJoinExistingGroup =
+    slot.groupType === 'grupal' &&
+    matchingBookings.length > 0 &&
+    matchingBookings.every((booking) => booking.groupType === 'grupal' && !booking.classFull) &&
+    groupOccupancy < groupCapacity
+
+  if (matchingBookings.length > 0 && !canJoinExistingGroup) {
     return 'booked'
   }
 

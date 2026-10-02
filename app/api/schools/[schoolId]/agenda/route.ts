@@ -146,6 +146,22 @@ export async function GET(request: Request, { params }: RouteProps) {
   })
   const myReservations = viewerId
     ? [
+        ...bookings
+          .filter(
+            (booking) =>
+              booking.athleteId === viewerId && booking.date >= startDate && booking.date <= endDate
+          )
+          .map((booking) => ({
+            id: booking.id,
+            coachId: booking.coachId,
+            coachName: booking.coachName || names[booking.coachId] || 'Entrenador',
+            date: booking.date,
+            startTime: booking.startTime,
+            endTime: booking.endTime,
+            status: booking.status,
+            groupType: booking.groupType,
+            studentIds: [],
+          })),
         ...schoolClassesSnapshot.docs.flatMap((doc) => {
           const occurrence = doc.data() as SchoolClassOccurrence
           if (
@@ -167,6 +183,9 @@ export async function GET(request: Request, { params }: RouteProps) {
             endTime: occurrence.endTime,
             status: occurrence.status === 'scheduled' ? 'confirmed' : occurrence.status,
             groupType: occurrence.type === 'group' ? 'grupal' : 'particular',
+            studentIds: occurrence.studentIds.filter((studentId) =>
+              viewerStudentIds.has(studentId)
+            ),
           }))
         }),
         ...requestsSnapshot.docs.flatMap((doc) => {
@@ -194,6 +213,8 @@ export async function GET(request: Request, { params }: RouteProps) {
               endTime: requestRecord.preferredEndTime,
               status: 'pending',
               groupType: requestRecord.type === 'group' ? 'grupal' : 'particular',
+              studentIds:
+                typeof requestRecord.studentId === 'string' ? [requestRecord.studentId] : [],
             },
           ]
         }),
