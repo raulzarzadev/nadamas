@@ -1,8 +1,8 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
-import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
+import { HOUR_STATUS_STYLE, HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import { dateKey } from '@/lib/coach-offerings'
 
 const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
@@ -14,17 +14,19 @@ export default function CoachAgendaDateSelector({
   dayStatuses,
   monthCount,
   weekCount,
+  selectedStatuses,
+  onToggleStatus,
   onSelectDate,
-  onChangeMonth,
   onChangeWeek,
 }: {
   selectedDate: string
   weekDates: Date[]
   dayStatuses: Map<string, HourStatus[]>
-  monthCount: string
-  weekCount: string
+  monthCount?: string
+  weekCount?: string
+  selectedStatuses: Set<HourStatus>
+  onToggleStatus: (status: HourStatus) => void
   onSelectDate: (date: string) => void
-  onChangeMonth: (delta: number) => void
   onChangeWeek: (delta: number) => void
 }) {
   const touchStartX = useRef<number | null>(null)
@@ -34,7 +36,8 @@ export default function CoachAgendaDateSelector({
   const monthLabel = new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
     month: 'long',
   })
-  const weekLabel = `${weekDates[0]?.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} - ${weekDates[6]?.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}`
+  const weekRange = `${weekDates[0]?.getDate()} – ${weekDates[6]?.getDate()}`
+  const weekStatuses = new Set(weekDates.flatMap((date) => dayStatuses.get(dateKey(date)) || []))
   const changeWeek = (delta: number) => onChangeWeek(delta)
   const touchEnd = (event: React.TouchEvent) => {
     if (touchStartX.current === null) return
@@ -48,56 +51,56 @@ export default function CoachAgendaDateSelector({
   return (
     <div className="flex flex-col gap-3">
       <NavStepper
-        label={monthLabel}
-        count={monthCount}
-        prevLabel="Mes anterior"
-        nextLabel="Mes siguiente"
-        onPrev={() => onChangeMonth(-1)}
-        onNext={() => onChangeMonth(1)}
-        labelClassName="text-xl font-extrabold capitalize"
-      />
-      <NavStepper
-        label={weekLabel}
-        count={weekCount}
+        label={
+          <>
+            <span>{monthLabel}</span>
+            {monthCount && (
+              <span className="text-[11px] font-medium text-slate-400">{monthCount}</span>
+            )}
+            <span className="px-0.5">·</span>
+            <span>{weekRange}</span>
+            {weekCount && (
+              <span className="text-[11px] font-medium text-slate-400">{weekCount}</span>
+            )}
+          </>
+        }
         prevLabel="Semana anterior"
         nextLabel="Semana siguiente"
         onPrev={() => changeWeek(-1)}
         onNext={() => changeWeek(1)}
-        labelClassName="text-sm font-semibold"
+        labelClassName="text-sm font-semibold capitalize"
       />
-      {selectedDate !== today && (
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={() => onSelectDate(today)}
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--c-aqua-strong)] px-5 py-2 text-sm font-bold text-white hover:bg-[var(--c-ocean-mid)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-          >
-            Hoy
-          </button>
-        </div>
+      {weekStatuses.size > 0 && (
+        <ul
+          aria-label="Significado de los colores"
+          className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-[var(--c-text-2)]"
+        >
+          {HOUR_STATUSES.filter((status) => weekStatuses.has(status)).map((status) => (
+            <li key={status}>
+              <button
+                type="button"
+                aria-pressed={selectedStatuses.has(status)}
+                onClick={() => onToggleStatus(status)}
+                className={`flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] transition hover:-translate-y-px hover:bg-[var(--c-surface)] hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] ${selectedStatuses.has(status) ? 'text-[var(--c-text-2)]' : 'opacity-40 grayscale'}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-[4px] w-4 rounded-full ${HOUR_STATUS_STYLE[status].bar}`}
+                />
+                {
+                  {
+                    available: 'Disponible',
+                    booked: 'Ocupado',
+                    groupAvailable: 'Grupal disponible',
+                    group: 'Grupal ocupada',
+                    blocked: 'Bloqueado',
+                  }[status]
+                }
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
-      <ul
-        aria-label="Significado de los colores"
-        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-[var(--c-text-2)]"
-      >
-        {(['available', 'booked', 'groupAvailable', 'group', 'blocked'] as const).map((status) => (
-          <li key={status} className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className={`h-[4px] w-4 rounded-full ${HOUR_STATUS_STYLE[status].bar}`}
-            />
-            {
-              {
-                available: 'Disponible',
-                booked: 'Ocupado',
-                groupAvailable: 'Grupal disponible',
-                group: 'Grupal ocupada',
-                blocked: 'Bloqueado',
-              }[status]
-            }
-          </li>
-        ))}
-      </ul>
       <div
         className="flex touch-pan-y items-stretch gap-1"
         onTouchStart={(event) => {
@@ -133,13 +136,14 @@ export default function CoachAgendaDateSelector({
             const selected = key === selectedDate
             const isToday = key === today
             const statuses = dayStatuses.get(key) || []
+            const visibleStatuses = statuses.filter((status) => selectedStatuses.has(status))
             const bars =
-              statuses.length > 6
+              visibleStatuses.length > 6
                 ? Array.from(
                     { length: 6 },
-                    (_, index) => statuses[Math.floor((index * statuses.length) / 6)]
+                    (_, index) => visibleStatuses[Math.floor((index * visibleStatuses.length) / 6)]
                   )
-                : statuses
+                : visibleStatuses
             const count = (status: HourStatus) =>
               statuses.filter((value) => value === status).length
             const weekday = date.toLocaleDateString('es-MX', { weekday: 'short' }).replace('.', '')
@@ -192,15 +196,13 @@ export default function CoachAgendaDateSelector({
 
 function NavStepper({
   label,
-  count,
   prevLabel,
   nextLabel,
   onPrev,
   onNext,
   labelClassName = '',
 }: {
-  label: string
-  count: string
+  label: ReactNode
   prevLabel: string
   nextLabel: string
   onPrev: () => void
@@ -213,19 +215,18 @@ function NavStepper({
         type="button"
         aria-label={prevLabel}
         onClick={onPrev}
-        className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
+        className="grid h-6 w-6 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
       >
         <FiChevronLeft aria-hidden="true" />
       </button>
       <span className="inline-flex items-baseline justify-center gap-2 text-center">
         <span className={`text-[var(--c-ocean)] ${labelClassName}`}>{label}</span>
-        <span className="text-xs font-semibold text-[var(--c-text-2)]">{count}</span>
       </span>
       <button
         type="button"
         aria-label={nextLabel}
         onClick={onNext}
-        className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
+        className="grid h-6 w-6 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
       >
         <FiChevronRight aria-hidden="true" />
       </button>

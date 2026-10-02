@@ -7,6 +7,13 @@
 // Classes are literal so Tailwind can detect them at build time.
 
 export type HourStatus = 'available' | 'blocked' | 'booked' | 'groupAvailable' | 'group'
+export const HOUR_STATUSES: HourStatus[] = [
+  'available',
+  'booked',
+  'groupAvailable',
+  'group',
+  'blocked',
+]
 
 export interface HourStatusStyle {
   /** Thin line in the day-chip occupancy meter. */

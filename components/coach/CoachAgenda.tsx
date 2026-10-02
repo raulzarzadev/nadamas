@@ -12,7 +12,7 @@ import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { deleteAuthed, getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
-import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
+import { HOUR_STATUS_STYLE, HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import type { Booking } from '@/lib/coach-booking'
 import {
   addDays,
@@ -124,6 +124,9 @@ export default function CoachAgenda({
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
   const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()))
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
+    () => new Set(HOUR_STATUSES)
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
@@ -198,11 +201,6 @@ export default function CoachAgenda({
 
   const changeWeek = (delta: number) =>
     setSelectedDate(dateKey(addDays(new Date(`${selectedDate}T12:00:00`), delta * 7)))
-
-  const changeMonth = (delta: number) => {
-    const base = new Date(`${selectedDate}T12:00:00`)
-    setSelectedDate(dateKey(new Date(base.getFullYear(), base.getMonth() + delta, 1)))
-  }
 
   const activeBookings = useMemo(
     () => (agenda?.bookings || []).filter((booking) => booking.status !== 'cancelled'),
@@ -283,8 +281,6 @@ export default function CoachAgenda({
     return ordered
   }, [activeBookings, agenda?.availableSlots, agenda?.blocks, multiCoachAgenda])
 
-  // Month-level occupancy: class slots vs total offered, restricted to the month shown
-  // in the header (the payload can bleed into adjacent months on boundary weeks).
   const monthStats = useMemo(() => {
     const inMonth = (date: string) => date.startsWith(monthOfSelected)
     const booked = activeClassSlotCount(
@@ -297,13 +293,11 @@ export default function CoachAgenda({
     return { booked, total: booked + available }
   }, [activeBookings, agenda?.availableSlots, monthOfSelected, multiCoachAgenda])
 
-  // Week-level occupancy: sum booked/total across the 7 visible days.
   const weekStats = useMemo(() => {
     let booked = 0
     let total = 0
     for (const date of weekDates) {
-      const statuses = dayStatuses.get(dateKey(date)) || []
-      for (const status of statuses) {
+      for (const status of dayStatuses.get(dateKey(date)) || []) {
         if (status === 'booked' || status === 'group') {
           booked += 1
           total += 1
@@ -416,8 +410,32 @@ export default function CoachAgenda({
       if (!block) continue
       blocked.push({ kind: 'blocked', sort: slot.startTime, slot, block })
     }
-    return [...available, ...booked, ...blocked].sort((a, b) => a.sort.localeCompare(b.sort))
-  }, [daySlots, dayBookings, dayBlocks, multiCoachAgenda])
+    return [...available, ...booked, ...blocked]
+      .filter((row) => {
+        const status: HourStatus =
+          row.kind === 'available'
+            ? row.slot.groupType === 'grupal'
+              ? 'groupAvailable'
+              : 'available'
+            : row.kind === 'blocked'
+              ? 'blocked'
+              : row.bookings.length > 1 ||
+                  row.bookings.some((booking) => booking.groupType === 'grupal')
+                ? 'group'
+                : 'booked'
+        return selectedStatuses.has(status)
+      })
+      .sort((a, b) => a.sort.localeCompare(b.sort))
+  }, [daySlots, dayBookings, dayBlocks, multiCoachAgenda, selectedStatuses])
+
+  const toggleStatus = (status: HourStatus) => {
+    setSelectedStatuses((current) => {
+      const next = new Set(current)
+      if (next.has(status)) next.delete(status)
+      else next.add(status)
+      return next
+    })
+  }
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true)
@@ -656,8 +674,9 @@ export default function CoachAgenda({
         dayStatuses={dayStatuses}
         monthCount={`${monthStats.booked}/${monthStats.total}`}
         weekCount={`${weekStats.booked}/${weekStats.total}`}
+        selectedStatuses={selectedStatuses}
+        onToggleStatus={toggleStatus}
         onSelectDate={setSelectedDate}
-        onChangeMonth={changeMonth}
         onChangeWeek={changeWeek}
       />
 

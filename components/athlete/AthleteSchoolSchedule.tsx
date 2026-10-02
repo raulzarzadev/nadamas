@@ -10,7 +10,7 @@ import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
-import type { HourStatus } from '@/lib/coach-agenda-status'
+import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import {
   flattenCoachBookingSelections,
   type PublicBlockedSlot,
@@ -82,6 +82,9 @@ export default function AthleteSchoolSchedule({
   const [agenda, setAgenda] = useState<CoachAgendaPayload | null>(null)
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [coachFilter, setCoachFilter] = useState('all')
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
+    () => new Set(HOUR_STATUSES)
+  )
   const [selectedSlot, setSelectedSlot] = useState<CoachAvailableSlot | null>(null)
   const [studentId, setStudentId] = useState('')
   const [busy, setBusy] = useState(false)
@@ -224,11 +227,14 @@ export default function AthleteSchoolSchedule({
   const schoolLabels =
     (agenda as (CoachAgendaPayload & { schoolLabels?: Record<string, string> }) | null)
       ?.schoolLabels || {}
-  const visibleSlots = (agenda?.availableSlots || []).filter(
+  const eligibleSlots = (agenda?.availableSlots || []).filter(
     (slot) =>
       slot.status === 'available' &&
       slotIsFuture(slot) &&
       (coachFilter === 'all' || slot.coachId === coachFilter)
+  )
+  const visibleSlots = eligibleSlots.filter((slot) =>
+    selectedStatuses.has(slot.groupType === 'grupal' ? 'groupAvailable' : 'available')
   )
   const coachIdsWithSlots = new Set(
     (agenda?.availableSlots || [])
@@ -249,26 +255,26 @@ export default function AthleteSchoolSchedule({
     : []
   const dayStatuses = useMemo(() => {
     const result = new Map<string, HourStatus[]>()
-    for (const slot of visibleSlots) {
+    for (const slot of eligibleSlots) {
       const statuses = result.get(slot.date) || []
       statuses.push(slot.groupType === 'grupal' ? 'groupAvailable' : 'available')
       result.set(slot.date, statuses)
     }
     for (const statuses of result.values()) statuses.sort()
     return result
-  }, [visibleSlots])
-  const monthAvailable = visibleSlots.filter((slot) => slot.date.startsWith(month)).length
-  const weekAvailable = visibleSlots.filter((slot) =>
-    week.some((date) => dateKey(date) === slot.date)
-  ).length
+  }, [eligibleSlots])
+  const toggleStatus = (status: HourStatus) => {
+    setSelectedStatuses((current) => {
+      const next = new Set(current)
+      if (next.has(status)) next.delete(status)
+      else next.add(status)
+      return next
+    })
+  }
   const changeWeek = (delta: number) => {
     const date = new Date(`${selectedDate}T12:00:00`)
     date.setDate(date.getDate() + delta * 7)
     setSelectedDate(dateKey(date))
-  }
-  const changeMonth = (delta: number) => {
-    const date = new Date(`${selectedDate}T12:00:00`)
-    setSelectedDate(dateKey(new Date(date.getFullYear(), date.getMonth() + delta, 1)))
   }
   const slots = visibleSlots
     .filter((slot) => slot.date === selectedDate)
@@ -369,10 +375,9 @@ export default function AthleteSchoolSchedule({
         selectedDate={selectedDate}
         weekDates={week}
         dayStatuses={dayStatuses}
-        monthCount={`0/${monthAvailable}`}
-        weekCount={`0/${weekAvailable}`}
+        selectedStatuses={selectedStatuses}
+        onToggleStatus={toggleStatus}
         onSelectDate={setSelectedDate}
-        onChangeMonth={changeMonth}
         onChangeWeek={changeWeek}
       />
       {error && (
