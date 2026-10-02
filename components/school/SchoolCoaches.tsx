@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FiClock, FiEdit2, FiPhone, FiSend, FiShield } from 'react-icons/fi'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
-import { type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
+import { capitalizeSchoolTerm, type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
 import { useSchoolSelection } from './useSchoolSelection'
@@ -20,6 +21,7 @@ interface Teacher {
 
 export default function SchoolCoaches() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
+  const terminology = useSchoolTerminology()
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [showInvite, setShowInvite] = useState(false)
@@ -44,20 +46,31 @@ export default function SchoolCoaches() {
         setTeachers(teacherPayload.teachers || [])
         setInvitations(invitePayload?.invitations?.filter((item) => item.role === 'teacher') || [])
       })
-      .catch(() => setMessage('No se pudieron cargar los coaches.'))
+      .catch(() =>
+        setMessage(
+          `No se pudieron cargar ${terminology.schoolId ? terminology.coachPlural : 'los coaches'}.`
+        )
+      )
       .finally(() => setLoading(false))
-  }, [selectedId, selected?.membership])
+  }, [selectedId, selected?.membership, terminology.coachPlural, terminology.schoolId])
 
   if (schoolStatus === 'loading')
-    return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando coaches…</div>
+    return (
+      <div className="py-16 text-center text-sm text-(--c-text-2)">
+        Cargando {terminology.schoolId ? terminology.coachPlural : 'coaches'}…
+      </div>
+    )
   if (schoolStatus === 'error')
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
   if (!selected) return <SchoolNoSelection />
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
+  const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
+  const CoachPlural = capitalizeSchoolTerm(coachPlural)
 
   return (
     <section className="flex flex-col gap-5">
-      <h1 className="sr-only">Profes</h1>
+      <h1 className="sr-only">{CoachPlural}</h1>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-col gap-2 sm:items-end">
           <SchoolSelector
@@ -71,7 +84,7 @@ export default function SchoolCoaches() {
               onClick={() => setShowInvite(true)}
               className="btn btn-primary min-h-11 gap-2"
             >
-              <FiSend aria-hidden="true" /> Invitar coach
+              <FiSend aria-hidden="true" /> Invitar {coachSingular}
             </button>
           )}
         </div>
@@ -144,16 +157,16 @@ export default function SchoolCoaches() {
         <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
           <FiShield className="text-3xl text-(--c-ocean-mid)" aria-hidden="true" />
           <h2 className="font-bold text-(--c-ocean)">
-            {isDirector ? 'Invita al primer coach' : 'Aún no hay coaches'}
+            {isDirector ? `Invita a tus ${coachPlural}` : `Aún no hay ${coachPlural}`}
           </h2>
           <p className="max-w-md text-sm text-(--c-text-2)">
-            Los coaches invitados podrán completar su perfil y horarios disponibles.
+            Envía una invitación para que puedan completar su perfil y horarios disponibles.
           </p>
         </div>
       )}
       {isDirector && invitations.length > 0 && (
         <div className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5">
-          <h2 className="font-bold text-(--c-ocean)">Invitaciones de coaches</h2>
+          <h2 className="font-bold text-(--c-ocean)">Invitaciones de {coachPlural}</h2>
           <div className="mt-3 grid gap-2">
             {invitations.slice(0, 8).map((invite) => (
               <div
@@ -199,6 +212,8 @@ function InviteCoach({
   const [email, setEmail] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const terminology = useSchoolTerminology()
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     setSaving(true)
@@ -226,9 +241,9 @@ function InviteCoach({
         onSubmit={submit}
         className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto max-w-md rounded-[var(--r-md)] bg-white p-6 shadow-[var(--shadow-md)]"
       >
-        <h2 className="text-xl font-extrabold text-(--c-ocean)">Invitar coach</h2>
+        <h2 className="text-xl font-extrabold text-(--c-ocean)">Invitar {coachSingular}</h2>
         <p className="mt-1 text-sm text-(--c-text-2)">
-          Se enviará un enlace para crear o completar su cuenta.
+          Se enviará un enlace para crear o completar la cuenta de la persona invitada.
         </p>
         <label className="mt-5 grid gap-1 text-sm font-semibold text-(--c-ocean)">
           Correo electrónico

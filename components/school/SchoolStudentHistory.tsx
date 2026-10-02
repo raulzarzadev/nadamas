@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { FiX } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { SchoolStudent } from '@/lib/school'
+import { capitalizeSchoolTerm } from '@/lib/school'
 import type {
   SchoolStudentHistory as HistoryPayload,
   SchoolHistoryClass,
@@ -27,6 +29,10 @@ export default function SchoolStudentHistory({
   student: SchoolStudent
   onClose: () => void
 }) {
+  const terminology = useSchoolTerminology()
+  const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
+  const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
   const [history, setHistory] = useState<HistoryPayload | null>(null)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -80,7 +86,7 @@ export default function SchoolStudentHistory({
     <Sheet open onClose={onClose} label={`Historial de ${student.name}`} keyboardAware>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-(--c-ocean)">Historial del alumno</h2>
+          <h2 className="text-xl font-bold text-(--c-ocean)">Historial de {participantSingular}</h2>
           <p className="mt-1 text-sm text-(--c-text-2)">{student.name} · En esta escuela</p>
         </div>
         <button
@@ -112,20 +118,23 @@ export default function SchoolStudentHistory({
         <>
           <p className="mt-5 font-semibold text-(--c-ocean)">
             {taken} {taken === 1 ? 'clase tomada' : 'clases tomadas'} · {coachIds.length}{' '}
-            {coachIds.length === 1 ? 'coach' : 'coaches'}
+            {coachIds.length === 1 ? coachSingular : coachPlural}
           </p>
           {coachIds.length > 0 && (
-            <ul aria-label="Coaches del alumno" className="mt-3 flex flex-wrap gap-2">
+            <ul
+              aria-label={`${capitalizeSchoolTerm(coachPlural)} de ${participantSingular}`}
+              className="mt-3 flex flex-wrap gap-2"
+            >
               {coachIds.map((id) => (
                 <li key={id} className="badge badge-outline h-auto px-3 py-2">
-                  {history.coachNames[id] || 'Coach'}
+                  {history.coachNames[id] || capitalizeSchoolTerm(coachSingular)}
                 </li>
               ))}
             </ul>
           )}
           {history.classes.length === 0 ? (
             <p className="py-8 text-center text-sm text-(--c-text-2)">
-              Este alumno todavía no tiene clases registradas en la escuela.
+              Esta persona todavía no tiene clases registradas en la escuela.
             </p>
           ) : (
             <ol className="mt-5 grid gap-3">
@@ -146,7 +155,9 @@ export default function SchoolStudentHistory({
                     · {item.startTime}–{item.endTime}
                   </p>
                   <p className="mt-1 text-sm text-(--c-ocean)">
-                    {item.coachIds.map((id) => history.coachNames[id] || 'Coach').join(', ')}
+                    {item.coachIds
+                      .map((id) => history.coachNames[id] || capitalizeSchoolTerm(coachSingular))
+                      .join(', ')}
                   </p>
                   {item.location && (
                     <p className="mt-1 text-xs text-(--c-text-2)">{item.location}</p>
@@ -160,9 +171,11 @@ export default function SchoolStudentHistory({
                         >
                           <h4 className="font-semibold text-(--c-ocean)">
                             {evaluation.direction === 'from-coach'
-                              ? 'Evaluación del coach'
-                              : 'Evaluación al coach'}{' '}
-                            · {history.coachNames[evaluation.coachId] || 'Coach'}
+                              ? `Evaluación de ${coachSingular}`
+                              : `Evaluación para ${coachSingular}`}{' '}
+                            ·{' '}
+                            {history.coachNames[evaluation.coachId] ||
+                              capitalizeSchoolTerm(coachSingular)}
                           </h4>
                           {evaluation.rating !== undefined && (
                             <p className="mt-1">{evaluation.rating} / 5 estrellas</p>

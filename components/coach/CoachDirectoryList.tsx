@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { FiChevronRight } from 'react-icons/fi'
 import COACH_SKILLS from '@/CONSTANTS/COACH_SKILLS'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { getAuthed } from '@/lib/client/authed-api'
 import { cacheCoachProfile } from '@/lib/client/coach-profile-cache'
@@ -65,6 +66,9 @@ export default function CoachDirectoryList({
 }) {
   const [coaches, setCoaches] = useState<DirectoryCoach[] | undefined>(undefined)
   const [query, setQuery] = useState('')
+  const terminology = useSchoolTerminology()
+  const coachSingular = schoolId && terminology.schoolId ? terminology.coachSingular : 'coach'
+  const coachPlural = schoolId && terminology.schoolId ? terminology.coachPlural : 'coaches'
 
   const [revision, setRevision] = useState(0)
   useSchoolAgendaUpdates(schoolId, () => setRevision((value) => value + 1))
@@ -107,7 +111,7 @@ export default function CoachDirectoryList({
     <div className="flex flex-col gap-4">
       {showSearch && (
         <SearchField
-          label="Buscar coach"
+          label={`Buscar ${coachSingular}`}
           hideLabel
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -117,10 +121,10 @@ export default function CoachDirectoryList({
       )}
 
       {coaches === undefined ? (
-        <p className="py-8 text-center text-sm text-[var(--c-text-2)]">Cargando coaches…</p>
+        <p className="py-8 text-center text-sm text-[var(--c-text-2)]">Cargando {coachPlural}…</p>
       ) : filtered.length === 0 ? (
         <p className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-8 text-center text-sm text-[var(--c-text-2)]">
-          No encontramos coaches con esa búsqueda.
+          No encontramos {coachPlural} con esa búsqueda.
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
@@ -176,7 +180,7 @@ export default function CoachDirectoryList({
           href={viewAllHref}
           className="inline-flex items-center justify-center gap-1 self-center rounded-full bg-(--c-ocean) px-6 py-3 text-sm font-bold text-white transition hover:opacity-90"
         >
-          Ver todos los coaches <FiChevronRight aria-hidden="true" size={15} />
+          Ver todos los {coachPlural} <FiChevronRight aria-hidden="true" size={15} />
         </Link>
       )}
     </div>

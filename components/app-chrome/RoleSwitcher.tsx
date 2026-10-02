@@ -5,12 +5,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiShare2 } from 'react-icons/fi'
 import ProfileShareDialog from '@/components/profile/ProfileShareDialog'
 import { useRole } from '@/context/RoleContext'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import type { RoleName } from '@/lib/roles'
 import type { School } from '@/lib/school'
+import { capitalizeSchoolTerm } from '@/lib/school'
 import { ROLE_LABEL, SECONDARY_NAV_BY_ROLE } from './nav-config'
 
 const ROLE_PILL_LABEL: Record<RoleName, string> = {
@@ -50,6 +52,7 @@ export default function RoleSwitcher({
   school?: Pick<School, 'name' | 'slug'> | null
 }) {
   const tenant = useTenantSchool()
+  const terminology = useSchoolTerminology()
   const { roles, activeRole, setActiveRole, enableCoach } = useRole()
   const { user, logout } = useUser() as {
     user: Parameters<typeof initialsFrom>[0]
@@ -57,6 +60,12 @@ export default function RoleSwitcher({
   }
   const pathname = usePathname()
   const displayedRole = currentRole ?? activeRole
+  const coachRoleLabel = terminology.schoolId
+    ? capitalizeSchoolTerm(terminology.coachSingular)
+    : ROLE_LABEL.coach
+  const athleteRoleLabel = terminology.schoolId
+    ? capitalizeSchoolTerm(terminology.participantSingular)
+    : ROLE_LABEL.athlete
   const secondaryLinks = SECONDARY_NAV_BY_ROLE[displayedRole]
   const avatarText = displayedRole === 'athlete' ? 'TÚ' : initialsFrom(user)
   const userEmail = user?.email
@@ -196,10 +205,14 @@ export default function RoleSwitcher({
           }`}
           aria-haspopup="menu"
           aria-expanded={open}
-          aria-label={`Rol actual: ${ROLE_LABEL[displayedRole]}. Cambiar rol o ir a otra sección`}
+          aria-label={`Rol actual: ${displayedRole === 'coach' ? coachRoleLabel : displayedRole === 'athlete' ? athleteRoleLabel : ROLE_LABEL[displayedRole]}. Cambiar rol o ir a otra sección`}
         >
           <span className="text-sm font-semibold text-[var(--c-ocean)]">
-            {ROLE_PILL_LABEL[displayedRole]}
+            {displayedRole === 'coach'
+              ? coachRoleLabel.toLowerCase()
+              : displayedRole === 'athlete'
+                ? athleteRoleLabel.toLowerCase()
+                : ROLE_PILL_LABEL[displayedRole]}
           </span>
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--c-aqua)] to-[var(--c-ocean)] text-[11px] font-bold leading-none text-white">
             {avatarText}
@@ -266,7 +279,7 @@ export default function RoleSwitcher({
                 }}
                 className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
               >
-                Modo {ROLE_LABEL.athlete}
+                Modo {athleteRoleLabel}
               </button>
               {!tenant && renderShare('athlete')}
             </div>
@@ -282,7 +295,7 @@ export default function RoleSwitcher({
                     }}
                     className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
                   >
-                    Modo {ROLE_LABEL.coach}
+                    Modo {coachRoleLabel}
                   </button>
                   {!tenant && renderShare('coach')}
                 </>
@@ -298,39 +311,41 @@ export default function RoleSwitcher({
                 </button>
               )}
             </div>
-            <div role="none" className="flex items-center gap-1 pr-1">
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setActiveRole('school')
-                  setOpen(false)
-                }}
-                className={`flex-1 rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
-                  displayedRole === 'school' ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
-                }`}
-              >
-                Modo {ROLE_LABEL.school}
-              </button>
-              {shareSchool && (
+            {!tenant && (
+              <div role="none" className="flex items-center gap-1 pr-1">
                 <button
                   type="button"
                   role="menuitem"
-                  aria-label="Compartir escuela"
-                  title={`Compartir ${shareSchool.name}`}
                   onClick={() => {
+                    setActiveRole('school')
                     setOpen(false)
-                    setShareTarget({
-                      title: `Compartir ${shareSchool.name}`,
-                      publicUrl: getPublicSchoolUrl(shareSchool.slug),
-                    })
                   }}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                  className={`flex-1 rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
+                    displayedRole === 'school' ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
+                  }`}
                 >
-                  <FiShare2 aria-hidden="true" />
+                  Modo {ROLE_LABEL.school}
                 </button>
-              )}
-            </div>
+                {shareSchool && (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    aria-label="Compartir escuela"
+                    title={`Compartir ${shareSchool.name}`}
+                    onClick={() => {
+                      setOpen(false)
+                      setShareTarget({
+                        title: `Compartir ${shareSchool.name}`,
+                        publicUrl: getPublicSchoolUrl(shareSchool.slug),
+                      })
+                    }}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                  >
+                    <FiShare2 aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+            )}
             {roles.admin && !tenant && (
               <div role="none">
                 <button

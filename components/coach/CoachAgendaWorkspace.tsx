@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FiPlus } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import { schoolMembershipHasRole } from '@/lib/school'
@@ -12,6 +13,7 @@ import ShareScheduleButton from './ShareScheduleButton'
 export default function CoachAgendaWorkspace() {
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
   const { schools, selectedId, isPersonal, status } = useSchoolSelection({ includePersonal: true })
+  const terminology = useSchoolTerminology()
   const hasSchoolSelection = useMemo(
     () =>
       schools.some(
@@ -53,7 +55,8 @@ export default function CoachAgendaWorkspace() {
         </div>
       </div>
       <p className="text-[var(--c-text-2)] text-xs">
-        Como coach, aquí ves tus horarios publicados y clases agendadas.
+        Como {terminology.schoolId ? terminology.coachSingular : 'coach'}, aquí ves tus horarios
+        publicados y clases agendadas.
       </p>
       <CoachAgenda
         scheduleEditorOpen={scheduleEditorOpen}
@@ -65,6 +68,7 @@ export default function CoachAgendaWorkspace() {
 
 function SchoolCoachAgenda({ schoolId, schoolName }: { schoolId: string; schoolName: string }) {
   const { user } = useUser() as { user: { uid?: string; id?: string } | null }
+  const terminology = useSchoolTerminology()
   const selfId = user?.uid || user?.id
   const [coachFilter, setCoachFilter] = useState('mine')
   const [teachers, setTeachers] = useState<Array<{ id: string; name: string; status: string }>>([])
@@ -80,7 +84,7 @@ function SchoolCoachAgenda({ schoolId, schoolName }: { schoolId: string; schoolN
         if (active) setTeachers(payload.teachers || [])
       })
       .catch(() => {
-        if (active) setMessage('No se pudo cargar la lista de profes. Inténtalo de nuevo.')
+        if (active) setMessage('No se pudo cargar la lista de responsables. Inténtalo de nuevo.')
       })
     return () => {
       active = false
@@ -95,7 +99,7 @@ function SchoolCoachAgenda({ schoolId, schoolName }: { schoolId: string; schoolN
       </div>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <label className="grid gap-2 text-sm font-bold text-(--c-ocean)">
-          Ver horarios de un profe
+          Ver horarios de {terminology.coachSingular}
           <select
             className="select select-bordered min-h-11 w-full sm:w-64"
             value={coachFilter}
@@ -104,7 +108,7 @@ function SchoolCoachAgenda({ schoolId, schoolName }: { schoolId: string; schoolN
               setScheduleEditorOpen(false)
             }}
           >
-            <option value="">Todos los profes</option>
+            <option value="">Todos los {terminology.coachPlural}</option>
             <option value="mine">Mis horarios</option>
             {teachers
               .filter((teacher) => teacher.status === 'active' && teacher.id !== selfId)

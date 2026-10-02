@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { FiChevronLeft, FiChevronRight, FiPlus, FiX } from 'react-icons/fi'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import {
   addDays,
   dateFromKey,
@@ -11,6 +12,7 @@ import {
   startOfWeek,
   WEEKDAY_LABELS,
 } from '@/lib/coach-offerings'
+import { capitalizeSchoolTerm } from '@/lib/school'
 import HourPickerModal from './HourPickerModal'
 
 export type HoursMode = 'add' | 'remove'
@@ -48,6 +50,8 @@ export default function ScheduleHoursEditor({
   selectedCoachId?: string
   onCoachChange?: (coachId: string) => void
 }) {
+  const terminology = useSchoolTerminology()
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   const initialKey = defaultDate || todayKey()
   const [mode, setMode] = useState<HoursMode>('add')
   const [weekStart, setWeekStart] = useState(() => startOfWeek(dateFromKey(initialKey)))
@@ -104,7 +108,7 @@ export default function ScheduleHoursEditor({
           {coachOptions.length > 0 && (
             <fieldset className="flex flex-col gap-2">
               <legend className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
-                Coach
+                {capitalizeSchoolTerm(coachSingular)}
               </legend>
               <div className="flex flex-wrap gap-2">
                 {coachOptions.map((coach) => {
@@ -129,7 +133,7 @@ export default function ScheduleHoursEditor({
               </div>
               {coachSelectionRequired && (
                 <p className="text-xs text-[var(--c-text-2)]">
-                  Elige un profe para editar sus horarios.
+                  Elige {coachSingular} para editar sus horarios.
                 </p>
               )}
             </fieldset>

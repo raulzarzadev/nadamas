@@ -16,6 +16,7 @@ import {
 } from 'react-icons/fi'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import Sheet from '@/components/ui/sheet'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { deleteAuthed, getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
@@ -37,6 +38,7 @@ import {
   formatWhatsappScheduleText,
   type WhatsappScheduleDay,
 } from '@/lib/coach-whatsapp-schedule'
+import { capitalizeSchoolTerm } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import { useCoachAgendaShare } from './CoachAgendaShareContext'
@@ -137,8 +139,15 @@ export default function CoachAgenda({
   const schoolQuery = schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''
   const contextQuery = `${coachQuery}${schoolQuery}`
   const { user } = useUser() as { user: { uid?: string; id?: string } | null }
+  const terminology = useSchoolTerminology()
   const { setScheduleText } = useCoachAgendaShare()
   const selfUid = user?.uid || user?.id
+  const participantSingular =
+    schoolId && terminology.schoolId ? terminology.participantSingular : 'alumno'
+  const participantPlural =
+    schoolId && terminology.schoolId ? terminology.participantPlural : 'alumnos'
+  const coachFallback =
+    schoolId && terminology.schoolId ? capitalizeSchoolTerm(terminology.coachSingular) : 'Coach'
 
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
   const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
@@ -659,7 +668,7 @@ export default function CoachAgenda({
       await saveOfferingList(offeringsWithoutHours(offerings, pairs))
       closeScheduleEditor()
       if (skipped > 0) {
-        setNotice(`No se quitaron ${skipped} hora(s) con alumno. Cancela la clase primero.`)
+        setNotice(`No se quitaron ${skipped} hora(s) ocupada(s). Cancela la clase primero.`)
       }
     })
   }
@@ -668,13 +677,13 @@ export default function CoachAgenda({
     confirmAction?.kind === 'cancel-booking'
       ? {
           title: 'Cancelar clase',
-          body: `Se cancelará la clase de ${confirmAction.booking.athleteName} a las ${confirmAction.booking.startTime}. El alumno seguirá guardado en tu lista.`,
+          body: `Se cancelará la clase de ${confirmAction.booking.athleteName} a las ${confirmAction.booking.startTime}. ${capitalizeSchoolTerm(participantSingular)} seguirá guardado en tu lista.`,
           action: 'Cancelar clase',
         }
       : confirmAction?.kind === 'delete-slot'
         ? {
             title: 'Eliminar horario',
-            body: `Se eliminará el horario de las ${confirmAction.slot.startTime}. Ya no aparecerá como disponible para alumnos.`,
+            body: `Se eliminará el horario de las ${confirmAction.slot.startTime}. Ya no aparecerá como disponible para ${participantPlural}.`,
             action: 'Eliminar horario',
           }
         : null
@@ -896,14 +905,14 @@ export default function CoachAgenda({
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <span className="text-xs font-bold uppercase text-[var(--c-text-2)]">
                           {isGroupClass
-                            ? `Clase grupal · ${firstBooking.schoolClassStudentCount ?? row.bookings.length} alumnos`
-                            : 'Clase particular · 1 alumno'}
+                            ? `Clase grupal · ${firstBooking.schoolClassStudentCount ?? row.bookings.length} ${participantPlural}`
+                            : `Clase particular · 1 ${participantSingular}`}
                         </span>
                         {multiCoachAgenda && (
                           <span className="text-sm font-extrabold text-[var(--c-ocean)]">
                             {firstBooking.coachName ||
                               agenda.coachNames?.[firstBooking.coachId] ||
-                              'Coach'}
+                              coachFallback}
                           </span>
                         )}
                         {manageSchoolSchedule && !hasSchoolClass && (
@@ -988,7 +997,8 @@ export default function CoachAgenda({
                                 isClassFull ? 'invisible' : ''
                               }`}
                             >
-                              <FiPlus aria-hidden="true" /> Alumno
+                              <FiPlus aria-hidden="true" />{' '}
+                              {capitalizeSchoolTerm(participantSingular)}
                             </button>
                           </div>
                         )}
@@ -1084,7 +1094,7 @@ export default function CoachAgenda({
                                     disabled={busy}
                                     onClick={() => setReassignBooking(booking)}
                                   >
-                                    Reasignar alumno
+                                    Reasignar {participantSingular}
                                   </button>
                                 )}
                                 <button
@@ -1126,7 +1136,9 @@ export default function CoachAgenda({
                           <FiLock aria-hidden="true" /> Bloqueado
                           <span className="font-normal text-[var(--c-text-2)]">
                             ·{' '}
-                            {row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || 'Coach'}
+                            {row.slot.coachName ||
+                              agenda.coachNames?.[row.slot.coachId] ||
+                              coachFallback}
                           </span>
                         </span>
                       ) : (
@@ -1135,7 +1147,7 @@ export default function CoachAgenda({
                             <span className="col-span-2 text-xs font-bold">
                               {row.slot.coachName ||
                                 agenda.coachNames?.[row.slot.coachId] ||
-                                'Coach'}
+                                coachFallback}
                             </span>
                           )}
                           <BinarySwitch
@@ -1179,7 +1191,8 @@ export default function CoachAgenda({
                             disabled={busy}
                             className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
                           >
-                            <FiPlus aria-hidden="true" /> Alumno
+                            <FiPlus aria-hidden="true" />{' '}
+                            {capitalizeSchoolTerm(participantSingular)}
                           </button>
                         )}
                         {!readOnlyAgenda && (
@@ -1228,14 +1241,19 @@ export default function CoachAgenda({
                         />
                         Disponible
                         <span className="font-normal text-[var(--c-text-2)]">
-                          · {row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || 'Coach'}
+                          ·{' '}
+                          {row.slot.coachName ||
+                            agenda.coachNames?.[row.slot.coachId] ||
+                            coachFallback}
                         </span>
                       </span>
                     ) : (
                       <div className="grid min-w-0 grid-cols-2 gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-2">
                         {multiCoachAgenda && (
                           <span className="col-span-2 text-xs font-bold">
-                            {row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || 'Coach'}
+                            {row.slot.coachName ||
+                              agenda.coachNames?.[row.slot.coachId] ||
+                              coachFallback}
                           </span>
                         )}
                         <BinarySwitch
@@ -1279,7 +1297,7 @@ export default function CoachAgenda({
                           disabled={busy}
                           className="inline-flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
                         >
-                          <FiPlus aria-hidden="true" /> Alumno
+                          <FiPlus aria-hidden="true" /> {capitalizeSchoolTerm(participantSingular)}
                         </button>
                       )}
                       {!readOnlyAgenda && (
@@ -1337,7 +1355,7 @@ export default function CoachAgenda({
           onClose={() => setReassignBooking(null)}
           onSaved={() => {
             setReassignBooking(null)
-            setNotice('Alumno reasignado.')
+            setNotice(`${capitalizeSchoolTerm(participantSingular)} reasignado.`)
             void loadAgenda(monthOfSelected)
           }}
         />

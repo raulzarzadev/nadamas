@@ -13,9 +13,11 @@ import {
   FiTrendingUp,
   FiUsers,
 } from 'react-icons/fi'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
+import { capitalizeSchoolTerm } from '@/lib/school'
 
 const ACTION_CARDS = [
   {
@@ -54,6 +56,9 @@ function longDate(date: string) {
 }
 
 export default function AthleteHomeDashboard() {
+  const terminology = useSchoolTerminology()
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
+  const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
   const { user } = useUser() as {
     user: { nickname?: string; displayName?: string; name?: string } | null
   }
@@ -97,7 +102,7 @@ export default function AthleteHomeDashboard() {
               Tu próxima clase
             </span>
             <span className="block truncate font-bold text-(--c-ocean)">
-              {nextClass.coachName || 'Tu coach'}
+              {nextClass.coachName || `Tu ${coachSingular}`}
             </span>
             <span className="block text-sm capitalize text-(--c-text-2)">
               {longDate(nextClass.date)} · {nextClass.startTime}
@@ -116,7 +121,9 @@ export default function AthleteHomeDashboard() {
           <span className="min-w-0 flex-1">
             <span className="block font-bold text-(--c-ocean)">Reserva tu primera clase</span>
             <span className="block text-sm text-(--c-text-2)">
-              Encuentra un coach y agenda tu primer entrenamiento.
+              {terminology.schoolId
+                ? `Busca a tu ${coachSingular} y agenda tu primer entrenamiento.`
+                : 'Encuentra un coach y agenda tu primer entrenamiento.'}
             </span>
           </span>
           <FiChevronRight aria-hidden="true" className="shrink-0 text-(--c-text-2)" />
@@ -136,7 +143,7 @@ export default function AthleteHomeDashboard() {
         />
         <StatTile
           icon={<FiUsers aria-hidden="true" />}
-          label="Coaches"
+          label={capitalizeSchoolTerm(coachPlural)}
           value={bookings === null ? undefined : coachCount}
         />
       </div>
@@ -157,13 +164,19 @@ export default function AthleteHomeDashboard() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1 font-bold text-(--c-ocean)">
-                  {card.title}
+                  {card.href === '/athlete/find-coach' && terminology.schoolId
+                    ? `Buscar ${coachSingular}`
+                    : card.title}
                   <FiChevronRight
                     aria-hidden="true"
                     className="text-(--c-text-2) transition-transform group-hover:translate-x-0.5"
                   />
                 </span>
-                <span className="mt-1 block text-sm text-(--c-text-2)">{card.body}</span>
+                <span className="mt-1 block text-sm text-(--c-text-2)">
+                  {card.href === '/athlete/find-coach' && terminology.schoolId
+                    ? `Encuentra ${coachPlural} verificados por especialidad y disponibilidad.`
+                    : card.body}
+                </span>
               </span>
             </Link>
           )

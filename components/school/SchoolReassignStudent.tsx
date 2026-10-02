@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Sheet from '@/components/ui/sheet'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
+import { capitalizeSchoolTerm } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 export default function SchoolReassignStudent({
@@ -18,6 +20,9 @@ export default function SchoolReassignStudent({
   onClose: () => void
   onSaved: () => void
 }) {
+  const terminology = useSchoolTerminology()
+  const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   const [date, setDate] = useState(booking.date)
   const [agenda, setAgenda] = useState<CoachAgendaPayload>()
   const [destination, setDestination] = useState('')
@@ -103,7 +108,7 @@ export default function SchoolReassignStudent({
     } catch (err) {
       reportInternalError('SCHOOL_REASSIGN_SAVE', err)
       setError(
-        'No pudimos reasignar al alumno. Revisa que la clase siga disponible e inténtalo de nuevo.'
+        `No pudimos reasignar el registro. Revisa que la clase siga disponible e inténtalo de nuevo.`
       )
     } finally {
       setBusy(false)
@@ -115,7 +120,7 @@ export default function SchoolReassignStudent({
       onClose={() => {
         if (!busy) onClose()
       }}
-      label="Reasignar alumno"
+      label={`Reasignar ${participantSingular}`}
     >
       <div className="flex flex-col gap-4">
         <h3 className="text-xl font-bold text-(--c-ocean)">Reasignar a {booking.athleteName}</h3>
@@ -145,7 +150,8 @@ export default function SchoolReassignStudent({
             <option value="">{agenda ? 'Selecciona una clase' : 'Cargando horarios…'}</option>
             {available.map(([key, slot]) => (
               <option key={key} value={key}>
-                {slot.startTime}–{slot.endTime} · {agenda?.coachNames?.[slot.coachId] || 'Coach'} ·{' '}
+                {slot.startTime}–{slot.endTime} ·{' '}
+                {agenda?.coachNames?.[slot.coachId] || capitalizeSchoolTerm(coachSingular)} ·{' '}
                 {slot.groupType === 'grupal' ? 'Grupal' : 'Particular'}
               </option>
             ))}
@@ -157,8 +163,8 @@ export default function SchoolReassignStudent({
           </p>
         )}
         <p className="text-sm text-(--c-text-2)">
-          Se moverá al alumno a la nueva clase. La asistencia y evaluación anteriores se conservarán
-          en el historial.
+          Al cambiar la clase, la asistencia y evaluación anteriores se conservarán. en el
+          historial.
         </p>
         {error && (
           <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
@@ -172,7 +178,7 @@ export default function SchoolReassignStudent({
             disabled={busy || !destination || !agenda}
             onClick={() => void save()}
           >
-            {busy ? 'Guardando…' : 'Reasignar alumno'}
+            {busy ? 'Guardando…' : `Reasignar ${participantSingular}`}
           </button>
           <button
             type="button"

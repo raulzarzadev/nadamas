@@ -32,6 +32,7 @@ export async function GET(request: Request, { params }: RouteProps) {
       schoolId: invitation.schoolId,
       schoolName: school.name,
       schoolLogoUrl: school.logoUrl || null,
+      terminology: school.terminology,
       role: invitation.role,
       email: invitation.email,
       status,

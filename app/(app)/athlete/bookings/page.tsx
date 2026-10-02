@@ -10,6 +10,7 @@ import { FiCalendar, FiChevronRight, FiClock, FiSearch, FiUser, FiX } from 'reac
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { type ClassEvaluation, canEvaluateBooking } from '@/lib/class-evaluation'
 import { deleteAuthed, getAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
@@ -76,7 +77,11 @@ function BookingCard({
   onEvaluate?: (booking: Booking) => void
 }) {
   const cancelled = booking.status === 'cancelled'
-  const coachName = coach?.name || booking.coachName || 'Coach de natación'
+  const terminology = useSchoolTerminology()
+  const coachName =
+    coach?.name ||
+    booking.coachName ||
+    `${terminology.schoolId ? terminology.coachSingular : 'coach'} de natación`
   const status = STATUS_STYLE[booking.status] || {
     label: booking.status,
     className: 'border-[var(--c-border)] bg-[var(--c-surface)] text-[var(--c-text-2)]',
@@ -186,6 +191,7 @@ function PastBookings({
 }
 
 export default function BookingsPage() {
+  const terminology = useSchoolTerminology()
   const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
   const [evaluationSaved, setEvaluationSaved] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -343,13 +349,16 @@ export default function BookingsPage() {
         <div className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-9 text-center">
           <FiSearch aria-hidden="true" className="mx-auto mb-3 text-3xl text-[var(--c-aqua)]" />
           <p className="mx-auto mb-4 max-w-xs text-sm leading-relaxed text-[var(--c-text-2)]">
-            Aún no tienes clases próximas. Encuentra un coach y reserva tu primer entrenamiento.
+            Aún no tienes clases próximas.{' '}
+            {terminology.schoolId
+              ? `Busca a tu ${terminology.coachSingular} y reserva tu primer entrenamiento.`
+              : 'Encuentra un coach y reserva tu primer entrenamiento.'}
           </p>
           <Link
             href="/athlete/find-coach"
             className="inline-flex items-center justify-center rounded-full bg-[var(--c-ocean)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
           >
-            Buscar coach
+            Buscar {terminology.schoolId ? terminology.coachSingular : 'coach'}
           </Link>
         </div>
       ) : (
@@ -392,7 +401,11 @@ export default function BookingsPage() {
         <ClassEvaluationForm
           key={toEvaluate.id}
           booking={toEvaluate}
-          coachName={coaches[toEvaluate.coachId]?.name || toEvaluate.coachName || 'Tu coach'}
+          coachName={
+            coaches[toEvaluate.coachId]?.name ||
+            toEvaluate.coachName ||
+            `Tu ${terminology.schoolId ? terminology.coachSingular : 'coach'}`
+          }
           onClose={() => setToEvaluate(null)}
           onSaved={(evaluation: ClassEvaluation) => {
             setBookings((current) =>
@@ -416,7 +429,9 @@ export default function BookingsPage() {
             </h3>
             <p className="mx-auto mt-2 mb-5 max-w-xs text-center text-sm text-[var(--c-text-2)]">
               {dayLabel(toCancel)} · {toCancel.startTime} con{' '}
-              {coaches[toCancel.coachId]?.name || toCancel.coachName || 'tu coach'}
+              {coaches[toCancel.coachId]?.name ||
+                toCancel.coachName ||
+                `tu ${terminology.schoolId ? terminology.coachSingular : 'coach'}`}
             </p>
             <button
               type="button"

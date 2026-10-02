@@ -49,6 +49,7 @@ export async function PATCH(request: Request, { params }: RouteProps) {
         : current.showCoachesSchedules === true,
     showStudents:
       typeof body.showStudents === 'boolean' ? body.showStudents : current.showStudents === true,
+    terminology: Object.hasOwn(body, 'terminology') ? body.terminology : current.terminology,
   })
   if (!validation.ok) {
     const messages = {
@@ -58,6 +59,7 @@ export async function PATCH(request: Request, { params }: RouteProps) {
       timezone: 'Selecciona una zona horaria válida.',
       logo: 'El logo actual no es válido.',
       palette: 'Selecciona una paleta válida.',
+      terminology: 'Completa los términos personalizados en singular y plural.',
     } as const
     return NextResponse.json({ error: messages[validation.reason] }, { status: 400 })
   }

@@ -3,12 +3,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FiCalendar, FiMail, FiPhone, FiSearch, FiUser } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { SchoolClassOccurrence, SchoolStudent } from '@/lib/school'
-import { schoolMembershipHasRole } from '@/lib/school'
+import { capitalizeSchoolTerm, schoolMembershipHasRole } from '@/lib/school'
 
 export default function CoachSchoolStudents() {
   const { schools, selectedId, status } = useSchoolSelection({ includePersonal: true })
+  const terminology = useSchoolTerminology()
+  const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
+  const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
   const coachSchools = useMemo(
     () =>
       schools.filter(
@@ -46,7 +50,7 @@ export default function CoachSchoolStudents() {
         setClasses(classPayload.classes || [])
       })
       .catch(() => {
-        if (active) setMessage('No se pudieron cargar los alumnos de esta escuela.')
+        if (active) setMessage(`No se pudieron cargar ${participantPlural} de esta escuela.`)
       })
       .finally(() => {
         if (active) setLoading(false)
@@ -54,7 +58,7 @@ export default function CoachSchoolStudents() {
     return () => {
       active = false
     }
-  }, [selected])
+  }, [selected, participantPlural])
 
   if (status === 'loading' || !selected) return null
 
@@ -77,9 +81,11 @@ export default function CoachSchoolStudents() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
-            Alumnos
+            {capitalizeSchoolTerm(participantPlural)}
           </p>
-          <h2 className="mt-1 text-xl font-extrabold text-(--c-ocean)">Alumnos de la escuela</h2>
+          <h2 className="mt-1 text-xl font-extrabold text-(--c-ocean)">
+            {capitalizeSchoolTerm(participantPlural)} de la escuela
+          </h2>
           <p className="mt-1 text-sm text-(--c-text-2)">{selected.school.name}</p>
         </div>
         {!loading && students.length > 0 && (
@@ -91,8 +97,8 @@ export default function CoachSchoolStudents() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar alumno"
-              aria-label="Buscar alumno"
+              placeholder={`Buscar ${participantSingular}`}
+              aria-label={`Buscar ${participantSingular}`}
               className="min-h-11 w-full rounded-full border border-(--c-border) bg-white pl-10 pr-3 text-sm text-(--c-ocean) outline-none focus:border-(--c-aqua) focus:ring-4 focus:ring-[rgba(0,180,216,0.16)]"
             />
           </label>
@@ -105,7 +111,7 @@ export default function CoachSchoolStudents() {
         </p>
       )}
       {loading ? (
-        <p className="py-8 text-center text-sm text-(--c-text-2)">Cargando alumnos…</p>
+        <p className="py-8 text-center text-sm text-(--c-text-2)">Cargando {participantPlural}…</p>
       ) : visibleStudents.length ? (
         <ul className="mt-5 grid gap-3 md:grid-cols-2">
           {visibleStudents.map((student) => (
@@ -139,7 +145,9 @@ export default function CoachSchoolStudents() {
               )}
               <p className="mt-2 flex items-center gap-2 text-xs text-(--c-text-2)">
                 <FiCalendar aria-hidden="true" />
-                {student.status === 'active' ? 'Alumno activo' : 'Alumno inactivo'}
+                {student.status === 'active'
+                  ? `${capitalizeSchoolTerm(participantSingular)} activo`
+                  : `${capitalizeSchoolTerm(participantSingular)} inactivo`}
               </p>
             </li>
           ))}
@@ -148,12 +156,12 @@ export default function CoachSchoolStudents() {
         <div className="mt-5 rounded-[var(--r-sm)] border border-dashed border-(--c-border) bg-(--c-surface) p-8 text-center">
           <FiUser className="mx-auto text-3xl text-(--c-aqua-strong)" aria-hidden="true" />
           <p className="mt-3 font-bold text-(--c-ocean)">
-            {students.length ? 'No hay coincidencias' : 'Aún no hay alumnos'}
+            {students.length ? 'No hay coincidencias' : `Aún no hay ${participantPlural}`}
           </p>
           <p className="mt-1 text-sm text-(--c-text-2)">
             {students.length
               ? 'Prueba con otro nombre o correo.'
-              : 'Cuando la escuela registre alumnos, aparecerán aquí.'}
+              : `Cuando la escuela registre ${participantPlural}, aparecerán aquí.`}
           </p>
         </div>
       )}

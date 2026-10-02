@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { FiCalendar, FiCheck, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import {
+  capitalizeSchoolTerm,
   type SchoolBookingMode,
   type SchoolClassOccurrence,
   type SchoolClassRequest,
@@ -34,6 +36,7 @@ function today() {
 
 export default function SchoolClasses() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
+  const terminology = useSchoolTerminology()
   const { user } = useUser() as {
     user: {
       uid?: string
@@ -154,6 +157,9 @@ export default function SchoolClasses() {
     ...(isDirector && directorId ? [{ id: directorId, name: directorName }] : []),
     ...activeTeachers.map(({ id, name }) => ({ id, name })),
   ]
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
+  const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
+  const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const visibleClasses = classes.filter(
     (item) => item.status !== 'cancelled' || item.date >= today()
   )
@@ -180,7 +186,7 @@ export default function SchoolClasses() {
           {isDirector && (
             <div className="flex flex-col gap-2 sm:w-64">
               <label htmlFor="schedule-coach" className="text-sm font-bold text-(--c-ocean)">
-                Administrar horarios de un profe
+                Administrar horarios de {coachSingular}
               </label>
               <select
                 id="schedule-coach"
@@ -189,7 +195,7 @@ export default function SchoolClasses() {
                 disabled={loading}
                 onChange={(event) => setScheduleCoachId(event.target.value)}
               >
-                {activeTeachers.length > 0 && <option value="">Todos los profes</option>}
+                {activeTeachers.length > 0 && <option value="">Todos los {coachPlural}</option>}
                 {scheduleCoachOptions.map((coach) => (
                   <option key={coach.id} value={coach.id}>
                     {coach.name}
@@ -260,7 +266,7 @@ export default function SchoolClasses() {
                     <div>
                       <p className="font-semibold text-(--c-ocean)">
                         {students.find((student) => student.id === request.studentId)?.name ||
-                          'Alumno'}
+                          capitalizeSchoolTerm(participantSingular)}
                       </p>
                       <p className="text-xs text-(--c-text-2)">
                         {request.type === 'group' ? 'Grupal' : 'Individual'} ·{' '}
@@ -292,7 +298,8 @@ export default function SchoolClasses() {
                   className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-sm"
                 >
                   <span>
-                    {students.find((student) => student.id === request.studentId)?.name || 'Alumno'}{' '}
+                    {students.find((student) => student.id === request.studentId)?.name ||
+                      capitalizeSchoolTerm(participantSingular)}{' '}
                     · {request.preferredStartTime}–{request.preferredEndTime}
                   </span>
                   <span className="font-semibold text-(--c-text-2)">
@@ -383,7 +390,7 @@ export default function SchoolClasses() {
                       studentId={item.studentIds[0]}
                       subjectName={
                         students.find((student) => student.id === item.studentIds[0])?.name ||
-                        'alumno'
+                        participantSingular
                       }
                     />
                   )}
@@ -399,7 +406,7 @@ export default function SchoolClasses() {
                         studentId={item.studentIds[0]}
                         subjectName={
                           teachers.find((teacher) => teacher.id === item.teacherIds[0])?.name ||
-                          'coach'
+                          coachSingular
                         }
                       />
                     )}
@@ -483,6 +490,9 @@ function CreateClassModal({
   onClose: () => void
   onCreated: (result: { occurrences?: SchoolClassOccurrence[] }) => void
 }) {
+  const terminology = useSchoolTerminology()
+  const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
+  const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
   const [form, setForm] = useState({
     title: request ? 'Clase solicitada' : '',
     type: (request?.type || 'individual') as 'individual' | 'group',
@@ -587,13 +597,13 @@ function CreateClassModal({
           </select>
         </label>
         <CheckList
-          label="Coaches"
+          label={capitalizeSchoolTerm(coachPlural)}
           items={teachers.map((teacher) => ({ id: teacher.id, label: teacher.name }))}
           selected={form.teacherIds}
           onToggle={(id) => toggle('teacherIds', id)}
         />
         <CheckList
-          label="Alumnos"
+          label={capitalizeSchoolTerm(participantPlural)}
           items={students.map((student) => ({ id: student.id, label: student.name }))}
           selected={form.studentIds}
           onToggle={(id) => toggle('studentIds', id)}
@@ -711,6 +721,9 @@ function RequestClassModal({
   onClose: () => void
   onCreated: (result?: { occurrences?: SchoolClassOccurrence[] }) => void
 }) {
+  const terminology = useSchoolTerminology()
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
+  const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const [form, setForm] = useState({
     studentId: students[0]?.id || '',
     teacherId: '',
@@ -751,7 +764,7 @@ function RequestClassModal({
     >
       <form onSubmit={submit} className="grid gap-3">
         <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-          Alumno
+          {capitalizeSchoolTerm(participantSingular)}
           <select
             required
             value={form.studentId}
@@ -767,14 +780,14 @@ function RequestClassModal({
         </label>
         {bookingMode === 'direct' && (
           <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Coach
+            {capitalizeSchoolTerm(coachSingular)}
             <select
               required
               value={form.teacherId}
               onChange={(event) => setForm({ ...form, teacherId: event.target.value })}
               className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
             >
-              <option value="">Selecciona un coach…</option>
+              <option value="">Selecciona {coachSingular}…</option>
               {teachers.map((teacher) => (
                 <option key={teacher.id} value={teacher.id}>
                   {teacher.name}

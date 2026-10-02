@@ -6,12 +6,17 @@ import type React from 'react'
 import { useEffect, useState } from 'react'
 import { FiCalendar, FiMapPin, FiTrendingUp, FiUsers } from 'react-icons/fi'
 import { progressResultEmoji } from '@/CONSTANTS/PROGRESS_SCALE'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
 import { clampScale, formatStudentLevel, type StudentProgress } from '@/lib/coach-student-progress'
+import { capitalizeSchoolTerm } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 export default function ProgressPage() {
+  const terminology = useSchoolTerminology()
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
+  const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
   const [bookings, setBookings] = useState<Booking[] | undefined>(undefined)
   const [progress, setProgress] = useState<StudentProgress[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -47,7 +52,7 @@ export default function ProgressPage() {
       <header>
         <h1 className="text-3xl font-extrabold text-(--c-ocean)">Mi progreso</h1>
         <p className="mt-1 text-(--c-text-2)">
-          Historial de clases y seguimiento de tus coaches.
+          Historial de clases y seguimiento de tus {coachPlural}.
         </p>
       </header>
 
@@ -65,7 +70,7 @@ export default function ProgressPage() {
         />
         <StatTile
           icon={<FiUsers aria-hidden="true" />}
-          label="Coaches"
+          label={coachPlural}
           value={bookings === undefined ? undefined : progress.length}
         />
         <StatTile
@@ -76,21 +81,25 @@ export default function ProgressPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xl font-bold text-(--c-ocean)">Seguimiento del coach</h2>
+        <h2 className="text-xl font-bold text-(--c-ocean)">Seguimiento de {coachSingular}</h2>
         {bookings === undefined ? (
           <Loading />
         ) : progress.length === 0 ? (
           <div className="rounded-[var(--r-md)] border border-dashed border-(--c-border) bg-(--c-surface) p-5">
             <h3 className="font-bold text-(--c-ocean)">Sin notas todavía</h3>
             <p className="mt-1 text-sm text-(--c-text-2)">
-              Cuando tu coach registre objetivos, observaciones o foco de entrenamiento, aparecerán
-              aquí.
+              Cuando {terminology.schoolId ? `tu ${coachSingular}` : 'tu coach'} registre objetivos,
+              observaciones o foco de entrenamiento, aparecerán aquí.
             </p>
           </div>
         ) : (
           <div className="grid gap-3">
             {progress.map((item) => {
-              const coachName = coachNameFor(item.coachId, bookings || [])
+              const coachName = coachNameFor(
+                item.coachId,
+                bookings || [],
+                capitalizeSchoolTerm(coachSingular)
+              )
               return (
                 <article
                   key={item.id}
@@ -141,10 +150,10 @@ export default function ProgressPage() {
                 key={booking.id}
                 className="flex items-center gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-4 shadow-[var(--shadow-sm)]"
               >
-                <Avatar name={booking.coachName || 'Coach'} size={42} />
+                <Avatar name={booking.coachName || coachSingular} size={42} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold text-(--c-ocean)">
-                    {booking.coachName || 'Coach de natación'}
+                    {booking.coachName || `${coachSingular} de natación`}
                   </p>
                   <p className="mt-0.5 flex items-center gap-1.5 text-xs text-(--c-text-2)">
                     <FiCalendar aria-hidden="true" />
@@ -189,6 +198,9 @@ function StatTile({
   )
 }
 
-function coachNameFor(coachId: string, bookings: Booking[]) {
-  return bookings.find((booking) => booking.coachId === coachId)?.coachName || 'Coach de natación'
+function coachNameFor(coachId: string, bookings: Booking[], coachLabel: string) {
+  return (
+    bookings.find((booking) => booking.coachId === coachId)?.coachName ||
+    `${coachLabel} de natación`
+  )
 }

@@ -4,11 +4,15 @@ import 'server-only'
 import type { DocumentSnapshot } from 'firebase-admin/firestore'
 import {
   DEFAULT_SCHOOL_PALETTE,
+  DEFAULT_SCHOOL_TERMINOLOGY,
   isSchoolPalette,
+  isValidSchoolTerminology,
+  normalizeSchoolTerminology,
   type School,
   type SchoolMembership,
   type SchoolPalette,
   type SchoolRole,
+  type SchoolTerminologyConfig,
 } from '@/lib/school'
 import { isValidSlug, normalizeSlug } from '@/lib/slug'
 import { adminDb } from './firebase-admin'
@@ -22,6 +26,7 @@ interface SchoolInput {
   showCoaches?: boolean
   showCoachesSchedules?: boolean
   showStudents?: boolean
+  terminology?: SchoolTerminologyConfig
   timezone: string
 }
 
@@ -53,7 +58,10 @@ function isAllowedLogoUrl(value: string) {
 }
 
 export function validateSchoolInput(
-  input: Partial<Omit<SchoolInput, 'palette'>> & { palette?: unknown }
+  input: Partial<Omit<SchoolInput, 'palette' | 'terminology'>> & {
+    palette?: unknown
+    terminology?: unknown
+  }
 ) {
   const name = typeof input.name === 'string' ? input.name.trim() : ''
   const slug = normalizeSlug(typeof input.slug === 'string' ? input.slug : '')
@@ -70,6 +78,9 @@ export function validateSchoolInput(
   if (rawPalette !== undefined && !isSchoolPalette(rawPalette)) {
     return { ok: false as const, reason: 'palette' as const }
   }
+  if (input.terminology !== undefined && !isValidSchoolTerminology(input.terminology)) {
+    return { ok: false as const, reason: 'terminology' as const }
+  }
 
   return {
     ok: true as const,
@@ -83,6 +94,7 @@ export function validateSchoolInput(
       showCoaches: input.showCoaches === true,
       showCoachesSchedules: input.showCoachesSchedules === true,
       showStudents: input.showStudents === true,
+      terminology: normalizeSchoolTerminology(input.terminology ?? DEFAULT_SCHOOL_TERMINOLOGY),
     },
   }
 }
@@ -156,6 +168,7 @@ export async function updateSchoolProfile(
     | 'showCoaches'
     | 'showCoachesSchedules'
     | 'showStudents'
+    | 'terminology'
   >
 ) {
   const schoolRef = adminDb.collection('schools').doc(schoolId)
@@ -174,6 +187,7 @@ export async function updateSchoolProfile(
     showCoaches: input.showCoaches === true,
     showCoachesSchedules: input.showCoachesSchedules === true,
     showStudents: input.showStudents === true,
+    terminology: normalizeSchoolTerminology(input.terminology),
     updatedAt: now,
   }
 
@@ -220,6 +234,7 @@ export async function createSchool(userId: string, input: SchoolInput) {
       showCoaches: input.showCoaches === true,
       showCoachesSchedules: input.showCoachesSchedules === true,
       showStudents: input.showStudents === true,
+      terminology: normalizeSchoolTerminology(input.terminology),
       timezone: input.timezone,
       createdBy: userId,
       directorId: userId,

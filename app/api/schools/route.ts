@@ -61,6 +61,7 @@ export async function POST(request: Request) {
       showCoachesSchedules:
         typeof body.showCoachesSchedules === 'boolean' ? body.showCoachesSchedules : undefined,
       showStudents: typeof body.showStudents === 'boolean' ? body.showStudents : undefined,
+      terminology: body.terminology,
     })
 
     if (!validation.ok) {
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
         timezone: 'Selecciona una zona horaria válida.',
         logo: 'El logo no es válido.',
         palette: 'Selecciona una paleta válida.',
+        terminology: 'Completa los términos personalizados en singular y plural.',
       } as const
       return NextResponse.json({ error: messages[validation.reason] }, { status: 400 })
     }

@@ -10,6 +10,7 @@ import {
   progressLevelInfo,
   progressSublevelInfo,
 } from '@/CONSTANTS/PROGRESS_SCALE'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import {
   clampScale,
@@ -41,6 +42,7 @@ export default function StudentProgressModal({
   onClose: () => void
   onSaved: (entry: StudentProgressEntry, progress: StudentProgress) => void
 }) {
+  const terminology = useSchoolTerminology()
   // Level/avance carry the student's current state as a starting point; the
   // session result starts unselected because it grades this session only.
   const [level, setLevel] = useState(() => normalizeLevelValue(initial?.level))
@@ -151,7 +153,7 @@ export default function StudentProgressModal({
           />
           <ScaleRow
             label="Resultado"
-            hint="Qué sentimiento percibes de los alumnos, los padres o tuyo."
+            hint={`Qué sentimiento percibes de ${terminology.schoolId ? terminology.participantPlural : 'los alumnos'}, los padres o tuyo.`}
             options={PROGRESS_RESULTS}
             selected={result}
             onSelect={setResult}

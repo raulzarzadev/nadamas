@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
 import { FiArrowUpRight, FiCalendar, FiClock, FiMapPin, FiUser, FiUsers } from 'react-icons/fi'
 import type { SchoolClassOccurrence } from '@/lib/school'
-import { SCHOOL_PALETTES } from '@/lib/school'
+import { capitalizeSchoolTerm, SCHOOL_PALETTES, schoolTerminologyLabels } from '@/lib/school'
 import { listPublicSchoolClasses } from '@/lib/server/school-classes'
 import { getSchoolBySlug } from '@/lib/server/schools'
 import { getTenantSchool } from '@/lib/server/tenant-school'
@@ -71,11 +71,22 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
     '--school-accent': palette.accent,
     '--school-surface': palette.surface,
   } as CSSProperties
+  const terminology = schoolTerminologyLabels(school.terminology)
   const publicAreas = PUBLIC_AREAS.filter((area) => {
     if (area.id === 'coaches') return school.showCoaches === true
     if (area.id === 'clases') return school.showCoachesSchedules === true
     return school.showStudents === true
-  })
+  }).map((area) =>
+    area.id === 'coaches'
+      ? { ...area, title: capitalizeSchoolTerm(terminology.coachPlural) }
+      : area.id === 'alumnos'
+        ? {
+            ...area,
+            title: capitalizeSchoolTerm(terminology.participantPlural),
+            body: `Forma parte de una comunidad que entrena con objetivos junto a ${terminology.participantPlural}.`,
+          }
+        : area
+  )
   const publicClasses = school.showCoachesSchedules ? await listPublicSchoolClasses(school.id) : []
 
   return (
@@ -235,7 +246,9 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
                       </div>
                       <p className="mt-3 flex items-center gap-1.5 text-xs text-(--c-text-2)">
                         <FiUser aria-hidden="true" />
-                        {occurrence.teacherIds.length ? 'Coach asignado' : 'Coach por asignar'}
+                        {occurrence.teacherIds.length
+                          ? `${capitalizeSchoolTerm(terminology.coachSingular)} asignado`
+                          : `${capitalizeSchoolTerm(terminology.coachSingular)} por asignar`}
                       </p>
                       {occurrence.location && (
                         <p className="mt-1 flex items-center gap-1.5 text-xs text-(--c-text-2)">

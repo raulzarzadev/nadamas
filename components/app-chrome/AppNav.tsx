@@ -17,10 +17,11 @@ import {
   FiUsers,
 } from 'react-icons/fi'
 import { useRole } from '@/context/RoleContext'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { RoleName } from '@/lib/roles'
-import type { School, SchoolMembership } from '@/lib/school'
+import { capitalizeSchoolTerm, type School, type SchoolMembership } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
 import NotificationsBell from './NotificationsBell'
 import { PRIMARY_NAV_BY_ROLE } from './nav-config'
@@ -44,9 +45,27 @@ const NAV_ICONS = {
 export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const tenant = useTenantSchool()
   const { activeRole } = useRole()
+  const terminology = useSchoolTerminology()
   const role = modeProp ?? activeRole
   const pathname = usePathname()
-  const primary = PRIMARY_NAV_BY_ROLE[role]
+  const primary = PRIMARY_NAV_BY_ROLE[role].map((item) => {
+    if (
+      terminology.schoolId &&
+      (item.href === '/coach/students' || item.href === '/school/students')
+    ) {
+      const label = capitalizeSchoolTerm(terminology.participantPlural)
+      return { ...item, label, mobileLabel: label }
+    }
+    if (terminology.schoolId && item.href === '/school/coaches') {
+      const label = capitalizeSchoolTerm(terminology.coachPlural)
+      return { ...item, label, mobileLabel: label }
+    }
+    if (terminology.schoolId && item.href === '/athlete/find-coach') {
+      const label = `Buscar ${terminology.coachSingular}`
+      return { ...item, label, mobileLabel: 'Buscar' }
+    }
+    return item
+  })
   const [schoolAccess, setSchoolAccess] = useState<{
     school: School
     membership: SchoolMembership

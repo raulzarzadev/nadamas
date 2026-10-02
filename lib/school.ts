@@ -69,6 +69,109 @@ export function isSchoolPalette(value: unknown): value is SchoolPalette {
 
 export type SchoolBookingMode = 'request' | 'direct'
 
+export type SchoolCoachTerm = 'entrenador' | 'profesores' | 'coach' | 'custom'
+export type SchoolParticipantTerm = 'atletas' | 'alumnos' | 'persona' | 'custom'
+
+export interface SchoolTerminologyConfig {
+  coach: {
+    preset: SchoolCoachTerm
+    customSingular?: string
+    customPlural?: string
+  }
+  participant: {
+    preset: SchoolParticipantTerm
+    customSingular?: string
+    customPlural?: string
+  }
+}
+
+export interface SchoolTerminologyLabels {
+  coachSingular: string
+  coachPlural: string
+  participantSingular: string
+  participantPlural: string
+}
+
+export const DEFAULT_SCHOOL_TERMINOLOGY: SchoolTerminologyConfig = {
+  coach: { preset: 'entrenador' },
+  participant: { preset: 'atletas' },
+}
+
+const SCHOOL_COACH_TERMS: Record<SchoolCoachTerm, [string, string]> = {
+  entrenador: ['entrenador', 'entrenadores'],
+  profesores: ['profesor', 'profesores'],
+  coach: ['coach', 'coaches'],
+  custom: ['', ''],
+}
+
+const SCHOOL_PARTICIPANT_TERMS: Record<SchoolParticipantTerm, [string, string]> = {
+  atletas: ['atleta', 'atletas'],
+  alumnos: ['alumno', 'alumnos'],
+  persona: ['persona', 'personas'],
+  custom: ['', ''],
+}
+
+function normalizeCustomTerm(value: unknown) {
+  const raw = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+  const customSingular = typeof raw.customSingular === 'string' ? raw.customSingular.trim() : ''
+  const customPlural = typeof raw.customPlural === 'string' ? raw.customPlural.trim() : ''
+  if (!customSingular || customSingular.length > 40 || !customPlural || customPlural.length > 40)
+    return null
+  return { customSingular, customPlural }
+}
+
+export function isValidSchoolTerminology(value: unknown): value is SchoolTerminologyConfig {
+  if (!value || typeof value !== 'object') return false
+  const config = value as Record<string, unknown>
+  const coach =
+    config.coach && typeof config.coach === 'object'
+      ? (config.coach as Record<string, unknown>)
+      : {}
+  const participant =
+    config.participant && typeof config.participant === 'object'
+      ? (config.participant as Record<string, unknown>)
+      : {}
+  const coachPreset = coach.preset
+  const participantPreset = participant.preset
+  if (!['entrenador', 'profesores', 'coach', 'custom'].includes(String(coachPreset))) return false
+  if (!['atletas', 'alumnos', 'persona', 'custom'].includes(String(participantPreset))) return false
+  return (
+    (coachPreset !== 'custom' || normalizeCustomTerm(coach)) !== null &&
+    (participantPreset !== 'custom' || normalizeCustomTerm(participant)) !== null
+  )
+}
+
+export function normalizeSchoolTerminology(value: unknown): SchoolTerminologyConfig {
+  if (!isValidSchoolTerminology(value)) return DEFAULT_SCHOOL_TERMINOLOGY
+  return {
+    coach:
+      value.coach.preset === 'custom'
+        ? { preset: 'custom', ...normalizeCustomTerm(value.coach) }
+        : { preset: value.coach.preset },
+    participant:
+      value.participant.preset === 'custom'
+        ? { preset: 'custom', ...normalizeCustomTerm(value.participant) }
+        : { preset: value.participant.preset },
+  }
+}
+
+export function schoolTerminologyLabels(value?: unknown): SchoolTerminologyLabels {
+  const config = normalizeSchoolTerminology(value)
+  const [coachDefaultSingular, coachDefaultPlural] = SCHOOL_COACH_TERMS[config.coach.preset]
+  const [participantDefaultSingular, participantDefaultPlural] =
+    SCHOOL_PARTICIPANT_TERMS[config.participant.preset]
+  return {
+    coachSingular: config.coach.customSingular || coachDefaultSingular,
+    coachPlural: config.coach.customPlural || coachDefaultPlural,
+    participantSingular: config.participant.customSingular || participantDefaultSingular,
+    participantPlural: config.participant.customPlural || participantDefaultPlural,
+  }
+}
+
+export function capitalizeSchoolTerm(value: string) {
+  return value.charAt(0).toLocaleUpperCase('es-MX') + value.slice(1)
+}
+
 export const SCHOOL_ROLES = ['director', 'teacher', 'student'] as const
 export type SchoolRole = (typeof SCHOOL_ROLES)[number]
 
@@ -87,6 +190,7 @@ export interface School {
   showCoaches?: boolean
   showCoachesSchedules?: boolean
   showStudents?: boolean
+  terminology?: SchoolTerminologyConfig
   createdAt: number
   updatedAt: number
 }

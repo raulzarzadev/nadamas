@@ -3,14 +3,20 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import SchoolLogoInput from '@/components/school/SchoolLogoInput'
+import { SCHOOL_TERMINOLOGY_UPDATE_EVENT } from '@/context/SchoolTerminologyContext'
 import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { patchAuthed } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import {
+  capitalizeSchoolTerm,
   DEFAULT_SCHOOL_PALETTE,
+  normalizeSchoolTerminology,
   SCHOOL_PALETTES,
   type School,
+  type SchoolCoachTerm,
   type SchoolPalette,
+  type SchoolParticipantTerm,
+  schoolTerminologyLabels,
 } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
@@ -33,11 +39,15 @@ export default function SchoolSettingsForm({
     school.showCoachesSchedules === true
   )
   const [showStudents, setShowStudents] = useState(school.showStudents === true)
+  const [terminology, setTerminology] = useState(() =>
+    normalizeSchoolTerminology(school.terminology)
+  )
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [editingLogo, setEditingLogo] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const terminologyLabels = schoolTerminologyLabels(terminology)
 
   async function uploadLogo() {
     if (!logoFile) return school.logoUrl || null
@@ -75,9 +85,13 @@ export default function SchoolSettingsForm({
         showCoaches,
         showCoachesSchedules,
         showStudents,
+        terminology,
       })
       const payload = (await response.json()) as { school: School }
       onUpdated(payload.school)
+      window.dispatchEvent(
+        new CustomEvent(SCHOOL_TERMINOLOGY_UPDATE_EVENT, { detail: payload.school })
+      )
       router.refresh()
       setLogoFile(null)
       setMessage('Cambios guardados.')
@@ -95,6 +109,7 @@ export default function SchoolSettingsForm({
         'No autenticado.',
         'No autorizado.',
         'Selecciona una paleta válida.',
+        'Completa los términos personalizados en singular y plural.',
       ]
       setMessage(safeMessages.includes(serverMessage) ? serverMessage : GENERIC_USER_ERROR)
     } finally {
@@ -170,6 +185,129 @@ export default function SchoolSettingsForm({
             })}
           </div>
         </fieldset>
+        <section className="grid gap-4 rounded-[var(--r-sm)] border border-(--c-border) p-4">
+          <div>
+            <h3 className="font-bold text-(--c-ocean)">Nombres en la escuela</h3>
+            <p className="mt-1 text-sm font-normal text-(--c-text-2)">
+              Elige cómo aparecerán en los menús, clases y mensajes.
+            </p>
+          </div>
+          <fieldset className="grid gap-2 text-sm font-semibold text-(--c-ocean)">
+            <label htmlFor="school-coach-term">¿Cómo nombras al responsable de la clase?</label>
+            <select
+              id="school-coach-term"
+              value={terminology.coach.preset}
+              onChange={(event) =>
+                setTerminology((current) => ({
+                  ...current,
+                  coach: { ...current.coach, preset: event.target.value as SchoolCoachTerm },
+                }))
+              }
+              className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3"
+            >
+              <option value="entrenador">Entrenador</option>
+              <option value="profesores">Profesores</option>
+              <option value="coach">Coach</option>
+              <option value="custom">Personalizado</option>
+            </select>
+            {terminology.coach.preset === 'custom' && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1 font-medium">
+                  Singular
+                  <input
+                    required
+                    maxLength={40}
+                    value={terminology.coach.customSingular || ''}
+                    onChange={(event) =>
+                      setTerminology((current) => ({
+                        ...current,
+                        coach: { ...current.coach, customSingular: event.target.value },
+                      }))
+                    }
+                    placeholder="Ej. instructor"
+                    className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+                  />
+                </label>
+                <label className="grid gap-1 font-medium">
+                  Plural
+                  <input
+                    required
+                    maxLength={40}
+                    value={terminology.coach.customPlural || ''}
+                    onChange={(event) =>
+                      setTerminology((current) => ({
+                        ...current,
+                        coach: { ...current.coach, customPlural: event.target.value },
+                      }))
+                    }
+                    placeholder="Ej. instructores"
+                    className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+                  />
+                </label>
+              </div>
+            )}
+          </fieldset>
+          <fieldset className="grid gap-2 text-sm font-semibold text-(--c-ocean)">
+            <label htmlFor="school-participant-term">
+              ¿Cómo nombras a quienes participan en la clase?
+            </label>
+            <select
+              id="school-participant-term"
+              value={terminology.participant.preset}
+              onChange={(event) =>
+                setTerminology((current) => ({
+                  ...current,
+                  participant: {
+                    ...current.participant,
+                    preset: event.target.value as SchoolParticipantTerm,
+                  },
+                }))
+              }
+              className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3"
+            >
+              <option value="atletas">Atletas</option>
+              <option value="alumnos">Alumnos</option>
+              <option value="persona">Persona</option>
+              <option value="custom">Personalizado</option>
+            </select>
+            {terminology.participant.preset === 'custom' && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1 font-medium">
+                  Singular
+                  <input
+                    required
+                    maxLength={40}
+                    value={terminology.participant.customSingular || ''}
+                    onChange={(event) =>
+                      setTerminology((current) => ({
+                        ...current,
+                        participant: { ...current.participant, customSingular: event.target.value },
+                      }))
+                    }
+                    placeholder="Ej. nadador"
+                    className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+                  />
+                </label>
+                <label className="grid gap-1 font-medium">
+                  Plural
+                  <input
+                    required
+                    maxLength={40}
+                    value={terminology.participant.customPlural || ''}
+                    onChange={(event) =>
+                      setTerminology((current) => ({
+                        ...current,
+                        participant: { ...current.participant, customPlural: event.target.value },
+                      }))
+                    }
+                    placeholder="Ej. nadadores"
+                    className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+                  />
+                </label>
+              </div>
+            )}
+          </fieldset>
+        </section>
         <fieldset className="grid gap-2 text-sm font-semibold text-(--c-ocean)">
           <legend>Mostrar en la página pública</legend>
           <label className="flex min-h-11 items-center gap-3 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal">
@@ -179,7 +317,7 @@ export default function SchoolSettingsForm({
               onChange={(event) => setShowCoaches(event.target.checked)}
               className="checkbox checkbox-sm"
             />
-            Entrenadores
+            {capitalizeSchoolTerm(terminologyLabels.coachPlural)}
           </label>
           <label className="flex min-h-11 items-center gap-3 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal">
             <input
@@ -188,7 +326,7 @@ export default function SchoolSettingsForm({
               onChange={(event) => setShowCoachesSchedules(event.target.checked)}
               className="checkbox checkbox-sm"
             />
-            Horarios de entrenadores
+            Horarios de {terminologyLabels.coachPlural}
           </label>
           <label className="flex min-h-11 items-center gap-3 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal">
             <input
@@ -197,7 +335,7 @@ export default function SchoolSettingsForm({
               onChange={(event) => setShowStudents(event.target.checked)}
               className="checkbox checkbox-sm"
             />
-            Alumnos
+            {capitalizeSchoolTerm(terminologyLabels.participantPlural)}
           </label>
         </fieldset>
         <div className="grid gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-3">

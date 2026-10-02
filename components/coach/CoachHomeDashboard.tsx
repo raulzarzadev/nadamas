@@ -6,9 +6,11 @@ import Link from 'next/link'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import { FiCalendar, FiChevronRight, FiClock, FiShield, FiUsers } from 'react-icons/fi'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload } from '@/lib/coach-agenda'
+import { capitalizeSchoolTerm } from '@/lib/school'
 
 const ACTION_CARDS = [
   {
@@ -39,6 +41,8 @@ function todayKey() {
 }
 
 export default function CoachHomeDashboard() {
+  const terminology = useSchoolTerminology()
+  const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
   const { user } = useUser() as {
     user: { nickname?: string; displayName?: string; name?: string } | null
   }
@@ -86,7 +90,11 @@ export default function CoachHomeDashboard() {
           label="Próximas"
           value={stats?.classes}
         />
-        <StatTile icon={<FiUsers aria-hidden="true" />} label="Alumnos" value={stats?.students} />
+        <StatTile
+          icon={<FiUsers aria-hidden="true" />}
+          label={capitalizeSchoolTerm(participantPlural)}
+          value={stats?.students}
+        />
         <StatTile icon={<FiClock aria-hidden="true" />} label="Horas libres" value={stats?.free} />
       </div>
 
@@ -106,13 +114,19 @@ export default function CoachHomeDashboard() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1 font-bold text-(--c-ocean)">
-                  {card.title}
+                  {card.href === '/coach/students' && terminology.schoolId
+                    ? capitalizeSchoolTerm(participantPlural)
+                    : card.title}
                   <FiChevronRight
                     aria-hidden="true"
                     className="text-(--c-text-2) transition-transform group-hover:translate-x-0.5"
                   />
                 </span>
-                <span className="mt-1 block text-sm text-(--c-text-2)">{card.body}</span>
+                <span className="mt-1 block text-sm text-(--c-text-2)">
+                  {card.href === '/coach/students' && terminology.schoolId
+                    ? `Tus ${participantPlural} y su progreso en un solo lugar.`
+                    : card.body}
+                </span>
               </span>
             </Link>
           )

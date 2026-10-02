@@ -8,7 +8,7 @@ export default function SchoolNoSelection() {
       </p>
       <h1 className="text-2xl font-extrabold text-(--c-ocean)">Configura tu escuela</h1>
       <p className="text-sm text-(--c-text-2)">
-        Para administrar horarios, profesores y alumnos, primero crea una escuela.
+        Para administrar horarios y participantes, primero crea una escuela.
       </p>
       <Link
         href="/school/create"

@@ -3,6 +3,7 @@
 import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import { useEffect, useState } from 'react'
 import { FiPlus, FiSearch, FiX } from 'react-icons/fi'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
@@ -38,6 +39,11 @@ export default function AgendaAddStudentModal({
   onClose: () => void
   onSubmit: (payloads: AddStudentPayload[]) => void
 }) {
+  const terminology = useSchoolTerminology()
+  const participantSingular =
+    schoolId && terminology.schoolId ? terminology.participantSingular : 'alumno'
+  const participantPlural =
+    schoolId && terminology.schoolId ? terminology.participantPlural : 'alumnos'
   const [students, setStudents] = useState<CoachStudent[] | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -149,7 +155,7 @@ export default function AgendaAddStudentModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Agregar alumnos"
+      aria-label={`Agregar ${participantPlural}`}
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm"
       style={keyboardSafeArea ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` } : undefined}
       onClick={(event) => {
@@ -162,7 +168,7 @@ export default function AgendaAddStudentModal({
       <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] sm:max-h-[min(86dvh,38rem)]">
         <div className="shrink-0 px-4 pt-3 sm:px-5 sm:pt-5">
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
-          <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar alumnos</h3>
+          <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar {participantPlural}</h3>
           <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>
         </div>
 
@@ -171,7 +177,7 @@ export default function AgendaAddStudentModal({
 
           <div className="flex flex-col gap-3">
             <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
-              Nombre del alumno
+              Nombre de {participantSingular}
               <span className="relative">
                 <FiSearch
                   aria-hidden="true"
@@ -209,7 +215,7 @@ export default function AgendaAddStudentModal({
 
             {students === undefined ? (
               <div className="flex h-40 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)] sm:h-56">
-                Cargando alumnos...
+                Cargando {participantPlural}...
               </div>
             ) : (
               <div className="flex h-40 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)] sm:h-56">
@@ -274,7 +280,7 @@ export default function AgendaAddStudentModal({
                         Crear «{trimmedQuery}»
                       </span>
                       <span className="block truncate text-xs text-[var(--c-text-2)]">
-                        Nuevo alumno
+                        Nuevo {participantSingular}
                       </span>
                     </span>
                   </button>
@@ -283,8 +289,8 @@ export default function AgendaAddStudentModal({
                 {matches.length === 0 && !canCreate && (
                   <p className="px-3 py-4 text-sm text-[var(--c-text-2)]">
                     {trimmedQuery
-                      ? 'Escribe un nombre más largo para crear un alumno.'
-                      : 'Escribe un nombre para buscar o crear un alumno.'}
+                      ? `Escribe un nombre más largo para crear ${participantSingular}.`
+                      : `Escribe un nombre para buscar o crear ${participantSingular}.`}
                   </p>
                 )}
               </div>
@@ -300,7 +306,9 @@ export default function AgendaAddStudentModal({
               onClick={submit}
               className="min-h-12 rounded-full bg-[var(--c-aqua)] px-4 font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:bg-slate-400 disabled:opacity-100"
             >
-              {totalSelected > 1 ? `Agregar ${totalSelected} alumnos` : 'Agregar alumno'}
+              {totalSelected > 1
+                ? `Agregar ${totalSelected} ${participantPlural}`
+                : `Agregar ${participantSingular}`}
             </button>
             <button
               type="button"

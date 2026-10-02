@@ -3,9 +3,11 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FiClock, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import {
+  capitalizeSchoolTerm,
   type SchoolGender,
   type SchoolInvitation,
   type SchoolStudent,
@@ -18,6 +20,7 @@ import { useSchoolSelection } from './useSchoolSelection'
 
 export default function SchoolStudents() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
+  const terminology = useSchoolTerminology()
   const [students, setStudents] = useState<SchoolStudent[]>([])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,18 +50,29 @@ export default function SchoolStudents() {
         setStudents(studentPayload.students || [])
         setInvitations(invitationPayload?.invitations || [])
       })
-      .catch(() => setMessage('No se pudieron cargar los alumnos.'))
+      .catch(() =>
+        setMessage(
+          `No se pudieron cargar ${terminology.schoolId ? terminology.participantPlural : 'los alumnos'}.`
+        )
+      )
       .finally(() => setLoading(false))
-  }, [selectedId, selected?.membership])
+  }, [selectedId, selected?.membership, terminology.participantPlural, terminology.schoolId])
 
   if (schoolStatus === 'loading')
-    return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando alumnos…</div>
+    return (
+      <div className="py-16 text-center text-sm text-(--c-text-2)">
+        Cargando {terminology.schoolId ? terminology.participantPlural : 'alumnos'}…
+      </div>
+    )
   if (schoolStatus === 'error')
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
   if (!selected) return <SchoolNoSelection />
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
+  const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
+  const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
+  const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
 
   async function deleteInvitation(invitation: SchoolInvitation) {
     const action = invitation.status === 'pending' ? 'cancelar' : 'eliminar'
@@ -77,7 +91,7 @@ export default function SchoolStudents() {
 
   return (
     <section className="flex flex-col gap-5">
-      <h1 className="sr-only">Alumnos</h1>
+      <h1 className="sr-only">{capitalizeSchoolTerm(participantPlural)}</h1>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-col gap-2 sm:items-end">
           <SchoolSelector
@@ -92,7 +106,8 @@ export default function SchoolStudents() {
                 onClick={() => setShowStudent(true)}
                 className="btn btn-primary min-h-11 gap-2"
               >
-                <FiPlus aria-hidden="true" /> {isDirector ? 'Agregar alumno' : 'Agregar Adicional'}
+                <FiPlus aria-hidden="true" />{' '}
+                {isDirector ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
               </button>
             )}
           </div>
@@ -142,11 +157,13 @@ export default function SchoolStudents() {
         <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
           <FiUsers className="text-3xl text-(--c-ocean-mid)" aria-hidden="true" />
           <h2 className="font-bold text-(--c-ocean)">
-            {isDirector ? 'Invita o agrega al primer alumno' : 'Tus alumnos adicionales'}
+            {isDirector
+              ? `Invita o agrega a ${participantPlural}`
+              : `Tus ${participantPlural} adicionales`}
           </h2>
           <p className="max-w-md text-sm text-(--c-text-2)">
             {isDirector
-              ? 'Invita por correo o registra los datos del alumno.'
+              ? `Invita por correo o registra los datos de ${participantPlural}.`
               : 'Gestiona personas adultas o menores mediante perfiles Adicionales.'}
           </p>
         </div>
@@ -161,7 +178,10 @@ export default function SchoolStudents() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-sm"
               >
                 <span className="min-w-0 truncate">
-                  {invite.email} · {invite.role === 'student' ? 'Alumno' : 'Coach'}
+                  {invite.email} ·{' '}
+                  {invite.role === 'student'
+                    ? capitalizeSchoolTerm(participantSingular)
+                    : capitalizeSchoolTerm(coachSingular)}
                 </span>
                 <div className="flex items-center gap-3">
                   <span className="font-semibold text-(--c-text-2)">
@@ -233,6 +253,8 @@ function StudentForm({
   onClose: () => void
   onCreated: (student: SchoolStudent | null, invitation?: SchoolInvitation | null) => void
 }) {
+  const terminology = useSchoolTerminology()
+  const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const [form, setForm] = useState({
     name: '',
     birthDate: '',
@@ -275,7 +297,7 @@ function StudentForm({
       }
       onCreated(payload.student, payload.invitation)
     } catch {
-      setError('No se pudo guardar el alumno.')
+      setError('No se pudo guardar el registro.')
     } finally {
       setSaving(false)
     }
@@ -312,7 +334,10 @@ function StudentForm({
   }
 
   return (
-    <Modal title={canInvite ? 'Agregar alumno' : 'Agregar Adicional'} onClose={onClose}>
+    <Modal
+      title={canInvite ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
+      onClose={onClose}
+    >
       <form onSubmit={submit} className="grid max-h-[70vh] gap-3 overflow-y-auto">
         {!canInvite && (
           <>
@@ -350,7 +375,7 @@ function StudentForm({
         {canInvite && (
           <>
             <Text
-              label="Correo del alumno (opcional)"
+              label="Correo de contacto (opcional)"
               value={form.studentEmail}
               onChange={(value) => setForm({ ...form, studentEmail: value })}
               type="email"
@@ -366,8 +391,8 @@ function StudentForm({
               </button>
             )}
             <p className="-mt-1 text-xs text-(--c-text-2)">
-              Invita solo con el correo para que el alumno complete sus datos, o llena el formulario
-              y guarda su registro.
+              Invita solo con el correo para que la persona complete sus datos, o llena el
+              formulario y guarda su registro.
             </p>
             <Text
               label="Nombre completo"
@@ -404,7 +429,7 @@ function StudentForm({
           disabled={saving || (!canInvite && !additionalProfileId)}
           className="btn btn-primary min-h-11"
         >
-          {saving ? 'Guardando…' : 'Guardar alumno'}
+          {saving ? 'Guardando…' : `Guardar ${participantSingular}`}
         </button>
       </form>
     </Modal>

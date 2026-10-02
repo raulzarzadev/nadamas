@@ -10,12 +10,14 @@ import { useUser } from '@/context/UserContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { SchoolInvitationStudentData } from '@/lib/school'
+import { type SchoolTerminologyConfig, schoolTerminologyLabels } from '@/lib/school'
 import { GENERIC_USER_ERROR } from '@/lib/user-facing-error'
 
 interface InvitationPayload {
   schoolId: string
   schoolName: string
   schoolLogoUrl: string | null
+  terminology?: SchoolTerminologyConfig
   role: 'teacher' | 'student'
   email: string
   status: string
@@ -38,6 +40,7 @@ export default function SchoolInvitationPage() {
   const [additionalProfileId, setAdditionalProfileId] = useState('')
   const [useInvitationData, setUseInvitationData] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const terminology = schoolTerminologyLabels(invitation?.terminology)
   const [profile, setProfile] = useState({
     name: '',
     phone: '',
@@ -105,10 +108,10 @@ export default function SchoolInvitationPage() {
         <h1 className="text-2xl font-extrabold text-(--c-ocean)">Todo listo</h1>
         <p className="text-(--c-text-2)">
           {invitation.role === 'teacher'
-            ? 'Ya formas parte del equipo de coaches.'
+            ? `Ya formas parte del equipo de ${terminology.coachPlural}.`
             : invitation.role === 'student'
-              ? 'Tu perfil quedó ligado al registro de la escuela.'
-              : 'El alumno quedó registrado en la escuela.'}
+              ? `Tu perfil quedó ligado al registro de la escuela como ${terminology.participantSingular}.`
+              : `El registro de ${terminology.participantSingular} quedó guardado en la escuela.`}
         </p>
         <button
           type="button"
@@ -122,7 +125,9 @@ export default function SchoolInvitationPage() {
           }}
           className="btn btn-primary min-h-11"
         >
-          {invitation.role === 'student' ? 'Ver mis próximas clases' : 'Ir al modo entrenador'}
+          {invitation.role === 'student'
+            ? 'Ver mis próximas clases'
+            : `Ir al modo ${terminology.coachSingular}`}
         </button>
       </section>
     )
@@ -199,12 +204,10 @@ export default function SchoolInvitationPage() {
         <p className="mt-5 text-sm font-semibold text-(--c-aqua-light)">Invitación a escuela</p>
         <h1 className="mt-1 text-3xl font-extrabold">{invitation.schoolName}</h1>
         <p className="mt-2 text-white/75">
-          Fuiste invitado como{' '}
+          Invitación para{' '}
           {invitation.role === 'teacher'
-            ? 'coach'
-            : invitation.role === 'student'
-              ? 'alumno'
-              : 'alumno'}
+            ? terminology.coachSingular
+            : terminology.participantSingular}
           .
         </p>
       </div>
