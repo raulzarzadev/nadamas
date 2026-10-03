@@ -6,18 +6,19 @@ import { tenantSlugFromHost } from '@/lib/tenant-host'
 
 const COLUMNS = [
   {
-    title: 'Producto',
+    title: 'Cómo funciona',
     links: [
-      { label: 'Cómo funciona', href: '#como-funciona' },
-      { label: 'Coaches', href: '#coaches' },
-      { label: 'Preguntas frecuentes', href: '#faq' },
+      { label: 'Para atletas', href: '/#atletas' },
+      { label: 'Para entrenadores', href: '/#entrenadores' },
+      { label: 'Para directores', href: '/#directores' },
     ],
   },
   {
-    title: 'Coaches',
+    title: 'Explorar',
     links: [
-      { label: 'Publicar mi perfil', href: '#para-coaches' },
-      { label: 'Cómo verificamos', href: '/como-verificamos' },
+      { label: 'Entrenadores', href: '/coaches' },
+      { label: 'Preguntas frecuentes', href: '/#faq' },
+      { label: 'Ingresar', href: '/login' },
     ],
   },
   {
@@ -64,17 +65,13 @@ export default function SiteFooter() {
               className="h-10 w-auto"
             />
             <p className="mt-5 text-[0.97rem] leading-relaxed" style={{ color: 'var(--c-text-2)' }}>
-              El marketplace para encontrar y reservar coaches de natación. Aprende, mejora y
-              entrena con quien de verdad sabe.
+              Clases, agendas y progreso de natación para atletas, entrenadores y escuelas.
             </p>
           </div>
 
           {COLUMNS.map((col) => (
             <div key={col.title}>
-              <p
-                className="text-sm font-bold uppercase tracking-wide"
-                style={{ color: 'var(--c-ocean)' }}
-              >
+              <p className="text-sm font-bold uppercase" style={{ color: 'var(--c-ocean)' }}>
                 {col.title}
               </p>
               <ul className="mt-4 space-y-3">

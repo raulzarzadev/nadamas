@@ -48,8 +48,9 @@
 
 /* editorial type rhythm — display echoes the lowercase rounded wordmark */
 .marketing {
-  --font-display: ui-rounded, "SF Pro Rounded", "Geist", "Bricolage Grotesque",
-    "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-display:
+    ui-rounded, "SF Pro Rounded", "Geist", "Bricolage Grotesque", "Segoe UI", system-ui,
+    -apple-system, sans-serif;
   --font-body: "Geist", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-family: var(--font-body);
 }
@@ -59,7 +60,7 @@
 .marketing h3,
 .marketing .display {
   font-family: var(--font-display);
-  letter-spacing: -0.025em;
+  letter-spacing: 0;
   line-height: 1.04;
   color: var(--c-ocean);
 }

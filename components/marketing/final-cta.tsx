@@ -1,61 +1,33 @@
+import Link from 'next/link'
+import { FiArrowRight } from 'react-icons/fi'
+
 export default function FinalCta() {
   return (
-    <section className="mx-auto max-w-[1180px] px-5 pb-24 pt-4 sm:px-8 lg:pb-32">
-      <div
-        className="reveal relative overflow-hidden rounded-[44px] px-7 py-20 text-center sm:px-12 lg:py-28"
-        style={{ background: 'var(--grad-brand)', boxShadow: 'var(--shadow-lg)' }}
-      >
-        <svg
-          aria-hidden
-          className="ribbon-drift pointer-events-none absolute inset-x-0 bottom-0 w-[140%] opacity-[0.22]"
-          viewBox="0 0 1440 240"
-          fill="none"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0 150 C 260 70 520 220 760 140 C 1000 60 1220 200 1440 130 L 1440 240 L 0 240 Z"
-            fill="#f8fafc"
-          />
-        </svg>
-
-        <div className="relative mx-auto max-w-[24ch]">
-          <h2
-            className="text-[2.3rem] font-extrabold leading-[1.05] sm:text-[3.4rem]"
-            style={{ color: '#f8fafc' }}
-          >
-            Nada mejor. Con el coach indicado.
+    <section className="bg-[#faebe6] px-5 py-16 sm:px-8 sm:py-20">
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-sm font-bold uppercase text-[#a94732]">Empieza aquí</p>
+          <h2 className="mt-3 max-w-[17ch] text-3xl font-extrabold sm:text-4xl">
+            Hay un lugar para ti dentro y fuera del agua.
           </h2>
+          <p className="mt-4 max-w-[48ch] text-base leading-relaxed text-(--c-text-2) sm:text-lg">
+            Reserva una clase, organiza tu agenda o coordina toda tu escuela.
+          </p>
         </div>
-        <p
-          className="relative mx-auto mt-6 max-w-[46ch] text-lg leading-relaxed"
-          style={{ color: 'color-mix(in oklch, #f8fafc 82%, transparent)' }}
-        >
-          Tu próxima clase puede empezar hoy. Encuentra a quien te lleve más lejos en el agua, sin
-          vueltas.
-        </p>
-
-        <div className="relative mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <a
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/login"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-7 py-3 font-bold text-white transition-colors hover:bg-[#164263] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean)"
+          >
+            Ingresar
+            <FiArrowRight aria-hidden="true" />
+          </Link>
+          <Link
             href="/coaches"
-            className="inline-flex items-center justify-center rounded-full px-8 py-4 text-base font-semibold"
-            style={{
-              background: '#f8fafc',
-              color: 'var(--c-ocean)',
-              boxShadow: 'var(--shadow-md)',
-            }}
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-(--c-ocean) px-7 py-3 font-semibold text-(--c-ocean) transition-colors hover:bg-white/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean)"
           >
-            Encontrar coach
-          </a>
-          <a
-            href="/login?intent=coach"
-            className="inline-flex items-center justify-center rounded-full px-8 py-4 text-base font-semibold"
-            style={{
-              color: '#f8fafc',
-              border: '1px solid color-mix(in oklch, #f8fafc 45%, transparent)',
-            }}
-          >
-            Publicar mi perfil
-          </a>
+            Explorar entrenadores
+          </Link>
         </div>
       </div>
     </section>

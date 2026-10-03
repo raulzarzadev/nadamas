@@ -1,23 +1,24 @@
 'use client'
 
+import NotificationsBell from '@comps/app-chrome/NotificationsBell'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import NotificationsBell from '@comps/app-chrome/NotificationsBell'
+import { useEffect, useRef, useState } from 'react'
+import { FiArrowRight, FiMenu, FiX } from 'react-icons/fi'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 
-const LINKS = [
-  { href: '/#inicio', label: 'Inicio' },
-  { href: '/#coaches', label: 'Coaches' },
-  { href: '/#como-funciona', label: 'Cómo funciona' },
-  { href: '/#para-coaches', label: 'Para coaches' },
-  { href: '/#faq', label: 'FAQ' },
-]
+const ROLE_LINKS = [
+  { href: '/#atletas', label: 'Atletas', detail: 'Clases y progreso' },
+  { href: '/#entrenadores', label: 'Entrenadores', detail: 'Agenda y alumnos' },
+  { href: '/#directores', label: 'Directores de escuelas', detail: 'Equipo y horarios' },
+] as const
 
 export default function SiteNav() {
   const tenant = useTenantSchool()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16)
@@ -26,23 +27,40 @@ export default function SiteNav() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    if (!open) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      triggerRef.current?.focus()
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
   return (
     <header
-      className="sticky top-0 z-50"
+      ref={headerRef}
+      className="sticky top-0 z-50 bg-(--c-bg)"
       style={{
-        transition:
-          'background 420ms var(--ease-expo), box-shadow 420ms var(--ease-expo), border-color 420ms var(--ease-expo)',
-        background: scrolled ? 'color-mix(in oklch, var(--c-bg) 86%, transparent)' : 'transparent',
-        backdropFilter: scrolled ? 'saturate(160%) blur(14px)' : 'none',
-        WebkitBackdropFilter: scrolled ? 'saturate(160%) blur(14px)' : 'none',
-        borderBottom: `1px solid ${scrolled ? 'var(--c-border)' : 'transparent'}`,
-        boxShadow: scrolled ? 'var(--shadow-sm)' : 'none',
+        borderBottom: '1px solid var(--c-border)',
+        boxShadow: scrolled || open ? 'var(--shadow-sm)' : 'none',
       }}
     >
-      <nav className="mx-auto flex max-w-[1180px] items-center justify-between px-5 py-4 sm:px-8">
+      <nav
+        aria-label="Navegación principal"
+        className="mx-auto flex h-[72px] max-w-[1180px] items-center justify-between px-5 sm:px-8"
+      >
         <Link
           href="/"
-          className="flex items-center gap-2.5"
+          className="flex shrink-0 items-center gap-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--c-aqua-strong)"
           aria-label={tenant ? `${tenant.name} inicio` : 'nadamas.app inicio'}
           onClick={() => setOpen(false)}
         >
@@ -76,162 +94,93 @@ export default function SiteNav() {
           )}
         </Link>
 
-        {!tenant && (
-          <ul className="hidden items-center gap-9 lg:flex">
-            {LINKS.map((l) => (
-              <li key={l.href}>
-                <a
-                  href={l.href}
-                  className="text-[0.95rem] font-medium"
-                  style={{ color: 'var(--c-text-2)', transition: 'color 220ms var(--ease-expo)' }}
-                >
-                  {l.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-
         {tenant ? (
           <div className="ml-auto flex items-center gap-2">
             <NotificationsBell />
             <Link
               href="/login"
-              className="inline-flex min-h-11 items-center rounded-full px-5 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              style={{ background: 'var(--c-aqua-strong)' }}
-            >
-              Iniciar sesión
-            </Link>
-          </div>
-        ) : (
-          <div className="hidden items-center gap-3 lg:flex">
-            <Link
-              href="/login"
-              className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
-              style={{ color: 'var(--c-ocean)' }}
+              className="inline-flex min-h-11 items-center rounded-full bg-(--c-aqua-strong) px-5 text-sm font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean)"
             >
               Ingresar
             </Link>
-            <a
-              href="/login?intent=coach"
-              className="rounded-full px-4 py-2.5 text-[0.92rem] font-semibold"
-              style={{ color: 'var(--c-ocean)' }}
-            >
-              Soy coach
-            </a>
-            <Link
-              href="/coaches"
-              className="rounded-full px-5 py-2.5 text-[0.92rem] font-semibold text-white"
-              style={{
-                background: 'var(--c-aqua-strong)',
-                boxShadow: 'var(--shadow-aqua)',
-                transition: 'transform 280ms var(--ease-expo), filter 280ms var(--ease-expo)',
-              }}
-            >
-              Encontrar coach
-            </Link>
           </div>
-        )}
-
-        {!tenant && (
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full lg:hidden"
-            style={{ background: 'var(--c-surface)', color: 'var(--c-ocean)' }}
-            aria-expanded={open}
-            aria-controls="mobile-menu"
-            aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-            onClick={() => setOpen((v) => !v)}
-          >
-            <span aria-hidden className="relative block h-3.5 w-5">
-              <span
-                className="absolute left-0 block h-[2px] w-5 rounded-full"
-                style={{
-                  background: 'currentColor',
-                  top: open ? '6px' : '0',
-                  transform: open ? 'rotate(45deg)' : 'none',
-                  transition: 'top 260ms var(--ease-expo), transform 260ms var(--ease-expo)',
-                }}
-              />
-              <span
-                className="absolute left-0 top-[6px] block h-[2px] w-5 rounded-full"
-                style={{
-                  background: 'currentColor',
-                  opacity: open ? 0 : 1,
-                  transition: 'opacity 180ms var(--ease-expo)',
-                }}
-              />
-              <span
-                className="absolute left-0 block h-[2px] w-5 rounded-full"
-                style={{
-                  background: 'currentColor',
-                  top: open ? '6px' : '12px',
-                  transform: open ? 'rotate(-45deg)' : 'none',
-                  transition: 'top 260ms var(--ease-expo), transform 260ms var(--ease-expo)',
-                }}
-              />
-            </span>
-          </button>
+        ) : (
+          <>
+            <div className="hidden items-center gap-5 lg:flex">
+              <span className="text-sm font-semibold text-(--c-text-2)">Cómo funciona:</span>
+              {ROLE_LINKS.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="whitespace-nowrap text-sm font-semibold text-(--c-ocean) transition-colors hover:text-(--c-aqua-strong) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--c-aqua-strong)"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <Link
+                href="/login"
+                className="ml-2 inline-flex min-h-11 items-center rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white transition-colors hover:bg-[#164263] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                Ingresar
+              </Link>
+            </div>
+            <button
+              ref={triggerRef}
+              type="button"
+              aria-expanded={open}
+              aria-controls="mobile-menu"
+              aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
+              title={open ? 'Cerrar menú' : 'Abrir menú'}
+              onClick={() => setOpen((current) => !current)}
+              className="grid size-11 place-items-center rounded-full text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) lg:hidden"
+            >
+              {open ? (
+                <FiX aria-hidden="true" className="size-6" />
+              ) : (
+                <FiMenu aria-hidden="true" className="size-6" />
+              )}
+            </button>
+          </>
         )}
       </nav>
 
       {!tenant && (
         <div
           id="mobile-menu"
-          className="overflow-hidden lg:hidden"
-          aria-hidden={!open}
+          hidden={!open}
           inert={!open || undefined}
-          style={{
-            maxHeight: open ? '36rem' : '0',
-            opacity: open ? 1 : 0,
-            transition: 'max-height 460ms var(--ease-expo), opacity 320ms var(--ease-expo)',
-            background: 'var(--c-bg)',
-            borderBottom: open ? '1px solid var(--c-border)' : '1px solid transparent',
-          }}
+          aria-hidden={!open}
+          className="absolute left-4 right-4 top-[calc(100%-0.25rem)] z-50 max-h-[calc(100dvh-5.5rem)] overflow-y-auto rounded-[var(--r-sm)] border border-(--c-border) bg-white p-3 shadow-[var(--shadow-md)] sm:left-auto sm:right-8 sm:w-96 lg:hidden"
         >
-          <ul className="mx-auto flex max-w-[1180px] flex-col gap-1 px-5 py-4 sm:px-8">
-            {LINKS.map((l) => (
-              <li key={l.href}>
-                <a
-                  href={l.href}
+          <p className="px-3 pb-2 pt-1 text-xs font-bold uppercase text-(--c-text-2)">
+            Cómo funciona
+          </p>
+          <ul>
+            {ROLE_LINKS.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
                   onClick={() => setOpen(false)}
-                  className="block rounded-2xl px-4 py-3 text-base font-medium"
-                  style={{ color: 'var(--c-ocean)' }}
+                  className="flex min-h-14 items-center justify-between gap-4 rounded-[var(--r-sm)] px-3 py-2 text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-(--c-aqua-strong)"
                 >
-                  {l.label}
-                </a>
+                  <span>
+                    <span className="block text-sm font-bold">{link.label}</span>
+                    <span className="block text-xs text-(--c-text-2)">{link.detail}</span>
+                  </span>
+                  <FiArrowRight aria-hidden="true" className="shrink-0 text-(--c-aqua-strong)" />
+                </Link>
               </li>
             ))}
-            <li className="mt-2 pb-2">
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
-                style={{
-                  color: 'var(--c-ocean)',
-                  border: '1px solid var(--c-border)',
-                }}
-              >
-                Ingresar
-              </Link>
-              <a
-                href="/login?intent=coach"
-                onClick={() => setOpen(false)}
-                className="mb-2 block rounded-full px-5 py-3 text-center text-base font-semibold"
-                style={{ color: 'var(--c-ocean)', border: '1px solid var(--c-border)' }}
-              >
-                Soy coach
-              </a>
-              <Link
-                href="/coaches"
-                onClick={() => setOpen(false)}
-                className="block rounded-full px-5 py-3 text-center text-base font-semibold text-white"
-                style={{ background: 'var(--c-aqua-strong)', boxShadow: 'var(--shadow-aqua)' }}
-              >
-                Encontrar coach
-              </Link>
-            </li>
           </ul>
+          <div className="mt-2 border-t border-(--c-border) pt-3">
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="flex min-h-11 items-center justify-center rounded-[var(--r-sm)] bg-(--c-ocean) px-4 font-bold text-white transition-colors hover:bg-[#164263] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+            >
+              Ingresar
+            </Link>
+          </div>
         </div>
       )}
     </header>

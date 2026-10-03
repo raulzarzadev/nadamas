@@ -1,143 +1,169 @@
-const SWIMMER = [
-  {
-    n: '01',
-    title: 'Encuentra tu coach',
-    body: 'Filtra por especialidad, ubicación y precio. Cada perfil con experiencia, reseñas y disponibilidad real.',
-  },
-  {
-    n: '02',
-    title: 'Reserva tu horario',
-    body: 'Eliges el hueco que te queda bien y pagas en la app. Sin cadenas de mensajes ni transferencias sueltas.',
-  },
-  {
-    n: '03',
-    title: 'Entrena y mejora',
-    body: 'Entrenas con un profesional y tu progreso te sigue: si cambias de coach, no empiezas de cero.',
-  },
-]
+import Link from 'next/link'
+import { FiArrowRight } from 'react-icons/fi'
 
-const COACH = [
+const JOURNEYS = [
   {
-    n: '01',
-    title: 'Publica tus horarios',
-    body: 'Defines clases privadas o de grupo, precios y disponibilidad. Tu agenda, tus reglas.',
+    id: 'atletas',
+    number: '01',
+    audience: 'Para atletas',
+    title: 'Encuentra tu clase y sigue avanzando.',
+    intro:
+      'Consulta opciones para entrenar, elige un horario disponible y lleva tus clases en tu propia agenda.',
+    steps: [
+      {
+        title: 'Explora entrenadores y escuelas',
+        body: 'Revisa perfiles públicos y horarios antes de elegir una clase.',
+      },
+      {
+        title: 'Reserva tu lugar',
+        body: 'Inscríbete en una clase particular o grupal según la disponibilidad publicada.',
+      },
+      {
+        title: 'Mira tu progreso',
+        body: 'Consulta tus próximas clases y el seguimiento que registra tu entrenador.',
+      },
+    ],
+    action: 'Explorar entrenadores',
+    href: '/coaches',
+    tone: 'white',
   },
   {
-    n: '02',
-    title: 'Recibe reservas',
-    body: 'Los nadadores te encuentran y reservan solos. Tú dedicas el tiempo a entrenar, no a coordinar.',
+    id: 'entrenadores',
+    number: '02',
+    audience: 'Para entrenadores',
+    title: 'Una agenda clara para enseñar mejor.',
+    intro:
+      'Gestiona tus horarios, clases y alumnos desde tu propio espacio, trabajes por tu cuenta o con una escuela.',
+    steps: [
+      {
+        title: 'Organiza tus horarios',
+        body: 'Define disponibilidad y prepara clases particulares o grupales.',
+      },
+      {
+        title: 'Gestiona a tus alumnos',
+        body: 'Añade participantes a tus clases y consulta quién estará en cada sesión.',
+      },
+      {
+        title: 'Registra avances',
+        body: 'Guarda notas y evaluaciones para dar continuidad al entrenamiento.',
+      },
+    ],
+    action: 'Empezar como entrenador',
+    href: '/login?redirectTo=%2Fcoach%2Factivate',
+    tone: 'mint',
   },
   {
-    n: '03',
-    title: 'Cobra automático',
-    body: 'El pago entra en la app al confirmar la clase. Menos fricción, menos cobros pendientes.',
+    id: 'directores',
+    number: '03',
+    audience: 'Para directores de escuelas',
+    title: 'Coordina a todo tu equipo desde un lugar.',
+    intro:
+      'Crea tu escuela y administra las agendas de varios entrenadores y atletas sin perder de vista cada clase.',
+    steps: [
+      {
+        title: 'Crea tu escuela',
+        body: 'Configura el espacio desde el que se organizan tus clases.',
+      },
+      {
+        title: 'Invita a tus entrenadores',
+        body: 'Forma tu equipo y asigna horarios a cada entrenador.',
+      },
+      {
+        title: 'Administra clases y participantes',
+        body: 'Consulta la agenda, gestiona alumnos y completa los grupos.',
+      },
+    ],
+    action: 'Crear una escuela',
+    href: '/login?redirectTo=%2Fschool%2Fcreate',
+    tone: 'dark',
   },
-]
-
-function Track({
-  kind,
-  steps,
-}: {
-  kind: 'swimmer' | 'coach'
-  steps: typeof SWIMMER
-}) {
-  const isCoach = kind === 'coach'
-  return (
-    <div
-      className="reveal rounded-[34px] p-8 sm:p-10"
-      style={{
-        background: isCoach ? 'var(--c-ocean)' : 'var(--c-surface)',
-        boxShadow: 'var(--shadow-md)',
-      }}
-    >
-      <span
-        className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[0.78rem] font-semibold"
-        style={{
-          background: isCoach
-            ? 'color-mix(in oklch, var(--c-aqua) 22%, transparent)'
-            : 'var(--c-bg)',
-          color: isCoach ? 'var(--c-aqua-light)' : 'var(--c-ocean-mid)',
-        }}
-      >
-        {isCoach ? 'Si eres coach' : 'Si quieres aprender'}
-      </span>
-
-      <h3
-        className="mt-5 text-2xl font-bold sm:text-[1.7rem]"
-        style={{ color: isCoach ? '#f8fafc' : 'var(--c-ocean)' }}
-      >
-        {isCoach
-          ? 'Tu negocio de entrenamiento, ordenado.'
-          : 'De buscar a nadar, en tres pasos.'}
-      </h3>
-
-      <ol className="mt-8 space-y-7">
-        {steps.map((s, i) => (
-          <li key={s.n} className="flex gap-5">
-            <div className="flex flex-col items-center">
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold"
-                style={{
-                  background: isCoach
-                    ? 'color-mix(in oklch, var(--c-aqua) 18%, transparent)'
-                    : 'var(--c-bg)',
-                  color: 'var(--c-aqua-strong)',
-                }}
-              >
-                {s.n}
-              </span>
-              {i < steps.length - 1 && (
-                <span
-                  className="mt-2 w-px flex-1"
-                  style={{
-                    background: isCoach
-                      ? 'color-mix(in oklch, var(--c-aqua-light) 24%, transparent)'
-                      : 'var(--c-border)',
-                  }}
-                />
-              )}
-            </div>
-            <div className="pb-1">
-              <p
-                className="text-lg font-semibold"
-                style={{ color: isCoach ? '#f8fafc' : 'var(--c-ocean)' }}
-              >
-                {s.title}
-              </p>
-              <p
-                className="mt-1.5 max-w-[42ch] text-[0.97rem] leading-relaxed"
-                style={{
-                  color: isCoach
-                    ? 'color-mix(in oklch, #f8fafc 72%, transparent)'
-                    : 'var(--c-text-2)',
-                }}
-              >
-                {s.body}
-              </p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
-}
+] as const
 
 export default function HowItWorks() {
   return (
-    <section id="como-funciona" className="mx-auto max-w-[1180px] px-5 py-20 sm:px-8 lg:py-28">
-      <div className="reveal max-w-[30ch]">
-        <h2 className="text-[2.1rem] font-extrabold sm:text-[2.9rem]">
-          Cómo funciona
-        </h2>
-        <p className="mt-4 text-lg" style={{ color: 'var(--c-text-2)' }}>
-          Dos caminos, una sola app. Tú eliges desde dónde entras.
-        </p>
-      </div>
+    <>
+      <section id="como-funciona" className="scroll-mt-20 px-5 py-16 sm:px-8 sm:py-20">
+        <div className="mx-auto max-w-[1180px]">
+          <p className="text-sm font-bold uppercase text-[#a94732]">Cómo funciona</p>
+          <h2 className="mt-3 max-w-[18ch] text-3xl font-extrabold sm:text-4xl">
+            Un espacio para cada forma de vivir la natación.
+          </h2>
+        </div>
+      </section>
 
-      <div className="mt-12 grid gap-6 lg:grid-cols-2 lg:gap-7">
-        <Track kind="swimmer" steps={SWIMMER} />
-        <Track kind="coach" steps={COACH} />
-      </div>
-    </section>
+      {JOURNEYS.map((journey) => {
+        const dark = journey.tone === 'dark'
+        const background =
+          journey.tone === 'dark' ? 'var(--c-ocean)' : journey.tone === 'mint' ? '#e8f5f2' : '#fff'
+        const text = dark ? '#fff' : 'var(--c-ocean)'
+        const secondary = dark ? 'rgba(255,255,255,0.78)' : 'var(--c-text-2)'
+        const border = dark ? 'rgba(255,255,255,0.22)' : 'var(--c-border)'
+
+        return (
+          <section
+            key={journey.id}
+            id={journey.id}
+            className="scroll-mt-20 px-5 py-16 sm:px-8 sm:py-20"
+            style={{ background, color: text }}
+          >
+            <div className="mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
+              <div>
+                <p
+                  className="text-sm font-bold uppercase"
+                  style={{ color: dark ? '#9ceaf0' : '#a94732' }}
+                >
+                  {journey.number} / {journey.audience}
+                </p>
+                <h2
+                  className="mt-4 max-w-[18ch] text-3xl font-extrabold sm:text-4xl"
+                  style={{ color: text }}
+                >
+                  {journey.title}
+                </h2>
+                <p
+                  className="mt-5 max-w-[44ch] text-base leading-relaxed sm:text-lg"
+                  style={{ color: secondary }}
+                >
+                  {journey.intro}
+                </p>
+                <Link
+                  href={journey.href}
+                  className="mt-7 inline-flex min-h-11 items-center gap-2 border-b pb-1 font-bold transition-opacity hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-current"
+                  style={{ color: text, borderColor: text }}
+                >
+                  {journey.action}
+                  <FiArrowRight aria-hidden="true" />
+                </Link>
+              </div>
+
+              <ol>
+                {journey.steps.map((step, index) => (
+                  <li
+                    key={step.title}
+                    className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-4 border-t py-5 first:pt-6 sm:grid-cols-[3.5rem_minmax(0,1fr)] sm:gap-5"
+                    style={{ borderColor: border }}
+                  >
+                    <span
+                      className="pt-1 text-sm font-bold"
+                      style={{ color: dark ? '#9ceaf0' : '#a94732' }}
+                    >
+                      0{index + 1}
+                    </span>
+                    <div>
+                      <h3 className="text-lg font-bold" style={{ color: text }}>
+                        {step.title}
+                      </h3>
+                      <p className="mt-2 max-w-[45ch] leading-relaxed" style={{ color: secondary }}>
+                        {step.body}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </section>
+        )
+      })}
+    </>
   )
 }

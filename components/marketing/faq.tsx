@@ -1,80 +1,53 @@
-const QA = [
+export const FAQ_ITEMS = [
   {
-    q: '¿Cómo pago una clase?',
-    a: 'Pagas dentro de la app al confirmar tu reserva. El cobro se libera al coach cuando la clase queda confirmada, así no hay transferencias sueltas ni cobros pendientes.',
+    q: '¿Puedo usar nadamas sin pertenecer a una escuela?',
+    a: 'Sí. Puedes explorar clases como atleta o activar el modo entrenador para gestionar tus propios horarios y alumnos. El modo director es para coordinar una escuela.',
   },
   {
-    q: '¿Puedo cancelar una reserva?',
-    a: 'Sí. Cada coach define su ventana de cancelación y la verás antes de reservar. Si cancelas dentro de ese plazo, se gestiona la devolución automáticamente.',
+    q: '¿Hay clases particulares y grupales?',
+    a: 'Sí. La disponibilidad depende de lo que publique cada entrenador o escuela. Puedes elegir el horario y ver a quién vas a inscribir antes de reservar.',
   },
   {
-    q: '¿Cómo me hago coach?',
-    a: 'Creas tu perfil, añades especialidades, horarios y precios, y nuestro equipo lo revisa a mano antes de publicarlo. Cuando está aprobado, los nadadores ya pueden reservarte.',
+    q: '¿Quién puede agregar atletas a una clase grupal?',
+    a: 'El entrenador o el director de la escuela pueden añadir alumnos a una clase grupal desde su agenda.',
   },
   {
-    q: '¿Qué tipos de clase hay?',
-    a: 'Clases privadas uno a uno y clases de grupo reducido. Cada coach decide qué ofrece, en piscina o aguas abiertas, y con qué enfoque: técnica, triatlón, principiantes o niños.',
+    q: '¿Qué puede organizar un director?',
+    a: 'Puede crear una escuela, invitar entrenadores, gestionar alumnos, asignar horarios y administrar las clases y sus participantes.',
   },
   {
-    q: '¿Las clases son privadas?',
-    a: 'Pueden serlo. Filtras por clases privadas si quieres atención individual, o eliges grupos pequeños si prefieres entrenar acompañado y a mejor precio.',
+    q: '¿Cómo comparto mi perfil o mi escuela?',
+    a: 'Desde el modo correspondiente puedes abrir el diálogo de compartir y copiar el enlace público o mostrar su código QR.',
   },
-  {
-    q: '¿Puedo publicar mis horarios como coach?',
-    a: 'Sí. Como coach puedes publicar horarios, precios y lugares de clase para que los nadadores encuentren disponibilidad real antes de reservar.',
-  },
-  {
-    q: '¿La plataforma tiene calendario para clases?',
-    a: 'Sí. El coach cuenta con una agenda mensual para ver sus clases por día, revisar horarios, alumno, lugar y datos de contacto.',
-  },
-  {
-    q: '¿Puedo tomar notas de mis alumnos?',
-    a: 'Sí. Cada alumno puede tener nivel, objetivo, próximo foco, notas de seguimiento y una evaluación simple de avance.',
-  },
-  {
-    q: '¿Cómo mide nadamas el progreso del alumno?',
-    a: 'El progreso se registra con historial de clases, nivel, objetivos, foco de entrenamiento y una evaluación del coach del 1 al 5.',
-  },
-]
+] as const
 
 export default function Faq() {
   return (
-    <section id="faq" className="mx-auto max-w-[1180px] px-5 py-20 sm:px-8 lg:py-28">
-      <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-        <div className="reveal lg:sticky lg:top-28 lg:self-start">
-          <h2 className="text-[2.1rem] font-extrabold sm:text-[2.9rem]">Preguntas frecuentes</h2>
-          <p className="mt-4 max-w-[34ch] text-lg" style={{ color: 'var(--c-text-2)' }}>
-            Lo que nadadores y coaches suelen preguntar antes de empezar.
-          </p>
+    <section id="faq" className="scroll-mt-20 px-5 py-20 sm:px-8 lg:py-24">
+      <div className="mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+        <div>
+          <p className="text-sm font-bold uppercase text-[#a94732]">Preguntas frecuentes</p>
+          <h2 className="mt-3 max-w-[16ch] text-3xl font-extrabold sm:text-4xl">
+            Antes de entrar al agua.
+          </h2>
         </div>
-
-        <div className="reveal flex flex-col">
-          {QA.map((item, i) => (
+        <div>
+          {FAQ_ITEMS.map((item, index) => (
             <details
               key={item.q}
-              className="group border-b"
-              style={{ borderColor: 'var(--c-border)' }}
-              {...(i === 0 ? { open: true } : {})}
+              className="group border-b border-(--c-border)"
+              {...(index === 0 ? { open: true } : {})}
             >
-              <summary
-                className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 text-lg font-semibold [&::-webkit-details-marker]:hidden"
-                style={{ color: 'var(--c-ocean)' }}
-              >
+              <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-5 py-4 text-base font-bold text-(--c-ocean) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) [&::-webkit-details-marker]:hidden">
                 {item.q}
                 <span
-                  aria-hidden
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-transform duration-300 group-open:rotate-45"
-                  style={{ background: 'var(--c-surface)', color: 'var(--c-aqua-strong)' }}
+                  aria-hidden="true"
+                  className="grid size-9 shrink-0 place-items-center rounded-full bg-(--c-surface) text-xl font-normal text-(--c-aqua-strong) transition-transform group-open:rotate-45"
                 >
                   +
                 </span>
               </summary>
-              <p
-                className="max-w-[58ch] pb-6 text-[1.02rem] leading-relaxed"
-                style={{ color: 'var(--c-text-2)' }}
-              >
-                {item.a}
-              </p>
+              <p className="max-w-[58ch] pb-5 leading-relaxed text-(--c-text-2)">{item.a}</p>
             </details>
           ))}
         </div>
