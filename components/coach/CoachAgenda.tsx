@@ -43,6 +43,24 @@ function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
   return `${booking.date}|${booking.startTime}`
 }
 
+function replaceMonthHours(
+  current: Record<string, string[]>,
+  month: string,
+  slots: CoachAvailableSlot[]
+) {
+  const next = Object.fromEntries(
+    Object.entries(current).filter(([date]) => !date.startsWith(month))
+  ) as Record<string, string[]>
+  for (const slot of slots) {
+    if (slot.status === 'booked') continue
+    const times = next[slot.date] || []
+    if (!times.includes(slot.startTime)) times.push(slot.startTime)
+    next[slot.date] = times
+  }
+  for (const times of Object.values(next)) times.sort()
+  return next
+}
+
 function activeClassSlotCount(
   bookings: Booking[],
   separateByCoach = false,
@@ -145,6 +163,7 @@ export default function CoachAgenda({
     schoolId && terminology.schoolId ? capitalizeSchoolTerm(terminology.coachSingular) : 'Coach'
 
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
+  const [scheduleHoursByDate, setScheduleHoursByDate] = useState<Record<string, string[]>>({})
   const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
   const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()))
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
@@ -178,6 +197,10 @@ export default function CoachAgenda({
   const [schoolTeachers, setSchoolTeachers] = useState<Array<{ id: string; name: string }>>([])
   const [notice, setNotice] = useState<string | null>(null)
   const agendaRequestRef = useRef(0)
+
+  useEffect(() => {
+    setScheduleHoursByDate({})
+  }, [coachId, schoolId])
 
   useEffect(() => {
     if (!slotEditor || !agenda) return
@@ -265,6 +288,13 @@ export default function CoachAgenda({
             offerings: [],
             coachNames: Object.assign({}, ...sourceAgendas.map((payload) => payload.coachNames)),
           })
+          setScheduleHoursByDate((current) =>
+            replaceMonthHours(
+              current,
+              month,
+              sourceAgendas.flatMap((payload) => payload.availableSlots)
+            )
+          )
           setLoadedCoachId(coachId)
           return
         }
@@ -276,12 +306,18 @@ export default function CoachAgenda({
         const nextAgenda = (await response.json()) as CoachAgendaPayload
         if (requestId !== agendaRequestRef.current) return
         setAgenda(nextAgenda)
+        setScheduleHoursByDate((current) =>
+          replaceMonthHours(current, month, nextAgenda.availableSlots)
+        )
         setLoadedCoachId(coachId)
       } catch (err) {
         if (requestId !== agendaRequestRef.current) return
         reportInternalError('COACH_AGENDA_LOAD', err)
         setError(GENERIC_USER_ERROR)
         setAgenda({ bookings: [], availableSlots: [], blocks: [], offerings: [] })
+        setScheduleHoursByDate((current) =>
+          Object.fromEntries(Object.entries(current).filter(([date]) => !date.startsWith(month)))
+        )
         setLoadedCoachId(undefined)
       }
     },
@@ -430,16 +466,8 @@ export default function CoachAgenda({
   }, [weekDates, dayStatuses])
 
   const existingTimesByDate = useMemo(() => {
-    const result: Record<string, string[]> = {}
-    for (const slot of agenda?.availableSlots || []) {
-      if (slot.status === 'booked') continue
-      const times = result[slot.date] || []
-      if (!times.includes(slot.startTime)) times.push(slot.startTime)
-      result[slot.date] = times
-    }
-    for (const times of Object.values(result)) times.sort()
-    return result
-  }, [agenda?.availableSlots])
+    return scheduleHoursByDate
+  }, [scheduleHoursByDate])
 
   const whatsappDayRows = useMemo<WhatsappScheduleDay[]>(() => {
     return weekDates
@@ -1971,6 +1999,7 @@ export default function CoachAgenda({
           coachOptions={allowSchoolScheduleEdit ? scheduleCoachOptions : []}
           selectedCoachId={coachId}
           onCoachChange={onScheduleCoachChange}
+          onWeekChange={(weekStart) => setSelectedDate(dateKey(weekStart))}
           onClose={closeScheduleEditor}
           onSubmit={applyHours}
         />

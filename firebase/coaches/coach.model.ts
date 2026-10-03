@@ -77,6 +77,7 @@ export interface CoachOfferingSchedule {
   days: string[]
   startTime: string
   endTime: string
+  /** `always` is retained only so existing records can be recognized and retired. */
   availabilityMode?: 'always' | 'next_week' | 'dates'
   availableDates?: string[]
 }

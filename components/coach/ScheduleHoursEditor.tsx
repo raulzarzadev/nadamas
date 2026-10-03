@@ -40,6 +40,7 @@ export default function ScheduleHoursEditor({
   coachOptions = [],
   selectedCoachId,
   onCoachChange,
+  onWeekChange,
 }: {
   defaultDate?: string
   existingTimesByDate: Record<string, string[]>
@@ -50,6 +51,7 @@ export default function ScheduleHoursEditor({
   coachOptions?: ScheduleCoachOption[]
   selectedCoachId?: string
   onCoachChange?: (coachId: string) => void
+  onWeekChange?: (weekStart: Date) => void
 }) {
   const terminology = useSchoolTerminology()
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
@@ -171,7 +173,11 @@ export default function ScheduleHoursEditor({
               <div className="flex min-w-0 items-center gap-1 sm:gap-2">
                 <button
                   type="button"
-                  onClick={() => setWeekStart(startOfWeek(new Date()))}
+                  onClick={() => {
+                    const nextWeekStart = startOfWeek(new Date())
+                    setWeekStart(nextWeekStart)
+                    onWeekChange?.(nextWeekStart)
+                  }}
                   className="rounded-full border border-[var(--c-border)] bg-white px-2.5 py-1 text-[11px] font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
                 >
                   Hoy
@@ -179,7 +185,11 @@ export default function ScheduleHoursEditor({
                 <button
                   type="button"
                   aria-label="Semana anterior"
-                  onClick={() => setWeekStart((current) => addDays(current, -7))}
+                  onClick={() => {
+                    const nextWeekStart = addDays(weekStart, -7)
+                    setWeekStart(nextWeekStart)
+                    onWeekChange?.(nextWeekStart)
+                  }}
                   className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
                 >
                   <FiChevronLeft aria-hidden="true" />
@@ -198,7 +208,11 @@ export default function ScheduleHoursEditor({
                 <button
                   type="button"
                   aria-label="Semana siguiente"
-                  onClick={() => setWeekStart((current) => addDays(current, 7))}
+                  onClick={() => {
+                    const nextWeekStart = addDays(weekStart, 7)
+                    setWeekStart(nextWeekStart)
+                    onWeekChange?.(nextWeekStart)
+                  }}
                   className="grid h-8 w-8 place-items-center rounded-full border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
                 >
                   <FiChevronRight aria-hidden="true" />

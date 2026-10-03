@@ -38,7 +38,7 @@ export function createOfferingSchedule(): CoachOfferingSchedule {
     days: [],
     startTime: '06:00',
     endTime: '07:00',
-    availabilityMode: 'always',
+    availabilityMode: 'dates',
     availableDates: [],
   }
 }
@@ -126,7 +126,12 @@ export function offeringIcon(offering: CoachClassOffering): string {
 }
 
 export function offeringWhen(offering: CoachClassOffering): string {
-  const schedules = resolveOfferingSchedules(offering)
+  const schedules = resolveOfferingSchedules(offering).filter((schedule) => {
+    if (scheduleIsOpen(schedule)) return true
+    const mode = schedule.availabilityMode ?? 'always'
+    if (mode === 'dates') return upcomingAvailableDateCount(schedule, new Date()) > 0
+    return mode === 'next_week' && schedule.days.length > 0
+  })
   if (!schedules.length) return 'Horarios por definir'
   return schedules
     .map((schedule) => {
@@ -140,11 +145,26 @@ export function offeringWhen(offering: CoachClassOffering): string {
 }
 
 export function offeringScheduleSummary(offering: CoachClassOffering): string {
-  const schedules = resolveOfferingSchedules(offering)
+  const schedules = resolveOfferingSchedules(offering).filter((schedule) => {
+    if (scheduleIsOpen(schedule)) return true
+    const mode = schedule.availabilityMode ?? 'always'
+    if (mode === 'dates') return upcomingAvailableDateCount(schedule, new Date()) > 0
+    return mode === 'next_week' && schedule.days.length > 0
+  })
   if (!schedules.length) return 'Horarios por definir'
   if (schedules.some(scheduleIsOpen)) return 'Horario abierto'
 
-  const availableCount = schedules.reduce((total, schedule) => total + schedule.days.length, 0)
+  const availableCount = schedules.reduce((total, schedule) => {
+    const mode = schedule.availabilityMode ?? 'always'
+    return (
+      total +
+      (mode === 'dates'
+        ? upcomingAvailableDateCount(schedule, new Date())
+        : mode === 'next_week'
+          ? schedule.days.length
+          : 0)
+    )
+  }, 0)
   if (!availableCount) return 'Horarios por definir'
 
   return `Horario disponible (${availableCount})`
@@ -168,10 +188,7 @@ export function offeringsAvailabilitySummary(offerings: CoachClassOffering[]): s
       if (scheduleIsOpen(schedule)) return totals
 
       const mode = schedule.availabilityMode ?? 'always'
-      if (mode === 'always') {
-        totals.weekly += schedule.days.length
-        return totals
-      }
+      if (mode === 'always') return totals
       if (mode === 'next_week') {
         totals.nextWeek += schedule.days.length
         return totals
@@ -205,7 +222,7 @@ export function hasPublishedOfferingSchedules(offerings: CoachClassOffering[]): 
     if (scheduleIsOpen(schedule)) return true
     const mode = schedule.availabilityMode ?? 'always'
     if (mode === 'dates') return upcomingAvailableDateCount(schedule, now) > 0
-    return schedule.days.length > 0
+    return mode === 'next_week' && schedule.days.length > 0
   })
 }
 
@@ -319,7 +336,7 @@ export function scheduleIsAvailableOn(schedule: CoachOfferingSchedule, date: Dat
   if (!day || !schedule.days.includes(day)) return false
 
   const mode = schedule.availabilityMode ?? 'always'
-  if (mode === 'always') return true
+  if (mode === 'always') return false
   if (mode === 'dates') return (schedule.availableDates || []).includes(dateKey(date))
 
   const nextWeek = startOfWeek(addDays(new Date(), 7))
@@ -380,9 +397,10 @@ export function offeringWithHours(
     .filter(
       (schedule) =>
         scheduleIsOpen(schedule) ||
+        (schedule.availabilityMode ?? 'always') === 'always' ||
         (schedule.availabilityMode === 'dates'
           ? (schedule.availableDates?.length ?? 0) > 0
-          : schedule.days.length > 0)
+          : schedule.availabilityMode === 'next_week' && schedule.days.length > 0)
     )
     .map((schedule) => ({ ...schedule }))
   for (const time of times) {
@@ -399,6 +417,7 @@ export function offeringWithHours(
       }
       schedules.push(schedule)
     }
+    schedule.availabilityMode = 'dates'
     const merged = [...new Set([...(schedule.availableDates || []), ...dates])].sort()
     schedule.availableDates = merged
     schedule.days = dayLabelsFromDates(merged)
@@ -415,7 +434,9 @@ export function offeringWithoutHours(
   const schedules = resolveOfferingSchedules(offering)
     .map((schedule) => {
       if (scheduleIsOpen(schedule)) return schedule
-      if ((schedule.availabilityMode ?? 'always') !== 'dates') {
+      const mode = schedule.availabilityMode ?? 'always'
+      if (mode === 'always') return schedule
+      if (mode === 'next_week') {
         const removedDays = new Set(
           pairs
             .filter((pair) => pair.time === schedule.startTime)
@@ -428,6 +449,7 @@ export function offeringWithoutHours(
       )
       return { ...schedule, availableDates, days: dayLabelsFromDates(availableDates) }
     })
+    .filter((schedule): schedule is CoachOfferingSchedule => schedule !== null)
     .filter(
       (schedule) =>
         scheduleIsOpen(schedule) ||
