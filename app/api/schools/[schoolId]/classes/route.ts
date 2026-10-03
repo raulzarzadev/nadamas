@@ -78,7 +78,14 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       { status: 400 }
     )
   }
-  const result = await createSchoolClass(validation.value)
+  let result: Awaited<ReturnType<typeof createSchoolClass>>
+  try {
+    result = await createSchoolClass(validation.value)
+  } catch (error) {
+    if (error instanceof Error && error.message === 'GROUP_CLASS_FULL')
+      return NextResponse.json({ error: 'El cupo de esta clase está cerrado.' }, { status: 409 })
+    throw error
+  }
   for (const teacherId of validation.value.teacherIds) {
     void createNotification({
       recipientId: teacherId,

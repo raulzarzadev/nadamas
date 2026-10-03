@@ -10,6 +10,7 @@ import {
 import { adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolCaller, requireSchoolAccess } from '@/lib/server/school-access'
 import {
+  coalesceGroupClassOccurrences,
   legacySchoolOfferings,
   schoolClassAgendaBooking,
   schoolClassCoachIds,
@@ -133,8 +134,10 @@ export async function GET(request: Request, { params }: RouteProps) {
   }
   const startDate = range.start.toISOString().slice(0, 10)
   const endDate = range.end.toISOString().slice(0, 10)
-  const schoolClassBookings = schoolClassesSnapshot.docs.flatMap((doc) => {
-    const occurrence = doc.data() as SchoolClassOccurrence
+  const classOccurrences = coalesceGroupClassOccurrences(
+    schoolClassesSnapshot.docs.map((doc) => doc.data() as SchoolClassOccurrence)
+  )
+  const schoolClassBookings = classOccurrences.flatMap((occurrence) => {
     if (
       occurrence.status === 'cancelled' ||
       !occurrence.date ||
@@ -176,8 +179,7 @@ export async function GET(request: Request, { params }: RouteProps) {
             studentIds: [],
             studentNames: [booking.athleteName || 'Mi perfil'],
           })),
-        ...schoolClassesSnapshot.docs.flatMap((doc) => {
-          const occurrence = doc.data() as SchoolClassOccurrence
+        ...classOccurrences.flatMap((occurrence) => {
           if (
             !occurrence.date ||
             occurrence.status === 'cancelled' ||

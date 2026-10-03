@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test'
-import type { SchoolMembership } from '../lib/school'
-import { schoolClassCoachIds, schoolScheduleOwners } from '../lib/server/school-agenda'
+import type { SchoolClassOccurrence, SchoolMembership } from '../lib/school'
+import {
+  coalesceGroupClassOccurrences,
+  schoolClassAgendaBooking,
+  schoolClassCoachIds,
+  schoolScheduleOwners,
+} from '../lib/server/school-agenda'
 
 function membership(
   id: string,
@@ -56,5 +61,51 @@ test.describe('responsables de horarios escolares', () => {
     })
 
     expect(coaches).toEqual(['coach-2'])
+  })
+
+  test('une alumnos de clases grupales duplicadas sin repetirlos', () => {
+    const base: SchoolClassOccurrence = {
+      id: 'class-1',
+      seriesId: 'series-1',
+      schoolId: 'school-1',
+      title: 'Clase escolar',
+      type: 'group',
+      date: '2026-10-03',
+      startTime: '18:00',
+      endTime: '19:00',
+      timezone: 'America/Mazatlan',
+      teacherIds: ['coach-1'],
+      studentIds: ['student-1'],
+      location: '',
+      locationUrl: '',
+      status: 'pending',
+      createdAt: 1,
+      updatedAt: 1,
+    }
+    const classes = coalesceGroupClassOccurrences([
+      base,
+      { ...base, id: 'class-2', status: 'scheduled', studentIds: ['student-1', 'student-2'] },
+      { ...base, id: 'class-3', teacherIds: ['coach-2'] },
+    ])
+
+    expect(classes).toHaveLength(2)
+    expect(classes[0]?.id).toBe('class-2')
+    expect(classes[0]?.studentIds).toEqual(['student-1', 'student-2'])
+    expect(classes[1]?.id).toBe('class-3')
+
+    const booking = schoolClassAgendaBooking({
+      schoolId: 'school-1',
+      occurrence: classes[0] as SchoolClassOccurrence,
+      coachId: 'coach-1',
+      coachName: 'Profe',
+      studentNames: new Map([
+        ['student-1', 'Chavalito Uno'],
+        ['student-2', 'Dante Gutiérrez'],
+      ]),
+    })
+    expect(booking.schoolClassStudents).toEqual([
+      { id: 'student-1', name: 'Chavalito Uno', pending: true },
+      { id: 'student-2', name: 'Dante Gutiérrez', pending: false },
+    ])
   })
 })

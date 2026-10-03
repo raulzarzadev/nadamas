@@ -14,14 +14,19 @@ const PERSONAL_VIEW = 'personal'
 export default function CoachAgendaWorkspace() {
   const { schools, status } = useSchoolSelection({ includePersonal: true })
   const terminology = useSchoolTerminology()
-  const coachSchools = useMemo(
-    () =>
-      schools.filter(
-        ({ membership }) =>
-          membership.status === 'active' && schoolMembershipHasRole(membership, 'teacher')
-      ),
-    [schools]
-  )
+  const coachSchools = useMemo(() => {
+    const seen = new Set<string>()
+    return schools.filter(({ school, membership }) => {
+      if (
+        seen.has(school.id) ||
+        membership.status !== 'active' ||
+        !schoolMembershipHasRole(membership, 'teacher')
+      )
+        return false
+      seen.add(school.id)
+      return true
+    })
+  }, [schools])
   const [view, setView] = useState(ALL_VIEW)
   const agendaSources = useMemo(
     () => [

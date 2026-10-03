@@ -36,9 +36,57 @@ export function schoolClassCoachIds({
   ]
 }
 
+type AgendaSchoolClassOccurrence = SchoolClassOccurrence & { pendingStudentIds?: string[] }
+
+/** Old group requests can leave several occurrences for one class hour. */
+export function coalesceGroupClassOccurrences(occurrences: SchoolClassOccurrence[]) {
+  const grouped = new Map<string, AgendaSchoolClassOccurrence>()
+  for (const occurrence of occurrences) {
+    if (occurrence.type !== 'group' || occurrence.status === 'cancelled') {
+      grouped.set(`id:${occurrence.id}`, occurrence)
+      continue
+    }
+    const key = [
+      occurrence.schoolId,
+      occurrence.date,
+      occurrence.startTime,
+      occurrence.endTime,
+      occurrence.title.trim().toLocaleLowerCase('es'),
+      [...occurrence.teacherIds].sort().join(','),
+    ].join('|')
+    const previous = grouped.get(key)
+    if (!previous) {
+      grouped.set(key, {
+        ...occurrence,
+        pendingStudentIds: occurrence.status === 'pending' ? occurrence.studentIds : [],
+      })
+      continue
+    }
+    // Keep the most populated record as the target for subsequent additions.
+    const primary =
+      occurrence.studentIds.length > previous.studentIds.length ? occurrence : previous
+    grouped.set(key, {
+      ...primary,
+      studentIds: [...new Set([...previous.studentIds, ...occurrence.studentIds])],
+      pendingStudentIds: [
+        ...new Set([
+          ...(previous.pendingStudentIds || []),
+          ...(occurrence.status === 'pending' ? occurrence.studentIds : []),
+        ]),
+      ],
+      classFull: previous.classFull === true || occurrence.classFull === true,
+      status:
+        previous.status === 'scheduled' || occurrence.status === 'scheduled'
+          ? 'scheduled'
+          : primary.status,
+    })
+  }
+  return [...grouped.values()]
+}
+
 export function schoolClassAgendaBooking(args: {
   schoolId: string
-  occurrence: SchoolClassOccurrence
+  occurrence: AgendaSchoolClassOccurrence
   coachId: string
   coachName: string | null
   studentNames?: ReadonlyMap<string, string>
@@ -47,11 +95,23 @@ export function schoolClassAgendaBooking(args: {
   const studentIds = Array.isArray(occurrence.studentIds)
     ? occurrence.studentIds.filter((id): id is string => typeof id === 'string')
     : []
+  const pendingStudentIds = new Set(
+    occurrence.pendingStudentIds || (occurrence.status === 'pending' ? studentIds : [])
+  )
   return {
     id: `school-class-${occurrence.id}-${args.coachId}`,
     schoolId: args.schoolId,
     schoolClassId: occurrence.id,
     schoolClassStudentIds: studentIds,
+    ...(args.studentNames
+      ? {
+          schoolClassStudents: studentIds.map((id) => ({
+            id,
+            name: args.studentNames?.get(id) || 'Alumno',
+            pending: pendingStudentIds.has(id),
+          })),
+        }
+      : {}),
     schoolClassTitle: occurrence.title || 'Clase escolar',
     schoolClassStudentCount: studentIds.length,
     coachId: args.coachId,

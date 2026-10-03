@@ -17,7 +17,7 @@ import {
 } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership } from '@/lib/server/school-access'
-import { schoolClassAgendaBooking } from '@/lib/server/school-agenda'
+import { coalesceGroupClassOccurrences, schoolClassAgendaBooking } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
@@ -114,8 +114,9 @@ export async function GET(request: Request) {
   )
   const startDate = range.start.toISOString().slice(0, 10)
   const endDate = range.end.toISOString().slice(0, 10)
-  const schoolClassBookings = (schoolClassesSnapshot?.docs || []).flatMap((doc) => {
-    const occurrence = doc.data() as SchoolClassOccurrence
+  const schoolClassBookings = coalesceGroupClassOccurrences(
+    (schoolClassesSnapshot?.docs || []).map((doc) => doc.data() as SchoolClassOccurrence)
+  ).flatMap((occurrence) => {
     if (
       !occurrence.date ||
       occurrence.date < startDate ||

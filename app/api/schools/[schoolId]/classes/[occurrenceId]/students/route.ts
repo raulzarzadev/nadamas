@@ -15,7 +15,10 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
   if (access.response) return access.response
 
-  const body = (await request.json().catch(() => ({}))) as { studentIds?: unknown }
+  const body = (await request.json().catch(() => ({}))) as {
+    studentIds?: unknown
+    promoteToGroup?: unknown
+  }
   if (
     !Array.isArray(body.studentIds) ||
     body.studentIds.length === 0 ||
@@ -32,6 +35,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     )
 
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
+  const promoteToGroup = body.promoteToGroup === true
   const classRef = adminDb.collection('schoolClassOccurrences').doc(occurrenceId)
   const result = await adminDb.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(classRef)
@@ -44,8 +48,10 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       Array.isArray(occurrence.teacherIds) &&
       occurrence.teacherIds.includes(access.caller.uid)
     if (!isDirector && !isAssignedTeacher) return { status: 'unauthorized' as const }
-    if (occurrence.status !== 'scheduled') return { status: 'inactive' as const }
-    if (occurrence.type !== 'group') return { status: 'individual' as const }
+    if (occurrence.status !== 'scheduled' && occurrence.status !== 'pending')
+      return { status: 'inactive' as const }
+    const shouldPromote = occurrence.type !== 'group' && promoteToGroup && isDirector
+    if (occurrence.type !== 'group' && !shouldPromote) return { status: 'individual' as const }
     if (occurrence.classFull) return { status: 'full' as const }
 
     const currentIds = Array.isArray(occurrence.studentIds)
@@ -54,7 +60,12 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     const nextIds = [...new Set([...currentIds, ...studentIds])]
     if (nextIds.length > 100) return { status: 'limit' as const }
     const addedCount = nextIds.length - currentIds.length
-    if (addedCount > 0) transaction.update(classRef, { studentIds: nextIds, updatedAt: Date.now() })
+    if (addedCount > 0 || shouldPromote)
+      transaction.update(classRef, {
+        studentIds: nextIds,
+        ...(shouldPromote ? { type: 'group' } : {}),
+        updatedAt: Date.now(),
+      })
     return { status: 'ok' as const, addedCount }
   })
 
@@ -65,7 +76,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
         message: 'No tienes permiso para agregar atletas a esta clase.',
         status: 403,
       },
-      inactive: { message: 'Aprueba la clase antes de agregar atletas.', status: 409 },
+      inactive: { message: 'Esta clase ya no admite atletas.', status: 409 },
       individual: { message: 'Solo se pueden agregar atletas a clases grupales.', status: 409 },
       full: { message: 'El cupo de esta clase está cerrado.', status: 409 },
       limit: { message: 'La clase alcanzó el máximo de 100 atletas.', status: 409 },

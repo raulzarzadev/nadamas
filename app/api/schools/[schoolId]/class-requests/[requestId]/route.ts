@@ -99,7 +99,14 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   })
   if (!classValidation.ok)
     return NextResponse.json({ error: 'Revisa los datos del horario.' }, { status: 400 })
-  const classResult = await createSchoolClass(classValidation.value)
+  let classResult: Awaited<ReturnType<typeof createSchoolClass>>
+  try {
+    classResult = await createSchoolClass(classValidation.value)
+  } catch (error) {
+    if (error instanceof Error && error.message === 'GROUP_CLASS_FULL')
+      return NextResponse.json({ error: 'El cupo de esta clase está cerrado.' }, { status: 409 })
+    throw error
+  }
   await requestRef.update({ status, updatedAt: Date.now(), classSeriesId: classResult.seriesId })
   void createNotification({
     recipientId: record.requestedBy,

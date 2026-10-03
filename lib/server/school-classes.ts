@@ -121,6 +121,79 @@ export async function createSchoolClass(input: CreateSchoolClassInput) {
   const now = Date.now()
   const seriesRef = adminDb.collection('schoolClassSeries').doc()
   const dates = datesForInput(input)
+  if (input.type === 'group') {
+    return adminDb.runTransaction(async (transaction) => {
+      const existingSnapshot = await transaction.get(
+        adminDb.collection('schoolClassOccurrences').where('schoolId', '==', input.schoolId)
+      )
+      const existing = existingSnapshot.docs.map((doc) => ({
+        ref: doc.ref,
+        occurrence: doc.data() as SchoolClassOccurrence,
+      }))
+      const teacherKey = [...input.teacherIds].sort().join('|')
+      const occurrences: SchoolClassOccurrence[] = []
+      let created = false
+      for (const date of dates) {
+        const matches = existing.filter(
+          ({ occurrence }) =>
+            occurrence.type === 'group' &&
+            (occurrence.status === 'scheduled' || occurrence.status === 'pending') &&
+            occurrence.date === date &&
+            occurrence.startTime === input.startTime &&
+            occurrence.endTime === input.endTime &&
+            occurrence.title.trim().toLocaleLowerCase('es') ===
+              input.title.trim().toLocaleLowerCase('es') &&
+            [...occurrence.teacherIds].sort().join('|') === teacherKey
+        )
+        if (matches.length) {
+          if (matches.some(({ occurrence }) => occurrence.classFull === true))
+            throw new Error('GROUP_CLASS_FULL')
+          const match = matches.reduce((primary, candidate) =>
+            candidate.occurrence.studentIds.length > primary.occurrence.studentIds.length
+              ? candidate
+              : primary
+          )
+          const studentIds = [
+            ...new Set([
+              ...matches.flatMap(({ occurrence }) => occurrence.studentIds),
+              ...input.studentIds,
+            ]),
+          ]
+          if (studentIds.length > 100) throw new Error('GROUP_CLASS_FULL')
+          if (studentIds.length !== match.occurrence.studentIds.length)
+            transaction.update(match.ref, { studentIds, updatedAt: now })
+          occurrences.push({ ...match.occurrence, studentIds })
+          continue
+        }
+        const ref = adminDb.collection('schoolClassOccurrences').doc()
+        const occurrence: SchoolClassOccurrence = {
+          id: ref.id,
+          seriesId: seriesRef.id,
+          schoolId: input.schoolId,
+          title: input.title,
+          type: input.type,
+          date,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          timezone: input.timezone,
+          teacherIds: input.teacherIds,
+          studentIds: input.studentIds,
+          location: input.location,
+          locationUrl: input.locationUrl,
+          visibility: input.visibility,
+          status: 'scheduled',
+          createdAt: now,
+          updatedAt: now,
+        }
+        transaction.set(ref, occurrence)
+        occurrences.push(occurrence)
+        created = true
+      }
+      if (created)
+        transaction.set(seriesRef, { ...input, id: seriesRef.id, createdAt: now, updatedAt: now })
+      return { seriesId: created ? seriesRef.id : occurrences[0]?.seriesId || '', occurrences }
+    })
+  }
   const batch = adminDb.batch()
   batch.set(seriesRef, { ...input, id: seriesRef.id, createdAt: now, updatedAt: now })
   const occurrences: SchoolClassOccurrence[] = []
