@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FiArrowRight, FiCheck, FiTrash2 } from 'react-icons/fi'
+import { FiArrowRight, FiCheck, FiEdit2, FiTrash2 } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 
 export type AgendaStudentAction = {
@@ -21,6 +21,8 @@ export default function AgendaStudentActions({
   onSave,
   onMove,
   onRemove,
+  onProgress,
+  progressSaved = false,
 }: {
   student: AgendaStudentAction
   busy: boolean
@@ -29,6 +31,8 @@ export default function AgendaStudentActions({
   onSave: (attended: boolean, note: string) => void
   onMove: () => void
   onRemove: () => void
+  onProgress?: () => void
+  progressSaved?: boolean
 }) {
   const [attended, setAttended] = useState(student.attended)
   const [note, setNote] = useState(student.note)
@@ -77,14 +81,16 @@ export default function AgendaStudentActions({
           />
         </label>
 
-        <button
-          type="button"
-          onClick={() => onSave(attended, note)}
-          disabled={busy}
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
-        >
-          <FiCheck aria-hidden="true" /> {busy ? 'Guardando…' : 'Guardar asistencia y nota'}
-        </button>
+        {onProgress && student.attended && (
+          <button
+            type="button"
+            onClick={onProgress}
+            disabled={busy}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] px-4 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+          >
+            <FiEdit2 aria-hidden="true" /> {progressSaved ? 'Progreso guardado' : 'Progreso'}
+          </button>
+        )}
 
         <div className="border-t border-[var(--c-border)] pt-4">
           <button
@@ -131,6 +137,17 @@ export default function AgendaStudentActions({
             <FiTrash2 aria-hidden="true" /> Eliminar de la clase
           </button>
         )}
+
+        <div className="sticky bottom-0 -mx-4 border-t border-[var(--c-border)] bg-white px-4 py-3 sm:mx-0 sm:px-0">
+          <button
+            type="button"
+            onClick={() => onSave(attended, note)}
+            disabled={busy}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+          >
+            <FiCheck aria-hidden="true" /> {busy ? 'Guardando…' : 'Guardar asistencia y nota'}
+          </button>
+        </div>
       </div>
     </Sheet>
   )

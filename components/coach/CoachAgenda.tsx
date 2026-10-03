@@ -3,7 +3,7 @@
 import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FiClipboard, FiEdit2, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers, FiX } from 'react-icons/fi'
+import { FiClipboard, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers } from 'react-icons/fi'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -731,18 +731,6 @@ export default function CoachAgenda({
     else if (!blocked && existingBlock) unblock(existingBlock)
   }
 
-  const updateAttendance = (booking: Booking, attended: boolean) => {
-    const targetSchoolId = schoolIdForBooking(booking)
-    return run(() =>
-      patchAuthed('/api/coach/agenda/bookings', {
-        ...(manageSchoolSchedule ? { coachId: booking.coachId } : {}),
-        id: booking.id,
-        attended,
-        ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
-      })
-    )
-  }
-
   const saveStudentAction = async (attended: boolean, note: string) => {
     if (!studentAction) return
     const { booking, student } = studentAction
@@ -1357,99 +1345,109 @@ export default function CoachAgenda({
                                   },
                                 ]
                           )
-                          .map(({ booking, rowKey, studentName, studentId, attended, note, pending }) => (
-                            <li
-                              key={rowKey}
-                              className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
-                            >
-                              <div className="flex min-w-0 items-center gap-2.5">
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
-                                  {initials(studentName)}
-                                </span>
-                                <span className="min-w-0 flex-1">
-                                  {booking.schoolClassTitle && (
-                                    <span className="block text-xs font-semibold text-[var(--c-text-2)]">
-                                      {booking.schoolClassTitle}
+                          .map(
+                            ({
+                              booking,
+                              rowKey,
+                              studentName,
+                              studentId,
+                              attended,
+                              note,
+                              pending,
+                            }) => (
+                              <li
+                                key={rowKey}
+                                className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
+                              >
+                                <div className="flex min-w-0 items-center gap-2.5">
+                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
+                                    {initials(studentName)}
+                                  </span>
+                                  <span className="min-w-0 flex-1">
+                                    {booking.schoolClassTitle && (
+                                      <span className="block text-xs font-semibold text-[var(--c-text-2)]">
+                                        {booking.schoolClassTitle}
+                                      </span>
+                                    )}
+                                    <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
+                                      {studentName}
+                                    </span>
+                                    {!hideBookingActions &&
+                                      !manageSchoolSchedule &&
+                                      !booking.schoolClassId &&
+                                      !booking.schoolRequestId && (
+                                        <Link
+                                          href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
+                                          className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                                        >
+                                          ver perfil ›
+                                        </Link>
+                                      )}
+                                  </span>
+                                </div>
+                                <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
+                                  {pending && (
+                                    <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">
+                                      Pendiente de aprobación
                                     </span>
                                   )}
-                                  <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
-                                    {studentName}
-                                  </span>
-                                  {!hideBookingActions &&
-                                    !manageSchoolSchedule &&
-                                    !booking.schoolClassId &&
-                                    !booking.schoolRequestId && (
-                                      <Link
-                                        href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
-                                        className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                                      >
-                                        ver perfil ›
-                                      </Link>
-                                    )}
-                                </span>
-                              </div>
-                              <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
-                                {pending && (
-                                  <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">
-                                    Pendiente de aprobación
-                                  </span>
-                                )}
-                                {!hideBookingActions && !booking.schoolRequestId && (
-                                  <button
-                                    type="button"
-                                    aria-label={`Abrir ficha de ${studentName}`}
-                                    title={`Ficha de ${studentName}`}
-                                    onClick={() => {
-                                      setStudentAction({
-                                        booking,
-                                        student: {
-                                          studentId,
-                                          studentName,
-                                          attended,
-                                          note,
-                                          date: booking.date,
-                                          startTime: booking.startTime,
-                                        },
-                                      })
-                                      setStudentActionError(null)
-                                    }}
-                                    disabled={busy}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
-                                  >
-                                    <FiClipboard aria-hidden="true" />
-                                  </button>
-                                )}
-                              </div>
-                              {booking.schoolRequestId && !hideBookingActions && (
-                                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSchoolRequest(booking, 'approved')}
-                                    disabled={busy}
-                                    className="min-h-10 rounded-full bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
-                                  >
-                                    Aprobar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSchoolRequest(booking, 'rejected')}
-                                    disabled={busy}
-                                    className="min-h-10 rounded-full border border-[var(--rose-bd)] px-3 text-xs font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50"
-                                  >
-                                    Rechazar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => void openSchoolRequestEditor(booking)}
-                                    disabled={busy}
-                                    className="col-span-2 min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50 sm:col-span-1"
-                                  >
-                                    Cambiar hora o entrenador
-                                  </button>
+                                  {!hideBookingActions && !booking.schoolRequestId && (
+                                    <button
+                                      type="button"
+                                      aria-label={`Abrir ficha de ${studentName}`}
+                                      title={`Ficha de ${studentName}`}
+                                      onClick={() => {
+                                        setStudentAction({
+                                          booking,
+                                          student: {
+                                            studentId,
+                                            studentName,
+                                            attended,
+                                            note,
+                                            date: booking.date,
+                                            startTime: booking.startTime,
+                                          },
+                                        })
+                                        setStudentActionError(null)
+                                      }}
+                                      disabled={busy}
+                                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+                                    >
+                                      <FiClipboard aria-hidden="true" />
+                                    </button>
+                                  )}
                                 </div>
-                              )}
-                            </li>
-                          ))}
+                                {booking.schoolRequestId && !hideBookingActions && (
+                                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSchoolRequest(booking, 'approved')}
+                                      disabled={busy}
+                                      className="min-h-10 rounded-full bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+                                    >
+                                      Aprobar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSchoolRequest(booking, 'rejected')}
+                                      disabled={busy}
+                                      className="min-h-10 rounded-full border border-[var(--rose-bd)] px-3 text-xs font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50"
+                                    >
+                                      Rechazar
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void openSchoolRequestEditor(booking)}
+                                      disabled={busy}
+                                      className="col-span-2 min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50 sm:col-span-1"
+                                    >
+                                      Cambiar hora o entrenador
+                                    </button>
+                                  </div>
+                                )}
+                              </li>
+                            )
+                          )}
                       </ul>
                     </div>
                   </AgendaRow>
@@ -2008,6 +2006,15 @@ export default function CoachAgenda({
             setStudentAction(null)
           }}
           onRemove={() => void removeStudentFromClass()}
+          onProgress={
+            !studentAction.booking.schoolClassId && !manageSchoolSchedule
+              ? () => {
+                  setProgressBooking(studentAction.booking)
+                  setStudentAction(null)
+                }
+              : undefined
+          }
+          progressSaved={progressBookingIds.has(studentAction.booking.id)}
         />
       )}
 
@@ -2036,9 +2043,9 @@ export default function CoachAgenda({
           }}
         />
       )}
-      {studentToReassign && schoolIdForBooking(studentToReassign.booking) && (
+      {studentToReassign && (
         <SchoolReassignStudent
-          schoolId={schoolIdForBooking(studentToReassign.booking) as string}
+          schoolId={schoolIdForBooking(studentToReassign.booking)}
           booking={studentToReassign.booking}
           schoolClassId={studentToReassign.booking.schoolClassId}
           studentId={studentToReassign.student.studentId}
@@ -2225,61 +2232,6 @@ function AgendaRow({
       </span>
       <div className="flex min-w-0 w-full sm:w-auto sm:flex-1">{children}</div>
     </div>
-  )
-}
-
-function BinarySwitch({
-  leftLabel,
-  rightLabel,
-  leftIcon,
-  rightIcon,
-  checked,
-  onChange,
-  disabled,
-  compact = false,
-}: {
-  leftLabel: string
-  rightLabel: string
-  leftIcon?: React.ReactNode
-  rightIcon?: React.ReactNode
-  checked: boolean
-  onChange: (checked: boolean) => void
-  disabled: boolean
-  compact?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={`Cambiar entre ${leftLabel} y ${rightLabel}. Estado actual: ${checked ? rightLabel : leftLabel}`}
-      onClick={() => onChange(!checked)}
-      disabled={disabled}
-      className={`inline-flex min-h-11 cursor-pointer items-center justify-start bg-transparent text-xs font-bold text-[var(--c-text-2)] transition-opacity hover:opacity-75 focus-visible:rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50 ${
-        compact
-          ? 'w-full min-w-0 gap-1.5 px-0.5 sm:w-auto sm:min-w-[7.75rem]'
-          : 'w-full min-w-0 gap-2.5 px-1 sm:w-auto sm:min-w-40 sm:px-1.5'
-      }`}
-    >
-      <span
-        aria-hidden="true"
-        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-          checked ? 'bg-[var(--c-aqua)]' : 'bg-slate-300'
-        }`}
-      >
-        <span
-          className={`absolute left-[3px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform ${
-            checked ? 'translate-x-4' : 'translate-x-0'
-          }`}
-        />
-      </span>
-      <span className="flex min-w-0 items-center gap-1 text-left text-[var(--c-ocean)]">
-        <span aria-hidden="true" className="shrink-0 text-sm">
-          {checked ? rightIcon : leftIcon}
-        </span>
-        <span className="truncate">{checked ? rightLabel : leftLabel}</span>
-      </span>
-    </button>
   )
 }
 

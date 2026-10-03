@@ -12,8 +12,9 @@ type RouteProps = { params: Promise<{ schoolId: string }> }
 
 async function handlePOST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
   if (access.response) return access.response
+  const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   const body = await request.json().catch(() => null)
   if (
     body &&
@@ -23,6 +24,11 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     typeof body.date === 'string' &&
     typeof body.startTime === 'string'
   ) {
+    if (!isDirector)
+      return NextResponse.json(
+        { error: 'Solo la dirección puede mover una clase completa.' },
+        { status: 403 }
+      )
     const membership = await getSchoolMembership(schoolId, body.coachId)
     if (
       !membership ||
@@ -81,6 +87,80 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     return NextResponse.json({ ok: true })
   }
   if (
+    body &&
+    typeof body.bookingId === 'string' &&
+    typeof body.destinationSchoolClassId === 'string' &&
+    typeof body.coachId === 'string'
+  ) {
+    if (!isDirector && body.coachId !== access.caller.uid)
+      return NextResponse.json(
+        { error: 'No tienes permiso para mover esta clase.' },
+        { status: 403 }
+      )
+    const result = await adminDb.runTransaction(async (transaction) => {
+      const bookingRef = adminDb.collection('bookings').doc(body.bookingId)
+      const classRef = adminDb
+        .collection('schoolClassOccurrences')
+        .doc(body.destinationSchoolClassId)
+      const [bookingSnapshot, classSnapshot] = await Promise.all([
+        transaction.get(bookingRef),
+        transaction.get(classRef),
+      ])
+      const booking = bookingSnapshot.data() as Booking | undefined
+      const destination = classSnapshot.data()
+      if (
+        !booking ||
+        !destination ||
+        booking.schoolId !== schoolId ||
+        destination.schoolId !== schoolId
+      )
+        return 'missing' as const
+      if (
+        !isDirector &&
+        (booking.coachId !== access.caller.uid ||
+          !destination.teacherIds?.includes(access.caller.uid))
+      )
+        return 'unauthorized' as const
+      if (
+        booking.status === 'cancelled' ||
+        destination.status !== 'scheduled' ||
+        destination.type !== 'group' ||
+        destination.classFull === true ||
+        !destination.teacherIds?.includes(body.coachId)
+      )
+        return 'unavailable' as const
+      const studentIds: string[] = Array.isArray(destination.studentIds)
+        ? destination.studentIds
+        : []
+      if (studentIds.includes(booking.athleteId)) return 'duplicate' as const
+      if (studentIds.length >= 100) return 'unavailable' as const
+      const studentSnapshot = await transaction.get(
+        adminDb.collection('schoolStudents').doc(booking.athleteId)
+      )
+      if (!studentSnapshot.exists || studentSnapshot.data()?.schoolId !== schoolId)
+        return 'unavailable' as const
+      const now = Date.now()
+      transaction.update(classRef, {
+        studentIds: [...studentIds, booking.athleteId],
+        updatedAt: now,
+      })
+      transaction.update(bookingRef, { status: 'cancelled', cancelledAt: now, updatedAt: now })
+      transaction.delete(adminDb.collection('agendaStudentRecords').doc(`booking-${booking.id}`))
+      return 'ok' as const
+    })
+    if (result !== 'ok') {
+      const errors = {
+        missing: ['No encontramos esta clase.', 404],
+        unauthorized: ['No tienes permiso para mover esta clase.', 403],
+        unavailable: ['La clase de destino ya no admite alumnos.', 409],
+        duplicate: ['El alumno ya está en esa clase.', 409],
+      } as const
+      const [error, status] = errors[result]
+      return NextResponse.json({ error }, { status })
+    }
+    return NextResponse.json({ ok: true })
+  }
+  if (
     !body ||
     typeof body.bookingId !== 'string' ||
     typeof body.coachId !== 'string' ||
@@ -90,6 +170,8 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   ) {
     return NextResponse.json({ error: 'Selecciona una clase de destino.' }, { status: 400 })
   }
+  if (!isDirector && body.coachId !== access.caller.uid)
+    return NextResponse.json({ error: 'No tienes permiso para mover esta clase.' }, { status: 403 })
   const membership = await getSchoolMembership(schoolId, body.coachId)
   if (
     !membership ||
@@ -119,6 +201,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     const booking = source.data() as Booking | undefined
     if (!booking || booking.schoolId !== schoolId || booking.status === 'cancelled')
       return 'missing'
+    if (!isDirector && booking.coachId !== access.caller.uid) return 'unauthorized'
     if (
       booking.coachId === body.coachId &&
       booking.date === body.date &&
@@ -207,6 +290,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   if (result !== 'ok') {
     const messages = {
       missing: 'No encontramos esta clase.',
+      unauthorized: 'No tienes permiso para mover esta clase.',
       same: 'Selecciona una clase diferente.',
       blocked: 'El horario ya no está disponible.',
       duplicate: 'El alumno ya está en esa clase.',
@@ -214,7 +298,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     }
     return NextResponse.json(
       { error: messages[result] },
-      { status: result === 'missing' ? 404 : 409 }
+      { status: result === 'missing' ? 404 : result === 'unauthorized' ? 403 : 409 }
     )
   }
   return NextResponse.json({ ok: true })

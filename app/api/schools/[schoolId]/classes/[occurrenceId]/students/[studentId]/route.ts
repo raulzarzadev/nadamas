@@ -29,16 +29,17 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
   const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
   if (access.response) return access.response
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
-  const body = remove ? {} : await request.json().catch(() => ({}))
+  const input = remove ? {} : await request.json().catch(() => ({}))
+  const body = input && typeof input === 'object' ? input : {}
   const attended = (body as { attended?: unknown }).attended
   const note = (body as { note?: unknown }).note
-  if (
-    !remove &&
-    (typeof attended !== 'boolean' && typeof note !== 'string')
-  )
+  if (!remove && typeof attended !== 'boolean' && typeof note !== 'string')
     return NextResponse.json({ error: 'Selecciona un cambio para este alumno.' }, { status: 400 })
   if (typeof note === 'string' && note.length > 1000)
-    return NextResponse.json({ error: 'La nota no puede superar 1000 caracteres.' }, { status: 400 })
+    return NextResponse.json(
+      { error: 'La nota no puede superar 1000 caracteres.' },
+      { status: 400 }
+    )
 
   const result = await adminDb.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(
@@ -96,7 +97,12 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
   })
   if (result === 'ok') return NextResponse.json({ ok: true })
   return NextResponse.json(
-    { error: result === 'unauthorized' ? 'No tienes permiso para editar esta clase.' : 'No encontramos al alumno en esta clase.' },
+    {
+      error:
+        result === 'unauthorized'
+          ? 'No tienes permiso para editar esta clase.'
+          : 'No encontramos al alumno en esta clase.',
+    },
     { status: result === 'unauthorized' ? 403 : result === 'inactive' ? 409 : 404 }
   )
 }

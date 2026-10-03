@@ -13,8 +13,13 @@ import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error
 
 type DestinationSlot = Pick<
   CoachAvailableSlot,
-  'coachId' | 'date' | 'startTime' | 'endTime' | 'groupType' | 'status'
-> & { schoolClassId?: string }
+  'coachId' | 'date' | 'startTime' | 'endTime' | 'groupType' | 'status' | 'locationName'
+> & {
+  schoolClassId?: string
+  schoolClassTitle?: string
+  schoolClassStudentCount?: number
+  coachName?: string | null
+}
 
 function addDays(date: Date, amount: number) {
   const result = new Date(date)
@@ -32,6 +37,10 @@ function weekDates(date: string) {
   return Array.from({ length: 7 }, (_, index) => addDays(monday, index))
 }
 
+function destinationKey(slot: DestinationSlot) {
+  return `${slot.coachId}|${slot.date}|${slot.startTime}`
+}
+
 export default function SchoolReassignStudent({
   schoolId,
   booking,
@@ -41,7 +50,7 @@ export default function SchoolReassignStudent({
   onClose,
   onSaved,
 }: {
-  schoolId: string
+  schoolId?: string
   booking: Booking
   schoolClassId?: string
   studentId?: string
@@ -65,7 +74,11 @@ export default function SchoolReassignStudent({
     let active = true
     setAgenda(undefined)
     setError(null)
-    getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}`)
+    getAuthed(
+      schoolId
+        ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}`
+        : `/api/coach/agenda?month=${month}`
+    )
       .then((response) => response.json())
       .then((payload) => {
         if (active) setAgenda(payload)
@@ -85,16 +98,24 @@ export default function SchoolReassignStudent({
         slots.set(`${slot.coachId}|${slot.startTime}`, slot)
     }
     for (const item of agenda?.bookings || []) {
-      if (item.date === targetDate && item.status !== 'cancelled')
-        slots.set(`${item.coachId}|${item.startTime}`, {
+      if (item.date === targetDate && item.status !== 'cancelled') {
+        const key = `${item.coachId}|${item.startTime}`
+        if (slots.get(key)?.schoolClassId && !item.schoolClassId) continue
+        slots.set(key, {
           ...item,
           schoolClassId: item.schoolClassId,
           status: 'booked',
         })
+      }
     }
     return [...slots.values()]
       .filter((slot) => {
-        if (studentId && (!slot.schoolClassId || slot.groupType !== 'grupal')) return false
+        if (
+          studentId &&
+          schoolClassId &&
+          (slot.schoolClassId ? slot.groupType !== 'grupal' : slot.status !== 'available')
+        )
+          return false
         if (
           schoolClassId &&
           (slot.schoolClassId === schoolClassId ||
@@ -143,6 +164,7 @@ export default function SchoolReassignStudent({
       .sort((a, b) => `${a.startTime}|${a.coachId}`.localeCompare(`${b.startTime}|${b.coachId}`))
   }
   const available = destinationsForDate(date)
+  const selectedSlot = available.find((slot) => destinationKey(slot) === destination)
   const days = weekDates(date)
   const statusEntries = new Map<string, { time: string; status: HourStatus }[]>()
   const pushStatus = (targetDate: string, time: string, status: HourStatus) => {
@@ -195,19 +217,24 @@ export default function SchoolReassignStudent({
       entries.sort((a, b) => a.time.localeCompare(b.time)).map((entry) => entry.status),
     ])
   )
-  const destinationKey = (slot: DestinationSlot) => `${slot.coachId}|${slot.date}|${slot.startTime}`
-
   async function save(slot: DestinationSlot) {
     if (!slot) return
     setBusy(true)
     setError(null)
     try {
-      if (schoolClassId && studentId && slot.schoolClassId) {
+      if (schoolId && schoolClassId && studentId) {
         await postAuthed(
           `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(schoolClassId)}/students/${encodeURIComponent(studentId)}/move`,
-          { destinationSchoolClassId: slot.schoolClassId }
+          slot.schoolClassId
+            ? { destinationSchoolClassId: slot.schoolClassId }
+            : {
+                coachId: slot.coachId,
+                date: slot.date,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+              }
         )
-      } else if (schoolClassId && slot.schoolClassId) {
+      } else if (schoolId && schoolClassId && slot.schoolClassId) {
         await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/reassign`, {
           schoolClassId,
           destinationSchoolClassId: slot.schoolClassId,
@@ -216,7 +243,7 @@ export default function SchoolReassignStudent({
           startTime: slot.startTime,
           endTime: slot.endTime,
         })
-      } else if (schoolClassId) {
+      } else if (schoolId && schoolClassId) {
         await patchAuthed(
           `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(schoolClassId)}`,
           {
@@ -227,10 +254,22 @@ export default function SchoolReassignStudent({
             teacherIds: [slot.coachId],
           }
         )
-      } else {
+      } else if (schoolId && slot.schoolClassId) {
+        await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/reassign`, {
+          bookingId: booking.id,
+          destinationSchoolClassId: slot.schoolClassId,
+          coachId: slot.coachId,
+        })
+      } else if (schoolId) {
         await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/reassign`, {
           bookingId: booking.id,
           coachId: slot.coachId,
+          date,
+          startTime: slot.startTime,
+        })
+      } else {
+        await postAuthed('/api/coach/agenda/bookings/reassign', {
+          bookingId: booking.id,
           date,
           startTime: slot.startTime,
         })
@@ -258,8 +297,7 @@ export default function SchoolReassignStudent({
     >
       <div className="flex flex-col gap-3 px-3 sm:px-0">
         <h3 className="text-xl font-bold text-(--c-ocean)">
-          {schoolClassId ? 'Cambiar clase de' : `Reasignar a`}{' '}
-          {studentName || booking.athleteName}
+          {schoolClassId ? 'Cambiar clase de' : `Reasignar a`} {studentName || booking.athleteName}
         </h3>
         <CoachAgendaDateSelector
           selectedDate={date}
@@ -308,11 +346,21 @@ export default function SchoolReassignStudent({
                 </strong>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold leading-tight text-(--c-ocean)">
-                    {agenda?.coachNames?.[slot.coachId] || capitalizeSchoolTerm(coachSingular)}
+                    {slot.schoolClassTitle ||
+                      (groupClass ? 'Nuevo horario grupal' : 'Nuevo horario particular')}
                   </p>
                   <p className="text-xs leading-tight text-(--c-text-2)">
                     {slot.startTime}–{slot.endTime} · {groupClass ? 'Grupal' : 'Particular'}
-                    {slot.schoolClassId ? ' · Grupo existente' : ''}
+                    {slot.schoolClassId ? ' · Clase existente' : ''}
+                  </p>
+                  <p className="text-xs leading-tight text-(--c-text-2)">
+                    {slot.coachName ||
+                      agenda?.coachNames?.[slot.coachId] ||
+                      capitalizeSchoolTerm(coachSingular)}
+                    {slot.locationName ? ` · ${slot.locationName}` : ''}
+                    {slot.schoolClassId && typeof slot.schoolClassStudentCount === 'number'
+                      ? ` · ${slot.schoolClassStudentCount} alumnos`
+                      : ''}
                   </p>
                 </div>
                 <button
@@ -333,9 +381,41 @@ export default function SchoolReassignStudent({
           )}
           {!agenda && <p className="p-4 text-sm text-(--c-text-2)">Cargando horarios…</p>}
         </div>
+        {selectedSlot && (
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-(--c-ocean)">
+            <p className="font-bold">Clase de destino</p>
+            <p className="mt-1 font-semibold">
+              {selectedSlot.schoolClassTitle ||
+                (selectedSlot.groupType === 'grupal'
+                  ? 'Nueva clase grupal'
+                  : 'Nueva clase particular')}
+            </p>
+            <p className="mt-1">
+              {new Date(`${selectedSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              })}{' '}
+              · {selectedSlot.startTime}–{selectedSlot.endTime} ·{' '}
+              {selectedSlot.groupType === 'grupal' ? 'Grupal' : 'Particular'}
+            </p>
+            <p>
+              {selectedSlot.coachName ||
+                agenda?.coachNames?.[selectedSlot.coachId] ||
+                capitalizeSchoolTerm(coachSingular)}
+              {selectedSlot.locationName ? ` · ${selectedSlot.locationName}` : ''}
+            </p>
+            {selectedSlot.schoolClassId &&
+              typeof selectedSlot.schoolClassStudentCount === 'number' && (
+                <p>{selectedSlot.schoolClassStudentCount} alumnos en esta clase</p>
+              )}
+          </div>
+        )}
         <p className="text-sm text-(--c-text-2)">
           {schoolClassId
-            ? 'La clase cambiará de horario o se unirá al grupo seleccionado.'
+            ? studentId
+              ? 'Solo este alumno cambiará de horario o se unirá al grupo seleccionado.'
+              : 'La clase cambiará de horario o se unirá al grupo seleccionado.'
             : 'Al cambiar la clase, la asistencia y evaluación anteriores se conservarán en el historial.'}
         </p>
         {error && (

@@ -1,6 +1,10 @@
 'use client'
 
-import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
+import {
+  keepFocusedFieldVisible,
+  modalViewportStyle,
+  useKeyboardSafeArea,
+} from '@comps/hooks/useKeyboardSafeArea'
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiX } from 'react-icons/fi'
@@ -28,7 +32,7 @@ export default function Sheet({
   closeDisabled?: boolean
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }) {
-  const keyboardSafeArea = useKeyboardSafeArea()
+  const keyboardViewport = useKeyboardSafeArea()
   const [closing, setClosing] = useState(false)
   const closingRef = useRef(false)
   const openRef = useRef(open)
@@ -69,6 +73,14 @@ export default function Sheet({
     setClosing(false)
   }, [open])
 
+  useEffect(() => {
+    if (!open || !keyboardViewport) return
+    const frame = requestAnimationFrame(() => {
+      if (dialogRef.current) keepFocusedFieldVisible(dialogRef.current)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [open, keyboardViewport])
+
   useEffect(
     () => () => {
       if (closeTimer.current) clearTimeout(closeTimer.current)
@@ -89,6 +101,7 @@ export default function Sheet({
         ? '[animation:sheet-slide-down_0.3s_var(--ease-expo)] motion-reduce:[animation:none]'
         : '[animation:sheet-slide-up_0.3s_var(--ease-expo)] motion-reduce:[animation:none]'
       : ''
+  const viewportStyle = modalViewportStyle(keyboardViewport)
 
   return (
     <div
@@ -104,11 +117,12 @@ export default function Sheet({
             : 'items-center overflow-y-auto p-4'
           : 'items-end sm:items-center sm:p-4'
       }`}
-      style={
-        keyboardAware && keyboardSafeArea
-          ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` }
-          : undefined
-      }
+      style={viewportStyle}
+      onFocusCapture={() => {
+        requestAnimationFrame(() => {
+          if (dialogRef.current) keepFocusedFieldVisible(dialogRef.current)
+        })
+      }}
       onClick={(event) => {
         if (event.target === event.currentTarget) requestClose()
       }}
@@ -158,11 +172,11 @@ export default function Sheet({
           showFooterClose ? 'flex flex-col' : ''
         } ${
           fullBleedMobile
-            ? `min-h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] overflow-y-auto rounded-t-[26px] rounded-b-none px-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sheetAnimation} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-2 sm:pt-5'} sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:rounded-[26px] sm:px-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${desktopWidth} sm:[animation:none]`
+            ? `min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-y-auto rounded-t-[26px] rounded-b-none px-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sheetAnimation} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-2 sm:pt-5'} sm:min-h-0 sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:px-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${desktopWidth} sm:[animation:none]`
             : `px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-5'} ${
                 keyboardAware
-                  ? `max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[26px] ${desktopWidth}`
-                  : `${sheetAnimation} max-h-[calc(100dvh-0.5rem)] overflow-y-auto rounded-t-[26px] ${desktopWidth} sm:max-h-[calc(100dvh-2rem)] sm:rounded-[26px] sm:[animation:none]`
+                  ? `max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] overflow-y-auto rounded-[26px] ${desktopWidth}`
+                  : `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-y-auto rounded-t-[26px] ${desktopWidth} sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:[animation:none]`
               }`
         }`}
       >
