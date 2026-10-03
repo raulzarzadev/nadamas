@@ -1,6 +1,6 @@
 'use client'
 
-import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
+import Sheet from '@comps/ui/sheet'
 import { useEffect, useState } from 'react'
 import { FiPlus, FiSearch, FiX } from 'react-icons/fi'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -25,6 +25,7 @@ export default function AgendaAddStudentModal({
   slotLabel,
   schoolId,
   busy,
+  allowCreate = true,
   takenAthleteIds = [],
   takenNames = [],
   onClose,
@@ -33,6 +34,7 @@ export default function AgendaAddStudentModal({
   slotLabel: string
   schoolId?: string
   busy: boolean
+  allowCreate?: boolean
   /** Students already booked in this class — cannot be added again. */
   takenAthleteIds?: string[]
   takenNames?: string[]
@@ -49,7 +51,6 @@ export default function AgendaAddStudentModal({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [createNames, setCreateNames] = useState<string[]>([])
   const [query, setQuery] = useState('')
-  const keyboardSafeArea = useKeyboardSafeArea()
 
   useEffect(() => {
     let active = true
@@ -118,7 +119,7 @@ export default function AgendaAddStudentModal({
     matches.some((student) => student.name.trim().toLowerCase() === normalizedQuery) ||
     takenNamesNormalized.has(normalizedQuery) ||
     createNames.some((name) => name.toLowerCase() === normalizedQuery)
-  const canCreate = trimmedQuery.length > 1 && !hasExactMatch
+  const canCreate = allowCreate && trimmedQuery.length > 1 && !hasExactMatch
 
   const selectedStudents = (students || []).filter((student) => selectedIds.has(student.athleteId))
   const totalSelected = selectedStudents.length + createNames.length
@@ -152,30 +153,23 @@ export default function AgendaAddStudentModal({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Agregar ${participantPlural}`}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm"
-      style={keyboardSafeArea ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` } : undefined}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') onClose()
-      }}
+    <Sheet
+      open
+      onClose={onClose}
+      label={`Agregar ${participantPlural}`}
+      keyboardAware
+      fullBleedMobile
     >
-      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)] sm:max-h-[min(86dvh,38rem)]">
-        <div className="shrink-0 px-4 pt-3 sm:px-5 sm:pt-5">
-          <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[var(--c-border)] sm:hidden" />
+      <div className="flex min-h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(86dvh,38rem)]">
+        <div className="shrink-0 px-4 pt-3 sm:px-0 sm:pt-0">
           <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar {participantPlural}</h3>
           <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-0">
           {error && <p className="mb-3 text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
 
-          <div className="flex flex-col gap-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
             <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
               Nombre de {participantSingular}
               <span className="relative">
@@ -186,7 +180,9 @@ export default function AgendaAddStudentModal({
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Escribe para buscar o crear"
+                  placeholder={
+                    allowCreate ? 'Escribe para buscar o crear' : 'Buscar alumno de la escuela'
+                  }
                   className="min-h-12 w-full rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white pl-10 pr-3 font-normal text-[var(--c-ocean)] outline-none transition focus:border-[var(--c-aqua)] focus:ring-4 focus:ring-[rgba(0,180,216,0.16)]"
                 />
               </span>
@@ -214,11 +210,11 @@ export default function AgendaAddStudentModal({
             )}
 
             {students === undefined ? (
-              <div className="flex h-40 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)] sm:h-56">
+              <div className="flex min-h-40 flex-1 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)] sm:min-h-56">
                 Cargando {participantPlural}...
               </div>
             ) : (
-              <div className="flex h-40 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)] sm:h-56">
+              <div className="flex min-h-40 flex-1 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)] sm:min-h-56">
                 {matches.map((student) => {
                   const taken = takenIds.has(student.athleteId)
                   const active = selectedIds.has(student.athleteId)
@@ -264,6 +260,14 @@ export default function AgendaAddStudentModal({
                   )
                 })}
 
+                {matches.length === 0 && !canCreate && (
+                  <p className="px-3 py-6 text-center text-sm text-[var(--c-text-2)]">
+                    {normalizedQuery
+                      ? `No encontramos ${participantSingular} con esa búsqueda.`
+                      : `No hay ${participantPlural} disponibles para agregar.`}
+                  </p>
+                )}
+
                 {canCreate && (
                   <button
                     type="button"
@@ -298,7 +302,7 @@ export default function AgendaAddStudentModal({
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-[var(--c-border)] bg-white px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 sm:px-5 sm:pb-5">
+        <div className="shrink-0 border-t border-[var(--c-border)] bg-white px-4 pb-3 pt-3 sm:px-0 sm:pb-0">
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <button
               type="button"
@@ -320,7 +324,7 @@ export default function AgendaAddStudentModal({
           </div>
         </div>
       </div>
-    </div>
+    </Sheet>
   )
 }
 

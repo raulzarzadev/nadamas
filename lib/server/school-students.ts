@@ -46,8 +46,24 @@ export async function listSchoolStudents(
     )
     .sort((a, b) => a.name.localeCompare(b.name))
 
+  // Older invitation flows could leave multiple documents for the same linked profile.
+  // Keep one roster entry per account participant / Additional while preserving records
+  // without a stable linked identity (school-managed students can share a name).
+  const seenParticipants = new Set<string>()
+  const uniqueStudents = students.filter((student) => {
+    const participantId = student.additionalProfileId
+      ? `additional:${student.additionalProfileId}`
+      : student.studentUserId
+        ? `account:${student.studentUserId}`
+        : ''
+    if (!participantId) return true
+    if (seenParticipants.has(participantId)) return false
+    seenParticipants.add(participantId)
+    return true
+  })
+
   const accountId = studentUserId || guardianId
-  if (!students.length && accountId) {
+  if (!uniqueStudents.length && accountId) {
     const membershipRef = adminDb.collection('schoolMemberships').doc(`${schoolId}_${accountId}`)
     const [membershipSnapshot, userSnapshot] = await Promise.all([
       membershipRef.get(),
@@ -91,7 +107,7 @@ export async function listSchoolStudents(
       ]
     }
   }
-  return students
+  return uniqueStudents
 }
 
 export async function createSchoolStudent(args: {

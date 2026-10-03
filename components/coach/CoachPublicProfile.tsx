@@ -658,182 +658,185 @@ export default function CoachPublicProfile({
         onClose={() => setBookingModalOpen(false)}
         label="Confirmar reserva"
         keyboardAware
+        fullBleedMobile
       >
-        <p className="text-xs font-semibold uppercase tracking-widest text-[var(--c-text-2)]">
-          Confirmar reserva
-        </p>
-        <h2 className="mt-1 text-xl font-extrabold text-[var(--c-ocean)]">
-          {bookingStep === 'done' ? 'Clases agendadas' : selectedCountLabel(selectedCount)}
-        </h2>
+        <div className="px-4 pb-3 sm:px-0 sm:pb-0">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--c-text-2)]">
+            Confirmar reserva
+          </p>
+          <h2 className="mt-1 text-xl font-extrabold text-[var(--c-ocean)]">
+            {bookingStep === 'done' ? 'Clases agendadas' : selectedCountLabel(selectedCount)}
+          </h2>
 
-        {bookingStep === 'done' ? (
-          <div className="mt-4 rounded-2xl bg-[var(--c-surface)] p-4">
-            <p className="font-semibold text-[var(--c-ocean)]">
-              Listo. El coach recibirá la notificación de estos horarios.
-            </p>
-            <p className="mt-2 text-sm font-medium text-[var(--c-text-2)]">
-              Cuando verifique tu pago te notificaremos por correo o por aquí. También podrás verlo
-              en tu sección Mis clases.
-            </p>
-            <button
-              type="button"
-              onClick={() => setBookingModalOpen(false)}
-              className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--c-ocean)] px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
-            >
-              Entendido
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="mt-3 rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-2.5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-extrabold text-[var(--c-ocean)]">
-                  {selectedCount} {selectedCount === 1 ? 'clase' : 'clases'}
-                </span>
-                <span className="font-extrabold text-[var(--c-ocean)]">{selectedTotal}</span>
-              </div>
-              <div className="mt-1 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowBookingDetails((current) => !current)}
-                  aria-expanded={showBookingDetails}
-                  className="inline-flex min-h-6 items-center text-right text-xs font-semibold text-[var(--c-text-2)] underline underline-offset-4 transition hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                >
-                  {showBookingDetails ? 'Ocultar detalles' : 'Ver detalles'}
-                </button>
-              </div>
-              {showBookingDetails && (
-                <ul className="mt-3 grid gap-2">
-                  {sortedAllSelectedSelections.map((selection) => (
-                    <li
-                      key={bookingSelectionKey(selection)}
-                      className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2"
-                    >
-                      <span className="min-w-0 truncate text-sm font-semibold text-[var(--c-ocean)]">
-                        {selectedDetailLabel(selection)}
-                      </span>
-                      <span className="shrink-0 text-sm font-bold text-[var(--c-text-2)]">
-                        {selection.priceCents !== null
-                          ? formatPesos(selection.priceCents)
-                          : 'Por definir'}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              {user ? (
-                <>
-                  <TextField
-                    label="Nombre"
-                    value={loggedBookingName}
-                    disabled
-                    readOnly
-                    placeholder="Tu nombre"
-                    autoComplete="name"
-                    className="bg-[var(--c-surface)] text-[var(--c-text-2)] disabled:opacity-100"
-                  />
-                  <TextField
-                    label="Correo"
-                    type="email"
-                    value={loggedBookingEmail}
-                    disabled
-                    readOnly
-                    placeholder="tu@email.com"
-                    autoComplete="email"
-                    className="bg-[var(--c-surface)] text-[var(--c-text-2)] disabled:opacity-100"
-                  />
-                </>
-              ) : (
-                <>
-                  <TextField
-                    label="Nombre"
-                    value={bookingName}
-                    onChange={(event) => setBookingName(event.target.value)}
-                    placeholder="Tu nombre"
-                    autoComplete="name"
-                  />
-                  <TextField
-                    label="Correo"
-                    type="email"
-                    value={bookingEmail}
-                    onChange={(event) => setBookingEmail(event.target.value)}
-                    placeholder="tu@email.com"
-                    autoComplete="email"
-                  />
-                </>
-              )}
-              {!user && bookingStep === 'otp' && (
-                <TextField
-                  label="Código"
-                  inputMode="numeric"
-                  value={otpCode}
-                  onChange={(event) => setOtpCode(event.target.value)}
-                  placeholder="000000"
-                />
-              )}
-            </div>
-
-            {!user && bookingStep === 'details' && (
-              <div className="mt-3">
-                <div className="mb-3 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-[var(--c-border)]" />
-                  <p className="text-xs font-medium text-[var(--c-text-2)]">o usa otra opción</p>
-                  <span className="h-px flex-1 bg-[var(--c-border)]" />
-                </div>
-                <button
-                  type="button"
-                  disabled={bookingStatus === 'loading'}
-                  onClick={() => void continueWithGoogle()}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--c-border)] bg-white text-sm font-medium text-[var(--c-text-2)] transition hover:border-[var(--c-aqua)] hover:text-[var(--c-ocean)] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Icon name="color-google" size="sm" />
-                  Continuar con Google
-                </button>
-              </div>
-            )}
-
-            {bookingMessage && (
-              <p
-                className={`mt-3 text-sm ${
-                  bookingStatus === 'error' ? 'text-[var(--rose-tx)]' : 'text-[var(--c-text-2)]'
-                }`}
-              >
-                {bookingMessage}
+          {bookingStep === 'done' ? (
+            <div className="mt-4 rounded-2xl bg-[var(--c-surface)] p-4">
+              <p className="font-semibold text-[var(--c-ocean)]">
+                Listo. El coach recibirá la notificación de estos horarios.
               </p>
-            )}
-
-            <div className="mt-4 flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={bookingStatus === 'loading'}
-                onClick={() =>
-                  user
-                    ? void confirmLoggedBooking()
-                    : bookingStep === 'otp'
-                      ? void verifyOtpAndBook()
-                      : void requestOtp()
-                }
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--c-ocean)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
-              >
-                {bookingStatus === 'loading'
-                  ? 'Confirmando…'
-                  : user || bookingStep === 'otp'
-                    ? 'Reservar clase'
-                    : 'Enviar código'}
-              </button>
+              <p className="mt-2 text-sm font-medium text-[var(--c-text-2)]">
+                Cuando verifique tu pago te notificaremos por correo o por aquí. También podrás
+                verlo en tu sección Mis clases.
+              </p>
               <button
                 type="button"
                 onClick={() => setBookingModalOpen(false)}
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white px-5 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition hover:bg-[var(--c-surface)]"
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--c-ocean)] px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
               >
-                Cancelar
+                Entendido
               </button>
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              <div className="mt-3 rounded-xl border border-[var(--c-border)] bg-[var(--c-surface)] px-3 py-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-extrabold text-[var(--c-ocean)]">
+                    {selectedCount} {selectedCount === 1 ? 'clase' : 'clases'}
+                  </span>
+                  <span className="font-extrabold text-[var(--c-ocean)]">{selectedTotal}</span>
+                </div>
+                <div className="mt-1 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowBookingDetails((current) => !current)}
+                    aria-expanded={showBookingDetails}
+                    className="inline-flex min-h-6 items-center text-right text-xs font-semibold text-[var(--c-text-2)] underline underline-offset-4 transition hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                  >
+                    {showBookingDetails ? 'Ocultar detalles' : 'Ver detalles'}
+                  </button>
+                </div>
+                {showBookingDetails && (
+                  <ul className="mt-3 grid gap-2">
+                    {sortedAllSelectedSelections.map((selection) => (
+                      <li
+                        key={bookingSelectionKey(selection)}
+                        className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2"
+                      >
+                        <span className="min-w-0 truncate text-sm font-semibold text-[var(--c-ocean)]">
+                          {selectedDetailLabel(selection)}
+                        </span>
+                        <span className="shrink-0 text-sm font-bold text-[var(--c-text-2)]">
+                          {selection.priceCents !== null
+                            ? formatPesos(selection.priceCents)
+                            : 'Por definir'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="mt-4 grid gap-3">
+                {user ? (
+                  <>
+                    <TextField
+                      label="Nombre"
+                      value={loggedBookingName}
+                      disabled
+                      readOnly
+                      placeholder="Tu nombre"
+                      autoComplete="name"
+                      className="bg-[var(--c-surface)] text-[var(--c-text-2)] disabled:opacity-100"
+                    />
+                    <TextField
+                      label="Correo"
+                      type="email"
+                      value={loggedBookingEmail}
+                      disabled
+                      readOnly
+                      placeholder="tu@email.com"
+                      autoComplete="email"
+                      className="bg-[var(--c-surface)] text-[var(--c-text-2)] disabled:opacity-100"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <TextField
+                      label="Nombre"
+                      value={bookingName}
+                      onChange={(event) => setBookingName(event.target.value)}
+                      placeholder="Tu nombre"
+                      autoComplete="name"
+                    />
+                    <TextField
+                      label="Correo"
+                      type="email"
+                      value={bookingEmail}
+                      onChange={(event) => setBookingEmail(event.target.value)}
+                      placeholder="tu@email.com"
+                      autoComplete="email"
+                    />
+                  </>
+                )}
+                {!user && bookingStep === 'otp' && (
+                  <TextField
+                    label="Código"
+                    inputMode="numeric"
+                    value={otpCode}
+                    onChange={(event) => setOtpCode(event.target.value)}
+                    placeholder="000000"
+                  />
+                )}
+              </div>
+
+              {!user && bookingStep === 'details' && (
+                <div className="mt-3">
+                  <div className="mb-3 flex items-center gap-3">
+                    <span className="h-px flex-1 bg-[var(--c-border)]" />
+                    <p className="text-xs font-medium text-[var(--c-text-2)]">o usa otra opción</p>
+                    <span className="h-px flex-1 bg-[var(--c-border)]" />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={bookingStatus === 'loading'}
+                    onClick={() => void continueWithGoogle()}
+                    className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--c-border)] bg-white text-sm font-medium text-[var(--c-text-2)] transition hover:border-[var(--c-aqua)] hover:text-[var(--c-ocean)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Icon name="color-google" size="sm" />
+                    Continuar con Google
+                  </button>
+                </div>
+              )}
+
+              {bookingMessage && (
+                <p
+                  className={`mt-3 text-sm ${
+                    bookingStatus === 'error' ? 'text-[var(--rose-tx)]' : 'text-[var(--c-text-2)]'
+                  }`}
+                >
+                  {bookingMessage}
+                </p>
+              )}
+
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  type="button"
+                  disabled={bookingStatus === 'loading'}
+                  onClick={() =>
+                    user
+                      ? void confirmLoggedBooking()
+                      : bookingStep === 'otp'
+                        ? void verifyOtpAndBook()
+                        : void requestOtp()
+                  }
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--c-ocean)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
+                >
+                  {bookingStatus === 'loading'
+                    ? 'Confirmando…'
+                    : user || bookingStep === 'otp'
+                      ? 'Reservar clase'
+                      : 'Enviar código'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBookingModalOpen(false)}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white px-5 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition hover:bg-[var(--c-surface)]"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </Sheet>
     </div>
   )

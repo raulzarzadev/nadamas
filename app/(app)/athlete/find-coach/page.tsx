@@ -1,51 +1,48 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import AthleteSchoolSchedule from '@/components/athlete/AthleteSchoolSchedule'
-import { useSchoolSelection } from '@/components/school/useSchoolSelection'
-import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
+import type { SchoolBookingMode } from '@/lib/school'
+
+interface PublicSchoolOption {
+  id: string
+  name: string
+  bookingMode: SchoolBookingMode
+  showCoachesSchedules: boolean
+}
 
 export default function FindCoachPage() {
-  const { selected, schools, selectedId, status } = useSchoolSelection({
-    includePersonal: true,
-    athleteMode: true,
-  })
-  const terminology = useSchoolTerminology()
   const tenant = useTenantSchool()
-  const schoolName = tenant?.name || selected?.school.name
-  const scheduleTitle = selectedId || tenant ? 'Horarios' : 'Coaches independientes'
-  const scheduleDescription = schoolName
-    ? `Consulta horarios disponibles de los entrenadores de ${schoolName}.`
-    : terminology.schoolId
-      ? `Consulta horarios disponibles de tus ${terminology.coachPlural}.`
-      : 'Consulta horarios disponibles de coaches que ofrecen clases por cuenta propia.'
+  const [schools, setSchools] = useState<PublicSchoolOption[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/public/schools')
+      .then((response) => response.json() as Promise<{ schools?: PublicSchoolOption[] }>)
+      .then((payload) => setSchools(payload.schools || []))
+      .catch(() => setSchools([]))
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
     <div className="flex flex-col gap-4">
-      {status === 'ready' &&
+      {!loading &&
         (tenant ? (
           <AthleteSchoolSchedule
             key={tenant.id}
             schoolId={tenant.id}
             schoolName={tenant.name}
-            title={scheduleTitle}
-            description={scheduleDescription}
+            title="Horarios"
+            description={`Consulta horarios disponibles de los entrenadores de ${tenant.name}.`}
             bookingMode={tenant.bookingMode || 'request'}
-          />
-        ) : selectedId ? (
-          <AthleteSchoolSchedule
-            key={selectedId}
-            schoolId={selectedId}
-            schoolName={selected?.school.name}
-            title={scheduleTitle}
-            description={scheduleDescription}
-            bookingMode={selected?.school.bookingMode || 'request'}
           />
         ) : (
           <AthleteSchoolSchedule
-            key="all-schools"
+            key="public-directory"
             schoolId={null}
-            title={scheduleTitle}
-            description={scheduleDescription}
+            title="Coaches independientes"
+            description="Consulta horarios disponibles de coaches que ofrecen clases por cuenta propia."
             bookingMode="direct"
             schools={schools}
           />

@@ -11,6 +11,7 @@ import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { listClassRequests, listSchoolClasses } from '@/lib/server/school-classes'
 import { listSchoolStudents } from '@/lib/server/school-students'
+import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 
 export const runtime = 'nodejs'
 
@@ -167,7 +168,12 @@ async function handlePOST(request: Request) {
   const body = (await request.json()) as BookingInput & {
     selections?: BookingInput[]
     locationId?: string
-    athleteProfile?: { name?: string; phone?: string }
+    athleteProfile?: {
+      profileId?: string
+      additionalProfileId?: string
+      name?: string
+      phone?: string
+    }
   }
 
   const selections = body.selections?.length ? body.selections : [body]
@@ -175,7 +181,13 @@ async function handlePOST(request: Request) {
     return NextResponse.json({ error: 'Datos de reserva incompletos.' }, { status: 400 })
   }
 
-  const profileName = body.athleteProfile?.name?.trim()
+  const additionalProfile = body.athleteProfile?.additionalProfileId
+    ? await getAdditionalProfile(caller.uid, body.athleteProfile.additionalProfileId)
+    : null
+  if (body.athleteProfile?.additionalProfileId && !additionalProfile) {
+    return NextResponse.json({ error: 'Perfil adicional inválido.' }, { status: 400 })
+  }
+  const profileName = additionalProfile?.name || body.athleteProfile?.name?.trim()
   if (!profileName) {
     return NextResponse.json({ error: 'Completa tu nombre para confirmar.' }, { status: 400 })
   }
@@ -185,6 +197,8 @@ async function handlePOST(request: Request) {
     selections,
     profileName,
     profilePhone: body.athleteProfile?.phone?.trim(),
+    profileId: additionalProfile?.id || caller.uid,
+    additionalProfileId: additionalProfile?.id,
     callerName: caller.name,
     callerEmail: caller.email,
   })

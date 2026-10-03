@@ -96,6 +96,7 @@ export default function CreateSchoolPage() {
       })
       const payload = (await response.json()) as { school: School }
       setOwnedSchool(payload.school)
+      window.dispatchEvent(new Event('nadamas:school-access-updated'))
       setStatus('success')
       setMessage('Tu escuela quedó creada.')
     } catch (error) {

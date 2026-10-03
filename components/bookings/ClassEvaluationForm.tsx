@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import Sheet from '@comps/ui/sheet'
+import { useState } from 'react'
 import { FiStar, FiX } from 'react-icons/fi'
 import { CLASS_TOPIC_LABELS, CLASS_TOPICS, type ClassEvaluation } from '@/lib/class-evaluation'
 import { putAuthed } from '@/lib/client/authed-api'
@@ -17,35 +18,23 @@ export default function ClassEvaluationForm({
   onClose: () => void
   onSaved: (evaluation: ClassEvaluation) => void
 }) {
-  const dialog = useRef<HTMLDialogElement>(null)
   const [value, setValue] = useState<ClassEvaluation>(
     booking.evaluation || { rating: 0, topics: [], publicComment: '', privateComment: '' }
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  useEffect(() => {
-    const previousFocus = document.activeElement as HTMLElement | null
-    const element = dialog.current
-    element?.showModal()
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = overflow
-      element?.close()
-      previousFocus?.focus()
-    }
-  }, [])
   return (
-    <dialog
-      ref={dialog}
-      aria-labelledby="evaluation-title"
-      onCancel={(event) => {
-        if (saving) event.preventDefault()
-        else onClose()
+    <Sheet
+      open
+      onClose={() => {
+        if (!saving) onClose()
       }}
-      className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-0 text-[var(--c-ocean)] backdrop:bg-black/40"
+      label="Evaluar clase"
+      keyboardAware
+      fullBleedMobile
     >
       <form
+        className="flex min-h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(86dvh,44rem)]"
         onSubmit={async (event) => {
           event.preventDefault()
           if (saving) return
@@ -70,7 +59,7 @@ export default function ClassEvaluationForm({
           }
         }}
       >
-        <div className="space-y-5 p-5">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 pb-4 pt-2 sm:px-0 sm:pt-0">
           <div className="flex items-center justify-between gap-3">
             <h2 id="evaluation-title" className="text-xl font-bold">
               Evaluar clase
@@ -192,7 +181,7 @@ export default function ClassEvaluationForm({
             </p>
           )}
         </div>
-        <footer className="sticky bottom-0 border-t border-[var(--c-border)] bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <footer className="shrink-0 border-t border-[var(--c-border)] bg-white px-4 pb-3 pt-3 sm:px-0 sm:pb-0">
           <button
             type="submit"
             disabled={saving}
@@ -202,6 +191,6 @@ export default function ClassEvaluationForm({
           </button>
         </footer>
       </form>
-    </dialog>
+    </Sheet>
   )
 }

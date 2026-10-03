@@ -36,6 +36,7 @@ export async function GET(request: Request, { params }: RouteProps) {
       role: invitation.role,
       email: invitation.email,
       status,
+      acceptedByCurrentUser: invitation.acceptedBy === caller?.uid,
       expiresAt: invitation.expiresAt,
       studentId: invitation.studentId || null,
       studentData: invitation.studentData || null,
@@ -58,6 +59,7 @@ export async function POST(request: Request, { params }: RouteProps) {
     guardianRelationship?: unknown
     guardianPhone?: unknown
     additionalProfileId?: unknown
+    participantIds?: unknown
     useInvitationData?: unknown
   }
   const result = await acceptSchoolInvitation({
@@ -79,6 +81,9 @@ export async function POST(request: Request, { params }: RouteProps) {
       guardianPhone: typeof body.guardianPhone === 'string' ? body.guardianPhone.slice(0, 40) : '',
       additionalProfileId:
         typeof body.additionalProfileId === 'string' ? body.additionalProfileId : '',
+      participantIds: Array.isArray(body.participantIds)
+        ? body.participantIds.filter((id): id is string => typeof id === 'string')
+        : undefined,
       useInvitationData: body.useInvitationData === true,
     },
   })
@@ -90,6 +95,7 @@ export async function POST(request: Request, { params }: RouteProps) {
       revoked: 'Esta invitación fue cancelada.',
       email_mismatch: 'Inicia sesión con el correo al que se envió la invitación.',
       student_profile: 'Completa tu nombre, fecha de nacimiento y rama / género.',
+      participants_required: 'Selecciona al menos un perfil para agregar a la escuela.',
       minor_requires_additional: 'Para un menor, crea y selecciona un Adicional desde Mi perfil.',
       additional_not_found: 'Selecciona un Adicional de tu cuenta.',
       student_not_found: 'El registro del alumno ya no está disponible.',

@@ -56,9 +56,13 @@ export default function CoachAgendaWorkspace() {
       {view === ALL_VIEW && (
         <section className="flex flex-col gap-3">
           <header>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
+              Modo entrenador
+            </p>
             <h1 className="text-2xl font-extrabold sm:text-3xl">Todos mis horarios</h1>
-            <p className="mt-1 text-sm text-(--c-text-2)">
-              Horarios personales y de tus escuelas. Cada fila indica dónde corresponde.
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-(--c-text-2)">
+              Gestiona tu agenda, publica tus horarios y organiza las clases de tus alumnos desde
+              aquí.
             </p>
           </header>
           <CoachAgenda key="all" agendaSources={agendaSources} />

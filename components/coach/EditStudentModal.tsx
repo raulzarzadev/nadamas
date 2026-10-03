@@ -1,6 +1,6 @@
 'use client'
 
-import { useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
+import Sheet from '@comps/ui/sheet'
 import { useState } from 'react'
 import { putAuthed } from '@/lib/client/authed-api'
 import type { StudentProgress } from '@/lib/coach-student-progress'
@@ -41,7 +41,6 @@ export default function EditStudentModal({
   const [address, setAddress] = useState(student.address || '')
   const [location, setLocation] = useState(student.location || '')
   const [status, setStatus] = useState<'idle' | 'saving' | 'error'>('idle')
-  const keyboardSafeArea = useKeyboardSafeArea()
   const canSubmit = name.trim().length > 1 && status !== 'saving'
 
   async function save() {
@@ -66,21 +65,14 @@ export default function EditStudentModal({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Editar datos de ${student.name}`}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm"
-      style={keyboardSafeArea ? { paddingBottom: `calc(${keyboardSafeArea}px + 1rem)` } : undefined}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') onClose()
-      }}
+    <Sheet
+      open
+      onClose={onClose}
+      label={`Editar datos de ${student.name}`}
+      keyboardAware
+      fullBleedMobile
     >
-      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)]">
-        <div className="mx-auto h-1 w-10 rounded-full bg-(--c-border) sm:hidden" />
+      <div className="flex flex-col gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
         <div>
           <h3 className="text-xl font-bold text-(--c-ocean)">Editar alumno</h3>
           <p className="mt-0.5 text-sm text-(--c-text-2)">
@@ -166,6 +158,6 @@ export default function EditStudentModal({
           </button>
         </div>
       </div>
-    </div>
+    </Sheet>
   )
 }

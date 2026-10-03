@@ -51,6 +51,7 @@ export function schoolClassAgendaBooking(args: {
     id: `school-class-${occurrence.id}-${args.coachId}`,
     schoolId: args.schoolId,
     schoolClassId: occurrence.id,
+    schoolClassStudentIds: studentIds,
     schoolClassTitle: occurrence.title || 'Clase escolar',
     schoolClassStudentCount: studentIds.length,
     coachId: args.coachId,

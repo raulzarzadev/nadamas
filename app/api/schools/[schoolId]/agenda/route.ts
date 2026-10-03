@@ -38,7 +38,8 @@ export async function GET(request: Request, { params }: RouteProps) {
   const publicView = url.searchParams.get('view') === 'public'
   const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response && !(publicView && access.response.status === 403)) return access.response
-  if (access.response && !(await getSchoolById(schoolId)))
+  const publicSchool = access.response ? await getSchoolById(schoolId) : null
+  if (access.response && (!publicSchool || (publicView && !publicSchool.isPublic)))
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   const viewerId = access.response ? (await getSchoolCaller(request))?.uid : access.caller.uid
   const canManage =

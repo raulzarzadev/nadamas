@@ -3,7 +3,7 @@
 import Loading from '@comps/Loading'
 import Sheet from '@comps/ui/sheet'
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { FiCalendar, FiChevronRight, FiSearch, FiUser, FiX } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
@@ -225,23 +225,6 @@ export default function AthleteBookingsOverview() {
   const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
   const [evaluationSaved, setEvaluationSaved] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
-  const calendarDialogRef = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    const dialog = calendarDialogRef.current
-    if (!dialog) return
-    if (calendarOpen && !dialog.open) dialog.showModal()
-    else if (!calendarOpen && dialog.open) dialog.close()
-  }, [calendarOpen])
-
-  useEffect(() => {
-    if (!calendarOpen) return
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [calendarOpen])
   const [bookings, setBookings] = useState<Booking[] | undefined>(undefined)
   const [coaches, setCoaches] = useState<Record<string, CoachInfo>>({})
   const { selectedId: selectedSchoolId } = useSchoolSelection({
@@ -333,22 +316,16 @@ export default function AthleteBookingsOverview() {
         </button>
       </header>
 
-      <dialog
-        ref={calendarDialogRef}
-        id="class-calendar-subscription"
-        aria-labelledby="class-calendar-title"
-        onCancel={() => setCalendarOpen(false)}
+      <Sheet
+        open={calendarOpen}
         onClose={() => setCalendarOpen(false)}
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') setCalendarOpen(false)
-        }}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) setCalendarOpen(false)
-        }}
-        className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-[var(--r-md)] border border-[var(--c-border)] bg-white p-0 text-[var(--c-ocean)] shadow-[var(--shadow-md)] backdrop:bg-[rgba(10,37,64,0.45)] backdrop:backdrop-blur-sm"
+        label="Suscribirme al calendario"
+        keyboardAware
+        fullBleedMobile
+        size="xl"
       >
-        <div className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
+        <div id="class-calendar-subscription" className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
+          <div className="flex items-center justify-between gap-3">
             <h2 id="class-calendar-title" className="text-xl font-bold">
               Suscribirme al calendario
             </h2>
@@ -363,7 +340,7 @@ export default function AthleteBookingsOverview() {
           </div>
           {calendarOpen && <CalendarConnectionCard calendarRole="athlete" embedded />}
         </div>
-      </dialog>
+      </Sheet>
 
       {bookings === undefined ? (
         <Loading />

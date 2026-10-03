@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiShare2 } from 'react-icons/fi'
 import ProfileShareDialog from '@/components/profile/ProfileShareDialog'
@@ -11,8 +11,7 @@ import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import type { RoleName } from '@/lib/roles'
-import type { School } from '@/lib/school'
-import { capitalizeSchoolTerm } from '@/lib/school'
+import { capitalizeSchoolTerm, type School } from '@/lib/school'
 import { ROLE_LABEL, SECONDARY_NAV_BY_ROLE } from './nav-config'
 
 const ROLE_PILL_LABEL: Record<RoleName, string> = {
@@ -55,11 +54,12 @@ export default function RoleSwitcher({
 }) {
   const tenant = useTenantSchool()
   const terminology = useSchoolTerminology()
-  const { roles, activeRole, setActiveRole, enableCoach } = useRole()
+  const { roles, activeRole, setActiveRole } = useRole()
   const { user, logout } = useUser() as {
     user: Parameters<typeof initialsFrom>[0]
     logout: () => void
   }
+  const router = useRouter()
   const pathname = usePathname()
   const displayedRole = currentRole ?? activeRole
   const coachRoleLabel = terminology.schoolId
@@ -68,30 +68,23 @@ export default function RoleSwitcher({
   const athleteRoleLabel = terminology.schoolId
     ? capitalizeSchoolTerm(terminology.participantSingular)
     : ROLE_LABEL.athlete
+  const shareSchool = tenant || school
+  const modeItemClassName = (role: RoleName) =>
+    `min-w-0 flex-1 rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer transition-colors ${
+      displayedRole === role ? 'bg-[var(--c-surface)] font-semibold text-[var(--c-ocean-mid)]' : ''
+    }`
   const secondaryLinks = SECONDARY_NAV_BY_ROLE[displayedRole]
   const avatarText = displayedRole === 'athlete' ? 'TÚ' : initialsFrom(user)
   const userEmail = user?.email
-  const shareSchool = tenant || school
-  const [shareTarget, setShareTarget] = useState<{ title: string; publicUrl: string } | null>(null)
   const [open, setOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [slugs, setSlugs] = useState<{ coach?: string; athlete?: string }>({})
+  const [athleteSlug, setAthleteSlug] = useState<string | null>()
+  const [coachSlug, setCoachSlug] = useState<string | null>()
+  const [shareTarget, setShareTarget] = useState<{ title: string; publicUrl: string } | null>(null)
   const switcherRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const focusTrigger = useCallback(() => triggerRef.current?.focus(), [])
-
-  const handleEnableCoach = async () => {
-    setBusy(true)
-    try {
-      await enableCoach()
-      setActiveRole('coach')
-    } finally {
-      setBusy(false)
-      setOpen(false)
-    }
-  }
 
   const getItems = () =>
     menuRef.current
@@ -154,44 +147,31 @@ export default function RoleSwitcher({
     return () => document.removeEventListener('pointerdown', closeOnOutsidePointerDown)
   }, [open])
 
-  // Load the user's public slugs lazily when the menu opens.
   useEffect(() => {
-    if (!open) return
+    if (
+      !open ||
+      (displayedRole !== 'athlete' && displayedRole !== 'coach') ||
+      (displayedRole === 'coach' && !roles.coach)
+    ) {
+      return
+    }
+
     let active = true
     getAuthed('/api/slug?self=1')
       .then((response) => response.json())
-      .then((data: { slugs?: { coach?: string; athlete?: string } }) => {
-        if (active) setSlugs(data.slugs || {})
+      .then((data: { slugs?: { athlete?: string; coach?: string } }) => {
+        if (active) setAthleteSlug(data.slugs?.athlete || null)
+        if (active) setCoachSlug(data.slugs?.coach || null)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (active) setAthleteSlug(null)
+        if (active) setCoachSlug(null)
+      })
+
     return () => {
       active = false
     }
-  }, [open])
-
-  const renderShare = (kind: 'coach' | 'athlete') => {
-    const slug = slugs[kind]
-    if (!slug) return null
-    return (
-      <button
-        type="button"
-        role="menuitem"
-        onClick={() => {
-          const path = kind === 'athlete' ? `/atleta/${slug}` : `/${slug}`
-          setOpen(false)
-          setShareTarget({
-            title: `Compartir perfil de ${ROLE_LABEL[kind].toLowerCase()}`,
-            publicUrl: `${window.location.origin}${path}`,
-          })
-        }}
-        aria-label={`Compartir perfil de ${ROLE_LABEL[kind].toLowerCase()}`}
-        title={kind === 'athlete' ? `nadamas.app/atleta/${slug}` : `nadamas.app/${slug}`}
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]"
-      >
-        <FiShare2 aria-hidden="true" />
-      </button>
-    )
-  }
+  }, [displayedRole, open, roles.coach])
 
   return (
     <>
@@ -233,12 +213,6 @@ export default function RoleSwitcher({
               </div>
             )}
 
-            {userEmail && (
-              <div role="none" aria-hidden="true">
-                <div className="my-1 border-t border-[var(--c-border)]" />
-              </div>
-            )}
-
             {secondaryLinks.map((link) => {
               const active = pathname.startsWith(link.href)
               return (
@@ -258,77 +232,119 @@ export default function RoleSwitcher({
               )
             })}
 
-            <div role="none" aria-hidden="true">
-              <div className="my-1 border-t border-[var(--c-border)]" />
-            </div>
-
-            {!tenant && (slugs.athlete || slugs.coach) && (
-              <p
-                role="none"
-                className="px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--c-text-2)]"
-              >
-                Compartir perfil
-              </p>
-            )}
-
-            <div role="none" className="flex items-center gap-1 pr-1">
+            <div role="none" className="flex items-center">
               <button
                 type="button"
                 role="menuitem"
+                aria-current={displayedRole === 'athlete' ? 'true' : undefined}
                 onClick={() => {
                   setActiveRole('athlete')
                   setOpen(false)
                 }}
-                className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+                className={modeItemClassName('athlete')}
               >
                 Modo {athleteRoleLabel}
               </button>
-              {!tenant && renderShare('athlete')}
-            </div>
-            <div role="none" className="flex items-center gap-1 pr-1">
-              {roles.coach ? (
-                <>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setActiveRole('coach')
-                      setOpen(false)
-                    }}
-                    className="flex-1 text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
-                  >
-                    Modo {coachRoleLabel}
-                  </button>
-                  {!tenant && renderShare('coach')}
-                </>
-              ) : (
+              {displayedRole === 'athlete' && (
                 <button
                   type="button"
                   role="menuitem"
-                  disabled={busy}
-                  onClick={handleEnableCoach}
-                  className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm text-[var(--c-aqua-strong)] font-semibold hover:bg-[var(--c-surface)] disabled:opacity-50 cursor-pointer"
+                  aria-label={
+                    athleteSlug
+                      ? `Compartir perfil de ${athleteRoleLabel.toLowerCase()}`
+                      : `Configurar enlace público para compartir el perfil de ${athleteRoleLabel.toLowerCase()}`
+                  }
+                  title={
+                    athleteSlug === undefined
+                      ? 'Cargando enlace público'
+                      : athleteSlug
+                        ? `Compartir perfil de ${athleteRoleLabel.toLowerCase()}`
+                        : 'Configurar enlace público'
+                  }
+                  disabled={athleteSlug === undefined}
+                  onClick={() => {
+                    setOpen(false)
+                    if (!athleteSlug) {
+                      router.push('/profile')
+                      return
+                    }
+                    setShareTarget({
+                      title: `Compartir perfil de ${athleteRoleLabel.toLowerCase()}`,
+                      publicUrl: `${window.location.origin}/atleta/${athleteSlug}`,
+                    })
+                  }}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
                 >
-                  {busy ? 'Activando…' : 'Activar modo entrenador'}
+                  <FiShare2 aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            <div role="none" className="flex items-center">
+              <button
+                type="button"
+                role="menuitem"
+                aria-current={displayedRole === 'coach' ? 'true' : undefined}
+                onClick={() => {
+                  setOpen(false)
+                  if (roles.coach) {
+                    setActiveRole('coach')
+                  } else {
+                    router.push('/coach/activate')
+                  }
+                }}
+                className={modeItemClassName('coach')}
+              >
+                Modo {coachRoleLabel}
+              </button>
+              {displayedRole === 'coach' && roles.coach && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  aria-label={
+                    coachSlug
+                      ? 'Compartir perfil de entrenador'
+                      : 'Configurar enlace público para compartir el perfil'
+                  }
+                  title={
+                    coachSlug === undefined
+                      ? 'Cargando enlace público'
+                      : coachSlug
+                        ? 'Compartir perfil de entrenador'
+                        : 'Configurar enlace público'
+                  }
+                  disabled={coachSlug === undefined}
+                  onClick={() => {
+                    setOpen(false)
+                    if (!coachSlug) {
+                      router.push('/coach/coach-profile')
+                      return
+                    }
+                    setShareTarget({
+                      title: `Compartir perfil de ${coachRoleLabel.toLowerCase()}`,
+                      publicUrl: `${window.location.origin}/${coachSlug}`,
+                    })
+                  }}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                >
+                  <FiShare2 aria-hidden="true" />
                 </button>
               )}
             </div>
             {(!tenant || canAccessDirectorMode) && (
-              <div role="none" className="flex items-center gap-1 pr-1">
+              <div role="none" className="flex items-center">
                 <button
                   type="button"
                   role="menuitem"
+                  aria-current={displayedRole === 'school' ? 'true' : undefined}
                   onClick={() => {
                     setActiveRole('school')
                     setOpen(false)
                   }}
-                  className={`flex-1 rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
-                    displayedRole === 'school' ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
-                  }`}
+                  className={modeItemClassName('school')}
                 >
                   Modo {ROLE_LABEL.school}
                 </button>
-                {shareSchool && (
+                {displayedRole === 'school' && canAccessDirectorMode && shareSchool && (
                   <button
                     type="button"
                     role="menuitem"
@@ -341,7 +357,7 @@ export default function RoleSwitcher({
                         publicUrl: getPublicSchoolUrl(shareSchool.slug),
                       })
                     }}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
                   >
                     <FiShare2 aria-hidden="true" />
                   </button>
@@ -349,24 +365,21 @@ export default function RoleSwitcher({
               </div>
             )}
             {roles.admin && !tenant && (
-              <div role="none">
+              <div role="none" className="flex items-center">
                 <button
                   type="button"
                   role="menuitem"
+                  aria-current={displayedRole === 'admin' ? 'true' : undefined}
                   onClick={() => {
                     setActiveRole('admin')
                     setOpen(false)
                   }}
-                  className="w-full text-left px-3 py-2 rounded-[var(--r-sm)] text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+                  className={modeItemClassName('admin')}
                 >
                   Modo {ROLE_LABEL.admin}
                 </button>
               </div>
             )}
-
-            <div role="none" aria-hidden="true">
-              <div className="my-1 border-t border-[var(--c-border)]" />
-            </div>
 
             <div role="none">
               <button

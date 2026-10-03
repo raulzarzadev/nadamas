@@ -1,5 +1,6 @@
 'use client'
 
+import Sheet from '@comps/ui/sheet'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FiClock, FiEdit2, FiPhone, FiSend, FiShield } from 'react-icons/fi'
@@ -276,15 +277,16 @@ function InviteCoach({
     }
   }
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 grid place-items-center bg-[rgba(10,37,64,0.55)] p-4"
+    <Sheet
+      open
+      onClose={() => {
+        if (!saving) onClose()
+      }}
+      label={`Invitar ${coachSingular}`}
+      keyboardAware
+      fullBleedMobile
     >
-      <form
-        onSubmit={submit}
-        className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto max-w-md rounded-[var(--r-md)] bg-white p-6 shadow-[var(--shadow-md)]"
-      >
+      <form onSubmit={submit} className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
         <h2 className="text-xl font-extrabold text-(--c-ocean)">Invitar {coachSingular}</h2>
         <p className="mt-1 text-sm text-(--c-text-2)">
           Se enviará un enlace para crear o completar la cuenta de la persona invitada.
@@ -309,6 +311,6 @@ function InviteCoach({
           </button>
         </div>
       </form>
-    </div>
+    </Sheet>
   )
 }

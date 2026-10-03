@@ -7,7 +7,11 @@ import { notifyBookingConfirmed } from '@/lib/server/notifications'
 
 export type BookingInput = Partial<CoachBookingSelection> & { locationId?: string }
 
-function bookingIdFor(athleteId: string, selection: CoachBookingSelection) {
+function bookingIdFor(
+  athleteId: string,
+  selection: CoachBookingSelection,
+  additionalProfileId?: string
+) {
   return createHash('sha1')
     .update(
       [
@@ -17,6 +21,7 @@ function bookingIdFor(athleteId: string, selection: CoachBookingSelection) {
         selection.scheduleId,
         selection.date,
         selection.days.join(','),
+        additionalProfileId || '',
       ].join('|')
     )
     .digest('hex')
@@ -44,6 +49,8 @@ export async function createConfirmedBookings(params: {
   selections: BookingInput[]
   profileName: string
   profilePhone?: string
+  profileId?: string
+  additionalProfileId?: string
   callerName?: string
   callerEmail?: string
 }) {
@@ -51,18 +58,20 @@ export async function createConfirmedBookings(params: {
   const profilePhone = params.profilePhone || ''
 
   const now = Date.now()
-  await adminDb
-    .collection('users')
-    .doc(uid)
-    .set(
-      {
-        name: profileName,
-        ...(profilePhone ? { phone: profilePhone } : {}),
-        profileCompletedAt: now,
-        updatedAt: now,
-      },
-      { merge: true }
-    )
+  if (!params.additionalProfileId) {
+    await adminDb
+      .collection('users')
+      .doc(uid)
+      .set(
+        {
+          name: profileName,
+          ...(profilePhone ? { phone: profilePhone } : {}),
+          profileCompletedAt: now,
+          updatedAt: now,
+        },
+        { merge: true }
+      )
+  }
 
   const athleteDoc = await adminDb.collection('users').doc(uid).get()
   const coachId = selections[0].coachId as string
@@ -71,6 +80,8 @@ export async function createConfirmedBookings(params: {
     const offeringId = (selection.offeringId || selection.locationId) as string
     return {
       athleteId: uid,
+      athleteProfileId: params.profileId || uid,
+      ...(params.additionalProfileId ? { additionalProfileId: params.additionalProfileId } : {}),
       athleteName:
         profileName ||
         athleteDoc.data()?.displayName ||
@@ -104,7 +115,7 @@ export async function createConfirmedBookings(params: {
   })
 
   const savedBookings = bookings.map((booking) => ({
-    id: bookingIdFor(uid, booking),
+    id: bookingIdFor(uid, booking, params.additionalProfileId),
     ...booking,
   }))
   await Promise.all(

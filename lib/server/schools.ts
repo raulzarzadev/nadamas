@@ -108,6 +108,22 @@ export async function getSchoolById(schoolId: string) {
   return schoolFromSnapshot(await adminDb.collection('schools').doc(schoolId).get())
 }
 
+export async function listPublicSchools() {
+  const snapshot = await adminDb.collection('schools').where('isPublic', '==', true).get()
+  return snapshot.docs
+    .map((doc) => {
+      const school = doc.data()
+      return {
+        id: doc.id,
+        name: typeof school.name === 'string' ? school.name : '',
+        bookingMode: school.bookingMode === 'direct' ? ('direct' as const) : ('request' as const),
+        showCoachesSchedules: school.showCoachesSchedules !== false,
+      }
+    })
+    .filter((school) => school.name)
+    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
 export async function getSchoolBySlug(slugInput: string) {
   const slug = normalizeSlug(slugInput)
   if (!slug) return null

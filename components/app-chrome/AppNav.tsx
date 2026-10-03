@@ -16,10 +16,10 @@ import {
   FiUser,
   FiUsers,
 } from 'react-icons/fi'
+import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
-import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { RoleName } from '@/lib/roles'
 import { capitalizeSchoolTerm, type School, type SchoolMembership } from '@/lib/school'
@@ -45,19 +45,16 @@ const NAV_ICONS = {
 // passed it follows the active role from RoleContext.
 export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const tenant = useTenantSchool()
-  const { activeRole } = useRole()
+  const { activeRole, roles } = useRole()
   const terminology = useSchoolTerminology()
   const role = modeProp ?? activeRole
   const pathname = usePathname()
+  const schoolPathname = role === 'school' ? pathname : ''
   const { selected: selectedSchool, status: schoolSelectionStatus } = useSchoolSelection({
     includePersonal: role === 'coach' || role === 'athlete',
     athleteMode: role === 'athlete',
   })
   const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/find-coach'
-  const canShowWorkspaceNavigation =
-    !tenant ||
-    publicAthleteSchedule ||
-    (schoolSelectionStatus === 'ready' && selectedSchool !== null)
   const primary = PRIMARY_NAV_BY_ROLE[role].map((item) => {
     if (
       terminology.schoolId &&
@@ -76,56 +73,70 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
     school: School
     membership: SchoolMembership
   } | null>(null)
+  const hasDirectorAccess = Boolean(
+    schoolAccess?.membership.status === 'active' &&
+      (schoolAccess.membership.roles?.includes('director') ||
+        schoolAccess.membership.role === 'director')
+  )
+  const canShowWorkspaceNavigation =
+    (role !== 'coach' || roles.coach) &&
+    (role !== 'school' || hasDirectorAccess) &&
+    (!tenant ||
+      publicAthleteSchedule ||
+      (schoolSelectionStatus === 'ready' && selectedSchool !== null))
 
   useEffect(() => {
-    if (role !== 'school' && !tenant) {
-      setSchoolAccess(null)
-      return
-    }
+    if (!tenant && role === 'school' && !schoolPathname.startsWith('/school/')) return
 
     let active = true
     const storedSchoolId = window.localStorage.getItem('nadamas.schoolId')
-    getAuthed('/api/schools')
-      .then(
-        (response) =>
-          response.json() as Promise<{
-            schools?: Array<{ school: School; membership: SchoolMembership }>
-            ownedSchool?: School | null
-          }>
-      )
-      .then((payload) => {
-        if (!active) return
-        const schools = schoolsForWorkspace(payload.schools || [], false).filter(
-          (item) => !tenant || item.school.id === tenant.id
+    const refreshSchoolAccess = () => {
+      getAuthed('/api/schools')
+        .then(
+          (response) =>
+            response.json() as Promise<{
+              schools?: Array<{ school: School; membership: SchoolMembership }>
+              ownedSchool?: School | null
+            }>
         )
-        const selected =
-          schools.find((item) => item.school.id === storedSchoolId) ||
-          schools[0] ||
-          (payload.ownedSchool
-            ? {
-                school: payload.ownedSchool,
-                membership: {
-                  id: `${payload.ownedSchool.id}_owner`,
-                  schoolId: payload.ownedSchool.id,
-                  userId: payload.ownedSchool.directorId,
-                  role: 'director' as const,
-                  roles: ['director'] as const,
-                  status: 'active' as const,
-                  createdAt: payload.ownedSchool.createdAt,
-                  updatedAt: payload.ownedSchool.updatedAt,
-                },
-              }
-            : null)
-        setSchoolAccess(selected)
-      })
-      .catch(() => {
-        if (active) setSchoolAccess(null)
-      })
+        .then((payload) => {
+          if (!active) return
+          const schools = schoolsForWorkspace(payload.schools || [], false).filter(
+            (item) => !tenant || item.school.id === tenant.id
+          )
+          const selected =
+            schools.find((item) => item.school.id === storedSchoolId) ||
+            schools[0] ||
+            (payload.ownedSchool
+              ? {
+                  school: payload.ownedSchool,
+                  membership: {
+                    id: `${payload.ownedSchool.id}_owner`,
+                    schoolId: payload.ownedSchool.id,
+                    userId: payload.ownedSchool.directorId,
+                    role: 'director' as const,
+                    roles: ['director'] as const,
+                    status: 'active' as const,
+                    createdAt: payload.ownedSchool.createdAt,
+                    updatedAt: payload.ownedSchool.updatedAt,
+                  },
+                }
+              : null)
+          setSchoolAccess(selected)
+        })
+        .catch(() => {
+          if (active) setSchoolAccess(null)
+        })
+    }
+
+    refreshSchoolAccess()
+    window.addEventListener('nadamas:school-access-updated', refreshSchoolAccess)
 
     return () => {
       active = false
+      window.removeEventListener('nadamas:school-access-updated', refreshSchoolAccess)
     }
-  }, [role, tenant])
+  }, [role, schoolPathname, tenant])
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
@@ -170,11 +181,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
             <RoleSwitcher
               currentRole={role}
               school={schoolAccess?.school}
-              canAccessDirectorMode={Boolean(
-                schoolAccess?.membership.status === 'active' &&
-                  (schoolAccess.membership.roles?.includes('director') ||
-                    schoolAccess.membership.role === 'director')
-              )}
+              canAccessDirectorMode={hasDirectorAccess}
             />
           </div>
         </div>
@@ -227,7 +234,9 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
         )}
 
         {canShowWorkspaceNavigation && role === 'coach' && <CoachSchoolSwitcher />}
-        {canShowWorkspaceNavigation && role === 'athlete' && <AthleteSchoolSwitcher />}
+        {canShowWorkspaceNavigation && role === 'athlete' && !publicAthleteSchedule && (
+          <AthleteSchoolSwitcher />
+        )}
         {publicAthleteSchedule && <div id="athlete-coach-filters" className="min-w-0" />}
       </div>
     </header>

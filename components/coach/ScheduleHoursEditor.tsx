@@ -1,5 +1,6 @@
 'use client'
 
+import Sheet from '@comps/ui/sheet'
 import { useEffect, useState } from 'react'
 import { FiChevronLeft, FiChevronRight, FiPlus, FiX } from 'react-icons/fi'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -82,21 +83,9 @@ export default function ScheduleHoursEditor({
   const removalCount = existingOccurrenceCount(existingTimesByDate, dates, times)
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Editar horas"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(10,37,64,0.55)] p-4 backdrop-blur-sm sm:items-center"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') onClose()
-      }}
-    >
-      <div className="flex max-h-[min(92dvh,44rem)] w-full max-w-lg flex-col overflow-hidden rounded-[var(--r-md)] bg-white shadow-[var(--shadow-md)]">
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5 pb-3">
-          <div className="mx-auto h-1 w-10 shrink-0 rounded-full bg-[var(--c-border)] sm:hidden" />
+    <Sheet open onClose={onClose} label="Editar horas" keyboardAware fullBleedMobile>
+      <div className="flex min-h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(92dvh,44rem)]">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-3 sm:px-0 sm:pb-0">
           <div>
             <h3 className="text-xl font-bold text-[var(--c-ocean)]">Editar horas</h3>
             <p className="mt-1 text-sm text-[var(--c-text-2)]">
@@ -281,7 +270,7 @@ export default function ScheduleHoursEditor({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-2 bg-white p-5 pt-4">
+        <div className="flex shrink-0 flex-col gap-2 bg-white px-4 pb-3 pt-4 sm:px-0 sm:pb-0">
           {error && <p className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">{error}</p>}
           {dates.size > 0 && times.size > 0 && (
             <p className="text-center text-sm font-semibold text-[var(--c-text-2)]">
@@ -332,6 +321,6 @@ export default function ScheduleHoursEditor({
           }}
         />
       )}
-    </div>
+    </Sheet>
   )
 }

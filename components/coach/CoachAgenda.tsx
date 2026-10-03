@@ -66,6 +66,7 @@ function blockCoversClassAt(block: CoachScheduleBlock, date: string, time: strin
 type ActiveSlot = {
   coachId?: string
   schoolId?: string
+  schoolClassId?: string
   date: string
   startTime: string
   endTime: string
@@ -708,6 +709,22 @@ export default function CoachAgenda({
 
   const openSchoolClassEditor = (booking: Booking) => setSchoolClassToEdit(booking)
 
+  const openSchoolClassAddStudent = (booking: Booking) => {
+    const targetSchoolId = schoolIdForBooking(booking) || booking.schoolId
+    if (!targetSchoolId || !booking.schoolClassId) return
+    setAddStudentSlot({
+      coachId: booking.coachId,
+      schoolId: targetSchoolId,
+      schoolClassId: booking.schoolClassId,
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      locationName: booking.locationName || 'Clase escolar',
+      groupType: 'grupal',
+    })
+    setSchoolClassToEdit(null)
+  }
+
   const cancelSchoolClass = (booking: Booking) => {
     const targetSchoolId = schoolIdForBooking(booking)
     if (!targetSchoolId || !booking.schoolClassId) return
@@ -840,13 +857,26 @@ export default function CoachAgenda({
 
   const submitAddStudent = (slot: ActiveSlot, payloads: AddStudentPayload[]) =>
     run(async () => {
-      for (const payload of payloads) {
-        await postAuthed('/api/coach/agenda/bookings', {
-          ...(manageSchoolSchedule && coachId ? { coachId } : {}),
-          ...slot,
-          ...payload,
-          ...(slot.schoolId || schoolId ? { schoolId: slot.schoolId || schoolId } : {}),
-        })
+      if (slot.schoolClassId) {
+        const targetSchoolId = slot.schoolId || schoolId
+        const studentIds = payloads.flatMap((payload) =>
+          payload.athleteId ? [payload.athleteId] : []
+        )
+        if (!targetSchoolId || studentIds.length !== payloads.length)
+          throw new Error('SCHOOL_CLASS_STUDENT_REQUIRED')
+        await postAuthed(
+          `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(slot.schoolClassId)}/students`,
+          { studentIds }
+        )
+      } else {
+        for (const payload of payloads) {
+          await postAuthed('/api/coach/agenda/bookings', {
+            ...(manageSchoolSchedule && coachId ? { coachId } : {}),
+            ...slot,
+            ...payload,
+            ...(slot.schoolId || schoolId ? { schoolId: slot.schoolId || schoolId } : {}),
+          })
+        }
       }
       setAddStudentSlot(null)
     })
@@ -1210,27 +1240,14 @@ export default function CoachAgenda({
                             {manageSchoolSchedule &&
                               !booking.schoolClassId &&
                               !booking.schoolRequestId && (
-                                <div className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-end">
-                                  <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-2 text-xs font-bold text-[var(--c-ocean)] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--c-aqua-strong)]">
-                                    <input
-                                      type="checkbox"
-                                      checked={booking.attended === true}
-                                      onChange={(event) =>
-                                        updateAttendance(booking, event.currentTarget.checked)
-                                      }
-                                      disabled={busy}
-                                      className="h-5 w-5 cursor-pointer rounded border-[var(--c-border)] accent-[var(--c-aqua-strong)] disabled:cursor-not-allowed"
-                                    />
-                                    Asistencia
-                                  </label>
-                                  <button
-                                    type="button"
+                                <div className="flex shrink-0 items-center">
+                                  <RowIconButton
+                                    ariaLabel={`Editar clase de ${booking.athleteName}`}
                                     onClick={() => setBookingToEdit(booking)}
                                     disabled={busy}
-                                    className="min-h-10 rounded-full border border-[var(--c-border)] px-4 text-sm font-bold text-[var(--c-ocean)] transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
                                   >
-                                    Editar
-                                  </button>
+                                    <FiEdit2 aria-hidden="true" />
+                                  </RowIconButton>
                                 </div>
                               )}
                             {!hideBookingActions &&
@@ -1800,6 +1817,22 @@ export default function CoachAgenda({
                 />
               )}
             </div>
+            {schoolClassToEdit.groupType === 'grupal' &&
+              schoolClassToEdit.status === 'confirmed' && (
+                <button
+                  type="button"
+                  onClick={() => openSchoolClassAddStudent(schoolClassToEdit)}
+                  disabled={busy || Boolean(schoolClassToEdit.classFull)}
+                  title={
+                    schoolClassToEdit.classFull
+                      ? 'Abre el cupo para agregar atletas.'
+                      : undefined
+                  }
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FiPlus aria-hidden="true" /> Agregar {capitalizeSchoolTerm(participantPlural)}
+                </button>
+              )}
             <button
               type="button"
               onClick={() => {
@@ -1890,6 +1923,7 @@ export default function CoachAgenda({
       {addStudentSlot && (
         <AgendaAddStudentModal
           schoolId={addStudentSlot.schoolId || schoolId}
+          allowCreate={!addStudentSlot.schoolClassId}
           slotLabel={`${new Date(`${addStudentSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
             weekday: 'short',
             day: 'numeric',
@@ -1904,7 +1938,13 @@ export default function CoachAgenda({
                 (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
                 booking.startTime === addStudentSlot.startTime
             )
-            .map((booking) => booking.athleteId)}
+            .flatMap((booking) =>
+              addStudentSlot.schoolClassId && booking.schoolClassId === addStudentSlot.schoolClassId
+                ? booking.schoolClassStudentIds || []
+                : booking.athleteId
+                  ? [booking.athleteId]
+                  : []
+            )}
           takenNames={activeBookings
             .filter(
               (booking) =>

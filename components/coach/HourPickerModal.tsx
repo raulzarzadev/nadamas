@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useId, useRef, useState } from 'react'
+import Sheet from '@comps/ui/sheet'
+import { useId, useState } from 'react'
 import { FiCheck, FiPlus, FiX } from 'react-icons/fi'
 import { HOUR_OPTIONS } from '@/lib/coach-offerings'
 
@@ -28,7 +29,6 @@ export default function HourPickerModal({
   onSubmit: (times: string[]) => void
 }) {
   const id = useId()
-  const dialog = useRef<HTMLDivElement>(null)
   const [showHalfHours, setShowHalfHours] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const wholeHourOptions = HOUR_OPTIONS.filter((time) => time.endsWith(':00'))
@@ -52,42 +52,18 @@ export default function HourPickerModal({
     setShowHalfHours((current) => !current)
   }
 
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null
-    dialog.current?.querySelector<HTMLButtonElement>('button')?.focus()
-    return () => previous?.focus()
-  }, [])
-
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[rgba(10,37,64,0.58)] p-3 backdrop-blur-sm sm:items-center">
-      <div
-        ref={dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={`${id}-title`}
-        aria-describedby={`${id}-description`}
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white text-[var(--c-ocean)] shadow-[var(--shadow-md)]"
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') {
-            event.stopPropagation()
-            if (!busy) onClose()
-          }
-          if (event.key === 'Tab') {
-            const controls = dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled)')
-            if (!controls?.length) return
-            const first = controls[0]
-            const last = controls[controls.length - 1]
-            if (event.shiftKey && document.activeElement === first) {
-              event.preventDefault()
-              last.focus()
-            } else if (!event.shiftKey && document.activeElement === last) {
-              event.preventDefault()
-              first.focus()
-            }
-          }
-        }}
-      >
-        <header className="flex items-start justify-between gap-3 px-5 pt-5">
+    <Sheet
+      open
+      onClose={() => {
+        if (!busy) onClose()
+      }}
+      label="Agregar horas"
+      keyboardAware
+      fullBleedMobile
+    >
+      <div className="flex min-h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden text-[var(--c-ocean)] sm:min-h-0 sm:max-h-[min(86dvh,44rem)]">
+        <header className="flex shrink-0 items-start justify-between gap-3 px-4 pt-2 sm:px-0 sm:pt-0">
           <div>
             <h3 id={`${id}-title`} className="text-xl font-bold">
               Agregar horas
@@ -107,7 +83,7 @@ export default function HourPickerModal({
           </button>
         </header>
 
-        <div className="min-h-0 overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-0">
           <button
             type="button"
             onClick={toggleHalfHours}
@@ -181,7 +157,7 @@ export default function HourPickerModal({
           )}
         </div>
 
-        <footer className="flex shrink-0 items-center gap-3 border-t border-[var(--c-border)] px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <footer className="flex shrink-0 items-center gap-3 border-t border-[var(--c-border)] px-4 py-3 sm:px-0 sm:pb-0">
           <button
             type="button"
             disabled={busy}
@@ -204,6 +180,6 @@ export default function HourPickerModal({
           </button>
         </footer>
       </div>
-    </div>
+    </Sheet>
   )
 }

@@ -32,6 +32,7 @@ export interface Booking extends CoachBookingSelection {
   evaluation?: import('@/lib/class-evaluation').ClassEvaluation
   /** Set when this row mirrors an occurrence from the school's class scheduler. */
   schoolClassId?: string
+  schoolClassStudentIds?: string[]
   schoolRequestId?: string
   schoolClassTitle?: string
   schoolClassStudentCount?: number
@@ -40,6 +41,8 @@ export interface Booking extends CoachBookingSelection {
   id: string
   schoolId?: string
   athleteId: string
+  athleteProfileId?: string
+  additionalProfileId?: string
   athleteName: string
   /** Coach-controlled capacity state for this specific date and time. */
   classFull?: boolean

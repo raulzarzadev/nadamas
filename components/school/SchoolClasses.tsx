@@ -1,5 +1,6 @@
 'use client'
 
+import Sheet from '@comps/ui/sheet'
 import { useEffect, useRef, useState } from 'react'
 import { FiCalendar, FiCheck, FiEdit2, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
@@ -944,12 +945,8 @@ function Modal({
   children: React.ReactNode
 }) {
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 grid place-items-center bg-[rgba(10,37,64,0.55)] p-4"
-    >
-      <div className="max-h-[calc(100dvh-2rem)] w-full overflow-y-auto max-w-xl rounded-[var(--r-md)] bg-white p-5 shadow-[var(--shadow-md)] sm:p-7">
+    <Sheet open onClose={onClose} label={title} keyboardAware fullBleedMobile size="xl">
+      <div className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-extrabold text-(--c-ocean)">{title}</h2>
           <button
@@ -962,6 +959,6 @@ function Modal({
         </div>
         {children}
       </div>
-    </div>
+    </Sheet>
   )
 }

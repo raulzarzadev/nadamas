@@ -12,7 +12,7 @@ import type {
   SchoolMembership,
   SchoolRole,
 } from '@/lib/school'
-import { getAdditionalProfile } from './additional-profiles'
+import { getAdditionalProfile, listAdditionalProfiles } from './additional-profiles'
 import { adminDb } from './firebase-admin'
 import { isMinor } from './school-students'
 
@@ -163,6 +163,7 @@ export async function acceptSchoolInvitation(args: {
     guardianRelationship?: string
     guardianPhone?: string
     additionalProfileId?: string
+    participantIds?: string[]
     useInvitationData?: boolean
   }
 }) {
@@ -185,6 +186,213 @@ export async function acceptSchoolInvitation(args: {
   const callerEmail = normalizeInvitationEmail(args.caller.email || '')
   if (!callerEmail || callerEmail !== invitation.email) {
     return { ok: false as const, reason: 'email_mismatch' as const }
+  }
+  if (invitation.role === 'student' && args.profile?.participantIds) {
+    const selectedIds = [...new Set(args.profile.participantIds)].filter(Boolean)
+    if (!selectedIds.length || selectedIds.length > 50)
+      return { ok: false as const, reason: 'participants_required' as const }
+    const additionalProfiles = await listAdditionalProfiles(args.caller.uid)
+    const additionalById = new Map(additionalProfiles.map((profile) => [profile.id, profile]))
+    const chosen = selectedIds.map((id) =>
+      id === 'self' ? { id, profile: null } : { id, profile: additionalById.get(id) || null }
+    )
+    if (chosen.some((item) => item.id !== 'self' && !item.profile))
+      return { ok: false as const, reason: 'additional_not_found' as const }
+
+    const now = Date.now()
+    const membershipRef = adminDb
+      .collection('schoolMemberships')
+      .doc(`${invitation.schoolId}_${args.caller.uid}`)
+    const accountProfileRef = adminDb
+      .collection('schoolProfiles')
+      .doc(`${invitation.schoolId}_${args.caller.uid}`)
+    const userSnapshot = await adminDb.collection('users').doc(args.caller.uid).get()
+    const user = userSnapshot.data() || {}
+    const selfName =
+      [user.firstName, user.lastName]
+        .filter((part) => typeof part === 'string' && part)
+        .join(' ') ||
+      (typeof user.nickname === 'string' && user.nickname.trim()) ||
+      (typeof user.displayName === 'string' && user.displayName.trim()) ||
+      (typeof user.name === 'string' && user.name.trim()) ||
+      args.caller.name ||
+      args.caller.email?.split('@')[0] ||
+      'Mi perfil'
+    const existingSchoolStudents = await adminDb
+      .collection('schoolStudents')
+      .where('schoolId', '==', invitation.schoolId)
+      .get()
+    const targetStudents = chosen.map((item, index) => {
+      const linkedId = item.id === 'self' ? args.caller.uid : item.id
+      const matchingDocs = existingSchoolStudents.docs.filter((doc) => {
+        const data = doc.data()
+        return item.id === 'self'
+          ? data.studentUserId === args.caller.uid
+          : data.additionalProfileId === item.id
+      })
+      const invitationDoc = invitation.studentId
+        ? existingSchoolStudents.docs.find((doc) => doc.id === invitation.studentId)
+        : undefined
+      const invitationData = invitationDoc?.data()
+      const invitationMatchesTarget =
+        item.id === 'self'
+          ? invitationData?.studentUserId === args.caller.uid
+          : invitationData?.additionalProfileId === item.id
+      const deterministicDoc = existingSchoolStudents.docs.find(
+        (doc) => doc.id === `${invitation.schoolId}_${linkedId}`
+      )
+      const preferredDoc = invitationMatchesTarget
+        ? invitationDoc
+        : deterministicDoc && matchingDocs.some((doc) => doc.id === deterministicDoc.id)
+          ? deterministicDoc
+          : matchingDocs.sort((a, b) => (a.data().createdAt || 0) - (b.data().createdAt || 0))[0]
+      // Preserve the pre-created invited-student record only for a single selected target.
+      // With several selected profiles, assigning it to the first checkbox created duplicates.
+      const ref = preferredDoc
+        ? adminDb.collection('schoolStudents').doc(preferredDoc.id)
+        : index === 0 && chosen.length === 1 && invitation.studentId
+          ? adminDb.collection('schoolStudents').doc(invitation.studentId)
+          : adminDb.collection('schoolStudents').doc(`${invitation.schoolId}_${linkedId}`)
+      const profile = item.profile
+      const isSelf = item.id === 'self'
+      return {
+        ref,
+        profile,
+        isSelf,
+        values: {
+          name: profile?.name || (isSelf ? invitation.studentData?.name || selfName : ''),
+          birthDate: profile?.birthDate || (isSelf ? invitation.studentData?.birthDate || '' : ''),
+          gender: profile?.gender || (isSelf ? invitation.studentData?.gender || 'otro' : 'otro'),
+        },
+      }
+    })
+    const uniqueTargets = targetStudents.filter(
+      (target, index) =>
+        targetStudents.findIndex((other) => other.ref.path === target.ref.path) === index
+    )
+
+    const transactionResult = await adminDb.runTransaction(async (transaction) => {
+      const invitationSnapshot = await transaction.get(invitation.ref)
+      if (invitationSnapshot.data()?.status !== 'pending')
+        return { ok: false as const, reason: 'accepted' as const }
+      if ((invitationSnapshot.data()?.expiresAt || 0) <= Date.now())
+        return { ok: false as const, reason: 'expired' as const }
+      const membershipSnapshot = await transaction.get(membershipRef)
+      const studentSnapshots = await Promise.all(
+        uniqueTargets.map((target) => transaction.get(target.ref))
+      )
+      for (let index = 0; index < uniqueTargets.length; index += 1) {
+        const target = uniqueTargets[index]
+        const snapshot = studentSnapshots[index]
+        if (!target || !snapshot) continue
+        const existing = snapshot.data()
+        if (invitation.studentId && target.ref.id === invitation.studentId && !snapshot.exists)
+          return { ok: false as const, reason: 'student_not_found' as const }
+        if (snapshot.exists && existing?.schoolId !== invitation.schoolId)
+          return { ok: false as const, reason: 'student_not_found' as const }
+        if (
+          snapshot.exists &&
+          existing?.studentUserId &&
+          (existing.studentUserId !== args.caller.uid || !target.isSelf)
+        )
+          return { ok: false as const, reason: 'student_already_linked' as const }
+        if (
+          snapshot.exists &&
+          existing?.additionalProfileId &&
+          existing.additionalProfileId !== target.profile?.id
+        )
+          return { ok: false as const, reason: 'student_already_linked' as const }
+        const existingManagers = [
+          ...(Array.isArray(existing?.managerIds) ? existing.managerIds : []),
+          ...(Array.isArray(existing?.guardianIds) ? existing.guardianIds : []),
+        ]
+        if (
+          snapshot.exists &&
+          existingManagers.length > 0 &&
+          !existingManagers.includes(args.caller.uid)
+        )
+          return { ok: false as const, reason: 'student_already_linked' as const }
+      }
+
+      const existingMembership = membershipSnapshot.exists
+        ? normalizeSchoolMembership(membershipSnapshot.data() as SchoolMembership)
+        : null
+      const existingRoles = existingMembership?.roles?.length
+        ? existingMembership.roles
+        : existingMembership?.role
+          ? [existingMembership.role]
+          : []
+      const roles = [...new Set([...existingRoles, 'student'] as SchoolRole[])]
+      transaction.set(
+        membershipRef,
+        {
+          schoolId: invitation.schoolId,
+          userId: args.caller.uid,
+          role: existingMembership?.role || 'student',
+          roles,
+          status: 'active',
+          createdAt: existingMembership?.createdAt || now,
+          updatedAt: now,
+        },
+        { merge: true }
+      )
+      for (let index = 0; index < uniqueTargets.length; index += 1) {
+        const target = uniqueTargets[index]
+        const snapshot = studentSnapshots[index]
+        if (!target || !snapshot) continue
+        const existing = snapshot.data() || {}
+        const studentUserId = target.isSelf ? args.caller.uid : ''
+        transaction.set(
+          target.ref,
+          {
+            ...existing,
+            id: target.ref.id,
+            schoolId: invitation.schoolId,
+            studentUserId,
+            accountParticipant: target.isSelf,
+            additionalProfileId: target.profile?.id || '',
+            managerIds: target.isSelf ? [] : [args.caller.uid],
+            guardianIds: target.isSelf ? [] : [args.caller.uid],
+            guardianName: existing.guardianName || (target.isSelf ? '' : selfName),
+            guardianRelationship: existing.guardianRelationship || '',
+            guardianPhone: existing.guardianPhone || '',
+            guardianEmail: existing.guardianEmail || args.caller.email || '',
+            studentEmail: existing.studentEmail || (target.isSelf ? args.caller.email || '' : ''),
+            name: target.values.name,
+            birthDate: target.values.birthDate,
+            gender: target.values.gender,
+            status: 'active',
+            createdAt: existing.createdAt || now,
+            updatedAt: now,
+          },
+          { merge: true }
+        )
+      }
+      if (chosen.some((item) => item.id === 'self')) {
+        transaction.set(
+          accountProfileRef,
+          {
+            schoolId: invitation.schoolId,
+            userId: args.caller.uid,
+            role: 'student',
+            name: selfName,
+            profileComplete: Boolean(selfName),
+            updatedAt: now,
+            ...(!membershipSnapshot.exists ? { createdAt: now } : {}),
+          },
+          { merge: true }
+        )
+      }
+      transaction.update(invitation.ref, {
+        status: 'accepted',
+        acceptedBy: args.caller.uid,
+        acceptedAt: now,
+        updatedAt: now,
+      })
+      return { ok: true as const }
+    })
+    if (!transactionResult.ok) return transactionResult
+    return { ok: true as const, schoolId: invitation.schoolId, role: invitation.role }
   }
   const additional = args.profile?.additionalProfileId
     ? await getAdditionalProfile(args.caller.uid, args.profile.additionalProfileId)
