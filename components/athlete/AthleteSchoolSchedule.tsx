@@ -22,7 +22,7 @@ import {
   hasPublishedOfferingSchedules,
   resolveOfferings,
 } from '@/lib/coach-offerings'
-import type { SchoolBookingMode, SchoolStudent } from '@/lib/school'
+import { type SchoolBookingMode, type SchoolStudent, schoolClassDisplayTitle } from '@/lib/school'
 
 const dateKey = (date: Date) => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
@@ -642,7 +642,10 @@ export default function AthleteSchoolSchedule({
                 }),
             teacherId: selectedSlot.coachId,
             preferredTeacherId: selectedSlot.coachId,
-            title: selectedSlot.locationName || 'Clase escolar',
+            title: schoolClassDisplayTitle(
+              undefined,
+              selectedSlot.groupType === 'grupal' ? 'group' : 'individual'
+            ),
             type: selectedSlot.groupType === 'grupal' ? 'group' : 'individual',
             preferredDays: [day],
             preferredStartTime: selectedSlot.startTime,

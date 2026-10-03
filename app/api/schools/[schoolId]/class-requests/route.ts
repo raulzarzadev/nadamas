@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { SchoolClassOccurrence, SchoolStudent } from '@/lib/school'
-import { type SchoolGender, schoolMembershipHasRole } from '@/lib/school'
+import { type SchoolGender, schoolClassDisplayTitle, schoolMembershipHasRole } from '@/lib/school'
 import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
@@ -169,7 +169,10 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   const requestedEnd = typeof body.preferredEndTime === 'string' ? body.preferredEndTime : '17:00'
   const classValidation = validateClassInput({
     schoolId,
-    title: typeof body.title === 'string' && body.title.trim() ? body.title : 'Clase escolar',
+    title: schoolClassDisplayTitle(
+      typeof body.title === 'string' ? body.title : undefined,
+      body.type === 'group' ? 'group' : 'individual'
+    ),
     type: body.type === 'group' ? 'group' : 'individual',
     teacherIds: [teacherId],
     studentIds: [studentId],

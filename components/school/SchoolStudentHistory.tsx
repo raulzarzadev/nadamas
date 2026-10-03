@@ -10,22 +10,34 @@ import type {
   SchoolStudentHistory as HistoryPayload,
   SchoolHistoryClass,
 } from '@/lib/school-student-history'
+import SchoolStudentClassAssignment from './SchoolStudentClassAssignment'
 
 const STATUS_LABELS: Record<SchoolHistoryClass['status'], string> = {
-  taken: 'Clase tomada',
-  scheduled: 'Programada',
+  taken: 'Tomada',
+  scheduled: 'Confirmada',
   cancelled: 'Cancelada',
-  absent: 'Sin asistencia registrada',
-  unconfirmed: 'Asistencia sin confirmar',
+  absent: 'Ausente',
+  unconfirmed: 'Sin confirmar',
+}
+
+function durationMinutes(startTime: string, endTime: string) {
+  const [startHour, startMinute] = startTime.split(':').map(Number)
+  const [endHour, endMinute] = endTime.split(':').map(Number)
+  const minutes = endHour * 60 + endMinute - (startHour * 60 + startMinute)
+  return Number.isFinite(minutes) && minutes > 0 ? minutes : null
 }
 
 export default function SchoolStudentHistory({
   schoolId,
+  timezone,
   student,
+  canAssign,
   onClose,
 }: {
   schoolId: string
+  timezone: string
   student: SchoolStudent
+  canAssign: boolean
   onClose: () => void
 }) {
   const terminology = useSchoolTerminology()
@@ -35,6 +47,7 @@ export default function SchoolStudentHistory({
   const [history, setHistory] = useState<HistoryPayload | null>(null)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(() => new Set())
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt deliberately reloads the same resource after a failure.
   useEffect(() => {
     let active = true
@@ -64,6 +77,7 @@ export default function SchoolStudentHistory({
       label={`Historial de ${student.name}`}
       keyboardAware
       fullBleedMobile
+      size="2xl"
     >
       <div className="px-4 pb-3 sm:px-0 sm:pb-0">
         <div className="flex items-start justify-between gap-3">
@@ -74,6 +88,14 @@ export default function SchoolStudentHistory({
             <p className="mt-1 text-sm text-(--c-text-2)">{student.name} · En esta escuela</p>
           </div>
         </div>
+        {canAssign && (
+          <SchoolStudentClassAssignment
+            schoolId={schoolId}
+            timezone={timezone}
+            student={student}
+            onAssigned={() => setAttempt((value) => value + 1)}
+          />
+        )}
         {error ? (
           <div role="alert" className="mt-5 text-sm text-(--c-text-2)">
             <p>No pudimos cargar el historial. Inténtalo de nuevo.</p>
@@ -112,73 +134,106 @@ export default function SchoolStudentHistory({
                 Esta persona todavía no tiene clases registradas en la escuela.
               </p>
             ) : (
-              <ol className="mt-5 grid gap-3">
-                {history.classes.map((item) => (
-                  <li
-                    key={item.id}
-                    className="rounded-[var(--r-sm)] border border-(--c-border) p-4"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="font-bold text-(--c-ocean)">{item.title}</h3>
-                      <span className="text-xs font-semibold text-(--c-text-2)">
+              <ol className="mt-5 grid gap-2">
+                {history.classes.map((item) => {
+                  const coachNames = item.coachIds
+                    .map((id) => history.coachNames[id] || capitalizeSchoolTerm(coachSingular))
+                    .join(', ')
+                  const date = new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
+                    day: 'numeric',
+                    month: 'short',
+                  })
+                  const duration = durationMinutes(item.startTime, item.endTime)
+                  const comments = [
+                    ...(item.note
+                      ? [{ id: 'class-note', label: 'Comentario', text: item.note }]
+                      : []),
+                    ...item.evaluations.map((evaluation) => ({
+                      id: evaluation.id,
+                      label:
+                        evaluation.direction === 'from-coach'
+                          ? `De ${history.coachNames[evaluation.coachId] || capitalizeSchoolTerm(coachSingular)}`
+                          : `Para ${history.coachNames[evaluation.coachId] || capitalizeSchoolTerm(coachSingular)}`,
+                      text: [
+                        evaluation.comment,
+                        evaluation.rating !== undefined ? `${evaluation.rating} / 5 estrellas` : '',
+                        evaluation.level
+                          ? `Nivel y avance: ${evaluation.level}${evaluation.result ? ` · Resultado: ${evaluation.result} / 4` : ''}`
+                          : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' · '),
+                    })),
+                  ].filter((comment) => comment.text)
+                  const expanded = expandedComments.has(item.id)
+                  const hasMore =
+                    comments.length > 1 || comments.some((comment) => comment.text.length > 130)
+                  const visibleComments = expanded ? comments : comments.slice(0, 1)
+
+                  return (
+                    <li
+                      key={item.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-[var(--r-sm)] border border-(--c-border) px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:gap-x-5"
+                    >
+                      <div className="min-w-0">
+                        <h3 className="truncate font-bold text-(--c-ocean)">
+                          {coachNames || capitalizeSchoolTerm(coachSingular)}
+                        </h3>
+                        {item.title && (
+                          <p className="truncate text-xs text-(--c-text-2)">{item.title}</p>
+                        )}
+                      </div>
+                      <time dateTime={item.date} className="text-sm text-(--c-text-2)">
+                        {date}
+                      </time>
+                      {duration && (
+                        <span className="text-sm text-(--c-text-2)">{duration} min</span>
+                      )}
+                      <span className="justify-self-end text-xs font-semibold text-(--c-text-2)">
                         {STATUS_LABELS[item.status]}
                       </span>
-                    </div>
-                    <p className="mt-2 text-sm text-(--c-text-2)">
-                      {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}{' '}
-                      · {item.startTime}–{item.endTime}
-                    </p>
-                    <p className="mt-1 text-sm text-(--c-ocean)">
-                      {item.coachIds
-                        .map((id) => history.coachNames[id] || capitalizeSchoolTerm(coachSingular))
-                        .join(', ')}
-                    </p>
-                    {item.location && (
-                      <p className="mt-1 text-xs text-(--c-text-2)">{item.location}</p>
-                    )}
-                    {item.evaluations.length ? (
-                      <div className="mt-3 grid gap-2 border-t border-(--c-border) pt-3">
-                        {item.evaluations.map((evaluation) => (
-                          <div
-                            key={evaluation.id}
-                            className="rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm"
-                          >
-                            <h4 className="font-semibold text-(--c-ocean)">
-                              {evaluation.direction === 'from-coach'
-                                ? `Evaluación de ${coachSingular}`
-                                : `Evaluación para ${coachSingular}`}{' '}
-                              ·{' '}
-                              {history.coachNames[evaluation.coachId] ||
-                                capitalizeSchoolTerm(coachSingular)}
-                            </h4>
-                            {evaluation.rating !== undefined && (
-                              <p className="mt-1">{evaluation.rating} / 5 estrellas</p>
-                            )}
-                            {evaluation.level && (
-                              <p className="mt-1">
-                                Nivel y avance: {evaluation.level}
-                                {evaluation.result ? ` · Resultado: ${evaluation.result} / 4` : ''}
-                              </p>
-                            )}
-                            {evaluation.comment && (
-                              <p className="mt-2 whitespace-pre-wrap text-(--c-text-2)">
-                                {evaluation.comment}
-                              </p>
-                            )}
+                      <div className="col-span-2 min-w-0 sm:col-span-4">
+                        {visibleComments.length ? (
+                          <div className="grid gap-1 text-sm">
+                            {visibleComments.map((comment) => {
+                              const text =
+                                !expanded && comment.text.length > 130
+                                  ? `${comment.text.slice(0, 130).trimEnd()}…`
+                                  : comment.text
+                              return (
+                                <p key={comment.id} className="min-w-0 text-(--c-text-2)">
+                                  <span className="font-semibold text-(--c-ocean)">
+                                    {comment.label}:{' '}
+                                  </span>
+                                  <span className="whitespace-pre-wrap">{text}</span>
+                                </p>
+                              )
+                            })}
                           </div>
-                        ))}
+                        ) : (
+                          <p className="text-xs text-(--c-text-2)">Sin comentarios registrados.</p>
+                        )}
+                        {hasMore && (
+                          <button
+                            type="button"
+                            aria-expanded={expanded}
+                            onClick={() =>
+                              setExpandedComments((current) => {
+                                const next = new Set(current)
+                                if (next.has(item.id)) next.delete(item.id)
+                                else next.add(item.id)
+                                return next
+                              })
+                            }
+                            className="mt-1 min-h-8 text-sm font-semibold text-[var(--c-aqua-strong)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                          >
+                            Ver {expanded ? 'menos' : 'más'}
+                          </button>
+                        )}
                       </div>
-                    ) : (
-                      <p className="mt-3 text-xs text-(--c-text-2)">
-                        Sin evaluaciones registradas.
-                      </p>
-                    )}
-                  </li>
-                ))}
+                    </li>
+                  )
+                })}
               </ol>
             )}
           </>

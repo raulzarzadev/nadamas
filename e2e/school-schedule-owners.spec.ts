@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
-import type { SchoolClassOccurrence, SchoolMembership } from '../lib/school'
+import {
+  type SchoolClassOccurrence,
+  type SchoolMembership,
+  schoolClassDisplayTitle,
+} from '../lib/school'
 import {
   coalesceGroupClassOccurrences,
   schoolClassAgendaBooking,
@@ -22,6 +26,12 @@ function membership(
     updatedAt: 0,
   }
 }
+
+test('muestra el tipo de clase en lugar del título genérico heredado', () => {
+  expect(schoolClassDisplayTitle('Clase escolar', 'group')).toBe('Clase grupal')
+  expect(schoolClassDisplayTitle('Clase escolar', 'individual')).toBe('Clase particular')
+  expect(schoolClassDisplayTitle('Técnica de crol', 'group')).toBe('Técnica de crol')
+})
 
 test.describe('responsables de horarios escolares', () => {
   test('incluye al director junto a los coaches activos', () => {
@@ -104,8 +114,8 @@ test.describe('responsables de horarios escolares', () => {
       ]),
     })
     expect(booking.schoolClassStudents).toEqual([
-      { id: 'student-1', name: 'Chavalito Uno', pending: true },
-      { id: 'student-2', name: 'Dante Gutiérrez', pending: false },
+      { id: 'student-1', name: 'Chavalito Uno', pending: true, attended: false, note: '' },
+      { id: 'student-2', name: 'Dante Gutiérrez', pending: false, attended: false, note: '' },
     ])
   })
 })

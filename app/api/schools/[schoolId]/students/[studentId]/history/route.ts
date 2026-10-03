@@ -32,7 +32,8 @@ export async function GET(
     const history = await getSchoolStudentHistory(
       student,
       school?.timezone || 'America/Mexico_City',
-      !director && teacher && !managesStudent ? access.caller.uid : undefined
+      !director && teacher && !managesStudent ? access.caller.uid : undefined,
+      director || teacher
     )
     return NextResponse.json(history)
   } catch {

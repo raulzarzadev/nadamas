@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server'
-import { type SchoolClassRequest, schoolMembershipHasRole } from '@/lib/school'
+import {
+  type SchoolClassRequest,
+  schoolClassDisplayTitle,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
@@ -78,8 +82,10 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     )
   const classValidation = validateClassInput({
     schoolId,
-    title:
-      typeof body.title === 'string' && body.title.trim() ? body.title.trim() : 'Clase escolar',
+    title: schoolClassDisplayTitle(
+      typeof body.title === 'string' ? body.title : undefined,
+      record.type
+    ),
     type: record.type,
     teacherIds,
     studentIds: [record.studentId],

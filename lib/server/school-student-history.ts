@@ -7,7 +7,11 @@ import {
   type StudentProgressEntry,
 } from '@/lib/coach-student-progress'
 import { publicNameFromUser } from '@/lib/public-name'
-import type { SchoolClassOccurrence, SchoolStudent } from '@/lib/school'
+import {
+  type SchoolClassOccurrence,
+  type SchoolStudent,
+  schoolClassDisplayTitle,
+} from '@/lib/school'
 import {
   type SchoolHistoryClass,
   type SchoolHistoryEvaluation,
@@ -27,16 +31,37 @@ interface SchoolHistoryReview {
   comment: string
 }
 
+interface SchoolStudentRecord {
+  sourceId: string
+  studentId: string
+  coachId: string
+  attended?: boolean
+  note?: string
+  updatedAt?: number
+}
+
 export async function getSchoolStudentHistory(
   student: SchoolStudent,
   timezone: string,
-  teacherId?: string
+  teacherId?: string,
+  includeNotes = false
 ): Promise<SchoolStudentHistory> {
-  const [bookingSnapshot, classSnapshot, reviewSnapshot] = await Promise.all([
+  const [bookingSnapshot, classSnapshot, reviewSnapshot, recordSnapshot] = await Promise.all([
     adminDb.collection('bookings').where('schoolId', '==', student.schoolId).get(),
     adminDb.collection('schoolClassOccurrences').where('schoolId', '==', student.schoolId).get(),
     adminDb.collection('schoolReviews').where('schoolId', '==', student.schoolId).get(),
+    adminDb.collection('agendaStudentRecords').where('schoolId', '==', student.schoolId).get(),
   ])
+  const studentIds = new Set(
+    [student.id, student.studentUserId, student.additionalProfileId].filter(Boolean)
+  )
+  const notes = new Map<string, SchoolStudentRecord>()
+  for (const doc of recordSnapshot.docs) {
+    const record = doc.data() as SchoolStudentRecord
+    if (!studentIds.has(record.studentId) || (teacherId && record.coachId !== teacherId)) continue
+    const key = `${record.sourceId}|${record.studentId}`
+    if ((record.updatedAt || 0) >= (notes.get(key)?.updatedAt || 0)) notes.set(key, record)
+  }
   const bookings = studentSchoolBookings(
     bookingSnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }) as Booking),
     student,
@@ -99,6 +124,7 @@ export async function getSchoolStudentHistory(
         location: booking.locationName || '',
         coachIds: [booking.coachId],
         status: schoolBookingHistoryStatus(booking, timezone),
+        note: includeNotes ? notes.get(`${booking.id}|${booking.athleteId}`)?.note || '' : '',
         evaluations,
       } satisfies SchoolHistoryClass
     })
@@ -106,18 +132,22 @@ export async function getSchoolStudentHistory(
   const classes: SchoolHistoryClass[] = [
     ...occurrences.map((item) => ({
       id: `class:${item.id}`,
-      title: item.title || 'Clase escolar',
+      title: schoolClassDisplayTitle(item.title, item.type),
       date: item.date,
       startTime: item.startTime,
       endTime: item.endTime,
       location: item.location || '',
       coachIds: teacherId ? [teacherId] : item.teacherIds,
-      status:
-        item.status === 'completed'
-          ? ('taken' as const)
-          : item.status === 'cancelled'
-            ? ('cancelled' as const)
-            : ('scheduled' as const),
+      status: schoolBookingHistoryStatus(
+        {
+          date: item.date,
+          endTime: item.endTime,
+          status: item.status === 'cancelled' ? 'cancelled' : 'confirmed',
+          attended: notes.get(`${item.id}|${student.id}`)?.attended,
+        },
+        timezone
+      ),
+      note: includeNotes ? notes.get(`${item.id}|${student.id}`)?.note || '' : '',
       evaluations: reviews
         .filter((review) => review.occurrenceId === item.id)
         .map((review) => ({
@@ -134,6 +164,7 @@ export async function getSchoolStudentHistory(
     const existing = classes.find((item) => item.id === detail.id)
     if (existing) {
       existing.coachIds = [...new Set([...existing.coachIds, ...detail.coachIds])]
+      if (!existing.note) existing.note = detail.note
       existing.evaluations.push(...detail.evaluations)
     } else classes.push(detail)
   }

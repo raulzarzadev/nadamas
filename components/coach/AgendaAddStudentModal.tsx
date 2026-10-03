@@ -160,7 +160,7 @@ export default function AgendaAddStudentModal({
       keyboardAware
       fullBleedMobile
     >
-      <div className="flex min-h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] w-full flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(86dvh,38rem)]">
+      <div className="flex min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),38rem)]">
         <div className="shrink-0 px-4 pt-3 sm:px-0 sm:pt-0">
           <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar {participantPlural}</h3>
           <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>

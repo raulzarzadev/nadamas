@@ -1,6 +1,7 @@
 'use client'
-import { useId, useRef, useState } from 'react'
+import { modalViewportStyle, useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import Image from 'next/image'
+import { useId, useRef, useState } from 'react'
 import { FiImage, FiPlus } from 'react-icons/fi'
 
 export interface ImageInputProps {
@@ -35,6 +36,7 @@ export default function ImageInput({
   const inputId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const previewViewport = useKeyboardSafeArea(isPreviewOpen)
   const isDisabled = disabled || busy
 
   if (imageUrl) {
@@ -60,13 +62,9 @@ export default function ImageInput({
           </button>
 
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-[var(--c-ocean)]">
-              {buttonLabel || 'Imagen subida'}
-            </p>
+            <p className="font-semibold text-[var(--c-ocean)]">{buttonLabel || 'Imagen subida'}</p>
             {helperText && (
-              <p className="mt-1 truncate text-sm text-[var(--c-text-2)]">
-                {helperText}
-              </p>
+              <p className="mt-1 truncate text-sm text-[var(--c-text-2)]">{helperText}</p>
             )}
           </div>
 
@@ -81,9 +79,7 @@ export default function ImageInput({
             <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-[var(--r-md)] bg-[rgba(10,37,64,0.62)] text-white">
               <span className="loading loading-spinner loading-sm" />
               <span className="text-sm font-semibold">
-                {typeof progress === 'number'
-                  ? `${Math.round(progress)}%`
-                  : 'Subiendo…'}
+                {typeof progress === 'number' ? `${Math.round(progress)}%` : 'Subiendo…'}
               </span>
             </div>
           )}
@@ -110,10 +106,14 @@ export default function ImageInput({
             role="dialog"
             aria-modal="true"
             aria-label={imageAlt}
+            style={modalViewportStyle(previewViewport)}
             className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,37,64,0.72)] p-4 backdrop-blur-sm"
             onClick={() => setIsPreviewOpen(false)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setIsPreviewOpen(false)
+            }}
           >
-            <div className="relative h-[min(80vh,720px)] w-full max-w-4xl">
+            <div className="relative h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),720px)] w-full max-w-4xl">
               <Image
                 src={imageUrl}
                 alt={imageAlt}
@@ -146,17 +146,13 @@ export default function ImageInput({
         <span className="font-semibold text-[var(--c-ocean)]">
           {buttonLabel || (imageUrl ? 'Cambiar imagen' : 'Subir imagen')}
         </span>
-        {helperText && (
-          <span className="mt-1 text-sm text-[var(--c-text-2)]">{helperText}</span>
-        )}
+        {helperText && <span className="mt-1 text-sm text-[var(--c-text-2)]">{helperText}</span>}
 
         {busy && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[rgba(10,37,64,0.62)] text-white">
             <span className="loading loading-spinner loading-md" />
             <span className="text-sm font-semibold">
-              {typeof progress === 'number'
-                ? `${Math.round(progress)}%`
-                : 'Subiendo…'}
+              {typeof progress === 'number' ? `${Math.round(progress)}%` : 'Subiendo…'}
             </span>
           </div>
         )}

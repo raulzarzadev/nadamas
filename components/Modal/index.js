@@ -1,29 +1,60 @@
 'use client'
+import {
+  keepFocusedFieldVisible,
+  modalViewportStyle,
+  useKeyboardSafeArea,
+} from '@comps/hooks/useKeyboardSafeArea'
 import Icon from '@comps/Icon'
 import React from 'react'
 
-const Modal = React.forwardRef(({
-  title = 'Modal title',
-  open,
-  handleOpen = () => { },
-  headerComponent,
-  children,
-  modalSize = 'sm'
-}, ref) => {
-  const modalId = `${title.split(' ').join('-').toLowerCase()}-${new Date().getTime()}-${Math.random()}`
+const Modal = React.forwardRef(
+  (
+    {
+      title = 'Modal title',
+      open,
+      handleOpen = () => {},
+      headerComponent,
+      children,
+      modalSize = 'sm',
+    },
+    _ref
+  ) => {
+    const modalId = `${title.split(' ').join('-').toLowerCase()}-${Date.now()}-${Math.random()}`
+    const keyboardViewport = useKeyboardSafeArea()
+    const dialogRef = React.useRef(null)
 
-  const modalSizing = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    full: 'max-w-full',
-  }
+    React.useEffect(() => {
+      if (!open || !keyboardViewport) return
+      const frame = requestAnimationFrame(() => {
+        if (dialogRef.current) keepFocusedFieldVisible(dialogRef.current)
+      })
+      return () => cancelAnimationFrame(frame)
+    }, [open, keyboardViewport])
 
-  return (
-    <div
-      style={{ position: 'fixed' }}
-      className={`
+    const modalSizing = {
+      sm: 'max-w-sm',
+      md: 'max-w-md',
+      lg: 'max-w-lg',
+      xl: 'max-w-xl',
+      full: 'max-w-full',
+    }
+
+    return (
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        style={modalViewportStyle(keyboardViewport)}
+        onFocusCapture={() => {
+          requestAnimationFrame(() => {
+            if (dialogRef.current) keepFocusedFieldVisible(dialogRef.current)
+          })
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') handleOpen()
+        }}
+        className={`
       ${open ? 'block' : 'hidden'} 
       bg-black 
       fixed
@@ -34,51 +65,47 @@ const Modal = React.forwardRef(({
       flex 
       justify-center
       items-center
+      p-4
       bg-opacity-50 
       z-20 
        `}
-      id={`container-${modalId}`}
-      onClick={(e) => {
-        e.stopPropagation()
-        e.target.id === `container-${modalId}` && handleOpen()
-      }}
-    >
-      <div
-        id={`modal-${modalId}`}
-        className={`
-        ${modalSizing[modalSize]}
-        bg-base-100 overflow-auto max-h-full rounded-lg w-full    z-20 
-        `}
+        id={`container-${modalId}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          e.target.id === `container-${modalId}` && handleOpen()
+        }}
       >
-        <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 z-20  h-8 '}>
-          <div className={''}>
-            <h5 className='font-bold'>{title}</h5>
-          </div>
-          <button
-            id={`close-modal-${modalId}`}
-            className={''}
-            onClick={(e) => {
-              e.preventDefault()
-              handleOpen()
-            }}
-          >
-            <Icon name='cross' />
-          </button>
+        <div
+          id={`modal-${modalId}`}
+          className={`
+        ${modalSizing[modalSize]}
+        bg-base-100 overflow-auto max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] rounded-lg w-full z-20
+        `}
+        >
+          <header className={'flex justify-between sticky top-0 bg-base-100 px-3 py-1 z-20  h-8 '}>
+            <div className={''}>
+              <h5 className="font-bold">{title}</h5>
+            </div>
+            <button
+              type="button"
+              id={`close-modal-${modalId}`}
+              className={''}
+              onClick={(e) => {
+                e.preventDefault()
+                handleOpen()
+              }}
+            >
+              <Icon name="cross" />
+            </button>
+          </header>
+          {headerComponent && <div className="sticky top-8 z-20">{headerComponent}</div>}
 
-        </header>
-        {headerComponent &&
-          <div className='sticky top-8 z-20'>
-            {headerComponent}
-          </div>
-        }
-
-        <div className='p-5 pt-0 '>{children}</div>
-
+          <div className="p-5 pt-0 ">{children}</div>
+        </div>
       </div>
-
-    </div>
-  )
-})
+    )
+  }
+)
 /* 
   <div
         // className="modal-box py-1 pt-0 bg-base-300 min-h-[10rem] "

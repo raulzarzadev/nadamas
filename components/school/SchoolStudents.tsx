@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiClock, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiGrid, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
@@ -70,6 +70,7 @@ export default function SchoolStudents() {
   if (!selected) return <SchoolNoSelection />
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
+  const canAssignClasses = isDirector || schoolMembershipHasRole(selected.membership, 'teacher')
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
@@ -122,35 +123,40 @@ export default function SchoolStudents() {
       {loading ? (
         <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
       ) : students.length ? (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="overflow-hidden rounded-[var(--r-md)] border border-(--c-border) bg-white shadow-[var(--shadow-sm)]">
           {students.map((student) => (
             <article
               key={student.id}
-              className="flex items-start gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
+              className="flex items-center gap-3 border-b border-(--c-border) px-4 py-3 last:border-b-0 sm:gap-4 sm:px-5"
             >
               <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
                 <FiUsers aria-hidden="true" />
               </span>
-              <div className="min-w-0 flex-1">
-                <h2 className="font-bold text-(--c-ocean)">{student.name}</h2>
-                {student.additionalProfileId && (
-                  <span className="badge badge-outline mt-1">Adicional</span>
-                )}
-                <p className="mt-1 text-sm text-(--c-text-2)">
-                  {student.gender} · Nacimiento: {student.birthDate}
+              <div className="min-w-0 flex-1 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-center sm:gap-4">
+                <div className="min-w-0">
+                  <h2 className="truncate font-bold text-(--c-ocean)">{student.name}</h2>
+                  <p className="text-sm text-(--c-text-2)">
+                    {student.additionalProfileId && 'Adicional · '}
+                    {student.gender}
+                    {student.birthDate && ` · Nacimiento: ${student.birthDate}`}
+                  </p>
+                </div>
+                <p className="mt-1 flex min-w-0 items-center gap-1 text-xs text-(--c-text-2) sm:mt-0">
+                  <FiMail className="shrink-0" aria-hidden="true" />
+                  <span className="truncate">
+                    {student.studentEmail || student.guardianEmail || 'Sin correo'}
+                  </span>
                 </p>
-                <p className="mt-2 flex items-center gap-1 text-xs text-(--c-text-2)">
-                  <FiMail aria-hidden="true" />{' '}
-                  {student.studentEmail || student.guardianEmail || 'Sin correo'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setHistoryStudent(student)}
-                  className="btn btn-outline mt-3 min-h-11 gap-2"
-                >
-                  <FiClock aria-hidden="true" /> Ver historial
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => setHistoryStudent(student)}
+                aria-label={`Abrir historial y clases de ${student.name}`}
+                title={`Historial y clases de ${student.name}`}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) transition hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                <FiGrid aria-hidden="true" />
+              </button>
             </article>
           ))}
         </div>
@@ -219,7 +225,9 @@ export default function SchoolStudents() {
         <SchoolStudentHistory
           key={`${selected.school.id}-${historyStudent.id}`}
           schoolId={selected.school.id}
+          timezone={selected.school.timezone}
           student={historyStudent}
+          canAssign={canAssignClasses}
           onClose={() => setHistoryStudent(null)}
         />
       )}

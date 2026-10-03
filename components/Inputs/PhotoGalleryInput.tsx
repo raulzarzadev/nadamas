@@ -1,6 +1,7 @@
 'use client'
-import { useState } from 'react'
+import { modalViewportStyle, useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import Image from 'next/image'
+import { useState } from 'react'
 import ImageInput from './ImageInput'
 
 export interface GalleryPhotoValue {
@@ -28,6 +29,7 @@ export default function PhotoGalleryInput<TPhoto extends GalleryPhotoValue>({
   onChange,
 }: PhotoGalleryInputProps<TPhoto>) {
   const [previewPhoto, setPreviewPhoto] = useState<TPhoto | null>(null)
+  const previewViewport = useKeyboardSafeArea(Boolean(previewPhoto))
   const remainingSlots = Math.max(maxPhotos - photos.length, 0)
   const isFull = remainingSlots === 0
 
@@ -56,6 +58,7 @@ export default function PhotoGalleryInput<TPhoto extends GalleryPhotoValue>({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {photos.map((photo, index) => (
             <article
+              // biome-ignore lint/suspicious/noArrayIndexKey: The same photo URL can appear more than once in a gallery.
               key={`${photo.url}-${index}`}
               className="overflow-hidden rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]"
             >
@@ -120,10 +123,14 @@ export default function PhotoGalleryInput<TPhoto extends GalleryPhotoValue>({
           role="dialog"
           aria-modal="true"
           aria-label={previewPhoto.label || 'Vista previa de foto'}
+          style={modalViewportStyle(previewViewport)}
           className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,37,64,0.72)] p-4 backdrop-blur-sm"
           onClick={() => setPreviewPhoto(null)}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setPreviewPhoto(null)
+          }}
         >
-          <div className="relative h-[min(80vh,720px)] w-full max-w-4xl">
+          <div className="relative h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),720px)] w-full max-w-4xl">
             <Image
               src={previewPhoto.url}
               alt={previewPhoto.label || 'Vista previa de foto'}

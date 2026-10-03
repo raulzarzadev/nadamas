@@ -34,7 +34,7 @@ export default function ClassEvaluationForm({
       fullBleedMobile
     >
       <form
-        className="flex min-h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(86dvh,44rem)]"
+        className="flex min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),44rem)]"
         onSubmit={async (event) => {
           event.preventDefault()
           if (saving) return

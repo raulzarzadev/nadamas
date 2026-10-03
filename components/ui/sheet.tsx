@@ -30,7 +30,7 @@ export default function Sheet({
   modalTopGap?: boolean
   showFooterClose?: boolean
   closeDisabled?: boolean
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 }) {
   const keyboardViewport = useKeyboardSafeArea()
   const [closing, setClosing] = useState(false)
@@ -94,6 +94,7 @@ export default function Sheet({
     md: 'sm:max-w-md',
     lg: 'sm:max-w-lg',
     xl: 'sm:max-w-xl',
+    '2xl': 'sm:max-w-2xl',
   }[size]
   const sheetAnimation =
     fullBleedMobile || !keyboardAware

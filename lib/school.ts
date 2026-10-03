@@ -345,6 +345,17 @@ export interface SchoolClassOccurrence {
   updatedAt: number
 }
 
+export function schoolClassDisplayTitle(
+  title: string | null | undefined,
+  type?: SchoolClassOccurrence['type']
+) {
+  const value = title?.trim()
+  if (value && value !== 'Clase escolar') return value
+  if (type === 'group') return 'Clase grupal'
+  if (type === 'individual') return 'Clase particular'
+  return 'Clase de natación'
+}
+
 export interface SchoolClassRequest {
   id: string
   schoolId: string

@@ -14,7 +14,7 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
   page,
   browser,
 }) => {
-  test.setTimeout(60000)
+  test.setTimeout(120000)
   let available = false
   try {
     available = (await fetch('http://127.0.0.1:8080')).ok
@@ -271,6 +271,28 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
       teacherIds: [teacher.localId],
       studentIds: [historyStudentId],
     })
+    await seed('agendaStudentRecords', `class-${historyClassId}-${historyStudentId}`, {
+      sourceId: historyClassId,
+      studentId: historyStudentId,
+      schoolId,
+      coachId: teacher.localId,
+      attended: true,
+      note: 'Observación de entrenamiento',
+      updatedAt: Date.now(),
+    })
+    const futureClassId = `future-class-${schoolId}`
+    await seed('schoolClassOccurrences', futureClassId, {
+      schoolId,
+      title: 'Nueva clase grupal',
+      type: 'group',
+      date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+      startTime: '09:00',
+      endTime: '10:00',
+      status: 'scheduled',
+      teacherIds: [teacher.localId],
+      studentIds: [],
+      classFull: false,
+    })
     for (const role of ['teacher', 'student'])
       await seed('schoolReviews', `review-${role}-${schoolId}`, {
         schoolId,
@@ -418,7 +440,7 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
       `/auth/link?email=${encodeURIComponent(owner.email)}&token=${otp.fields.devLinkToken.stringValue}`
     )
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
-    await page.waitForURL('**/athlete/bookings')
+    await page.waitForURL(/\/athlete\/(bookings|progress)$/)
     await page.goto('/profile')
     const section = page.getByRole('region', { name: 'Adicionales', exact: true })
     await expect(section.getByText('Persona adulta', { exact: true })).toBeVisible()
@@ -441,7 +463,7 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
       `/auth/link?email=${encodeURIComponent(outsider.email)}&token=${directorOtp.fields.devLinkToken.stringValue}`
     )
     await directorPage.getByRole('button', { name: 'Confirmar', exact: true }).click()
-    await directorPage.waitForURL('**/athlete/bookings')
+    await directorPage.waitForURL(/\/athlete\/(bookings|progress)$/)
     await directorPage.evaluate(
       (id) => window.localStorage.setItem('nadamas.schoolId', id),
       schoolId
@@ -450,12 +472,24 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
     const historyButton = directorPage
       .locator('article')
       .filter({ has: directorPage.getByRole('heading', { name: 'Persona adulta', exact: true }) })
-      .getByRole('button', { name: 'Ver historial' })
+      .getByRole('button', { name: 'Abrir historial y clases de Persona adulta' })
     await historyButton.click()
     const historyDialog = directorPage.getByRole('dialog', { name: 'Historial de Persona adulta' })
-    await expect(historyDialog.getByText('2 clases tomadas · 1 coach')).toBeVisible()
+    await expect(historyDialog.getByText(/2 clases tomadas · 1 (coach|entrenador)/)).toBeVisible()
     await expect(historyDialog.getByText('Buen avance', { exact: true })).toBeVisible()
     await expect(historyDialog.getByText('Explicación clara', { exact: true })).toBeVisible()
+    await expect(historyDialog.getByText('Observación de entrenamiento')).toBeVisible()
+    await historyDialog.getByRole('checkbox', { name: /Nueva clase grupal/ }).check()
+    await historyDialog.getByRole('button', { name: 'Asignar a 1 clase' }).click()
+    await expect(
+      historyDialog.getByText('Asignación guardada para Persona adulta en 1 clase.')
+    ).toBeVisible()
+    const assignedClass = (
+      await (
+        await request.get(`/api/schools/${schoolId}/classes`, { headers: otherHeaders })
+      ).json()
+    ).classes.find((item: { id: string }) => item.id === futureClassId)
+    expect(assignedClass.studentIds).toContain(historyStudentId)
     await directorPage.screenshot({
       path: '/tmp/nadamas-student-history-mobile.png',
       fullPage: true,
@@ -636,7 +670,7 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
       `/auth/link?email=${encodeURIComponent(unassignedStudent.email)}&token=${coachOtp.fields.devLinkToken.stringValue}`
     )
     await coachPage.getByRole('button', { name: 'Confirmar', exact: true }).click()
-    await coachPage.waitForURL('**/athlete/bookings')
+    await coachPage.waitForURL(/\/athlete\/(bookings|progress)$/)
     await coachPage.goto(`/school/invitations/${coachToken}`)
     await coachPage.getByLabel('Nombre completo', { exact: true }).fill('Coach invitado')
     await coachPage.getByRole('button', { name: 'Aceptar invitación', exact: true }).click()

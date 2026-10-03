@@ -1,4 +1,5 @@
 'use client'
+import { modalViewportStyle, useKeyboardSafeArea } from '@comps/hooks/useKeyboardSafeArea'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -27,6 +28,7 @@ const PreviewImage = ({
   variant = 'modal',
 }) => {
   const [openModal, setOpenModal] = useState(false)
+  const previewViewport = useKeyboardSafeArea(openModal && variant === 'lightbox')
   const handleOpenModal = () => setOpenModal(!openModal)
 
   useEffect(() => {
@@ -90,7 +92,10 @@ const PreviewImage = ({
           {variant === 'lightbox' ? (
             openModal &&
             createPortal(
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,37,64,0.78)] p-5 backdrop-blur-sm sm:p-8">
+              <div
+                style={modalViewportStyle(previewViewport)}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,37,64,0.78)] p-5 backdrop-blur-sm sm:p-8"
+              >
                 <button
                   type="button"
                   aria-label="Cerrar imagen"
@@ -105,7 +110,7 @@ const PreviewImage = ({
                 >
                   ×
                 </button>
-                <div className="relative z-10 h-[min(76vh,48rem)] w-[min(88vw,60rem)]">
+                <div className="relative z-10 h-[min(calc(var(--sheet-viewport-height,100dvh)-4rem),48rem)] w-[min(88vw,60rem)]">
                   <Image
                     fill
                     style={{ objectFit: 'contain' }}
