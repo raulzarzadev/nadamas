@@ -158,7 +158,7 @@ export default function ScheduleHoursEditor({
           </div>
           <p className="-mt-2 text-xs text-[var(--c-text-2)]">
             {isRemove
-              ? 'Se quitan las horas disponibles o bloqueadas. Las ocupadas no: primero cancela la clase.'
+              ? 'En un horario recurrente se quita ese día de la semana; en horarios por fecha solo se quitan las fechas elegidas. Las horas ocupadas se conservan.'
               : 'Se agregan las horas seleccionadas. Si ya existe ese horario no se duplica.'}
           </p>
 

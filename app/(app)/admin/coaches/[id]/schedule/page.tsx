@@ -4,7 +4,7 @@ import CoachAgenda from '@comps/coach/CoachAgenda'
 import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { use, useEffect, useState } from 'react'
-import { FiArrowLeft } from 'react-icons/fi'
+import { FiArrowLeft, FiEdit2 } from 'react-icons/fi'
 import type { AppUser } from '@/firebase/users/user.model'
 import { getAuthed } from '@/lib/client/authed-api'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
@@ -17,6 +17,7 @@ export default function AdminCoachSchedulePage({ params }: { params: Promise<{ i
   const { id } = use(params)
   const [name, setName] = useState<string | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
+  const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -52,10 +53,21 @@ export default function AdminCoachSchedulePage({ params }: { params: Promise<{ i
       </Link>
 
       <header>
-        <h1 className="text-2xl font-extrabold">Horarios de {name || 'Coach'}</h1>
-        <p className="mt-1 text-[var(--c-text-2)]">
-          Consulta y edita las horas abiertas y bloqueos de este coach.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold">Horarios de {name || 'Coach'}</h1>
+            <p className="mt-1 text-[var(--c-text-2)]">
+              Consulta y edita las horas abiertas y bloqueos de este coach.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setScheduleEditorOpen(true)}
+            className="btn btn-primary min-h-11"
+          >
+            <FiEdit2 aria-hidden="true" /> Editar horarios
+          </button>
+        </div>
       </header>
 
       {error && (
@@ -64,7 +76,11 @@ export default function AdminCoachSchedulePage({ params }: { params: Promise<{ i
         </p>
       )}
 
-      <CoachAgenda coachId={id} />
+      <CoachAgenda
+        coachId={id}
+        scheduleEditorOpen={scheduleEditorOpen}
+        onScheduleEditorClose={() => setScheduleEditorOpen(false)}
+      />
     </div>
   )
 }

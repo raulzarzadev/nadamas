@@ -18,41 +18,53 @@ async function handlePOST(request: Request) {
 
   const caller = await adminAuth.verifyIdToken(token)
   const userDoc = await adminDb.collection('users').doc(caller.uid).get()
-  if (userDoc.data()?.roles?.coach !== true && userDoc.data()?.roles?.admin !== true) {
+  const isAdmin = userDoc.data()?.roles?.admin === true
+  if (userDoc.data()?.roles?.coach !== true && !isAdmin) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
 
   const body = (await request.json()) as {
     classOfferings?: CoachClassOffering[]
     schoolId?: string
+    coachId?: string
   }
   if (!Array.isArray(body.classOfferings)) {
     return NextResponse.json({ error: 'La configuración de clases es inválida.' }, { status: 400 })
   }
 
+  const requestedCoachId = typeof body.coachId === 'string' ? body.coachId.trim() : ''
+  if (requestedCoachId && requestedCoachId !== caller.uid && !isAdmin) {
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  }
+  const coachId = isAdmin && requestedCoachId ? requestedCoachId : caller.uid
+
   const schoolId = typeof body.schoolId === 'string' ? body.schoolId.trim() : ''
   if (schoolId) {
-    const membership = await getSchoolMembership(schoolId, caller.uid)
+    const membership = await getSchoolMembership(schoolId, coachId)
     if (
-      !membership ||
-      membership.status !== 'active' ||
-      !schoolMembershipHasRole(membership as SchoolMembership, 'teacher')
+      !isAdmin &&
+      (!membership ||
+        membership.status !== 'active' ||
+        !schoolMembershipHasRole(membership as SchoolMembership, 'teacher'))
     ) {
       return NextResponse.json({ error: 'No autorizado para esta escuela.' }, { status: 403 })
     }
   }
 
-  const coachRef = adminDb.collection('coaches').doc(caller.uid)
+  const coachRef = adminDb.collection('coaches').doc(coachId)
   const coachDoc = await coachRef.get()
+  if (isAdmin && !coachDoc.exists) {
+    return NextResponse.json({ error: 'Coach no encontrado.' }, { status: 404 })
+  }
   const now = Date.now()
   if (schoolId) {
     const schoolOfferingsRef = adminDb
       .collection('schoolCoachOfferings')
-      .doc(`${schoolId}_${caller.uid}`)
+      .doc(`${schoolId}_${coachId}`)
     await schoolOfferingsRef.set(
       {
         schoolId,
-        coachId: caller.uid,
+        coachId,
         classOfferings: body.classOfferings,
         updatedAt: now,
       },
@@ -62,7 +74,7 @@ async function handlePOST(request: Request) {
   }
   const data: Partial<CoachPublic> = {
     classOfferings: body.classOfferings,
-    userId: caller.uid,
+    userId: coachId,
     updatedAt: now,
   }
   if (!coachDoc.exists) data.createdAt = now

@@ -887,6 +887,7 @@ export default function CoachAgenda({
   const saveOfferings = (next: CoachClassOffering) =>
     postAuthed(manageSchoolSchedule ? scheduleEndpoint : '/api/coach/offerings', {
       ...(schoolId ? { schoolId } : {}),
+      ...(adminMode && !manageSchoolSchedule ? { coachId } : {}),
       classOfferings: offerings.some((item) => item.id === next.id)
         ? offerings.map((item) => (item.id === next.id ? next : item))
         : [...offerings, next],
@@ -894,6 +895,7 @@ export default function CoachAgenda({
   const saveOfferingList = (next: CoachClassOffering[]) =>
     postAuthed(manageSchoolSchedule ? scheduleEndpoint : '/api/coach/offerings', {
       ...(schoolId ? { schoolId } : {}),
+      ...(adminMode && !manageSchoolSchedule ? { coachId } : {}),
       classOfferings: next,
     })
 

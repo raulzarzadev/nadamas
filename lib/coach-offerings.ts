@@ -415,12 +415,26 @@ export function offeringWithoutHours(
   const schedules = resolveOfferingSchedules(offering)
     .map((schedule) => {
       if (scheduleIsOpen(schedule)) return schedule
+      if ((schedule.availabilityMode ?? 'always') !== 'dates') {
+        const removedDays = new Set(
+          pairs
+            .filter((pair) => pair.time === schedule.startTime)
+            .map((pair) => WEEKDAY_LABELS[new Date(`${pair.date}T12:00:00`).getDay()])
+        )
+        return { ...schedule, days: schedule.days.filter((day) => !removedDays.has(day)) }
+      }
       const availableDates = (schedule.availableDates || []).filter(
         (date) => !remove.has(`${date}|${schedule.startTime}`)
       )
       return { ...schedule, availableDates, days: dayLabelsFromDates(availableDates) }
     })
-    .filter((schedule) => scheduleIsOpen(schedule) || (schedule.availableDates?.length ?? 0) > 0)
+    .filter(
+      (schedule) =>
+        scheduleIsOpen(schedule) ||
+        ((schedule.availabilityMode ?? 'always') === 'dates'
+          ? (schedule.availableDates?.length ?? 0) > 0
+          : schedule.days.length > 0)
+    )
   const updated = { ...offering, schedules }
   if (schedules.length === 0) {
     // Once the canonical schedule list is empty, remove the legacy fallback too.
