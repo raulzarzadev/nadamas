@@ -279,12 +279,11 @@ function InviteCoach({
   return (
     <Sheet
       open
-      onClose={() => {
-        if (!saving) onClose()
-      }}
+      onClose={onClose}
       label={`Invitar ${coachSingular}`}
       keyboardAware
       fullBleedMobile
+      closeDisabled={saving}
     >
       <form onSubmit={submit} className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
         <h2 className="text-xl font-extrabold text-(--c-ocean)">Invitar {coachSingular}</h2>
@@ -302,14 +301,9 @@ function InviteCoach({
           />
         </label>
         {error && <p className="mt-3 text-sm text-(--c-error,#b91c1c)">{error}</p>}
-        <div className="mt-5 flex gap-2">
-          <button type="button" onClick={onClose} className="btn btn-outline min-h-11 flex-1">
-            Cancelar
-          </button>
-          <button type="submit" disabled={saving} className="btn btn-primary min-h-11 flex-1">
-            {saving ? 'Enviando…' : 'Enviar'}
-          </button>
-        </div>
+        <button type="submit" disabled={saving} className="btn btn-primary mt-5 min-h-11 w-full">
+          {saving ? 'Enviando…' : 'Enviar'}
+        </button>
       </form>
     </Sheet>
   )

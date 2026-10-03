@@ -13,6 +13,8 @@ export default function Sheet({
   keyboardAware = false,
   fullBleedMobile = false,
   modalTopGap = false,
+  showFooterClose = true,
+  closeDisabled = false,
   size = 'md',
 }: {
   open: boolean
@@ -22,6 +24,8 @@ export default function Sheet({
   keyboardAware?: boolean
   fullBleedMobile?: boolean
   modalTopGap?: boolean
+  showFooterClose?: boolean
+  closeDisabled?: boolean
   size?: 'sm' | 'md' | 'lg' | 'xl'
 }) {
   const keyboardSafeArea = useKeyboardSafeArea()
@@ -33,7 +37,7 @@ export default function Sheet({
   openRef.current = open
 
   const requestClose = useCallback(() => {
-    if (closingRef.current) return
+    if (closingRef.current || closeDisabled) return
     closingRef.current = true
     setClosing(true)
     closeTimer.current = setTimeout(() => {
@@ -45,7 +49,7 @@ export default function Sheet({
         }
       }, 50)
     }, 300)
-  }, [onClose])
+  }, [closeDisabled, onClose])
 
   useEffect(() => {
     if (!open) return
@@ -151,6 +155,8 @@ export default function Sheet({
     >
       <div
         className={`relative w-full bg-white shadow-[0_-20px_60px_-30px_rgba(10,37,64,0.5)] ${
+          showFooterClose ? 'flex flex-col' : ''
+        } ${
           fullBleedMobile
             ? `min-h-[calc(100dvh-0.5rem)] max-h-[calc(100dvh-0.5rem)] overflow-y-auto rounded-t-[26px] rounded-b-none px-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sheetAnimation} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-2 sm:pt-5'} sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:rounded-[26px] sm:px-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${desktopWidth} sm:[animation:none]`
             : `px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-5'} ${
@@ -164,6 +170,7 @@ export default function Sheet({
           type="button"
           aria-label="Cerrar modal"
           title="Cerrar"
+          disabled={closeDisabled}
           onClick={requestClose}
           className="group relative mx-auto mb-2 grid h-11 w-11 place-items-center rounded-full text-[var(--c-text-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] sm:hidden"
         >
@@ -174,6 +181,16 @@ export default function Sheet({
           />
         </button>
         {children}
+        {showFooterClose && (
+          <button
+            type="button"
+            disabled={closeDisabled}
+            onClick={requestClose}
+            className="mt-auto min-h-11 self-center px-4 py-3 text-sm font-medium text-(--c-text-2) underline-offset-4 transition-colors hover:text-(--c-ocean) hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cerrar
+          </button>
+        )}
       </div>
     </div>
   )
