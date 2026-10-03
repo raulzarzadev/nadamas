@@ -162,7 +162,7 @@ export default function Sheet({
             : `px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-5'} ${
                 keyboardAware
                   ? `max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[26px] ${desktopWidth}`
-                  : `${sheetAnimation} rounded-t-[26px] ${desktopWidth} sm:rounded-[26px] sm:[animation:none]`
+                  : `${sheetAnimation} max-h-[calc(100dvh-0.5rem)] overflow-y-auto rounded-t-[26px] ${desktopWidth} sm:max-h-[calc(100dvh-2rem)] sm:rounded-[26px] sm:[animation:none]`
               }`
         }`}
       >

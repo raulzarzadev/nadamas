@@ -1771,16 +1771,6 @@ export default function CoachAgenda({
                 Cancelar clase
               </button>
             </div>
-            <footer className="flex justify-end border-t border-[var(--c-border)] pt-3">
-              <button
-                type="button"
-                onClick={() => setBookingToEdit(null)}
-                disabled={busy}
-                className="min-h-10 rounded-full px-4 text-sm font-bold text-[var(--c-text-2)]"
-              >
-                Cerrar
-              </button>
-            </footer>
           </div>
         )}
       </Sheet>
@@ -1898,14 +1888,6 @@ export default function CoachAgenda({
               className="min-h-12 rounded-full border border-[var(--rose-bd)] px-5 text-sm font-bold text-[var(--rose-tx)]"
             >
               {busy ? 'Cancelando…' : 'Cancelar clase'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setSchoolClassToEdit(null)}
-              disabled={busy}
-              className="min-h-11 rounded-full px-4 text-sm font-bold text-[var(--c-text-2)]"
-            >
-              Cerrar
             </button>
           </div>
         )}
