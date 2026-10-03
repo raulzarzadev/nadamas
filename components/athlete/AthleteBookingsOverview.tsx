@@ -4,21 +4,25 @@ import Loading from '@comps/Loading'
 import Sheet from '@comps/ui/sheet'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { FiCalendar, FiChevronRight, FiSearch, FiUser, FiX } from 'react-icons/fi'
+import { FiCalendar, FiChevronRight, FiEdit3, FiSearch, FiUser, FiX } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
+import { auth } from '@/firebase/index'
 import { type ClassEvaluation, canEvaluateBooking } from '@/lib/class-evaluation'
-import { deleteAuthed, getAuthed } from '@/lib/client/authed-api'
+import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { Booking } from '@/lib/coach-booking'
+import type { SchoolHistorySharedComment } from '@/lib/school-student-history'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 interface CoachInfo {
   name: string
   avatarUrl: string | null
 }
+
+type BookingWithSharedComments = Booking & { sharedComments?: SchoolHistorySharedComment[] }
 
 const STATUS_STYLE: Record<string, { label: string; className: string }> = {
   confirmed: {
@@ -68,11 +72,13 @@ function BookingGroupRow({
   coach,
   onCancel,
   onEvaluate,
+  onComment,
 }: {
-  bookings: Booking[]
+  bookings: BookingWithSharedComments[]
   coach?: CoachInfo
-  onCancel?: (booking: Booking) => void
-  onEvaluate?: (booking: Booking) => void
+  onCancel?: (booking: BookingWithSharedComments) => void
+  onEvaluate?: (booking: BookingWithSharedComments) => void
+  onComment?: (booking: BookingWithSharedComments) => void
 }) {
   const booking = bookings[0]
   const terminology = useSchoolTerminology()
@@ -147,6 +153,28 @@ function BookingGroupRow({
                       {item.evaluation ? 'Editar evaluación' : 'Evaluar'}
                     </button>
                   )}
+                  {onComment && item.schoolId && (
+                    <button
+                      type="button"
+                      onClick={() => onComment(item)}
+                      aria-label={`Escribir comentario sobre la clase del ${dayLabel(item)}`}
+                      title="Escribir comentario"
+                      className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-[var(--c-ocean)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                    >
+                      <FiEdit3 aria-hidden="true" />
+                    </button>
+                  )}
+                  {item.sharedComments?.map((comment) => (
+                    <p
+                      key={comment.id}
+                      className="basis-full whitespace-pre-wrap pl-1 text-xs text-[var(--c-text-2)]"
+                    >
+                      <span className="font-semibold text-[var(--c-ocean)]">
+                        Comentario de {comment.authorName}:{' '}
+                      </span>
+                      {comment.text}
+                    </p>
+                  ))}
                 </li>
               )
             })}
@@ -178,10 +206,12 @@ function PastBookings({
   bookings,
   coaches,
   onEvaluate,
+  onComment,
 }: {
-  bookings: Booking[]
+  bookings: BookingWithSharedComments[]
   coaches: Record<string, CoachInfo>
-  onEvaluate: (booking: Booking) => void
+  onEvaluate: (booking: BookingWithSharedComments) => void
+  onComment: (booking: BookingWithSharedComments) => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -212,6 +242,7 @@ function PastBookings({
               bookings={group}
               coach={coaches[group[0].coachId]}
               onEvaluate={onEvaluate}
+              onComment={onComment}
             />
           ))}
         </ul>
@@ -225,7 +256,7 @@ export default function AthleteBookingsOverview() {
   const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
   const [evaluationSaved, setEvaluationSaved] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
-  const [bookings, setBookings] = useState<Booking[] | undefined>(undefined)
+  const [bookings, setBookings] = useState<BookingWithSharedComments[] | undefined>(undefined)
   const [coaches, setCoaches] = useState<Record<string, CoachInfo>>({})
   const { selectedId: selectedSchoolId } = useSchoolSelection({
     includePersonal: true,
@@ -234,6 +265,10 @@ export default function AthleteBookingsOverview() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [toCancel, setToCancel] = useState<Booking | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [commentBooking, setCommentBooking] = useState<BookingWithSharedComments | null>(null)
+  const [commentText, setCommentText] = useState('')
+  const [commentBusy, setCommentBusy] = useState(false)
+  const [commentError, setCommentError] = useState(false)
 
   const load = useCallback(async () => {
     setError(null)
@@ -241,9 +276,40 @@ export default function AthleteBookingsOverview() {
       const response = await getAuthed('/api/bookings')
       const payload = (await response.json()) as { bookings: Booking[] }
       const list = payload.bookings || []
-      setBookings(list)
+      const linkedStudentId = auth.currentUser?.uid
+      const schoolIds = [...new Set(list.map((booking) => booking.schoolId).filter(Boolean))]
+      const historyEntries = await Promise.all(
+        linkedStudentId
+          ? schoolIds.map(async (schoolId) => {
+              try {
+                const historyResponse = await getAuthed(
+                  `/api/schools/${encodeURIComponent(schoolId as string)}/students/${encodeURIComponent(linkedStudentId)}/history`
+                )
+                const history = (await historyResponse.json()) as {
+                  classes?: Array<{ id: string; sharedComments?: SchoolHistorySharedComment[] }>
+                }
+                if (!historyResponse.ok) return []
+                return history.classes || []
+              } catch {
+                return []
+              }
+            })
+          : []
+      )
+      const commentsByClass = new Map(
+        historyEntries
+          .flat()
+          .map((historyClass) => [historyClass.id, historyClass.sharedComments || []])
+      )
+      const bookingsWithComments: BookingWithSharedComments[] = list.map((booking) => ({
+        ...booking,
+        sharedComments: commentsByClass.get(
+          booking.schoolClassId ? `class:${booking.schoolClassId}` : `booking:${booking.id}`
+        ),
+      }))
+      setBookings(bookingsWithComments)
 
-      const coachIds = [...new Set(list.map((b) => b.coachId))]
+      const coachIds = [...new Set(bookingsWithComments.map((b) => b.coachId))]
       const entries = await Promise.all(
         coachIds.map(async (coachId) => {
           try {
@@ -283,6 +349,35 @@ export default function AthleteBookingsOverview() {
       setError(GENERIC_USER_ERROR)
     } finally {
       setCancellingId(null)
+    }
+  }
+
+  async function saveSharedComment() {
+    if (!commentBooking?.schoolId || !commentText.trim() || commentBusy) return
+    const studentId = auth.currentUser?.uid
+    if (!studentId) {
+      setCommentError(true)
+      return
+    }
+    setCommentBusy(true)
+    setCommentError(false)
+    try {
+      await postAuthed(
+        `/api/schools/${encodeURIComponent(commentBooking.schoolId)}/students/${encodeURIComponent(studentId)}/history/comments`,
+        {
+          classKey: commentBooking.schoolClassId
+            ? `class:${commentBooking.schoolClassId}`
+            : `booking:${commentBooking.id}`,
+          text: commentText.trim(),
+        }
+      )
+      setCommentBooking(null)
+      setCommentText('')
+      await load()
+    } catch {
+      setCommentError(true)
+    } finally {
+      setCommentBusy(false)
     }
   }
 
@@ -377,6 +472,7 @@ export default function AthleteBookingsOverview() {
                   bookings={group}
                   coach={coaches[group[0].coachId]}
                   onCancel={setToCancel}
+                  onComment={setCommentBooking}
                 />
               ))}
             </ul>
@@ -389,6 +485,7 @@ export default function AthleteBookingsOverview() {
             <PastBookings
               bookings={pastBookings}
               coaches={coaches}
+              onComment={setCommentBooking}
               onEvaluate={(booking) => {
                 setEvaluationSaved(false)
                 setToEvaluate(booking)
@@ -424,6 +521,51 @@ export default function AthleteBookingsOverview() {
           }}
         />
       )}
+      <Sheet
+        open={!!commentBooking}
+        onClose={() => setCommentBooking(null)}
+        label="Escribir comentario de clase"
+        keyboardAware
+      >
+        {commentBooking && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-bold text-[var(--c-ocean)]">Comentario compartido</h2>
+              <p className="mt-1 text-sm text-[var(--c-text-2)]">
+                {dayLabel(commentBooking)} · {modalityLabel(commentBooking)}
+              </p>
+              <p className="mt-2 text-sm text-[var(--c-text-2)]">
+                Tu comentario podrán verlo tú y tus profesores.
+              </p>
+            </div>
+            <label className="flex flex-col gap-2 text-sm font-semibold text-[var(--c-ocean)]">
+              Comentario
+              <textarea
+                rows={5}
+                maxLength={1000}
+                value={commentText}
+                onChange={(event) => setCommentText(event.currentTarget.value)}
+                disabled={commentBusy}
+                placeholder="Escribe un comentario sobre esta clase…"
+                className="w-full resize-y rounded-[var(--r-sm)] border border-[var(--c-border)] p-3 text-sm font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+              />
+            </label>
+            {commentError && (
+              <p role="alert" className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">
+                No se pudo guardar el comentario. Inténtalo de nuevo.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => void saveSharedComment()}
+              disabled={!commentText.trim() || commentBusy}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {commentBusy ? 'Guardando…' : 'Guardar comentario'}
+            </button>
+          </div>
+        )}
+      </Sheet>
       <Sheet open={!!toCancel} onClose={() => setToCancel(null)} label="Cancelar clase">
         {toCancel && (
           <>

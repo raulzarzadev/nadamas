@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiGrid, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiClipboard, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
@@ -70,7 +70,6 @@ export default function SchoolStudents() {
   if (!selected) return <SchoolNoSelection />
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
-  const canAssignClasses = isDirector || schoolMembershipHasRole(selected.membership, 'teacher')
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
@@ -155,7 +154,7 @@ export default function SchoolStudents() {
                 title={`Historial y clases de ${student.name}`}
                 className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) transition hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
               >
-                <FiGrid aria-hidden="true" />
+                <FiClipboard aria-hidden="true" />
               </button>
             </article>
           ))}
@@ -225,9 +224,7 @@ export default function SchoolStudents() {
         <SchoolStudentHistory
           key={`${selected.school.id}-${historyStudent.id}`}
           schoolId={selected.school.id}
-          timezone={selected.school.timezone}
           student={historyStudent}
-          canAssign={canAssignClasses}
           onClose={() => setHistoryStudent(null)}
         />
       )}

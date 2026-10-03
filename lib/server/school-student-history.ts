@@ -15,6 +15,7 @@ import {
 import {
   type SchoolHistoryClass,
   type SchoolHistoryEvaluation,
+  type SchoolHistorySharedComment,
   type SchoolStudentHistory,
   schoolBookingHistoryStatus,
   studentSchoolBookings,
@@ -46,12 +47,14 @@ export async function getSchoolStudentHistory(
   teacherId?: string,
   includeNotes = false
 ): Promise<SchoolStudentHistory> {
-  const [bookingSnapshot, classSnapshot, reviewSnapshot, recordSnapshot] = await Promise.all([
-    adminDb.collection('bookings').where('schoolId', '==', student.schoolId).get(),
-    adminDb.collection('schoolClassOccurrences').where('schoolId', '==', student.schoolId).get(),
-    adminDb.collection('schoolReviews').where('schoolId', '==', student.schoolId).get(),
-    adminDb.collection('agendaStudentRecords').where('schoolId', '==', student.schoolId).get(),
-  ])
+  const [bookingSnapshot, classSnapshot, reviewSnapshot, recordSnapshot, commentSnapshot] =
+    await Promise.all([
+      adminDb.collection('bookings').where('schoolId', '==', student.schoolId).get(),
+      adminDb.collection('schoolClassOccurrences').where('schoolId', '==', student.schoolId).get(),
+      adminDb.collection('schoolReviews').where('schoolId', '==', student.schoolId).get(),
+      adminDb.collection('agendaStudentRecords').where('schoolId', '==', student.schoolId).get(),
+      adminDb.collection('schoolClassComments').where('schoolId', '==', student.schoolId).get(),
+    ])
   const studentIds = new Set(
     [student.id, student.studentUserId, student.additionalProfileId].filter(Boolean)
   )
@@ -61,6 +64,21 @@ export async function getSchoolStudentHistory(
     if (!studentIds.has(record.studentId) || (teacherId && record.coachId !== teacherId)) continue
     const key = `${record.sourceId}|${record.studentId}`
     if ((record.updatedAt || 0) >= (notes.get(key)?.updatedAt || 0)) notes.set(key, record)
+  }
+  const sharedCommentsBySource = new Map<string, SchoolHistorySharedComment[]>()
+  for (const doc of commentSnapshot.docs) {
+    const comment = doc.data()
+    if (!studentIds.has(comment.studentId)) continue
+    const sourceKey = `${comment.sourceType}:${comment.sourceId}`
+    const comments = sharedCommentsBySource.get(sourceKey) || []
+    comments.push({
+      id: doc.id,
+      authorId: String(comment.authorId || ''),
+      authorName: '',
+      text: String(comment.text || ''),
+      createdAt: Number(comment.createdAt || 0),
+    })
+    sharedCommentsBySource.set(sourceKey, comments)
   }
   const bookings = studentSchoolBookings(
     bookingSnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }) as Booking),
@@ -125,6 +143,10 @@ export async function getSchoolStudentHistory(
         coachIds: [booking.coachId],
         status: schoolBookingHistoryStatus(booking, timezone),
         note: includeNotes ? notes.get(`${booking.id}|${booking.athleteId}`)?.note || '' : '',
+        sharedComments:
+          sharedCommentsBySource.get(
+            `${booking.schoolClassId ? 'class' : 'booking'}:${booking.schoolClassId || booking.id}`
+          ) || [],
         evaluations,
       } satisfies SchoolHistoryClass
     })
@@ -148,6 +170,7 @@ export async function getSchoolStudentHistory(
         timezone
       ),
       note: includeNotes ? notes.get(`${item.id}|${student.id}`)?.note || '' : '',
+      sharedComments: sharedCommentsBySource.get(`class:${item.id}`) || [],
       evaluations: reviews
         .filter((review) => review.occurrenceId === item.id)
         .map((review) => ({
@@ -165,12 +188,20 @@ export async function getSchoolStudentHistory(
     if (existing) {
       existing.coachIds = [...new Set([...existing.coachIds, ...detail.coachIds])]
       if (!existing.note) existing.note = detail.note
+      existing.sharedComments.push(...detail.sharedComments)
       existing.evaluations.push(...detail.evaluations)
     } else classes.push(detail)
   }
   const coachIds = [...new Set(classes.flatMap((item) => item.coachIds))]
+  const authorIds = [
+    ...new Set(
+      classes
+        .flatMap((item) => item.sharedComments.map((comment) => comment.authorId))
+        .filter(Boolean)
+    ),
+  ]
   const names = await Promise.all(
-    coachIds.map(async (id) => {
+    [...new Set([...coachIds, ...authorIds])].map(async (id) => {
       const [user, profile] = await Promise.all([
         adminDb.collection('users').doc(id).get(),
         adminDb.collection('schoolProfiles').doc(`${student.schoolId}_${id}`).get(),
@@ -178,10 +209,17 @@ export async function getSchoolStudentHistory(
       return [id, profile.data()?.name || publicNameFromUser(user.data())] as const
     })
   )
+  const coachNames = Object.fromEntries(names)
+  for (const item of classes)
+    item.sharedComments
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .forEach((comment) => {
+        comment.authorName = coachNames[comment.authorId] || 'Profesor'
+      })
   return {
     classes: classes.sort((a, b) =>
       `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`)
     ),
-    coachNames: Object.fromEntries(names),
+    coachNames,
   }
 }

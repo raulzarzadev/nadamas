@@ -15,8 +15,15 @@ export async function GET(
   const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   try {
-    const snapshot = await adminDb.collection('schoolStudents').doc(studentId).get()
-    const student = snapshot.exists
+    const directSnapshot = await adminDb.collection('schoolStudents').doc(studentId).get()
+    const linkedSnapshots = directSnapshot.exists
+      ? []
+      : (await adminDb.collection('schoolStudents').where('studentUserId', '==', studentId).get())
+          .docs
+    const snapshot = directSnapshot.exists
+      ? directSnapshot
+      : linkedSnapshots.find((doc) => doc.data().schoolId === schoolId)
+    const student = snapshot?.exists
       ? ({ ...snapshot.data(), id: snapshot.id } as SchoolStudent)
       : null
     if (!student || student.schoolId !== schoolId)

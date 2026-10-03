@@ -66,6 +66,7 @@ test('la ficha grupal edita y mueve solo al alumno elegido', async ({ request })
 
   const director = await signup()
   const teacher = await signup()
+  const studentAccount = await signup()
   const outsider = await signup()
   const headers = { authorization: `Bearer ${director.idToken}` }
   const month = '2026-10'
@@ -84,8 +85,18 @@ test('la ficha grupal edita y mueve solo al alumno elegido', async ({ request })
       role: 'teacher',
       status: 'active',
     })
-    await seed('schoolStudents', studentA, { schoolId, name: 'Alumno A' })
+    await seed('schoolStudents', studentA, {
+      schoolId,
+      name: 'Alumno A',
+      studentUserId: studentAccount.localId,
+    })
     await seed('schoolStudents', studentB, { schoolId, name: 'Alumno B' })
+    await seed('schoolMemberships', `${schoolId}_${studentAccount.localId}`, {
+      schoolId,
+      userId: studentAccount.localId,
+      role: 'student',
+      status: 'active',
+    })
     const base = {
       schoolId,
       type: 'group',
@@ -161,6 +172,36 @@ test('la ficha grupal edita y mueve solo al alumno elegido', async ({ request })
       attended: false,
       note: '',
     })
+
+    const commentResponse = await request.post(
+      `/api/schools/${schoolId}/students/${studentA}/history/comments`,
+      { headers, data: { classKey: `class:${sourceId}`, text: 'Practicó respiración bilateral.' } }
+    )
+    expect(commentResponse.status(), await commentResponse.text()).toBe(200)
+    const commentId = (await commentResponse.json()).id as string
+    created.push(['schoolClassComments', commentId])
+    const studentCommentResponse = await request.post(
+      `/api/schools/${schoolId}/students/${studentAccount.localId}/history/comments`,
+      {
+        headers: { authorization: `Bearer ${studentAccount.idToken}` },
+        data: { classKey: `class:${sourceId}`, text: 'Me gustó practicar respiración.' },
+      }
+    )
+    expect(studentCommentResponse.status(), await studentCommentResponse.text()).toBe(200)
+    created.push(['schoolClassComments', (await studentCommentResponse.json()).id as string])
+    const studentHistory = await request.get(
+      `/api/schools/${schoolId}/students/${studentAccount.localId}/history`,
+      { headers: { authorization: `Bearer ${studentAccount.idToken}` } }
+    )
+    expect(studentHistory.status(), await studentHistory.text()).toBe(200)
+    const studentHistoryPayload = await studentHistory.json()
+    expect(
+      studentHistoryPayload.classes.find((item: { id: string }) => item.id === `class:${sourceId}`)
+        ?.sharedComments
+    ).toEqual([
+      expect.objectContaining({ text: 'Practicó respiración bilateral.' }),
+      expect.objectContaining({ text: 'Me gustó practicar respiración.' }),
+    ])
 
     expect(
       (

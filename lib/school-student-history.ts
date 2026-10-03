@@ -12,6 +12,14 @@ export interface SchoolHistoryEvaluation {
   result?: number
 }
 
+export interface SchoolHistorySharedComment {
+  id: string
+  authorId: string
+  authorName: string
+  text: string
+  createdAt: number
+}
+
 export interface SchoolHistoryClass {
   id: string
   title: string
@@ -22,6 +30,7 @@ export interface SchoolHistoryClass {
   coachIds: string[]
   status: 'taken' | 'scheduled' | 'cancelled' | 'absent' | 'unconfirmed'
   note: string
+  sharedComments: SchoolHistorySharedComment[]
   evaluations: SchoolHistoryEvaluation[]
 }
 

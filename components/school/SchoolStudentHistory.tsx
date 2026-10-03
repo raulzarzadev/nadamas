@@ -1,16 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { FiEdit3 } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
-import { getAuthed } from '@/lib/client/authed-api'
+import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { SchoolStudent } from '@/lib/school'
 import { capitalizeSchoolTerm } from '@/lib/school'
 import type {
   SchoolStudentHistory as HistoryPayload,
   SchoolHistoryClass,
 } from '@/lib/school-student-history'
-import SchoolStudentClassAssignment from './SchoolStudentClassAssignment'
 
 const STATUS_LABELS: Record<SchoolHistoryClass['status'], string> = {
   taken: 'Tomada',
@@ -29,15 +29,11 @@ function durationMinutes(startTime: string, endTime: string) {
 
 export default function SchoolStudentHistory({
   schoolId,
-  timezone,
   student,
-  canAssign,
   onClose,
 }: {
   schoolId: string
-  timezone: string
   student: SchoolStudent
-  canAssign: boolean
   onClose: () => void
 }) {
   const terminology = useSchoolTerminology()
@@ -48,6 +44,7 @@ export default function SchoolStudentHistory({
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [expandedComments, setExpandedComments] = useState<Set<string>>(() => new Set())
+  const [commentOpen, setCommentOpen] = useState(false)
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt deliberately reloads the same resource after a failure.
   useEffect(() => {
     let active = true
@@ -70,6 +67,18 @@ export default function SchoolStudentHistory({
 
   const coachIds = [...new Set(history?.classes.flatMap((item) => item.coachIds) || [])]
   const taken = history?.classes.filter((item) => item.status === 'taken').length || 0
+
+  if (commentOpen && history)
+    return (
+      <SchoolStudentCommentModal
+        schoolId={schoolId}
+        student={student}
+        classes={history.classes}
+        onClose={() => setCommentOpen(false)}
+        onSaved={() => setAttempt((value) => value + 1)}
+      />
+    )
+
   return (
     <Sheet
       open
@@ -87,15 +96,17 @@ export default function SchoolStudentHistory({
             </h2>
             <p className="mt-1 text-sm text-(--c-text-2)">{student.name} · En esta escuela</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setCommentOpen(true)}
+            disabled={!history?.classes.length}
+            aria-label="Escribir comentario sobre una clase"
+            title="Escribir comentario"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-40"
+          >
+            <FiEdit3 aria-hidden="true" />
+          </button>
         </div>
-        {canAssign && (
-          <SchoolStudentClassAssignment
-            schoolId={schoolId}
-            timezone={timezone}
-            student={student}
-            onAssigned={() => setAttempt((value) => value + 1)}
-          />
-        )}
         {error ? (
           <div role="alert" className="mt-5 text-sm text-(--c-text-2)">
             <p>No pudimos cargar el historial. Inténtalo de nuevo.</p>
@@ -175,13 +186,15 @@ export default function SchoolStudentHistory({
                       key={item.id}
                       className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-[var(--r-sm)] border border-(--c-border) px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:gap-x-5"
                     >
-                      <div className="min-w-0">
-                        <h3 className="truncate font-bold text-(--c-ocean)">
-                          {coachNames || capitalizeSchoolTerm(coachSingular)}
-                        </h3>
-                        {item.title && (
-                          <p className="truncate text-xs text-(--c-text-2)">{item.title}</p>
-                        )}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate font-bold text-(--c-ocean)">
+                            {coachNames || capitalizeSchoolTerm(coachSingular)}
+                          </h3>
+                          {item.title && (
+                            <p className="truncate text-xs text-(--c-text-2)">{item.title}</p>
+                          )}
+                        </div>
                       </div>
                       <time dateTime={item.date} className="text-sm text-(--c-text-2)">
                         {date}
@@ -213,6 +226,17 @@ export default function SchoolStudentHistory({
                         ) : (
                           <p className="text-xs text-(--c-text-2)">Sin comentarios registrados.</p>
                         )}
+                        {item.sharedComments?.map((comment) => (
+                          <p
+                            key={comment.id}
+                            className="mt-2 whitespace-pre-wrap text-sm text-(--c-text-2)"
+                          >
+                            <span className="font-semibold text-(--c-ocean)">
+                              Comentario compartido · {comment.authorName}:
+                            </span>{' '}
+                            {comment.text}
+                          </p>
+                        ))}
                         {hasMore && (
                           <button
                             type="button"
@@ -238,6 +262,102 @@ export default function SchoolStudentHistory({
             )}
           </>
         )}
+      </div>
+    </Sheet>
+  )
+}
+
+function SchoolStudentCommentModal({
+  schoolId,
+  student,
+  classes,
+  onClose,
+  onSaved,
+}: {
+  schoolId: string
+  student: SchoolStudent
+  classes: SchoolHistoryClass[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [text, setText] = useState('')
+  const [classKey, setClassKey] = useState(classes[0]?.id || '')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(false)
+
+  async function saveComment() {
+    if (!text.trim() || busy) return
+    setBusy(true)
+    setError(false)
+    try {
+      await postAuthed(
+        `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(student.id)}/history/comments`,
+        { classKey, text: text.trim() }
+      )
+      onSaved()
+      onClose()
+    } catch {
+      setError(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Sheet open onClose={onClose} label="Agregar comentario compartido" keyboardAware>
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-bold text-(--c-ocean)">Comentario compartido</h2>
+          <p className="mt-1 text-sm text-(--c-text-2)">{student.name}</p>
+          <p className="mt-2 text-sm text-(--c-text-2)">
+            Este comentario podrán verlo el alumno y sus profesores.
+          </p>
+        </div>
+        <label className="flex flex-col gap-2 text-sm font-semibold text-(--c-ocean)">
+          Clase
+          <select
+            value={classKey}
+            onChange={(event) => setClassKey(event.currentTarget.value)}
+            disabled={busy}
+            className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+          >
+            {classes.map((item) => (
+              <option key={item.id} value={item.id}>
+                {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}{' '}
+                · {item.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-2 text-sm font-semibold text-(--c-ocean)">
+          Comentario
+          <textarea
+            rows={5}
+            maxLength={1000}
+            value={text}
+            onChange={(event) => setText(event.currentTarget.value)}
+            disabled={busy}
+            placeholder="Escribe un comentario sobre esta clase…"
+            className="w-full resize-y rounded-[var(--r-sm)] border border-(--c-border) p-3 text-sm font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-(--c-error,#b91c1c)">
+            No se pudo guardar el comentario. Inténtalo de nuevo.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => void saveComment()}
+          disabled={!text.trim() || busy}
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-(--c-aqua) px-5 text-sm font-bold text-white disabled:opacity-50"
+        >
+          {busy ? 'Guardando…' : 'Guardar comentario'}
+        </button>
       </div>
     </Sheet>
   )
