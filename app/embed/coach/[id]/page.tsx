@@ -26,7 +26,7 @@ export default async function CoachEmbedPage({
 
   if (!detail) {
     return (
-      <WidgetFrameResizer>
+      <WidgetFrameResizer dark={dark}>
         <main className={`px-4 py-6 ${dark ? 'widget-dark' : ''}`}>
           <div className="rounded-2xl border border-[var(--c-border)] bg-white p-4 text-sm font-semibold text-[var(--c-ocean)]">
             No encontramos horarios para este coach.
@@ -37,7 +37,7 @@ export default async function CoachEmbedPage({
   }
 
   return (
-    <WidgetFrameResizer>
+    <WidgetFrameResizer dark={dark}>
       <main
         className={`mx-auto w-full max-w-3xl px-4 py-5 ${dark ? 'widget-dark' : 'bg-white'}`}
         style={

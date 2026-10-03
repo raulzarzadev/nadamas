@@ -2,7 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 
-export default function WidgetFrameResizer({ children }: { children: React.ReactNode }) {
+export default function WidgetFrameResizer({
+  children,
+  dark = false,
+}: {
+  children: React.ReactNode
+  dark?: boolean
+}) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -25,5 +31,5 @@ export default function WidgetFrameResizer({ children }: { children: React.React
     }
   }, [])
 
-  return <div ref={ref}>{children}</div>
+  return <div ref={ref} className={dark ? 'widget-frame-dark' : undefined}>{children}</div>
 }

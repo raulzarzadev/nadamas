@@ -15,10 +15,17 @@
   background: var(--c-bg);
 }
 
-/* The resize-driven iframe can be taller than the widget content; without this
-   the page body shows through as a white strip below the dark card. */
+/* The host page can assign the iframe a fixed height. Keep the whole document
+   and measured widget surface dark even when the profile content is shorter. */
+html:has(.widget-dark),
 body:has(.widget-dark) {
-  background: #0b0f14;
+  min-height: 100%;
+  background-color: #0b0f14;
+}
+
+.widget-frame-dark {
+  min-height: 100vh;
+  background-color: #0b0f14;
 }
 
 .widget-dark .bg-white {
