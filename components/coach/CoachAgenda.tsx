@@ -3,7 +3,7 @@
 import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FiEdit2, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers, FiX } from 'react-icons/fi'
+import { FiClipboard, FiEdit2, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers, FiX } from 'react-icons/fi'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -31,6 +31,7 @@ import {
 import { capitalizeSchoolTerm } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
+import AgendaStudentActions, { type AgendaStudentAction } from './AgendaStudentActions'
 import CoachAgendaDateSelector from './CoachAgendaDateSelector'
 import { useCoachAgendaShare } from './CoachAgendaShareContext'
 import ScheduleHoursEditor, {
@@ -191,6 +192,15 @@ export default function CoachAgenda({
   // The school editor manages availability hours only.
   const [hoursEditorOpen, setHoursEditorOpen] = useState(false)
   const [reassignBooking, setReassignBooking] = useState<Booking | null>(null)
+  const [studentAction, setStudentAction] = useState<{
+    booking: Booking
+    student: AgendaStudentAction
+  } | null>(null)
+  const [studentActionError, setStudentActionError] = useState<string | null>(null)
+  const [studentToReassign, setStudentToReassign] = useState<{
+    booking: Booking
+    student: AgendaStudentAction
+  } | null>(null)
   const [bookingToEdit, setBookingToEdit] = useState<Booking | null>(null)
   const [schoolRequestDraft, setSchoolRequestDraft] = useState<SchoolRequestDraft | null>(null)
   const [schoolClassToEdit, setSchoolClassToEdit] = useState<Booking | null>(null)
@@ -733,6 +743,65 @@ export default function CoachAgenda({
     )
   }
 
+  const saveStudentAction = async (attended: boolean, note: string) => {
+    if (!studentAction) return
+    const { booking, student } = studentAction
+    const targetSchoolId = schoolIdForBooking(booking)
+    setBusy(true)
+    setStudentActionError(null)
+    try {
+      if (booking.schoolClassId && targetSchoolId) {
+        await patchAuthed(
+          `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(booking.schoolClassId)}/students/${encodeURIComponent(student.studentId)}`,
+          { attended, note }
+        )
+      } else {
+        await patchAuthed('/api/coach/agenda/bookings', {
+          id: booking.id,
+          attended,
+          note,
+          ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
+          ...(manageSchoolSchedule ? { coachId: booking.coachId } : {}),
+        })
+      }
+      setStudentAction(null)
+      setNotice('Ficha del alumno guardada.')
+      await loadAgenda(monthOfSelected)
+    } catch (err) {
+      reportInternalError('COACH_STUDENT_ACTION_SAVE', err)
+      setStudentActionError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const removeStudentFromClass = async () => {
+    if (!studentAction) return
+    const { booking, student } = studentAction
+    const targetSchoolId = schoolIdForBooking(booking)
+    setBusy(true)
+    setStudentActionError(null)
+    try {
+      if (booking.schoolClassId && targetSchoolId) {
+        await deleteAuthed(
+          `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(booking.schoolClassId)}/students/${encodeURIComponent(student.studentId)}`
+        )
+      } else {
+        await deleteAuthed(
+          `/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${schoolQueryFor(targetSchoolId)}${manageSchoolSchedule ? `&coachId=${encodeURIComponent(booking.coachId)}` : coachQuery}`
+        )
+      }
+      setStudentAction(null)
+      setNotice(`${capitalizeSchoolTerm(participantSingular)} eliminado de la clase.`)
+      await loadAgenda(monthOfSelected)
+    } catch (err) {
+      reportInternalError('COACH_STUDENT_ACTION_REMOVE', err)
+      setStudentActionError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const handleSchoolRequest = (booking: Booking, status: 'approved' | 'rejected') => {
     const targetSchoolId = schoolIdForBooking(booking)
     if (!targetSchoolId || !booking.schoolRequestId) return
@@ -1269,6 +1338,9 @@ export default function CoachAgenda({
                                   booking,
                                   rowKey: `${booking.id}:${student.id}`,
                                   studentName: student.name,
+                                  studentId: student.id,
+                                  attended: student.attended === true,
+                                  note: student.note || '',
                                   pending: student.pending,
                                 }))
                               : [
@@ -1276,13 +1348,16 @@ export default function CoachAgenda({
                                     booking,
                                     rowKey: booking.id,
                                     studentName: booking.athleteName,
+                                    studentId: booking.athleteId,
+                                    attended: booking.attended === true,
+                                    note: booking.studentNote || '',
                                     pending: Boolean(
                                       booking.schoolRequestId || booking.status === 'pending'
                                     ),
                                   },
                                 ]
                           )
-                          .map(({ booking, rowKey, studentName, pending }) => (
+                          .map(({ booking, rowKey, studentName, studentId, attended, note, pending }) => (
                             <li
                               key={rowKey}
                               className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
@@ -1313,11 +1388,38 @@ export default function CoachAgenda({
                                     )}
                                 </span>
                               </div>
-                              {pending && (
-                                <span className="ml-auto shrink-0 self-start rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">
-                                  Pendiente de aprobación
-                                </span>
-                              )}
+                              <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
+                                {pending && (
+                                  <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">
+                                    Pendiente de aprobación
+                                  </span>
+                                )}
+                                {!hideBookingActions && !booking.schoolRequestId && (
+                                  <button
+                                    type="button"
+                                    aria-label={`Abrir ficha de ${studentName}`}
+                                    title={`Ficha de ${studentName}`}
+                                    onClick={() => {
+                                      setStudentAction({
+                                        booking,
+                                        student: {
+                                          studentId,
+                                          studentName,
+                                          attended,
+                                          note,
+                                          date: booking.date,
+                                          startTime: booking.startTime,
+                                        },
+                                      })
+                                      setStudentActionError(null)
+                                    }}
+                                    disabled={busy}
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+                                  >
+                                    <FiClipboard aria-hidden="true" />
+                                  </button>
+                                )}
+                              </div>
                               {booking.schoolRequestId && !hideBookingActions && (
                                 <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
                                   <button
@@ -1346,84 +1448,6 @@ export default function CoachAgenda({
                                   </button>
                                 </div>
                               )}
-                              {manageSchoolSchedule &&
-                                !booking.schoolClassId &&
-                                !booking.schoolRequestId && (
-                                  <div className="flex shrink-0 items-center">
-                                    <RowIconButton
-                                      ariaLabel={`Editar clase de ${booking.athleteName}`}
-                                      onClick={() => setBookingToEdit(booking)}
-                                      disabled={busy}
-                                    >
-                                      <FiEdit2 aria-hidden="true" />
-                                    </RowIconButton>
-                                  </div>
-                                )}
-                              {!hideBookingActions &&
-                                !manageSchoolSchedule &&
-                                !booking.schoolClassId &&
-                                !booking.schoolRequestId && (
-                                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:self-center">
-                                    <label className="col-span-2 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white/65 px-3 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--c-aqua-strong)] sm:col-auto sm:rounded-full sm:border-transparent sm:bg-transparent sm:px-2 sm:hover:bg-white/60">
-                                      <input
-                                        type="checkbox"
-                                        checked={booking.attended === true}
-                                        onChange={(event) =>
-                                          updateAttendance(booking, event.currentTarget.checked)
-                                        }
-                                        disabled={busy}
-                                        className="h-5 w-5 cursor-pointer rounded border-[var(--c-border)] accent-[var(--c-aqua-strong)] disabled:cursor-not-allowed"
-                                      />
-                                      Asistencia
-                                    </label>
-                                    {!manageSchoolSchedule && booking.attended === true && (
-                                      <button
-                                        type="button"
-                                        aria-label={
-                                          progressBookingIds.has(booking.id)
-                                            ? `Editar progreso de ${booking.athleteName}`
-                                            : `Agregar progreso de ${booking.athleteName}`
-                                        }
-                                        onClick={() => setProgressBooking(booking)}
-                                        disabled={busy}
-                                        className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--c-border)] bg-white px-2 text-xs font-bold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50 sm:w-fit sm:px-3.5"
-                                      >
-                                        {progressBookingIds.has(booking.id) ? (
-                                          <>
-                                            <FiEdit2 aria-hidden="true" /> Progreso guardado
-                                          </>
-                                        ) : (
-                                          <>
-                                            <FiPlus aria-hidden="true" /> Progreso
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
-                                    {manageSchoolSchedule && (
-                                      <button
-                                        type="button"
-                                        className="btn btn-outline btn-sm min-h-11"
-                                        disabled={busy}
-                                        onClick={() => setReassignBooking(booking)}
-                                      >
-                                        Reasignar {participantSingular}
-                                      </button>
-                                    )}
-                                    <button
-                                      type="button"
-                                      aria-label={`Cancelar clase de ${booking.athleteName}`}
-                                      onClick={() =>
-                                        setConfirmAction({ kind: 'cancel-booking', booking })
-                                      }
-                                      disabled={busy}
-                                      className={`inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full border border-[var(--rose-bd)] bg-white px-2 text-xs font-bold text-[var(--rose-tx)] transition-colors hover:bg-[var(--rose-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50 sm:w-fit sm:px-3.5 ${
-                                        booking.attended === true ? '' : 'col-span-2'
-                                      }`}
-                                    >
-                                      <FiX aria-hidden="true" /> Cancelar
-                                    </button>
-                                  </div>
-                                )}
                             </li>
                           ))}
                       </ul>
@@ -1971,6 +1995,22 @@ export default function CoachAgenda({
         )}
       </Sheet>
 
+      {studentAction && (
+        <AgendaStudentActions
+          key={`${studentAction.booking.id}:${studentAction.student.studentId}`}
+          student={studentAction.student}
+          busy={busy}
+          error={studentActionError}
+          onClose={() => setStudentAction(null)}
+          onSave={(attended, note) => void saveStudentAction(attended, note)}
+          onMove={() => {
+            setStudentToReassign(studentAction)
+            setStudentAction(null)
+          }}
+          onRemove={() => void removeStudentFromClass()}
+        />
+      )}
+
       {reassignBooking && schoolIdForBooking(reassignBooking) && (
         <SchoolReassignStudent
           schoolId={schoolIdForBooking(reassignBooking) as string}
@@ -1992,6 +2032,21 @@ export default function CoachAgenda({
           onSaved={() => {
             setSchoolClassToReassign(null)
             setNotice('Se cambió la clase de sus alumnos.')
+            void loadAgenda(monthOfSelected)
+          }}
+        />
+      )}
+      {studentToReassign && schoolIdForBooking(studentToReassign.booking) && (
+        <SchoolReassignStudent
+          schoolId={schoolIdForBooking(studentToReassign.booking) as string}
+          booking={studentToReassign.booking}
+          schoolClassId={studentToReassign.booking.schoolClassId}
+          studentId={studentToReassign.student.studentId}
+          studentName={studentToReassign.student.studentName}
+          onClose={() => setStudentToReassign(null)}
+          onSaved={() => {
+            setStudentToReassign(null)
+            setNotice(`${capitalizeSchoolTerm(participantSingular)} cambiado de clase.`)
             void loadAgenda(monthOfSelected)
           }}
         />

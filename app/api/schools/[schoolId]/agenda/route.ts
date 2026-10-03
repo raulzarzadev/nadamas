@@ -10,6 +10,7 @@ import {
 import { adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolCaller, requireSchoolAccess } from '@/lib/server/school-access'
 import {
+  type AgendaStudentRecord,
   coalesceGroupClassOccurrences,
   legacySchoolOfferings,
   schoolClassAgendaBooking,
@@ -59,11 +60,20 @@ export async function GET(request: Request, { params }: RouteProps) {
     adminDb.collection('bookings').where('schoolId', '==', schoolId).get(),
     adminDb.collection('coachScheduleBlocks').where('schoolId', '==', schoolId).get(),
   ])
-  const [schoolClassesSnapshot, studentsSnapshot, requestsSnapshot] = await Promise.all([
+  const [schoolClassesSnapshot, studentsSnapshot, requestsSnapshot, studentRecordsSnapshot] = await Promise.all([
     adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get(),
     adminDb.collection('schoolStudents').where('schoolId', '==', schoolId).get(),
     adminDb.collection('schoolClassRequests').where('schoolId', '==', schoolId).get(),
+    canManage
+      ? adminDb.collection('agendaStudentRecords').where('schoolId', '==', schoolId).get()
+      : Promise.resolve(null),
   ])
+  const studentRecords = new Map(
+    (studentRecordsSnapshot?.docs || []).map((doc) => {
+      const record = doc.data() as AgendaStudentRecord
+      return [`${record.sourceId}|${record.studentId}`, record] as const
+    })
+  )
 
   const scheduleMemberships = schoolScheduleOwners(
     membershipSnapshot.docs.map((doc) => doc.data() as SchoolMembership)
@@ -109,6 +119,9 @@ export async function GET(request: Request, { params }: RouteProps) {
     .map((booking) => ({
       ...booking,
       coachName: booking.coachName || names[booking.coachId] || 'Coach',
+      ...(canManage
+        ? { studentNote: studentRecords.get(`${booking.id}|${booking.athleteId}`)?.note || '' }
+        : {}),
     }))
     .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
   const studentNames = new Map(
@@ -157,6 +170,7 @@ export async function GET(request: Request, { params }: RouteProps) {
         coachId,
         coachName: names[coachId] || 'Coach',
         studentNames: canManage ? studentNames : undefined,
+        studentRecords: canManage ? studentRecords : undefined,
       })
     )
   })

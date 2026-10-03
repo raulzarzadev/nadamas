@@ -33,7 +33,14 @@ export interface Booking extends CoachBookingSelection {
   /** Set when this row mirrors an occurrence from the school's class scheduler. */
   schoolClassId?: string
   schoolClassStudentIds?: string[]
-  schoolClassStudents?: Array<{ id: string; name: string; pending: boolean }>
+  schoolClassStudents?: Array<{
+    id: string
+    name: string
+    pending: boolean
+    attended?: boolean
+    note?: string
+  }>
+  studentNote?: string
   schoolRequestId?: string
   schoolClassTitle?: string
   schoolClassStudentCount?: number

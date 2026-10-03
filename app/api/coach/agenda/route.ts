@@ -17,7 +17,11 @@ import {
 } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership } from '@/lib/server/school-access'
-import { coalesceGroupClassOccurrences, schoolClassAgendaBooking } from '@/lib/server/school-agenda'
+import {
+  type AgendaStudentRecord,
+  coalesceGroupClassOccurrences,
+  schoolClassAgendaBooking,
+} from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
@@ -105,10 +109,25 @@ export async function GET(request: Request) {
       : Promise.resolve(null),
   ])
 
+  const studentRecordsSnapshot = await adminDb
+    .collection('agendaStudentRecords')
+    .where(schoolId ? 'schoolId' : 'coachId', '==', schoolId || coachId)
+    .get()
+  const studentRecords = new Map(
+    studentRecordsSnapshot.docs.map((doc) => {
+      const record = doc.data() as AgendaStudentRecord
+      return [`${record.sourceId}|${record.studentId}`, record] as const
+    })
+  )
+
   const coach = { id: coachDoc.id, ...coachDoc.data() } as CoachPublic
   const regularBookings = bookingsSnapshot.docs
     .map((doc) => doc.data() as Booking)
     .filter((booking) => (schoolId ? booking.schoolId === schoolId : !booking.schoolId))
+    .map((booking) => ({
+      ...booking,
+      studentNote: studentRecords.get(`${booking.id}|${booking.athleteId}`)?.note || '',
+    }))
   const studentNames = new Map(
     (schoolStudentsSnapshot?.docs || []).map((doc) => [doc.id, String(doc.data().name || 'Alumno')])
   )
@@ -132,6 +151,7 @@ export async function GET(request: Request) {
         coachId,
         coachName: null,
         studentNames,
+        studentRecords,
       }),
     ]
   })

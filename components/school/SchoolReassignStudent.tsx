@@ -36,12 +36,16 @@ export default function SchoolReassignStudent({
   schoolId,
   booking,
   schoolClassId,
+  studentId,
+  studentName,
   onClose,
   onSaved,
 }: {
   schoolId: string
   booking: Booking
   schoolClassId?: string
+  studentId?: string
+  studentName?: string
   onClose: () => void
   onSaved: () => void
 }) {
@@ -90,6 +94,7 @@ export default function SchoolReassignStudent({
     }
     return [...slots.values()]
       .filter((slot) => {
+        if (studentId && (!slot.schoolClassId || slot.groupType !== 'grupal')) return false
         if (
           schoolClassId &&
           (slot.schoolClassId === schoolClassId ||
@@ -124,10 +129,14 @@ export default function SchoolReassignStudent({
         )
           return false
         const classIsFull = classmates.some((item) => item.classFull)
-        const duplicateStudent = classmates.some((item) => item.athleteId === booking.athleteId)
+        const duplicateStudent = classmates.some(
+          (item) =>
+            item.athleteId === (studentId || booking.athleteId) ||
+            Boolean(studentId && item.schoolClassStudentIds?.includes(studentId))
+        )
         return (
           !classIsFull &&
-          (Boolean(schoolClassId) || !duplicateStudent) &&
+          !duplicateStudent &&
           (slot.groupType === 'grupal' || classmates.length === 0)
         )
       })
@@ -193,7 +202,12 @@ export default function SchoolReassignStudent({
     setBusy(true)
     setError(null)
     try {
-      if (schoolClassId && slot.schoolClassId) {
+      if (schoolClassId && studentId && slot.schoolClassId) {
+        await postAuthed(
+          `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(schoolClassId)}/students/${encodeURIComponent(studentId)}/move`,
+          { destinationSchoolClassId: slot.schoolClassId }
+        )
+      } else if (schoolClassId && slot.schoolClassId) {
         await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/reassign`, {
           schoolClassId,
           destinationSchoolClassId: slot.schoolClassId,
@@ -244,7 +258,8 @@ export default function SchoolReassignStudent({
     >
       <div className="flex flex-col gap-3 px-3 sm:px-0">
         <h3 className="text-xl font-bold text-(--c-ocean)">
-          {schoolClassId ? 'Cambiar clase de' : `Reasignar a`} {booking.athleteName}
+          {schoolClassId ? 'Cambiar clase de' : `Reasignar a`}{' '}
+          {studentName || booking.athleteName}
         </h3>
         <CoachAgendaDateSelector
           selectedDate={date}

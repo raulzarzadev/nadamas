@@ -103,6 +103,7 @@ type SlotSettingsInput = {
   groupType?: 'particular' | 'grupal'
   classFull?: boolean
   attended?: boolean
+  note?: string
   schoolId?: string
 }
 
@@ -294,7 +295,9 @@ async function handlePATCH(request: Request) {
   )
   if (schoolError) return schoolError
   const bookingId = typeof body.id === 'string' ? body.id.trim() : ''
-  if (bookingId && typeof body.attended === 'boolean') {
+  if (bookingId && (typeof body.attended === 'boolean' || typeof body.note === 'string')) {
+    if (typeof body.note === 'string' && body.note.length > 1000)
+      return NextResponse.json({ error: 'La nota no puede superar 1000 caracteres.' }, { status: 400 })
     const bookingRef = adminDb.collection('bookings').doc(bookingId)
     const bookingDoc = await bookingRef.get()
     const booking = bookingDoc.data() as Booking | undefined
@@ -309,8 +312,22 @@ async function handlePATCH(request: Request) {
     if (booking.status === 'cancelled') {
       return NextResponse.json({ error: 'Esta clase está cancelada.' }, { status: 409 })
     }
-    await bookingRef.set({ attended: body.attended, updatedAt: Date.now() }, { merge: true })
-    return NextResponse.json({ ok: true, attended: body.attended })
+    const now = Date.now()
+    if (typeof body.attended === 'boolean')
+      await bookingRef.set({ attended: body.attended, updatedAt: now }, { merge: true })
+    if (typeof body.note === 'string')
+      await adminDb.collection('agendaStudentRecords').doc(`booking-${bookingId}`).set(
+        {
+          sourceId: bookingId,
+          studentId: booking.athleteId,
+          coachId: booking.coachId,
+          ...(schoolId ? { schoolId } : {}),
+          note: body.note.trim(),
+          updatedAt: now,
+        },
+        { merge: true }
+      )
+    return NextResponse.json({ ok: true })
   }
 
   const date = typeof body.date === 'string' ? body.date.trim() : ''

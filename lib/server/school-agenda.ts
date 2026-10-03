@@ -36,7 +36,17 @@ export function schoolClassCoachIds({
   ]
 }
 
-type AgendaSchoolClassOccurrence = SchoolClassOccurrence & { pendingStudentIds?: string[] }
+type AgendaSchoolClassOccurrence = SchoolClassOccurrence & {
+  pendingStudentIds?: string[]
+  sourceOccurrenceIds?: string[]
+}
+
+export type AgendaStudentRecord = {
+  sourceId: string
+  studentId: string
+  attended?: boolean
+  note?: string
+}
 
 /** Old group requests can leave several occurrences for one class hour. */
 export function coalesceGroupClassOccurrences(occurrences: SchoolClassOccurrence[]) {
@@ -59,6 +69,7 @@ export function coalesceGroupClassOccurrences(occurrences: SchoolClassOccurrence
       grouped.set(key, {
         ...occurrence,
         pendingStudentIds: occurrence.status === 'pending' ? occurrence.studentIds : [],
+        sourceOccurrenceIds: [occurrence.id],
       })
       continue
     }
@@ -74,6 +85,7 @@ export function coalesceGroupClassOccurrences(occurrences: SchoolClassOccurrence
           ...(occurrence.status === 'pending' ? occurrence.studentIds : []),
         ]),
       ],
+      sourceOccurrenceIds: [...new Set([...(previous.sourceOccurrenceIds || [previous.id]), occurrence.id])],
       classFull: previous.classFull === true || occurrence.classFull === true,
       status:
         previous.status === 'scheduled' || occurrence.status === 'scheduled'
@@ -90,6 +102,7 @@ export function schoolClassAgendaBooking(args: {
   coachId: string
   coachName: string | null
   studentNames?: ReadonlyMap<string, string>
+  studentRecords?: ReadonlyMap<string, AgendaStudentRecord>
 }): Booking {
   const { occurrence } = args
   const studentIds = Array.isArray(occurrence.studentIds)
@@ -98,6 +111,7 @@ export function schoolClassAgendaBooking(args: {
   const pendingStudentIds = new Set(
     occurrence.pendingStudentIds || (occurrence.status === 'pending' ? studentIds : [])
   )
+  const sourceIds = occurrence.sourceOccurrenceIds || [occurrence.id]
   return {
     id: `school-class-${occurrence.id}-${args.coachId}`,
     schoolId: args.schoolId,
@@ -109,6 +123,13 @@ export function schoolClassAgendaBooking(args: {
             id,
             name: args.studentNames?.get(id) || 'Alumno',
             pending: pendingStudentIds.has(id),
+            attended: sourceIds.some(
+              (sourceId) => args.studentRecords?.get(`${sourceId}|${id}`)?.attended === true
+            ),
+            note:
+              sourceIds
+                .map((sourceId) => args.studentRecords?.get(`${sourceId}|${id}`)?.note)
+                .find((note) => typeof note === 'string') || '',
           })),
         }
       : {}),
