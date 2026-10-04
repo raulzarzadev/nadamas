@@ -340,6 +340,7 @@ export interface SchoolClassOccurrence {
   teacherIds: string[]
   studentIds: string[]
   classFull?: boolean
+  classNote?: string
   location: string
   locationUrl: string
   visibility?: 'public' | 'private'

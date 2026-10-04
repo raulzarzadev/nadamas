@@ -40,6 +40,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     body.status === 'pending'
       ? body.status
       : null
+  const classNote = typeof body.classNote === 'string' ? body.classNote.trim().slice(0, 1000) : null
   if (
     schoolMembershipHasRole(access.membership, 'teacher') &&
     !isTeacher &&
@@ -53,7 +54,9 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     if (!canCancel || status !== 'cancelled')
       return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
-  if (!status && !isDirector && !access.globalAdmin)
+  if (!status && classNote === null && !isDirector && !access.globalAdmin)
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  if (classNote !== null && !isDirector && !isTeacher)
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   if (
     (status === 'pending' || (occurrence.status === 'pending' && status === 'scheduled')) &&
@@ -217,6 +220,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   const editable = isStudentAccount ? {} : body
   const update = {
     ...(status ? { status } : {}),
+    ...(classNote !== null ? { classNote } : {}),
     ...(typeof editable.date === 'string' ? { date: editable.date } : {}),
     ...(typeof editable.startTime === 'string' ? { startTime: editable.startTime } : {}),
     ...(typeof editable.endTime === 'string' ? { endTime: editable.endTime } : {}),
@@ -232,26 +236,27 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     updatedAt: Date.now(),
   }
   await adminDb.collection('schoolClassOccurrences').doc(occurrenceId).update(update)
-  for (const teacherId of new Set([...occurrence.teacherIds, ...(teacherIds || [])]))
-    void createNotification({
-      recipientId: teacherId,
-      actorId: access.caller.uid,
-      actorName: access.caller.name || null,
-      type: status === 'cancelled' ? 'school_class_cancelled' : 'school_class_assigned',
-      title:
-        status === 'cancelled'
-          ? 'Clase cancelada'
-          : status === 'pending'
-            ? 'Clase pendiente de aprobación'
-            : 'Clase actualizada',
-      body:
-        status === 'cancelled'
-          ? `La clase ${occurrence.title} fue cancelada.`
-          : status === 'pending'
-            ? `La clase ${occurrence.title} quedó pendiente de aprobación.`
-            : `La clase ${occurrence.title} fue actualizada.`,
-      link: '/school/classes',
-    }).catch(() => {})
+  if (status || hasScheduleChange)
+    for (const teacherId of new Set([...occurrence.teacherIds, ...(teacherIds || [])]))
+      void createNotification({
+        recipientId: teacherId,
+        actorId: access.caller.uid,
+        actorName: access.caller.name || null,
+        type: status === 'cancelled' ? 'school_class_cancelled' : 'school_class_assigned',
+        title:
+          status === 'cancelled'
+            ? 'Clase cancelada'
+            : status === 'pending'
+              ? 'Clase pendiente de aprobación'
+              : `Clase actualizada`,
+        body:
+          status === 'cancelled'
+            ? `La clase ${occurrence.title} fue cancelada.`
+            : status === 'pending'
+              ? `La clase ${occurrence.title} quedó pendiente de aprobación.`
+              : `La clase ${occurrence.title} fue actualizada.`,
+        link: '/school/classes',
+      }).catch(() => {})
   return NextResponse.json({ occurrence: { ...occurrence, ...update } })
 }
 

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FiClipboard, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers } from 'react-icons/fi'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
+import CoachBadge from '@/components/ui/coach-badge'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
@@ -1537,6 +1538,7 @@ export default function CoachAgenda({
                     cardShowCoachName={
                       showCoachName && !readOnlyAgenda && !(adminMode && !manageSchoolSchedule)
                     }
+                    cardCoachUnassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
                     cardGroupType={isBlockedGroup ? 'grupal' : 'particular'}
                     cardStatusLabel="Bloqueado"
                     cardAgendaLabel={combinedSources ? row.slot.agendaLabel : undefined}
@@ -1605,11 +1607,14 @@ export default function CoachAgenda({
                     ) : (
                       <div className="flex min-w-0 flex-wrap items-center gap-2">
                         {showCoachName && (
-                          <span className="text-xs font-bold">
-                            {row.slot.coachName ||
+                          <CoachBadge
+                            name={
+                              row.slot.coachName ||
                               agenda.coachNames?.[row.slot.coachId] ||
-                              coachFallback}
-                          </span>
+                              coachFallback
+                            }
+                            unassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                          />
                         )}
                         <span className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--c-text-2)]">
                           <span className="inline-flex items-center gap-1">
@@ -2289,6 +2294,7 @@ function AgendaRow({
   cardStatus,
   cardCoachName,
   cardShowCoachName = false,
+  cardCoachUnassigned = false,
   cardGroupType = 'particular',
   cardStatusLabel,
   cardAgendaLabel,
@@ -2305,6 +2311,7 @@ function AgendaRow({
   cardStatus?: HourStatus
   cardCoachName?: string
   cardShowCoachName?: boolean
+  cardCoachUnassigned?: boolean
   cardGroupType?: 'particular' | 'grupal'
   cardStatusLabel?: string
   cardAgendaLabel?: string
@@ -2342,9 +2349,7 @@ function AgendaRow({
           >
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               {cardShowCoachName && cardCoachName && (
-                <span className="min-w-0 truncate text-xs font-bold text-[var(--c-ocean)]">
-                  {cardCoachName}
-                </span>
+                <CoachBadge name={cardCoachName} unassigned={cardCoachUnassigned} />
               )}
               <span className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--c-text-2)]">
                 {cardStatusLabel && (
