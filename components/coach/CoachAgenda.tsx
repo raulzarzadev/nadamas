@@ -1272,11 +1272,13 @@ export default function CoachAgenda({
                   ? addStudentBooking?.status === 'confirmed' ||
                     addStudentBooking?.status === 'pending'
                   : addStudentBooking?.status === 'confirmed'
+                const classBlocked = row.bookings.some((booking) =>
+                  Boolean(blockForBooking(booking))
+                )
                 const canAddToGroup =
                   isGroupClass &&
                   !hideBookingActions &&
                   classAcceptsStudents &&
-                  !row.bookings.some((booking) => Boolean(blockForBooking(booking))) &&
                   (!schoolClassBooking ||
                     schoolClassBooking.groupType === 'grupal' ||
                     manageSchoolSchedule)
@@ -1287,9 +1289,6 @@ export default function CoachAgenda({
                       0
                     )
                   : 1
-                const classStudentLabel =
-                  classStudentCount === 1 ? participantSingular : participantPlural
-                const classStyle = isGroupClass ? HOUR_STATUS_STYLE.group : HOUR_STATUS_STYLE.booked
                 const isFocusTarget = row.bookings.some(bookingMatchesFocus)
                 return (
                   <AgendaRow
@@ -1297,278 +1296,222 @@ export default function CoachAgenda({
                     time={row.sort}
                     showTime={showTime}
                     showSeparator={showSeparator}
-                  >
-                    <div
-                      ref={isFocusTarget ? focusRef : undefined}
-                      tabIndex={isFocusTarget ? -1 : undefined}
-                      className={`flex min-w-0 flex-1 scroll-mt-32 flex-col gap-3 rounded-[var(--r-md)] border px-3 py-3 ${classStyle.border} ${classStyle.bg} ${isFocusTarget ? 'outline outline-2 outline-offset-2 outline-[var(--c-aqua-strong)]' : ''}`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        {showCoachName && (
-                          <span className="min-w-0 truncate text-sm font-extrabold text-[var(--c-ocean)]">
-                            {firstBooking.coachName ||
-                              agenda.coachNames?.[firstBooking.coachId] ||
-                              coachFallback}
-                          </span>
+                    cardStatus={classBlocked ? 'blocked' : isGroupClass ? 'group' : 'booked'}
+                    cardCoachName={
+                      firstBooking.coachName ||
+                      agenda.coachNames?.[firstBooking.coachId] ||
+                      coachFallback
+                    }
+                    cardShowCoachName={showCoachName}
+                    cardGroupType={isGroupClass ? 'grupal' : 'particular'}
+                    cardStatusLabel={classBlocked ? 'Bloqueado' : undefined}
+                    cardAgendaLabel={combinedSources ? firstBooking.agendaLabel : undefined}
+                    cardPending={row.bookings.some((booking) => booking.schoolRequestId)}
+                    cardAddStudent={
+                      canAddToGroup && addStudentBooking
+                        ? {
+                            label: capitalizeSchoolTerm(participantSingular),
+                            ariaLabel: `Agregar ${participantSingular} a la clase grupal`,
+                            title: classBlocked
+                              ? 'Desbloquea el horario para agregar alumnos.'
+                              : groupIsFull
+                                ? 'Abre el cupo para agregar alumnos.'
+                                : undefined,
+                            disabled:
+                              busy ||
+                              classBlocked ||
+                              groupIsFull ||
+                              Boolean(schoolClassBooking && classStudentCount >= 100),
+                            onClick: () => openGroupClassAddStudent(addStudentBooking),
+                          }
+                        : undefined
+                    }
+                    cardActions={
+                      <>
+                        {!hideBookingActions && (hasSchoolClass || !hasPendingRequest) && (
+                          <RowIconButton
+                            ariaLabel="Configurar clase"
+                            onClick={() =>
+                              schoolClassBooking
+                                ? openSchoolClassEditor(schoolClassBooking)
+                                : setBookingToEdit(firstBooking)
+                            }
+                            disabled={busy}
+                          >
+                            <FiSettings aria-hidden="true" />
+                          </RowIconButton>
                         )}
-                        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-2">
-                          <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-right text-xs font-bold uppercase text-[var(--c-text-2)]">
-                            <span className="sr-only">
-                              {isGroupClass ? 'Clase grupal' : 'Clase particular'} con{' '}
-                            </span>
-                            {isGroupClass ? (
-                              <FiUsers aria-hidden="true" />
-                            ) : (
-                              <FiUser aria-hidden="true" />
-                            )}
-                            ({classStudentCount})
-                            <span className="sr-only"> {classStudentLabel}</span>
-                            {row.bookings.some((booking) => booking.schoolRequestId) && (
-                              <span className="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-900">
-                                Pendiente de aprobación
-                              </span>
-                            )}
-                          </span>
-                          {combinedSources && firstBooking.agendaLabel && (
-                            <span className="w-fit rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
-                              {firstBooking.agendaLabel}
-                            </span>
-                          )}
-                          {canAddToGroup && addStudentBooking && (
-                            <button
-                              type="button"
-                              onClick={() => openGroupClassAddStudent(addStudentBooking)}
-                              disabled={
-                                busy ||
-                                groupIsFull ||
-                                Boolean(schoolClassBooking && classStudentCount >= 100)
-                              }
-                              aria-label={`Agregar ${participantSingular} a la clase grupal`}
-                              title={groupIsFull ? 'Abre el cupo para agregar alumnos.' : undefined}
-                              className="inline-flex min-h-11 items-center gap-1 rounded-full bg-[var(--c-aqua)] px-3 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <FiPlus aria-hidden="true" />{' '}
-                              {capitalizeSchoolTerm(participantSingular)}
-                            </button>
-                          )}
-                          {!hideBookingActions && (hasSchoolClass || !hasPendingRequest) && (
-                            <span className="ml-auto flex shrink-0">
-                              <RowIconButton
-                                ariaLabel="Configurar clase"
-                                onClick={() =>
-                                  schoolClassBooking
-                                    ? openSchoolClassEditor(schoolClassBooking)
-                                    : setBookingToEdit(firstBooking)
-                                }
-                                disabled={busy}
-                              >
-                                <FiSettings aria-hidden="true" />
-                              </RowIconButton>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <ul className="flex flex-col gap-2">
-                        {row.bookings
-                          .flatMap((booking) =>
-                            booking.schoolClassStudents?.length
-                              ? booking.schoolClassStudents.map((student) => ({
-                                  booking,
-                                  rowKey: `${booking.id}:${student.id}`,
-                                  studentName: student.name,
-                                  studentId: student.id,
-                                  attended: student.attended === true,
-                                  note: student.note || '',
-                                  pending: student.pending,
-                                }))
-                              : [
-                                  {
-                                    booking,
-                                    rowKey: booking.id,
-                                    studentName: booking.athleteName,
-                                    studentId: booking.athleteId,
-                                    attended: booking.attended === true,
-                                    note: booking.studentNote || '',
-                                    pending: Boolean(
-                                      booking.schoolRequestId || booking.status === 'pending'
-                                    ),
-                                  },
-                                ]
-                          )
-                          .map(
-                            ({
+                      </>
+                    }
+                    cardRef={isFocusTarget ? focusRef : undefined}
+                    cardFocused={isFocusTarget}
+                  >
+                    <ul className="flex w-full flex-col gap-2">
+                      {row.bookings
+                        .flatMap((booking) => {
+                          const classStudents = booking.schoolClassStudents
+                          if (booking.schoolClassId && !classStudents?.length) return []
+                          if (classStudents?.length)
+                            return classStudents.map((student) => ({
                               booking,
-                              rowKey,
-                              studentName,
-                              studentId,
-                              attended,
-                              note,
-                              pending,
-                            }) => (
-                              <li
-                                key={rowKey}
-                                className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
-                              >
-                                <div className="flex min-w-0 items-center gap-2.5">
-                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
-                                    {initials(studentName)}
+                              rowKey: `${booking.id}:${student.id}`,
+                              studentName: student.name,
+                              studentId: student.id,
+                              attended: student.attended === true,
+                              note: student.note || '',
+                              pending: student.pending,
+                            }))
+                          return [
+                            {
+                              booking,
+                              rowKey: booking.id,
+                              studentName: booking.athleteName,
+                              studentId: booking.athleteId,
+                              attended: booking.attended === true,
+                              note: booking.studentNote || '',
+                              pending: Boolean(
+                                booking.schoolRequestId || booking.status === 'pending'
+                              ),
+                            },
+                          ]
+                        })
+                        .map(
+                          ({
+                            booking,
+                            rowKey,
+                            studentName,
+                            studentId,
+                            attended,
+                            note,
+                            pending,
+                          }) => (
+                            <li
+                              key={rowKey}
+                              className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
+                            >
+                              <div className="flex min-w-0 items-center gap-2.5">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
+                                  {initials(studentName)}
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                  {booking.schoolClassTitle && (
+                                    <span className="block text-xs font-semibold text-[var(--c-text-2)]">
+                                      {booking.schoolClassTitle}
+                                    </span>
+                                  )}
+                                  <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
+                                    {studentName}
                                   </span>
-                                  <span className="min-w-0 flex-1">
-                                    {booking.schoolClassTitle && (
-                                      <span className="block text-xs font-semibold text-[var(--c-text-2)]">
-                                        {booking.schoolClassTitle}
-                                      </span>
+                                  {!hideBookingActions &&
+                                    !manageSchoolSchedule &&
+                                    !booking.schoolClassId &&
+                                    !booking.schoolRequestId && (
+                                      <Link
+                                        href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
+                                        className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                                      >
+                                        ver perfil ›
+                                      </Link>
                                     )}
-                                    <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
-                                      {studentName}
-                                    </span>
-                                    {!hideBookingActions &&
-                                      !manageSchoolSchedule &&
-                                      !booking.schoolClassId &&
-                                      !booking.schoolRequestId && (
-                                        <Link
-                                          href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
-                                          className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                                        >
-                                          ver perfil ›
-                                        </Link>
-                                      )}
+                                </span>
+                              </div>
+                              <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
+                                {pending && (
+                                  <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">
+                                    Pendiente de aprobación
                                   </span>
-                                </div>
-                                <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
-                                  {pending && (
-                                    <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">
-                                      Pendiente de aprobación
-                                    </span>
-                                  )}
-                                  {!hideBookingActions && !booking.schoolRequestId && (
-                                    <button
-                                      type="button"
-                                      aria-label={`Abrir ficha de ${studentName}`}
-                                      title={`Ficha de ${studentName}`}
-                                      onClick={() => {
-                                        setStudentAction({
-                                          booking,
-                                          student: {
-                                            studentId,
-                                            studentName,
-                                            attended,
-                                            note,
-                                            date: booking.date,
-                                            startTime: booking.startTime,
-                                          },
-                                        })
-                                        setStudentActionError(null)
-                                      }}
-                                      disabled={busy}
-                                      className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
-                                    >
-                                      <FiClipboard aria-hidden="true" />
-                                    </button>
-                                  )}
-                                </div>
-                                {booking.schoolRequestId && !hideBookingActions && (
-                                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSchoolRequest(booking, 'approved')}
-                                      disabled={busy}
-                                      className="min-h-10 rounded-full bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
-                                    >
-                                      Aprobar
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSchoolRequest(booking, 'rejected')}
-                                      disabled={busy}
-                                      className="min-h-10 rounded-full border border-[var(--rose-bd)] px-3 text-xs font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50"
-                                    >
-                                      Rechazar
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => void openSchoolRequestEditor(booking)}
-                                      disabled={busy}
-                                      className="col-span-2 min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50 sm:col-span-1"
-                                    >
-                                      Cambiar hora o entrenador
-                                    </button>
-                                  </div>
                                 )}
-                              </li>
-                            )
-                          )}
-                      </ul>
-                    </div>
+                                {!hideBookingActions && !booking.schoolRequestId && (
+                                  <button
+                                    type="button"
+                                    aria-label={`Abrir ficha de ${studentName}`}
+                                    title={`Ficha de ${studentName}`}
+                                    onClick={() => {
+                                      setStudentAction({
+                                        booking,
+                                        student: {
+                                          studentId,
+                                          studentName,
+                                          attended,
+                                          note,
+                                          date: booking.date,
+                                          startTime: booking.startTime,
+                                        },
+                                      })
+                                      setStudentActionError(null)
+                                    }}
+                                    disabled={busy}
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+                                  >
+                                    <FiClipboard aria-hidden="true" />
+                                  </button>
+                                )}
+                              </div>
+                              {booking.schoolRequestId && !hideBookingActions && (
+                                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSchoolRequest(booking, 'approved')}
+                                    disabled={busy}
+                                    className="min-h-10 rounded-full bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+                                  >
+                                    Aprobar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSchoolRequest(booking, 'rejected')}
+                                    disabled={busy}
+                                    className="min-h-10 rounded-full border border-[var(--rose-bd)] px-3 text-xs font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50"
+                                  >
+                                    Rechazar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => void openSchoolRequestEditor(booking)}
+                                    disabled={busy}
+                                    className="col-span-2 min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50 sm:col-span-1"
+                                  >
+                                    Cambiar hora o entrenador
+                                  </button>
+                                </div>
+                              )}
+                            </li>
+                          )
+                        )}
+                    </ul>
                   </AgendaRow>
                 )
               }
               if (row.kind === 'blocked') {
                 const isBlockedGroup = row.slot.groupType === 'grupal'
+                const blockedCoachName =
+                  row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || coachFallback
                 return (
                   <AgendaRow
                     key={`x-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
                     time={row.slot.startTime}
                     showTime={showTime}
                     showSeparator={showSeparator}
-                  >
-                    <div
-                      className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 sm:flex-row sm:items-center sm:justify-between sm:px-3 ${HOUR_STATUS_STYLE.blocked.border} ${HOUR_STATUS_STYLE.blocked.bg}`}
-                    >
-                      {readOnlyAgenda || (adminMode && !manageSchoolSchedule) ? (
-                        <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
-                          <FiLock aria-hidden="true" /> Bloqueado
-                          <span className="font-normal text-[var(--c-text-2)]">
-                            ·{' '}
-                            {row.slot.coachName ||
-                              agenda.coachNames?.[row.slot.coachId] ||
-                              coachFallback}
-                          </span>
-                        </span>
-                      ) : (
-                        <div className="flex min-w-0 flex-wrap items-center gap-2 opacity-60">
-                          {showCoachName && (
-                            <span className="text-xs font-bold">
-                              {row.slot.coachName ||
-                                agenda.coachNames?.[row.slot.coachId] ||
-                                coachFallback}
-                            </span>
-                          )}
-                          <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-600">
-                            <span className="inline-flex items-center gap-1">
-                              <FiLock aria-hidden="true" className="h-3.5 w-3.5" /> Bloqueado
-                            </span>
-                            <span aria-hidden="true">·</span>
-                            <span className="inline-flex items-center gap-1">
-                              {isBlockedGroup ? (
-                                <FiUsers aria-hidden="true" className="h-3.5 w-3.5" />
-                              ) : (
-                                <FiUser aria-hidden="true" className="h-3.5 w-3.5" />
-                              )}
-                              {isBlockedGroup ? 'Grupal' : 'Particular'}
-                            </span>
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
-                        {combinedSources && row.slot.agendaLabel && (
-                          <span className="w-fit shrink-0 rounded-full border border-gray-300 bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-500">
-                            {row.slot.agendaLabel}
-                          </span>
-                        )}
-                        {!hideBookingActions && (
-                          <button
-                            type="button"
-                            disabled
-                            aria-label={`No se puede agregar ${participantSingular} a un horario bloqueado`}
-                            title="Desbloquea el horario para agregar alumnos."
-                            className="inline-flex min-h-11 cursor-not-allowed items-center justify-center gap-1 rounded-full bg-slate-200 px-3 text-xs font-bold text-slate-500 opacity-70 sm:flex-none"
-                          >
-                            <FiPlus aria-hidden="true" />{' '}
-                            {capitalizeSchoolTerm(participantSingular)}
-                          </button>
-                        )}
+                    cardStatus="blocked"
+                    cardCoachName={blockedCoachName}
+                    cardShowCoachName={
+                      showCoachName && !readOnlyAgenda && !(adminMode && !manageSchoolSchedule)
+                    }
+                    cardGroupType={isBlockedGroup ? 'grupal' : 'particular'}
+                    cardStatusLabel="Bloqueado"
+                    cardAgendaLabel={combinedSources ? row.slot.agendaLabel : undefined}
+                    cardAddStudent={
+                      !hideBookingActions
+                        ? {
+                            label: capitalizeSchoolTerm(participantSingular),
+                            ariaLabel: `No se puede agregar ${participantSingular} a un horario bloqueado`,
+                            title: 'Desbloquea el horario para agregar alumnos.',
+                            disabled: true,
+                          }
+                        : undefined
+                    }
+                    cardActions={
+                      <>
                         {!readOnlyAgenda && (
                           <RowIconButton
                             ariaLabel="Configurar este horario"
@@ -1586,9 +1529,9 @@ export default function CoachAgenda({
                             <FiSettings aria-hidden="true" />
                           </RowIconButton>
                         )}
-                      </div>
-                    </div>
-                  </AgendaRow>
+                      </>
+                    }
+                  />
                 )
               }
               const isAvailableGroup = row.slot.groupType === 'grupal'
@@ -1665,7 +1608,7 @@ export default function CoachAgenda({
                             })
                           }
                           disabled={busy}
-                          className="inline-flex min-h-11 w-fit shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-4 text-xs font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                          className="inline-flex min-h-9 w-fit shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <FiPlus aria-hidden="true" /> {capitalizeSchoolTerm(participantSingular)}
                         </button>
@@ -1896,7 +1839,7 @@ export default function CoachAgenda({
                   setBookingToEdit(null)
                 }}
                 disabled={busy || (bookingToEdit.groupType === 'grupal' && bookingToEdit.classFull)}
-                className="min-h-11 rounded-full bg-[var(--c-aqua)] px-4 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] disabled:opacity-50"
+                className="min-h-9 rounded-full bg-[var(--c-aqua)] px-2.5 text-[11px] font-bold text-white hover:bg-[var(--c-aqua-strong)] disabled:opacity-50"
               >
                 + {capitalizeSchoolTerm(participantSingular)}
               </button>
@@ -1999,7 +1942,7 @@ export default function CoachAgenda({
                   title={
                     schoolClassToEdit.classFull ? 'Abre el cupo para agregar atletas.' : undefined
                   }
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-9 items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FiPlus aria-hidden="true" /> Agregar {capitalizeSchoolTerm(participantPlural)}
                 </button>
@@ -2268,13 +2211,44 @@ function AgendaRow({
   time,
   showTime = true,
   showSeparator = true,
+  cardStatus,
+  cardCoachName,
+  cardShowCoachName = false,
+  cardGroupType = 'particular',
+  cardStatusLabel,
+  cardAgendaLabel,
+  cardPending = false,
+  cardAddStudent,
+  cardActions,
+  cardRef,
+  cardFocused = false,
   children,
 }: {
   time: string
   showTime?: boolean
   showSeparator?: boolean
-  children: React.ReactNode
+  cardStatus?: HourStatus
+  cardCoachName?: string
+  cardShowCoachName?: boolean
+  cardGroupType?: 'particular' | 'grupal'
+  cardStatusLabel?: string
+  cardAgendaLabel?: string
+  cardPending?: boolean
+  cardAddStudent?: {
+    label: string
+    ariaLabel: string
+    title?: string
+    disabled: boolean
+    onClick?: () => void
+  }
+  cardActions?: React.ReactNode
+  cardRef?: React.Ref<HTMLDivElement>
+  cardFocused?: boolean
+  children?: React.ReactNode
 }) {
+  const cardStyle = cardStatus ? HOUR_STATUS_STYLE[cardStatus] : null
+  const isBlockedCard = cardStatus === 'blocked'
+  const isAvailableCard = cardStatus === 'available' || cardStatus === 'groupAvailable'
   return (
     <div
       className={`flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:gap-3 sm:px-5 sm:py-1.5 ${
@@ -2284,7 +2258,74 @@ function AgendaRow({
       <span className="w-fit text-sm font-extrabold text-[var(--c-ocean)] sm:w-12 sm:shrink-0 sm:text-sm sm:font-semibold sm:text-[var(--c-text-2)]">
         {showTime ? time : <span className="sr-only">{time}</span>}
       </span>
-      <div className="flex min-w-0 w-full sm:w-auto sm:flex-1">{children}</div>
+      <div className="flex min-w-0 w-full sm:w-auto sm:flex-1">
+        {cardStatus && cardStyle ? (
+          <div
+            ref={cardRef}
+            tabIndex={cardFocused ? -1 : undefined}
+            className={`flex min-w-0 flex-1 scroll-mt-32 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 sm:px-3 ${cardStyle.border} ${cardStyle.bg} ${cardFocused ? 'outline outline-2 outline-offset-2 outline-[var(--c-aqua-strong)]' : ''}`}
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {cardShowCoachName && cardCoachName && (
+                <span className="min-w-0 truncate text-xs font-bold text-[var(--c-ocean)]">
+                  {cardCoachName}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--c-text-2)]">
+                {cardStatusLabel && (
+                  <span className="inline-flex items-center gap-1">
+                    {isBlockedCard ? (
+                      <FiLock aria-hidden="true" className="h-3.5 w-3.5" />
+                    ) : isAvailableCard ? (
+                      <FiUnlock aria-hidden="true" className="h-3.5 w-3.5" />
+                    ) : null}
+                    {cardStatusLabel}
+                  </span>
+                )}
+                {cardStatusLabel && <span aria-hidden="true">·</span>}
+                <span className="inline-flex items-center gap-1">
+                  {cardGroupType === 'grupal' ? (
+                    <FiUsers aria-hidden="true" className="h-3.5 w-3.5" />
+                  ) : (
+                    <FiUser aria-hidden="true" className="h-3.5 w-3.5" />
+                  )}
+                  {cardGroupType === 'grupal' ? 'Grupal' : 'Particular'}
+                </span>
+              </span>
+              {cardPending && (
+                <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] text-amber-900">
+                  Pendiente de aprobación
+                </span>
+              )}
+              {cardAgendaLabel && (
+                <span className="w-fit rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
+                  {cardAgendaLabel}
+                </span>
+              )}
+            </div>
+            {(cardActions || cardAddStudent) && (
+              <div className="ml-auto flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
+                {cardAddStudent && (
+                  <button
+                    type="button"
+                    onClick={cardAddStudent.onClick}
+                    disabled={cardAddStudent.disabled}
+                    aria-label={cardAddStudent.ariaLabel}
+                    title={cardAddStudent.title}
+                    className={`inline-flex min-h-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-bold sm:flex-none ${isBlockedCard ? 'cursor-not-allowed bg-slate-200 text-slate-500 opacity-70' : 'bg-[var(--c-aqua)] text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50'}`}
+                  >
+                    <FiPlus aria-hidden="true" /> {cardAddStudent.label}
+                  </button>
+                )}
+                {cardActions}
+              </div>
+            )}
+            {children}
+          </div>
+        ) : (
+          children
+        )}
+      </div>
     </div>
   )
 }

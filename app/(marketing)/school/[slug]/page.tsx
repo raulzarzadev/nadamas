@@ -1,8 +1,9 @@
 import SchoolPublicActions from '@comps/school/SchoolPublicActions'
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
-import { FiArrowUpRight, FiCalendar, FiClock, FiMapPin, FiUser, FiUsers } from 'react-icons/fi'
+import { FiArrowDown, FiCalendar, FiClock, FiMapPin, FiUser, FiUsers } from 'react-icons/fi'
 import type { SchoolClassOccurrence } from '@/lib/school'
 import { capitalizeSchoolTerm, SCHOOL_PALETTES, schoolTerminologyLabels } from '@/lib/school'
 import { listPublicSchoolClasses } from '@/lib/server/school-classes'
@@ -12,21 +13,6 @@ import { getTenantSchool } from '@/lib/server/tenant-school'
 interface SchoolPublicPageProps {
   params: Promise<{ slug: string }>
 }
-
-const PUBLIC_AREAS = [
-  {
-    id: 'coaches',
-    title: 'Entrenadores',
-    body: 'Conoce al equipo que acompaña cada entrenamiento.',
-    icon: FiUsers,
-  },
-  {
-    id: 'clases',
-    title: 'Horarios',
-    body: 'Encuentra horarios y modalidades para tu próximo entrenamiento.',
-    icon: FiCalendar,
-  },
-]
 
 function publicDateLabel(occurrence: SchoolClassOccurrence) {
   return new Date(`${occurrence.date}T12:00:00`).toLocaleDateString('es-MX', {
@@ -65,147 +51,223 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
     '--school-surface': palette.surface,
   } as CSSProperties
   const terminology = schoolTerminologyLabels(school.terminology)
-  const publicAreas = PUBLIC_AREAS.map((area) =>
-    area.id === 'coaches' ? { ...area, title: capitalizeSchoolTerm(terminology.coachPlural) } : area
-  )
   const publicClasses = await listPublicSchoolClasses(school.id)
+  const groupCount = publicClasses.filter((item) => item.type === 'group').length
+  const individualCount = publicClasses.filter((item) => item.type === 'individual').length
 
   return (
     <div style={schoolTheme} className="min-h-screen bg-(--school-surface)">
-      <section className="mx-auto max-w-5xl px-5 pb-12 pt-12 sm:px-8 sm:pb-16 sm:pt-16">
-        <div
-          className="flex flex-col gap-6 border-b pb-9 sm:flex-row sm:items-end sm:justify-between sm:pb-10"
-          style={{ borderColor: 'var(--school-secondary)' }}
+      <div className="mx-auto max-w-7xl px-5 pb-16 pt-7 sm:px-8 sm:pt-10">
+        <section
+          aria-labelledby="school-title"
+          className="relative isolate overflow-hidden rounded-[2rem] bg-(--school-primary) text-white"
+          style={{
+            backgroundImage:
+              'radial-gradient(ellipse at 80% 0%, color-mix(in srgb, var(--school-secondary) 55%, transparent), transparent 44%)',
+          }}
         >
-          <div className="max-w-3xl">
-            <p
-              className="text-xs font-bold uppercase tracking-[0.2em]"
-              style={{ color: 'var(--school-primary)' }}
-            >
-              Escuela de natación
-            </p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight text-(--c-ocean) sm:text-6xl">
-              {school.name}
-            </h1>
-            <p className="mt-4 text-lg leading-8 text-(--c-text-2) sm:text-xl">
-              {school.description ||
-                'Una comunidad para aprender, entrenar y disfrutar la natación.'}
-            </p>
-          </div>
-          <SchoolPublicActions schoolId={school.id} />
-        </div>
-
-        {publicAreas.length > 0 && (
-          <nav aria-label="Secciones de la escuela" className="mt-4 flex flex-wrap gap-3">
-            {publicAreas.map((area) => {
-              const Icon = area.icon
-              return (
-                <a
-                  key={area.id}
-                  href={`#${area.id}`}
-                  className="group flex min-h-12 items-center gap-2 rounded-full border bg-white px-4 py-2 transition hover:bg-(--school-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--school-secondary)"
-                  style={{ borderColor: 'var(--school-secondary)' }}
-                >
+          <div className="grid min-h-[28rem] items-center gap-10 px-7 py-10 sm:px-12 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:px-16">
+            <div className="relative z-10 max-w-2xl">
+              <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/90">
+                {school.logoUrl ? (
+                  <Image
+                    src={school.logoUrl}
+                    alt=""
+                    width={28}
+                    height={28}
+                    className="size-7 rounded-full object-cover"
+                  />
+                ) : (
                   <span
-                    className="grid size-8 place-items-center rounded-full"
-                    style={{
-                      backgroundColor: 'var(--school-accent)',
-                      color: 'var(--school-primary)',
-                    }}
+                    className="grid size-7 place-items-center rounded-full bg-white text-sm font-black"
+                    style={{ color: 'var(--school-primary)' }}
                   >
-                    <Icon aria-hidden="true" className="size-4" />
+                    {school.name.slice(0, 1).toUpperCase()}
                   </span>
-                  <span>
-                    <span className="flex items-center gap-1 text-sm font-bold text-(--c-ocean)">
-                      {area.title}
-                      <FiArrowUpRight
-                        aria-hidden="true"
-                        className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                      />
-                    </span>
-                    <span className="sr-only">{area.body}</span>
-                  </span>
+                )}
+                Escuela de natación
+              </div>
+              <h1
+                id="school-title"
+                className="max-w-xl text-5xl font-black leading-[0.98] tracking-tight text-white sm:text-7xl"
+                style={{ color: 'white' }}
+              >
+                {school.name}
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-white/80 sm:text-xl">
+                {school.description ||
+                  'Una comunidad para aprender, entrenar y disfrutar la natación.'}
+              </p>
+              <div className="mt-9 flex flex-wrap items-center gap-3">
+                <a
+                  href="#clases"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 font-bold transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+                  style={{ color: 'var(--school-primary)' }}
+                >
+                  Explorar horarios <FiArrowDown aria-hidden="true" />
                 </a>
-              )
-            })}
-          </nav>
-        )}
+                <SchoolPublicActions schoolId={school.id} authenticatedLabel="Ver mis horarios" />
+              </div>
+            </div>
+            <div
+              aria-hidden="true"
+              className="relative mx-auto hidden aspect-[4/3] w-full max-w-lg lg:block"
+            >
+              <div className="absolute inset-0 rotate-[-8deg] rounded-[2.5rem] border border-white/15 bg-white/[0.06]" />
+              <div className="absolute inset-[9%] rotate-[5deg] overflow-hidden rounded-[2rem] border border-white/15 bg-black/10 p-5">
+                <div className="flex h-full flex-col justify-between rounded-[1.5rem] border border-white/15 bg-white/[0.04] p-5">
+                  <div className="flex items-center justify-between text-xs font-bold uppercase tracking-[0.18em] text-white/60">
+                    <span>En el agua</span>
+                    <span>01 / 04</span>
+                  </div>
+                  <div className="space-y-3">
+                    {[0, 1, 2, 3].map((lane) => (
+                      <div
+                        key={lane}
+                        className="relative h-10 overflow-hidden rounded-full border border-white/20 bg-white/[0.06]"
+                      >
+                        <span
+                          className="absolute inset-y-0 left-0 w-[58%] rounded-full opacity-80"
+                          style={{
+                            backgroundColor:
+                              lane % 2 ? 'var(--school-secondary)' : 'var(--school-accent)',
+                          }}
+                        />
+                        <span className="absolute inset-y-0 left-[58%] border-l border-dashed border-white/60" />
+                        <span className="absolute right-4 top-1/2 size-2 -translate-y-1/2 rounded-full bg-white/80" />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm font-semibold text-white/80">Cada brazada cuenta.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 border-t border-white/15 bg-black/10 sm:grid-cols-3">
+            <div className="px-7 py-5 sm:px-12">
+              <p className="text-2xl font-black">{publicClasses.length}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/65">
+                Horarios publicados
+              </p>
+            </div>
+            <div className="border-l border-white/15 px-7 py-5 sm:px-12">
+              <p className="text-2xl font-black">{groupCount}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/65">
+                Clases grupales
+              </p>
+            </div>
+            <div className="col-span-2 border-t border-white/15 px-7 py-5 sm:col-span-1 sm:border-l sm:border-t-0 sm:px-12">
+              <p className="text-2xl font-black">{individualCount}</p>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/65">
+                Clases particulares
+              </p>
+            </div>
+          </div>
+        </section>
 
         <section
           id="clases"
-          className="mt-5 rounded-2xl border bg-white p-5 sm:p-7"
-          style={{ borderColor: 'var(--school-secondary)' }}
+          aria-labelledby="classes-title"
+          className="scroll-mt-24 pt-12 sm:pt-16"
         >
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p
-                className="text-xs font-bold uppercase tracking-[0.2em]"
-                style={{ color: 'var(--school-secondary)' }}
+          <div
+            className="overflow-hidden rounded-3xl border bg-white"
+            style={{ borderColor: 'color-mix(in srgb, var(--school-secondary) 38%, white)' }}
+          >
+            <div className="flex items-center justify-between gap-4 px-5 py-5 sm:px-8">
+              <h2
+                id="classes-title"
+                className="text-xl font-extrabold text-(--c-ocean) sm:text-2xl"
               >
-                Horarios
-              </p>
-              <h2 className="mt-1 text-2xl font-black text-(--c-ocean) sm:text-3xl">
-                Horarios disponibles
+                Horarios publicados
               </h2>
+              <span
+                className="rounded-full px-3 py-1.5 text-xs font-bold"
+                style={{ backgroundColor: 'var(--school-surface)', color: 'var(--school-primary)' }}
+              >
+                {publicClasses.length}
+              </span>
             </div>
-            <p className="text-sm text-(--c-text-2)">Horarios publicados por la escuela</p>
-          </div>
-          {publicClasses.length ? (
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {publicClasses.map((occurrence) => {
-                const occupied = occurrence.studentIds.length > 0
-                const full = occurrence.type === 'individual' && occupied
-                return (
-                  <article
-                    key={occurrence.id}
-                    className={`rounded-xl border p-4 ${full ? 'border-(--c-border) bg-slate-50 opacity-65' : 'bg-(--school-surface)'}`}
-                    style={{ borderColor: full ? undefined : 'var(--school-secondary)' }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
+            {publicClasses.length ? (
+              <div
+                className="divide-y"
+                style={{ borderColor: 'color-mix(in srgb, var(--school-secondary) 24%, white)' }}
+              >
+                {publicClasses.map((occurrence) => {
+                  const occupied = occurrence.studentIds.length > 0
+                  const full = occurrence.type === 'individual' && occupied
+                  return (
+                    <article
+                      key={occurrence.id}
+                      className={`grid gap-4 px-5 py-5 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-center sm:px-8 ${full ? 'opacity-60' : ''}`}
+                    >
+                      <div className="flex items-center gap-2 text-sm font-bold tabular-nums text-(--c-ocean) sm:block">
+                        <FiClock aria-hidden="true" className="shrink-0 sm:mb-1" />
+                        <span>
+                          {occurrence.startTime}–{occurrence.endTime}
+                        </span>
+                      </div>
                       <div className={full ? 'line-through' : ''}>
                         <h3 className="font-extrabold text-(--c-ocean)">{occurrence.title}</h3>
-                        <p className="mt-1 text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
-                          {occurrence.type === 'group' ? 'Grupal' : 'Particular'}
-                        </p>
-                        <p className="mt-1 flex items-center gap-1.5 text-sm text-(--c-text-2)">
-                          <FiCalendar aria-hidden="true" /> {publicDateLabel(occurrence)}
-                        </p>
-                        <p className="mt-1 flex items-center gap-1.5 text-sm text-(--c-text-2)">
-                          <FiClock aria-hidden="true" /> {occurrence.startTime}–{occurrence.endTime}
+                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-(--c-text-2)">
+                          <span className="flex items-center gap-1.5">
+                            <FiCalendar aria-hidden="true" />
+                            {publicDateLabel(occurrence)}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            {occurrence.type === 'group' ? (
+                              <FiUsers aria-hidden="true" />
+                            ) : (
+                              <FiUser aria-hidden="true" />
+                            )}
+                            {occurrence.type === 'group' ? 'Grupal' : 'Particular'}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <FiUser aria-hidden="true" />
+                            {occurrence.teacherIds.length
+                              ? capitalizeSchoolTerm(terminology.coachSingular)
+                              : `${capitalizeSchoolTerm(terminology.coachSingular)} por asignar`}
+                          </span>
+                          {occurrence.location && (
+                            <span className="flex items-center gap-1.5">
+                              <FiMapPin aria-hidden="true" />
+                              {occurrence.location}
+                            </span>
+                          )}
                         </p>
                       </div>
                       <span
-                        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${full ? 'bg-slate-200 text-slate-600' : 'bg-(--school-accent) text-(--school-primary)'}`}
+                        className={`w-fit rounded-full px-3 py-1.5 text-xs font-bold ${full ? 'bg-slate-100 text-slate-600' : ''}`}
+                        style={
+                          full
+                            ? undefined
+                            : {
+                                backgroundColor: 'var(--school-accent)',
+                                color: 'var(--school-primary)',
+                              }
+                        }
                       >
                         {full
                           ? 'Ocupado'
                           : occurrence.type === 'group' && occupied
-                            ? `${occurrence.studentIds.length} inscrito${occurrence.studentIds.length === 1 ? '' : 's'}`
+                            ? `${occurrence.studentIds.length} inscritos`
                             : 'Disponible'}
                       </span>
-                    </div>
-                    <p className="mt-3 flex items-center gap-1.5 text-xs text-(--c-text-2)">
-                      <FiUser aria-hidden="true" />
-                      {occurrence.teacherIds.length
-                        ? `${capitalizeSchoolTerm(terminology.coachSingular)} asignado`
-                        : `${capitalizeSchoolTerm(terminology.coachSingular)} por asignar`}
-                    </p>
-                    {occurrence.location && (
-                      <p className="mt-1 flex items-center gap-1.5 text-xs text-(--c-text-2)">
-                        <FiMapPin aria-hidden="true" /> {occurrence.location}
-                      </p>
-                    )}
-                  </article>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="mt-5 rounded-2xl bg-(--school-surface) p-5 text-sm text-(--c-text-2)">
-              La escuela todavía no ha publicado horarios.
-            </p>
-          )}
+                    </article>
+                  )
+                })}
+              </div>
+            ) : (
+              <div
+                className="border-t px-5 py-6 text-sm text-(--c-text-2) sm:px-8"
+                style={{ borderColor: 'color-mix(in srgb, var(--school-secondary) 24%, white)' }}
+              >
+                Sin horarios publicados.
+              </div>
+            )}
+          </div>
         </section>
-      </section>
+      </div>
     </div>
   )
 }
