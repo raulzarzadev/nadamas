@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiEdit3 } from 'react-icons/fi'
+import { FiEdit3, FiPlus } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
@@ -11,6 +11,7 @@ import type {
   SchoolStudentHistory as HistoryPayload,
   SchoolHistoryClass,
 } from '@/lib/school-student-history'
+import SchoolStudentClassAssignment from './SchoolStudentClassAssignment'
 
 const STATUS_LABELS: Record<SchoolHistoryClass['status'], string> = {
   taken: 'Tomada',
@@ -29,11 +30,15 @@ function durationMinutes(startTime: string, endTime: string) {
 
 export default function SchoolStudentHistory({
   schoolId,
+  timezone,
   student,
+  canAssign,
   onClose,
 }: {
   schoolId: string
+  timezone: string
   student: SchoolStudent
+  canAssign: boolean
   onClose: () => void
 }) {
   const terminology = useSchoolTerminology()
@@ -45,6 +50,7 @@ export default function SchoolStudentHistory({
   const [attempt, setAttempt] = useState(0)
   const [expandedComments, setExpandedComments] = useState<Set<string>>(() => new Set())
   const [commentOpen, setCommentOpen] = useState(false)
+  const [assignmentOpen, setAssignmentOpen] = useState(false)
   const [coachFilter, setCoachFilter] = useState<string | null>(null)
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt deliberately reloads the same resource after a failure.
   useEffect(() => {
@@ -83,6 +89,17 @@ export default function SchoolStudentHistory({
         onSaved={() => setAttempt((value) => value + 1)}
       />
     )
+  if (assignmentOpen)
+    return (
+      <SchoolStudentClassAssignment
+        schoolId={schoolId}
+        timezone={timezone}
+        student={student}
+        open
+        onClose={() => setAssignmentOpen(false)}
+        onAssigned={() => setAttempt((value) => value + 1)}
+      />
+    )
 
   return (
     <Sheet
@@ -101,16 +118,28 @@ export default function SchoolStudentHistory({
             </h2>
             <p className="mt-1 text-sm text-(--c-text-2)">{student.name} · En esta escuela</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setCommentOpen(true)}
-            disabled={!history}
-            aria-label="Escribir comentario sobre una clase"
-            title="Escribir comentario"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-40"
-          >
-            <FiEdit3 aria-hidden="true" />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {canAssign && (
+              <button
+                type="button"
+                onClick={() => setAssignmentOpen(true)}
+                disabled={!history}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-ocean) px-4 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-40"
+              >
+                <FiPlus aria-hidden="true" /> Asignar clases
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setCommentOpen(true)}
+              disabled={!history}
+              aria-label="Escribir comentario sobre el alumno"
+              title="Escribir comentario"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-40"
+            >
+              <FiEdit3 aria-hidden="true" />
+            </button>
+          </div>
         </div>
         {error ? (
           <div role="alert" className="mt-5 text-sm text-(--c-text-2)">

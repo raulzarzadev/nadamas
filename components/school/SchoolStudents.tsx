@@ -70,6 +70,7 @@ export default function SchoolStudents() {
   if (!selected) return <SchoolNoSelection />
   const activeSchool = selected
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
+  const canAssignClasses = isDirector || schoolMembershipHasRole(selected.membership, 'teacher')
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
@@ -224,7 +225,9 @@ export default function SchoolStudents() {
         <SchoolStudentHistory
           key={`${selected.school.id}-${historyStudent.id}`}
           schoolId={selected.school.id}
+          timezone={selected.school.timezone || 'America/Mexico_City'}
           student={historyStudent}
+          canAssign={canAssignClasses}
           onClose={() => setHistoryStudent(null)}
         />
       )}
