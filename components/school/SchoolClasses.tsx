@@ -1,6 +1,7 @@
 'use client'
 
 import Sheet from '@comps/ui/sheet'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { FiCalendar, FiCheck, FiEdit2, FiMapPin, FiPlus, FiX } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
@@ -37,6 +38,13 @@ function today() {
 
 export default function SchoolClasses() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
+  const searchParams = useSearchParams()
+  const focusSchool = searchParams.get('school')
+  const focusDate = searchParams.get('date')
+  const focusTime = searchParams.get('time')
+  const focusClass = searchParams.get('class')
+  const validFocusDate = focusDate && /^\d{4}-\d{2}-\d{2}$/.test(focusDate) ? focusDate : undefined
+  const validFocusTime = focusTime && /^\d{2}:\d{2}$/.test(focusTime) ? focusTime : undefined
   const terminology = useSchoolTerminology()
   const { user } = useUser() as {
     user: {
@@ -51,6 +59,11 @@ export default function SchoolClasses() {
   const previousSchoolId = useRef<string | null>(null)
   const [agendaRevision, setAgendaRevision] = useState(0)
   useSchoolAgendaUpdates(selectedId, () => setAgendaRevision((revision) => revision + 1))
+  useEffect(() => {
+    if (focusSchool && schools.some((item) => item.school.id === focusSchool)) {
+      selectSchool(focusSchool)
+    }
+  }, [focusSchool, schools, selectSchool])
   const [scheduleCoachId, setScheduleCoachId] = useState('')
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
@@ -253,6 +266,9 @@ export default function SchoolClasses() {
           onScheduleEditorClose={() => setScheduleEditorOpen(false)}
           scheduleCoachOptions={scheduleCoachOptions}
           onScheduleCoachChange={setScheduleCoachId}
+          initialDate={validFocusDate}
+          focusClassId={focusClass || undefined}
+          focusTime={validFocusTime}
         />
       </section>
       <section

@@ -114,6 +114,8 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     throw error
   }
   await requestRef.update({ status, updatedAt: Date.now(), classSeriesId: classResult.seriesId })
+  const classLink = classDeepLink(schoolId, classResult)
+  const classLinkData = classDeepLinkData(classResult)
   void createNotification({
     recipientId: record.requestedBy,
     actorId: access.caller.uid,
@@ -121,7 +123,8 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     type: 'school_class_assigned',
     title: 'Solicitud aprobada',
     body: 'La dirección asignó un horario para tu solicitud.',
-    link: '/school/classes',
+    link: classLink,
+    ...(classLinkData ? { data: classLinkData } : {}),
   }).catch(() => {})
   for (const teacherId of teacherIds) {
     void createNotification({
@@ -131,10 +134,39 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       type: 'school_class_assigned',
       title: 'Nueva clase asignada',
       body: `${classValidation.value.title} fue asignada a tu agenda.`,
-      link: '/school/classes',
+      link: classLink,
+      ...(classLinkData ? { data: classLinkData } : {}),
     }).catch(() => {})
   }
   return NextResponse.json({ status, ...classResult })
+}
+
+function classDeepLink(
+  schoolId: string,
+  result: { seriesId: string; occurrences?: Array<{ date: string; startTime: string }> }
+) {
+  const first = [...(result.occurrences || [])].sort((a, b) =>
+    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+  )[0]
+  const params = new URLSearchParams({ school: schoolId })
+  if (first?.date) params.set('date', first.date)
+  if (first?.startTime) params.set('time', first.startTime)
+  if (result.seriesId) params.set('class', result.seriesId)
+  return `/school/classes?${params.toString()}`
+}
+
+function classDeepLinkData(result: {
+  seriesId: string
+  occurrences?: Array<{ date: string; startTime: string }>
+}): { date?: string; startTime?: string } | undefined {
+  const first = [...(result.occurrences || [])].sort((a, b) =>
+    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+  )[0]
+  if (!first?.date && !first?.startTime) return undefined
+  return {
+    ...(first?.date ? { date: first.date } : {}),
+    ...(first?.startTime ? { startTime: first.startTime } : {}),
+  }
 }
 
 export const PATCH = withSchoolAgendaUpdate(handlePATCH)

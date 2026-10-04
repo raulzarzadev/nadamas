@@ -117,6 +117,9 @@ export default function CoachAgenda({
   onScheduleEditorClose,
   scheduleCoachOptions = [],
   onScheduleCoachChange,
+  initialDate,
+  focusClassId,
+  focusTime,
 }: {
   coachId?: string
   schoolId?: string
@@ -132,6 +135,12 @@ export default function CoachAgenda({
   onScheduleEditorClose?: () => void
   scheduleCoachOptions?: ScheduleCoachOption[]
   onScheduleCoachChange?: (coachId: string) => void
+  /** Deep link target date (YYYY-MM-DD) selected on mount. */
+  initialDate?: string
+  /** Deep link target: series or occurrence id of the assigned class. */
+  focusClassId?: string
+  /** Deep link target hour (HH:MM) of the assigned class. */
+  focusTime?: string
 }) {
   // When an admin opens another coach's agenda, `coachId` targets that coach and
   // booking actions (add/cancel students) are hidden — admin mode manages
@@ -167,7 +176,11 @@ export default function CoachAgenda({
   const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
   const [scheduleHoursByDate, setScheduleHoursByDate] = useState<Record<string, string[]>>({})
   const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
-  const [selectedDate, setSelectedDate] = useState(() => dateKey(new Date()))
+  const [selectedDate, setSelectedDate] = useState(() =>
+    initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : dateKey(new Date())
+  )
+  const focusRef = useRef<HTMLDivElement>(null)
+  const focusAppliedKeyRef = useRef<string | null>(null)
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
     () => new Set(HOUR_STATUSES)
   )
@@ -515,6 +528,34 @@ export default function CoachAgenda({
   const dayBookings = activeBookings.filter((booking) => booking.date === selectedDate)
   const daySlots = (agenda?.availableSlots || []).filter((slot) => slot.date === selectedDate)
   const dayBlocks = (agenda?.blocks || []).filter((block) => block.date === selectedDate)
+  const bookingMatchesFocus = useCallback(
+    (booking: Booking) => {
+      if (!focusClassId && !focusTime) return false
+      if (
+        focusClassId &&
+        booking.schoolClassId !== focusClassId &&
+        booking.offeringId !== `school-class:${focusClassId}` &&
+        booking.scheduleId !== `school-class:${focusClassId}`
+      )
+        return false
+      if (focusTime && booking.startTime !== focusTime) return false
+      return true
+    },
+    [focusClassId, focusTime]
+  )
+  // Deep link from the "clase asignada" notification: jump to that date/hour,
+  // scroll the row into view and focus it.
+  useEffect(() => {
+    const focusKey = `${selectedDate}|${focusClassId || ''}|${focusTime || ''}`
+    if (focusAppliedKeyRef.current === focusKey || !agenda || (!focusClassId && !focusTime)) return
+    if (!dayBookings.some(bookingMatchesFocus)) return
+    focusAppliedKeyRef.current = focusKey
+    const frame = requestAnimationFrame(() => {
+      focusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      focusRef.current?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [agenda, dayBookings, bookingMatchesFocus, selectedDate, focusClassId, focusTime])
   const bookingClassMembers = bookingToEdit
     ? dayBookings.filter(
         (booking) =>
@@ -1242,6 +1283,7 @@ export default function CoachAgenda({
                 const classStudentLabel =
                   classStudentCount === 1 ? participantSingular : participantPlural
                 const classStyle = isGroupClass ? HOUR_STATUS_STYLE.group : HOUR_STATUS_STYLE.booked
+                const isFocusTarget = row.bookings.some(bookingMatchesFocus)
                 return (
                   <AgendaRow
                     key={`b-${firstBooking.schoolId || 'personal'}-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
@@ -1250,7 +1292,9 @@ export default function CoachAgenda({
                     showSeparator={showSeparator}
                   >
                     <div
-                      className={`flex min-w-0 flex-1 flex-col gap-3 rounded-[var(--r-md)] border px-3 py-3 ${classStyle.border} ${classStyle.bg}`}
+                      ref={isFocusTarget ? focusRef : undefined}
+                      tabIndex={isFocusTarget ? -1 : undefined}
+                      className={`flex min-w-0 flex-1 scroll-mt-32 flex-col gap-3 rounded-[var(--r-md)] border px-3 py-3 ${classStyle.border} ${classStyle.bg} ${isFocusTarget ? 'outline outline-2 outline-offset-2 outline-[var(--c-aqua-strong)]' : ''}`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         {showCoachName && (

@@ -94,10 +94,39 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       type: 'school_class_assigned',
       title: 'Nueva clase asignada',
       body: `${validation.value.title} fue asignada a tu agenda.`,
-      link: '/school/classes',
+      link: classDeepLink(schoolId, result),
+      data: classDeepLinkData(result),
     }).catch(() => {})
   }
   return NextResponse.json(result, { status: 201 })
+}
+
+function classDeepLink(
+  schoolId: string,
+  result: { seriesId: string; occurrences?: Array<{ date: string; startTime: string }> }
+) {
+  const first = [...(result.occurrences || [])].sort((a, b) =>
+    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+  )[0]
+  const params = new URLSearchParams({ school: schoolId })
+  if (first?.date) params.set('date', first.date)
+  if (first?.startTime) params.set('time', first.startTime)
+  if (result.seriesId) params.set('class', result.seriesId)
+  return `/school/classes?${params.toString()}`
+}
+
+function classDeepLinkData(result: {
+  seriesId: string
+  occurrences?: Array<{ date: string; startTime: string }>
+}): { date?: string; startTime?: string } | undefined {
+  const first = [...(result.occurrences || [])].sort((a, b) =>
+    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+  )[0]
+  if (!first?.date && !first?.startTime) return undefined
+  return {
+    ...(first?.date ? { date: first.date } : {}),
+    ...(first?.startTime ? { startTime: first.startTime } : {}),
+  }
 }
 
 export const POST = withSchoolAgendaUpdate(handlePOST)
