@@ -104,12 +104,7 @@ export function buildAvailableSlots({
           (booking) =>
             booking.status !== 'cancelled' &&
             booking.date === key &&
-            timesOverlap(
-              schedule.startTime,
-              schedule.endTime,
-              booking.startTime,
-              booking.endTime
-            )
+            timesOverlap(schedule.startTime, schedule.endTime, booking.startTime, booking.endTime)
         )
         const slot = {
           id: [offering.id, schedule.id, key, schedule.startTime, schedule.endTime].join('::'),
@@ -219,6 +214,6 @@ function normalizeTime(value: unknown) {
   return /^\d{2}:\d{2}$/.test(time) ? time : null
 }
 
-function timesOverlap(startA: string, endA: string, startB: string, endB: string) {
+export function timesOverlap(startA: string, endA: string, startB: string, endB: string) {
   return startA < endB && startB < endA
 }

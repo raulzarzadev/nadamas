@@ -82,10 +82,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     )
   const classValidation = validateClassInput({
     schoolId,
-    title: schoolClassDisplayTitle(
-      typeof body.title === 'string' ? body.title : undefined,
-      record.type
-    ),
+    title: schoolClassDisplayTitle(typeof body.title === 'string' ? body.title : undefined),
     type: record.type,
     teacherIds,
     studentIds: [record.studentId],

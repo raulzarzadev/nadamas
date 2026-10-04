@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { buildAvailableSlots, type CoachScheduleBlock } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
-import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
+import {
+  type SchoolClassOccurrence,
+  schoolMembershipHasRole,
+  UNASSIGNED_SCHOOL_COACH_ID,
+} from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
 import { legacySchoolOfferings } from '@/lib/server/school-agenda'
@@ -61,8 +65,13 @@ async function assignToExistingClass(
       occurrence.date !== slot.date ||
       occurrence.startTime !== slot.startTime ||
       occurrence.endTime !== slot.endTime ||
-      !occurrence.teacherIds.includes(slot.coachId) ||
-      (!isDirector && !occurrence.teacherIds.includes(callerId)) ||
+      !(
+        occurrence.teacherIds.includes(slot.coachId) ||
+        (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID && occurrence.teacherIds.length === 0)
+      ) ||
+      (!isDirector &&
+        !(slot.coachId === UNASSIGNED_SCHOOL_COACH_ID && occurrence.teacherIds.length === 0) &&
+        !occurrence.teacherIds.includes(callerId)) ||
       occurrence.classFull === true
     )
       return false
@@ -84,14 +93,16 @@ async function assignToOpenSlot(
   isDirector: boolean,
   callerId: string
 ) {
-  const membership = await getSchoolMembership(schoolId, slot.coachId)
-  if (
-    !membership ||
-    membership.status !== 'active' ||
-    !schoolMembershipHasRole(membership, 'teacher') ||
-    (!isDirector && slot.coachId !== callerId)
-  )
-    return false
+  if (slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID) {
+    const membership = await getSchoolMembership(schoolId, slot.coachId)
+    if (
+      !membership ||
+      membership.status !== 'active' ||
+      !schoolMembershipHasRole(membership, 'teacher') ||
+      (!isDirector && slot.coachId !== callerId)
+    )
+      return false
+  }
 
   const [offeringSnapshot, legacySnapshot, bookingSnapshot, blockSnapshot, classSnapshot] =
     await Promise.all([
@@ -111,7 +122,8 @@ async function assignToOpenSlot(
         item.endTime === slot.endTime &&
         item.type === 'group' &&
         item.status !== 'cancelled' &&
-        item.teacherIds.includes(slot.coachId)
+        (item.teacherIds.includes(slot.coachId) ||
+          (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID && item.teacherIds.length === 0))
     )
   if (matchingClass) return false
 
@@ -147,7 +159,7 @@ async function assignToOpenSlot(
     schoolId,
     title: slot.groupType === 'grupal' ? 'Clase grupal' : 'Clase particular',
     type: slot.groupType === 'grupal' ? 'group' : 'individual',
-    teacherIds: [slot.coachId],
+    teacherIds: slot.coachId === UNASSIGNED_SCHOOL_COACH_ID ? [] : [slot.coachId],
     studentIds: [studentId],
     startDate: slot.date,
     endDate: slot.date,

@@ -9,6 +9,9 @@ export const SCHOOL_TIMEZONE_OPTIONS = [
 
 export const DEFAULT_SCHOOL_TIMEZONE = 'America/Mexico_City'
 
+/** Virtual schedule owner for school offerings that have no coach assigned yet. */
+export const UNASSIGNED_SCHOOL_COACH_ID = '__unassigned__'
+
 export const SCHOOL_PALETTES = [
   {
     value: 'ocean',
@@ -345,15 +348,10 @@ export interface SchoolClassOccurrence {
   updatedAt: number
 }
 
-export function schoolClassDisplayTitle(
-  title: string | null | undefined,
-  type?: SchoolClassOccurrence['type']
-) {
+export function schoolClassDisplayTitle(title: string | null | undefined) {
   const value = title?.trim()
   if (value && value !== 'Clase escolar') return value
-  if (type === 'group') return 'Clase grupal'
-  if (type === 'individual') return 'Clase particular'
-  return 'Clase de natación'
+  return ''
 }
 
 export interface SchoolClassRequest {

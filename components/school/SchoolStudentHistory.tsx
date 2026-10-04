@@ -345,7 +345,8 @@ function HistoryClassRow({
     >
       <div className="flex min-w-0 items-center justify-between gap-2">
         <h3 className="min-w-0 truncate text-sm font-bold text-(--c-ocean)">
-          {coachNames || capitalizeSchoolTerm(coachSingular)}
+          {coachNames ||
+            (item.coachIds.length === 0 ? 'Sin profe aún' : capitalizeSchoolTerm(coachSingular))}
         </h3>
         <div className="flex shrink-0 items-center gap-2 text-xs text-(--c-text-2)">
           <span className="whitespace-nowrap font-medium">{STATUS_LABELS[item.status]}</span>

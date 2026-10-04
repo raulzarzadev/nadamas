@@ -5,6 +5,7 @@ import {
   type SchoolMembership,
   schoolClassDisplayTitle,
   schoolMembershipHasExplicitRole,
+  UNASSIGNED_SCHOOL_COACH_ID,
 } from '@/lib/school'
 
 export function schoolScheduleOwners(memberships: readonly SchoolMembership[]) {
@@ -25,6 +26,13 @@ export function schoolClassCoachIds({
   allowedCoachIds: ReadonlySet<string>
   targetCoachId?: string | null
 }) {
+  if (
+    assignedCoachIds.length === 0 &&
+    allowedCoachIds.has(UNASSIGNED_SCHOOL_COACH_ID) &&
+    (!targetCoachId || targetCoachId === UNASSIGNED_SCHOOL_COACH_ID)
+  ) {
+    return [UNASSIGNED_SCHOOL_COACH_ID]
+  }
   return [
     ...new Set(
       assignedCoachIds.filter(
@@ -138,7 +146,7 @@ export function schoolClassAgendaBooking(args: {
           }),
         }
       : {}),
-    schoolClassTitle: schoolClassDisplayTitle(occurrence.title, occurrence.type),
+    schoolClassTitle: schoolClassDisplayTitle(occurrence.title),
     schoolClassStudentCount: studentIds.length,
     coachId: args.coachId,
     coachName: args.coachName,

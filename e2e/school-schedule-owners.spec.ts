@@ -3,6 +3,7 @@ import {
   type SchoolClassOccurrence,
   type SchoolMembership,
   schoolClassDisplayTitle,
+  UNASSIGNED_SCHOOL_COACH_ID,
 } from '../lib/school'
 import {
   coalesceGroupClassOccurrences,
@@ -27,10 +28,10 @@ function membership(
   }
 }
 
-test('muestra el tipo de clase en lugar del título genérico heredado', () => {
-  expect(schoolClassDisplayTitle('Clase escolar', 'group')).toBe('Clase grupal')
-  expect(schoolClassDisplayTitle('Clase escolar', 'individual')).toBe('Clase particular')
-  expect(schoolClassDisplayTitle('Técnica de crol', 'group')).toBe('Técnica de crol')
+test('omite el título genérico de las clases escolares', () => {
+  expect(schoolClassDisplayTitle('Clase escolar')).toBe('')
+  expect(schoolClassDisplayTitle(undefined)).toBe('')
+  expect(schoolClassDisplayTitle('Técnica de crol')).toBe('Técnica de crol')
 })
 
 test.describe('responsables de horarios escolares', () => {
@@ -61,6 +62,15 @@ test.describe('responsables de horarios escolares', () => {
     })
 
     expect(coaches).toEqual(['coach-1', 'coach-2'])
+  })
+
+  test('muestra las clases sin profe en la agenda virtual de horarios sin asignar', () => {
+    const coaches = schoolClassCoachIds({
+      assignedCoachIds: [],
+      allowedCoachIds: new Set([UNASSIGNED_SCHOOL_COACH_ID]),
+    })
+
+    expect(coaches).toEqual([UNASSIGNED_SCHOOL_COACH_ID])
   })
 
   test('filtra la clase al coach elegido cuando se administra una sola agenda', () => {

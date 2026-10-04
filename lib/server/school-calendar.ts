@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { randomBytes } from 'node:crypto'
-import type { SchoolClassOccurrence } from '@/lib/school'
+import { schoolClassDisplayTitle, type SchoolClassOccurrence } from '@/lib/school'
 import { adminDb } from './firebase-admin'
 import { listSchoolClasses } from './school-classes'
 import { listSchoolStudents } from './school-students'
@@ -151,13 +151,13 @@ export function buildSchoolCalendarIcs(
       `DTSTAMP:${utcStamp()}`,
       `DTSTART;TZID=${occurrence.timezone || 'UTC'}:${icsDateTime(occurrence.date, occurrence.startTime)}`,
       `DTEND;TZID=${occurrence.timezone || 'UTC'}:${icsDateTime(occurrence.date, occurrence.endTime)}`,
-      `SUMMARY:${escapeIcsText(occurrence.title)}`,
-      `DESCRIPTION:${escapeIcsText('Clase escolar Nadamas')}`,
       `LOCATION:${escapeIcsText(occurrence.location || 'Por confirmar')}`,
       `STATUS:${status}`,
       `LAST-MODIFIED:${utcStamp(new Date(occurrence.updatedAt || occurrence.createdAt))}`,
       'END:VEVENT'
     )
+    const title = schoolClassDisplayTitle(occurrence.title)
+    if (title) lines.splice(lines.length - 6, 0, `SUMMARY:${escapeIcsText(title)}`)
   }
   lines.push('END:VCALENDAR')
   return `${lines.map(foldLine).join('\r\n')}\r\n`

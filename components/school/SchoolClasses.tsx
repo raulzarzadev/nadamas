@@ -17,6 +17,7 @@ import {
   type SchoolLocation,
   type SchoolStudent,
   schoolMembershipHasRole,
+  UNASSIGNED_SCHOOL_COACH_ID,
 } from '@/lib/school'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolReviewForm from './SchoolReviewForm'
@@ -180,6 +181,7 @@ export default function SchoolClasses() {
   const scheduleCoachOptions = [
     ...(isDirector && directorId ? [{ id: directorId, name: directorName }] : []),
     ...activeTeachers.map(({ id, name }) => ({ id, name })),
+    ...(isDirector ? [{ id: UNASSIGNED_SCHOOL_COACH_ID, name: 'Sin profe aún' }] : []),
   ]
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'

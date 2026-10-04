@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
+import { buildAvailableSlots } from '@/lib/coach-agenda'
+import { resolveOfferings } from '@/lib/coach-offerings'
 import type { SchoolClassOccurrence, SchoolStudent } from '@/lib/school'
-import { type SchoolGender, schoolClassDisplayTitle, schoolMembershipHasRole } from '@/lib/school'
+import {
+  type SchoolGender,
+  schoolClassDisplayTitle,
+  schoolMembershipHasRole,
+  UNASSIGNED_SCHOOL_COACH_ID,
+} from '@/lib/school'
 import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
@@ -157,7 +164,8 @@ async function handlePOST(request: Request, { params }: RouteProps) {
         ? body.teacherId
         : ''
   if (!teacherId) return NextResponse.json({ error: 'Selecciona un entrenador.' }, { status: 400 })
-  if (!(await schoolPeopleAreValid(schoolId, [teacherId], [studentId])))
+  const unassignedTeacher = teacherId === UNASSIGNED_SCHOOL_COACH_ID
+  if (!unassignedTeacher && !(await schoolPeopleAreValid(schoolId, [teacherId], [studentId])))
     return NextResponse.json(
       { error: 'Selecciona un entrenador que pertenezca a la escuela.' },
       { status: 400 }
@@ -167,14 +175,49 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   const requestedStart =
     typeof body.preferredStartTime === 'string' ? body.preferredStartTime : '16:00'
   const requestedEnd = typeof body.preferredEndTime === 'string' ? body.preferredEndTime : '17:00'
+  if (unassignedTeacher) {
+    const dateAssignments = await adminDb
+      .collection('schoolScheduleAssignments')
+      .where('schoolId', '==', schoolId)
+      .get()
+    if (
+      dateAssignments.docs.some((doc) => {
+        const assignment = doc.data()
+        return assignment.date === requestedDate && assignment.startTime === requestedStart
+      })
+    )
+      return NextResponse.json({ error: 'El horario ya no está disponible.' }, { status: 409 })
+    const offeringSnapshot = await adminDb
+      .collection('schoolCoachOfferings')
+      .doc(`${schoolId}_${UNASSIGNED_SCHOOL_COACH_ID}`)
+      .get()
+    const offerings = resolveOfferings({
+      classOfferings: offeringSnapshot.data()?.classOfferings || [],
+      teachingLocations: [],
+      priceOptions: [],
+    })
+    const date = new Date(`${requestedDate}T12:00:00`)
+    const available = buildAvailableSlots({
+      coachId: UNASSIGNED_SCHOOL_COACH_ID,
+      offerings,
+      bookings: [],
+      blocks: [],
+      startDate: date,
+      endDate: date,
+    }).some(
+      (slot) =>
+        slot.startTime === requestedStart &&
+        slot.endTime === requestedEnd &&
+        slot.groupType === (body.type === 'group' ? 'grupal' : 'particular')
+    )
+    if (!available)
+      return NextResponse.json({ error: 'El horario ya no está disponible.' }, { status: 409 })
+  }
   const classValidation = validateClassInput({
     schoolId,
-    title: schoolClassDisplayTitle(
-      typeof body.title === 'string' ? body.title : undefined,
-      body.type === 'group' ? 'group' : 'individual'
-    ),
+    title: schoolClassDisplayTitle(typeof body.title === 'string' ? body.title : undefined),
     type: body.type === 'group' ? 'group' : 'individual',
-    teacherIds: [teacherId],
+    teacherIds: unassignedTeacher ? [] : [teacherId],
     studentIds: [studentId],
     startDate: requestedDate,
     endDate: requestedDate,
@@ -218,7 +261,9 @@ async function handlePOST(request: Request, { params }: RouteProps) {
           occurrence.date === directClassValidation.value.startDate &&
           occurrence.startTime === directClassValidation.value.startTime &&
           occurrence.endTime === directClassValidation.value.endTime &&
-          occurrence.teacherIds.includes(teacherId)
+          (unassignedTeacher
+            ? occurrence.teacherIds.length === 0
+            : occurrence.teacherIds.includes(teacherId))
         )
       })
       if (existingGroup) {

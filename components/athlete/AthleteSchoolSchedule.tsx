@@ -642,10 +642,7 @@ export default function AthleteSchoolSchedule({
                 }),
             teacherId: selectedSlot.coachId,
             preferredTeacherId: selectedSlot.coachId,
-            title: schoolClassDisplayTitle(
-              undefined,
-              selectedSlot.groupType === 'grupal' ? 'group' : 'individual'
-            ),
+            title: schoolClassDisplayTitle(undefined),
             type: selectedSlot.groupType === 'grupal' ? 'group' : 'individual',
             preferredDays: [day],
             preferredStartTime: selectedSlot.startTime,

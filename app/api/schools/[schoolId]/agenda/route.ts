@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server'
-import { buildAvailableSlots, type CoachScheduleBlock, monthRange } from '@/lib/coach-agenda'
+import {
+  buildAvailableSlots,
+  type CoachScheduleBlock,
+  monthRange,
+  timesOverlap,
+} from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
 import {
   type SchoolClassOccurrence,
   type SchoolMembership,
   schoolMembershipHasRole,
+  UNASSIGNED_SCHOOL_COACH_ID,
 } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolCaller, requireSchoolAccess } from '@/lib/server/school-access'
@@ -60,6 +66,10 @@ export async function GET(request: Request, { params }: RouteProps) {
     adminDb.collection('bookings').where('schoolId', '==', schoolId).get(),
     adminDb.collection('coachScheduleBlocks').where('schoolId', '==', schoolId).get(),
   ])
+  const assignmentsSnapshot = await adminDb
+    .collection('schoolScheduleAssignments')
+    .where('schoolId', '==', schoolId)
+    .get()
   const [schoolClassesSnapshot, studentsSnapshot, requestsSnapshot, studentRecordsSnapshot] =
     await Promise.all([
       adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get(),
@@ -89,9 +99,43 @@ export async function GET(request: Request, { params }: RouteProps) {
           (!targetCoachId || userId === targetCoachId)
       )
   )
+  const activeTeacherIds = new Set(scheduleMemberships.map((membership) => membership.userId))
+  for (const doc of assignmentsSnapshot.docs) {
+    const assignedCoachId = doc.data().coachId
+    if (
+      canManage &&
+      typeof assignedCoachId === 'string' &&
+      activeTeacherIds.has(assignedCoachId) &&
+      (!targetCoachId ||
+        targetCoachId === UNASSIGNED_SCHOOL_COACH_ID ||
+        targetCoachId === assignedCoachId)
+    )
+      teacherIds.add(assignedCoachId)
+  }
+  const unassignedOfferingsSnapshot = await adminDb
+    .collection('schoolCoachOfferings')
+    .doc(`${schoolId}_${UNASSIGNED_SCHOOL_COACH_ID}`)
+    .get()
+  if (
+    unassignedOfferingsSnapshot.exists &&
+    (!targetCoachId || targetCoachId === UNASSIGNED_SCHOOL_COACH_ID)
+  ) {
+    teacherIds.add(UNASSIGNED_SCHOOL_COACH_ID)
+  }
 
   const teacherData = await Promise.all(
     [...teacherIds].map(async (teacherId) => {
+      if (teacherId === UNASSIGNED_SCHOOL_COACH_ID) {
+        return {
+          teacherId,
+          name: 'Sin profe aún',
+          offerings: resolveOfferings({
+            classOfferings: unassignedOfferingsSnapshot.data()?.classOfferings || [],
+            teachingLocations: [],
+            priceOptions: [],
+          }),
+        }
+      }
       const [userSnapshot, profileSnapshot, offeringsSnapshot, availabilitySnapshot] =
         await Promise.all([
           adminDb.collection('users').doc(teacherId).get(),
@@ -308,22 +352,93 @@ export async function GET(request: Request, { params }: RouteProps) {
   const agendaBookings = [...bookings, ...schoolClassBookings, ...pendingRequestBookings].sort(
     (a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
   )
-  const availableSlots = teacherData
-    .flatMap(({ teacherId, name, offerings }) =>
-      buildAvailableSlots({
-        coachId: teacherId,
-        offerings,
-        bookings: agendaBookings.filter((booking) => booking.coachId === teacherId),
-        blocks: blocks.filter((block) => block.coachId === teacherId),
-        startDate: range.start,
-        endDate: range.end,
-      }).map((slot) => ({ ...slot, coachName: name, schoolId }))
-    )
-    .sort((a, b) =>
-      `${a.date} ${a.startTime} ${a.coachName || ''}`.localeCompare(
-        `${b.date} ${b.startTime} ${b.coachName || ''}`
+  const assignedSlots = assignmentsSnapshot.docs
+    .map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }))
+    .filter(({ data }) => {
+      const date = String(data.date || '')
+      return date >= startDate && date <= endDate && teacherIds.has(String(data.coachId))
+    })
+    .map(({ id, data }) => {
+      const slot = {
+        id: `assignment:${id}`,
+        coachId: String(data.coachId),
+        schoolId,
+        offeringId: String(data.offeringId || ''),
+        scheduleId: String(data.scheduleId || ''),
+        date: String(data.date),
+        startTime: String(data.startTime),
+        endTime: String(data.endTime),
+        locationName: String(data.locationName || ''),
+        groupType: data.groupType === 'grupal' ? ('grupal' as const) : ('particular' as const),
+        coachName: names[String(data.coachId)] || 'Coach',
+      }
+      const matchingBookings = agendaBookings.filter(
+        (booking) =>
+          booking.coachId === slot.coachId &&
+          booking.date === slot.date &&
+          booking.status !== 'cancelled' &&
+          timesOverlap(slot.startTime, slot.endTime, booking.startTime, booking.endTime)
       )
+      const sourceOffering = teacherData
+        .find(({ teacherId }) => teacherId === UNASSIGNED_SCHOOL_COACH_ID)
+        ?.offerings.find(({ id: candidateId }) => candidateId === slot.offeringId)
+      const groupCapacity = sourceOffering?.maxPeople || Number.POSITIVE_INFINITY
+      const groupOccupancy = matchingBookings.reduce(
+        (count, booking) =>
+          count +
+          Math.max(
+            1,
+            ('schoolClassStudentCount' in booking && booking.schoolClassStudentCount) || 1
+          ),
+        0
+      )
+      const canJoinGroup =
+        slot.groupType === 'grupal' &&
+        matchingBookings.length > 0 &&
+        matchingBookings.every((booking) => booking.groupType === 'grupal' && !booking.classFull) &&
+        groupOccupancy < groupCapacity
+      return {
+        ...slot,
+        status:
+          matchingBookings.length > 0 && !canJoinGroup
+            ? ('booked' as const)
+            : ('available' as const),
+      }
+    })
+  const builtSlots = teacherData.flatMap(({ teacherId, name, offerings }) =>
+    buildAvailableSlots({
+      coachId: teacherId,
+      offerings,
+      bookings: agendaBookings.filter((booking) => booking.coachId === teacherId),
+      blocks: blocks.filter((block) => block.coachId === teacherId),
+      startDate: range.start,
+      endDate: range.end,
+    }).map((slot) => ({ ...slot, coachName: name, schoolId }))
+  )
+  const availableSlots = [
+    ...builtSlots.filter(
+      (slot) =>
+        !(
+          slot.coachId === UNASSIGNED_SCHOOL_COACH_ID &&
+          assignmentsSnapshot.docs.some(
+            (doc) => doc.data().date === slot.date && doc.data().startTime === slot.startTime
+          )
+        )
+    ),
+    ...assignedSlots.filter(
+      (assignment) =>
+        !builtSlots.some(
+          (slot) =>
+            slot.coachId === assignment.coachId &&
+            slot.date === assignment.date &&
+            slot.startTime === assignment.startTime
+        )
+    ),
+  ].sort((a, b) =>
+    `${a.date} ${a.startTime} ${a.coachName || ''}`.localeCompare(
+      `${b.date} ${b.startTime} ${b.coachName || ''}`
     )
+  )
 
   return NextResponse.json({
     bookings: [

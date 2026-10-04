@@ -95,8 +95,8 @@ export default function ScheduleHoursEditor({
 
   return (
     <Sheet open onClose={onClose} label="Editar horas" keyboardAware fullBleedMobile>
-      <div className="flex min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),44rem)]">
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-3 sm:px-0 sm:pb-0">
+      <div className="flex max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),44rem)]">
+        <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-3 sm:px-0 sm:pb-0">
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-xl font-bold text-[var(--c-ocean)]">Editar horas</h3>

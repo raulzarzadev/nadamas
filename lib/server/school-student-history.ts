@@ -147,7 +147,7 @@ export async function getSchoolStudentHistory(
   const classes: SchoolHistoryClass[] = [
     ...occurrences.map((item) => ({
       id: `class:${item.id}`,
-      title: schoolClassDisplayTitle(item.title, item.type),
+      title: schoolClassDisplayTitle(item.title),
       date: item.date,
       startTime: item.startTime,
       endTime: item.endTime,

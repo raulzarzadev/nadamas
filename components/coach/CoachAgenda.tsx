@@ -28,7 +28,7 @@ import {
   formatWhatsappScheduleText,
   type WhatsappScheduleDay,
 } from '@/lib/coach-whatsapp-schedule'
-import { capitalizeSchoolTerm } from '@/lib/school'
+import { capitalizeSchoolTerm, UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import AgendaStudentActions, { type AgendaStudentAction } from './AgendaStudentActions'
@@ -196,6 +196,7 @@ export default function CoachAgenda({
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [slotEditor, setSlotEditor] = useState<SlotEditorState | null>(null)
+  const [slotAssignmentCoachId, setSlotAssignmentCoachId] = useState('')
   const [progressBooking, setProgressBooking] = useState<Booking | null>(null)
   // Classes that already have a saved progress entry (labels the row button).
   const [progressBookingIds, setProgressBookingIds] = useState<Set<string>>(new Set())
@@ -992,8 +993,27 @@ export default function CoachAgenda({
     )
   }
 
-  const openSlotEditor = (slot: CoachAvailableSlot, block?: CoachScheduleBlock) =>
+  const openSlotEditor = (slot: CoachAvailableSlot, block?: CoachScheduleBlock) => {
+    setSlotAssignmentCoachId('')
     setSlotEditor({ slot, block })
+  }
+
+  const assignSlotToCoach = () => {
+    if (!slotEditor || !schoolId || !slotAssignmentCoachId) return
+    const slot = slotEditor.slot
+    void run(async () => {
+      await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/assignments`, {
+        coachId: slotAssignmentCoachId,
+        date: slot.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        groupType: slot.groupType,
+        offeringId: slot.offeringId,
+        scheduleId: slot.scheduleId,
+      })
+      setSlotEditor(null)
+    })
+  }
 
   const updateSlotAvailability = (checked: boolean) => {
     if (!slotEditor) return
@@ -1027,6 +1047,26 @@ export default function CoachAgenda({
           `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(slot.schoolClassId)}/students`,
           { studentIds, ...(slot.promoteToGroup ? { promoteToGroup: true } : {}) }
         )
+      } else if (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID) {
+        const targetSchoolId = slot.schoolId || schoolId
+        if (!targetSchoolId || payloads.some((payload) => !payload.athleteId))
+          throw new Error('UNASSIGNED_SLOT_REQUIRES_SCHOOL_STUDENTS')
+        for (const payload of payloads) {
+          await postAuthed(
+            `/api/schools/${encodeURIComponent(targetSchoolId)}/students/${encodeURIComponent(payload.athleteId as string)}/classes`,
+            {
+              slots: [
+                {
+                  date: slot.date,
+                  startTime: slot.startTime,
+                  endTime: slot.endTime,
+                  coachId: UNASSIGNED_SCHOOL_COACH_ID,
+                  groupType: slot.groupType,
+                },
+              ],
+            }
+          )
+        }
       } else {
         for (const payload of payloads) {
           await postAuthed('/api/coach/agenda/bookings', {
@@ -2069,7 +2109,9 @@ export default function CoachAgenda({
       {addStudentSlot && (
         <AgendaAddStudentModal
           schoolId={addStudentSlot.schoolId || schoolId}
-          allowCreate={!addStudentSlot.schoolClassId}
+          allowCreate={
+            !addStudentSlot.schoolClassId && addStudentSlot.coachId !== UNASSIGNED_SCHOOL_COACH_ID
+          }
           slotLabel={`${new Date(`${addStudentSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
             weekday: 'short',
             day: 'numeric',
@@ -2138,6 +2180,39 @@ export default function CoachAgenda({
                 {slotEditor.slot.startTime}–{slotEditor.slot.endTime}
               </p>
             </div>
+            {manageSchoolSchedule && slotEditor.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID && (
+              <div className="flex flex-col gap-3 rounded-[var(--r-md)] border border-[var(--c-border)] p-3">
+                <label
+                  htmlFor="assign-slot-coach"
+                  className="text-sm font-bold text-[var(--c-text-2)]"
+                >
+                  Asignar profe para esta fecha
+                </label>
+                <select
+                  id="assign-slot-coach"
+                  value={slotAssignmentCoachId}
+                  onChange={(event) => setSlotAssignmentCoachId(event.target.value)}
+                  className="min-h-11 rounded-xl border border-[var(--c-border)] bg-white px-3 text-[var(--c-ocean)]"
+                >
+                  <option value="">Seleccionar profe</option>
+                  {Object.entries(agenda?.coachNames || {})
+                    .filter(([id]) => id !== UNASSIGNED_SCHOOL_COACH_ID)
+                    .map(([id, name]) => (
+                      <option key={id} value={id}>
+                        {name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={assignSlotToCoach}
+                  disabled={busy || !slotAssignmentCoachId}
+                  className="min-h-11 rounded-full bg-[var(--c-primary)] px-4 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  Asignar profe
+                </button>
+              </div>
+            )}
             <div className="flex flex-col gap-4 rounded-[var(--r-md)] border border-[var(--c-border)] p-3">
               <SlotSegmentedControl
                 label="Estado del horario"

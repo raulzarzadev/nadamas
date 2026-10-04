@@ -5,6 +5,7 @@ import {
   type SchoolMembership,
   schoolMembershipHasExplicitRole,
   schoolMembershipHasRole,
+  UNASSIGNED_SCHOOL_COACH_ID,
 } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
@@ -19,6 +20,7 @@ async function authorize(request: Request, params: RouteProps['params']) {
   const { schoolId, teacherId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return { response: access.response }
+  if (teacherId === UNASSIGNED_SCHOOL_COACH_ID) return { schoolId, teacherId }
   const target = await getSchoolMembership(schoolId, teacherId)
   const activeTarget = target?.status === 'active'
   const isTeacher = activeTarget && schoolMembershipHasExplicitRole(target, 'teacher')

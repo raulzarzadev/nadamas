@@ -62,7 +62,7 @@ export default function HourPickerModal({
       keyboardAware
       fullBleedMobile
     >
-      <div className="flex min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden text-[var(--c-ocean)] sm:min-h-0 sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),44rem)]">
+      <div className="flex max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden text-[var(--c-ocean)] sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),44rem)]">
         <header className="flex shrink-0 items-start justify-between gap-3 px-4 pt-2 sm:px-0 sm:pt-0">
           <div>
             <h3 id={`${id}-title`} className="text-xl font-bold">
@@ -83,7 +83,7 @@ export default function HourPickerModal({
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-0">
+        <div className="min-h-0 overflow-y-auto px-4 py-4 sm:px-0">
           <button
             type="button"
             onClick={toggleHalfHours}

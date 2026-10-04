@@ -10,6 +10,7 @@ import {
   type SchoolClassOccurrence,
   type SchoolStudent,
   schoolClassDisplayTitle,
+  UNASSIGNED_SCHOOL_COACH_ID,
 } from '@/lib/school'
 
 interface AssignmentSlot {
@@ -177,7 +178,7 @@ export default function SchoolStudentClassAssignment({
         item.studentIds.includes(student.id)
       )
         continue
-      const coachId = item.teacherIds[0]
+      const coachId = item.teacherIds[0] || UNASSIGNED_SCHOOL_COACH_ID
       const key = `${coachId}|${item.date}|${item.startTime}|grupal`
       const current = slots.get(key)
       slots.set(key, {
@@ -186,11 +187,11 @@ export default function SchoolStudentClassAssignment({
         startTime: item.startTime,
         endTime: item.endTime,
         coachId,
-        coachName: agenda.coachNames?.[coachId] || 'Profesor',
+        coachName: agenda.coachNames?.[coachId] || 'Sin profe aún',
         groupType: 'grupal',
         locationName: item.location || '',
         schoolClassId: item.id,
-        schoolClassTitle: schoolClassDisplayTitle(item.title, item.type),
+        schoolClassTitle: schoolClassDisplayTitle(item.title),
         studentCount: item.studentIds.length,
         classFull: item.classFull,
       })
