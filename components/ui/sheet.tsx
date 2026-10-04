@@ -38,6 +38,10 @@ export default function Sheet({
   const openRef = useRef(open)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const dragStartY = useRef<number | null>(null)
+  const [dragY, setDragY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
   openRef.current = open
 
   const requestClose = useCallback(() => {
@@ -71,6 +75,9 @@ export default function Sheet({
     if (!open) return
     closingRef.current = false
     setClosing(false)
+    setDragY(0)
+    setIsDragging(false)
+    dragStartY.current = null
   }, [open])
 
   useEffect(() => {
@@ -169,9 +176,11 @@ export default function Sheet({
       }}
     >
       <div
+        ref={sheetRef}
+        style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
         className={`relative w-full bg-white shadow-[0_-20px_60px_-30px_rgba(10,37,64,0.5)] ${
           showFooterClose ? 'flex flex-col' : ''
-        } ${
+        } ${isDragging ? 'transition-none' : ''} ${
           fullBleedMobile
             ? `min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-y-auto rounded-t-[26px] rounded-b-none px-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sheetAnimation} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-2 sm:pt-5'} sm:min-h-0 sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:px-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${desktopWidth} sm:[animation:none]`
             : `px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-5'} ${
@@ -181,20 +190,45 @@ export default function Sheet({
               }`
         }`}
       >
-        <button
-          type="button"
-          aria-label="Cerrar modal"
-          title="Cerrar"
-          disabled={closeDisabled}
-          onClick={requestClose}
-          className="group relative mx-auto mb-2 grid h-11 w-11 place-items-center rounded-full text-[var(--c-text-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] sm:hidden"
+        <div
+          onTouchStart={(event) => {
+            if (closeDisabled) return
+            dragStartY.current = event.touches[0].clientY
+            setIsDragging(true)
+          }}
+          onTouchMove={(event) => {
+            if (dragStartY.current === null || closeDisabled) return
+            const offset = event.touches[0].clientY - dragStartY.current
+            setDragY(offset > 0 ? offset : 0)
+          }}
+          onTouchEnd={() => {
+            const offset = dragY
+            dragStartY.current = null
+            setIsDragging(false)
+            if (offset > 90) {
+              setDragY(0)
+              requestClose()
+            } else {
+              setDragY(0)
+            }
+          }}
+          className="sticky top-0 z-10 -mx-0 flex touch-none justify-center bg-white pt-1 pb-1 sm:hidden"
         >
-          <span className="h-1 w-10 rounded-full bg-[var(--c-border)] transition duration-150 group-hover:scale-x-0 group-hover:opacity-0 group-focus-visible:scale-x-0 group-focus-visible:opacity-0" />
-          <FiX
-            aria-hidden="true"
-            className="absolute h-5 w-5 opacity-0 transition duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
-          />
-        </button>
+          <button
+            type="button"
+            aria-label="Cerrar modal"
+            title="Cerrar"
+            disabled={closeDisabled}
+            onClick={requestClose}
+            className="group relative grid h-11 w-16 place-items-center rounded-full text-[var(--c-text-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+          >
+            <span className="h-1 w-10 rounded-full bg-[var(--c-border)] transition duration-150 group-hover:scale-x-0 group-hover:opacity-0 group-focus-visible:scale-x-0 group-focus-visible:opacity-0" />
+            <FiX
+              aria-hidden="true"
+              className="absolute h-5 w-5 opacity-0 transition duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+            />
+          </button>
+        </div>
         {children}
         {showFooterClose && (
           <button
