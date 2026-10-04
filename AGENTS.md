@@ -74,5 +74,6 @@ Known gotcha: `firebase/athletes/main.ts` instantiates the collection as `'athel
 
 ### Other
 
+- Reuse `components/ui/coach-badge.tsx` whenever a UI needs to display an assigned coach/teacher; pass `unassigned` for unassigned states so the badge renders outlined without an avatar.
 - `next.config.mjs`: `next/image` `remotePatterns` (firebasestorage, lh3.googleusercontent, images.unsplash, img.icons8); security headers (CSP-adjacent: X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, HSTS); long-lived cache headers for static assets. **No `next-pwa`** — PWA manifest is the static `public/manifest.json`.
 - App-wide constants in `CONSTANTS/` (`ROUTES.js` drives nav, `SWIMMING_TESTS.js`, `AWARDS.js`, `STATUS_EVENT.js`).

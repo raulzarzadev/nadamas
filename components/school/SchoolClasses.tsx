@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import CoachBadge from '@/components/ui/coach-badge'
+import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
@@ -199,7 +200,10 @@ export default function SchoolClasses() {
   const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const visibleClasses = classes.filter(
-    (item) => item.status !== 'cancelled' || item.date >= today()
+    (item) =>
+      item.status !== 'scheduled' &&
+      item.status !== 'completed' &&
+      (item.status !== 'cancelled' || item.date >= today())
   )
 
   async function updateClass(
@@ -309,24 +313,6 @@ export default function SchoolClasses() {
           {message}
         </p>
       )}
-      <section aria-label="Agenda de la escuela" className="flex flex-col gap-4">
-        <CoachAgenda
-          key={selected.school.id}
-          schoolId={selected.school.id}
-          coachId={isDirector && scheduleCoachId ? scheduleCoachId : undefined}
-          aggregateSchool
-          readOnly={!isDirector}
-          manageSchoolSchedule={isDirector}
-          allowSchoolScheduleEdit={isDirector}
-          scheduleEditorOpen={scheduleEditorOpen}
-          onScheduleEditorClose={() => setScheduleEditorOpen(false)}
-          scheduleCoachOptions={scheduleCoachOptions}
-          onScheduleCoachChange={setScheduleCoachId}
-          initialDate={validFocusDate}
-          focusClassId={focusClass || undefined}
-          focusTime={validFocusTime}
-        />
-      </section>
       <section
         aria-label="Solicitudes y configuración de la escuela"
         className="flex flex-col gap-4"
@@ -374,6 +360,10 @@ export default function SchoolClasses() {
                     .map((teacherId) => teachers.find((teacher) => teacher.id === teacherId)?.name)
                     .filter((name): name is string => Boolean(name))
                     .join(', ') || 'Sin profe aún'
+                const studentBadges = item.studentIds.flatMap((studentId) => {
+                  const student = students.find((entry) => entry.id === studentId)
+                  return student ? [{ id: studentId, name: student.name }] : []
+                })
                 const canComment =
                   isDirector || (isTeacher && item.teacherIds.includes(user?.uid || ''))
                 const locationLabel = item.location.trim()
@@ -389,6 +379,13 @@ export default function SchoolClasses() {
                   >
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                       <CoachBadge name={coachName} unassigned={item.teacherIds.length === 0} />
+                      {studentBadges.length > 0 ? (
+                        studentBadges.map((student) => (
+                          <StudentBadge key={student.id} name={student.name} />
+                        ))
+                      ) : (
+                        <StudentBadge name="Sin alumno" />
+                      )}
                       <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-(--c-text-2)">
                         {item.type === 'group' ? (
                           <FiUsers aria-hidden="true" />
@@ -488,6 +485,24 @@ export default function SchoolClasses() {
             </div>
           </details>
         ) : null}
+      </section>
+      <section aria-label="Agenda de la escuela" className="flex flex-col gap-4">
+        <CoachAgenda
+          key={selected.school.id}
+          schoolId={selected.school.id}
+          coachId={isDirector && scheduleCoachId ? scheduleCoachId : undefined}
+          aggregateSchool
+          readOnly={!isDirector}
+          manageSchoolSchedule={isDirector}
+          allowSchoolScheduleEdit={isDirector}
+          scheduleEditorOpen={scheduleEditorOpen}
+          onScheduleEditorClose={() => setScheduleEditorOpen(false)}
+          scheduleCoachOptions={scheduleCoachOptions}
+          onScheduleCoachChange={setScheduleCoachId}
+          initialDate={validFocusDate}
+          focusClassId={focusClass || undefined}
+          focusTime={validFocusTime}
+        />
       </section>
       <Sheet
         open={Boolean(commentClass)}
