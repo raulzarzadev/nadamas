@@ -121,7 +121,7 @@ export default function CoachAgendaDateSelector({
           type="button"
           aria-label="Semana anterior"
           onClick={() => changeWeek(-1)}
-          className="grid w-6 shrink-0 place-items-center rounded-[var(--r-md)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
+          className="grid w-6 shrink-0 place-items-center self-stretch rounded-[var(--r-md)] border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
         >
           <FiChevronLeft aria-hidden="true" />
         </button>
@@ -187,7 +187,7 @@ export default function CoachAgendaDateSelector({
           type="button"
           aria-label="Semana siguiente"
           onClick={() => changeWeek(1)}
-          className="grid w-6 shrink-0 place-items-center rounded-[var(--r-md)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
+          className="grid w-6 shrink-0 place-items-center self-stretch rounded-[var(--r-md)] border border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)]"
         >
           <FiChevronRight aria-hidden="true" />
         </button>

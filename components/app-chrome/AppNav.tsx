@@ -141,7 +141,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="flex items-center gap-4">
+        <div className="relative flex items-center gap-4">
           <Link
             href="/"
             className={tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'}
@@ -176,6 +176,12 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
               />
             )}
           </Link>
+          {tenant && hasDirectorAccess && (
+            <span className="absolute left-1/2 inline-flex max-w-32 -translate-x-1/2 items-center gap-1 truncate rounded-full bg-[var(--c-ocean)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white sm:max-w-64">
+              <FiShield aria-hidden="true" className="h-3 w-3 shrink-0" />
+              <span className="truncate">Director</span>
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <NotificationsBell />
             <RoleSwitcher

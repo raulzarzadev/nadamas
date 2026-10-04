@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { FiPlus } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import { useRole } from '@/context/RoleContext'
 import { schoolMembershipHasRole } from '@/lib/school'
 import CoachAgenda from './CoachAgenda'
 import ShareScheduleButton from './ShareScheduleButton'
@@ -12,6 +13,7 @@ const PERSONAL_VIEW = 'personal'
 
 export default function CoachAgendaWorkspace() {
   const { schools, status } = useSchoolSelection({ includePersonal: true })
+  const { setActiveRole } = useRole()
   const coachSchools = useMemo(() => {
     const seen = new Set<string>()
     return schools.filter(({ school, membership }) => {
@@ -80,16 +82,24 @@ export default function CoachAgendaWorkspace() {
           {[
             { id: ALL_VIEW, label: 'Todos' },
             { id: PERSONAL_VIEW, label: 'Míos' },
-            ...coachSchools.map(({ school }) => ({
+            ...coachSchools.map(({ school, membership }) => ({
               id: `school:${school.id}`,
               label: school.name,
+              directs: schoolMembershipHasRole(membership, 'director'),
             })),
           ].map((option) => (
             <button
               key={option.id}
               type="button"
               aria-pressed={view === option.id}
+              title={'directs' in option && option.directs ? 'Abrir modo director' : undefined}
               onClick={() => {
+                if ('directs' in option && option.directs) {
+                  const schoolId = option.id.slice('school:'.length)
+                  window.localStorage.setItem('nadamas.schoolId', schoolId)
+                  setActiveRole('school')
+                  return
+                }
                 setView(option.id)
                 setScheduleEditorOpen(false)
               }}
