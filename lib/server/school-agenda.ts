@@ -3,6 +3,7 @@ import { WEEKDAY_LABELS } from '@/lib/coach-offerings'
 import {
   type SchoolClassOccurrence,
   type SchoolMembership,
+  schoolClassDisplayTitle,
   schoolMembershipHasExplicitRole,
 } from '@/lib/school'
 
@@ -46,6 +47,7 @@ export type AgendaStudentRecord = {
   studentId: string
   attended?: boolean
   note?: string
+  updatedAt?: number
 }
 
 /** Old group requests can leave several occurrences for one class hour. */
@@ -85,7 +87,9 @@ export function coalesceGroupClassOccurrences(occurrences: SchoolClassOccurrence
           ...(occurrence.status === 'pending' ? occurrence.studentIds : []),
         ]),
       ],
-      sourceOccurrenceIds: [...new Set([...(previous.sourceOccurrenceIds || [previous.id]), occurrence.id])],
+      sourceOccurrenceIds: [
+        ...new Set([...(previous.sourceOccurrenceIds || [previous.id]), occurrence.id]),
+      ],
       classFull: previous.classFull === true || occurrence.classFull === true,
       status:
         previous.status === 'scheduled' || occurrence.status === 'scheduled'
@@ -119,28 +123,30 @@ export function schoolClassAgendaBooking(args: {
     schoolClassStudentIds: studentIds,
     ...(args.studentNames
       ? {
-          schoolClassStudents: studentIds.map((id) => ({
-            id,
-            name: args.studentNames?.get(id) || 'Alumno',
-            pending: pendingStudentIds.has(id),
-            attended: sourceIds.some(
-              (sourceId) => args.studentRecords?.get(`${sourceId}|${id}`)?.attended === true
-            ),
-            note:
-              sourceIds
-                .map((sourceId) => args.studentRecords?.get(`${sourceId}|${id}`)?.note)
-                .find((note) => typeof note === 'string') || '',
-          })),
+          schoolClassStudents: studentIds.map((id) => {
+            const record = sourceIds
+              .map((sourceId) => args.studentRecords?.get(`${sourceId}|${id}`))
+              .filter((item): item is AgendaStudentRecord => Boolean(item))
+              .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0]
+            return {
+              id,
+              name: args.studentNames?.get(id) || 'Alumno',
+              pending: pendingStudentIds.has(id),
+              attended: record?.attended === true,
+              note: record?.note || '',
+            }
+          }),
         }
       : {}),
-    schoolClassTitle: occurrence.title || 'Clase escolar',
+    schoolClassTitle: schoolClassDisplayTitle(occurrence.title, occurrence.type),
     schoolClassStudentCount: studentIds.length,
     coachId: args.coachId,
     coachName: args.coachName,
     athleteId: '',
     athleteName: args.studentNames
-      ? studentIds.map((id) => args.studentNames?.get(id) || 'Alumno').join(', ') || 'Clase escolar'
-      : 'Clase escolar',
+      ? studentIds.map((id) => args.studentNames?.get(id) || 'Alumno').join(', ') ||
+        'Clase de natación'
+      : 'Clase de natación',
     athleteEmail: null,
     date: occurrence.date,
     startTime: occurrence.startTime,

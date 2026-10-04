@@ -60,14 +60,15 @@ export async function GET(request: Request, { params }: RouteProps) {
     adminDb.collection('bookings').where('schoolId', '==', schoolId).get(),
     adminDb.collection('coachScheduleBlocks').where('schoolId', '==', schoolId).get(),
   ])
-  const [schoolClassesSnapshot, studentsSnapshot, requestsSnapshot, studentRecordsSnapshot] = await Promise.all([
-    adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get(),
-    adminDb.collection('schoolStudents').where('schoolId', '==', schoolId).get(),
-    adminDb.collection('schoolClassRequests').where('schoolId', '==', schoolId).get(),
-    canManage
-      ? adminDb.collection('agendaStudentRecords').where('schoolId', '==', schoolId).get()
-      : Promise.resolve(null),
-  ])
+  const [schoolClassesSnapshot, studentsSnapshot, requestsSnapshot, studentRecordsSnapshot] =
+    await Promise.all([
+      adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get(),
+      adminDb.collection('schoolStudents').where('schoolId', '==', schoolId).get(),
+      adminDb.collection('schoolClassRequests').where('schoolId', '==', schoolId).get(),
+      canManage
+        ? adminDb.collection('agendaStudentRecords').where('schoolId', '==', schoolId).get()
+        : Promise.resolve(null),
+    ])
   const studentRecords = new Map(
     (studentRecordsSnapshot?.docs || []).map((doc) => {
       const record = doc.data() as AgendaStudentRecord

@@ -53,7 +53,7 @@ export async function getSchoolStudentHistory(
       adminDb.collection('schoolClassOccurrences').where('schoolId', '==', student.schoolId).get(),
       adminDb.collection('schoolReviews').where('schoolId', '==', student.schoolId).get(),
       adminDb.collection('agendaStudentRecords').where('schoolId', '==', student.schoolId).get(),
-      adminDb.collection('schoolClassComments').where('schoolId', '==', student.schoolId).get(),
+      adminDb.collection('schoolStudentComments').where('schoolId', '==', student.schoolId).get(),
     ])
   const studentIds = new Set(
     [student.id, student.studentUserId, student.additionalProfileId].filter(Boolean)
@@ -65,12 +65,10 @@ export async function getSchoolStudentHistory(
     const key = `${record.sourceId}|${record.studentId}`
     if ((record.updatedAt || 0) >= (notes.get(key)?.updatedAt || 0)) notes.set(key, record)
   }
-  const sharedCommentsBySource = new Map<string, SchoolHistorySharedComment[]>()
+  const comments: SchoolHistorySharedComment[] = []
   for (const doc of commentSnapshot.docs) {
     const comment = doc.data()
     if (!studentIds.has(comment.studentId)) continue
-    const sourceKey = `${comment.sourceType}:${comment.sourceId}`
-    const comments = sharedCommentsBySource.get(sourceKey) || []
     comments.push({
       id: doc.id,
       authorId: String(comment.authorId || ''),
@@ -78,7 +76,6 @@ export async function getSchoolStudentHistory(
       text: String(comment.text || ''),
       createdAt: Number(comment.createdAt || 0),
     })
-    sharedCommentsBySource.set(sourceKey, comments)
   }
   const bookings = studentSchoolBookings(
     bookingSnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }) as Booking),
@@ -143,10 +140,6 @@ export async function getSchoolStudentHistory(
         coachIds: [booking.coachId],
         status: schoolBookingHistoryStatus(booking, timezone),
         note: includeNotes ? notes.get(`${booking.id}|${booking.athleteId}`)?.note || '' : '',
-        sharedComments:
-          sharedCommentsBySource.get(
-            `${booking.schoolClassId ? 'class' : 'booking'}:${booking.schoolClassId || booking.id}`
-          ) || [],
         evaluations,
       } satisfies SchoolHistoryClass
     })
@@ -170,7 +163,6 @@ export async function getSchoolStudentHistory(
         timezone
       ),
       note: includeNotes ? notes.get(`${item.id}|${student.id}`)?.note || '' : '',
-      sharedComments: sharedCommentsBySource.get(`class:${item.id}`) || [],
       evaluations: reviews
         .filter((review) => review.occurrenceId === item.id)
         .map((review) => ({
@@ -188,18 +180,11 @@ export async function getSchoolStudentHistory(
     if (existing) {
       existing.coachIds = [...new Set([...existing.coachIds, ...detail.coachIds])]
       if (!existing.note) existing.note = detail.note
-      existing.sharedComments.push(...detail.sharedComments)
       existing.evaluations.push(...detail.evaluations)
     } else classes.push(detail)
   }
   const coachIds = [...new Set(classes.flatMap((item) => item.coachIds))]
-  const authorIds = [
-    ...new Set(
-      classes
-        .flatMap((item) => item.sharedComments.map((comment) => comment.authorId))
-        .filter(Boolean)
-    ),
-  ]
+  const authorIds = [...new Set(comments.map((comment) => comment.authorId).filter(Boolean))]
   const names = await Promise.all(
     [...new Set([...coachIds, ...authorIds])].map(async (id) => {
       const [user, profile] = await Promise.all([
@@ -210,16 +195,13 @@ export async function getSchoolStudentHistory(
     })
   )
   const coachNames = Object.fromEntries(names)
-  for (const item of classes)
-    item.sharedComments
-      .sort((a, b) => a.createdAt - b.createdAt)
-      .forEach((comment) => {
-        comment.authorName = coachNames[comment.authorId] || 'Profesor'
-      })
+  comments.sort((a, b) => a.createdAt - b.createdAt)
+  for (const comment of comments) comment.authorName = coachNames[comment.authorId] || 'Usuario'
   return {
     classes: classes.sort((a, b) =>
       `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`)
     ),
+    comments,
     coachNames,
   }
 }

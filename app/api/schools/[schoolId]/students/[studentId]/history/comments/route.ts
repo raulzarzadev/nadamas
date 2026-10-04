@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
+import { schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
@@ -15,9 +15,8 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
 
   const input = await request.json().catch(() => ({}))
   const body = input && typeof input === 'object' ? (input as Record<string, unknown>) : {}
-  const classKey = typeof body.classKey === 'string' ? body.classKey : ''
   const text = typeof body.text === 'string' ? body.text.trim() : ''
-  if (!text || text.length > 1000 || !/^(class|booking):.+/.test(classKey))
+  if (!text || text.length > 1000)
     return NextResponse.json(
       { error: 'Escribe un comentario de hasta 1000 caracteres.' },
       { status: 400 }
@@ -31,59 +30,24 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
   const studentSnapshot = directSnapshot.exists
     ? directSnapshot
     : linkedSnapshots.find((doc) => doc.data().schoolId === schoolId)
-  if (!studentSnapshot?.exists)
-    return NextResponse.json({ error: 'Alumno no encontrado.' }, { status: 404 })
-  const student = studentSnapshot.data()
-  if (student?.schoolId !== schoolId)
+  if (!studentSnapshot?.exists || studentSnapshot.data()?.schoolId !== schoolId)
     return NextResponse.json({ error: 'Alumno no encontrado.' }, { status: 404 })
 
-  const [sourceType, sourceId] = [
-    classKey.slice(0, classKey.indexOf(':')),
-    classKey.slice(classKey.indexOf(':') + 1),
-  ]
+  const student = studentSnapshot.data()
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   const isTeacher = schoolMembershipHasRole(access.membership, 'teacher')
-  const isStudent = student.studentUserId === access.caller.uid
-  let teacherIds: string[] = []
-  let belongsToStudent = false
-  if (sourceType === 'class') {
-    const source = await adminDb.collection('schoolClassOccurrences').doc(sourceId).get()
-    const occurrence = source.data() as SchoolClassOccurrence | undefined
-    if (occurrence?.schoolId === schoolId) {
-      teacherIds = occurrence.teacherIds || []
-      belongsToStudent = (occurrence.studentIds || []).includes(studentSnapshot.id)
-    }
-  } else {
-    const source = await adminDb.collection('bookings').doc(sourceId).get()
-    const booking = source.data()
-    const studentIds = [
-      studentSnapshot.id,
-      studentId,
-      student.studentUserId,
-      student.additionalProfileId,
-    ].filter((id): id is string => typeof id === 'string' && !!id)
-    if (booking?.schoolId === schoolId) {
-      teacherIds = [String(booking.coachId || '')]
-      belongsToStudent = studentIds.includes(String(booking.athleteId || ''))
-    }
-  }
-  if (!belongsToStudent)
-    return NextResponse.json({ error: 'No encontramos al alumno en esta clase.' }, { status: 404 })
-  if (!isDirector && !isStudent && (!isTeacher || !teacherIds.includes(access.caller.uid)))
-    return NextResponse.json(
-      { error: 'No tienes permiso para comentar esta clase.' },
-      { status: 403 }
-    )
+  const isStudent =
+    schoolMembershipHasRole(access.membership, 'student') &&
+    student?.studentUserId === access.caller.uid
+  if (!isDirector && !isTeacher && !isStudent)
+    return NextResponse.json({ error: 'No tienes permiso para comentar.' }, { status: 403 })
 
-  const comment = {
+  const saved = await adminDb.collection('schoolStudentComments').add({
     schoolId,
     studentId: studentSnapshot.id,
-    sourceType,
-    sourceId,
     authorId: access.caller.uid,
     text,
     createdAt: Date.now(),
-  }
-  const saved = await adminDb.collection('schoolClassComments').add(comment)
+  })
   return NextResponse.json({ ok: true, id: saved.id })
 })

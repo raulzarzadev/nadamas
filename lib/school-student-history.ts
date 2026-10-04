@@ -30,12 +30,12 @@ export interface SchoolHistoryClass {
   coachIds: string[]
   status: 'taken' | 'scheduled' | 'cancelled' | 'absent' | 'unconfirmed'
   note: string
-  sharedComments: SchoolHistorySharedComment[]
   evaluations: SchoolHistoryEvaluation[]
 }
 
 export interface SchoolStudentHistory {
   classes: SchoolHistoryClass[]
+  comments: SchoolHistorySharedComment[]
   coachNames: Record<string, string>
 }
 

@@ -22,8 +22,6 @@ interface CoachInfo {
   avatarUrl: string | null
 }
 
-type BookingWithSharedComments = Booking & { sharedComments?: SchoolHistorySharedComment[] }
-
 const STATUS_STYLE: Record<string, { label: string; className: string }> = {
   confirmed: {
     label: 'Confirmada',
@@ -72,13 +70,11 @@ function BookingGroupRow({
   coach,
   onCancel,
   onEvaluate,
-  onComment,
 }: {
-  bookings: BookingWithSharedComments[]
+  bookings: Booking[]
   coach?: CoachInfo
-  onCancel?: (booking: BookingWithSharedComments) => void
-  onEvaluate?: (booking: BookingWithSharedComments) => void
-  onComment?: (booking: BookingWithSharedComments) => void
+  onCancel?: (booking: Booking) => void
+  onEvaluate?: (booking: Booking) => void
 }) {
   const booking = bookings[0]
   const terminology = useSchoolTerminology()
@@ -153,28 +149,6 @@ function BookingGroupRow({
                       {item.evaluation ? 'Editar evaluación' : 'Evaluar'}
                     </button>
                   )}
-                  {onComment && item.schoolId && (
-                    <button
-                      type="button"
-                      onClick={() => onComment(item)}
-                      aria-label={`Escribir comentario sobre la clase del ${dayLabel(item)}`}
-                      title="Escribir comentario"
-                      className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-[var(--c-ocean)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                    >
-                      <FiEdit3 aria-hidden="true" />
-                    </button>
-                  )}
-                  {item.sharedComments?.map((comment) => (
-                    <p
-                      key={comment.id}
-                      className="basis-full whitespace-pre-wrap pl-1 text-xs text-[var(--c-text-2)]"
-                    >
-                      <span className="font-semibold text-[var(--c-ocean)]">
-                        Comentario de {comment.authorName}:{' '}
-                      </span>
-                      {comment.text}
-                    </p>
-                  ))}
                 </li>
               )
             })}
@@ -206,12 +180,10 @@ function PastBookings({
   bookings,
   coaches,
   onEvaluate,
-  onComment,
 }: {
-  bookings: BookingWithSharedComments[]
+  bookings: Booking[]
   coaches: Record<string, CoachInfo>
-  onEvaluate: (booking: BookingWithSharedComments) => void
-  onComment: (booking: BookingWithSharedComments) => void
+  onEvaluate: (booking: Booking) => void
 }) {
   const [open, setOpen] = useState(false)
 
@@ -242,7 +214,6 @@ function PastBookings({
               bookings={group}
               coach={coaches[group[0].coachId]}
               onEvaluate={onEvaluate}
-              onComment={onComment}
             />
           ))}
         </ul>
@@ -256,7 +227,7 @@ export default function AthleteBookingsOverview() {
   const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
   const [evaluationSaved, setEvaluationSaved] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
-  const [bookings, setBookings] = useState<BookingWithSharedComments[] | undefined>(undefined)
+  const [bookings, setBookings] = useState<Booking[] | undefined>(undefined)
   const [coaches, setCoaches] = useState<Record<string, CoachInfo>>({})
   const { selectedId: selectedSchoolId } = useSchoolSelection({
     includePersonal: true,
@@ -265,7 +236,8 @@ export default function AthleteBookingsOverview() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [toCancel, setToCancel] = useState<Booking | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [commentBooking, setCommentBooking] = useState<BookingWithSharedComments | null>(null)
+  const [studentComments, setStudentComments] = useState<SchoolHistorySharedComment[]>([])
+  const [commentOpen, setCommentOpen] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [commentBusy, setCommentBusy] = useState(false)
   const [commentError, setCommentError] = useState(false)
@@ -277,39 +249,35 @@ export default function AthleteBookingsOverview() {
       const payload = (await response.json()) as { bookings: Booking[] }
       const list = payload.bookings || []
       const linkedStudentId = auth.currentUser?.uid
-      const schoolIds = [...new Set(list.map((booking) => booking.schoolId).filter(Boolean))]
-      const historyEntries = await Promise.all(
+      const schoolIds = [
+        ...new Set(
+          [...list.map((booking) => booking.schoolId), selectedSchoolId].filter(
+            (id): id is string => typeof id === 'string' && !!id
+          )
+        ),
+      ]
+      const histories = await Promise.all(
         linkedStudentId
           ? schoolIds.map(async (schoolId) => {
               try {
                 const historyResponse = await getAuthed(
                   `/api/schools/${encodeURIComponent(schoolId as string)}/students/${encodeURIComponent(linkedStudentId)}/history`
                 )
-                const history = (await historyResponse.json()) as {
-                  classes?: Array<{ id: string; sharedComments?: SchoolHistorySharedComment[] }>
-                }
                 if (!historyResponse.ok) return []
-                return history.classes || []
+                const history = (await historyResponse.json()) as {
+                  comments?: SchoolHistorySharedComment[]
+                }
+                return history.comments || []
               } catch {
                 return []
               }
             })
           : []
       )
-      const commentsByClass = new Map(
-        historyEntries
-          .flat()
-          .map((historyClass) => [historyClass.id, historyClass.sharedComments || []])
-      )
-      const bookingsWithComments: BookingWithSharedComments[] = list.map((booking) => ({
-        ...booking,
-        sharedComments: commentsByClass.get(
-          booking.schoolClassId ? `class:${booking.schoolClassId}` : `booking:${booking.id}`
-        ),
-      }))
-      setBookings(bookingsWithComments)
+      setStudentComments(histories.flat().sort((a, b) => a.createdAt - b.createdAt))
+      setBookings(list)
 
-      const coachIds = [...new Set(bookingsWithComments.map((b) => b.coachId))]
+      const coachIds = [...new Set(list.map((b) => b.coachId))]
       const entries = await Promise.all(
         coachIds.map(async (coachId) => {
           try {
@@ -328,7 +296,7 @@ export default function AthleteBookingsOverview() {
       setBookings([])
       setError(GENERIC_USER_ERROR)
     }
-  }, [])
+  }, [selectedSchoolId])
 
   useEffect(() => {
     void load()
@@ -353,7 +321,7 @@ export default function AthleteBookingsOverview() {
   }
 
   async function saveSharedComment() {
-    if (!commentBooking?.schoolId || !commentText.trim() || commentBusy) return
+    if (!selectedSchoolId || !commentText.trim() || commentBusy) return
     const studentId = auth.currentUser?.uid
     if (!studentId) {
       setCommentError(true)
@@ -363,15 +331,10 @@ export default function AthleteBookingsOverview() {
     setCommentError(false)
     try {
       await postAuthed(
-        `/api/schools/${encodeURIComponent(commentBooking.schoolId)}/students/${encodeURIComponent(studentId)}/history/comments`,
-        {
-          classKey: commentBooking.schoolClassId
-            ? `class:${commentBooking.schoolClassId}`
-            : `booking:${commentBooking.id}`,
-          text: commentText.trim(),
-        }
+        `/api/schools/${encodeURIComponent(selectedSchoolId)}/students/${encodeURIComponent(studentId)}/history/comments`,
+        { text: commentText.trim() }
       )
-      setCommentBooking(null)
+      setCommentOpen(false)
       setCommentText('')
       await load()
     } catch {
@@ -399,17 +362,44 @@ export default function AthleteBookingsOverview() {
             </p>
           )}
         </div>
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          aria-controls="class-calendar-subscription"
-          onClick={() => setCalendarOpen(true)}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-        >
-          <FiCalendar aria-hidden="true" />
-          Suscribirme al calendario
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {selectedSchoolId && (
+            <button
+              type="button"
+              onClick={() => setCommentOpen(true)}
+              aria-label="Escribir comentario sobre ti"
+              title="Escribir comentario"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-ocean)] text-lg text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+            >
+              <FiEdit3 aria-hidden="true" />
+            </button>
+          )}
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="class-calendar-subscription"
+            onClick={() => setCalendarOpen(true)}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+          >
+            <FiCalendar aria-hidden="true" />
+            Suscribirme al calendario
+          </button>
+        </div>
       </header>
+
+      {studentComments.length > 0 && (
+        <section className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-4">
+          <h2 className="font-bold text-[var(--c-ocean)]">Comentarios sobre ti</h2>
+          <ul className="mt-2 grid gap-2">
+            {studentComments.map((comment) => (
+              <li key={comment.id} className="text-sm text-[var(--c-text-2)]">
+                <span className="font-semibold text-[var(--c-ocean)]">{comment.authorName}: </span>
+                <span className="whitespace-pre-wrap">{comment.text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Sheet
         open={calendarOpen}
@@ -472,7 +462,6 @@ export default function AthleteBookingsOverview() {
                   bookings={group}
                   coach={coaches[group[0].coachId]}
                   onCancel={setToCancel}
-                  onComment={setCommentBooking}
                 />
               ))}
             </ul>
@@ -485,7 +474,6 @@ export default function AthleteBookingsOverview() {
             <PastBookings
               bookings={pastBookings}
               coaches={coaches}
-              onComment={setCommentBooking}
               onEvaluate={(booking) => {
                 setEvaluationSaved(false)
                 setToEvaluate(booking)
@@ -522,18 +510,15 @@ export default function AthleteBookingsOverview() {
         />
       )}
       <Sheet
-        open={!!commentBooking}
-        onClose={() => setCommentBooking(null)}
-        label="Escribir comentario de clase"
+        open={commentOpen}
+        onClose={() => setCommentOpen(false)}
+        label="Escribir comentario sobre ti"
         keyboardAware
       >
-        {commentBooking && (
+        {commentOpen && (
           <div className="space-y-4">
             <div>
-              <h2 className="text-xl font-bold text-[var(--c-ocean)]">Comentario compartido</h2>
-              <p className="mt-1 text-sm text-[var(--c-text-2)]">
-                {dayLabel(commentBooking)} · {modalityLabel(commentBooking)}
-              </p>
+              <h2 className="text-xl font-bold text-[var(--c-ocean)]">Comentario sobre ti</h2>
               <p className="mt-2 text-sm text-[var(--c-text-2)]">
                 Tu comentario podrán verlo tú y tus profesores.
               </p>
@@ -546,7 +531,7 @@ export default function AthleteBookingsOverview() {
                 value={commentText}
                 onChange={(event) => setCommentText(event.currentTarget.value)}
                 disabled={commentBusy}
-                placeholder="Escribe un comentario sobre esta clase…"
+                placeholder="Escribe un comentario sobre ti…"
                 className="w-full resize-y rounded-[var(--r-sm)] border border-[var(--c-border)] p-3 text-sm font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
               />
             </label>

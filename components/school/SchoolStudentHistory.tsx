@@ -73,7 +73,6 @@ export default function SchoolStudentHistory({
       <SchoolStudentCommentModal
         schoolId={schoolId}
         student={student}
-        classes={history.classes}
         onClose={() => setCommentOpen(false)}
         onSaved={() => setAttempt((value) => value + 1)}
       />
@@ -99,7 +98,7 @@ export default function SchoolStudentHistory({
           <button
             type="button"
             onClick={() => setCommentOpen(true)}
-            disabled={!history?.classes.length}
+            disabled={!history}
             aria-label="Escribir comentario sobre una clase"
             title="Escribir comentario"
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-40"
@@ -124,6 +123,19 @@ export default function SchoolStudentHistory({
           </p>
         ) : (
           <>
+            {history.comments.length > 0 && (
+              <section className="mt-5 rounded-[var(--r-sm)] border border-(--c-border) bg-(--c-surface) p-4">
+                <h3 className="font-bold text-(--c-ocean)">Comentarios sobre {student.name}</h3>
+                <ul className="mt-2 grid gap-2">
+                  {history.comments.map((comment) => (
+                    <li key={comment.id} className="text-sm text-(--c-text-2)">
+                      <span className="font-semibold text-(--c-ocean)">{comment.authorName}: </span>
+                      <span className="whitespace-pre-wrap">{comment.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <p className="mt-5 font-semibold text-(--c-ocean)">
               {taken} {taken === 1 ? 'clase tomada' : 'clases tomadas'} · {coachIds.length}{' '}
               {coachIds.length === 1 ? coachSingular : coachPlural}
@@ -226,17 +238,6 @@ export default function SchoolStudentHistory({
                         ) : (
                           <p className="text-xs text-(--c-text-2)">Sin comentarios registrados.</p>
                         )}
-                        {item.sharedComments?.map((comment) => (
-                          <p
-                            key={comment.id}
-                            className="mt-2 whitespace-pre-wrap text-sm text-(--c-text-2)"
-                          >
-                            <span className="font-semibold text-(--c-ocean)">
-                              Comentario compartido · {comment.authorName}:
-                            </span>{' '}
-                            {comment.text}
-                          </p>
-                        ))}
                         {hasMore && (
                           <button
                             type="button"
@@ -270,18 +271,15 @@ export default function SchoolStudentHistory({
 function SchoolStudentCommentModal({
   schoolId,
   student,
-  classes,
   onClose,
   onSaved,
 }: {
   schoolId: string
   student: SchoolStudent
-  classes: SchoolHistoryClass[]
   onClose: () => void
   onSaved: () => void
 }) {
   const [text, setText] = useState('')
-  const [classKey, setClassKey] = useState(classes[0]?.id || '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
 
@@ -292,7 +290,7 @@ function SchoolStudentCommentModal({
     try {
       await postAuthed(
         `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(student.id)}/history/comments`,
-        { classKey, text: text.trim() }
+        { text: text.trim() }
       )
       onSaved()
       onClose()
@@ -307,32 +305,12 @@ function SchoolStudentCommentModal({
     <Sheet open onClose={onClose} label="Agregar comentario compartido" keyboardAware>
       <div className="space-y-4">
         <div>
-          <h2 className="text-xl font-bold text-(--c-ocean)">Comentario compartido</h2>
+          <h2 className="text-xl font-bold text-(--c-ocean)">Comentario sobre el alumno</h2>
           <p className="mt-1 text-sm text-(--c-text-2)">{student.name}</p>
           <p className="mt-2 text-sm text-(--c-text-2)">
             Este comentario podrán verlo el alumno y sus profesores.
           </p>
         </div>
-        <label className="flex flex-col gap-2 text-sm font-semibold text-(--c-ocean)">
-          Clase
-          <select
-            value={classKey}
-            onChange={(event) => setClassKey(event.currentTarget.value)}
-            disabled={busy}
-            className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-          >
-            {classes.map((item) => (
-              <option key={item.id} value={item.id}>
-                {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}{' '}
-                · {item.title}
-              </option>
-            ))}
-          </select>
-        </label>
         <label className="flex flex-col gap-2 text-sm font-semibold text-(--c-ocean)">
           Comentario
           <textarea
@@ -341,7 +319,7 @@ function SchoolStudentCommentModal({
             value={text}
             onChange={(event) => setText(event.currentTarget.value)}
             disabled={busy}
-            placeholder="Escribe un comentario sobre esta clase…"
+            placeholder="Escribe un comentario sobre el alumno…"
             className="w-full resize-y rounded-[var(--r-sm)] border border-(--c-border) p-3 text-sm font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
           />
         </label>

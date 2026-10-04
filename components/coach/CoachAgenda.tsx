@@ -814,7 +814,7 @@ export default function CoachAgenda({
       date: booking.date,
       startTime: booking.startTime,
       endTime: booking.endTime,
-      locationName: booking.locationName || 'Clase escolar',
+      locationName: booking.locationName || 'Clase de natación',
       groupType: 'grupal',
     })
     setSchoolClassToEdit(null)

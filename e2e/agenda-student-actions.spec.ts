@@ -175,30 +175,27 @@ test('la ficha grupal edita y mueve solo al alumno elegido', async ({ request })
 
     const commentResponse = await request.post(
       `/api/schools/${schoolId}/students/${studentA}/history/comments`,
-      { headers, data: { classKey: `class:${sourceId}`, text: 'Practicó respiración bilateral.' } }
+      { headers, data: { text: 'Practicó respiración bilateral.' } }
     )
     expect(commentResponse.status(), await commentResponse.text()).toBe(200)
     const commentId = (await commentResponse.json()).id as string
-    created.push(['schoolClassComments', commentId])
+    created.push(['schoolStudentComments', commentId])
     const studentCommentResponse = await request.post(
       `/api/schools/${schoolId}/students/${studentAccount.localId}/history/comments`,
       {
         headers: { authorization: `Bearer ${studentAccount.idToken}` },
-        data: { classKey: `class:${sourceId}`, text: 'Me gustó practicar respiración.' },
+        data: { text: 'Me gustó practicar respiración.' },
       }
     )
     expect(studentCommentResponse.status(), await studentCommentResponse.text()).toBe(200)
-    created.push(['schoolClassComments', (await studentCommentResponse.json()).id as string])
+    created.push(['schoolStudentComments', (await studentCommentResponse.json()).id as string])
     const studentHistory = await request.get(
       `/api/schools/${schoolId}/students/${studentAccount.localId}/history`,
       { headers: { authorization: `Bearer ${studentAccount.idToken}` } }
     )
     expect(studentHistory.status(), await studentHistory.text()).toBe(200)
     const studentHistoryPayload = await studentHistory.json()
-    expect(
-      studentHistoryPayload.classes.find((item: { id: string }) => item.id === `class:${sourceId}`)
-        ?.sharedComments
-    ).toEqual([
+    expect(studentHistoryPayload.comments).toEqual([
       expect.objectContaining({ text: 'Practicó respiración bilateral.' }),
       expect.objectContaining({ text: 'Me gustó practicar respiración.' }),
     ])
