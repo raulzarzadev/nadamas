@@ -1,8 +1,9 @@
 'use client'
 
+import InfoModal from '@comps/ui/info-modal'
 import Sheet from '@comps/ui/sheet'
 import { useEffect, useState } from 'react'
-import { FiChevronLeft, FiChevronRight, FiPlus, FiX } from 'react-icons/fi'
+import { FiChevronLeft, FiChevronRight, FiInfo, FiPlus, FiX } from 'react-icons/fi'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import {
   addDays,
@@ -41,6 +42,9 @@ export default function ScheduleHoursEditor({
   selectedCoachId,
   onCoachChange,
   onWeekChange,
+  targetOptions = [],
+  selectedTarget,
+  onTargetChange,
 }: {
   defaultDate?: string
   existingTimesByDate: Record<string, string[]>
@@ -52,6 +56,10 @@ export default function ScheduleHoursEditor({
   selectedCoachId?: string
   onCoachChange?: (coachId: string) => void
   onWeekChange?: (weekStart: Date) => void
+  /** Destination selector (personal vs school): hours are saved to the selected target. */
+  targetOptions?: Array<{ id: string; label: string }>
+  selectedTarget?: string
+  onTargetChange?: (target: string) => void
 }) {
   const terminology = useSchoolTerminology()
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
@@ -61,6 +69,7 @@ export default function ScheduleHoursEditor({
   const [dates, setDates] = useState<Set<string>>(() => new Set(defaultDate ? [defaultDate] : []))
   const [times, setTimes] = useState<Set<string>>(() => new Set())
   const [hoursModalOpen, setHoursModalOpen] = useState(false)
+  const [infoOpen, setInfoOpen] = useState(false)
 
   useEffect(() => {
     if (mode !== 'remove') return
@@ -89,12 +98,61 @@ export default function ScheduleHoursEditor({
       <div className="flex min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),44rem)]">
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-3 sm:px-0 sm:pb-0">
           <div>
-            <h3 className="text-xl font-bold text-[var(--c-ocean)]">Editar horas</h3>
-            <p className="mt-1 text-sm text-[var(--c-text-2)]">
-              Selecciona días y horas, luego elige si las agregas o las quitas. Puedes seleccionar
-              días de otras semanas para repetir los mismos horarios.
-            </p>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold text-[var(--c-ocean)]">Editar horas</h3>
+              <button
+                type="button"
+                onClick={() => setInfoOpen((open) => !open)}
+                aria-expanded={infoOpen}
+                aria-label="Cómo editar horas"
+                title="Más información"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-lg text-[var(--c-aqua-strong)] transition hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+              >
+                <FiInfo aria-hidden="true" />
+              </button>
+            </div>
+            <InfoModal open={infoOpen} onClose={() => setInfoOpen(false)} label="Cómo editar horas">
+              <p>
+                Selecciona días y horas, luego elige si las agregas o las quitas. Puedes seleccionar
+                días de otras semanas para repetir los mismos horarios.
+              </p>
+            </InfoModal>
           </div>
+
+          {targetOptions.length > 0 && onTargetChange && (
+            <fieldset className="flex flex-col gap-2">
+              <legend className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
+                Dónde se agregan
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {targetOptions.map((option) => {
+                  const selected = option.id === selectedTarget
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={selected}
+                      disabled={busy}
+                      onClick={() => {
+                        if (!selected) onTargetChange(option.id)
+                      }}
+                      className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 ${
+                        selected
+                          ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                          : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-[var(--c-text-2)]">
+                Los horarios se guardarán en{' '}
+                {targetOptions.find((option) => option.id === selectedTarget)?.label || 'Míos'}.
+              </p>
+            </fieldset>
+          )}
 
           {coachOptions.length > 0 && (
             <fieldset className="flex flex-col gap-2">

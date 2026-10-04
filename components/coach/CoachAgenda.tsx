@@ -120,6 +120,9 @@ export default function CoachAgenda({
   initialDate,
   focusClassId,
   focusTime,
+  scheduleTarget,
+  scheduleTargetOptions,
+  onScheduleTargetChange,
 }: {
   coachId?: string
   schoolId?: string
@@ -141,6 +144,10 @@ export default function CoachAgenda({
   focusClassId?: string
   /** Deep link target hour (HH:MM) of the assigned class. */
   focusTime?: string
+  /** Destination selector shown inside the hours editor (personal or school id). */
+  scheduleTarget?: string
+  scheduleTargetOptions?: Array<{ id: string; label: string }>
+  onScheduleTargetChange?: (target: string) => void
 }) {
   // When an admin opens another coach's agenda, `coachId` targets that coach and
   // booking actions (add/cancel students) are hidden — admin mode manages
@@ -2168,6 +2175,9 @@ export default function CoachAgenda({
           onWeekChange={(weekStart) => setSelectedDate(dateKey(weekStart))}
           onClose={closeScheduleEditor}
           onSubmit={applyHours}
+          targetOptions={scheduleTargetOptions}
+          selectedTarget={scheduleTarget}
+          onTargetChange={onScheduleTargetChange}
         />
       )}
 
