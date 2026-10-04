@@ -178,7 +178,7 @@ export default function AgendaAddStudentModal({
               onClick={onClose}
               className="min-h-11 rounded-full px-4 font-semibold text-[var(--c-text-2)] hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
             >
-              Cancelar
+              Cerrar
             </button>
           </div>
         </div>
