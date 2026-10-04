@@ -46,6 +46,18 @@ export default function AgendaStudentActions({
       label={`Ficha de ${student.studentName}`}
       closeDisabled={busy}
       onClose={onClose}
+      footer={
+        <div className=" border-t border-[var(--c-border)] bg-white px-4 py-3 sm:px-0">
+          <button
+            type="button"
+            onClick={() => onSave(attended, note)}
+            disabled={busy}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+          >
+            <FiCheck aria-hidden="true" /> {busy ? 'Guardando…' : 'Guardar asistencia y nota'}
+          </button>
+        </div>
+      }
     >
       <div className="flex flex-col gap-5 px-4 pb-4 sm:px-0">
         <div>
@@ -137,17 +149,6 @@ export default function AgendaStudentActions({
             <FiTrash2 aria-hidden="true" /> Eliminar de la clase
           </button>
         )}
-
-        <div className="sticky bottom-0 -mx-4 border-t border-[var(--c-border)] bg-white px-4 py-3 sm:mx-0 sm:px-0">
-          <button
-            type="button"
-            onClick={() => onSave(attended, note)}
-            disabled={busy}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
-          >
-            <FiCheck aria-hidden="true" /> {busy ? 'Guardando…' : 'Guardar asistencia y nota'}
-          </button>
-        </div>
       </div>
     </Sheet>
   )

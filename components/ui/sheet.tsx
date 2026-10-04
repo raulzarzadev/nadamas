@@ -9,10 +9,29 @@ import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiX } from 'react-icons/fi'
 
+/**
+ * Shared responsive modal. On mobile it opens from the bottom and closes via
+ * the handle, downward drag, backdrop or Escape; desktop uses a centered dialog.
+ *
+ * Usage for agents:
+ * - Height follows content; never add h-screen, min-h-screen, viewport min-height
+ *   or flex-1 spacers to children. max-height belongs to Sheet, not the form.
+ * - Pass primary actions through `footer` to keep them outside the scrolling
+ *   body and above the keyboard/safe area. Do not use fixed/sticky form footers.
+ * - `fullBleedMobile` removes horizontal padding only; it is NOT fullscreen.
+ *   Give that variant's content/footer px-4 sm:px-0 as needed.
+ * - `showFooterClose={false}` requires a visible cancel/close action of your own.
+ * - Use `closeDisabled` while a mutation must finish, and `label` for an
+ *   accessible dialog name. Keep form fields labeled and avoid nested scroll
+ *   regions unless a long list specifically needs its own height limit.
+ * - Viewport tracking, focus trapping/restoration, motion and scrolling are
+ *   centralized here. Extend this component instead of duplicating modal logic.
+ */
 export default function Sheet({
   open,
   onClose,
   children,
+  footer,
   label,
   keyboardAware = false,
   fullBleedMobile = false,
@@ -24,6 +43,7 @@ export default function Sheet({
   open: boolean
   onClose: () => void
   children: ReactNode
+  footer?: ReactNode
   label?: string
   keyboardAware?: boolean
   fullBleedMobile?: boolean
@@ -103,12 +123,9 @@ export default function Sheet({
     xl: 'sm:max-w-xl',
     '2xl': 'sm:max-w-2xl',
   }[size]
-  const sheetAnimation =
-    fullBleedMobile || !keyboardAware
-      ? closing
-        ? '[animation:sheet-slide-down_0.3s_var(--ease-expo)] motion-reduce:[animation:none]'
-        : '[animation:sheet-slide-up_0.3s_var(--ease-expo)] motion-reduce:[animation:none]'
-      : ''
+  const sheetAnimation = closing
+    ? '[animation:sheet-slide-down_0.3s_var(--ease-expo)] motion-reduce:[animation:none]'
+    : '[animation:sheet-slide-up_0.3s_var(--ease-expo)] motion-reduce:[animation:none]'
   const viewportStyle = modalViewportStyle(keyboardViewport)
 
   return (
@@ -122,7 +139,7 @@ export default function Sheet({
         keyboardAware
           ? fullBleedMobile
             ? 'items-end overflow-y-auto p-0 sm:items-center sm:p-4'
-            : 'items-center overflow-y-auto p-4'
+            : 'items-end overflow-y-auto p-4 sm:items-center'
           : 'items-end sm:items-center sm:p-4'
       }`}
       style={viewportStyle}
@@ -178,15 +195,13 @@ export default function Sheet({
       <div
         ref={sheetRef}
         style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
-        className={`relative w-full bg-white shadow-[0_-20px_60px_-30px_rgba(10,37,64,0.5)] ${
-          showFooterClose ? 'flex flex-col' : ''
-        } ${isDragging ? 'transition-none' : ''} ${
+        className={`relative w-full bg-white shadow-[0_-20px_60px_-30px_rgba(10,37,64,0.5)] flex min-h-0 flex-col ${isDragging ? 'transition-none' : ''} ${
           fullBleedMobile
-            ? `min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-y-auto rounded-t-[26px] rounded-b-none px-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sheetAnimation} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-2 sm:pt-5'} sm:min-h-0 sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:px-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${desktopWidth} sm:[animation:none]`
+            ? `max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-hidden rounded-t-[26px] rounded-b-none px-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sheetAnimation} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-2 sm:pt-5'} sm:min-h-0 sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:px-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${desktopWidth} sm:[animation:none]`
             : `px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-5'} ${
                 keyboardAware
-                  ? `max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] overflow-y-auto rounded-[26px] ${desktopWidth}`
-                  : `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-y-auto rounded-t-[26px] ${desktopWidth} sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:[animation:none]`
+                  ? `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] overflow-hidden rounded-[26px] ${desktopWidth} sm:[animation:none]`
+                  : `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-hidden rounded-t-[26px] ${desktopWidth} sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:[animation:none]`
               }`
         }`}
       >
@@ -212,7 +227,7 @@ export default function Sheet({
               setDragY(0)
             }
           }}
-          className="sticky top-0 z-10 -mx-0 flex touch-none justify-center bg-white pt-1 pb-1 sm:hidden"
+          className="relative z-10 shrink-0 -mx-0 flex touch-none justify-center bg-white pt-1 pb-1 sm:hidden"
         >
           <button
             type="button"
@@ -229,13 +244,14 @@ export default function Sheet({
             />
           </button>
         </div>
-        {children}
+        <div className="min-h-0 overflow-y-auto overscroll-contain">{children}</div>
+        {footer && <div className="shrink-0 bg-white">{footer}</div>}
         {showFooterClose && (
           <button
             type="button"
             disabled={closeDisabled}
             onClick={requestClose}
-            className="mt-auto min-h-11 self-center px-4 py-3 text-sm font-medium text-(--c-text-2) underline-offset-4 transition-colors hover:text-(--c-ocean) hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-2 min-h-11 shrink-0 self-center px-4 py-3 text-sm font-medium text-(--c-text-2) underline-offset-4 transition-colors hover:text-(--c-ocean) hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cerrar
           </button>

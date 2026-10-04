@@ -74,5 +74,14 @@ export function keepFocusedFieldVisible(dialog: HTMLElement) {
     } else if (field.bottom > visible.bottom - margin) {
       container.scrollTop += field.bottom - visible.bottom + margin
     }
+
+    const adjustedField = active.getBoundingClientRect()
+    const adjustedVisible = container.getBoundingClientRect()
+    if (
+      adjustedField.top >= adjustedVisible.top + margin &&
+      adjustedField.bottom <= adjustedVisible.bottom - margin
+    ) {
+      break
+    }
   }
 }

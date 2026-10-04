@@ -159,17 +159,41 @@ export default function AgendaAddStudentModal({
       label={`Agregar ${participantPlural}`}
       keyboardAware
       fullBleedMobile
+      showFooterClose={false}
+      footer={
+        <div className="shrink-0 border-t border-[var(--c-border)] bg-white px-4 pb-3 pt-3 sm:px-0 sm:pb-0">
+          <div className="flex flex-col gap-2 sm:flex-row-reverse">
+            <button
+              type="button"
+              disabled={!canSubmit}
+              onClick={submit}
+              className="min-h-12 rounded-full bg-[var(--c-aqua)] px-4 font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:bg-slate-400 disabled:opacity-100"
+            >
+              {totalSelected > 1
+                ? `Agregar ${totalSelected} ${participantPlural}`
+                : `Agregar ${participantSingular}`}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-11 rounded-full px-4 font-semibold text-[var(--c-text-2)] hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      }
     >
-      <div className="flex min-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden sm:min-h-0 sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),38rem)]">
+      <div className="flex w-full flex-col">
         <div className="shrink-0 px-4 pt-3 sm:px-0 sm:pt-0">
           <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar {participantPlural}</h3>
           <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-0">
+        <div className="flex flex-col px-4 py-4 sm:px-0">
           {error && <p className="mb-3 text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
 
-          <div className="flex min-h-0 flex-1 flex-col gap-3">
+          <div className="flex flex-col gap-3">
             <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">
               Nombre de {participantSingular}
               <span className="relative">
@@ -210,11 +234,11 @@ export default function AgendaAddStudentModal({
             )}
 
             {students === undefined ? (
-              <div className="flex min-h-40 flex-1 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)] sm:min-h-56">
+              <div className="flex min-h-40 items-center justify-center rounded-[var(--r-sm)] border border-[var(--c-border)] text-sm text-[var(--c-text-2)]">
                 Cargando {participantPlural}...
               </div>
             ) : (
-              <div className="flex min-h-40 flex-1 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)] sm:min-h-56">
+              <div className="flex max-h-[min(40dvh,20rem)] min-h-0 flex-col overflow-y-auto rounded-[var(--r-sm)] border border-[var(--c-border)] sm:max-h-72">
                 {matches.map((student) => {
                   const taken = takenIds.has(student.athleteId)
                   const active = selectedIds.has(student.athleteId)
@@ -299,28 +323,6 @@ export default function AgendaAddStudentModal({
                 )}
               </div>
             )}
-          </div>
-        </div>
-
-        <div className="shrink-0 border-t border-[var(--c-border)] bg-white px-4 pb-3 pt-3 sm:px-0 sm:pb-0">
-          <div className="flex flex-col gap-2 sm:flex-row-reverse">
-            <button
-              type="button"
-              disabled={!canSubmit}
-              onClick={submit}
-              className="min-h-12 rounded-full bg-[var(--c-aqua)] px-4 font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:bg-slate-400 disabled:opacity-100"
-            >
-              {totalSelected > 1
-                ? `Agregar ${totalSelected} ${participantPlural}`
-                : `Agregar ${participantSingular}`}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="min-h-11 rounded-full px-4 font-semibold text-[var(--c-text-2)] hover:text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-            >
-              Cancelar
-            </button>
           </div>
         </div>
       </div>

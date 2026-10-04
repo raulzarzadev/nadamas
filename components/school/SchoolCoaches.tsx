@@ -176,10 +176,7 @@ export default function SchoolCoaches() {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Link
-                      href="/school/classes"
-                      onClick={() => {
-                        window.localStorage.setItem('nadamas.schoolId', selected.school.id)
-                      }}
+                      href={`/school/classes?school=${encodeURIComponent(selected.school.id)}&coach=${encodeURIComponent(teacher.id)}`}
                       className="btn btn-outline min-h-11 gap-2 text-(--c-ocean)"
                     >
                       <FiClock aria-hidden="true" /> Ver horarios

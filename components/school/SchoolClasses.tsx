@@ -40,6 +40,7 @@ export default function SchoolClasses() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
   const searchParams = useSearchParams()
   const focusSchool = searchParams.get('school')
+  const focusCoach = searchParams.get('coach')
   const focusDate = searchParams.get('date')
   const focusTime = searchParams.get('time')
   const focusClass = searchParams.get('class')
@@ -64,7 +65,7 @@ export default function SchoolClasses() {
       selectSchool(focusSchool)
     }
   }, [focusSchool, schools, selectSchool])
-  const [scheduleCoachId, setScheduleCoachId] = useState('')
+  const [scheduleCoachId, setScheduleCoachId] = useState(focusCoach || '')
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
   const [students, setStudents] = useState<SchoolStudent[]>([])
@@ -91,7 +92,7 @@ export default function SchoolClasses() {
     const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
     const isStudentAccount = schoolMembershipHasRole(selected?.membership, 'student')
     const directorId = isDirector ? selected?.membership.userId : undefined
-    if (resetSelection) setScheduleCoachId('')
+    if (resetSelection) setScheduleCoachId(focusCoach || '')
     const load = async () => {
       const [classResponse, studentResponse, teacherResponse, locationResponse] = await Promise.all(
         [
@@ -122,7 +123,14 @@ export default function SchoolClasses() {
         const nextTeachers = teacherPayload.teachers || []
         setTeachers(nextTeachers)
         setScheduleCoachId((current) => {
-          if (resetSelection) return ''
+          if (resetSelection)
+            return focusCoach &&
+              ((isDirector && focusCoach === directorId) ||
+                nextTeachers.some(
+                  (teacher) => teacher.id === focusCoach && teacher.status === 'active'
+                ))
+              ? focusCoach
+              : ''
           if (current === '') return current
           if (isDirector && current === directorId) return current
           if (
@@ -137,7 +145,7 @@ export default function SchoolClasses() {
       })
       .catch(() => {
         if (!active) return
-        if (resetSelection) setScheduleCoachId('')
+        if (resetSelection) setScheduleCoachId(focusCoach || '')
         setMessage('No se pudo cargar la agenda escolar.')
       })
       .finally(() => {
@@ -146,7 +154,7 @@ export default function SchoolClasses() {
     return () => {
       active = false
     }
-  }, [agendaRevision, selectedId, selected?.membership, selected?.school.bookingMode])
+  }, [agendaRevision, focusCoach, selectedId, selected?.membership, selected?.school.bookingMode])
 
   if (schoolStatus === 'loading')
     return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando clases…</div>
