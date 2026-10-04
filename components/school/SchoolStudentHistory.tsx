@@ -45,11 +45,13 @@ export default function SchoolStudentHistory({
   const [attempt, setAttempt] = useState(0)
   const [expandedComments, setExpandedComments] = useState<Set<string>>(() => new Set())
   const [commentOpen, setCommentOpen] = useState(false)
+  const [coachFilter, setCoachFilter] = useState<string | null>(null)
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt deliberately reloads the same resource after a failure.
   useEffect(() => {
     let active = true
     setHistory(null)
     setError(false)
+    setCoachFilter(null)
     getAuthed(
       `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(student.id)}/history`
     )
@@ -67,6 +69,10 @@ export default function SchoolStudentHistory({
 
   const coachIds = [...new Set(history?.classes.flatMap((item) => item.coachIds) || [])]
   const taken = history?.classes.filter((item) => item.status === 'taken').length || 0
+  const visibleClasses = coachFilter
+    ? history?.classes.filter((item) => item.coachIds.includes(coachFilter)) || []
+    : history?.classes || []
+  const filterName = coachFilter && history ? history.coachNames[coachFilter] || null : null
 
   if (commentOpen && history)
     return (
@@ -141,24 +147,53 @@ export default function SchoolStudentHistory({
               {coachIds.length === 1 ? coachSingular : coachPlural}
             </p>
             {coachIds.length > 0 && (
-              <ul
-                aria-label={`${capitalizeSchoolTerm(coachPlural)} de ${participantSingular}`}
-                className="mt-3 flex flex-wrap gap-2"
-              >
-                {coachIds.map((id) => (
-                  <li key={id} className="badge badge-outline h-auto px-3 py-2">
-                    {history.coachNames[id] || capitalizeSchoolTerm(coachSingular)}
-                  </li>
-                ))}
-              </ul>
+              <fieldset className="mt-3 flex flex-wrap gap-2">
+                <legend className="sr-only">{`Filtrar por ${capitalizeSchoolTerm(coachPlural)} de ${participantSingular}`}</legend>
+                {coachIds.map((id) => {
+                  const active = coachFilter === id
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setCoachFilter(active ? null : id)}
+                      aria-pressed={active}
+                      title={
+                        active
+                          ? `Quitar filtro de ${history.coachNames[id] || capitalizeSchoolTerm(coachSingular)}`
+                          : `Filtrar por ${history.coachNames[id] || capitalizeSchoolTerm(coachSingular)}`
+                      }
+                      className={`inline-flex min-h-11 items-center rounded-[var(--r-sm)] border px-3 py-2 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${active ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:border-(--c-aqua-strong) hover:bg-(--c-surface)'}`}
+                    >
+                      {history.coachNames[id] || capitalizeSchoolTerm(coachSingular)}
+                    </button>
+                  )
+                })}
+              </fieldset>
+            )}
+            {coachFilter && (
+              <p className="mt-3 text-sm text-(--c-text-2)">
+                Mostrando {visibleClasses.length} de {history.classes.length} clases
+                {filterName ? ` de ${filterName}` : ''}.{' '}
+                <button
+                  type="button"
+                  onClick={() => setCoachFilter(null)}
+                  className="font-semibold text-[var(--c-aqua-strong)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                >
+                  Quitar filtro
+                </button>
+              </p>
             )}
             {history.classes.length === 0 ? (
               <p className="py-8 text-center text-sm text-(--c-text-2)">
                 Esta persona todavía no tiene clases registradas en la escuela.
               </p>
+            ) : visibleClasses.length === 0 ? (
+              <p className="py-8 text-center text-sm text-(--c-text-2)">
+                No hay clases con este filtro.
+              </p>
             ) : (
               <ol className="mt-5 grid gap-2">
-                {history.classes.map((item) => {
+                {visibleClasses.map((item) => {
                   const coachNames = item.coachIds
                     .map((id) => history.coachNames[id] || capitalizeSchoolTerm(coachSingular))
                     .join(', ')
