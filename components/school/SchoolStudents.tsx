@@ -228,6 +228,8 @@ export default function SchoolStudents() {
           timezone={selected.school.timezone || 'America/Mexico_City'}
           student={historyStudent}
           canAssign={canAssignClasses}
+          isDirector={isDirector}
+          viewerId={selected.membership.userId}
           onClose={() => setHistoryStudent(null)}
         />
       )}

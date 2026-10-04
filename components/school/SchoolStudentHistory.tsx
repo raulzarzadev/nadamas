@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiEdit3, FiPlus } from 'react-icons/fi'
+import { FiClipboard, FiEdit3, FiPlus, FiUser, FiUsers } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
-import { getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { SchoolStudent } from '@/lib/school'
 import { capitalizeSchoolTerm } from '@/lib/school'
 import type {
@@ -21,24 +21,21 @@ const STATUS_LABELS: Record<SchoolHistoryClass['status'], string> = {
   unconfirmed: 'Sin confirmar',
 }
 
-function durationMinutes(startTime: string, endTime: string) {
-  const [startHour, startMinute] = startTime.split(':').map(Number)
-  const [endHour, endMinute] = endTime.split(':').map(Number)
-  const minutes = endHour * 60 + endMinute - (startHour * 60 + startMinute)
-  return Number.isFinite(minutes) && minutes > 0 ? minutes : null
-}
-
 export default function SchoolStudentHistory({
   schoolId,
   timezone,
   student,
   canAssign,
+  isDirector,
+  viewerId,
   onClose,
 }: {
   schoolId: string
   timezone: string
   student: SchoolStudent
   canAssign: boolean
+  isDirector: boolean
+  viewerId: string
   onClose: () => void
 }) {
   const terminology = useSchoolTerminology()
@@ -48,8 +45,8 @@ export default function SchoolStudentHistory({
   const [history, setHistory] = useState<HistoryPayload | null>(null)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const [expandedComments, setExpandedComments] = useState<Set<string>>(() => new Set())
   const [commentOpen, setCommentOpen] = useState(false)
+  const [classNoteTarget, setClassNoteTarget] = useState<SchoolHistoryClass | null>(null)
   const [assignmentOpen, setAssignmentOpen] = useState(false)
   const [coachFilter, setCoachFilter] = useState<string | null>(null)
   // biome-ignore lint/correctness/useExhaustiveDependencies: attempt deliberately reloads the same resource after a failure.
@@ -79,7 +76,30 @@ export default function SchoolStudentHistory({
     ? history?.classes.filter((item) => item.coachIds.includes(coachFilter)) || []
     : history?.classes || []
   const filterName = coachFilter && history ? history.coachNames[coachFilter] || null : null
+  const upcomingClasses = visibleClasses
+    .filter((item) => item.status === 'scheduled')
+    .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+  const previousClasses = visibleClasses.filter((item) => item.status !== 'scheduled')
 
+  if (classNoteTarget && history)
+    return (
+      <SchoolStudentClassNoteModal
+        schoolId={schoolId}
+        student={student}
+        item={classNoteTarget}
+        coachId={
+          classNoteTarget.coachIds.find((id) => id === viewerId) ||
+          classNoteTarget.coachIds[0] ||
+          ''
+        }
+        directorMode={isDirector}
+        onClose={() => setClassNoteTarget(null)}
+        onSaved={() => {
+          setClassNoteTarget(null)
+          setAttempt((value) => value + 1)
+        }}
+      />
+    )
   if (commentOpen && history)
     return (
       <SchoolStudentCommentModal
@@ -137,7 +157,7 @@ export default function SchoolStudentHistory({
               title="Escribir comentario"
               className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-40"
             >
-              <FiEdit3 aria-hidden="true" />
+              <FiClipboard aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -221,111 +241,272 @@ export default function SchoolStudentHistory({
                 No hay clases con este filtro.
               </p>
             ) : (
-              <ol className="mt-5 grid gap-2">
-                {visibleClasses.map((item) => {
-                  const coachNames = item.coachIds
-                    .map((id) => history.coachNames[id] || capitalizeSchoolTerm(coachSingular))
-                    .join(', ')
-                  const date = new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
-                    day: 'numeric',
-                    month: 'short',
-                  })
-                  const duration = durationMinutes(item.startTime, item.endTime)
-                  const comments = [
-                    ...(item.note
-                      ? [{ id: 'class-note', label: 'Comentario', text: item.note }]
-                      : []),
-                    ...item.evaluations.map((evaluation) => ({
-                      id: evaluation.id,
-                      label:
-                        evaluation.direction === 'from-coach'
-                          ? `De ${history.coachNames[evaluation.coachId] || capitalizeSchoolTerm(coachSingular)}`
-                          : `Para ${history.coachNames[evaluation.coachId] || capitalizeSchoolTerm(coachSingular)}`,
-                      text: [
-                        evaluation.comment,
-                        evaluation.rating !== undefined ? `${evaluation.rating} / 5 estrellas` : '',
-                        evaluation.level
-                          ? `Nivel y avance: ${evaluation.level}${evaluation.result ? ` · Resultado: ${evaluation.result} / 4` : ''}`
-                          : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' · '),
-                    })),
-                  ].filter((comment) => comment.text)
-                  const expanded = expandedComments.has(item.id)
-                  const hasMore =
-                    comments.length > 1 || comments.some((comment) => comment.text.length > 130)
-                  const visibleComments = expanded ? comments : comments.slice(0, 1)
-
-                  return (
-                    <li
-                      key={item.id}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-[var(--r-sm)] border border-(--c-border) px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:gap-x-5"
-                    >
-                      <div className="flex min-w-0 items-center gap-2">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="truncate font-bold text-(--c-ocean)">
-                            {coachNames || capitalizeSchoolTerm(coachSingular)}
-                          </h3>
-                          {item.title && (
-                            <p className="truncate text-xs text-(--c-text-2)">{item.title}</p>
-                          )}
-                        </div>
-                      </div>
-                      <time dateTime={item.date} className="text-sm text-(--c-text-2)">
-                        {date}
-                      </time>
-                      {duration && (
-                        <span className="text-sm text-(--c-text-2)">{duration} min</span>
-                      )}
-                      <span className="justify-self-end text-xs font-semibold text-(--c-text-2)">
-                        {STATUS_LABELS[item.status]}
-                      </span>
-                      <div className="col-span-2 min-w-0 sm:col-span-4">
-                        {visibleComments.length ? (
-                          <div className="grid gap-1 text-sm">
-                            {visibleComments.map((comment) => {
-                              const text =
-                                !expanded && comment.text.length > 130
-                                  ? `${comment.text.slice(0, 130).trimEnd()}…`
-                                  : comment.text
-                              return (
-                                <p key={comment.id} className="min-w-0 text-(--c-text-2)">
-                                  <span className="font-semibold text-(--c-ocean)">
-                                    {comment.label}:{' '}
-                                  </span>
-                                  <span className="whitespace-pre-wrap">{text}</span>
-                                </p>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          <p className="text-xs text-(--c-text-2)">Sin comentarios registrados.</p>
-                        )}
-                        {hasMore && (
-                          <button
-                            type="button"
-                            aria-expanded={expanded}
-                            onClick={() =>
-                              setExpandedComments((current) => {
-                                const next = new Set(current)
-                                if (next.has(item.id)) next.delete(item.id)
-                                else next.add(item.id)
-                                return next
-                              })
-                            }
-                            className="mt-1 min-h-8 text-sm font-semibold text-[var(--c-aqua-strong)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-                          >
-                            Ver {expanded ? 'menos' : 'más'}
-                          </button>
-                        )}
-                      </div>
-                    </li>
-                  )
-                })}
-              </ol>
+              <>
+                {upcomingClasses.length > 0 && (
+                  <section className="mt-5">
+                    <h3 className="mb-2 font-bold text-(--c-ocean)">Próximas clases</h3>
+                    <ol className="grid gap-2">
+                      {upcomingClasses.map((item) => (
+                        <HistoryClassRow
+                          key={item.id}
+                          item={item}
+                          history={history}
+                          coachSingular={coachSingular}
+                          canEditNote={
+                            item.status !== 'cancelled' &&
+                            canAssign &&
+                            (isDirector || item.coachIds.includes(viewerId))
+                          }
+                          onEditNote={() => setClassNoteTarget(item)}
+                        />
+                      ))}
+                    </ol>
+                  </section>
+                )}
+                {previousClasses.length > 0 && (
+                  <section className="mt-5">
+                    <h3 className="mb-2 font-bold text-(--c-ocean)">Historial de clases</h3>
+                    <ol className="grid gap-2">
+                      {previousClasses.map((item) => (
+                        <HistoryClassRow
+                          key={item.id}
+                          item={item}
+                          history={history}
+                          coachSingular={coachSingular}
+                          canEditNote={
+                            item.status !== 'cancelled' &&
+                            canAssign &&
+                            (isDirector || item.coachIds.includes(viewerId))
+                          }
+                          onEditNote={() => setClassNoteTarget(item)}
+                        />
+                      ))}
+                    </ol>
+                  </section>
+                )}
+              </>
             )}
           </>
+        )}
+      </div>
+    </Sheet>
+  )
+}
+
+function HistoryClassRow({
+  item,
+  history,
+  coachSingular,
+  canEditNote,
+  onEditNote,
+}: {
+  item: SchoolHistoryClass
+  history: HistoryPayload
+  coachSingular: string
+  canEditNote: boolean
+  onEditNote: () => void
+}) {
+  const coachNames = item.coachIds
+    .map((id) => history.coachNames[id] || capitalizeSchoolTerm(coachSingular))
+    .join(', ')
+  const date = new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
+    day: 'numeric',
+    month: 'short',
+  })
+  const classType = /grup/i.test(item.title) ? 'Grupal' : 'Particular'
+  const comments = [
+    ...(item.note ? [{ id: 'class-note', label: 'Nota de clase', text: item.note }] : []),
+    ...item.evaluations.map((evaluation) => ({
+      id: evaluation.id,
+      label:
+        evaluation.direction === 'from-coach'
+          ? `De ${history.coachNames[evaluation.coachId] || capitalizeSchoolTerm(coachSingular)}`
+          : `Para ${history.coachNames[evaluation.coachId] || capitalizeSchoolTerm(coachSingular)}`,
+      text: [
+        evaluation.comment,
+        evaluation.rating !== undefined ? `${evaluation.rating} / 5 estrellas` : '',
+        evaluation.level
+          ? `Nivel y avance: ${evaluation.level}${evaluation.result ? ` · Resultado: ${evaluation.result} / 4` : ''}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    })),
+  ].filter((comment) => comment.text)
+  const [expanded, setExpanded] = useState(false)
+  const hasMore = comments.length > 1 || comments.some((comment) => comment.text.length > 130)
+  const visibleComments = expanded ? comments : comments.slice(0, 1)
+
+  return (
+    <li
+      className={`grid gap-1 rounded-[var(--r-sm)] border px-3 py-2 ${
+        classType === 'Grupal' ? 'border-blue-300' : 'border-(--c-border)'
+      }`}
+    >
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <h3 className="min-w-0 truncate text-sm font-bold text-(--c-ocean)">
+          {coachNames || capitalizeSchoolTerm(coachSingular)}
+        </h3>
+        <div className="flex shrink-0 items-center gap-2 text-xs text-(--c-text-2)">
+          <span className="whitespace-nowrap font-medium">{STATUS_LABELS[item.status]}</span>
+          <time dateTime={item.date}>{date}</time>
+          <time dateTime={`${item.date}T${item.startTime}`}>{item.startTime}</time>
+          <span role="img" title={`Clase ${classType}`} aria-label={`Clase ${classType}`}>
+            {classType === 'Grupal' ? (
+              <FiUsers aria-hidden="true" />
+            ) : (
+              <FiUser aria-hidden="true" />
+            )}
+          </span>
+        </div>
+      </div>
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          {visibleComments.length ? (
+            <div className="grid gap-0 text-xs">
+              {visibleComments.map((comment) => {
+                const text =
+                  !expanded && comment.text.length > 130
+                    ? `${comment.text.slice(0, 130).trimEnd()}…`
+                    : comment.text
+                return (
+                  <p key={comment.id} className="min-w-0 text-(--c-text-2)">
+                    <span className="font-semibold text-(--c-ocean)">{comment.label}: </span>
+                    <span className="whitespace-pre-wrap">{text}</span>
+                  </p>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-(--c-text-2)">Sin comentarios registrados.</p>
+          )}
+          {hasMore && (
+            <button
+              type="button"
+              aria-expanded={expanded}
+              onClick={() => setExpanded((value) => !value)}
+              className="min-h-6 text-xs font-semibold text-[var(--c-aqua-strong)] underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+            >
+              Ver {expanded ? 'menos' : 'más'}
+            </button>
+          )}
+        </div>
+        {canEditNote && (
+          <button
+            type="button"
+            onClick={onEditNote}
+            aria-label={`${item.note ? 'Editar' : 'Agregar'} nota de clase para ${date}`}
+            title={item.note ? 'Editar nota de clase' : 'Agregar nota de clase'}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+          >
+            <FiEdit3 aria-hidden="true" />
+          </button>
+        )}
+      </div>
+    </li>
+  )
+}
+
+function SchoolStudentClassNoteModal({
+  schoolId,
+  student,
+  item,
+  coachId,
+  directorMode,
+  onClose,
+  onSaved,
+}: {
+  schoolId: string
+  student: SchoolStudent
+  item: SchoolHistoryClass
+  coachId: string
+  directorMode: boolean
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [note, setNote] = useState(item.note)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(false)
+
+  async function saveNote() {
+    if (busy || note.length > 1000) return
+    setBusy(true)
+    setError(false)
+    try {
+      if (item.id.startsWith('class:')) {
+        const occurrenceId = item.id.slice('class:'.length)
+        await patchAuthed(
+          `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(occurrenceId)}/students/${encodeURIComponent(student.id)}`,
+          { note: note.trim() }
+        )
+      } else {
+        await patchAuthed('/api/coach/agenda/bookings', {
+          id: item.id.slice('booking:'.length),
+          schoolId,
+          ...(directorMode ? { coachId } : {}),
+          note: note.trim(),
+        })
+      }
+      onSaved()
+    } catch {
+      setError(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Sheet
+      open
+      onClose={onClose}
+      label="Nota de clase"
+      keyboardAware
+      fullBleedMobile
+      showFooterClose={false}
+      footer={
+        <div className="flex flex-col gap-2 border-t border-(--c-border) bg-white px-4 py-3 sm:flex-row-reverse sm:px-0">
+          <button
+            type="button"
+            onClick={saveNote}
+            disabled={busy || note.length > 1000}
+            className="min-h-11 rounded-full bg-(--c-aqua) px-5 text-sm font-bold text-white disabled:opacity-50"
+          >
+            {busy ? 'Guardando…' : 'Guardar nota'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="min-h-11 rounded-full px-4 font-semibold text-(--c-text-2) hover:text-(--c-ocean)"
+          >
+            Cerrar
+          </button>
+        </div>
+      }
+    >
+      <div className="grid gap-3 px-4 pb-4 sm:px-0">
+        <div>
+          <h2 className="text-xl font-bold text-(--c-ocean)">{item.title || 'Clase'}</h2>
+          <p className="mt-1 text-sm text-(--c-text-2)">
+            {student.name} · {item.date} · {item.startTime}–{item.endTime}
+          </p>
+        </div>
+        <label className="grid gap-2 text-sm font-semibold text-(--c-ocean)">
+          Nota de esta clase
+          <textarea
+            rows={5}
+            maxLength={1000}
+            value={note}
+            onChange={(event) => setNote(event.currentTarget.value)}
+            disabled={busy}
+            placeholder="Escribe una nota sobre esta clase…"
+            className="w-full resize-y rounded-[var(--r-sm)] border border-(--c-border) p-3 text-sm font-normal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-(--c-error,#b91c1c)">
+            No se pudo guardar la nota. Inténtalo de nuevo.
+          </p>
         )}
       </div>
     </Sheet>
