@@ -38,7 +38,7 @@ async function verifyCoach(request: Request) {
     return { error: NextResponse.json({ error: 'Revisa los datos de la clase.' }, { status: 400 }) }
   const schoolId = typeof input.schoolId === 'string' ? input.schoolId.trim() : ''
   const targetCoachId = typeof input.coachId === 'string' ? input.coachId.trim() : ''
-  if (targetCoachId) {
+  if (targetCoachId && targetCoachId !== authenticatedCaller.uid) {
     if (!schoolId) return { error: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
     const actor = await getSchoolMembership(schoolId, authenticatedCaller.uid)
     const target = await getSchoolMembership(schoolId, targetCoachId)

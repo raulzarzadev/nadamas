@@ -2113,6 +2113,7 @@ export default function CoachAgenda({
 
       {addStudentSlot && (
         <AgendaAddStudentModal
+          coachId={addStudentSlot.coachId}
           schoolId={addStudentSlot.schoolId || schoolId}
           allowCreate={
             !addStudentSlot.schoolClassId && addStudentSlot.coachId !== UNASSIGNED_SCHOOL_COACH_ID

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { validProfileBirthDate } from '@/lib/additional-profile'
+import type { Booking } from '@/lib/coach-booking'
 import {
   type SchoolGender,
   type SchoolInvitationStudentData,
@@ -8,6 +9,7 @@ import {
 import { coachVisibleSchoolStudentIds } from '@/lib/school-coach-students'
 import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 import { sendSchoolInvitationEmail } from '@/lib/server/emails'
+import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { listSchoolClasses } from '@/lib/server/school-classes'
@@ -41,6 +43,42 @@ export async function GET(request: Request, { params }: RouteProps) {
       ])
       const visibleIds = coachVisibleSchoolStudentIds(classes, school?.timezone || 'UTC')
       students = students.filter((student) => visibleIds.has(student.id))
+    }
+    const query = new URL(request.url).searchParams
+    if (query.get('includeAgendaStudents') === 'true' && (isDirector || isTeacher)) {
+      const coachId = query.get('coachId')?.trim() || access.caller.uid
+      if (!isDirector && coachId !== access.caller.uid)
+        return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+      const bookings = await adminDb.collection('bookings').where('coachId', '==', coachId).get()
+      const seen = new Set(students.map((student) => student.id))
+      const agendaStudents: Array<{
+        id: string
+        name: string
+        studentEmail: string
+        guardianPhone: string
+      }> = []
+      // These students were created in agenda slots, rather than the school roster.
+      // Include their history even after cancellation so they remain reusable.
+      for (const doc of bookings.docs) {
+        const booking = doc.data() as Booking
+        if (
+          booking.schoolId !== schoolId ||
+          booking.source !== 'coach' ||
+          !/^manual[:_]/.test(booking.athleteId) ||
+          seen.has(booking.athleteId)
+        )
+          continue
+        seen.add(booking.athleteId)
+        agendaStudents.push({
+          id: booking.athleteId,
+          name: booking.athleteName,
+          studentEmail: booking.athleteEmail || '',
+          guardianPhone: booking.athletePhone || '',
+        })
+      }
+      return NextResponse.json({
+        students: [...students, ...agendaStudents].sort((a, b) => a.name.localeCompare(b.name)),
+      })
     }
     return NextResponse.json({ students })
   } catch {

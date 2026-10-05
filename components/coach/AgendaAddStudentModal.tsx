@@ -24,6 +24,7 @@ export interface AddStudentPayload {
 export default function AgendaAddStudentModal({
   slotLabel,
   schoolId,
+  coachId,
   busy,
   allowCreate = true,
   takenAthleteIds = [],
@@ -33,6 +34,7 @@ export default function AgendaAddStudentModal({
 }: {
   slotLabel: string
   schoolId?: string
+  coachId?: string
   busy: boolean
   allowCreate?: boolean
   /** Students already booked in this class — cannot be added again. */
@@ -54,7 +56,14 @@ export default function AgendaAddStudentModal({
 
   useEffect(() => {
     let active = true
-    getAuthed(schoolId ? `/api/schools/${schoolId}/students` : '/api/coach/students')
+    const agendaQuery = allowCreate
+      ? `?includeAgendaStudents=true${coachId ? `&coachId=${encodeURIComponent(coachId)}` : ''}`
+      : ''
+    getAuthed(
+      schoolId
+        ? `/api/schools/${encodeURIComponent(schoolId)}/students${agendaQuery}`
+        : '/api/coach/students'
+    )
       .then((response) => response.json())
       .then(
         (data: {
@@ -97,7 +106,7 @@ export default function AgendaAddStudentModal({
     return () => {
       active = false
     }
-  }, [schoolId])
+  }, [schoolId, coachId, allowCreate])
 
   const takenIds = new Set(takenAthleteIds)
   const takenNamesNormalized = new Set(takenNames.map((name) => name.trim().toLowerCase()))
@@ -116,10 +125,11 @@ export default function AgendaAddStudentModal({
   // Only offer "create" when the typed name doesn't match an existing student,
   // someone already in the class, or a pending new name.
   const hasExactMatch =
-    matches.some((student) => student.name.trim().toLowerCase() === normalizedQuery) ||
+    students?.some((student) => student.name.trim().toLowerCase() === normalizedQuery) ||
     takenNamesNormalized.has(normalizedQuery) ||
     createNames.some((name) => name.toLowerCase() === normalizedQuery)
-  const canCreate = allowCreate && trimmedQuery.length > 1 && !hasExactMatch
+  const canCreate =
+    allowCreate && students !== undefined && !error && trimmedQuery.length > 1 && !hasExactMatch
 
   const selectedStudents = (students || []).filter((student) => selectedIds.has(student.athleteId))
   const totalSelected = selectedStudents.length + createNames.length
