@@ -301,7 +301,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     } else {
       classResult = await createSchoolClass(directClassValidation.value)
     }
-    void createNotification({
+    await createNotification({
       recipientId: student.studentUserId || caller.uid,
       actorId: caller.uid,
       actorName: caller.name || caller.email,
@@ -309,17 +309,26 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       title: 'Reserva confirmada',
       body: 'La clase se agregó directamente a tu agenda.',
       link: '/athlete/progress',
-    }).catch(() => {})
+    }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
     for (const assignedTeacherId of directClassValidation.value.teacherIds) {
-      void createNotification({
+      await createNotification({
         recipientId: assignedTeacherId,
+        classEvent: classResult.occurrences[0]
+          ? {
+              schoolId,
+              date: classResult.occurrences[0].date,
+              startTime: classResult.occurrences[0].startTime,
+              endTime: classResult.occurrences[0].endTime,
+              groupType: directClassValidation.value.type === 'group' ? 'grupal' : 'particular',
+            }
+          : undefined,
         actorId: caller.uid,
         actorName: caller.name || caller.email,
         type: 'school_class_assigned',
         title: 'Nueva clase agendada',
         body: `${student.name} reservó una clase directamente.`,
         link: '/coach/agenda',
-      }).catch(() => {})
+      }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
     }
     return NextResponse.json(
       { direct: true, pendingApproval: false, ...classResult },
@@ -344,7 +353,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     notes: typeof body.notes === 'string' ? body.notes.slice(0, 500) : '',
   })
   if (school)
-    void createNotification({
+    await createNotification({
       recipientId: school.directorId,
       actorId: caller.uid,
       actorName: caller.name || caller.email,
@@ -352,8 +361,8 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       title: 'Nueva solicitud de clase',
       body: 'Un alumno solicitó un horario para un alumno.',
       link: '/school/classes',
-    }).catch(() => {})
-  void createNotification({
+    }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
+  await createNotification({
     recipientId: teacherId,
     actorId: caller.uid,
     actorName: caller.name || caller.email,
@@ -361,7 +370,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     title: 'Reserva pendiente de aprobación',
     body: `${student.name} solicitó una clase para el ${requestRecord.startDate} a las ${requestRecord.preferredStartTime}.`,
     link: '/coach/agenda',
-  }).catch(() => {})
+  }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   return NextResponse.json({ request: requestRecord, pendingApproval: true }, { status: 201 })
 }
 

@@ -3,7 +3,9 @@ import { buildAvailableSlots } from '@/lib/coach-agenda'
 import { resolveOfferings } from '@/lib/coach-offerings'
 import { UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
+import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
@@ -11,7 +13,7 @@ interface RouteProps {
   params: Promise<{ schoolId: string }>
 }
 
-export async function POST(request: Request, { params }: RouteProps) {
+async function handlePOST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
   const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
@@ -69,6 +71,7 @@ export async function POST(request: Request, { params }: RouteProps) {
 
   const id = `${schoolId}_${date}_${startTime.replace(':', '')}`
   const ref = adminDb.collection('schoolScheduleAssignments').doc(id)
+  const previous = await ref.get()
   await ref.set(
     {
       schoolId,
@@ -85,5 +88,20 @@ export async function POST(request: Request, { params }: RouteProps) {
     },
     { merge: true }
   )
+  if (previous.data()?.coachId !== coachId) {
+    const query = new URLSearchParams({ school: schoolId, date, time: startTime })
+    await createNotification({
+      recipientId: coachId,
+      actorId: access.caller.uid,
+      actorName: access.caller.name || null,
+      type: 'school_class_assigned',
+      title: 'Nuevo horario asignado',
+      body: `La dirección te asignó el horario ${date} · ${startTime}.`,
+      link: `/coach/agenda?${query.toString()}`,
+      data: { date, startTime },
+    }).catch((error) => console.error('[SCHOOL_SLOT_NOTIFICATION]', error))
+  }
   return NextResponse.json({ ok: true })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)

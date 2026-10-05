@@ -8,6 +8,7 @@ import {
   UNASSIGNED_SCHOOL_COACH_ID,
 } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
+import { createNotification } from '@/lib/server/notifications'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
 import { legacySchoolOfferings } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
@@ -224,8 +225,27 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
             isDirector,
             access.caller.uid
           )
-      if (assigned) assignedCount += 1
-      else failedKeys.push(key)
+      if (assigned) {
+        assignedCount += 1
+        if (isDirector && slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID) {
+          const query = new URLSearchParams({
+            school: schoolId,
+            date: slot.date,
+            time: slot.startTime,
+          })
+          await createNotification({
+            recipientId: slot.coachId,
+            classEvent: { schoolId, ...slot },
+            actorId: access.caller.uid,
+            actorName: access.caller.name || null,
+            type: 'school_class_assigned',
+            title: 'Nueva clase asignada',
+            body: `${student?.name || 'Un alumno'} fue asignado a tu agenda.`,
+            link: `/coach/agenda?${query.toString()}`,
+            data: { date: slot.date, startTime: slot.startTime },
+          }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
+        }
+      } else failedKeys.push(key)
     } catch {
       failedKeys.push(key)
     }

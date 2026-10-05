@@ -58,7 +58,7 @@ async function loadWebPush(): Promise<WebPushModule | null> {
 
 export async function sendPushNotificationToUser(
   uid: string,
-  notification: Pick<AppNotification, 'title' | 'body' | 'link' | 'type' | 'data'>
+  notification: Pick<AppNotification, 'title' | 'body' | 'link' | 'type' | 'data'> & { id?: string }
 ): Promise<PushSendResult> {
   if (!uid)
     return { status: 'skipped', reason: 'missing_recipient', sent: 0, failed: 0, removed: 0 }
@@ -84,6 +84,7 @@ export async function sendPushNotificationToUser(
 
   const payload = JSON.stringify({
     title: notification.title,
+    tag: notification.id?.startsWith('class-') ? notification.id : undefined,
     body: notification.body,
     link: notification.link,
     type: notification.type,

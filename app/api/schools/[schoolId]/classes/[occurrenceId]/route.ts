@@ -238,8 +238,15 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   await adminDb.collection('schoolClassOccurrences').doc(occurrenceId).update(update)
   if (status || hasScheduleChange)
     for (const teacherId of new Set([...occurrence.teacherIds, ...(teacherIds || [])]))
-      void createNotification({
+      await createNotification({
         recipientId: teacherId,
+        classEvent: {
+          schoolId,
+          date: update.date || occurrence.date,
+          startTime: update.startTime || occurrence.startTime,
+          endTime: update.endTime || occurrence.endTime,
+          groupType: (update.type || occurrence.type) === 'group' ? 'grupal' : 'particular',
+        },
         actorId: access.caller.uid,
         actorName: access.caller.name || null,
         type: status === 'cancelled' ? 'school_class_cancelled' : 'school_class_assigned',
@@ -256,7 +263,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
               ? `La clase ${occurrence.title} quedó pendiente de aprobación.`
               : `La clase ${occurrence.title} fue actualizada.`,
         link: '/school/classes',
-      }).catch(() => {})
+      }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   return NextResponse.json({ occurrence: { ...occurrence, ...update } })
 }
 

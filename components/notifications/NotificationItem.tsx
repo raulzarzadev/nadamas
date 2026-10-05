@@ -37,7 +37,9 @@ export default function NotificationItem({
             {notificationTimeAgo(notification.createdAt)}
           </span>
         </span>
-        <span className="mt-0.5 block text-sm text-[var(--c-text-2)]">{notification.body}</span>
+        <span className="mt-0.5 block whitespace-pre-line text-sm text-[var(--c-text-2)]">
+          {notification.body}
+        </span>
       </span>
     </Link>
   )

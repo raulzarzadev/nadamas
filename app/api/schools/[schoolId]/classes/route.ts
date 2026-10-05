@@ -87,8 +87,17 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     throw error
   }
   for (const teacherId of validation.value.teacherIds) {
-    void createNotification({
+    await createNotification({
       recipientId: teacherId,
+      classEvent: result.occurrences[0]
+        ? {
+            schoolId,
+            date: result.occurrences[0].date,
+            startTime: result.occurrences[0].startTime,
+            endTime: result.occurrences[0].endTime,
+            groupType: validation.value.type === 'group' ? 'grupal' : 'particular',
+          }
+        : undefined,
       actorId: access.caller.uid,
       actorName: null,
       type: 'school_class_assigned',
@@ -96,7 +105,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       body: `${validation.value.title} fue asignada a tu agenda.`,
       link: classDeepLink(schoolId, result),
       data: classDeepLinkData(result),
-    }).catch(() => {})
+    }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   }
   return NextResponse.json(result, { status: 201 })
 }

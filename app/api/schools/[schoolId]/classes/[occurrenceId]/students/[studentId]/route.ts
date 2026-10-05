@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
+import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
@@ -95,7 +96,32 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
     }
     return 'ok' as const
   })
-  if (result === 'ok') return NextResponse.json({ ok: true })
+  if (result === 'ok') {
+    if (remove && isDirector) {
+      const occurrence = (
+        await adminDb.collection('schoolClassOccurrences').doc(occurrenceId).get()
+      ).data() as SchoolClassOccurrence
+      for (const teacherId of occurrence.teacherIds) {
+        await createNotification({
+          recipientId: teacherId,
+          actorId: access.caller.uid,
+          type: 'school_class_assigned',
+          title: 'Se actualizó la clase grupal',
+          body: 'La dirección actualizó los alumnos de tu clase.',
+          link: '/coach/agenda',
+          data: { date: occurrence.date, startTime: occurrence.startTime },
+          classEvent: {
+            schoolId,
+            date: occurrence.date,
+            startTime: occurrence.startTime,
+            endTime: occurrence.endTime,
+            groupType: occurrence.type === 'group' ? 'grupal' : 'particular',
+          },
+        }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
+      }
+    }
+    return NextResponse.json({ ok: true })
+  }
   return NextResponse.json(
     {
       error:

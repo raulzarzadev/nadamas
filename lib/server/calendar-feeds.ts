@@ -1,8 +1,16 @@
 import 'server-only'
 
 import { randomBytes } from 'node:crypto'
+import { calendarClassEvents } from '@/lib/calendar-class-events'
 import type { Booking } from '@/lib/coach-booking'
+import {
+  type SchoolClassOccurrence,
+  type SchoolMembership,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
+import { coalesceGroupClassOccurrences, schoolClassAgendaBooking } from './school-agenda'
+import { listSchoolStudents } from './school-students'
 
 export type CalendarRole = 'athlete' | 'coach'
 export type ReminderOffset = 5 | 60 | 1440
@@ -99,13 +107,62 @@ export async function getFeedByToken(tokenWithExtension: string) {
 export async function getBookingsForFeed(feed: CalendarFeed) {
   const field = feed.role === 'coach' ? 'coachId' : 'athleteId'
   const snapshot = await adminDb.collection('bookings').where(field, '==', feed.uid).get()
-  return snapshot.docs
+  const bookings = snapshot.docs
     .map((doc) => doc.data() as Booking)
     .filter((booking) => booking.status !== 'cancelled')
     .filter((booking) => Boolean(booking.athleteId && booking.coachId && booking.date))
-    .sort((a, b) =>
-      `${a.date || ''} ${a.startTime || ''}`.localeCompare(`${b.date || ''} ${b.startTime || ''}`)
+  if (feed.role === 'coach') {
+    const memberships = await adminDb
+      .collection('schoolMemberships')
+      .where('userId', '==', feed.uid)
+      .get()
+    const schoolIds = new Set(
+      memberships.docs
+        .map((doc) => doc.data() as SchoolMembership)
+        .filter(
+          (membership) =>
+            membership.status === 'active' && schoolMembershipHasRole(membership, 'teacher')
+        )
+        .map((membership) => membership.schoolId)
     )
+    const classes = await adminDb
+      .collection('schoolClassOccurrences')
+      .where('teacherIds', 'array-contains', feed.uid)
+      .get()
+    const occurrences = classes.docs
+      .map((doc) => ({ ...doc.data(), id: doc.id }) as SchoolClassOccurrence)
+      .filter(
+        (occurrence) =>
+          schoolIds.has(occurrence.schoolId) &&
+          ['scheduled', 'completed'].includes(occurrence.status)
+      )
+    const rosters = await Promise.all(
+      [...new Set(occurrences.map((occurrence) => occurrence.schoolId))].map(
+        async (schoolId) =>
+          [
+            schoolId,
+            new Map(
+              (await listSchoolStudents(schoolId)).map((student) => [student.id, student.name])
+            ),
+          ] as const
+      )
+    )
+    const namesBySchool = new Map(rosters)
+    for (const occurrence of coalesceGroupClassOccurrences(occurrences)) {
+      bookings.push(
+        schoolClassAgendaBooking({
+          schoolId: occurrence.schoolId,
+          occurrence,
+          coachId: feed.uid,
+          coachName: null,
+          studentNames: namesBySchool.get(occurrence.schoolId),
+        })
+      )
+    }
+  }
+  return bookings.sort((a, b) =>
+    `${a.date || ''} ${a.startTime || ''}`.localeCompare(`${b.date || ''} ${b.startTime || ''}`)
+  )
 }
 
 function escapeIcsText(value: string | null | undefined) {
@@ -165,15 +222,26 @@ export function buildCalendarIcs(feed: CalendarFeed, bookings: Booking[]) {
     'X-PUBLISHED-TTL:PT1H',
   ]
 
-  for (const booking of bookings) {
+  for (const event of calendarClassEvents(bookings, feed.role)) {
+    const { booking } = event
+    const summary = event.grouped
+      ? `Clase grupal (${event.names.length})`
+      : eventSummary(feed, booking)
+    const description = event.grouped
+      ? [
+          `Alumnos (${event.names.length}):`,
+          ...event.names.map((name) => `- ${name}`),
+          `Ubicación: ${booking.locationName || 'Por confirmar'}`,
+        ].join('\n')
+      : eventDescription(feed, booking)
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${escapeIcsText(`${booking.id}@nadamas.app`)}`,
+      `UID:${escapeIcsText(`${event.uid}@nadamas.app`)}`,
       `DTSTAMP:${utcStamp()}`,
       `DTSTART:${icsDateTime(booking.date, booking.startTime)}`,
       `DTEND:${icsDateTime(booking.date, booking.endTime || booking.startTime)}`,
-      `SUMMARY:${escapeIcsText(eventSummary(feed, booking))}`,
-      `DESCRIPTION:${escapeIcsText(eventDescription(feed, booking))}`,
+      `SUMMARY:${escapeIcsText(summary)}`,
+      `DESCRIPTION:${escapeIcsText(description)}`,
       `LOCATION:${escapeIcsText(booking.locationName || 'Por confirmar')}`,
       `STATUS:CONFIRMED`,
       `LAST-MODIFIED:${utcStamp(new Date(booking.updatedAt || booking.createdAt || Date.now()))}`
@@ -182,7 +250,7 @@ export function buildCalendarIcs(feed: CalendarFeed, bookings: Booking[]) {
       lines.push(
         'BEGIN:VALARM',
         'ACTION:DISPLAY',
-        `DESCRIPTION:${escapeIcsText(eventSummary(feed, booking))}`,
+        `DESCRIPTION:${escapeIcsText(summary)}`,
         `TRIGGER:-PT${offset}M`,
         'END:VALARM'
       )

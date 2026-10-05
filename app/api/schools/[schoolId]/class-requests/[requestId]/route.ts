@@ -57,7 +57,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   if (!status) return NextResponse.json({ error: 'Estado inválido.' }, { status: 400 })
   if (status === 'rejected') {
     await requestRef.update({ status, updatedAt: Date.now() })
-    void createNotification({
+    await createNotification({
       recipientId: record.requestedBy,
       actorId: access.caller.uid,
       actorName: null,
@@ -65,7 +65,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       title: 'Reserva rechazada',
       body: 'El entrenador no pudo aceptar el horario solicitado.',
       link: '/athlete/progress',
-    }).catch(() => {})
+    }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
     return NextResponse.json({ status })
   }
   const teacherIds = Array.isArray(body.teacherIds)
@@ -113,7 +113,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   await requestRef.update({ status, updatedAt: Date.now(), classSeriesId: classResult.seriesId })
   const classLink = classDeepLink(schoolId, classResult)
   const classLinkData = classDeepLinkData(classResult)
-  void createNotification({
+  await createNotification({
     recipientId: record.requestedBy,
     actorId: access.caller.uid,
     actorName: null,
@@ -122,10 +122,19 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     body: 'La dirección asignó un horario para tu solicitud.',
     link: classLink,
     ...(classLinkData ? { data: classLinkData } : {}),
-  }).catch(() => {})
+  }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   for (const teacherId of teacherIds) {
-    void createNotification({
+    await createNotification({
       recipientId: teacherId,
+      classEvent: classResult.occurrences[0]
+        ? {
+            schoolId,
+            date: classResult.occurrences[0].date,
+            startTime: classResult.occurrences[0].startTime,
+            endTime: classResult.occurrences[0].endTime,
+            groupType: classValidation.value.type === 'group' ? 'grupal' : 'particular',
+          }
+        : undefined,
       actorId: access.caller.uid,
       actorName: null,
       type: 'school_class_assigned',
@@ -133,7 +142,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       body: `${classValidation.value.title} fue asignada a tu agenda.`,
       link: classLink,
       ...(classLinkData ? { data: classLinkData } : {}),
-    }).catch(() => {})
+    }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   }
   return NextResponse.json({ status, ...classResult })
 }

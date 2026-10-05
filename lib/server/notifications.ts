@@ -1,7 +1,11 @@
 import 'server-only'
 
+import { createHash } from 'node:crypto'
+import { classSlotKey } from '@/lib/calendar-class-events'
 import type { AppNotification, NotificationType } from '@/lib/notification'
+import type { SchoolClassOccurrence } from '@/lib/school'
 import { adminDb } from './firebase-admin'
+import { listSchoolStudents } from './school-students'
 import { type PushSendResult, sendPushNotificationToUser } from './web-push'
 
 interface CreateNotificationInput {
@@ -13,6 +17,13 @@ interface CreateNotificationInput {
   body: string
   link: string
   data?: AppNotification['data']
+  classEvent?: {
+    schoolId: string
+    date: string
+    startTime: string
+    endTime: string
+    groupType: 'particular' | 'grupal'
+  }
 }
 
 export interface CreateNotificationResult extends AppNotification {
@@ -27,15 +38,67 @@ export interface CreateNotificationResult extends AppNotification {
  */
 export async function createNotification(input: CreateNotificationInput) {
   if (!input.recipientId || input.recipientId.startsWith('manual')) return null
-  const ref = adminDb.collection('notifications').doc()
+  let grouped = false
+  let names: string[] = []
+  if (input.classEvent?.groupType === 'grupal') {
+    grouped = true
+    const { schoolId, date, startTime, endTime } = input.classEvent
+    const snapshot = await adminDb
+      .collection('schoolClassOccurrences')
+      .where('schoolId', '==', schoolId)
+      .get()
+    const occurrences = snapshot.docs
+      .map((doc) => doc.data() as SchoolClassOccurrence)
+      .filter(
+        (occurrence) =>
+          occurrence.type === 'group' &&
+          occurrence.teacherIds.includes(input.recipientId) &&
+          occurrence.date === date &&
+          occurrence.startTime === startTime &&
+          occurrence.endTime === endTime
+      )
+    const active = occurrences.filter((occurrence) => occurrence.status !== 'cancelled')
+    const studentIds = new Set(
+      (active.length ? active : occurrences).flatMap((occurrence) => occurrence.studentIds)
+    )
+    const students = await listSchoolStudents(schoolId)
+    const studentNames = new Map(students.map((student) => [student.id, student.name]))
+    names = [...studentIds]
+      .map((id) => studentNames.get(id) || 'Alumno')
+      .sort((a, b) => a.localeCompare(b, 'es'))
+    if (active.length && input.type === 'school_class_cancelled')
+      input = { ...input, type: 'school_class_assigned' }
+  }
+  const key =
+    grouped && input.classEvent
+      ? createHash('sha256')
+          .update(classSlotKey({ ...input.classEvent, coachId: input.recipientId }))
+          .digest('hex')
+      : null
+  const ref = key
+    ? adminDb.collection('notifications').doc(`class-${key}`)
+    : adminDb.collection('notifications').doc()
+  const previous = grouped ? await ref.get() : null
+  const cancelled = input.type === 'school_class_cancelled'
   const notification: AppNotification = {
     id: ref.id,
     recipientId: input.recipientId,
     actorId: input.actorId ?? null,
     actorName: input.actorName ?? null,
     type: input.type,
-    title: input.title,
-    body: input.body,
+    title: grouped
+      ? cancelled
+        ? 'Clase grupal cancelada'
+        : previous?.exists
+          ? 'Se actualizó la clase grupal'
+          : `Clase grupal (${names.length})`
+      : input.title,
+    body: grouped
+      ? [
+          `Clase grupal (${names.length}) · ${input.classEvent?.date} · ${input.classEvent?.startTime}`,
+          ...names,
+        ].join('\n')
+      : input.body,
     link: input.link,
     ...(input.data ? { data: input.data } : {}),
     createdAt: Date.now(),

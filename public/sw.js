@@ -22,6 +22,7 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'nadamas.app';
   const options = {
     body: payload.body || '',
+    ...(payload.tag ? { tag: payload.tag } : {}),
     icon: payload.icon || '/icons/icon_x192.png',
     badge: payload.badge || '/icons/icon_x72.png',
     data: {
