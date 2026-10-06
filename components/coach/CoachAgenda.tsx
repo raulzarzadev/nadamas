@@ -33,6 +33,7 @@ import { capitalizeSchoolTerm, UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import AgendaStudentActions, { type AgendaStudentAction } from './AgendaStudentActions'
+import CancelClassModal from './CancelClassModal'
 import CoachAgendaDateSelector from './CoachAgendaDateSelector'
 import { useCoachAgendaShare } from './CoachAgendaShareContext'
 import ScheduleHoursEditor, {
@@ -101,9 +102,7 @@ type SchoolRequestDraft = {
   endTime: string
   coachId: string
 }
-type ConfirmAction =
-  | { kind: 'cancel-booking'; booking: Booking }
-  | { kind: 'delete-slot'; slot: CoachAvailableSlot }
+type ConfirmAction = { kind: 'delete-slot'; slot: CoachAvailableSlot }
 type SlotEditorState = { slot: CoachAvailableSlot; block?: CoachScheduleBlock }
 
 export default function CoachAgenda({
@@ -195,6 +194,8 @@ export default function CoachAgenda({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
+  const [cancelClassTarget, setCancelClassTarget] = useState<Booking | null>(null)
+  const [cancelClassError, setCancelClassError] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [slotEditor, setSlotEditor] = useState<SlotEditorState | null>(null)
   const [slotAssignmentCoachId, setSlotAssignmentCoachId] = useState('')
@@ -741,15 +742,6 @@ export default function CoachAgenda({
   // day (creates a hidden block). El horario base se edita en "Mis horarios".
   const eliminarSlot = (slot: CoachAvailableSlot) => block(slot, true)
 
-  const cancelBooking = (booking: Booking) => {
-    const targetSchoolId = schoolIdForBooking(booking)
-    return run(() =>
-      deleteAuthed(
-        `/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${schoolQueryFor(targetSchoolId)}${manageSchoolSchedule ? `&coachId=${encodeURIComponent(booking.coachId)}` : coachQuery}`
-      )
-    )
-  }
-
   const updateClassSettings = (
     bookings: Booking[],
     settings: { groupType?: 'particular' | 'grupal'; classFull?: boolean }
@@ -886,17 +878,68 @@ export default function CoachAgenda({
     })
   }
 
-  const cancelSchoolClass = (booking: Booking) => {
-    const targetSchoolId = schoolIdForBooking(booking)
-    if (!targetSchoolId || !booking.schoolClassId) return
-    run(async () => {
-      await patchAuthed(
-        `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(booking.schoolClassId as string)}`,
-        { status: 'cancelled' }
+  const openClassCancellation = (booking: Booking) => {
+    setCancelClassError(null)
+    setCancelClassTarget(booking)
+    setBookingToEdit(null)
+    setSchoolClassToEdit(null)
+  }
+
+  const cancellationBookings = (agenda?.bookings || []).filter(
+    (booking) =>
+      cancelClassTarget &&
+      booking.status !== 'cancelled' &&
+      booking.coachId === cancelClassTarget.coachId &&
+      booking.schoolId === cancelClassTarget.schoolId &&
+      booking.date === cancelClassTarget.date &&
+      booking.startTime === cancelClassTarget.startTime &&
+      booking.endTime === cancelClassTarget.endTime &&
+      (!cancelClassTarget.schoolClassId ||
+        booking.schoolClassId === cancelClassTarget.schoolClassId)
+  )
+  const cancellationParticipants = [
+    ...new Map(
+      cancellationBookings.flatMap((booking) =>
+        booking.schoolClassStudents
+          ? booking.schoolClassStudents.map(
+              (student) => [student.id, { id: student.id, name: student.name }] as const
+            )
+          : [[booking.athleteId, { id: booking.athleteId, name: booking.athleteName }] as const]
       )
-      setSchoolClassToEdit(null)
-      setNotice('Clase cancelada.')
-    })
+    ).values(),
+  ]
+
+  const submitClassCancellation = async (studentIds: string[]) => {
+    if (!cancelClassTarget) return
+    setBusy(true)
+    setCancelClassError(null)
+    try {
+      const targetSchoolId = schoolIdForBooking(cancelClassTarget)
+      let response: Response
+      if (cancelClassTarget.schoolClassId && targetSchoolId) {
+        response = await postAuthed(
+          `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(cancelClassTarget.schoolClassId)}/cancellations`,
+          { studentIds }
+        )
+      } else {
+        response = await deleteAuthed(
+          `/api/coach/agenda/bookings?id=${encodeURIComponent(cancelClassTarget.id)}&participantIds=${encodeURIComponent(JSON.stringify(studentIds))}${schoolQueryFor(targetSchoolId)}${manageSchoolSchedule ? `&coachId=${encodeURIComponent(cancelClassTarget.coachId)}` : coachQuery}`
+        )
+      }
+      const result = (await response.json()) as { cancelled: boolean }
+      setCancelClassTarget(null)
+      setNotice(
+        result.cancelled
+          ? 'Clase cancelada.'
+          : 'Participantes retirados. La clase continúa con los demás.'
+      )
+      await loadAgenda(monthOfSelected)
+    } catch (err) {
+      reportInternalError('COACH_CLASS_CANCELLATION', err)
+      setCancelClassError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const updateSchoolClassStatus = (booking: Booking, status: 'pending' | 'scheduled') => {
@@ -1199,29 +1242,18 @@ export default function CoachAgenda({
     })
   }
 
-  const confirmCopy =
-    confirmAction?.kind === 'cancel-booking'
-      ? {
-          title: 'Cancelar clase',
-          body: `Se cancelará la clase de ${confirmAction.booking.athleteName} a las ${confirmAction.booking.startTime}. ${capitalizeSchoolTerm(participantSingular)} seguirá guardado en tu lista.`,
-          action: 'Cancelar clase',
-        }
-      : confirmAction?.kind === 'delete-slot'
-        ? {
-            title: 'Eliminar horario',
-            body: `Se eliminará el horario de las ${confirmAction.slot.startTime}. Ya no aparecerá como disponible para ${participantPlural}.`,
-            action: 'Eliminar horario',
-          }
-        : null
+  const confirmCopy = confirmAction
+    ? {
+        title: 'Eliminar horario',
+        body: `Se eliminará el horario de las ${confirmAction.slot.startTime}. Ya no aparecerá como disponible para ${participantPlural}.`,
+        action: 'Eliminar horario',
+      }
+    : null
 
   const runConfirmedAction = () => {
     if (!confirmAction) return
     const action = confirmAction
     setConfirmAction(null)
-    if (action.kind === 'cancel-booking') {
-      cancelBooking(action.booking)
-      return
-    }
     eliminarSlot(action.slot)
   }
 
@@ -1902,7 +1934,7 @@ export default function CoachAgenda({
               <button
                 type="button"
                 onClick={() => {
-                  setConfirmAction({ kind: 'cancel-booking', booking: bookingToEdit })
+                  openClassCancellation(bookingToEdit)
                   setBookingToEdit(null)
                 }}
                 disabled={busy}
@@ -2022,7 +2054,7 @@ export default function CoachAgenda({
             </button>
             <button
               type="button"
-              onClick={() => cancelSchoolClass(schoolClassToEdit)}
+              onClick={() => openClassCancellation(schoolClassToEdit)}
               disabled={busy}
               className="min-h-12 rounded-full border border-[var(--rose-bd)] px-5 text-sm font-bold text-[var(--rose-tx)]"
             >
@@ -2253,6 +2285,16 @@ export default function CoachAgenda({
         )}
       </Sheet>
 
+      {cancelClassTarget && (
+        <CancelClassModal
+          key={cancelClassTarget.id}
+          participants={cancellationParticipants}
+          busy={busy}
+          error={cancelClassError}
+          onClose={() => setCancelClassTarget(null)}
+          onSubmit={(ids) => void submitClassCancellation(ids)}
+        />
+      )}
       <Sheet
         open={!!confirmAction}
         onClose={() => setConfirmAction(null)}

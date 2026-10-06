@@ -452,6 +452,73 @@ async function handleDELETE(request: Request) {
   }
 
   const now = Date.now()
+  const participantIds = url.searchParams.get('participantIds')
+  if (participantIds !== null) {
+    let input: unknown
+    try {
+      input = JSON.parse(participantIds)
+    } catch {
+      input = null
+    }
+    if (
+      !Array.isArray(input) ||
+      !input.length ||
+      input.length > 100 ||
+      input.some((value) => typeof value !== 'string' || !value)
+    )
+      return NextResponse.json(
+        { error: 'Selecciona los participantes que quieres retirar.' },
+        { status: 400 }
+      )
+    const selected = new Set<string>(input)
+    const anchor = current.data() as Booking
+    const result = await adminDb.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(
+        adminDb.collection('bookings').where('coachId', '==', verification.caller.uid)
+      )
+      const active = snapshot.docs.filter((doc) => {
+        const booking = doc.data() as Booking
+        return (
+          booking.status !== 'cancelled' &&
+          booking.date === anchor.date &&
+          booking.startTime === anchor.startTime &&
+          booking.endTime === anchor.endTime &&
+          (schoolId ? booking.schoolId === schoolId : !booking.schoolId)
+        )
+      })
+      if ([...selected].some((id) => !active.some((doc) => doc.data().athleteId === id)))
+        return null
+      const removed = active.filter((doc) => selected.has(doc.data().athleteId))
+      for (const doc of removed)
+        transaction.update(doc.ref, { status: 'cancelled', cancelledAt: now, updatedAt: now })
+      return {
+        removed: removed.map((doc) => ({ ...doc.data(), id: doc.id }) as Booking),
+        cancelled: removed.length === active.length,
+      }
+    })
+    if (!result)
+      return NextResponse.json(
+        { error: 'La clase cambió. Actualiza la agenda e inténtalo de nuevo.' },
+        { status: 409 }
+      )
+    for (const booking of result.removed) {
+      await notifyBookingByCoach({
+        athleteId: booking.athleteId,
+        coachId: booking.coachId,
+        coachName: booking.coachName,
+        date: booking.date,
+        startTime: booking.startTime,
+        locationName: booking.locationName,
+        bookingId: booking.id,
+        cancelled: true,
+      }).catch((error) => console.error('[COACH_BOOKING_CANCEL_NOTIFY_INAPP]', error))
+    }
+    return NextResponse.json({
+      ok: true,
+      cancelled: result.cancelled,
+      removedCount: result.removed.length,
+    })
+  }
   await ref.set({ status: 'cancelled', cancelledAt: now, updatedAt: now }, { merge: true })
 
   const cancelled = current.data() as Booking

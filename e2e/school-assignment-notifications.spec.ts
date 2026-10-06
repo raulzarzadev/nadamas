@@ -251,6 +251,48 @@ test('las asignaciones del director notifican al entrenador antes de responder',
     expect((await refreshedCalendar.text()).replace(/\r\n /g, '').match(/UID:([^\r]+)/)?.[1]).toBe(
       uid
     )
+    const cancellationPath = `/api/schools/${schoolId}/classes/${group.occurrences[0].id}/cancellations`
+    const stale = await request.post(cancellationPath, {
+      headers,
+      data: { studentIds: ['not-in-class'] },
+    })
+    expect(stale.status()).toBe(409)
+    const partial = await request.post(cancellationPath, {
+      headers,
+      data: { studentIds: [studentIds[0]] },
+    })
+    expect(partial.ok(), await partial.text()).toBe(true)
+    expect(await partial.json()).toMatchObject({ cancelled: false, removedCount: 1 })
+    const afterPartial = await fetch(`${root}/schoolClassOccurrences/${group.occurrences[0].id}`, {
+      headers: { authorization: 'Bearer owner' },
+    })
+    const remaining = (await afterPartial.json()).fields
+    expect(remaining.status.stringValue).toBe('scheduled')
+    expect(
+      remaining.studentIds.arrayValue.values.map(
+        (value: { stringValue: string }) => value.stringValue
+      )
+    ).toEqual(studentIds.slice(1))
+    const full = await request.post(cancellationPath, {
+      headers,
+      data: { studentIds: studentIds.slice(1) },
+    })
+    expect(full.ok(), await full.text()).toBe(true)
+    expect(await full.json()).toMatchObject({ cancelled: true, removedCount: 2 })
+    const finalClass = await fetch(`${root}/schoolClassOccurrences/${group.occurrences[0].id}`, {
+      headers: { authorization: 'Bearer owner' },
+    })
+    const finalFields = (await finalClass.json()).fields
+    expect(finalFields.status.stringValue).toBe('cancelled')
+    expect(finalFields.studentIds.arrayValue.values || []).toHaveLength(0)
+    for (const id of studentIds)
+      expect(
+        (
+          await fetch(`${root}/schoolStudents/${id}`, {
+            headers: { authorization: 'Bearer owner' },
+          })
+        ).ok
+      ).toBe(true)
   } finally {
     await notifications()
     for (const path of documents)

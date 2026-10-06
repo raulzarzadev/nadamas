@@ -154,6 +154,34 @@ test('un entrenador agrega un alumno registrado a su propia agenda', async ({ re
       data: { ...payload, coachId: 'another-coach' },
     })
     expect(otherCoach.status()).toBe(403)
+    const classmate = await request.post('/api/coach/agenda/bookings', {
+      headers,
+      data: {
+        ...payload,
+        athleteId: newBooking.athleteId,
+        athleteName: 'Atleta nuevo',
+        groupType: 'grupal',
+      },
+    })
+    expect(classmate.ok(), await classmate.text()).toBe(true)
+    const classmateBooking = (await classmate.json()).booking
+    documents.push(`bookings/${classmateBooking.id}`)
+    const partialCancel = await request.delete(
+      `/api/coach/agenda/bookings?id=${booking.id}&participantIds=${encodeURIComponent(JSON.stringify([athleteId]))}`,
+      { headers }
+    )
+    expect(partialCancel.ok(), await partialCancel.text()).toBe(true)
+    expect(await partialCancel.json()).toMatchObject({ cancelled: false, removedCount: 1 })
+    const stillBooked = await fetch(`${root}/bookings/${classmateBooking.id}`, {
+      headers: { authorization: 'Bearer owner' },
+    })
+    expect((await stillBooked.json()).fields.status.stringValue).toBe('confirmed')
+    const fullCancel = await request.delete(
+      `/api/coach/agenda/bookings?id=${classmateBooking.id}&participantIds=${encodeURIComponent(JSON.stringify([newBooking.athleteId]))}`,
+      { headers }
+    )
+    expect(fullCancel.ok(), await fullCancel.text()).toBe(true)
+    expect(await fullCancel.json()).toMatchObject({ cancelled: true, removedCount: 1 })
   } finally {
     for (const path of documents) {
       await fetch(`${root}/${path}`, {
