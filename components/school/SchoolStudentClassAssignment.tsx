@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { FiUser, FiUsers } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
+import CoachBadge from '@/components/ui/coach-badge'
 import Sheet from '@/components/ui/sheet'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
-import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
+import { HOUR_STATUS_STYLE, HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import {
   type SchoolClassOccurrence,
   type SchoolStudent,
@@ -88,6 +90,7 @@ export default function SchoolStudentClassAssignment({
   onClose: () => void
   onAssigned: () => void
 }) {
+  const [view, setView] = useState<'vertical' | 'horizontal'>('vertical')
   const [date, setDate] = useState(() => dateInTimezone(timezone))
   const [agenda, setAgenda] = useState<CoachAgendaPayload | null>(null)
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
@@ -288,7 +291,45 @@ export default function SchoolStudentClassAssignment({
     >
       <div className="flex min-h-0 flex-col gap-3 px-4 pb-3 sm:px-0 sm:pb-0">
         <div className="shrink-0">
-          <h2 className="text-xl font-bold text-(--c-ocean)">Asignar clases</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-(--c-ocean)">Asignar clases</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-(--c-text-2)">Vista</span>
+              <fieldset
+                aria-label="Visualización de horarios"
+                className="inline-flex rounded-full border border-(--c-border) bg-(--c-surface) p-0.5"
+              >
+                {(['vertical', 'horizontal'] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-label={option === 'vertical' ? 'Vista vertical' : 'Vista horizontal'}
+                    title={option === 'vertical' ? 'Vista vertical' : 'Vista horizontal'}
+                    aria-pressed={view === option}
+                    onClick={() => setView(option)}
+                    className={`grid size-8 place-items-center rounded-full text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${view === option ? 'bg-(--c-ocean) text-white' : 'text-(--c-ocean) hover:bg-white'}`}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      width="14"
+                      height="14"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      {option === 'vertical' ? (
+                        <path d="M5 4v12M10 4v12M15 4v12" />
+                      ) : (
+                        <path d="M4 7h12M4 13h12" />
+                      )}
+                    </svg>
+                  </button>
+                ))}
+              </fieldset>
+            </div>
+          </div>
           <p className="mt-1 text-sm text-(--c-text-2)">
             {student.name} · Selecciona uno o varios horarios grupales o particulares.
           </p>
@@ -306,77 +347,202 @@ export default function SchoolStudentClassAssignment({
           </div>
         ) : (
           <>
-            <CoachAgendaDateSelector
-              selectedDate={date}
-              weekDates={days}
-              dayStatuses={dayStatuses}
-              selectedStatuses={selectedStatuses}
-              onToggleStatus={(status) =>
-                setSelectedStatuses((current) => {
-                  const next = new Set(current)
-                  if (next.has(status)) next.delete(status)
-                  else next.add(status)
-                  return next
-                })
-              }
-              onSelectDate={(selectedDate) => setDate(selectedDate)}
-              onChangeWeek={(delta) =>
-                setDate(dateKey(addDays(new Date(`${date}T12:00:00`), delta * 7)))
-              }
-            />
-            <h3 className="shrink-0 text-sm font-bold capitalize text-(--c-ocean)">
-              Horarios disponibles ·{' '}
-              {new Date(`${date}T12:00:00`).toLocaleDateString('es-MX', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
-            </h3>
-            <div className="max-h-[min(35dvh,22rem)] overflow-y-auto overscroll-contain rounded-2xl border border-(--c-border) bg-white">
-              {daySlots.length ? (
-                daySlots.map((slot) => {
-                  const selected = selectedSlots.some((item) => item.key === slot.key)
-                  return (
-                    <div
-                      key={slot.key}
-                      className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-(--c-border) px-3 py-2.5 last:border-b-0"
+            {view === 'vertical' ? (
+              <>
+                <CoachAgendaDateSelector
+                  selectedDate={date}
+                  weekDates={days}
+                  dayStatuses={dayStatuses}
+                  selectedStatuses={selectedStatuses}
+                  onToggleStatus={(status) =>
+                    setSelectedStatuses((current) => {
+                      const next = new Set(current)
+                      if (next.has(status)) next.delete(status)
+                      else next.add(status)
+                      return next
+                    })
+                  }
+                  onSelectDate={(selectedDate) => setDate(selectedDate)}
+                  onChangeWeek={(delta) =>
+                    setDate(dateKey(addDays(new Date(`${date}T12:00:00`), delta * 7)))
+                  }
+                />
+                <h3 className="shrink-0 text-sm font-bold capitalize text-(--c-ocean)">
+                  Horarios disponibles ·{' '}
+                  {new Date(`${date}T12:00:00`).toLocaleDateString('es-MX', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                  })}
+                </h3>
+                <div className="max-h-[min(35dvh,22rem)] overflow-y-auto overscroll-contain rounded-2xl border border-(--c-border) bg-white">
+                  {daySlots.length ? (
+                    daySlots.map((slot) => {
+                      const selected = selectedSlots.some((item) => item.key === slot.key)
+                      return (
+                        <div
+                          key={slot.key}
+                          className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-2 border-b border-(--c-border) px-3 py-2.5 last:border-b-0"
+                        >
+                          <strong className="text-sm tabular-nums text-(--c-ocean)">
+                            {slot.startTime}
+                          </strong>
+                          <div className="min-w-0">
+                            <p className="flex items-center gap-1.5 text-sm font-semibold text-(--c-ocean)">
+                              <span className="inline-flex w-28 shrink-0 [&>span]:h-6 [&>span]:w-full">
+                                <CoachBadge
+                                  name={slot.coachName}
+                                  unassigned={slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                                />
+                              </span>
+                              {slot.groupType === 'grupal' ? 'Grupal' : 'Particular'}
+                              {slot.groupType === 'grupal' ? (
+                                <FiUsers aria-hidden="true" className="size-4 shrink-0" />
+                              ) : (
+                                <FiUser aria-hidden="true" className="size-4 shrink-0" />
+                              )}
+                            </p>
+                            <p className="truncate text-xs text-(--c-text-2)">
+                              {slot.locationName.trim() &&
+                              slot.locationName.trim().toLocaleLowerCase('es') !==
+                                'lugar por definir'
+                                ? ` · ${slot.locationName}`
+                                : ''}
+                              {typeof slot.studentCount === 'number'
+                                ? ` · ${slot.studentCount} alumnos`
+                                : ''}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleSlot(slot)}
+                            disabled={saving}
+                            aria-pressed={selected}
+                            className={`min-h-10 whitespace-nowrap rounded-full px-3 text-xs font-bold sm:px-4 sm:text-sm ${selected ? 'bg-(--c-ocean) text-white' : 'border border-(--c-border) text-(--c-ocean)'}`}
+                          >
+                            {selected ? 'Seleccionado' : 'Seleccionar'}
+                          </button>
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <p className="p-4 text-sm text-(--c-text-2)">
+                      {agenda
+                        ? 'No hay horarios disponibles este día. Elige otra fecha.'
+                        : 'Cargando horarios…'}
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-bold">Horarios disponibles</h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label="Semana anterior"
+                      className="btn btn-outline min-h-11 px-3"
+                      onClick={() => setDate(dateKey(addDays(new Date(`${date}T12:00:00`), -7)))}
                     >
-                      <strong className="text-sm tabular-nums text-(--c-ocean)">
-                        {slot.startTime}
-                      </strong>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-(--c-ocean)">
-                          {slot.schoolClassTitle || `Nuevo horario ${slot.groupType}`}
-                        </p>
-                        <p className="truncate text-xs text-(--c-text-2)">
-                          {slot.startTime}–{slot.endTime} ·{' '}
-                          {slot.groupType === 'grupal' ? 'Grupal' : 'Particular'} · {slot.coachName}
-                          {slot.locationName ? ` · ${slot.locationName}` : ''}
-                          {typeof slot.studentCount === 'number'
-                            ? ` · ${slot.studentCount} alumnos`
-                            : ''}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleSlot(slot)}
-                        disabled={saving}
-                        aria-pressed={selected}
-                        className={`min-h-10 whitespace-nowrap rounded-full px-3 text-xs font-bold sm:px-4 sm:text-sm ${selected ? 'bg-(--c-ocean) text-white' : 'border border-(--c-border) text-(--c-ocean)'}`}
+                      ‹
+                    </button>
+                    <span className="text-xs font-semibold">
+                      {days[0].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} →{' '}
+                      {days[6].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Semana siguiente"
+                      className="btn btn-outline min-h-11 px-3"
+                      onClick={() => setDate(dateKey(addDays(new Date(`${date}T12:00:00`), 7)))}
+                    >
+                      ›
+                    </button>
+                  </div>
+                </div>
+                <div className="grid gap-3 rounded-2xl border border-(--c-border) bg-(--c-surface) p-3 sm:p-4">
+                  {!agenda && <p className="text-sm">Cargando horarios…</p>}
+                  {days.map((day) => {
+                    const slots = availableSlots.filter((slot) => slot.date === dateKey(day))
+                    if (!slots.length) return null
+                    return (
+                      <div
+                        key={dateKey(day)}
+                        className="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2"
                       >
-                        {selected ? 'Seleccionado' : 'Seleccionar'}
-                      </button>
-                    </div>
-                  )
-                })
-              ) : (
-                <p className="p-4 text-sm text-(--c-text-2)">
-                  {agenda
-                    ? 'No hay horarios disponibles este día. Elige otra fecha.'
-                    : 'Cargando horarios…'}
-                </p>
-              )}
-            </div>
+                        <div className="py-2">
+                          <h4 className="text-sm font-bold capitalize">
+                            {day.toLocaleDateString('es-MX', { weekday: 'long' })}
+                          </h4>
+                          <p className="text-xs text-(--c-text-2)">
+                            {day.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {[...new Set(slots.map((slot) => slot.startTime))].map((time) => (
+                            <div
+                              key={time}
+                              className="rounded-xl border border-(--c-border) bg-white p-1"
+                            >
+                              <div className="flex gap-1">
+                                {slots
+                                  .filter((slot) => slot.startTime === time)
+                                  .map((slot) => {
+                                    const selected = selectedSlots.some(
+                                      (item) => item.key === slot.key
+                                    )
+                                    const details = `${slot.startTime}–${slot.endTime} · ${slot.groupType} · ${slot.coachName}${slot.locationName.trim() && slot.locationName.trim().toLocaleLowerCase('es') !== 'lugar por definir' ? ` · ${slot.locationName}` : ''}`
+                                    return (
+                                      <button
+                                        key={slot.key}
+                                        type="button"
+                                        disabled={saving}
+                                        aria-pressed={selected}
+                                        aria-label={`${day.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })} · ${details}`}
+                                        title={details}
+                                        onClick={() => toggleSlot(slot)}
+                                        className={`min-h-9 rounded-xl border px-2 py-1 text-xs font-bold tabular-nums transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${HOUR_STATUS_STYLE[slot.groupType === 'grupal' ? 'groupAvailable' : 'available'].border} ${selected ? 'bg-(--c-ocean) text-white ring-1 ring-(--c-ocean)' : 'bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
+                                      >
+                                        <span className="mb-0.5 flex items-center justify-center gap-1 [&>span]:size-3 [&>span]:text-[7px]">
+                                          <CoachBadge
+                                            name={slot.coachName}
+                                            unassigned={slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                                            avatarOnly
+                                          />
+                                          <span
+                                            aria-hidden="true"
+                                            className="inline-flex size-3 items-center justify-center"
+                                          >
+                                            {slot.groupType === 'grupal' && (
+                                              <FiUsers className="size-3" />
+                                            )}
+                                          </span>
+                                        </span>
+                                      </button>
+                                    )
+                                  })}
+                              </div>
+                              <span className="block pt-0.5 text-center text-xs font-bold tabular-nums">
+                                {time}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {agenda &&
+                    !availableSlots.some((slot) =>
+                      days.some((day) => dateKey(day) === slot.date)
+                    ) && (
+                      <p className="text-sm text-(--c-text-2)">
+                        No hay horarios disponibles esta semana. Elige otra semana.
+                      </p>
+                    )}
+                </div>
+              </>
+            )}
             {selectedSlots.length > 0 && (
               <p className="shrink-0 text-sm font-semibold text-(--c-ocean)">
                 {selectedSlots.length}{' '}

@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useRole } from '@/context/RoleContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { SchoolAccessRequestCard } from './SchoolAccessRequests'
 import { useSchoolSelection } from './useSchoolSelection'
 
 export default function TenantWorkspaceGate({
@@ -39,6 +40,17 @@ function ScopedWorkspaceGate({
   const { setActiveRole } = useRole()
   if (!tenant) return children
   if (status === 'loading') return <p className="py-12 text-center">Cargando escuela…</p>
+  if (status === 'error')
+    return (
+      <p role="alert">
+        No pudimos cargar tu acceso.{' '}
+        <button type="button" className="btn btn-outline" onClick={() => window.location.reload()}>
+          Volver a intentar
+        </button>
+      </p>
+    )
+  if (!selected && mode === 'athlete')
+    return <SchoolAccessRequestCard schoolId={tenant.id} schoolName={tenant.name} />
   if (!selected)
     return (
       <div className="grid gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-6">

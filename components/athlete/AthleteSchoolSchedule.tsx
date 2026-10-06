@@ -1,10 +1,12 @@
 'use client'
 
 import Sheet from '@comps/ui/sheet'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiUser, FiUsers, FiX } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
+import AdditionalProfileCreateModal from '@/components/profile/AdditionalProfileCreateModal'
+import CoachBadge from '@/components/ui/coach-badge'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
@@ -119,6 +121,7 @@ export default function AthleteSchoolSchedule({
     ''
   ).trim()
   const accountId = user?.uid || user?.id || auth.currentUser?.uid || ''
+  const [scheduleView, setScheduleView] = useState<'vertical' | 'horizontal'>('vertical')
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()))
   const [agenda, setAgenda] = useState<CoachAgendaPayload | null>(null)
   const [myReservations, setMyReservations] = useState<SchoolReservation[]>([])
@@ -131,6 +134,8 @@ export default function AthleteSchoolSchedule({
     () => new Set(HOUR_STATUSES)
   )
   const [selectedSlot, setSelectedSlot] = useState<CoachAvailableSlot | null>(null)
+  const [showAdditionalForm, setShowAdditionalForm] = useState(false)
+  const initializedSlot = useRef<CoachAvailableSlot | null>(null)
   const [studentIds, setStudentIds] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -490,6 +495,18 @@ export default function AthleteSchoolSchedule({
                 reservation.groupType === 'grupal'
             ))
     )
+  const defaultAccountValue = bookingParticipants.find(
+    (participant) => participant.account && !isParticipantBookedInGroup(participant)
+  )?.value
+  useEffect(() => {
+    if (!selectedSlot) {
+      initializedSlot.current = null
+      return
+    }
+    if (initializedSlot.current === selectedSlot) return
+    initializedSlot.current = selectedSlot
+    setStudentIds(defaultAccountValue ? [defaultAccountValue] : [])
+  }, [selectedSlot, defaultAccountValue])
   const bookedParticipants = selectedParticipants.filter(isParticipantBookedInGroup)
   const participantAlreadyBookedInGroup = bookedParticipants.length > 0
   const dayStatuses = useMemo(() => {
@@ -763,15 +780,83 @@ export default function AthleteSchoolSchedule({
           </div>,
           coachFiltersTarget
         )}
-      <CoachAgendaDateSelector
-        selectedDate={selectedDate}
-        weekDates={week}
-        dayStatuses={dayStatuses}
-        selectedStatuses={selectedStatuses}
-        onToggleStatus={toggleStatus}
-        onSelectDate={setSelectedDate}
-        onChangeWeek={changeWeek}
-      />
+      <div className="flex items-center justify-end gap-2">
+        <span className="text-xs font-semibold text-(--c-text-2)">Vista</span>
+        <fieldset
+          aria-label="Visualización de horarios"
+          className="inline-flex rounded-full border border-(--c-border) bg-(--c-surface) p-0.5"
+        >
+          {(['vertical', 'horizontal'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              aria-label={`Vista ${option}`}
+              title={`Vista ${option}`}
+              aria-pressed={scheduleView === option}
+              onClick={() => setScheduleView(option)}
+              className={`grid size-8 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) ${scheduleView === option ? 'bg-(--c-ocean) text-white' : 'text-(--c-ocean) hover:bg-white'}`}
+            >
+              <svg
+                aria-hidden="true"
+                width="14"
+                height="14"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                {option === 'vertical' ? (
+                  <path d="M5 4v12M10 4v12M15 4v12" />
+                ) : (
+                  <path d="M4 7h12M4 13h12" />
+                )}
+              </svg>
+            </button>
+          ))}
+        </fieldset>
+      </div>
+      {scheduleView === 'vertical' ? (
+        <CoachAgendaDateSelector
+          selectedDate={selectedDate}
+          weekDates={week}
+          dayStatuses={dayStatuses}
+          selectedStatuses={selectedStatuses}
+          onToggleStatus={toggleStatus}
+          onSelectDate={setSelectedDate}
+          onChangeWeek={changeWeek}
+        />
+      ) : (
+        <div className="flex items-center justify-center gap-3">
+          <button
+            type="button"
+            aria-label="Semana anterior"
+            onClick={() => changeWeek(-1)}
+            className="btn btn-outline min-h-11 rounded-full px-3"
+          >
+            ‹
+          </button>
+          <span className="text-sm font-bold">
+            {week[0].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} →{' '}
+            {week[6].toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+          </span>
+          <button
+            type="button"
+            aria-label="Semana siguiente"
+            onClick={() => changeWeek(1)}
+            className="btn btn-outline min-h-11 rounded-full px-3"
+          >
+            ›
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedDate(dateKey(new Date()))}
+            className="btn btn-outline min-h-11 rounded-full"
+          >
+            Hoy
+          </button>
+        </div>
+      )}
       {error && (
         <p role="alert" className="text-sm text-rose-600">
           {error}
@@ -784,6 +869,63 @@ export default function AthleteSchoolSchedule({
       )}
       {agenda === null ? (
         <p className="py-6 text-center text-sm">Cargando horarios…</p>
+      ) : scheduleView === 'horizontal' ? (
+        <div className="grid gap-3 rounded-2xl border border-(--c-border) bg-(--c-surface) p-4">
+          {week.map((day) => {
+            const dayKey = dateKey(day)
+            const dayOptions = visibleSlots.filter((slot) => slot.date === dayKey)
+            if (!dayOptions.length) return null
+            return (
+              <div key={dayKey} className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-2">
+                <div>
+                  <h3 className="text-sm font-bold capitalize">
+                    {day.toLocaleDateString('es-MX', { weekday: 'long' })}
+                  </h3>
+                  <p className="text-xs text-(--c-text-2)">
+                    {day.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[...new Set(dayOptions.map((slot) => slot.startTime))].sort().map((time) => (
+                    <div key={time} className="rounded-xl border border-(--c-border) bg-white p-1">
+                      <div className="flex gap-1">
+                        {dayOptions
+                          .filter((slot) => slot.startTime === time)
+                          .map((slot) => (
+                            <button
+                              key={`${slot.schoolId || ''}-${slot.coachId}-${slot.id}`}
+                              type="button"
+                              title={`${coachNames[slot.coachId] || 'Coach'} · ${slot.groupType}`}
+                              aria-label={`Elegir ${dayKey} ${time}, ${coachNames[slot.coachId] || 'Coach'}, ${slot.groupType}`}
+                              onClick={() => {
+                                setSelectedDate(dayKey)
+                                setSelectedSlot(slot)
+                                setStudentIds([])
+                              }}
+                              className={`flex min-h-9 items-center justify-center gap-1 rounded-xl border px-2 py-1 focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) [&>span]:size-3 [&>span]:text-[7px] ${slot.groupType === 'grupal' ? 'border-blue-300' : 'border-emerald-400'}`}
+                            >
+                              <CoachBadge
+                                name={coachNames[slot.coachId] || 'Coach'}
+                                unassigned={slot.coachId === '__unassigned__'}
+                                avatarOnly
+                              />
+                              <span aria-hidden="true" className="inline-flex size-3">
+                                {slot.groupType === 'grupal' && <FiUsers className="size-3" />}
+                              </span>
+                            </button>
+                          ))}
+                      </div>
+                      <span className="block text-center text-xs font-bold">{time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+          {!visibleSlots.some((slot) => week.some((day) => dateKey(day) === slot.date)) && (
+            <p className="text-sm">No hay horarios disponibles esta semana.</p>
+          )}
+        </div>
       ) : slots.length === 0 && personalReservations.length === 0 ? (
         <p className="rounded-xl border border-dashed p-6 text-center text-sm text-[var(--c-text-2)]">
           No hay horarios disponibles para este día.
@@ -895,7 +1037,8 @@ export default function AthleteSchoolSchedule({
         </div>
       )}
       <Sheet
-        open={Boolean(selectedSlot)}
+        open={Boolean(selectedSlot) && !showAdditionalForm}
+        closeDisabled={busy}
         onClose={() => {
           if (!busy) setSelectedSlot(null)
         }}
@@ -999,6 +1142,14 @@ export default function AthleteSchoolSchedule({
                   </p>
                 )}
               </fieldset>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => setShowAdditionalForm(true)}
+                className="btn btn-outline min-h-11 self-start"
+              >
+                Inscribir a alguien más · Agregar Adicional
+              </button>
               {participantAlreadyBookedInGroup && (
                 <p role="status" className="rounded-xl bg-violet-50 p-3 text-sm text-violet-900">
                   {bookedParticipants.map((participant) => participant.name).join(', ')} ya está
@@ -1054,6 +1205,18 @@ export default function AthleteSchoolSchedule({
           </div>
         )}
       </Sheet>
+      {showAdditionalForm && (
+        <AdditionalProfileCreateModal
+          onClose={() => setShowAdditionalForm(false)}
+          onCreated={(profile) => {
+            setAdditionalProfiles((current) =>
+              [...current, profile].sort((a, b) => a.name.localeCompare(b.name))
+            )
+            setStudentIds((current) => [...current, `additional:${profile.id}`])
+            setShowAdditionalForm(false)
+          }}
+        />
+      )}
     </section>
   )
 }

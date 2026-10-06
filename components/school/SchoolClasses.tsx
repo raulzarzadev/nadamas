@@ -197,7 +197,6 @@ export default function SchoolClasses() {
     ...(isDirector ? [{ id: UNASSIGNED_SCHOOL_COACH_ID, name: 'Sin profe aún' }] : []),
   ]
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
-  const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const visibleClasses = classes.filter(
     (item) =>
@@ -264,26 +263,32 @@ export default function SchoolClasses() {
           />
           {isDirector && (
             <div className="flex w-full min-w-0 flex-1 items-end gap-2">
-              <label
-                htmlFor="schedule-coach"
-                className="grid min-w-0 flex-1 gap-2 text-sm font-bold text-(--c-ocean)"
-              >
-                Administrar horarios de {coachSingular}
-                <select
-                  id="schedule-coach"
-                  className="select select-bordered min-h-11 w-full min-w-0"
-                  value={scheduleCoachId}
-                  disabled={loading}
-                  onChange={(event) => setScheduleCoachId(event.target.value)}
-                >
-                  {activeTeachers.length > 0 && <option value="">Todos los {coachPlural}</option>}
-                  {scheduleCoachOptions.map((coach) => (
-                    <option key={coach.id} value={coach.id}>
-                      {coach.name}
-                    </option>
+              <fieldset className="grid min-w-0 flex-1 gap-2">
+                <legend className="mb-2 text-sm font-bold text-(--c-ocean)">
+                  Administrar horarios de {coachSingular}
+                </legend>
+                <div className="flex flex-wrap gap-2">
+                  {[{ id: '', name: 'Todos' }, ...scheduleCoachOptions].map((coach) => (
+                    <button
+                      key={coach.id}
+                      type="button"
+                      disabled={loading}
+                      aria-pressed={scheduleCoachId === coach.id}
+                      onClick={() => setScheduleCoachId(coach.id)}
+                      className={`min-h-8 rounded-full border px-2.5 py-1 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${scheduleCoachId === coach.id ? 'border-(--c-ocean) bg-(--c-ocean) text-white [&>span]:text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'} [&>span]:border-0 [&>span]:bg-transparent [&>span]:p-0 [&>span]:text-xs`}
+                    >
+                      {coach.id ? (
+                        <CoachBadge
+                          name={coach.name}
+                          unassigned={coach.id === UNASSIGNED_SCHOOL_COACH_ID}
+                        />
+                      ) : (
+                        'Todos'
+                      )}
+                    </button>
                   ))}
-                </select>
-              </label>
+                </div>
+              </fieldset>
               <button
                 type="button"
                 disabled={loading}

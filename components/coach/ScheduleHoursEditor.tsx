@@ -4,6 +4,7 @@ import InfoModal from '@comps/ui/info-modal'
 import Sheet from '@comps/ui/sheet'
 import { useEffect, useState } from 'react'
 import { FiChevronLeft, FiChevronRight, FiInfo, FiPlus, FiX } from 'react-icons/fi'
+import CoachBadge from '@/components/ui/coach-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import {
   addDays,
@@ -14,7 +15,7 @@ import {
   startOfWeek,
   WEEKDAY_LABELS,
 } from '@/lib/coach-offerings'
-import { capitalizeSchoolTerm } from '@/lib/school'
+import { capitalizeSchoolTerm, UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 import HourPickerModal from './HourPickerModal'
 
 export type HoursMode = 'add' | 'remove'
@@ -138,7 +139,7 @@ export default function ScheduleHoursEditor({
                       }}
                       className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 ${
                         selected
-                          ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                          ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white [&>span]:text-white'
                           : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]'
                       }`}
                     >
@@ -160,8 +161,8 @@ export default function ScheduleHoursEditor({
                 {capitalizeSchoolTerm(coachSingular)}
               </legend>
               <div className="flex flex-wrap gap-2">
-                {coachOptions.map((coach) => {
-                  const selected = coach.id === selectedCoachId
+                {[{ id: '', name: 'Todos' }, ...coachOptions].map((coach) => {
+                  const selected = coach.id === (selectedCoachId || '')
                   return (
                     <button
                       key={coach.id}
@@ -169,13 +170,20 @@ export default function ScheduleHoursEditor({
                       aria-pressed={selected}
                       disabled={busy || !onCoachChange}
                       onClick={() => onCoachChange?.(coach.id)}
-                      className={`min-h-11 rounded-full border px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 ${
+                      className={`min-h-8 rounded-full border px-2.5 py-1 text-xs font-bold [&>span]:border-0 [&>span]:bg-transparent [&>span]:p-0 [&>span]:text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60 ${
                         selected
                           ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
                           : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)]'
                       }`}
                     >
-                      {coach.name}
+                      {coach.id ? (
+                        <CoachBadge
+                          name={coach.name}
+                          unassigned={coach.id === UNASSIGNED_SCHOOL_COACH_ID}
+                        />
+                      ) : (
+                        'Todos'
+                      )}
                     </button>
                   )
                 })}

@@ -154,16 +154,23 @@ export default function CoachAgendaDateSelector({
               <button
                 type="button"
                 key={key}
+                aria-pressed={selected}
+                aria-current={isToday ? 'date' : undefined}
                 onClick={() => onSelectDate(key)}
                 aria-label={
                   statuses.length
                     ? `${label}: ${count('booked')} ocupadas, ${count('group')} grupales ocupadas, ${count('groupAvailable')} grupales disponibles, ${count('available')} disponibles, ${count('blocked')} bloqueadas`
                     : label
                 }
-                className={`flex min-h-[68px] flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${selected ? 'border-[var(--c-aqua)] bg-gradient-to-b from-[var(--c-aqua)] to-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]' : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${[0, 6].includes(date.getDay()) ? 'bg-[var(--c-surface)]' : 'bg-white'}`} ${isToday ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
+                className={`relative flex min-h-[68px] flex-col items-center gap-1 rounded-[var(--r-md)] border py-2 transition-colors ${isToday ? 'border-transparent bg-cyan-300 text-[var(--c-ocean)] shadow-[var(--shadow-sm)]' : `border-[var(--c-border)] text-[var(--c-ocean)] hover:bg-[var(--c-surface)] ${[0, 6].includes(date.getDay()) ? 'bg-[var(--c-surface)]' : 'bg-white'}`} ${selected ? 'ring-2 ring-[var(--c-aqua)] ring-offset-1' : ''}`}
               >
+                {isToday && (
+                  <span className="absolute -top-2 rounded-full bg-(--c-ocean) px-2 py-0.5 text-[9px] font-bold leading-none text-white">
+                    Hoy
+                  </span>
+                )}
                 <span
-                  className={`text-[10px] font-bold ${selected ? 'text-white/80' : 'text-[var(--c-text-2)]'}`}
+                  className={`text-[10px] font-bold ${isToday ? 'text-[var(--c-ocean)]' : 'text-[var(--c-text-2)]'}`}
                 >
                   {WEEKDAYS[date.getDay() === 0 ? 6 : date.getDay() - 1]}
                 </span>

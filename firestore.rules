@@ -71,6 +71,7 @@ service cloud.firestore {
         'schools',
         'schoolSlugs',
         'schoolMemberships',
+        'schoolAccessRequests',
         'schoolInvitations',
         'schoolProfiles',
         'schoolStudents',

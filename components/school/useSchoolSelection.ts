@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { getAuthed } from '@/lib/client/authed-api'
-import type { School, SchoolMembership } from '@/lib/school'
+import { type School, type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
 
 export const SCHOOL_SELECTION_EVENT = 'nadamas:school-selection-changed'
@@ -44,7 +44,10 @@ export function useSchoolSelection({
       .then((payload) => {
         const storedCoachSelection = window.localStorage.getItem(selectionKey)
         const next = athleteMode
-          ? (payload.schools || []).filter(({ membership }) => membership.status === 'active')
+          ? (payload.schools || []).filter(
+              ({ membership }) =>
+                membership.status === 'active' && schoolMembershipHasRole(membership, 'student')
+            )
           : schoolsForWorkspace(payload.schools || [], includePersonal)
         if (tenant) {
           const scoped = next.filter((item) => item.school.id === tenant.id)

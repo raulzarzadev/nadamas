@@ -1,10 +1,23 @@
 export default function CoachBadge({
   name,
   unassigned = false,
+  avatarOnly = false,
 }: {
   name: string
   unassigned?: boolean
+  avatarOnly?: boolean
 }) {
+  if (avatarOnly)
+    return (
+      <span
+        role="img"
+        title={name}
+        aria-label={name}
+        className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-[var(--c-ocean)] ${unassigned ? 'border border-current bg-transparent' : 'bg-[var(--c-aqua)]/15'}`}
+      >
+        {!unassigned && getInitials(name)}
+      </span>
+    )
   return (
     <span
       className={`inline-flex w-fit max-w-full shrink-0 items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold leading-none ${

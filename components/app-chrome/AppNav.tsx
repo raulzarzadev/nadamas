@@ -82,7 +82,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
     (role !== 'coach' || roles.coach) &&
     (role !== 'school' || hasDirectorAccess) &&
     (!tenant ||
-      publicAthleteSchedule ||
+      role === 'athlete' ||
       (schoolSelectionStatus === 'ready' && selectedSchool !== null))
 
   useEffect(() => {
@@ -240,9 +240,10 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
         )}
 
         {canShowWorkspaceNavigation && role === 'coach' && <CoachSchoolSwitcher />}
-        {canShowWorkspaceNavigation && role === 'athlete' && !publicAthleteSchedule && (
-          <AthleteSchoolSwitcher />
-        )}
+        {canShowWorkspaceNavigation &&
+          role === 'athlete' &&
+          !publicAthleteSchedule &&
+          (!tenant || selectedSchool !== null) && <AthleteSchoolSwitcher />}
         {publicAthleteSchedule && <div id="athlete-coach-filters" className="min-w-0" />}
       </div>
     </header>

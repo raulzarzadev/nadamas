@@ -14,6 +14,7 @@ import {
   type SchoolStudent,
   schoolMembershipHasRole,
 } from '@/lib/school'
+import SchoolAccessRequests from './SchoolAccessRequests'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
 import SchoolStudentHistory from './SchoolStudentHistory'
@@ -115,6 +116,17 @@ export default function SchoolStudents() {
           </div>
         </div>
       </div>
+      {isDirector && (
+        <SchoolAccessRequests
+          key={selected.school.id}
+          schoolId={selected.school.id}
+          onApproved={async () => {
+            const response = await getAuthed(`/api/schools/${activeSchool.school.id}/students`)
+            const payload = await response.json()
+            setStudents(payload.students || [])
+          }}
+        />
+      )}
       {message && (
         <p className="rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
           {message}
