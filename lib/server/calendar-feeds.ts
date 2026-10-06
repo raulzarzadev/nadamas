@@ -109,7 +109,6 @@ export async function getBookingsForFeed(feed: CalendarFeed) {
   const snapshot = await adminDb.collection('bookings').where(field, '==', feed.uid).get()
   const bookings = snapshot.docs
     .map((doc) => doc.data() as Booking)
-    .filter((booking) => booking.status !== 'cancelled')
     .filter((booking) => Boolean(booking.athleteId && booking.coachId && booking.date))
   if (feed.role === 'coach') {
     const memberships = await adminDb
@@ -134,7 +133,7 @@ export async function getBookingsForFeed(feed: CalendarFeed) {
       .filter(
         (occurrence) =>
           schoolIds.has(occurrence.schoolId) &&
-          ['scheduled', 'completed'].includes(occurrence.status)
+          ['scheduled', 'completed', 'cancelled'].includes(occurrence.status)
       )
     const rosters = await Promise.all(
       [...new Set(occurrences.map((occurrence) => occurrence.schoolId))].map(
@@ -152,7 +151,13 @@ export async function getBookingsForFeed(feed: CalendarFeed) {
       bookings.push(
         schoolClassAgendaBooking({
           schoolId: occurrence.schoolId,
-          occurrence,
+          occurrence:
+            occurrence.status === 'cancelled'
+              ? {
+                  ...occurrence,
+                  studentIds: occurrence.cancelledStudentIds || occurrence.studentIds,
+                }
+              : occurrence,
           coachId: feed.uid,
           coachName: null,
           studentNames: namesBySchool.get(occurrence.schoolId),
@@ -224,9 +229,11 @@ export function buildCalendarIcs(feed: CalendarFeed, bookings: Booking[]) {
 
   for (const event of calendarClassEvents(bookings, feed.role)) {
     const { booking } = event
-    const summary = event.grouped
+    const cancelled = booking.status === 'cancelled'
+    const baseSummary = event.grouped
       ? `Clase grupal (${event.names.length})`
       : eventSummary(feed, booking)
+    const summary = cancelled ? `Cancelada · ${baseSummary}` : baseSummary
     const description = event.grouped
       ? [
           `Alumnos (${event.names.length}):`,
@@ -243,10 +250,11 @@ export function buildCalendarIcs(feed: CalendarFeed, bookings: Booking[]) {
       `SUMMARY:${escapeIcsText(summary)}`,
       `DESCRIPTION:${escapeIcsText(description)}`,
       `LOCATION:${escapeIcsText(booking.locationName || 'Por confirmar')}`,
-      `STATUS:CONFIRMED`,
+      `STATUS:${cancelled ? 'CANCELLED' : 'CONFIRMED'}`,
+      `TRANSP:${cancelled ? 'TRANSPARENT' : 'OPAQUE'}`,
       `LAST-MODIFIED:${utcStamp(new Date(booking.updatedAt || booking.createdAt || Date.now()))}`
     )
-    for (const offset of feed.reminderOffsets) {
+    for (const offset of cancelled ? [] : feed.reminderOffsets) {
       lines.push(
         'BEGIN:VALARM',
         'ACTION:DISPLAY',

@@ -328,6 +328,8 @@ export interface SchoolLocation {
 }
 
 export interface SchoolClassOccurrence {
+  /** Roster at cancellation, retained for the subscribed calendar's event history. */
+  cancelledStudentIds?: string[]
   id: string
   seriesId: string
   schoolId: string

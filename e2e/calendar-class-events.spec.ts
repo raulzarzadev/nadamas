@@ -57,3 +57,32 @@ test('separa escuelas, entrenadores y horarios y conserva la vista individual de
   ).toHaveLength(4)
   expect(calendarClassEvents([first, booking('b', 'Justi')], 'athlete')).toHaveLength(2)
 })
+
+test('conserva el mismo evento cancelado y distingue una retirada parcial', () => {
+  const first = booking('a', 'Adri')
+  const second = booking('b', 'Justi')
+  const before = calendarClassEvents([first, second], 'coach')[0]
+  const cancelled = calendarClassEvents(
+    [
+      { ...first, status: 'cancelled', updatedAt: 3 },
+      { ...second, status: 'cancelled', updatedAt: 4 },
+    ],
+    'coach'
+  )[0]
+  expect(cancelled.uid).toBe(before.uid)
+  expect(cancelled.booking.status).toBe('cancelled')
+  expect(cancelled.booking.updatedAt).toBe(4)
+  expect(cancelled.names).toEqual(['Adri', 'Justi'])
+  const partial = calendarClassEvents([{ ...first, status: 'cancelled' }, second], 'coach')[0]
+  expect(partial.uid).toBe(before.uid)
+  expect(partial.booking.status).toBe('confirmed')
+  expect(partial.names).toEqual(['Justi'])
+  const individual = booking('c', 'Luis', { groupType: 'particular' })
+  const athleteBefore = calendarClassEvents([individual], 'athlete')[0]
+  const athleteCancelled = calendarClassEvents(
+    [{ ...individual, status: 'cancelled' }],
+    'athlete'
+  )[0]
+  expect(athleteCancelled.uid).toBe(athleteBefore.uid)
+  expect(athleteCancelled.booking.status).toBe('cancelled')
+})

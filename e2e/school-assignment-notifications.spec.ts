@@ -238,7 +238,7 @@ test('las asignaciones del director notifican al entrenador antes de responder',
     const calendar = await request.get(`/api/calendar/feeds/${token}.ics`)
     expect(calendar.ok(), await calendar.text()).toBe(true)
     const ics = (await calendar.text()).replace(/\r\n /g, '')
-    expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(1)
+    expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2)
     expect(ics).toContain('SUMMARY:Clase grupal (3)')
     for (const name of ['Adri', 'Justi', 'Luis']) expect(ics).toContain(name)
     const uid = ics.match(/UID:([^\r]+)/)?.[1]
@@ -273,6 +273,14 @@ test('las asignaciones del director notifican al entrenador antes de responder',
         (value: { stringValue: string }) => value.stringValue
       )
     ).toEqual(studentIds.slice(1))
+    const partialCalendar = await request.get(`/api/calendar/feeds/${token}.ics`)
+    const partialIcs = (await partialCalendar.text()).replace(/\r\n /g, '')
+    const activeGroup = partialIcs
+      .split('BEGIN:VEVENT')
+      .find((event) => event.includes('SUMMARY:Clase grupal (2)'))
+    expect(activeGroup).toContain('STATUS:CONFIRMED')
+    expect(activeGroup).not.toContain('Adri')
+    expect(activeGroup).toContain(`UID:${uid}`)
     const full = await request.post(cancellationPath, {
       headers,
       data: { studentIds: studentIds.slice(1) },
@@ -285,6 +293,18 @@ test('las asignaciones del director notifican al entrenador antes de responder',
     const finalFields = (await finalClass.json()).fields
     expect(finalFields.status.stringValue).toBe('cancelled')
     expect(finalFields.studentIds.arrayValue.values || []).toHaveLength(0)
+    const cancelledCalendar = await request.get(`/api/calendar/feeds/${token}.ics`)
+    const cancelledIcs = (await cancelledCalendar.text()).replace(/\r\n /g, '')
+    const cancelledGroup = cancelledIcs
+      .split('BEGIN:VEVENT')
+      .find((event) => event.includes('Clase grupal (2)'))
+    expect(cancelledGroup).toContain(`UID:${uid}`)
+    expect(cancelledGroup).toContain('SUMMARY:Cancelada · Clase grupal (2)')
+    expect(cancelledGroup).toContain('STATUS:CANCELLED')
+    expect(cancelledGroup).toContain('TRANSP:TRANSPARENT')
+    expect(cancelledGroup).not.toContain('BEGIN:VALARM')
+    expect(cancelledGroup).toContain('Justi')
+    expect(cancelledGroup).toContain('Luis')
     for (const id of studentIds)
       expect(
         (

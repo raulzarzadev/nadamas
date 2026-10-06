@@ -67,7 +67,7 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
       const current = item.data() as SchoolClassOccurrence
       transaction.update(item.ref, {
         studentIds: current.studentIds.filter((id) => !selected.has(id)),
-        ...(cancelled ? { status: 'cancelled' } : {}),
+        ...(cancelled ? { status: 'cancelled', cancelledStudentIds: current.studentIds } : {}),
         updatedAt: Date.now(),
       })
     }
