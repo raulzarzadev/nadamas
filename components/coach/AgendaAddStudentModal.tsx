@@ -22,6 +22,7 @@ export interface AddStudentPayload {
 }
 
 export default function AgendaAddStudentModal({
+  submitError,
   slotLabel,
   schoolId,
   coachId,
@@ -32,6 +33,7 @@ export default function AgendaAddStudentModal({
   onClose,
   onSubmit,
 }: {
+  submitError?: string
   slotLabel: string
   schoolId?: string
   coachId?: string
@@ -201,7 +203,9 @@ export default function AgendaAddStudentModal({
         </div>
 
         <div className="flex flex-col px-4 py-4 sm:px-0">
-          {error && <p className="mb-3 text-sm text-[var(--c-error,#b91c1c)]">{error}</p>}
+          {(error || submitError) && (
+            <p className="mb-3 text-sm text-[var(--c-error,#b91c1c)]">{submitError || error}</p>
+          )}
 
           <div className="flex flex-col gap-3">
             <label className="flex min-w-0 flex-col gap-1 text-sm font-semibold text-[var(--c-ocean)]">

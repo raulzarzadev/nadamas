@@ -11,8 +11,11 @@ export function useSchoolAgendaUpdates(
   useEffect(() => {
     callback.current = onChange
   }, [onChange])
+  const schoolIdsKey = JSON.stringify(
+    [...new Set(Array.isArray(schoolId) ? schoolId : schoolId ? [schoolId] : [])].sort()
+  )
   useEffect(() => {
-    const schoolIds = [...new Set(Array.isArray(schoolId) ? schoolId : schoolId ? [schoolId] : [])]
+    const schoolIds = JSON.parse(schoolIdsKey) as string[]
     if (!schoolIds.length) return
     let unsubscribes: Array<() => void> = []
     const update = () => callback.current()
@@ -32,5 +35,5 @@ export function useSchoolAgendaUpdates(
       })
       document.removeEventListener('visibilitychange', syncVisibility)
     }
-  }, [schoolId])
+  }, [schoolIdsKey])
 }

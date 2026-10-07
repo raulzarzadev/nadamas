@@ -9,6 +9,7 @@ const WEEKDAYS = ['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']
 const BAR_KEYS = ['b1', 'b2', 'b3', 'b4', 'b5', 'b6']
 
 export default function CoachAgendaDateSelector({
+  navigationOnly = false,
   selectedDate,
   weekDates,
   dayStatuses,
@@ -19,6 +20,7 @@ export default function CoachAgendaDateSelector({
   onSelectDate,
   onChangeWeek,
 }: {
+  navigationOnly?: boolean
   selectedDate: string
   weekDates: Date[]
   dayStatuses: Map<string, HourStatus[]>
@@ -48,30 +50,34 @@ export default function CoachAgendaDateSelector({
     if (Math.abs(dx) > 40) changeWeek(dx < 0 ? 1 : -1)
   }
 
+  const navigation = (
+    <NavStepper
+      label={
+        <>
+          <span>{monthLabel}</span>
+          {monthCount && (
+            <span className="text-[11px] font-medium text-slate-400">{monthCount}</span>
+          )}
+          <span className="px-0.5">·</span>
+          <span>{weekRange}</span>
+          {weekCount && <span className="text-[11px] font-medium text-slate-400">{weekCount}</span>}
+        </>
+      }
+      prevLabel="Semana anterior"
+      nextLabel="Semana siguiente"
+      onPrev={() => changeWeek(-1)}
+      onNext={() => changeWeek(1)}
+      onToday={() => onSelectDate(today)}
+      isToday={selectedDate === today}
+      labelClassName="text-sm font-semibold capitalize"
+    />
+  )
+  if (navigationOnly) return navigation
+
   return (
     <div className="flex flex-col gap-3">
-      <NavStepper
-        label={
-          <>
-            <span>{monthLabel}</span>
-            {monthCount && (
-              <span className="text-[11px] font-medium text-slate-400">{monthCount}</span>
-            )}
-            <span className="px-0.5">·</span>
-            <span>{weekRange}</span>
-            {weekCount && (
-              <span className="text-[11px] font-medium text-slate-400">{weekCount}</span>
-            )}
-          </>
-        }
-        prevLabel="Semana anterior"
-        nextLabel="Semana siguiente"
-        onPrev={() => changeWeek(-1)}
-        onNext={() => changeWeek(1)}
-        onToday={() => onSelectDate(today)}
-        isToday={selectedDate === today}
-        labelClassName="text-sm font-semibold capitalize"
-      />
+      {navigation}
+
       {weekStatuses.size > 0 && (
         <ul
           aria-label="Significado de los colores"

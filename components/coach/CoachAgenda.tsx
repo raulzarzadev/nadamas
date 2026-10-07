@@ -4,6 +4,7 @@ import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { FiClipboard, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers } from 'react-icons/fi'
+import ScheduleViews from '@/components/schedule/ScheduleViews'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import CoachBadge from '@/components/ui/coach-badge'
 import Sheet from '@/components/ui/sheet'
@@ -197,6 +198,17 @@ export default function CoachAgenda({
   const [cancelClassTarget, setCancelClassTarget] = useState<Booking | null>(null)
   const [cancelClassError, setCancelClassError] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [batchSlots, setBatchSlots] = useState<CoachAvailableSlot[]>([])
+  const [batchAction, setBatchAction] = useState<'students' | 'coaches' | 'type' | 'status' | null>(
+    null
+  )
+  const [batchValue, setBatchValue] = useState('')
+  const [batchError, setBatchError] = useState('')
+  const [batchStudents, setBatchStudents] = useState<Array<{ id: string; name: string }>>([])
+  const [batchStudentIds, setBatchStudentIds] = useState<string[]>([])
+  const batchSlotKey = (slot: CoachAvailableSlot) =>
+    `${slot.coachId}|${slot.date}|${slot.startTime}|${slot.groupType}`
+  const [horizontalDayOpen, setHorizontalDayOpen] = useState(false)
   const [slotEditor, setSlotEditor] = useState<SlotEditorState | null>(null)
   const [slotAssignmentCoachId, setSlotAssignmentCoachId] = useState('')
   const [progressBooking, setProgressBooking] = useState<Booking | null>(null)
@@ -700,9 +712,11 @@ export default function CoachAgenda({
     try {
       await action()
       await loadAgenda(monthOfSelected)
+      return true
     } catch (err) {
       reportInternalError('COACH_AGENDA_ACTION', err)
       setError(GENERIC_USER_ERROR)
+      return false
     } finally {
       setBusy(false)
     }
@@ -1143,7 +1157,7 @@ export default function CoachAgenda({
     })
 
   const updateAvailableSlotGroupType = (slot: CoachAvailableSlot, checked: boolean) => {
-    run(async () => {
+    return run(async () => {
       let targetOfferings = offerings
       const targetSchoolId = schoolIdForSlot(slot)
       if (combinedSources) {
@@ -1250,6 +1264,124 @@ export default function CoachAgenda({
       }
     : null
 
+  async function openBatchAction(action: 'students' | 'coaches' | 'type' | 'status') {
+    setBatchError('')
+    setBatchValue(action === 'type' ? 'particular' : action === 'status' ? 'available' : '')
+    setBatchStudentIds([])
+    setBatchAction(action)
+    if (action === 'students' && schoolId) {
+      try {
+        const response = await getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/students`)
+        const payload = await response.json()
+        setBatchStudents(payload.students || [])
+      } catch {
+        setBatchError('No pudimos cargar los alumnos.')
+      }
+    }
+  }
+  async function applyBatch(studentPayloads?: AddStudentPayload[]) {
+    if (busy || !schoolId || !batchAction) return
+    if (batchAction === 'type') {
+      for (const slot of batchSlots) {
+        if (!(await updateAvailableSlotGroupType(slot, batchValue === 'grupal'))) {
+          setBatchError('No pudimos actualizar todos los horarios. Revisa la agenda.')
+          return
+        }
+      }
+      setBatchAction(null)
+      setBatchSlots([])
+      return
+    }
+    setBusy(true)
+    setBatchError('')
+    const selectedStudentIds = [...batchStudentIds]
+    if (batchAction === 'students' && studentPayloads) {
+      try {
+        for (const payload of studentPayloads) {
+          if (payload.athleteId && !/^manual[:_]/.test(payload.athleteId))
+            selectedStudentIds.push(payload.athleteId)
+          else {
+            const response = await postAuthed(
+              `/api/schools/${encodeURIComponent(schoolId)}/students/quick`,
+              { name: payload.athleteName }
+            )
+            const { student } = await response.json()
+            selectedStudentIds.push(student.id)
+          }
+        }
+      } catch {
+        setBatchError('No pudimos crear todos los alumnos. Revisa la lista antes de reintentar.')
+        setBusy(false)
+        return
+      }
+    }
+    const failed: CoachAvailableSlot[] = []
+    for (const slot of batchSlots) {
+      try {
+        if (batchAction === 'students') {
+          for (const studentId of selectedStudentIds)
+            await postAuthed(
+              `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(studentId)}/classes`,
+              {
+                slots: [
+                  {
+                    date: slot.date,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    coachId: slot.coachId,
+                    groupType: slot.groupType,
+                  },
+                ],
+              }
+            )
+        } else if (batchAction === 'coaches') {
+          if (slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID) throw new Error('SLOT_ALREADY_ASSIGNED')
+          await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/assignments`, {
+            coachId: batchValue,
+            date: slot.date,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            groupType: slot.groupType,
+            offeringId: slot.offeringId,
+            scheduleId: slot.scheduleId,
+          })
+        } else if (batchValue === 'blocked') {
+          await postAuthed(scheduleEndpointFor(slot.coachId), {
+            date: slot.date,
+            allDay: false,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            hidden: false,
+            schoolId,
+          })
+        } else {
+          const blocks = (agenda?.blocks || []).filter(
+            (block) =>
+              block.coachId === slot.coachId &&
+              block.date === slot.date &&
+              block.startTime === slot.startTime &&
+              !block.allDay
+          )
+          for (const block of blocks)
+            await deleteAuthed(
+              `${scheduleEndpointFor(slot.coachId)}?id=${encodeURIComponent(block.id)}&schoolId=${encodeURIComponent(schoolId)}`
+            )
+        }
+      } catch {
+        failed.push(slot)
+      }
+    }
+    setBatchSlots(failed)
+    await loadAgenda(monthOfSelected)
+    if (failed.length)
+      setBatchError('Algunos horarios no se actualizaron. Quedaron seleccionados para revisarlos.')
+    else {
+      setBatchAction(null)
+      setNotice('Horarios actualizados.')
+    }
+    setBusy(false)
+  }
+
   const runConfirmedAction = () => {
     if (!confirmAction) return
     const action = confirmAction
@@ -1259,475 +1391,654 @@ export default function CoachAgenda({
 
   if (agenda === undefined) return <Loading />
 
-  return (
-    <div className="flex flex-col gap-4">
-      <CoachAgendaDateSelector
-        selectedDate={selectedDate}
-        weekDates={weekDates}
-        dayStatuses={dayStatuses}
-        monthCount={`${monthStats.booked}/${monthStats.total}`}
-        weekCount={`${weekStats.booked}/${weekStats.total}`}
-        selectedStatuses={selectedStatuses}
-        onToggleStatus={toggleStatus}
-        onSelectDate={setSelectedDate}
-        onChangeWeek={changeWeek}
-      />
+  const dayCard = (
+    <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
+      {error && <p className="px-4 pb-2 text-sm text-[var(--c-error,#b91c1c)] sm:px-5">{error}</p>}
+      {notice && <p className="px-4 pb-2 text-sm font-semibold text-amber-600 sm:px-5">{notice}</p>}
 
-      {/* Day card */}
-      <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
-        {error && (
-          <p className="px-4 pb-2 text-sm text-[var(--c-error,#b91c1c)] sm:px-5">{error}</p>
+      <div className="border-t border-[var(--c-border)]">
+        {allDayBlock && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
+            <span className="flex items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
+              <FiLock aria-hidden="true" /> Día bloqueado
+              {allDayBlock.note ? ` · ${allDayBlock.note}` : ''}
+            </span>
+            {!readOnlyAgenda && (
+              <RowIconButton
+                ariaLabel="Desbloquear día"
+                onClick={() => unblock(allDayBlock)}
+                disabled={busy}
+              >
+                <FiUnlock aria-hidden="true" />
+              </RowIconButton>
+            )}
+          </div>
         )}
-        {notice && (
-          <p className="px-4 pb-2 text-sm font-semibold text-amber-600 sm:px-5">{notice}</p>
+
+        {!allDayBlock && rows.length === 0 && (
+          <p className="px-4 py-8 text-center text-sm text-[var(--c-text-2)] sm:px-5">
+            {selectedDate < dateKey(new Date())
+              ? 'No hay clases registradas para este día.'
+              : schoolId
+                ? 'No hay horarios asignados para este día.'
+                : 'No hay horarios este día.'}
+          </p>
         )}
 
-        <div className="border-t border-[var(--c-border)]">
-          {allDayBlock && (
-            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
-              <span className="flex items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
-                <FiLock aria-hidden="true" /> Día bloqueado
-                {allDayBlock.note ? ` · ${allDayBlock.note}` : ''}
-              </span>
-              {!readOnlyAgenda && (
-                <RowIconButton
-                  ariaLabel="Desbloquear día"
-                  onClick={() => unblock(allDayBlock)}
-                  disabled={busy}
-                >
-                  <FiUnlock aria-hidden="true" />
-                </RowIconButton>
-              )}
-            </div>
-          )}
-
-          {!allDayBlock && rows.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-[var(--c-text-2)] sm:px-5">
-              {selectedDate < dateKey(new Date())
-                ? 'No hay clases registradas para este día.'
-                : schoolId
-                  ? 'No hay horarios asignados para este día.'
-                  : 'No hay horarios este día.'}
-            </p>
-          )}
-
-          {!allDayBlock &&
-            rows.map((row, rowIndex) => {
-              const showTime = rowIndex === 0 || rows[rowIndex - 1]?.sort !== row.sort
-              const showSeparator = rows[rowIndex + 1]?.sort !== row.sort
-              if (row.kind === 'booked') {
-                const firstBooking = row.bookings[0]
-                if (!firstBooking) return null
-                const schoolClassBooking =
-                  row.bookings.find(
-                    (booking) =>
-                      booking.schoolClassId &&
-                      booking.groupType === 'grupal' &&
-                      (booking.status === 'confirmed' || booking.status === 'pending')
-                  ) ||
-                  row.bookings.find(
-                    (booking) => booking.schoolClassId && booking.status === 'confirmed'
-                  ) ||
-                  row.bookings.find((booking) => booking.schoolClassId)
-                const hasSchoolClass = Boolean(schoolClassBooking)
-                const hasPendingRequest = row.bookings.some(
+        {!allDayBlock &&
+          rows.map((row, rowIndex) => {
+            const showTime = rowIndex === 0 || rows[rowIndex - 1]?.sort !== row.sort
+            const showSeparator = rows[rowIndex + 1]?.sort !== row.sort
+            if (row.kind === 'booked') {
+              const firstBooking = row.bookings[0]
+              if (!firstBooking) return null
+              const schoolClassBooking =
+                row.bookings.find(
                   (booking) =>
-                    Boolean(booking.schoolRequestId) ||
-                    booking.status === 'pending' ||
-                    booking.schoolClassStudents?.some((student) => student.pending)
-                )
-                const isGroupClass =
-                  row.bookings.length > 1 ||
-                  row.bookings.some((booking) => booking.groupType === 'grupal')
-                const addStudentBooking =
-                  schoolClassBooking || (!hasPendingRequest ? firstBooking : null)
-                const classAcceptsStudents = schoolClassBooking
-                  ? addStudentBooking?.status === 'confirmed' ||
-                    addStudentBooking?.status === 'pending'
-                  : addStudentBooking?.status === 'confirmed'
-                const classBlocked = row.bookings.some((booking) =>
-                  Boolean(blockForBooking(booking))
-                )
-                const canAddToGroup =
-                  isGroupClass &&
-                  !hideBookingActions &&
-                  classAcceptsStudents &&
-                  (!schoolClassBooking ||
-                    schoolClassBooking.groupType === 'grupal' ||
-                    manageSchoolSchedule)
-                const groupIsFull = row.bookings.some((booking) => booking.classFull)
-                const classStudentCount = isGroupClass
-                  ? row.bookings.reduce(
-                      (count, booking) => count + (booking.schoolClassStudentCount ?? 1),
-                      0
-                    )
-                  : 1
-                const isFocusTarget = row.bookings.some(bookingMatchesFocus)
-                return (
-                  <AgendaRow
-                    key={`b-${firstBooking.schoolId || 'personal'}-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
-                    time={row.sort}
-                    showTime={showTime}
-                    showSeparator={showSeparator}
-                    cardStatus={classBlocked ? 'blocked' : isGroupClass ? 'group' : 'booked'}
-                    cardCoachName={
-                      firstBooking.coachName ||
-                      agenda.coachNames?.[firstBooking.coachId] ||
-                      coachFallback
-                    }
-                    cardShowCoachName={showCoachName}
-                    cardGroupType={isGroupClass ? 'grupal' : 'particular'}
-                    cardStatusLabel={classBlocked ? 'Bloqueado' : undefined}
-                    cardAgendaLabel={combinedSources ? firstBooking.agendaLabel : undefined}
-                    cardPending={row.bookings.some((booking) => booking.schoolRequestId)}
-                    cardAddStudent={
-                      canAddToGroup && addStudentBooking
-                        ? {
-                            label: capitalizeSchoolTerm(participantSingular),
-                            ariaLabel: `Agregar ${participantSingular} a la clase grupal`,
-                            title: classBlocked
-                              ? 'Desbloquea el horario para agregar alumnos.'
-                              : groupIsFull
-                                ? 'Abre el cupo para agregar alumnos.'
-                                : undefined,
-                            disabled:
-                              busy ||
-                              classBlocked ||
-                              groupIsFull ||
-                              Boolean(schoolClassBooking && classStudentCount >= 100),
-                            onClick: () => openGroupClassAddStudent(addStudentBooking),
-                          }
-                        : undefined
-                    }
-                    cardActions={
-                      <>
-                        {!hideBookingActions && (hasSchoolClass || !hasPendingRequest) && (
-                          <RowIconButton
-                            ariaLabel="Configurar clase"
-                            onClick={() =>
-                              schoolClassBooking
-                                ? openSchoolClassEditor(schoolClassBooking)
-                                : setBookingToEdit(firstBooking)
-                            }
-                            disabled={busy}
-                          >
-                            <FiSettings aria-hidden="true" />
-                          </RowIconButton>
-                        )}
-                      </>
-                    }
-                    cardRef={isFocusTarget ? focusRef : undefined}
-                    cardFocused={isFocusTarget}
-                  >
-                    <ul className="flex w-full flex-col gap-2">
-                      {row.bookings
-                        .flatMap((booking) => {
-                          const classStudents = booking.schoolClassStudents
-                          if (booking.schoolClassId && !classStudents?.length) return []
-                          if (classStudents?.length)
-                            return classStudents.map((student) => ({
-                              booking,
-                              rowKey: `${booking.id}:${student.id}`,
-                              studentName: student.name,
-                              studentId: student.id,
-                              attended: student.attended === true,
-                              note: student.note || '',
-                              pending: student.pending,
-                            }))
-                          return [
-                            {
-                              booking,
-                              rowKey: booking.id,
-                              studentName: booking.athleteName,
-                              studentId: booking.athleteId,
-                              attended: booking.attended === true,
-                              note: booking.studentNote || '',
-                              pending: Boolean(
-                                booking.schoolRequestId || booking.status === 'pending'
-                              ),
-                            },
-                          ]
-                        })
-                        .map(
-                          ({
-                            booking,
-                            rowKey,
-                            studentName,
-                            studentId,
-                            attended,
-                            note,
-                            pending,
-                          }) => (
-                            <li
-                              key={rowKey}
-                              className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
-                            >
-                              <div className="flex min-w-0 items-center gap-2.5">
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
-                                  {initials(studentName)}
-                                </span>
-                                <span className="min-w-0 flex-1">
-                                  {booking.schoolClassTitle && (
-                                    <span className="block text-xs font-semibold text-[var(--c-text-2)]">
-                                      {booking.schoolClassTitle}
-                                    </span>
-                                  )}
-                                  <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
-                                    {studentName}
-                                  </span>
-                                  {!hideBookingActions &&
-                                    !manageSchoolSchedule &&
-                                    !booking.schoolClassId &&
-                                    !booking.schoolRequestId && (
-                                      <Link
-                                        href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
-                                        className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                                      >
-                                        ver perfil ›
-                                      </Link>
-                                    )}
-                                </span>
-                              </div>
-                              <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
-                                {pending && (
-                                  <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">
-                                    Pendiente de aprobación
-                                  </span>
-                                )}
-                                {!hideBookingActions && !booking.schoolRequestId && (
-                                  <button
-                                    type="button"
-                                    aria-label={`Abrir ficha de ${studentName}`}
-                                    title={`Ficha de ${studentName}`}
-                                    onClick={() => {
-                                      setStudentAction({
-                                        booking,
-                                        student: {
-                                          studentId,
-                                          studentName,
-                                          attended,
-                                          note,
-                                          date: booking.date,
-                                          startTime: booking.startTime,
-                                        },
-                                      })
-                                      setStudentActionError(null)
-                                    }}
-                                    disabled={busy}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
-                                  >
-                                    <FiClipboard aria-hidden="true" />
-                                  </button>
-                                )}
-                              </div>
-                              {booking.schoolRequestId && !hideBookingActions && (
-                                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSchoolRequest(booking, 'approved')}
-                                    disabled={busy}
-                                    className="min-h-10 rounded-full bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
-                                  >
-                                    Aprobar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSchoolRequest(booking, 'rejected')}
-                                    disabled={busy}
-                                    className="min-h-10 rounded-full border border-[var(--rose-bd)] px-3 text-xs font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50"
-                                  >
-                                    Rechazar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => void openSchoolRequestEditor(booking)}
-                                    disabled={busy}
-                                    className="col-span-2 min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50 sm:col-span-1"
-                                  >
-                                    Cambiar hora o entrenador
-                                  </button>
-                                </div>
-                              )}
-                            </li>
-                          )
-                        )}
-                    </ul>
-                  </AgendaRow>
-                )
-              }
-              if (row.kind === 'blocked') {
-                const isBlockedGroup = row.slot.groupType === 'grupal'
-                const blockedCoachName =
-                  row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || coachFallback
-                return (
-                  <AgendaRow
-                    key={`x-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
-                    time={row.slot.startTime}
-                    showTime={showTime}
-                    showSeparator={showSeparator}
-                    cardStatus="blocked"
-                    cardCoachName={blockedCoachName}
-                    cardShowCoachName={
-                      showCoachName && !readOnlyAgenda && !(adminMode && !manageSchoolSchedule)
-                    }
-                    cardCoachUnassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
-                    cardGroupType={isBlockedGroup ? 'grupal' : 'particular'}
-                    cardStatusLabel="Bloqueado"
-                    cardAgendaLabel={combinedSources ? row.slot.agendaLabel : undefined}
-                    cardAddStudent={
-                      !hideBookingActions
-                        ? {
-                            label: capitalizeSchoolTerm(participantSingular),
-                            ariaLabel: `No se puede agregar ${participantSingular} a un horario bloqueado`,
-                            title: 'Desbloquea el horario para agregar alumnos.',
-                            disabled: true,
-                          }
-                        : undefined
-                    }
-                    cardActions={
-                      <>
-                        {!readOnlyAgenda && (
-                          <RowIconButton
-                            ariaLabel="Configurar este horario"
-                            onClick={() => openSlotEditor(row.slot, row.block)}
-                            disabled={
-                              busy ||
-                              dayBookings.some(
-                                (booking) =>
-                                  (!combinedSources || booking.schoolId === row.slot.schoolId) &&
-                                  booking.coachId === row.slot.coachId &&
-                                  booking.startTime === row.slot.startTime
-                              )
-                            }
-                          >
-                            <FiSettings aria-hidden="true" />
-                          </RowIconButton>
-                        )}
-                      </>
-                    }
-                  />
-                )
-              }
-              const isAvailableGroup = row.slot.groupType === 'grupal'
-              const availableStyle = isAvailableGroup
-                ? HOUR_STATUS_STYLE.groupAvailable
-                : HOUR_STATUS_STYLE.available
+                    booking.schoolClassId &&
+                    booking.groupType === 'grupal' &&
+                    (booking.status === 'confirmed' || booking.status === 'pending')
+                ) ||
+                row.bookings.find(
+                  (booking) => booking.schoolClassId && booking.status === 'confirmed'
+                ) ||
+                row.bookings.find((booking) => booking.schoolClassId)
+              const hasSchoolClass = Boolean(schoolClassBooking)
+              const hasPendingRequest = row.bookings.some(
+                (booking) =>
+                  Boolean(booking.schoolRequestId) ||
+                  booking.status === 'pending' ||
+                  booking.schoolClassStudents?.some((student) => student.pending)
+              )
+              const isGroupClass =
+                row.bookings.length > 1 ||
+                row.bookings.some((booking) => booking.groupType === 'grupal')
+              const addStudentBooking =
+                schoolClassBooking || (!hasPendingRequest ? firstBooking : null)
+              const classAcceptsStudents = schoolClassBooking
+                ? addStudentBooking?.status === 'confirmed' ||
+                  addStudentBooking?.status === 'pending'
+                : addStudentBooking?.status === 'confirmed'
+              const classBlocked = row.bookings.some((booking) => Boolean(blockForBooking(booking)))
+              const canAddToGroup =
+                isGroupClass &&
+                !hideBookingActions &&
+                classAcceptsStudents &&
+                (!schoolClassBooking ||
+                  schoolClassBooking.groupType === 'grupal' ||
+                  manageSchoolSchedule)
+              const groupIsFull = row.bookings.some((booking) => booking.classFull)
+              const classStudentCount = isGroupClass
+                ? row.bookings.reduce(
+                    (count, booking) => count + (booking.schoolClassStudentCount ?? 1),
+                    0
+                  )
+                : 1
+              const isFocusTarget = row.bookings.some(bookingMatchesFocus)
               return (
                 <AgendaRow
-                  key={`a-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
+                  key={`b-${firstBooking.schoolId || 'personal'}-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
+                  time={row.sort}
+                  showTime={showTime}
+                  showSeparator={showSeparator}
+                  cardStatus={classBlocked ? 'blocked' : isGroupClass ? 'group' : 'booked'}
+                  cardCoachName={
+                    firstBooking.coachName ||
+                    agenda.coachNames?.[firstBooking.coachId] ||
+                    coachFallback
+                  }
+                  cardShowCoachName={showCoachName}
+                  cardGroupType={isGroupClass ? 'grupal' : 'particular'}
+                  cardStatusLabel={classBlocked ? 'Bloqueado' : undefined}
+                  cardAgendaLabel={combinedSources ? firstBooking.agendaLabel : undefined}
+                  cardPending={row.bookings.some((booking) => booking.schoolRequestId)}
+                  cardAddStudent={
+                    canAddToGroup && addStudentBooking
+                      ? {
+                          label: capitalizeSchoolTerm(participantSingular),
+                          ariaLabel: `Agregar ${participantSingular} a la clase grupal`,
+                          title: classBlocked
+                            ? 'Desbloquea el horario para agregar alumnos.'
+                            : groupIsFull
+                              ? 'Abre el cupo para agregar alumnos.'
+                              : undefined,
+                          disabled:
+                            busy ||
+                            classBlocked ||
+                            groupIsFull ||
+                            Boolean(schoolClassBooking && classStudentCount >= 100),
+                          onClick: () => openGroupClassAddStudent(addStudentBooking),
+                        }
+                      : undefined
+                  }
+                  cardActions={
+                    <>
+                      {!hideBookingActions && (hasSchoolClass || !hasPendingRequest) && (
+                        <RowIconButton
+                          ariaLabel="Configurar clase"
+                          onClick={() =>
+                            schoolClassBooking
+                              ? openSchoolClassEditor(schoolClassBooking)
+                              : setBookingToEdit(firstBooking)
+                          }
+                          disabled={busy}
+                        >
+                          <FiSettings aria-hidden="true" />
+                        </RowIconButton>
+                      )}
+                    </>
+                  }
+                  cardRef={isFocusTarget ? focusRef : undefined}
+                  cardFocused={isFocusTarget}
+                >
+                  <ul className="flex w-full flex-col gap-2">
+                    {row.bookings
+                      .flatMap((booking) => {
+                        const classStudents = booking.schoolClassStudents
+                        if (booking.schoolClassId && !classStudents?.length) return []
+                        if (classStudents?.length)
+                          return classStudents.map((student) => ({
+                            booking,
+                            rowKey: `${booking.id}:${student.id}`,
+                            studentName: student.name,
+                            studentId: student.id,
+                            attended: student.attended === true,
+                            note: student.note || '',
+                            pending: student.pending,
+                          }))
+                        return [
+                          {
+                            booking,
+                            rowKey: booking.id,
+                            studentName: booking.athleteName,
+                            studentId: booking.athleteId,
+                            attended: booking.attended === true,
+                            note: booking.studentNote || '',
+                            pending: Boolean(
+                              booking.schoolRequestId || booking.status === 'pending'
+                            ),
+                          },
+                        ]
+                      })
+                      .map(
+                        ({ booking, rowKey, studentName, studentId, attended, note, pending }) => (
+                          <li
+                            key={rowKey}
+                            className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
+                          >
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
+                                {initials(studentName)}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                {booking.schoolClassTitle && (
+                                  <span className="block text-xs font-semibold text-[var(--c-text-2)]">
+                                    {booking.schoolClassTitle}
+                                  </span>
+                                )}
+                                <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
+                                  {studentName}
+                                </span>
+                                {!hideBookingActions &&
+                                  !manageSchoolSchedule &&
+                                  !booking.schoolClassId &&
+                                  !booking.schoolRequestId && (
+                                    <Link
+                                      href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
+                                      className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+                                    >
+                                      ver perfil ›
+                                    </Link>
+                                  )}
+                              </span>
+                            </div>
+                            <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
+                              {pending && (
+                                <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-900">
+                                  Pendiente de aprobación
+                                </span>
+                              )}
+                              {!hideBookingActions && !booking.schoolRequestId && (
+                                <button
+                                  type="button"
+                                  aria-label={`Abrir ficha de ${studentName}`}
+                                  title={`Ficha de ${studentName}`}
+                                  onClick={() => {
+                                    setStudentAction({
+                                      booking,
+                                      student: {
+                                        studentId,
+                                        studentName,
+                                        attended,
+                                        note,
+                                        date: booking.date,
+                                        startTime: booking.startTime,
+                                      },
+                                    })
+                                    setStudentActionError(null)
+                                  }}
+                                  disabled={busy}
+                                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+                                >
+                                  <FiClipboard aria-hidden="true" />
+                                </button>
+                              )}
+                            </div>
+                            {booking.schoolRequestId && !hideBookingActions && (
+                              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                                <button
+                                  type="button"
+                                  onClick={() => handleSchoolRequest(booking, 'approved')}
+                                  disabled={busy}
+                                  className="min-h-10 rounded-full bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+                                >
+                                  Aprobar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSchoolRequest(booking, 'rejected')}
+                                  disabled={busy}
+                                  className="min-h-10 rounded-full border border-[var(--rose-bd)] px-3 text-xs font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50"
+                                >
+                                  Rechazar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void openSchoolRequestEditor(booking)}
+                                  disabled={busy}
+                                  className="col-span-2 min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50 sm:col-span-1"
+                                >
+                                  Cambiar hora o entrenador
+                                </button>
+                              </div>
+                            )}
+                          </li>
+                        )
+                      )}
+                  </ul>
+                </AgendaRow>
+              )
+            }
+            if (row.kind === 'blocked') {
+              const isBlockedGroup = row.slot.groupType === 'grupal'
+              const blockedCoachName =
+                row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || coachFallback
+              return (
+                <AgendaRow
+                  key={`x-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
                   time={row.slot.startTime}
                   showTime={showTime}
                   showSeparator={showSeparator}
-                >
-                  <div
-                    className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
-                  >
-                    {readOnlyAgenda || (adminMode && !manageSchoolSchedule) ? (
-                      <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
-                        <span
-                          className={`h-2 w-2 shrink-0 rounded-full ${availableStyle.dot}`}
-                          aria-hidden="true"
-                        />
-                        Disponible
-                        <span className="font-normal text-[var(--c-text-2)]">
-                          ·{' '}
-                          {row.slot.coachName ||
-                            agenda.coachNames?.[row.slot.coachId] ||
-                            coachFallback}
-                        </span>
-                      </span>
-                    ) : (
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        {showCoachName && (
-                          <CoachBadge
-                            name={
-                              row.slot.coachName ||
-                              agenda.coachNames?.[row.slot.coachId] ||
-                              coachFallback
-                            }
-                            unassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
-                          />
-                        )}
-                        <span className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--c-text-2)]">
-                          <span className="inline-flex items-center gap-1">
-                            <FiUnlock aria-hidden="true" className="h-3.5 w-3.5" /> Disponible
-                          </span>
-                          <span aria-hidden="true">·</span>
-                          <span className="inline-flex items-center gap-1">
-                            {isAvailableGroup ? (
-                              <FiUsers aria-hidden="true" className="h-3.5 w-3.5" />
-                            ) : (
-                              <FiUser aria-hidden="true" className="h-3.5 w-3.5" />
-                            )}
-                            {isAvailableGroup ? 'Grupal' : 'Particular'}
-                          </span>
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
-                      {combinedSources && row.slot.agendaLabel && (
-                        <span className="w-fit shrink-0 rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
-                          {row.slot.agendaLabel}
-                        </span>
-                      )}
-                      {!hideBookingActions && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setAddStudentSlot({
-                              coachId: row.slot.coachId,
-                              schoolId: row.slot.schoolId,
-                              date: row.slot.date,
-                              startTime: row.slot.startTime,
-                              endTime: row.slot.endTime,
-                              locationName: row.slot.locationName,
-                              groupType: row.slot.groupType,
-                            })
-                          }
-                          disabled={busy}
-                          className="inline-flex min-h-9 w-fit shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          <FiPlus aria-hidden="true" /> {capitalizeSchoolTerm(participantSingular)}
-                        </button>
-                      )}
+                  cardStatus="blocked"
+                  cardCoachName={blockedCoachName}
+                  cardShowCoachName={
+                    showCoachName && !readOnlyAgenda && !(adminMode && !manageSchoolSchedule)
+                  }
+                  cardCoachUnassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                  cardGroupType={isBlockedGroup ? 'grupal' : 'particular'}
+                  cardStatusLabel="Bloqueado"
+                  cardAgendaLabel={combinedSources ? row.slot.agendaLabel : undefined}
+                  cardAddStudent={
+                    !hideBookingActions
+                      ? {
+                          label: capitalizeSchoolTerm(participantSingular),
+                          ariaLabel: `No se puede agregar ${participantSingular} a un horario bloqueado`,
+                          title: 'Desbloquea el horario para agregar alumnos.',
+                          disabled: true,
+                        }
+                      : undefined
+                  }
+                  cardActions={
+                    <>
                       {!readOnlyAgenda && (
-                        <span
-                          className="group relative"
-                          title={
+                        <RowIconButton
+                          ariaLabel="Configurar este horario"
+                          onClick={() => openSlotEditor(row.slot, row.block)}
+                          disabled={
+                            busy ||
                             dayBookings.some(
                               (booking) =>
                                 (!combinedSources || booking.schoolId === row.slot.schoolId) &&
                                 booking.coachId === row.slot.coachId &&
                                 booking.startTime === row.slot.startTime
                             )
-                              ? 'No se puede eliminar porque hay una clase asignada.'
-                              : undefined
                           }
                         >
-                          <RowIconButton
-                            ariaLabel="Configurar este horario"
-                            onClick={() => openSlotEditor(row.slot)}
-                            disabled={
-                              busy ||
-                              dayBookings.some(
-                                (booking) =>
-                                  (!combinedSources || booking.schoolId === row.slot.schoolId) &&
-                                  booking.coachId === row.slot.coachId &&
-                                  booking.startTime === row.slot.startTime
-                              )
-                            }
-                          >
-                            <FiSettings aria-hidden="true" />
-                          </RowIconButton>
-                        </span>
+                          <FiSettings aria-hidden="true" />
+                        </RowIconButton>
                       )}
-                    </div>
-                  </div>
-                </AgendaRow>
+                    </>
+                  }
+                />
               )
-            })}
+            }
+            const isAvailableGroup = row.slot.groupType === 'grupal'
+            const availableStyle = isAvailableGroup
+              ? HOUR_STATUS_STYLE.groupAvailable
+              : HOUR_STATUS_STYLE.available
+            return (
+              <AgendaRow
+                key={`a-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
+                time={row.slot.startTime}
+                showTime={showTime}
+                showSeparator={showSeparator}
+              >
+                <div
+                  className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
+                >
+                  {readOnlyAgenda || (adminMode && !manageSchoolSchedule) ? (
+                    <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
+                      <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${availableStyle.dot}`}
+                        aria-hidden="true"
+                      />
+                      Disponible
+                      <span className="font-normal text-[var(--c-text-2)]">
+                        ·{' '}
+                        {row.slot.coachName ||
+                          agenda.coachNames?.[row.slot.coachId] ||
+                          coachFallback}
+                      </span>
+                    </span>
+                  ) : (
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      {showCoachName && (
+                        <CoachBadge
+                          name={
+                            row.slot.coachName ||
+                            agenda.coachNames?.[row.slot.coachId] ||
+                            coachFallback
+                          }
+                          unassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                        />
+                      )}
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--c-text-2)]">
+                        <span className="inline-flex items-center gap-1">
+                          <FiUnlock aria-hidden="true" className="h-3.5 w-3.5" /> Disponible
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span className="inline-flex items-center gap-1">
+                          {isAvailableGroup ? (
+                            <FiUsers aria-hidden="true" className="h-3.5 w-3.5" />
+                          ) : (
+                            <FiUser aria-hidden="true" className="h-3.5 w-3.5" />
+                          )}
+                          {isAvailableGroup ? 'Grupal' : 'Particular'}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
+                    {combinedSources && row.slot.agendaLabel && (
+                      <span className="w-fit shrink-0 rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
+                        {row.slot.agendaLabel}
+                      </span>
+                    )}
+                    {!hideBookingActions && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAddStudentSlot({
+                            coachId: row.slot.coachId,
+                            schoolId: row.slot.schoolId,
+                            date: row.slot.date,
+                            startTime: row.slot.startTime,
+                            endTime: row.slot.endTime,
+                            locationName: row.slot.locationName,
+                            groupType: row.slot.groupType,
+                          })
+                        }
+                        disabled={busy}
+                        className="inline-flex min-h-9 w-fit shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <FiPlus aria-hidden="true" /> {capitalizeSchoolTerm(participantSingular)}
+                      </button>
+                    )}
+                    {!readOnlyAgenda && (
+                      <span
+                        className="group relative"
+                        title={
+                          dayBookings.some(
+                            (booking) =>
+                              (!combinedSources || booking.schoolId === row.slot.schoolId) &&
+                              booking.coachId === row.slot.coachId &&
+                              booking.startTime === row.slot.startTime
+                          )
+                            ? 'No se puede eliminar porque hay una clase asignada.'
+                            : undefined
+                        }
+                      >
+                        <RowIconButton
+                          ariaLabel="Configurar este horario"
+                          onClick={() => openSlotEditor(row.slot)}
+                          disabled={
+                            busy ||
+                            dayBookings.some(
+                              (booking) =>
+                                (!combinedSources || booking.schoolId === row.slot.schoolId) &&
+                                booking.coachId === row.slot.coachId &&
+                                booking.startTime === row.slot.startTime
+                            )
+                          }
+                        >
+                          <FiSettings aria-hidden="true" />
+                        </RowIconButton>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </AgendaRow>
+            )
+          })}
+      </div>
+    </section>
+  )
+
+  return (
+    <div className="flex flex-col gap-4">
+      {manageSchoolSchedule ? (
+        <ScheduleViews
+          selectedDate={selectedDate}
+          days={weekDates}
+          today={dateKey(new Date())}
+          dayStatuses={dayStatuses}
+          selectedStatuses={selectedStatuses}
+          onToggleStatus={toggleStatus}
+          onSelectDate={setSelectedDate}
+          onChangeWeek={changeWeek}
+          monthCount={`${monthStats.booked}/${monthStats.total}`}
+          weekCount={`${weekStats.booked}/${weekStats.total}`}
+          slots={(agenda?.availableSlots || []).map((slot) => ({
+            key: batchSlotKey(slot),
+            date: slot.date,
+            startTime: slot.startTime,
+            groupType: slot.groupType,
+            selected: batchSlots.some((item) => batchSlotKey(item) === batchSlotKey(slot)),
+            label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${slot.coachName || agenda?.coachNames?.[slot.coachId] || 'Sin profe aún'} · ${slot.groupType}${slot.status === 'blocked' ? ' · Bloqueado' : ''}`,
+          }))}
+          onSelectSlot={(key) => {
+            const slot = agenda?.availableSlots.find((item) => batchSlotKey(item) === key)
+            if (slot)
+              setBatchSlots((current) =>
+                current.some((item) => batchSlotKey(item) === key)
+                  ? current.filter((item) => batchSlotKey(item) !== key)
+                  : [...current, slot]
+              )
+          }}
+        >
+          {dayCard}
+        </ScheduleViews>
+      ) : (
+        <>
+          <CoachAgendaDateSelector
+            selectedDate={selectedDate}
+            weekDates={weekDates}
+            dayStatuses={dayStatuses}
+            monthCount={`${monthStats.booked}/${monthStats.total}`}
+            weekCount={`${weekStats.booked}/${weekStats.total}`}
+            selectedStatuses={selectedStatuses}
+            onToggleStatus={toggleStatus}
+            onSelectDate={setSelectedDate}
+            onChangeWeek={changeWeek}
+          />
+          {dayCard}
+        </>
+      )}
+
+      {batchSlots.length > 0 && (
+        <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3 shadow-lg">
+          <span className="mr-auto text-sm font-bold">
+            {batchSlots.length} horarios seleccionados
+          </span>
+          {(['students', 'coaches', 'type', 'status'] as const).map((action) => (
+            <button
+              key={action}
+              type="button"
+              disabled={busy}
+              onClick={() => void openBatchAction(action)}
+              className="btn btn-outline min-h-11"
+            >
+              {{ students: 'Alumnos', coaches: 'Profes', type: 'Tipo', status: 'Estado' }[action]}
+            </button>
+          ))}
+          <button
+            type="button"
+            disabled={busy}
+            className="btn btn-ghost"
+            onClick={() => setBatchSlots([])}
+          >
+            Limpiar
+          </button>
         </div>
-      </section>
+      )}
+      {batchAction === 'students' && schoolId && (
+        <AgendaAddStudentModal
+          slotLabel={`${batchSlots.length} horarios seleccionados`}
+          submitError={batchError}
+          schoolId={schoolId}
+          busy={busy}
+          allowCreate
+          onClose={() => setBatchAction(null)}
+          onSubmit={(payloads) => void applyBatch(payloads)}
+        />
+      )}
+      {batchError && (
+        <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
+          {batchError}
+        </p>
+      )}
+      <Sheet
+        open={batchAction !== null && batchAction !== 'students'}
+        onClose={() => setBatchAction(null)}
+        closeDisabled={busy}
+        label="Gestionar horarios seleccionados"
+      >
+        <div className="grid gap-3">
+          <h2 className="text-lg font-bold">Gestionar {batchSlots.length} horarios</h2>
+          {batchAction === 'students' ? (
+            <fieldset className="grid gap-2">
+              <legend>Alumnos</legend>
+              {batchStudents.map((student) => (
+                <label key={student.id} className="flex min-h-11 items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={batchStudentIds.includes(student.id)}
+                    onChange={() =>
+                      setBatchStudentIds((current) =>
+                        current.includes(student.id)
+                          ? current.filter((id) => id !== student.id)
+                          : [...current, student.id]
+                      )
+                    }
+                  />
+                  {student.name}
+                </label>
+              ))}
+            </fieldset>
+          ) : batchAction === 'coaches' ? (
+            <label className="grid gap-2 rounded-[var(--r-md)] border border-(--c-border) p-3">
+              <span className="text-sm font-bold text-(--c-text-2)">
+                Asignar profe para estas fechas
+              </span>
+              <select
+                value={batchValue}
+                disabled={busy}
+                onChange={(event) => setBatchValue(event.target.value)}
+                className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-sm focus:outline-2 focus:outline-(--c-aqua-strong)"
+              >
+                <option value="">Seleccionar profe</option>
+                {scheduleCoachOptions
+                  .filter((coach) => coach.id !== UNASSIGNED_SCHOOL_COACH_ID)
+                  .map((coach) => (
+                    <option key={coach.id} value={coach.id}>
+                      {coach.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          ) : batchAction === 'type' ? (
+            <SlotSegmentedControl
+              label="Tipo de clase"
+              leftLabel="Particular"
+              rightLabel="Grupal"
+              leftIcon={<FiUser />}
+              rightIcon={<FiUsers />}
+              checked={batchValue === 'grupal'}
+              onChange={(checked) => setBatchValue(checked ? 'grupal' : 'particular')}
+              disabled={busy}
+            />
+          ) : (
+            <SlotSegmentedControl
+              label="Estado del horario"
+              leftLabel="Disponible"
+              rightLabel="Bloqueada"
+              leftIcon={<FiUnlock />}
+              rightIcon={<FiLock />}
+              checked={batchValue === 'blocked'}
+              onChange={(checked) => setBatchValue(checked ? 'blocked' : 'available')}
+              disabled={busy}
+            />
+          )}
+          {batchAction === 'coaches' &&
+            batchSlots.some((slot) => slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID) && (
+              <p>Selecciona únicamente horarios sin profesor para asignarlos.</p>
+            )}
+          {batchAction === 'type' && (
+            <p className="text-sm">
+              El tipo se actualiza en el horario publicado y sus fechas recurrentes.
+            </p>
+          )}
+          {batchError && <p role="alert">{batchError}</p>}
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={
+              busy ||
+              (batchAction === 'students' ? !batchStudentIds.length : !batchValue) ||
+              (batchAction === 'coaches' &&
+                batchSlots.some((slot) => slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID))
+            }
+            onClick={() => void applyBatch()}
+          >
+            {busy ? 'Guardando…' : 'Aplicar'}
+          </button>
+        </div>
+      </Sheet>
+      <Sheet
+        open={horizontalDayOpen}
+        onClose={() => setHorizontalDayOpen(false)}
+        label="Administrar horarios del día"
+        size="xl"
+      >
+        <h2 className="mb-3 text-lg font-bold">
+          {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+          })}
+        </h2>
+        {dayCard}
+      </Sheet>
 
       <Sheet
         open={Boolean(schoolRequestDraft)}
