@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { type ReactNode, useState } from 'react'
-import { FiArrowLeft, FiClipboard, FiPlus, FiSettings, FiUsers } from 'react-icons/fi'
+import { FiArrowLeft, FiPlus, FiSettings, FiUsers } from 'react-icons/fi'
 import Avatar from '@/components/ui/avatar'
 import Chip from '@/components/ui/chip'
 import ClassCard from '@/components/ui/class-card'
+import ClassStudentRow from '@/components/ui/class-student-row'
 import CoachBadge from '@/components/ui/coach-badge'
 import InfoModal from '@/components/ui/info-modal'
 import ScheduleTag from '@/components/ui/schedule-tag'
@@ -50,18 +51,7 @@ export default function InterfaceCatalog() {
   const [feedback, setFeedback] = useState('')
   const [group, setGroup] = useState(true)
   const demoStudent = (name: string) => (
-    <div className="flex items-center gap-3 rounded-2xl bg-white/60 px-3 py-2">
-      <Avatar name={name} tone="white" size={36} />
-      <strong className="min-w-0 flex-1 truncate">{name}</strong>
-      <button
-        type="button"
-        aria-label={`Editar nota de ${name}`}
-        onClick={() => setModal('note')}
-        className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-(--c-border) bg-white before:absolute before:-inset-1.5 hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-      >
-        <FiClipboard aria-hidden="true" size={14} />
-      </button>
-    </div>
+    <ClassStudentRow name={name} onEdit={() => setModal('note')} />
   )
 
   return (

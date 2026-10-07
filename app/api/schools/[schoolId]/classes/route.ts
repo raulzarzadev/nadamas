@@ -121,7 +121,7 @@ function classDeepLink(
   if (first?.date) params.set('date', first.date)
   if (first?.startTime) params.set('time', first.startTime)
   if (result.seriesId) params.set('class', result.seriesId)
-  return `/school/classes?${params.toString()}`
+  return `/coach/agenda?${params.toString()}`
 }
 
 function classDeepLinkData(result: {

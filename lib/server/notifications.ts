@@ -99,7 +99,10 @@ export async function createNotification(input: CreateNotificationInput) {
           ...names,
         ].join('\n')
       : input.body,
-    link: input.link,
+    link:
+      input.classEvent && input.link.startsWith('/school/classes')
+        ? input.link.replace('/school/classes', '/coach/agenda')
+        : input.link,
     ...(input.data ? { data: input.data } : {}),
     createdAt: Date.now(),
     readAt: null,

@@ -262,7 +262,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
             : status === 'pending'
               ? `La clase ${occurrence.title} quedó pendiente de aprobación.`
               : `La clase ${occurrence.title} fue actualizada.`,
-        link: '/school/classes',
+        link: `/coach/agenda?${new URLSearchParams({ school: schoolId, date: update.date || occurrence.date, time: update.startTime || occurrence.startTime }).toString()}`,
       }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   return NextResponse.json({ occurrence: { ...occurrence, ...update } })
 }

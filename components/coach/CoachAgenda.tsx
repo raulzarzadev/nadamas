@@ -16,11 +16,11 @@ import {
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import ClassCard from '@/components/ui/class-card'
+import ClassStudentRow from '@/components/ui/class-student-row'
 import CoachBadge from '@/components/ui/coach-badge'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
 import StatusBadge from '@/components/ui/status-badge'
-import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
@@ -2247,25 +2247,36 @@ export default function CoachAgenda({
               pending
               showSeparator={false}
             >
-              <StudentBadge name={booking.athleteName || 'Alumno'} />
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void resolveBatchRequest(booking, 'approved')}
-                  className="min-h-11 rounded-full bg-(--c-ocean) px-4 text-sm font-bold text-white disabled:opacity-50"
-                >
-                  Aceptar
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void resolveBatchRequest(booking, 'rejected')}
-                  className="min-h-11 rounded-full border border-rose-200 px-4 text-sm font-bold text-rose-700 disabled:opacity-50"
-                >
-                  Rechazar
-                </button>
-              </div>
+              <ClassStudentRow
+                name={booking.athleteName || 'Alumno'}
+                disabled={busy}
+                onEdit={() => {
+                  setShowBatchRequests(false)
+                  openSchoolClassEditor(booking)
+                }}
+                actions={
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void resolveBatchRequest(booking, 'approved')}
+                        className="relative h-8 min-h-8 rounded-full bg-(--c-ocean) px-3 text-xs before:absolute before:-inset-y-1.5 font-bold text-white disabled:opacity-50"
+                      >
+                        Aceptar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void resolveBatchRequest(booking, 'rejected')}
+                        className="relative h-8 min-h-8 rounded-full border border-rose-200 px-3 text-xs before:absolute before:-inset-y-1.5 font-bold text-rose-700 disabled:opacity-50"
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  </>
+                }
+              />
             </ClassCard>
           ))}
         </div>

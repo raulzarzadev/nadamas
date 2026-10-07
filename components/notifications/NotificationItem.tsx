@@ -1,7 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { type AppNotification, notificationTimeAgo } from '@/lib/notification'
+import { useRole } from '@/context/RoleContext'
+import {
+  type AppNotification,
+  notificationDestination,
+  notificationTimeAgo,
+} from '@/lib/notification'
 
 export default function NotificationItem({
   notification,
@@ -13,10 +18,11 @@ export default function NotificationItem({
   /** Show "Para: …" instead of the unread dot (used in the "Enviadas" tab). */
   showActor?: boolean
 }) {
+  const { activeRole } = useRole()
   const unread = !showActor && !notification.readAt
   return (
     <Link
-      href={notification.link}
+      href={notificationDestination(notification, activeRole)}
       onClick={onNavigate}
       className={`flex gap-3 px-3 py-3 transition-colors hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[var(--c-aqua-strong)] ${
         unread ? 'bg-[var(--c-aqua-light)]/25' : ''

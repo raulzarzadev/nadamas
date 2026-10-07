@@ -51,3 +51,15 @@ export function notificationTimeAgo(createdAt: number, now = Date.now()): string
   if (days < 7) return `hace ${days} d`
   return new Date(createdAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
 }
+
+/** Repair legacy class links without routing coaches into the director workspace. */
+export function notificationDestination(notification: AppNotification, role: string) {
+  const classUpdate =
+    notification.type === 'school_class_assigned' || notification.type === 'school_class_cancelled'
+  if (classUpdate && notification.link.startsWith('/school/classes')) {
+    if (role === 'coach') return notification.link.replace('/school/classes', '/coach/agenda')
+    if (role === 'athlete')
+      return notification.link.replace('/school/classes', '/athlete/find-coach')
+  }
+  return notification.link
+}

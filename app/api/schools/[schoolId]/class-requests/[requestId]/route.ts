@@ -114,7 +114,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     type: 'school_class_assigned',
     title: 'Solicitud aprobada',
     body: 'La dirección asignó un horario para tu solicitud.',
-    link: classLink,
+    link: classLink.replace('/school/classes', '/athlete/find-coach'),
     ...(classLinkData ? { data: classLinkData } : {}),
   }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   for (const teacherId of teacherIds) {
@@ -134,7 +134,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       type: 'school_class_assigned',
       title: 'Nueva clase asignada',
       body: `${classValidation.value.title} fue asignada a tu agenda.`,
-      link: classLink,
+      link: classLink.replace('/school/classes', '/coach/agenda'),
       ...(classLinkData ? { data: classLinkData } : {}),
     }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   }
