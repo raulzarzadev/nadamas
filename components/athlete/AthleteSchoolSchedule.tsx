@@ -6,11 +6,12 @@ import { createPortal } from 'react-dom'
 import { FiUser, FiUsers, FiX } from 'react-icons/fi'
 import AdditionalProfileCreateModal from '@/components/profile/AdditionalProfileCreateModal'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
+import ScheduleTag from '@/components/ui/schedule-tag'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
 import type { AdditionalProfile } from '@/lib/additional-profile'
-import { getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { AuthedApiError, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
 import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import {
@@ -139,7 +140,12 @@ export default function AthleteSchoolSchedule({
     setChosenSlots((current) =>
       current.some((item) => selectionKey(item) === selectionKey(slot))
         ? current.filter((item) => selectionKey(item) !== selectionKey(slot))
-        : [...current, slot]
+        : [
+            ...current.filter(
+              (item) => item.date !== slot.date || item.startTime !== slot.startTime
+            ),
+            slot,
+          ]
     )
   }
   const [selectedSlot, setSelectedSlot] = useState<CoachAvailableSlot | null>(null)
@@ -148,6 +154,7 @@ export default function AthleteSchoolSchedule({
   const [studentIds, setStudentIds] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [bookingConfirmation, setBookingConfirmation] = useState('')
   const [error, setError] = useState('')
   const month = selectedDate.slice(0, 7)
 
@@ -559,10 +566,9 @@ export default function AthleteSchoolSchedule({
     date.setDate(date.getDate() + delta * 7)
     setSelectedDate(dateKey(date))
   }
-  const personalReservations = myReservations
+  const visibleReservations = myReservations
     .filter(
       (reservation) =>
-        reservation.date === selectedDate &&
         reservation.status !== 'cancelled' &&
         (!schoolId || reservation.schoolId === schoolId) &&
         (schoolFilter !== 'all'
@@ -573,6 +579,9 @@ export default function AthleteSchoolSchedule({
             reservation.coachId === coachFilter)
     )
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
+  const personalReservations = visibleReservations.filter(
+    (reservation) => reservation.date === selectedDate
+  )
   const personalReservationKeys = new Set(
     personalReservations.map(
       (reservation) =>
@@ -620,8 +629,11 @@ export default function AthleteSchoolSchedule({
     if (!selectedSlot || !selectedParticipants.length || busy) return
     setBusy(true)
     setError('')
+    setMessage('')
+    setBookingConfirmation('')
     let completed = 0
     let failed = 0
+    const failureStatuses = new Set<number>()
     const targets = chosenSlots.length ? chosenSlots : [selectedSlot]
     for (const slot of targets) {
       const day = new Date(`${slot.date}T12:00:00`).getDay()
@@ -700,27 +712,37 @@ export default function AthleteSchoolSchedule({
           }
           completedBookings.current.add(operationKey)
           completed++
-        } catch {
+        } catch (error) {
           failed++
+          if (error instanceof AuthedApiError) failureStatuses.add(error.status)
         }
       }
     }
     if (failed) {
+      const guidance = failureStatuses.has(401)
+        ? 'Tu sesión venció. Vuelve a iniciar sesión.'
+        : failureStatuses.has(403)
+          ? 'No tienes acceso para solicitar estos horarios en la escuela.'
+          : failureStatuses.has(409)
+            ? 'Uno o más horarios ya no están disponibles. Actualiza la agenda y elige otro horario.'
+            : failureStatuses.has(400)
+              ? 'Revisa los horarios y las personas seleccionadas antes de reintentar.'
+              : 'Inténtalo de nuevo más tarde.'
       setError(
-        `No pudimos completar ${failed} inscripciones. Puedes reintentar; las que se enviaron correctamente no se repetirán.`
+        `No pudimos completar ${failed} inscripciones. ${guidance} Las que se enviaron correctamente no se repetirán.`
       )
     } else {
       setSelectedSlot(null)
       setChosenSlots([])
       completedBookings.current.clear()
-      setMessage(
-        completed
-          ? `${completed} inscripciones enviadas. Las solicitudes pendientes deben ser confirmadas por la escuela.`
-          : 'Las personas seleccionadas ya están inscritas en esos horarios.'
-      )
+      const confirmation = completed
+        ? `${completed} inscripciones enviadas. Las solicitudes pendientes deben ser confirmadas por la escuela.`
+        : 'Las personas seleccionadas ya están inscritas en esos horarios.'
+      setMessage(confirmation)
+      setBookingConfirmation(confirmation)
     }
-    await load()
     setBusy(false)
+    if (!failed) void load()
   }
 
   return (
@@ -830,14 +852,37 @@ export default function AthleteSchoolSchedule({
         onSelectDate={setSelectedDate}
         onChangeWeek={changeWeek}
         loading={!agenda}
-        slots={visibleSlots.map((slot) => ({
-          key: `${slot.schoolId || ''}-${slot.coachId}-${slot.id}`,
-          date: slot.date,
-          startTime: slot.startTime,
-          groupType: slot.groupType,
-          selected: chosenSlots.some((item) => selectionKey(item) === selectionKey(slot)),
-          label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${coachNames[slot.coachId] || 'Coach'} · ${slot.groupType}`,
-        }))}
+        slots={[
+          ...visibleSlots
+            .filter(
+              (slot) =>
+                !visibleReservations.some(
+                  (reservation) => reservationSlotKey(reservation) === reservationSlotKey(slot)
+                )
+            )
+            .map((slot) => ({
+              key: `${slot.schoolId || ''}-${slot.coachId}-${slot.id}`,
+              date: slot.date,
+              startTime: slot.startTime,
+              groupType: slot.groupType,
+              selected: chosenSlots.some((item) => selectionKey(item) === selectionKey(slot)),
+              coachName: coachNames[slot.coachId] || 'Coach',
+              unassigned: slot.coachId === '__unassigned__',
+              label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${coachNames[slot.coachId] || 'Coach'} · ${slot.groupType}`,
+            })),
+          ...visibleReservations.map((reservation) => ({
+            key: `reservation-${reservation.schoolId || ''}-${reservation.id}`,
+            date: reservation.date,
+            startTime: reservation.startTime,
+            groupType: reservation.groupType,
+            coachName: reservation.coachName,
+            unassigned: reservation.coachId === '__unassigned__',
+            disabled: true,
+            bookingStatus:
+              reservation.status === 'pending' ? ('pending' as const) : ('confirmed' as const),
+            label: `${reservation.coachName} · ${reservation.status === 'pending' ? 'Pendiente de aprobación' : 'Inscrito'}`,
+          })),
+        ]}
         onSelectSlot={(key) => {
           const slot = visibleSlots.find(
             (item) => `${item.schoolId || ''}-${item.coachId}-${item.id}` === key
@@ -917,7 +962,7 @@ export default function AthleteSchoolSchedule({
                                   key={status}
                                   className={`rounded-full px-2 py-0.5 text-xs font-bold ${status === 'pending' ? 'bg-amber-200 text-amber-950' : 'bg-emerald-200 text-emerald-950'}`}
                                 >
-                                  {status === 'pending' ? 'Pendiente' : 'Inscrito'}
+                                  {status === 'pending' ? 'Pendiente de aprobación' : 'Inscrito'}
                                 </span>
                               ))}
                             </li>
@@ -1015,20 +1060,50 @@ export default function AthleteSchoolSchedule({
                   <FiX aria-hidden="true" />
                 </button>
               </header>
-              {chosenSlots.length > 1 && (
+              {chosenSlots.length > 0 && (
                 <div className="rounded-xl bg-(--c-surface) p-3">
                   <h3 className="text-sm font-bold">
-                    {chosenSlots.length} horarios para inscribir
+                    {chosenSlots.length} {chosenSlots.length === 1 ? 'horario' : 'horarios'} para
+                    inscribir
                   </h3>
                   <ul className="mt-2 grid gap-1 text-sm">
                     {chosenSlots.map((slot) => (
-                      <li key={selectionKey(slot)}>
-                        {new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
-                          weekday: 'short',
-                          day: 'numeric',
-                          month: 'short',
-                        })}{' '}
-                        · {slot.startTime}–{slot.endTime} · {coachNames[slot.coachId] || 'Coach'}
+                      <li
+                        key={selectionKey(slot)}
+                        className="grid gap-1 rounded-xl border border-(--c-border) bg-white p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span>
+                            {new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
+                              weekday: 'short',
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            aria-label={`Quitar horario del ${slot.date} a las ${slot.startTime}`}
+                            className="grid size-9 shrink-0 place-items-center rounded-full text-(--c-text-2) transition hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
+                            onClick={() => {
+                              const remaining = chosenSlots.filter(
+                                (chosen) => selectionKey(chosen) !== selectionKey(slot)
+                              )
+                              setChosenSlots(remaining)
+                              if (selectionKey(selectedSlot) === selectionKey(slot)) {
+                                setSelectedSlot(remaining[0] ?? null)
+                              }
+                            }}
+                          >
+                            <FiX aria-hidden="true" />
+                          </button>
+                        </div>
+                        <ScheduleTag
+                          time={slot.startTime}
+                          coachName={coachNames[slot.coachId] || 'Coach'}
+                          unassigned={slot.coachId === '__unassigned__'}
+                          groupType={slot.groupType}
+                        />
                       </li>
                     ))}
                   </ul>
@@ -1175,6 +1250,25 @@ export default function AthleteSchoolSchedule({
             </div>
           </div>
         )}
+      </Sheet>
+      <Sheet
+        open={Boolean(bookingConfirmation)}
+        onClose={() => setBookingConfirmation('')}
+        label="Inscripciones enviadas"
+      >
+        <div className="flex flex-col gap-4 px-4 sm:px-0">
+          <h2 className="text-xl font-extrabold text-(--c-ocean)">Listo</h2>
+          <p role="status" className="text-sm text-(--c-text-2)">
+            {bookingConfirmation}
+          </p>
+          <button
+            type="button"
+            onClick={() => setBookingConfirmation('')}
+            className="min-h-11 rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white"
+          >
+            Entendido
+          </button>
+        </div>
       </Sheet>
       {showAdditionalForm && (
         <AdditionalProfileCreateModal

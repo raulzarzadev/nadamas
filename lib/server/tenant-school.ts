@@ -9,6 +9,12 @@ export const getTenantSchool = cache(async () => {
   const slug = tenantSlugFromHost((await headers()).get('host'))
   if (!slug) return null
   const school = await getSchoolBySlug(slug)
-  if (!school) notFound()
   return school
 })
+
+/** Route groups may return 404; the root layout must always render html/body. */
+export async function requireTenantSchool() {
+  const school = await getTenantSchool()
+  if (!school && tenantSlugFromHost((await headers()).get('host'))) notFound()
+  return school
+}

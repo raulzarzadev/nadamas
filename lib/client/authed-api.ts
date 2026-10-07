@@ -1,6 +1,16 @@
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/firebase/index'
 
+export class AuthedApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message)
+    this.name = 'AuthedApiError'
+  }
+}
+
 async function getAuthToken() {
   const currentUser = auth.currentUser
   if (currentUser) return currentUser.getIdToken()
@@ -36,7 +46,7 @@ async function requestAuthed(path: string, init?: RequestInit) {
     } catch {
       // Keep the status-based fallback when the response is not JSON.
     }
-    throw new Error(message)
+    throw new AuthedApiError(message, response.status)
   }
 
   return response

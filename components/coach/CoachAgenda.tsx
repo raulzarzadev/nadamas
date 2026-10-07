@@ -7,6 +7,7 @@ import { FiClipboard, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers } fr
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import CoachBadge from '@/components/ui/coach-badge'
+import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
@@ -40,6 +41,7 @@ import ScheduleHoursEditor, {
   type HoursMode,
   type ScheduleCoachOption,
 } from './ScheduleHoursEditor'
+import ScheduleStudentsModal from './ScheduleStudentsModal'
 import StudentProgressModal from './StudentProgressModal'
 
 function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
@@ -210,6 +212,8 @@ export default function CoachAgenda({
   const [cancelClassTarget, setCancelClassTarget] = useState<Booking | null>(null)
   const [cancelClassError, setCancelClassError] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [showBatchRequests, setShowBatchRequests] = useState(false)
+  const [batchRequestError, setBatchRequestError] = useState('')
   const [batchSlots, setBatchSlots] = useState<CoachAvailableSlot[]>([])
   const [batchAction, setBatchAction] = useState<'students' | 'coaches' | 'type' | 'status' | null>(
     null
@@ -1276,12 +1280,68 @@ export default function CoachAgenda({
       }
     : null
 
+  function enrolledCountForSlot(slot: CoachAvailableSlot) {
+    const students = new Set<string>()
+    for (const booking of agenda?.bookings || []) {
+      if (
+        booking.status === 'cancelled' ||
+        booking.status === 'pending' ||
+        booking.schoolRequestId ||
+        booking.date !== slot.date ||
+        booking.startTime !== slot.startTime ||
+        booking.coachId !== slot.coachId ||
+        booking.groupType !== slot.groupType ||
+        schoolIdForBooking(booking) !== schoolIdForSlot(slot)
+      )
+        continue
+      if (booking.schoolClassStudents) {
+        for (const student of booking.schoolClassStudents)
+          if (!student.pending) students.add(student.id)
+      } else if (booking.schoolClassStudentIds) {
+        for (const id of booking.schoolClassStudentIds) students.add(id)
+      } else {
+        students.add(
+          booking.additionalProfileId || booking.athleteProfileId || booking.athleteId || booking.id
+        )
+      }
+    }
+    return students.size
+  }
+
+  const batchBookings = (agenda?.bookings || []).filter((booking) =>
+    batchSlots.some(
+      (slot) =>
+        slot.date === booking.date &&
+        slot.startTime === booking.startTime &&
+        slot.coachId === booking.coachId &&
+        schoolIdForSlot(slot) === schoolIdForBooking(booking)
+    )
+  )
+  const batchRequests = batchBookings.filter(
+    (booking) => booking.schoolRequestId && booking.status === 'pending'
+  )
+  async function resolveBatchRequest(booking: Booking, status: 'approved' | 'rejected') {
+    const targetSchoolId = schoolIdForBooking(booking)
+    if (busy || !targetSchoolId || !booking.schoolRequestId) return
+    setBatchRequestError('')
+    const success = await run(() =>
+      patchAuthed(
+        `/api/schools/${encodeURIComponent(targetSchoolId)}/class-requests/${encodeURIComponent(booking.schoolRequestId as string)}`,
+        { status }
+      )
+    )
+    if (success) setNotice(status === 'approved' ? 'Solicitud aceptada.' : 'Solicitud rechazada.')
+    else setBatchRequestError(GENERIC_USER_ERROR)
+  }
+
   async function openBatchAction(action: 'students' | 'coaches' | 'type' | 'status') {
     setBatchError('')
     setBatchValue(action === 'type' ? 'particular' : action === 'status' ? 'available' : '')
     setBatchStudentIds([])
     setBatchAction(action)
     if (action === 'students' && schoolId) {
+      setBatchRequestError('')
+      await loadAgenda(monthOfSelected)
       try {
         const response = await getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/students`)
         const payload = await response.json()
@@ -1861,10 +1921,13 @@ export default function CoachAgenda({
         weekCount={`${weekStats.booked}/${weekStats.total}`}
         slots={(agenda?.availableSlots || []).map((slot) => ({
           key: batchSlotKey(slot),
+          enrolledCount: enrolledCountForSlot(slot),
           date: slot.date,
           startTime: slot.startTime,
           groupType: slot.groupType,
           selected: batchSlots.some((item) => batchSlotKey(item) === batchSlotKey(slot)),
+          coachName: slot.coachName || agenda?.coachNames?.[slot.coachId] || 'Sin profe aún',
+          unassigned: slot.coachId === '__unassigned__',
           label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${slot.coachName || agenda?.coachNames?.[slot.coachId] || 'Sin profe aún'} · ${slot.groupType}${slot.status === 'blocked' ? ' · Bloqueado' : ''}`,
         }))}
         onSelectSlot={(key) => {
@@ -1878,7 +1941,12 @@ export default function CoachAgenda({
             setBatchSlots((current) =>
               current.some((item) => batchSlotKey(item) === key)
                 ? current.filter((item) => batchSlotKey(item) !== key)
-                : [...current, slot]
+                : [
+                    ...current.filter(
+                      (item) => item.date !== slot.date || item.startTime !== slot.startTime
+                    ),
+                    slot,
+                  ]
             )
         }}
       >
@@ -1889,6 +1957,19 @@ export default function CoachAgenda({
           <span className="mr-auto text-sm font-bold">
             {batchSlots.length} horarios seleccionados
           </span>
+          {batchRequests.length > 0 && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setBatchRequestError('')
+                setShowBatchRequests(true)
+              }}
+              className="btn btn-outline min-h-11"
+            >
+              Solicitudes ({batchRequests.length})
+            </button>
+          )}
           {(['students', 'coaches', 'type', 'status'] as const).map((action) => (
             <button
               key={action}
@@ -1910,15 +1991,75 @@ export default function CoachAgenda({
           </button>
         </div>
       )}
+      <Sheet
+        open={showBatchRequests}
+        onClose={() => setShowBatchRequests(false)}
+        closeDisabled={busy}
+        label="Solicitudes de los horarios seleccionados"
+      >
+        <div className="flex flex-col gap-3 px-4 sm:px-0">
+          <h2 className="text-lg font-bold">Solicitudes ({batchRequests.length})</h2>
+          {batchRequestError && (
+            <p role="alert" className="text-sm text-rose-600">
+              {batchRequestError}
+            </p>
+          )}
+          {!batchRequests.length && (
+            <p role="status" className="text-sm text-(--c-text-2)">
+              No hay solicitudes pendientes para los horarios seleccionados.
+            </p>
+          )}
+          {batchRequests.map((booking) => (
+            <div
+              key={booking.schoolRequestId}
+              className="flex flex-col gap-2 rounded-xl border border-(--c-border) bg-white p-3"
+            >
+              <strong className="text-sm">{booking.athleteName || 'Alumno'}</strong>
+              <span className="text-xs text-(--c-text-2)">
+                {new Date(`${booking.date}T12:00:00`).toLocaleDateString('es-MX', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                })}
+              </span>
+              <ScheduleTag
+                time={booking.startTime}
+                coachName={booking.coachName || 'Sin profe aún'}
+                unassigned={booking.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                groupType={booking.groupType}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void resolveBatchRequest(booking, 'approved')}
+                  className="min-h-11 rounded-full bg-(--c-ocean) px-4 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  Aceptar
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void resolveBatchRequest(booking, 'rejected')}
+                  className="min-h-11 rounded-full border border-rose-200 px-4 text-sm font-bold text-rose-700 disabled:opacity-50"
+                >
+                  Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Sheet>
       {batchAction === 'students' && schoolId && (
-        <AgendaAddStudentModal
-          slotLabel={`${batchSlots.length} horarios seleccionados`}
-          submitError={batchError}
+        <ScheduleStudentsModal
+          bookings={batchBookings}
+          slotCount={batchSlots.length}
+          error={batchError || batchRequestError}
           schoolId={schoolId}
           busy={busy}
-          allowCreate
           onClose={() => setBatchAction(null)}
-          onSubmit={(payloads) => void applyBatch(payloads)}
+          onAdd={(payloads) => void applyBatch(payloads)}
+          onResolve={(booking, status) => void resolveBatchRequest(booking, status)}
         />
       )}
       {batchError && (

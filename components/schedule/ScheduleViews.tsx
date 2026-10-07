@@ -1,7 +1,10 @@
 'use client'
 
 import { type ReactNode, useState } from 'react'
+import { FiUser, FiUsers } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
+import ScheduleTag from '@/components/ui/schedule-tag'
+import Sheet from '@/components/ui/sheet'
 import type { HourStatus } from '@/lib/coach-agenda-status'
 
 export interface ScheduleViewSlot {
@@ -9,9 +12,13 @@ export interface ScheduleViewSlot {
   date: string
   startTime: string
   label: string
+  coachName?: string
+  unassigned?: boolean
   groupType: 'particular' | 'grupal'
   selected?: boolean
   disabled?: boolean
+  enrolledCount?: number
+  bookingStatus?: 'pending' | 'confirmed'
 }
 
 function dayKey(day: Date) {
@@ -58,6 +65,10 @@ export default function ScheduleViews({
   monthCount?: string
   weekCount?: string
 }) {
+  const [optionGroup, setOptionGroup] = useState<{ date: string; time: string } | null>(null)
+  const groupOptions = optionGroup
+    ? slots.filter((slot) => slot.date === optionGroup.date && slot.startTime === optionGroup.time)
+    : []
   const [view, setView] = useState<'vertical' | 'horizontal'>('vertical')
   const weekSlots = slots.filter((slot) => days.some((day) => dayKey(day) === slot.date))
   return (
@@ -165,29 +176,74 @@ export default function ScheduleViews({
                           Sin horarios para hoy
                         </p>
                       )}
-                      {[...new Set(options.map((slot) => slot.startTime))].sort().map((time) => (
-                        <div
-                          key={time}
-                          className="flex gap-1 rounded-xl border border-(--c-border) bg-white p-1"
-                        >
-                          {options
-                            .filter((slot) => slot.startTime === time)
-                            .map((slot) => (
-                              <button
-                                key={slot.key}
-                                type="button"
-                                title={slot.label}
-                                aria-label={slot.label}
-                                aria-pressed={slot.selected}
-                                disabled={disabled || slot.disabled}
-                                onClick={() => onSelectSlot(slot.key)}
-                                className={`min-h-9 rounded-xl px-2 py-1 text-xs font-bold tabular-nums transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${slot.selected ? 'bg-(--c-ocean) text-white ring-1 ring-(--c-ocean)' : 'bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
-                              >
-                                {time}
-                              </button>
-                            ))}
-                        </div>
-                      ))}
+                      {[...new Set(options.map((slot) => slot.startTime))].sort().map((time) => {
+                        const choices = options.filter((slot) => slot.startTime === time)
+                        const selected = choices.some((slot) => slot.selected)
+                        const hasGroup = choices.some((slot) => slot.groupType === 'grupal')
+                        const enrolledCount = choices.reduce(
+                          (total, slot) => total + (slot.enrolledCount || 0),
+                          0
+                        )
+                        return (
+                          <button
+                            key={time}
+                            type="button"
+                            aria-label={`${date} · ${time}${choices.length > 1 ? ` · ${choices.length} opciones de clase` : ` · ${choices[0].label}`}`}
+                            aria-pressed={selected}
+                            aria-haspopup={choices.length > 1 ? 'dialog' : undefined}
+                            disabled={disabled || choices.every((slot) => slot.disabled)}
+                            onClick={() =>
+                              choices.length > 1
+                                ? setOptionGroup({ date, time })
+                                : onSelectSlot(choices[0].key)
+                            }
+                            style={
+                              hasGroup && !selected
+                                ? { backgroundColor: '#eff6ff', borderColor: '#60a5fa' }
+                                : undefined
+                            }
+                            className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-bold tabular-nums transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : hasGroup ? 'border-blue-300 bg-blue-50 text-(--c-ocean) hover:bg-blue-100' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'} ${hasGroup ? 'pt-1' : ''}`}
+                          >
+                            {(hasGroup || enrolledCount > 0) && (
+                              <span className="mb-0.5 flex items-center justify-end gap-1">
+                                {enrolledCount > 0 && (
+                                  <span
+                                    className="font-light"
+                                    role="img"
+                                    aria-label={`${enrolledCount} inscritos`}
+                                  >
+                                    ({enrolledCount})
+                                  </span>
+                                )}
+                                <span
+                                  role="img"
+                                  aria-label={hasGroup ? 'Grupal' : 'Particular'}
+                                  className={
+                                    hasGroup
+                                      ? 'inline-flex rounded-full bg-blue-100 p-1 text-blue-700'
+                                      : 'inline-flex'
+                                  }
+                                >
+                                  {hasGroup ? (
+                                    <FiUsers aria-hidden="true" size={12} />
+                                  ) : (
+                                    <FiUser aria-hidden="true" size={12} />
+                                  )}
+                                </span>
+                              </span>
+                            )}
+                            {time}
+                            {choices.length > 1 ? ` (${choices.length})` : ''}
+                            {choices.some((slot) => slot.bookingStatus) && (
+                              <span className="mt-1 block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-950">
+                                {choices.some((slot) => slot.bookingStatus === 'pending')
+                                  ? 'Pendiente de aprobación'
+                                  : 'Inscrito'}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                 )
@@ -202,6 +258,61 @@ export default function ScheduleViews({
           {horizontalDetails}
         </>
       )}
+      <Sheet
+        open={optionGroup !== null}
+        onClose={() => setOptionGroup(null)}
+        label="Escoger clase"
+        keyboardAware
+        fullBleedMobile
+      >
+        <div className="grid gap-3 px-4 pb-3 sm:px-0">
+          <h2 className="text-xl font-bold">Clases disponibles · {optionGroup?.time}</h2>
+          {optionGroup && (
+            <p className="text-sm text-(--c-text-2)">
+              {new Date(`${optionGroup.date}T12:00:00`).toLocaleDateString('es-MX', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+              })}
+            </p>
+          )}
+          <p className="text-sm text-(--c-text-2)">Elige una sola clase para este horario.</p>
+          {groupOptions.map((slot) => (
+            <button
+              key={slot.key}
+              type="button"
+              disabled={disabled || slot.disabled}
+              aria-pressed={slot.selected}
+              onClick={() => {
+                setOptionGroup(null)
+                onSelectSlot(slot.key)
+              }}
+              className={`flex min-h-12 items-center justify-between gap-3 rounded-xl border border-(--c-border) p-3 text-left text-sm focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${slot.selected ? 'bg-(--c-ocean) text-white' : 'bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
+            >
+              <ScheduleTag
+                time={slot.startTime}
+                coachName={slot.coachName}
+                unassigned={slot.unassigned}
+                groupType={slot.groupType}
+                selected={slot.selected}
+                enrolledCount={slot.enrolledCount}
+              />
+              <span className="shrink-0 text-xs font-bold">
+                {slot.bookingStatus === 'pending'
+                  ? 'Pendiente de aprobación'
+                  : slot.bookingStatus === 'confirmed'
+                    ? 'Inscrito'
+                    : slot.selected
+                      ? 'Seleccionada'
+                      : 'Elegir'}
+              </span>
+            </button>
+          ))}
+          {!groupOptions.length && (
+            <p className="text-sm">Estas opciones ya no están disponibles.</p>
+          )}
+        </div>
+      </Sheet>
     </div>
   )
 }

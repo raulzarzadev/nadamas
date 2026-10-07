@@ -83,7 +83,7 @@ export function validateClassInput(input: Partial<CreateSchoolClassInput>) {
         ),
       ]
     : []
-  if (!title || title.length > 120) return { ok: false as const, reason: 'title' as const }
+  if (title.length > 120) return { ok: false as const, reason: 'title' as const }
   if (!type) return { ok: false as const, reason: 'type' as const }
   const parsedStartDate = parseDate(startDate)
   const parsedEndDate = parseDate(endDate)

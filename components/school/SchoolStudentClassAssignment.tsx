@@ -234,7 +234,12 @@ export default function SchoolStudentClassAssignment({
     setSelectedSlots((current) =>
       current.some((item) => item.key === slot.key)
         ? current.filter((item) => item.key !== slot.key)
-        : [...current, slot]
+        : [
+            ...current.filter(
+              (item) => item.date !== slot.date || item.startTime !== slot.startTime
+            ),
+            slot,
+          ]
     )
   }
 
@@ -331,6 +336,8 @@ export default function SchoolStudentClassAssignment({
               slots={availableSlots.map((slot) => ({
                 ...slot,
                 selected: selectedSlots.some((item) => item.key === slot.key),
+                coachName: slot.coachName,
+                unassigned: slot.coachId === '__unassigned__',
                 label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${slot.coachName} · ${slot.groupType}`,
               }))}
               onSelectSlot={(key) => {
