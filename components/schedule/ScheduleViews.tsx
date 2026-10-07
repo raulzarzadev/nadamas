@@ -138,7 +138,7 @@ export default function ScheduleViews({
               days.map((day) => {
                 const date = dayKey(day)
                 const options = weekSlots.filter((slot) => slot.date === date)
-                if (!options.length) return null
+                if (!options.length && date !== today) return null
                 return (
                   <div
                     key={date}
@@ -157,7 +157,14 @@ export default function ScheduleViews({
                         {day.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div
+                      className={`flex flex-wrap gap-2 ${!options.length ? 'self-stretch items-center' : ''}`}
+                    >
+                      {!options.length && (
+                        <p className="text-center text-xs text-(--c-ocean)">
+                          Sin horarios para hoy
+                        </p>
+                      )}
                       {[...new Set(options.map((slot) => slot.startTime))].sort().map((time) => (
                         <div
                           key={time}

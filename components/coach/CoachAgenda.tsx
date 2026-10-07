@@ -35,7 +35,6 @@ import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import AgendaStudentActions, { type AgendaStudentAction } from './AgendaStudentActions'
 import CancelClassModal from './CancelClassModal'
-import CoachAgendaDateSelector from './CoachAgendaDateSelector'
 import { useCoachAgendaShare } from './CoachAgendaShareContext'
 import ScheduleHoursEditor, {
   type HoursMode,
@@ -181,7 +180,20 @@ export default function CoachAgenda({
   const coachFallback =
     schoolId && terminology.schoolId ? capitalizeSchoolTerm(terminology.coachSingular) : 'Coach'
 
-  const [agenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
+  const [fullAgenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
+  const localSchoolFilter = manageSchoolSchedule && aggregateSchool && !combinedSources
+  const requestCoachId = localSchoolFilter ? undefined : coachId
+  const requestCoachQuery = requestCoachId ? `&coachId=${encodeURIComponent(requestCoachId)}` : ''
+  const requestContextQuery = `${requestCoachQuery}${schoolQuery}`
+  const agenda = useMemo(() => {
+    if (!fullAgenda || !localSchoolFilter || !coachId) return fullAgenda
+    return {
+      ...fullAgenda,
+      availableSlots: fullAgenda.availableSlots.filter((slot) => slot.coachId === coachId),
+      bookings: fullAgenda.bookings.filter((booking) => booking.coachId === coachId),
+      blocks: fullAgenda.blocks.filter((block) => block.coachId === coachId),
+    }
+  }, [fullAgenda, localSchoolFilter, coachId])
   const [scheduleHoursByDate, setScheduleHoursByDate] = useState<Record<string, string[]>>({})
   const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
   const [selectedDate, setSelectedDate] = useState(() =>
@@ -207,7 +219,7 @@ export default function CoachAgenda({
   const [batchStudents, setBatchStudents] = useState<Array<{ id: string; name: string }>>([])
   const [batchStudentIds, setBatchStudentIds] = useState<string[]>([])
   const batchSlotKey = (slot: CoachAvailableSlot) =>
-    `${slot.coachId}|${slot.date}|${slot.startTime}|${slot.groupType}`
+    `${slot.schoolId || schoolId || ''}|${slot.coachId}|${slot.date}|${slot.startTime}|${slot.groupType}`
   const [horizontalDayOpen, setHorizontalDayOpen] = useState(false)
   const [slotEditor, setSlotEditor] = useState<SlotEditorState | null>(null)
   const [slotAssignmentCoachId, setSlotAssignmentCoachId] = useState('')
@@ -247,7 +259,7 @@ export default function CoachAgenda({
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset cached hours when the viewed coach or school changes.
   useEffect(() => {
     setScheduleHoursByDate({})
-  }, [coachId, schoolId])
+  }, [requestCoachId, schoolId])
 
   useEffect(() => {
     if (!slotEditor || !agenda) return
@@ -342,13 +354,13 @@ export default function CoachAgenda({
               sourceAgendas.flatMap((payload) => payload.availableSlots)
             )
           )
-          setLoadedCoachId(coachId)
+          setLoadedCoachId(requestCoachId)
           return
         }
         const endpoint =
           (aggregateSchool || manageSchoolSchedule) && schoolId
-            ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}${coachQuery}${readOnly ? '&view=public' : ''}`
-            : `/api/coach/agenda?month=${month}${contextQuery}`
+            ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}${requestCoachQuery}${readOnly ? '&view=public' : ''}`
+            : `/api/coach/agenda?month=${month}${requestContextQuery}`
         const response = await getAuthed(endpoint)
         const nextAgenda = (await response.json()) as CoachAgendaPayload
         if (requestId !== agendaRequestRef.current) return
@@ -356,7 +368,7 @@ export default function CoachAgenda({
         setScheduleHoursByDate((current) =>
           replaceMonthHours(current, month, nextAgenda.availableSlots)
         )
-        setLoadedCoachId(coachId)
+        setLoadedCoachId(requestCoachId)
       } catch (err) {
         if (requestId !== agendaRequestRef.current) return
         reportInternalError('COACH_AGENDA_LOAD', err)
@@ -371,10 +383,10 @@ export default function CoachAgenda({
     [
       aggregateSchool,
       manageSchoolSchedule,
-      coachQuery,
-      contextQuery,
+      requestCoachQuery,
+      requestContextQuery,
       schoolId,
-      coachId,
+      requestCoachId,
       readOnly,
       agendaSources,
     ]
@@ -1165,7 +1177,7 @@ export default function CoachAgenda({
           `/api/coach/agenda?month=${monthOfSelected}${schoolQueryFor(targetSchoolId)}`
         )
         targetOfferings = ((await response.json()) as CoachAgendaPayload).offerings || []
-      } else if (manageSchoolSchedule && schoolId && !coachId) {
+      } else if (manageSchoolSchedule && schoolId) {
         const response = await getAuthed(
           `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(slot.coachId)}`
         )
@@ -1836,55 +1848,42 @@ export default function CoachAgenda({
 
   return (
     <div className="flex flex-col gap-4">
-      {manageSchoolSchedule ? (
-        <ScheduleViews
-          selectedDate={selectedDate}
-          days={weekDates}
-          today={dateKey(new Date())}
-          dayStatuses={dayStatuses}
-          selectedStatuses={selectedStatuses}
-          onToggleStatus={toggleStatus}
-          onSelectDate={setSelectedDate}
-          onChangeWeek={changeWeek}
-          monthCount={`${monthStats.booked}/${monthStats.total}`}
-          weekCount={`${weekStats.booked}/${weekStats.total}`}
-          slots={(agenda?.availableSlots || []).map((slot) => ({
-            key: batchSlotKey(slot),
-            date: slot.date,
-            startTime: slot.startTime,
-            groupType: slot.groupType,
-            selected: batchSlots.some((item) => batchSlotKey(item) === batchSlotKey(slot)),
-            label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${slot.coachName || agenda?.coachNames?.[slot.coachId] || 'Sin profe aún'} · ${slot.groupType}${slot.status === 'blocked' ? ' · Bloqueado' : ''}`,
-          }))}
-          onSelectSlot={(key) => {
-            const slot = agenda?.availableSlots.find((item) => batchSlotKey(item) === key)
-            if (slot)
-              setBatchSlots((current) =>
-                current.some((item) => batchSlotKey(item) === key)
-                  ? current.filter((item) => batchSlotKey(item) !== key)
-                  : [...current, slot]
-              )
-          }}
-        >
-          {dayCard}
-        </ScheduleViews>
-      ) : (
-        <>
-          <CoachAgendaDateSelector
-            selectedDate={selectedDate}
-            weekDates={weekDates}
-            dayStatuses={dayStatuses}
-            monthCount={`${monthStats.booked}/${monthStats.total}`}
-            weekCount={`${weekStats.booked}/${weekStats.total}`}
-            selectedStatuses={selectedStatuses}
-            onToggleStatus={toggleStatus}
-            onSelectDate={setSelectedDate}
-            onChangeWeek={changeWeek}
-          />
-          {dayCard}
-        </>
-      )}
-
+      <ScheduleViews
+        selectedDate={selectedDate}
+        days={weekDates}
+        today={dateKey(new Date())}
+        dayStatuses={dayStatuses}
+        selectedStatuses={selectedStatuses}
+        onToggleStatus={toggleStatus}
+        onSelectDate={setSelectedDate}
+        onChangeWeek={changeWeek}
+        monthCount={`${monthStats.booked}/${monthStats.total}`}
+        weekCount={`${weekStats.booked}/${weekStats.total}`}
+        slots={(agenda?.availableSlots || []).map((slot) => ({
+          key: batchSlotKey(slot),
+          date: slot.date,
+          startTime: slot.startTime,
+          groupType: slot.groupType,
+          selected: batchSlots.some((item) => batchSlotKey(item) === batchSlotKey(slot)),
+          label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${slot.coachName || agenda?.coachNames?.[slot.coachId] || 'Sin profe aún'} · ${slot.groupType}${slot.status === 'blocked' ? ' · Bloqueado' : ''}`,
+        }))}
+        onSelectSlot={(key) => {
+          const slot = agenda?.availableSlots.find((item) => batchSlotKey(item) === key)
+          if (slot && !manageSchoolSchedule) {
+            setSelectedDate(slot.date)
+            setHorizontalDayOpen(true)
+            return
+          }
+          if (slot)
+            setBatchSlots((current) =>
+              current.some((item) => batchSlotKey(item) === key)
+                ? current.filter((item) => batchSlotKey(item) !== key)
+                : [...current, slot]
+            )
+        }}
+      >
+        {dayCard}
+      </ScheduleViews>
       {batchSlots.length > 0 && (
         <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3 shadow-lg">
           <span className="mr-auto text-sm font-bold">
@@ -2501,7 +2500,7 @@ export default function CoachAgenda({
         <ScheduleHoursEditor
           defaultDate={selectedDate}
           existingTimesByDate={existingTimesByDate}
-          busy={busy || (manageSchoolSchedule && loadedCoachId !== coachId)}
+          busy={busy || (manageSchoolSchedule && loadedCoachId !== requestCoachId)}
           error={error}
           coachOptions={allowSchoolScheduleEdit ? scheduleCoachOptions : []}
           selectedCoachId={coachId}
