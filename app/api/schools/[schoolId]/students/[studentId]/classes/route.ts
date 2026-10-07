@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { buildAvailableSlots, type CoachScheduleBlock } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
@@ -72,12 +73,12 @@ async function assignToExistingClass(
       ) ||
       (!isDirector &&
         !(slot.coachId === UNASSIGNED_SCHOOL_COACH_ID && occurrence.teacherIds.length === 0) &&
-        !occurrence.teacherIds.includes(callerId)) ||
-      occurrence.classFull === true
+        !occurrence.teacherIds.includes(callerId))
     )
       return false
     const currentIds = Array.isArray(occurrence.studentIds) ? occurrence.studentIds : []
-    if (currentIds.includes(studentId) || currentIds.length >= 100) return false
+    if (currentIds.includes(studentId)) return true
+    if (occurrence.classFull === true || currentIds.length >= 100) return false
     transaction.update(classRef, {
       studentIds: [...currentIds, studentId],
       updatedAt: Date.now(),
@@ -126,14 +127,39 @@ async function assignToOpenSlot(
         (item.teacherIds.includes(slot.coachId) ||
           (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID && item.teacherIds.length === 0))
     )
-  if (matchingClass) return false
+  if (matchingClass)
+    return assignToExistingClass(
+      schoolId,
+      studentId,
+      { ...slot, schoolClassId: matchingClass.id },
+      callerId,
+      isDirector
+    )
 
-  const offerings = offeringSnapshot.exists
+  if (slot.groupType === 'particular') {
+    const existing = existingClasses.find(
+      (item) =>
+        item.type === 'individual' &&
+        item.status !== 'cancelled' &&
+        item.date === slot.date &&
+        item.startTime === slot.startTime &&
+        item.endTime === slot.endTime &&
+        (item.teacherIds.includes(slot.coachId) ||
+          (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID && item.teacherIds.length === 0))
+    )
+    if (existing) return existing.studentIds.includes(studentId)
+  }
+
+  const offerings: CoachClassOffering[] = offeringSnapshot.exists
     ? resolveOfferings({ classOfferings: offeringSnapshot.data()?.classOfferings || [] })
     : legacySchoolOfferings(legacySnapshot.data()?.weeklySlots)
   const bookings = bookingSnapshot.docs
     .map((doc) => ({ ...doc.data(), id: doc.id }) as Booking)
-    .filter((booking) => booking.coachId === slot.coachId && booking.status !== 'cancelled')
+    .filter(
+      (booking) =>
+        (booking.coachId === slot.coachId || booking.assignedCoachIds?.includes(slot.coachId)) &&
+        booking.status !== 'cancelled'
+    )
   const blocks = blockSnapshot.docs
     .map((doc) => ({ ...doc.data(), id: doc.id }) as CoachScheduleBlock)
     .filter((block) => block.coachId === slot.coachId)
@@ -145,7 +171,7 @@ async function assignToOpenSlot(
     blocks,
     startDate: date,
     endDate: date,
-  }).some(
+  }).find(
     (item) =>
       item.date === slot.date &&
       item.startTime === slot.startTime &&
@@ -160,7 +186,12 @@ async function assignToOpenSlot(
     schoolId,
     title: slot.groupType === 'grupal' ? 'Clase grupal' : 'Clase particular',
     type: slot.groupType === 'grupal' ? 'group' : 'individual',
-    teacherIds: slot.coachId === UNASSIGNED_SCHOOL_COACH_ID ? [] : [slot.coachId],
+    teacherIds:
+      slot.coachId === UNASSIGNED_SCHOOL_COACH_ID
+        ? []
+        : offerings.find((offering) => offering.id === available.offeringId)?.assignedCoachIds || [
+            slot.coachId,
+          ],
     studentIds: [studentId],
     startDate: slot.date,
     endDate: slot.date,

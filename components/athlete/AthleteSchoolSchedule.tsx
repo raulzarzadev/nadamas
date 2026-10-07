@@ -11,7 +11,7 @@ import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
 import type { AdditionalProfile } from '@/lib/additional-profile'
-import { AuthedApiError, getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { AuthedApiError, deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
 import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import {
@@ -45,6 +45,8 @@ interface PublicSchoolOption {
 const EMPTY_SCHOOLS: PublicSchoolOption[] = []
 type SchoolReservation = {
   id: string
+  schoolRequestId?: string
+  schoolClassId?: string
   schoolId?: string
   coachId: string
   coachName: string
@@ -124,6 +126,7 @@ export default function AthleteSchoolSchedule({
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()))
   const [agenda, setAgenda] = useState<CoachAgendaPayload | null>(null)
   const [myReservations, setMyReservations] = useState<SchoolReservation[]>([])
+  const [reservationToCancel, setReservationToCancel] = useState<SchoolReservation | null>(null)
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
   const [coachFilter, setCoachFilter] = useState('all')
@@ -877,13 +880,20 @@ export default function AthleteSchoolSchedule({
             groupType: reservation.groupType,
             coachName: reservation.coachName,
             unassigned: reservation.coachId === '__unassigned__',
-            disabled: true,
+            disabled: busy,
             bookingStatus:
               reservation.status === 'pending' ? ('pending' as const) : ('confirmed' as const),
             label: `${reservation.coachName} · ${reservation.status === 'pending' ? 'Pendiente de aprobación' : 'Inscrito'}`,
           })),
         ]}
         onSelectSlot={(key) => {
+          const reservation = visibleReservations.find(
+            (item) => `reservation-${item.schoolId || ''}-${item.id}` === key
+          )
+          if (reservation) {
+            setReservationToCancel(reservation)
+            return
+          }
           const slot = visibleSlots.find(
             (item) => `${item.schoolId || ''}-${item.coachId}-${item.id}` === key
           )
@@ -1034,6 +1044,56 @@ export default function AthleteSchoolSchedule({
         </div>
       )}
       <Sheet
+        open={Boolean(reservationToCancel)}
+        onClose={() => setReservationToCancel(null)}
+        closeDisabled={busy}
+        label="Cancelar inscripción"
+      >
+        {reservationToCancel && (
+          <div className="grid gap-4 px-4 sm:px-0">
+            <h2 className="text-xl font-bold">Mi inscripción</h2>
+            <ScheduleTag
+              date={reservationToCancel.date}
+              time={reservationToCancel.startTime}
+              coachName={reservationToCancel.coachName}
+              groupType={reservationToCancel.groupType}
+            />
+            <p className="text-sm text-(--c-text-2)">
+              Puedes cancelar tu inscripción aunque la haya asignado otra persona. Los demás alumnos
+              conservarán su lugar.
+            </p>
+            <button
+              type="button"
+              disabled={busy}
+              className="btn btn-outline text-rose-700"
+              onClick={async () => {
+                setBusy(true)
+                try {
+                  const reservation = reservationToCancel
+                  if (
+                    reservation.schoolId &&
+                    (reservation.schoolClassId || reservation.schoolRequestId)
+                  ) {
+                    await postAuthed(`/api/schools/${reservation.schoolId}/reservations/cancel`, {
+                      schoolClassId: reservation.schoolClassId,
+                      schoolRequestId: reservation.schoolRequestId,
+                    })
+                  } else await deleteAuthed(`/api/bookings/${reservation.id}`)
+                  setReservationToCancel(null)
+                  await load()
+                } catch {
+                  setError('No pudimos cancelar tu inscripción. Inténtalo de nuevo.')
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              {busy ? 'Cancelando…' : 'Cancelar mi inscripción'}
+            </button>
+          </div>
+        )}
+      </Sheet>
+      <Sheet
         open={Boolean(selectedSlot) && !showAdditionalForm}
         closeDisabled={busy}
         onClose={() => {
@@ -1049,19 +1109,12 @@ export default function AthleteSchoolSchedule({
               <header className="flex items-start justify-between gap-3">
                 <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">
                   {selectedBookingMode === 'direct' ? 'Reservar horario' : 'Solicitar horario'}
+                  {selectedSlot.schoolId &&
+                    ` · ${schoolName || schoolLabels[selectedSlot.schoolId] || 'Escuela'}`}
                 </h2>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => setSelectedSlot(null)}
-                  aria-label="Cerrar reserva"
-                  className="grid size-10 shrink-0 place-items-center rounded-full text-[var(--c-text-2)] transition hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] disabled:opacity-50"
-                >
-                  <FiX aria-hidden="true" />
-                </button>
               </header>
               {chosenSlots.length > 0 && (
-                <div className="rounded-xl bg-(--c-surface) p-3">
+                <div>
                   <h3 className="text-sm font-bold">
                     {chosenSlots.length} {chosenSlots.length === 1 ? 'horario' : 'horarios'} para
                     inscribir
@@ -1109,49 +1162,19 @@ export default function AthleteSchoolSchedule({
                   </ul>
                 </div>
               )}
-              <section
-                aria-label="Resumen del horario"
-                className="overflow-hidden rounded-2xl border border-[var(--c-border)] bg-[var(--c-surface)]"
-              >
-                <dl className="grid grid-cols-2 divide-x divide-[var(--c-border)]">
-                  <div className="px-4 py-3">
-                    <dt className="text-xs font-bold uppercase tracking-wider text-[var(--c-text-2)]">
-                      Fecha
-                    </dt>
-                    <dd className="mt-1 text-lg font-extrabold text-[var(--c-ocean)]">
-                      {new Date(`${selectedSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
-                        day: 'numeric',
-                        month: 'long',
-                      })}
-                    </dd>
-                  </div>
-                  <div className="px-4 py-3">
-                    <dt className="text-xs font-bold uppercase tracking-wider text-[var(--c-text-2)]">
-                      Hora
-                    </dt>
-                    <dd className="mt-1 text-lg font-extrabold tabular-nums text-[var(--c-ocean)]">
-                      {selectedSlot.startTime}–{selectedSlot.endTime}
-                    </dd>
-                  </div>
-                </dl>
-                <dl className="grid gap-2 border-t border-[var(--c-border)] bg-white/70 px-4 py-3 text-sm sm:grid-cols-2">
-                  {selectedSlot.schoolId && (
-                    <div className="min-w-0">
-                      <dt className="text-xs font-semibold text-[var(--c-text-2)]">Escuela</dt>
-                      <dd className="truncate font-bold text-[var(--c-ocean)]">
-                        {schoolName || schoolLabels[selectedSlot.schoolId] || 'Escuela'}
-                      </dd>
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <dt className="text-xs font-semibold text-[var(--c-text-2)]">Entrenador</dt>
-                    <dd className="truncate font-bold text-[var(--c-ocean)]">
-                      {coachNames[selectedSlot.coachId] || 'Coach'}
-                      {selectedSlot.groupType === 'grupal' ? ' · Grupal' : ''}
-                    </dd>
-                  </div>
-                </dl>
-              </section>
+              {chosenSlots.length === 0 && (
+                <ScheduleTag
+                  date={new Date(`${selectedSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                  time={`${selectedSlot.startTime}–${selectedSlot.endTime}`}
+                  coachName={coachNames[selectedSlot.coachId] || 'Coach'}
+                  unassigned={selectedSlot.coachId === '__unassigned__'}
+                  groupType={selectedSlot.groupType}
+                />
+              )}
               <fieldset className="grid gap-2 text-sm">
                 <legend className="mb-1 font-semibold">¿A quiénes vas a inscribir?</legend>
                 {bookingParticipants.map((participant) => {

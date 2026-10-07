@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import AthleteBookingsOverview from '@/components/athlete/AthleteBookingsOverview'
 import AthleteSchoolSchedule from '@/components/athlete/AthleteSchoolSchedule'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import type { SchoolBookingMode } from '@/lib/school'
@@ -27,6 +28,7 @@ export default function FindCoachPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <AthleteBookingsOverview view="upcoming" />
       {!loading &&
         (tenant ? (
           <AthleteSchoolSchedule

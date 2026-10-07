@@ -18,7 +18,7 @@ interface RouteProps {
 
 async function handlePATCH(request: Request, { params }: RouteProps) {
   const { schoolId, requestId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
+  const access = await requireSchoolAccess(request, schoolId, ['director'])
   if (access.response) return access.response
   const requestRef = adminDb.collection('schoolClassRequests').doc(requestId)
   const snapshot = await requestRef.get()
@@ -26,15 +26,9 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     return NextResponse.json({ error: 'Solicitud no encontrada.' }, { status: 404 })
   const record = snapshot.data() as SchoolClassRequest
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
-  const canReviewAsTeacher = access.membership?.canManageSchoolBookings === true
-  if (!isDirector && !canReviewAsTeacher)
+  if (!isDirector)
     return NextResponse.json(
       { error: 'No tienes permiso para aprobar reservas de esta escuela.' },
-      { status: 403 }
-    )
-  if (!isDirector && record.preferredTeacherId !== access.caller.uid)
-    return NextResponse.json(
-      { error: 'No autorizado para atender esta solicitud.' },
       { status: 403 }
     )
   if (record.status !== 'pending')

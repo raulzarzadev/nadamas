@@ -3,18 +3,11 @@
 import Sheet from '@comps/ui/sheet'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import {
-  FiCheck,
-  FiEdit2,
-  FiMapPin,
-  FiMessageSquare,
-  FiPlus,
-  FiUser,
-  FiUsers,
-  FiX,
-} from 'react-icons/fi'
+import { FiCheck, FiEdit2, FiMapPin, FiMessageSquare, FiPlus, FiX } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
+import ClassCard from '@/components/ui/class-card'
 import CoachBadge from '@/components/ui/coach-badge'
+import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
@@ -51,7 +44,6 @@ export default function SchoolClasses() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
   const searchParams = useSearchParams()
   const focusSchool = searchParams.get('school')
-  const focusCoach = searchParams.get('coach')
   const focusDate = searchParams.get('date')
   const focusTime = searchParams.get('time')
   const focusClass = searchParams.get('class')
@@ -76,7 +68,7 @@ export default function SchoolClasses() {
       selectSchool(focusSchool)
     }
   }, [focusSchool, schools, selectSchool])
-  const [scheduleCoachId, setScheduleCoachId] = useState(focusCoach || '')
+  const [scheduleCoachId, setScheduleCoachId] = useState('')
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
   const [students, setStudents] = useState<SchoolStudent[]>([])
@@ -84,6 +76,7 @@ export default function SchoolClasses() {
   const [locations, setLocations] = useState<SchoolLocation[]>([])
   const [bookingMode, setBookingMode] = useState<SchoolBookingMode>('request')
   const [requests, setRequests] = useState<SchoolClassRequest[]>([])
+  const [resolvingRequestId, setResolvingRequestId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<SchoolClassRequest | null>(null)
   const [commentClass, setCommentClass] = useState<SchoolClassOccurrence | null>(null)
@@ -106,7 +99,7 @@ export default function SchoolClasses() {
     const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
     const isStudentAccount = schoolMembershipHasRole(selected?.membership, 'student')
     const directorId = isDirector ? selected?.membership.userId : undefined
-    if (resetSelection) setScheduleCoachId(focusCoach || '')
+    if (resetSelection) setScheduleCoachId('')
     const load = async () => {
       const [classResponse, studentResponse, teacherResponse, locationResponse] = await Promise.all(
         [
@@ -137,14 +130,7 @@ export default function SchoolClasses() {
         const nextTeachers = teacherPayload.teachers || []
         setTeachers(nextTeachers)
         setScheduleCoachId((current) => {
-          if (resetSelection)
-            return focusCoach &&
-              ((isDirector && focusCoach === directorId) ||
-                nextTeachers.some(
-                  (teacher) => teacher.id === focusCoach && teacher.status === 'active'
-                ))
-              ? focusCoach
-              : ''
+          if (resetSelection) return ''
           if (current === '') return current
           if (isDirector && current === directorId) return current
           if (
@@ -159,7 +145,7 @@ export default function SchoolClasses() {
       })
       .catch(() => {
         if (!active) return
-        if (resetSelection) setScheduleCoachId(focusCoach || '')
+        if (resetSelection) setScheduleCoachId('')
         setMessage('No se pudo cargar la agenda escolar.')
       })
       .finally(() => {
@@ -168,7 +154,7 @@ export default function SchoolClasses() {
     return () => {
       active = false
     }
-  }, [agendaRevision, focusCoach, selectedId, selected?.membership, selected?.school.bookingMode])
+  }, [agendaRevision, selectedId, selected?.membership, selected?.school.bookingMode])
 
   if (schoolStatus === 'loading')
     return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando clases…</div>
@@ -251,9 +237,224 @@ export default function SchoolClasses() {
     return new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long' }).format(value)
   }
 
+  const pendingRequests = requests
+    .filter((request) => request.status === 'pending')
+    .sort((a, b) => b.createdAt - a.createdAt)
+
   return (
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">Horarios</h1>
+      {!loading && (visibleClasses.length > 0 || (isDirector && pendingRequests.length > 0)) && (
+        <details
+          open={isDirector && pendingRequests.length > 0}
+          className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-4"
+        >
+          <summary className="cursor-pointer font-bold text-(--c-ocean)">
+            Clases y solicitudes (
+            {visibleClasses.length + (isDirector ? pendingRequests.length : 0)})
+          </summary>
+          <div className="mt-4 grid gap-3">
+            {isDirector && pendingRequests.length > 0 && (
+              <section aria-label="Solicitudes nuevas" className="flex flex-col gap-3">
+                <h2 className="font-bold text-(--c-ocean)">Solicitudes nuevas</h2>
+                {pendingRequests.map((request) => (
+                  <ClassCard
+                    key={request.id}
+                    time={request.preferredStartTime}
+                    date={formatClassDate(request.startDate)}
+                    coachName={
+                      teachers.find((teacher) => teacher.id === request.preferredTeacherId)?.name ||
+                      'Sin profe aún'
+                    }
+                    showCoachName
+                    unassigned={
+                      !request.preferredTeacherId ||
+                      request.preferredTeacherId === UNASSIGNED_SCHOOL_COACH_ID
+                    }
+                    groupType={request.type === 'group' ? 'grupal' : 'particular'}
+                    status={request.type === 'group' ? 'group' : 'booked'}
+                    pending
+                    showSeparator={false}
+                  >
+                    <StudentBadge
+                      name={
+                        request.studentName ||
+                        students.find((student) => student.id === request.studentId)?.name ||
+                        'Alumno'
+                      }
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={resolvingRequestId !== null}
+                        className="btn btn-primary btn-sm"
+                        onClick={() => {
+                          setSelectedRequest(request)
+                          setShowCreate(true)
+                        }}
+                      >
+                        Revisar y aceptar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={resolvingRequestId !== null}
+                        className="btn btn-outline btn-sm"
+                        onClick={async () => {
+                          setResolvingRequestId(request.id)
+                          try {
+                            await patchAuthed(
+                              `/api/schools/${selectedId}/class-requests/${request.id}`,
+                              { status: 'rejected' }
+                            )
+                            setRequests((current) =>
+                              current.map((item) =>
+                                item.id === request.id ? { ...item, status: 'rejected' } : item
+                              )
+                            )
+                          } catch {
+                            setMessage('No pudimos rechazar la solicitud. Inténtalo de nuevo.')
+                          } finally {
+                            setResolvingRequestId(null)
+                          }
+                        }}
+                      >
+                        Rechazar
+                      </button>
+                    </div>
+                  </ClassCard>
+                ))}
+              </section>
+            )}
+
+            {visibleClasses.map((item) => {
+              const coachName =
+                item.teacherIds
+                  .map((teacherId) => teachers.find((teacher) => teacher.id === teacherId)?.name)
+                  .filter((name): name is string => Boolean(name))
+                  .join(', ') || 'Sin profe aún'
+              const studentBadges = item.studentIds.flatMap((studentId) => {
+                const student = students.find((entry) => entry.id === studentId)
+                return student ? [{ id: studentId, name: student.name }] : []
+              })
+              const canComment =
+                isDirector || (isTeacher && item.teacherIds.includes(user?.uid || ''))
+              const locationLabel = item.location.trim()
+              const hasLocation =
+                locationLabel &&
+                !['lugar por definir', 'lugar por confirmar'].includes(
+                  locationLabel.toLocaleLowerCase('es-MX')
+                )
+              return (
+                <ClassCard
+                  key={item.id}
+                  time={item.startTime}
+                  date={formatClassDate(item.date)}
+                  coachName={coachName}
+                  showCoachName
+                  unassigned={item.teacherIds.length === 0}
+                  groupType={item.type === 'group' ? 'grupal' : 'particular'}
+                  status={item.type === 'group' ? 'group' : 'booked'}
+                  pending={item.status === 'pending'}
+                  agendaLabel={`${classDuration(item.startTime, item.endTime)} min`}
+                  showSeparator={false}
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    {studentBadges.length > 0 ? (
+                      studentBadges.map((student) => (
+                        <StudentBadge key={student.id} name={student.name} />
+                      ))
+                    ) : (
+                      <StudentBadge name="Sin alumno" />
+                    )}
+                    {item.status !== 'pending' && (
+                      <StatusBadge
+                        status={item.status === 'cancelled' ? 'cancelled' : 'confirmed'}
+                      />
+                    )}
+                    {item.status === 'completed' && (
+                      <span className="text-xs text-(--c-text-2)">Completada</span>
+                    )}
+                  </div>
+                  {hasLocation && (
+                    <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
+                      <FiMapPin aria-hidden="true" /> {locationLabel}
+                      {item.locationUrl && (
+                        <a
+                          href={item.locationUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-(--c-ocean-mid)"
+                        >
+                          Ver mapa
+                        </a>
+                      )}
+                    </p>
+                  )}
+                  {item.classNote && (
+                    <p className="mt-2 text-sm text-(--c-text-2)">{item.classNote}</p>
+                  )}
+                  <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-x-auto">
+                    {(isDirector || isTeacher) && item.status === 'scheduled' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => void updateClass(item.id, 'completed')}
+                          className="btn btn-outline btn-sm shrink-0 gap-1 px-2 text-xs"
+                        >
+                          <FiCheck aria-hidden="true" /> Completar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void updateClass(item.id, 'cancelled')}
+                          className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs text-(--c-error,#b91c1c)"
+                        >
+                          <FiX aria-hidden="true" /> Cancelar
+                        </button>
+                      </>
+                    )}
+                    {canManageBookings && item.status === 'pending' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => void updateClass(item.id, 'scheduled')}
+                          className="btn btn-primary btn-sm shrink-0 px-2 text-xs"
+                        >
+                          Aprobar clase
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void updateClass(item.id, 'cancelled')}
+                          className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs text-(--c-error,#b91c1c)"
+                        >
+                          <FiX aria-hidden="true" /> Rechazar
+                        </button>
+                      </>
+                    )}
+                    {canComment && (
+                      <button
+                        type="button"
+                        aria-label={
+                          item.classNote
+                            ? 'Editar comentario de clase'
+                            : 'Agregar comentario a la clase'
+                        }
+                        onClick={() => {
+                          setCommentClass(item)
+                          setClassNoteDraft(item.classNote || '')
+                        }}
+                        className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs"
+                      >
+                        <FiMessageSquare aria-hidden="true" />{' '}
+                        {item.classNote ? 'Editar nota' : 'Comentar'}
+                      </button>
+                    )}
+                  </div>
+                </ClassCard>
+              )
+            })}
+          </div>
+        </details>
+      )}
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
           <SchoolSelector
@@ -351,145 +552,6 @@ export default function SchoolClasses() {
             </div>
           </div>
         )}
-        {loading ? (
-          <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
-        ) : visibleClasses.length ? (
-          <details className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-4">
-            <summary className="cursor-pointer font-bold text-(--c-ocean)">
-              Administrar clases ({visibleClasses.length})
-            </summary>
-            <div className="mt-4 grid gap-3">
-              {visibleClasses.map((item) => {
-                const coachName =
-                  item.teacherIds
-                    .map((teacherId) => teachers.find((teacher) => teacher.id === teacherId)?.name)
-                    .filter((name): name is string => Boolean(name))
-                    .join(', ') || 'Sin profe aún'
-                const studentBadges = item.studentIds.flatMap((studentId) => {
-                  const student = students.find((entry) => entry.id === studentId)
-                  return student ? [{ id: studentId, name: student.name }] : []
-                })
-                const canComment =
-                  isDirector || (isTeacher && item.teacherIds.includes(user?.uid || ''))
-                const locationLabel = item.location.trim()
-                const hasLocation =
-                  locationLabel &&
-                  !['lugar por definir', 'lugar por confirmar'].includes(
-                    locationLabel.toLocaleLowerCase('es-MX')
-                  )
-                return (
-                  <article
-                    key={item.id}
-                    className={`rounded-[var(--r-md)] border bg-white p-5 shadow-[var(--shadow-sm)] ${item.status === 'completed' ? 'border-[#b9dfc9]' : 'border-(--c-border)'}`}
-                  >
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                      <CoachBadge name={coachName} unassigned={item.teacherIds.length === 0} />
-                      {studentBadges.length > 0 ? (
-                        studentBadges.map((student) => (
-                          <StudentBadge key={student.id} name={student.name} />
-                        ))
-                      ) : (
-                        <StudentBadge name="Sin alumno" />
-                      )}
-                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-(--c-text-2)">
-                        {item.type === 'group' ? (
-                          <FiUsers aria-hidden="true" />
-                        ) : (
-                          <FiUser aria-hidden="true" />
-                        )}
-                        {formatClassDate(item.date)} · {item.startTime} ·{' '}
-                        {classDuration(item.startTime, item.endTime)} min
-                      </span>
-                      <span className="ml-auto text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
-                        {item.status === 'completed'
-                          ? 'Completada'
-                          : item.status === 'cancelled'
-                            ? 'Cancelada'
-                            : item.status === 'pending'
-                              ? 'Pendiente de aprobación'
-                              : 'Programada'}
-                      </span>
-                    </div>
-                    {hasLocation && (
-                      <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
-                        <FiMapPin aria-hidden="true" /> {locationLabel}
-                        {item.locationUrl && (
-                          <a
-                            href={item.locationUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-semibold text-(--c-ocean-mid)"
-                          >
-                            Ver mapa
-                          </a>
-                        )}
-                      </p>
-                    )}
-                    {item.classNote && (
-                      <p className="mt-2 text-sm text-(--c-text-2)">{item.classNote}</p>
-                    )}
-                    <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-x-auto">
-                      {(isDirector || isTeacher) && item.status === 'scheduled' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => void updateClass(item.id, 'completed')}
-                            className="btn btn-outline btn-sm shrink-0 gap-1 px-2 text-xs"
-                          >
-                            <FiCheck aria-hidden="true" /> Completar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void updateClass(item.id, 'cancelled')}
-                            className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs text-(--c-error,#b91c1c)"
-                          >
-                            <FiX aria-hidden="true" /> Cancelar
-                          </button>
-                        </>
-                      )}
-                      {canManageBookings && item.status === 'pending' && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => void updateClass(item.id, 'scheduled')}
-                            className="btn btn-primary btn-sm shrink-0 px-2 text-xs"
-                          >
-                            Aprobar clase
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => void updateClass(item.id, 'cancelled')}
-                            className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs text-(--c-error,#b91c1c)"
-                          >
-                            <FiX aria-hidden="true" /> Rechazar
-                          </button>
-                        </>
-                      )}
-                      {canComment && (
-                        <button
-                          type="button"
-                          aria-label={
-                            item.classNote
-                              ? 'Editar comentario de clase'
-                              : 'Agregar comentario a la clase'
-                          }
-                          onClick={() => {
-                            setCommentClass(item)
-                            setClassNoteDraft(item.classNote || '')
-                          }}
-                          className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs"
-                        >
-                          <FiMessageSquare aria-hidden="true" />{' '}
-                          {item.classNote ? 'Editar nota' : 'Comentar'}
-                        </button>
-                      )}
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
-          </details>
-        ) : null}
       </section>
       <section aria-label="Agenda de la escuela" className="flex flex-col gap-4">
         <CoachAgenda

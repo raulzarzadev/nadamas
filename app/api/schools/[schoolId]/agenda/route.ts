@@ -256,6 +256,7 @@ export async function GET(request: Request, { params }: RouteProps) {
             allowedCoachIds: teacherIds,
           }).map((coachId) => ({
             id: `class-${occurrence.id}-${coachId}`,
+            schoolClassId: occurrence.id,
             coachId,
             coachName: names[coachId] || 'Entrenador',
             date: occurrence.date,
@@ -278,7 +279,8 @@ export async function GET(request: Request, { params }: RouteProps) {
               ? requestRecord.preferredTeacherId
               : ''
           if (
-            requestRecord.requestedBy !== viewerId ||
+            (requestRecord.requestedBy !== viewerId &&
+              !viewerStudentIds.has(requestRecord.studentId)) ||
             requestRecord.status !== 'pending' ||
             !coachId ||
             !requestRecord.startDate ||
@@ -289,6 +291,7 @@ export async function GET(request: Request, { params }: RouteProps) {
           return [
             {
               id: `request-${doc.id}`,
+              schoolRequestId: doc.id,
               coachId,
               coachName: names[coachId] || 'Entrenador',
               date: requestRecord.startDate,

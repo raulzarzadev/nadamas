@@ -8,6 +8,9 @@ import { FiCalendar, FiChevronRight, FiEdit3, FiSearch, FiUser, FiX } from 'reac
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import ClassCard from '@/components/ui/class-card'
+import StatusBadge from '@/components/ui/status-badge'
+import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { auth } from '@/firebase/index'
 import { type ClassEvaluation, canEvaluateBooking } from '@/lib/class-evaluation'
@@ -70,7 +73,9 @@ function BookingGroupRow({
   coach,
   onCancel,
   onEvaluate,
+  compact = false,
 }: {
+  compact?: boolean
   bookings: Booking[]
   coach?: CoachInfo
   onCancel?: (booking: Booking) => void
@@ -86,6 +91,58 @@ function BookingGroupRow({
     (total, item) => total + (item.schoolClassStudentCount || 1),
     0
   )
+  if (compact)
+    return (
+      <li className="grid gap-2">
+        <ClassCard
+          date={dayLabel(booking)}
+          time={booking.startTime}
+          showSeparator={false}
+          showCoachName
+          coachName={coachName}
+          groupType={booking.groupType}
+          status={booking.groupType === 'grupal' ? 'group' : 'booked'}
+          actions={
+            <Link
+              href={`/athlete/coach/${booking.coachId}`}
+              aria-label={`Ver perfil de ${coachName}`}
+              className="inline-flex size-7 items-center justify-center rounded-full hover:bg-white"
+            >
+              <FiChevronRight aria-hidden="true" size={16} />
+            </Link>
+          }
+        >
+          <ul className="grid gap-1 px-2">
+            {bookings.map((item) => (
+              <li key={item.id} className="flex flex-wrap items-center gap-2">
+                <StudentBadge name={item.athleteName || 'Alumno'} />
+                <span className="ml-auto">
+                  <StatusBadge
+                    status={
+                      item.status === 'pending'
+                        ? 'pending'
+                        : item.status === 'cancelled'
+                          ? 'cancelled'
+                          : 'confirmed'
+                    }
+                  />
+                </span>
+                {onCancel && (
+                  <button
+                    type="button"
+                    onClick={() => onCancel(item)}
+                    className="min-h-9 px-2 text-xs font-semibold text-(--rose-tx)"
+                    aria-label={`Cancelar clase de ${item.athleteName}`}
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </ClassCard>
+      </li>
+    )
   return (
     <li className="rounded-xl border border-[var(--c-border)] bg-white px-3 py-3 sm:px-4">
       <div className="flex items-start gap-3 sm:items-center">
@@ -222,7 +279,15 @@ function PastBookings({
   )
 }
 
-export default function AthleteBookingsOverview() {
+export default function AthleteBookingsOverview({
+  view = 'progress',
+  onUpcomingCountChange,
+}: {
+  view?: 'upcoming' | 'progress'
+  onUpcomingCountChange?: (count: number) => void
+}) {
+  const showUpcoming = view === 'upcoming'
+  const [upcomingOpen, setUpcomingOpen] = useState(false)
   const terminology = useSchoolTerminology()
   const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
   const [evaluationSaved, setEvaluationSaved] = useState(false)
@@ -309,7 +374,12 @@ export default function AthleteBookingsOverview() {
   async function cancelBooking(booking: Booking) {
     setCancellingId(booking.id)
     try {
-      await deleteAuthed(`/api/bookings/${booking.id}`)
+      if (booking.schoolId && (booking.schoolRequestId || booking.schoolClassId)) {
+        await postAuthed(`/api/schools/${booking.schoolId}/reservations/cancel`, {
+          schoolRequestId: booking.schoolRequestId,
+          schoolClassId: booking.schoolClassId,
+        })
+      } else await deleteAuthed(`/api/bookings/${booking.id}`)
       setToCancel(null)
       await load()
     } catch (cancelError) {
@@ -350,20 +420,25 @@ export default function AthleteBookingsOverview() {
   const pastBookings = selectedBookings.filter(isPastBooking)
   const upcomingGroups = groupByClassTime(upcomingBookings)
   const activeCount = upcomingBookings.length
+  useEffect(() => {
+    if (bookings !== undefined) onUpcomingCountChange?.(activeCount)
+  }, [bookings, activeCount, onUpcomingCountChange])
 
-  return (
+  const content = (
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold text-[var(--c-ocean)]">Próximas clases</h1>
-          {upcomingBookings.length > 0 && (
+          <h1 className="text-3xl font-extrabold text-[var(--c-ocean)]">
+            {showUpcoming ? 'Próximas clases' : 'Progreso'}
+          </h1>
+          {showUpcoming && upcomingBookings.length > 0 && (
             <p className="mt-1 text-sm text-[var(--c-text-2)]">
               {activeCount} {activeCount === 1 ? 'clase agendada' : 'clases agendadas'}
             </p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {selectedSchoolId && (
+          {!showUpcoming && selectedSchoolId && (
             <button
               type="button"
               onClick={() => setCommentOpen(true)}
@@ -374,20 +449,22 @@ export default function AthleteBookingsOverview() {
               <FiEdit3 aria-hidden="true" />
             </button>
           )}
-          <button
-            type="button"
-            aria-haspopup="dialog"
-            aria-controls="class-calendar-subscription"
-            onClick={() => setCalendarOpen(true)}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-          >
-            <FiCalendar aria-hidden="true" />
-            Suscribirme al calendario
-          </button>
+          {showUpcoming && (
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-controls="class-calendar-subscription"
+              onClick={() => setCalendarOpen(true)}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+            >
+              <FiCalendar aria-hidden="true" />
+              Suscribirme al calendario
+            </button>
+          )}
         </div>
       </header>
 
-      {studentComments.length > 0 && (
+      {!showUpcoming && studentComments.length > 0 && (
         <section className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-4">
           <h2 className="font-bold text-[var(--c-ocean)]">Comentarios sobre ti</h2>
           <ul className="mt-2 grid gap-2">
@@ -440,7 +517,7 @@ export default function AthleteBookingsOverview() {
         <div className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-9 text-center">
           <FiSearch aria-hidden="true" className="mx-auto mb-3 text-3xl text-[var(--c-aqua)]" />
           <p className="mx-auto mb-4 max-w-xs text-sm leading-relaxed text-[var(--c-text-2)]">
-            Aún no tienes clases próximas.{' '}
+            {showUpcoming ? 'Aún no tienes clases próximas.' : 'Aún no tienes clases registradas.'}{' '}
             {terminology.schoolId
               ? `Busca a tu ${terminology.coachSingular} y reserva tu primer entrenamiento.`
               : 'Encuentra un coach y reserva tu primer entrenamiento.'}
@@ -454,23 +531,30 @@ export default function AthleteBookingsOverview() {
         </div>
       ) : (
         <>
-          {upcomingBookings.length > 0 ? (
-            <ul className="flex flex-col gap-2">
-              {upcomingGroups.map((group) => (
-                <BookingGroupRow
-                  key={group[0].id}
-                  bookings={group}
-                  coach={coaches[group[0].coachId]}
-                  onCancel={setToCancel}
-                />
-              ))}
-            </ul>
-          ) : (
-            <div className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-6 text-center text-sm text-[var(--c-text-2)]">
-              No tienes clases próximas.
-            </div>
+          {showUpcoming &&
+            (upcomingBookings.length > 0 ? (
+              <ul className="flex flex-col gap-2">
+                {upcomingGroups.map((group) => (
+                  <BookingGroupRow
+                    compact
+                    key={group[0].id}
+                    bookings={group}
+                    coach={coaches[group[0].coachId]}
+                    onCancel={setToCancel}
+                  />
+                ))}
+              </ul>
+            ) : (
+              <div className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-6 text-center text-sm text-[var(--c-text-2)]">
+                No tienes clases próximas.
+              </div>
+            ))}
+          {!showUpcoming && pastBookings.length === 0 && (
+            <p className="py-6 text-center text-sm text-(--c-text-2)">
+              Todavía no tienes clases en tu historial.
+            </p>
           )}
-          {pastBookings.length > 0 && (
+          {!showUpcoming && pastBookings.length > 0 && (
             <PastBookings
               bookings={pastBookings}
               coaches={coaches}
@@ -585,5 +669,25 @@ export default function AthleteBookingsOverview() {
         )}
       </Sheet>
     </div>
+  )
+  if (!showUpcoming) return content
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setUpcomingOpen(true)}
+        className="min-h-11 rounded-2xl border border-(--c-border) bg-white p-4 text-left font-bold text-(--c-ocean)"
+      >
+        Próximas clases{bookings !== undefined ? ` (${activeCount})` : ''}
+      </button>
+      <Sheet
+        open={upcomingOpen}
+        onClose={() => setUpcomingOpen(false)}
+        label="Próximas clases"
+        size="xl"
+      >
+        <div className="px-4 sm:px-0">{content}</div>
+      </Sheet>
+    </>
   )
 }

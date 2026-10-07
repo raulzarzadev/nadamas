@@ -235,7 +235,7 @@ export default function Sheet({
             title="Cerrar"
             disabled={closeDisabled}
             onClick={requestClose}
-            className="group relative grid h-11 w-16 place-items-center rounded-full text-[var(--c-text-2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+            className="group relative grid h-9 w-16 place-items-center rounded-full text-[var(--c-text-2)] before:absolute before:-inset-y-1 before:inset-x-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
           >
             <span className="h-1 w-10 rounded-full bg-[var(--c-border)] transition duration-150 group-hover:scale-x-0 group-hover:opacity-0 group-focus-visible:scale-x-0 group-focus-visible:opacity-0" />
             <FiX

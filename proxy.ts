@@ -10,6 +10,7 @@ export function proxy(request: NextRequest) {
     pathname === '/profile' ||
     pathname === '/notifications' ||
     pathname === '/dashboard' ||
+    pathname === '/interfaces' ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/athlete/') ||
     pathname.startsWith('/coach/') ||

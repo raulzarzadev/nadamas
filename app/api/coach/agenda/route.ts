@@ -82,8 +82,12 @@ export async function GET(request: Request) {
   )
   if (schoolError) return schoolError
   const schoolMembership = schoolId ? await getSchoolMembership(schoolId, coachId) : null
-  const canReviewSchoolBookings =
-    verification.isAdmin || schoolMembership?.canManageSchoolBookings === true
+  const canViewSchoolRequests =
+    verification.isAdmin ||
+    (schoolMembership?.status === 'active' &&
+      (schoolMembership.role === 'teacher' ||
+        schoolMembership.roles?.includes('teacher') ||
+        schoolMembership.canManageSchoolBookings === true))
   const range = monthRange(url.searchParams.get('month'))
   const [
     coachDoc,
@@ -93,6 +97,8 @@ export async function GET(request: Request) {
     schoolClassesSnapshot,
     schoolStudentsSnapshot,
     schoolRequestsSnapshot,
+    coachUserDoc,
+    schoolProfileDoc,
   ] = await Promise.all([
     adminDb.collection('coaches').doc(coachId).get(),
     adminDb
@@ -112,6 +118,10 @@ export async function GET(request: Request) {
     schoolId
       ? adminDb.collection('schoolClassRequests').where('schoolId', '==', schoolId).get()
       : Promise.resolve(null),
+    adminDb.collection('users').doc(coachId).get(),
+    schoolId
+      ? adminDb.collection('schoolProfiles').doc(`${schoolId}_${coachId}`).get()
+      : Promise.resolve(null),
   ])
 
   const studentRecordsSnapshot = await adminDb
@@ -126,6 +136,12 @@ export async function GET(request: Request) {
   )
 
   const coach = { id: coachDoc.id, ...coachDoc.data() } as CoachPublic
+  const coachUser = coachUserDoc.data() || {}
+  const coachName =
+    [schoolProfileDoc?.data(), coachUser]
+      .flatMap((profile) => [profile?.nickname, profile?.displayName, profile?.name])
+      .find((name): name is string => typeof name === 'string' && Boolean(name.trim()))
+      ?.trim() || null
   const regularBookings = bookingsSnapshot.docs
     .map((doc) => doc.data() as Booking)
     .filter((booking) => (schoolId ? booking.schoolId === schoolId : !booking.schoolId))
@@ -156,13 +172,13 @@ export async function GET(request: Request) {
         schoolId: schoolId as string,
         occurrence,
         coachId,
-        coachName: null,
+        coachName,
         studentNames,
         studentRecords,
       }),
     ]
   })
-  const schoolRequestBookings = canReviewSchoolBookings
+  const schoolRequestBookings = canViewSchoolRequests
     ? (schoolRequestsSnapshot?.docs || []).flatMap((doc) => {
         const record = doc.data() as SchoolClassRequest
         if (
@@ -178,7 +194,7 @@ export async function GET(request: Request) {
             schoolRequestId: doc.id,
             schoolId: schoolId as string,
             coachId,
-            coachName: null,
+            coachName,
             athleteId: record.requestedBy,
             athleteName: record.studentName || 'Alumno',
             athleteEmail: null,
@@ -230,7 +246,14 @@ export async function GET(request: Request) {
     endDate: range.end,
   })
 
-  return NextResponse.json({ bookings, blocks, availableSlots, offerings, schoolId })
+  return NextResponse.json({
+    bookings,
+    blocks,
+    availableSlots,
+    offerings,
+    schoolId,
+    coachNames: coachName ? { [coachId]: coachName } : {},
+  })
 }
 
 async function handlePOST(request: Request) {

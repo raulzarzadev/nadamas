@@ -3,8 +3,11 @@
 import Sheet from '@comps/ui/sheet'
 import { useEffect, useState } from 'react'
 import { FiPlus, FiSearch, FiX } from 'react-icons/fi'
+import ScheduleTag from '@/components/ui/schedule-tag'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed } from '@/lib/client/authed-api'
+import type { CoachAvailableSlot } from '@/lib/coach-agenda'
+import { UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 interface CoachStudent {
@@ -24,6 +27,9 @@ export interface AddStudentPayload {
 export default function AgendaAddStudentModal({
   submitError,
   slotLabel,
+  selectedSlots,
+  promotionRequired = false,
+  occupiedIndividual = false,
   schoolId,
   coachId,
   busy,
@@ -35,6 +41,11 @@ export default function AgendaAddStudentModal({
 }: {
   submitError?: string
   slotLabel: string
+  promotionRequired?: boolean
+  occupiedIndividual?: boolean
+  selectedSlots?: Array<
+    Pick<CoachAvailableSlot, 'date' | 'startTime' | 'coachId' | 'coachName' | 'groupType'>
+  >
   schoolId?: string
   coachId?: string
   busy: boolean
@@ -135,7 +146,7 @@ export default function AgendaAddStudentModal({
 
   const selectedStudents = (students || []).filter((student) => selectedIds.has(student.athleteId))
   const totalSelected = selectedStudents.length + createNames.length
-  const canSubmit = !busy && totalSelected > 0
+  const canSubmit = !busy && !occupiedIndividual && totalSelected > 0
 
   const toggleStudent = (athleteId: string) =>
     setSelectedIds((current) => {
@@ -181,9 +192,11 @@ export default function AgendaAddStudentModal({
               onClick={submit}
               className="min-h-12 rounded-full bg-[var(--c-aqua)] px-4 font-bold text-white transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:bg-slate-400 disabled:opacity-100"
             >
-              {totalSelected > 1
-                ? `Agregar ${totalSelected} ${participantPlural}`
-                : `Agregar ${participantSingular}`}
+              {promotionRequired
+                ? 'Cambiar a grupal y agregar'
+                : totalSelected > 1
+                  ? `Agregar ${totalSelected} ${participantPlural}`
+                  : `Agregar ${participantSingular}`}
             </button>
             <button
               type="button"
@@ -199,10 +212,47 @@ export default function AgendaAddStudentModal({
       <div className="flex w-full flex-col">
         <div className="shrink-0 px-4 pt-3 sm:px-0 sm:pt-0">
           <h3 className="text-xl font-bold text-[var(--c-ocean)]">Agregar {participantPlural}</h3>
-          <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>
+          {selectedSlots?.length ? (
+            <ul className="mt-3 grid gap-2" aria-label="Horarios seleccionados">
+              {[...selectedSlots]
+                .sort((a, b) =>
+                  `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
+                )
+                .map((slot) => (
+                  <li key={`${slot.date}:${slot.startTime}:${slot.coachId}:${slot.groupType}`}>
+                    <ScheduleTag
+                      date={new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                      time={slot.startTime}
+                      coachName={
+                        slot.coachName ||
+                        (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID ? 'Sin profe aún' : undefined)
+                      }
+                      unassigned={slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                      groupType={slot.groupType}
+                    />
+                  </li>
+                ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>
+          )}
         </div>
 
         <div className="flex flex-col px-4 py-4 sm:px-0">
+          {(promotionRequired || occupiedIndividual) && (
+            <p
+              role="status"
+              className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900"
+            >
+              {occupiedIndividual
+                ? 'Esta clase particular ya tiene un alumno. Cambia su tipo a grupal antes de agregar otro.'
+                : 'Hay clases particulares que ya tienen un alumno. Al agregar otro, esas clases cambiarán a grupales.'}
+            </p>
+          )}
           {(error || submitError) && (
             <p className="mb-3 text-sm text-[var(--c-error,#b91c1c)]">{submitError || error}</p>
           )}

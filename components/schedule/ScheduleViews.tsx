@@ -5,6 +5,7 @@ import { FiShield, FiUser, FiUsers } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
+import StatusBadge from '@/components/ui/status-badge'
 import type { HourStatus } from '@/lib/coach-agenda-status'
 
 export interface ScheduleViewSlot {
@@ -18,7 +19,8 @@ export interface ScheduleViewSlot {
   selected?: boolean
   disabled?: boolean
   enrolledCount?: number
-  bookingStatus?: 'pending' | 'confirmed'
+  bookingStatus?: 'pending' | 'confirmed' | 'cancelled'
+  pendingApproval?: boolean
 }
 
 function dayKey(day: Date) {
@@ -140,7 +142,7 @@ export default function ScheduleViews({
             onSelectDate={onSelectDate}
             onChangeWeek={onChangeWeek}
           />
-          <div className="grid gap-1 rounded-2xl border border-(--c-border) bg-(--c-surface) p-3 sm:p-4">
+          <div className="grid gap-1 rounded-2xl bg-(--c-surface) p-3 sm:p-4">
             {loading ? (
               <p className="text-sm" role="status">
                 Cargando horarios…
@@ -198,11 +200,9 @@ export default function ScheduleViews({
                                 : onSelectSlot(choices[0].key)
                             }
                             style={
-                              hasGroup && !selected
-                                ? { backgroundColor: '#eff6ff', borderColor: '#60a5fa' }
-                                : undefined
+                              hasGroup && !selected ? { backgroundColor: '#eff6ff' } : undefined
                             }
-                            className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-bold tabular-nums transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : hasGroup ? 'border-blue-300 bg-blue-50 text-(--c-ocean) hover:bg-blue-100' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
+                            className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-bold tabular-nums transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : hasGroup ? 'border-(--c-border) bg-blue-50 text-(--c-ocean) hover:bg-blue-100' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
                           >
                             <span className="mb-0.5 flex h-5 items-center justify-end gap-0.5">
                               {choices.length > 1 && (
@@ -230,7 +230,7 @@ export default function ScheduleViews({
                                   aria-label={hasGroup ? 'Grupal' : 'Particular'}
                                   className={
                                     hasGroup
-                                      ? 'inline-flex rounded-full bg-blue-100 p-1 text-blue-700'
+                                      ? 'inline-flex rounded-full bg-(--c-surface) p-1 text-(--c-ocean)'
                                       : 'inline-flex'
                                   }
                                 >
@@ -243,11 +243,20 @@ export default function ScheduleViews({
                               )}
                             </span>
                             {time}
-                            {choices.some((slot) => slot.bookingStatus) && (
-                              <span className="mt-1 block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-950">
-                                {choices.some((slot) => slot.bookingStatus === 'pending')
-                                  ? 'Pendiente de aprobación'
-                                  : 'Inscrito'}
+                            {choices.some((slot) => slot.pendingApproval || slot.bookingStatus) && (
+                              <span className="mt-1 flex justify-center">
+                                <StatusBadge
+                                  status={
+                                    choices.some(
+                                      (slot) =>
+                                        slot.pendingApproval || slot.bookingStatus === 'pending'
+                                    )
+                                      ? 'pending'
+                                      : choices.some((slot) => slot.bookingStatus === 'confirmed')
+                                        ? 'confirmed'
+                                        : 'cancelled'
+                                  }
+                                />
                               </span>
                             )}
                           </button>
@@ -307,13 +316,15 @@ export default function ScheduleViews({
                 enrolledCount={slot.enrolledCount}
               />
               <span className="shrink-0 text-xs font-bold">
-                {slot.bookingStatus === 'pending'
-                  ? 'Pendiente de aprobación'
-                  : slot.bookingStatus === 'confirmed'
-                    ? 'Inscrito'
-                    : slot.selected
-                      ? 'Seleccionada'
-                      : 'Elegir'}
+                {slot.pendingApproval || slot.bookingStatus ? (
+                  <StatusBadge
+                    status={slot.pendingApproval ? 'pending' : (slot.bookingStatus ?? 'pending')}
+                  />
+                ) : slot.selected ? (
+                  'Quitar'
+                ) : (
+                  'Elegir'
+                )}
               </span>
             </button>
           ))}

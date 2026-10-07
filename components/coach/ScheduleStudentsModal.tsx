@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import ScheduleTag from '@/components/ui/schedule-tag'
+import ClassCard from '@/components/ui/class-card'
 import Sheet from '@/components/ui/sheet'
 import StudentTag from '@/components/ui/student-tag'
+import type { CoachAvailableSlot } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import type { AgendaStudentAction } from './AgendaStudentActions'
@@ -12,6 +13,7 @@ export default function ScheduleStudentsModal({
   schoolId,
   bookings,
   slotCount,
+  selectedSlots,
   busy,
   error,
   onClose,
@@ -22,6 +24,7 @@ export default function ScheduleStudentsModal({
   schoolId: string
   bookings: Booking[]
   slotCount: number
+  selectedSlots: CoachAvailableSlot[]
   busy: boolean
   error?: string
   onClose: () => void
@@ -36,11 +39,31 @@ export default function ScheduleStudentsModal({
   const enrolled = bookings.filter(
     (booking) => !booking.schoolRequestId && booking.status !== 'cancelled'
   )
+  const classes = new Map<string, Booking[]>()
+  for (const booking of enrolled) {
+    const key = [
+      booking.schoolId || schoolId,
+      booking.coachId,
+      booking.date,
+      booking.startTime,
+      booking.endTime,
+      booking.groupType,
+      booking.groupType === 'particular' ? booking.schoolClassId || booking.id : 'group',
+    ].join('|')
+    classes.set(key, [...(classes.get(key) || []), booking])
+  }
   if (adding)
     return (
       <AgendaAddStudentModal
         schoolId={schoolId}
         slotLabel={`${slotCount} horarios seleccionados`}
+        selectedSlots={selectedSlots}
+        promotionRequired={enrolled.some(
+          (booking) => booking.groupType === 'particular' && Boolean(booking.schoolClassId)
+        )}
+        occupiedIndividual={enrolled.some(
+          (booking) => booking.groupType === 'particular' && !booking.schoolClassId
+        )}
         busy={busy}
         submitError={error}
         onClose={() => setAdding(false)}
@@ -56,7 +79,9 @@ export default function ScheduleStudentsModal({
     >
       <div className="flex flex-col gap-4 px-4 sm:px-0">
         <h2 className="text-lg font-bold">Alumnos</h2>
-        <p className="text-sm text-(--c-text-2)">{slotCount} horarios seleccionados</p>
+        <p className="text-sm text-(--c-text-2)">
+          {slotCount} {slotCount === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
+        </p>
         {error && (
           <p role="alert" className="text-sm text-rose-600">
             {error}
@@ -67,73 +92,99 @@ export default function ScheduleStudentsModal({
           {!enrolled.length && (
             <p className="text-sm text-(--c-text-2)">No hay alumnos inscritos en estos horarios.</p>
           )}
-          {enrolled.map((booking) => (
-            <div key={`${booking.id}:${booking.coachId}`} className="grid gap-2">
-              <ScheduleTag
-                date={formatDate(booking.date)}
-                time={booking.startTime}
-                coachName={booking.coachName || 'Sin profe aún'}
-                unassigned={booking.coachId === '__unassigned__'}
-                groupType={booking.groupType}
-                enrolledCount={
-                  booking.schoolClassStudents?.filter((student) => !student.pending).length || 1
-                }
-              />
-              <ul className="grid gap-2 pb-2 text-sm">
-                {(booking.schoolClassStudents?.length
-                  ? booking.schoolClassStudents.map((student) => ({
-                      id: student.id,
-                      name: student.name,
-                      attended: student.attended || false,
-                      note: student.note || '',
-                    }))
-                  : [
-                      {
-                        id: booking.athleteId || booking.id,
-                        name: booking.athleteName || 'Alumno',
-                        attended: booking.attended || false,
-                        note: booking.studentNote || '',
-                      },
-                    ]
-                ).map((student) => (
-                  <li key={student.id}>
-                    <StudentTag
-                      name={student.name}
-                      disabled={busy}
-                      editLabel={`Editar la clase de ${student.name} del ${formatDate(booking.date)} a las ${booking.startTime}`}
-                      onEdit={() =>
-                        onEdit(booking, {
-                          studentId: student.id,
-                          studentName: student.name,
-                          attended: student.attended,
-                          note: student.note,
-                          date: booking.date,
-                          startTime: booking.startTime,
-                        })
-                      }
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {[...classes.entries()].map(([key, classBookings]) => {
+            const booking = classBookings[0]
+            const students = new Map<
+              string,
+              {
+                booking: Booking
+                id: string
+                name: string
+                attended: boolean
+                note: string
+                pending: boolean
+              }
+            >()
+            for (const item of classBookings) {
+              const roster = item.schoolClassStudents?.length
+                ? item.schoolClassStudents.map((student) => ({
+                    id: student.id,
+                    name: student.name,
+                    attended: student.attended || false,
+                    note: student.note || '',
+                    pending: Boolean(student.pending),
+                  }))
+                : [
+                    {
+                      id: item.athleteId || item.id,
+                      name: item.athleteName || 'Alumno',
+                      attended: item.attended || false,
+                      note: item.studentNote || '',
+                      pending: item.status === 'pending',
+                    },
+                  ]
+              for (const student of roster) students.set(student.id, { ...student, booking: item })
+            }
+            return (
+              <div key={key} className="@container">
+                <ClassCard
+                  date={formatDate(booking.date)}
+                  time={booking.startTime}
+                  coachName={
+                    booking.coachName ||
+                    selectedSlots.find((slot) => slot.coachId === booking.coachId)?.coachName ||
+                    'Sin profe aún'
+                  }
+                  showCoachName
+                  unassigned={booking.coachId === '__unassigned__'}
+                  groupType={booking.groupType}
+                  status={booking.groupType === 'grupal' ? 'group' : 'booked'}
+                  showSeparator={false}
+                >
+                  <ul className="grid gap-2 pb-1 text-sm">
+                    {[...students.values()].map((student) => (
+                      <li key={student.id}>
+                        <StudentTag
+                          name={student.name}
+                          status={student.pending ? 'pending' : 'enrolled'}
+                          disabled={busy}
+                          editLabel={`Editar la clase de ${student.name} del ${formatDate(booking.date)} a las ${booking.startTime}`}
+                          onEdit={() =>
+                            onEdit(student.booking, {
+                              studentId: student.id,
+                              studentName: student.name,
+                              attended: student.attended,
+                              note: student.note,
+                              date: booking.date,
+                              startTime: booking.startTime,
+                            })
+                          }
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </ClassCard>
+              </div>
+            )
+          })}
         </section>
         {requests.length > 0 && (
           <section className="grid gap-2" aria-label="Solicitudes pendientes">
             <h3 className="text-sm font-bold">Solicitudes ({requests.length})</h3>
             {requests.map((booking) => (
-              <div
+              <ClassCard
                 key={booking.schoolRequestId}
-                className="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3"
+                date={formatDate(booking.date)}
+                time={booking.startTime}
+                coachName={booking.coachName || 'Sin profe aún'}
+                showCoachName
+                unassigned={booking.coachId === '__unassigned__'}
+                groupType={booking.groupType}
+                status={booking.groupType === 'grupal' ? 'group' : 'booked'}
+                pending
+                showSeparator={false}
               >
-                <strong className="text-sm">{booking.athleteName || 'Alumno'}</strong>
-                <span className="text-xs text-(--c-text-2)">{formatDate(booking.date)}</span>
-                <ScheduleTag
-                  time={booking.startTime}
-                  coachName={booking.coachName || 'Sin profe aún'}
-                  unassigned={booking.coachId === '__unassigned__'}
-                  groupType={booking.groupType}
-                />
+                <StudentTag name={booking.athleteName || 'Alumno'} status="pending" />
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -152,7 +203,7 @@ export default function ScheduleStudentsModal({
                     Rechazar
                   </button>
                 </div>
-              </div>
+              </ClassCard>
             ))}
           </section>
         )}

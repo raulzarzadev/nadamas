@@ -43,7 +43,7 @@ export default function ScheduleTag({
         role="img"
         aria-label={typeLabel}
         title={typeLabel}
-        className={`inline-flex shrink-0 items-center justify-center ${groupType === 'grupal' ? 'rounded-full bg-blue-100 p-1 text-blue-700' : ''}`}
+        className={`inline-flex shrink-0 items-center justify-center ${groupType === 'grupal' ? 'rounded-full bg-(--c-surface) p-1 text-(--c-ocean)' : ''}`}
       >
         {groupType === 'grupal' ? (
           <FiUsers aria-hidden="true" size={16} />

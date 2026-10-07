@@ -28,7 +28,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   const occurrence = await getSchoolClassOccurrence(schoolId, occurrenceId)
   if (!occurrence) return NextResponse.json({ error: 'Clase no encontrada.' }, { status: 404 })
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
-  const canManageBookings = isDirector || access.membership?.canManageSchoolBookings === true
+  const canManageBookings = isDirector
   const isTeacher = occurrence.teacherIds.includes(access.caller.uid)
   const isStudentAccount =
     !isDirector && !isTeacher && schoolMembershipHasRole(access.membership, 'student')
