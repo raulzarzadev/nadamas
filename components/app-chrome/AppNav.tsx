@@ -189,7 +189,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
           </div>
         </div>
 
-        {role === 'school' && schoolAccess && (
+        {!tenant && role === 'school' && schoolAccess && (
           <div className="flex items-center justify-between gap-3">
             <p className="min-w-0 truncate text-left text-sm font-bold text-[var(--c-ocean)]">
               <span className="font-normal text-[var(--c-text-2)]">Escuela · </span>
