@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { FiMapPin, FiPlus, FiTrash2 } from 'react-icons/fi'
+import Sheet from '@/components/ui/sheet'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { SchoolLocation } from '@/lib/school'
 
@@ -14,6 +15,7 @@ export default function SchoolLocationsCard({
 }) {
   const [locations, setLocations] = useState<SchoolLocation[]>([])
   const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({ name: '', address: '', mapUrl: '' })
   const [message, setMessage] = useState<string | null>(null)
   useEffect(() => {
@@ -24,6 +26,8 @@ export default function SchoolLocationsCard({
   }, [schoolId])
   async function create(event: React.FormEvent) {
     event.preventDefault()
+    setBusy(true)
+    setMessage(null)
     try {
       const response = await postAuthed(`/api/schools/${schoolId}/locations`, form)
       const payload = (await response.json()) as { location: SchoolLocation }
@@ -32,8 +36,10 @@ export default function SchoolLocationsCard({
       )
       setForm({ name: '', address: '', mapUrl: '' })
       setOpen(false)
-    } catch (reason) {
-      setMessage(reason instanceof Error ? reason.message : 'No se pudo crear la instalación.')
+    } catch {
+      setMessage('No se pudo crear la instalación. Inténtalo de nuevo.')
+    } finally {
+      setBusy(false)
     }
   }
   async function remove(id: string) {
@@ -46,9 +52,9 @@ export default function SchoolLocationsCard({
   }
   return (
     <section className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
             <FiMapPin aria-hidden="true" />
           </span>
           <div>
@@ -61,7 +67,11 @@ export default function SchoolLocationsCard({
         {canManage && (
           <button
             type="button"
-            onClick={() => setOpen((value) => !value)}
+            disabled={busy}
+            onClick={() => {
+              setMessage(null)
+              setOpen(true)
+            }}
             className="btn btn-outline btn-sm gap-1"
           >
             <FiPlus aria-hidden="true" /> Agregar
@@ -105,50 +115,64 @@ export default function SchoolLocationsCard({
           ))}
         </div>
       )}
-      {open && (
-        <form onSubmit={create} className="mt-4 grid gap-3 border-t border-(--c-border) pt-4">
-          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Nombre
-            <input
-              required
-              value={form.name}
-              onChange={(event) => setForm({ ...form, name: event.target.value })}
-              className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Dirección
-            <input
-              value={form.address}
-              onChange={(event) => setForm({ ...form, address: event.target.value })}
-              className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-            Enlace de ubicación
-            <input
-              type="url"
-              value={form.mapUrl}
-              onChange={(event) => setForm({ ...form, mapUrl: event.target.value })}
-              placeholder="https://maps.google.com/…"
-              className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-            />
-          </label>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        closeDisabled={busy}
+        label="Agregar instalación"
+      >
+        <form onSubmit={create} className="grid min-w-0 gap-3 px-4 py-1 sm:px-1">
+          <h2 className="text-lg font-bold">Agregar instalación</h2>
+          <fieldset disabled={busy} className="grid gap-3">
+            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+              Nombre
+              <input
+                required
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+              Dirección
+              <input
+                value={form.address}
+                onChange={(event) => setForm({ ...form, address: event.target.value })}
+                className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+              Enlace de ubicación
+              <input
+                type="url"
+                value={form.mapUrl}
+                onChange={(event) => setForm({ ...form, mapUrl: event.target.value })}
+                placeholder="https://maps.google.com/…"
+                className="min-h-10 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
+              />
+            </label>
+          </fieldset>
+          {message && (
+            <p role="alert" className="text-sm text-rose-700">
+              {message}
+            </p>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
+              disabled={busy}
               onClick={() => setOpen(false)}
               className="btn btn-outline min-h-10 flex-1"
             >
               Cancelar
             </button>
-            <button type="submit" className="btn btn-primary min-h-10 flex-1">
-              Guardar
+            <button type="submit" disabled={busy} className="btn btn-primary min-h-11 flex-1">
+              {busy ? 'Guardando…' : 'Guardar'}
             </button>
           </div>
         </form>
-      )}
-      {message && <p className="mt-3 text-sm text-(--c-text-2)">{message}</p>}
+      </Sheet>
+      {message && !open && <p className="mt-3 text-sm text-(--c-text-2)">{message}</p>}
     </section>
   )
 }

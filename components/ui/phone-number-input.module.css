@@ -1,0 +1,61 @@
+.field {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  background: white;
+  color: var(--c-ocean);
+  font-weight: 400;
+  padding: 0 0.75rem;
+}
+
+.field:focus-within {
+  outline: 2px solid var(--c-ocean);
+  outline-offset: 2px;
+}
+
+.field:has(input:disabled) {
+  opacity: 0.5;
+}
+.field:has(input[aria-invalid="true"]) {
+  border-color: #be123c;
+}
+
+.field :global(.PhoneInputCountry) {
+  align-self: stretch;
+  display: flex;
+  min-width: 3rem;
+  margin-right: 0.75rem;
+  padding-right: 0.75rem;
+  border-right: 1px solid var(--c-border);
+}
+
+.field :global(.PhoneInputCountryIcon) {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  box-shadow: none;
+  background: transparent;
+}
+
+.field :global(.PhoneInputCountrySelect) {
+  cursor: pointer;
+}
+
+.field :global(.PhoneInputInput) {
+  width: 0;
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  outline: none;
+  box-shadow: none;
+  font: inherit;
+}

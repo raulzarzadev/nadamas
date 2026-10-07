@@ -1,4 +1,9 @@
-import { normalizeSchoolMembership } from '@/lib/school'
+import { normalizeSchoolMembership, schoolMembershipHasRole } from '@/lib/school'
+import {
+  normalizeSchoolContacts,
+  type SchoolContact,
+  visibleSchoolContacts,
+} from '@/lib/school-contact'
 import 'server-only'
 
 import type { DocumentSnapshot } from 'firebase-admin/firestore'
@@ -18,6 +23,7 @@ import { isValidSlug, normalizeSlug } from '@/lib/slug'
 import { adminDb } from './firebase-admin'
 
 interface SchoolInput {
+  contacts?: SchoolContact[]
   name: string
   slug: string
   description: string
@@ -58,9 +64,10 @@ function isAllowedLogoUrl(value: string) {
 }
 
 export function validateSchoolInput(
-  input: Partial<Omit<SchoolInput, 'palette' | 'terminology'>> & {
+  input: Partial<Omit<SchoolInput, 'palette' | 'terminology' | 'contacts'>> & {
     palette?: unknown
     terminology?: unknown
+    contacts?: unknown
   }
 ) {
   const name = typeof input.name === 'string' ? input.name.trim() : ''
@@ -82,9 +89,13 @@ export function validateSchoolInput(
     return { ok: false as const, reason: 'terminology' as const }
   }
 
+  const contacts = normalizeSchoolContacts(input.contacts === undefined ? [] : input.contacts)
+  if (!contacts) return { ok: false as const, reason: 'contacts' as const }
+
   return {
     ok: true as const,
     value: {
+      contacts,
       name,
       slug,
       description,
@@ -105,7 +116,18 @@ function schoolFromSnapshot(snapshot: DocumentSnapshot): School | null {
 }
 
 export async function getSchoolById(schoolId: string) {
-  return schoolFromSnapshot(await adminDb.collection('schools').doc(schoolId).get())
+  const ref = adminDb.collection('schools').doc(schoolId)
+  const [snapshot, contactsSnapshot] = await Promise.all([
+    ref.get(),
+    ref.collection('privateSettings').doc('contacts').get(),
+  ])
+  const school = schoolFromSnapshot(snapshot)
+  return school
+    ? ({
+        ...school,
+        contacts: normalizeSchoolContacts(contactsSnapshot.data()?.contacts ?? []) || [],
+      } as School)
+    : null
 }
 
 export async function listPublicSchools() {
@@ -139,7 +161,7 @@ export async function getSchoolBySlug(slugInput: string) {
     .where('slug', '==', slug)
     .limit(1)
     .get()
-  return legacySnapshot.empty ? null : schoolFromSnapshot(legacySnapshot.docs[0])
+  return legacySnapshot.empty ? null : getSchoolById(legacySnapshot.docs[0].id)
 }
 
 export async function getSchoolsForUser(userId: string) {
@@ -155,13 +177,28 @@ export async function getSchoolsForUser(userId: string) {
         ...(membershipSnapshot.data() as Omit<SchoolMembership, 'id'>),
       })
       const school = await getSchoolById(membership.schoolId)
-      return school ? { school, membership } : null
+      return school
+        ? {
+            school: {
+              ...school,
+              contacts: visibleSchoolContacts(
+                school.contacts,
+                membership.status === 'active'
+                  ? {
+                      director: schoolMembershipHasRole(membership, 'director'),
+                      teacher: schoolMembershipHasRole(membership, 'teacher'),
+                      student: schoolMembershipHasRole(membership, 'student'),
+                    }
+                  : {}
+              ),
+            },
+            membership,
+          }
+        : null
     })
   )
 
-  return result.filter(
-    (item): item is { school: School; membership: SchoolMembership } => item !== null
-  )
+  return result.filter((item): item is NonNullable<typeof item> => item !== null)
 }
 
 export async function getOwnedSchool(userId: string) {
@@ -185,6 +222,7 @@ export async function updateSchoolProfile(
     | 'showCoachesSchedules'
     | 'showStudents'
     | 'terminology'
+    | 'contacts'
   >
 ) {
   const schoolRef = adminDb.collection('schools').doc(schoolId)
@@ -207,8 +245,13 @@ export async function updateSchoolProfile(
     updatedAt: now,
   }
 
+  const contactsRef = schoolRef.collection('privateSettings').doc('contacts')
+  const contactsData = { contacts: input.contacts ?? current.contacts ?? [], updatedAt: now }
   if (current.slug === input.slug) {
-    await schoolRef.update(schoolData)
+    const batch = adminDb.batch()
+    batch.update(schoolRef, schoolData)
+    batch.set(contactsRef, contactsData)
+    await batch.commit()
   } else {
     const nextSlugRef = adminDb.collection('schoolSlugs').doc(input.slug)
     const currentSlugRef = adminDb.collection('schoolSlugs').doc(current.slug)
@@ -218,6 +261,7 @@ export async function updateSchoolProfile(
         throw new Error('SCHOOL_SLUG_TAKEN')
       }
       transaction.update(schoolRef, schoolData)
+      transaction.set(contactsRef, contactsData)
       transaction.delete(currentSlugRef)
       transaction.set(nextSlugRef, { schoolId, slug: input.slug, updatedAt: now })
     })

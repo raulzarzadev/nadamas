@@ -31,6 +31,7 @@ export async function PATCH(request: Request, { params }: RouteProps) {
         : current.logoUrl
     : current.logoUrl
   const validation = validateSchoolInput({
+    contacts: Object.hasOwn(body, 'contacts') ? body.contacts : current.contacts,
     name: typeof body.name === 'string' ? body.name : current.name,
     slug,
     description:
@@ -53,6 +54,7 @@ export async function PATCH(request: Request, { params }: RouteProps) {
   })
   if (!validation.ok) {
     const messages = {
+      contacts: 'Revisa los enlaces y contactos de la escuela.',
       name: 'Escribe un nombre de escuela válido.',
       slug: 'El slug actual de la escuela no es válido.',
       description: 'La descripción es demasiado larga.',

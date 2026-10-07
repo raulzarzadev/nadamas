@@ -1,3 +1,4 @@
+import type { SchoolContact } from '@/lib/school-contact'
 export const SCHOOL_TIMEZONE_OPTIONS = [
   { value: 'America/Mexico_City', label: 'Ciudad de México' },
   { value: 'America/Monterrey', label: 'Monterrey' },
@@ -179,6 +180,7 @@ export const SCHOOL_ROLES = ['director', 'teacher', 'student'] as const
 export type SchoolRole = (typeof SCHOOL_ROLES)[number]
 
 export interface School {
+  contacts?: SchoolContact[]
   id: string
   name: string
   slug: string

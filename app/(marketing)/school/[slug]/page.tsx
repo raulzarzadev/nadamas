@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
 import { FiArrowRight } from 'react-icons/fi'
+import SchoolPublicContacts from '@/components/school/SchoolPublicContacts'
 import { SCHOOL_PALETTES } from '@/lib/school'
+import { visibleSchoolContacts } from '@/lib/school-contact'
 import { getSchoolBySlug } from '@/lib/server/schools'
 import { getTenantSchool } from '@/lib/server/tenant-school'
 
@@ -136,6 +138,10 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
             </div>
           </div>
         </section>
+        <SchoolPublicContacts
+          schoolId={school.id}
+          initialContacts={visibleSchoolContacts(school.contacts)}
+        />
       </div>
     </div>
   )

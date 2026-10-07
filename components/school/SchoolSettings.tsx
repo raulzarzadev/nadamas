@@ -5,6 +5,7 @@ import { useRole } from '@/context/RoleContext'
 import { type School, schoolMembershipHasRole } from '@/lib/school'
 import SchoolBookingSettingsCard from './SchoolBookingSettingsCard'
 import SchoolCalendarCard from './SchoolCalendarCard'
+import SchoolContactsCard from './SchoolContactsCard'
 import SchoolLocationsCard from './SchoolLocationsCard'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
@@ -63,6 +64,7 @@ function SettingsContent({
       )}
       <SchoolCalendarCard schoolId={school.id} />
       <SchoolLocationsCard schoolId={school.id} canManage={canManage} />
+      <SchoolContactsCard school={school} canManage={canManage} onUpdated={setSchool} />
     </>
   )
 }

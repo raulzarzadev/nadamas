@@ -66,6 +66,7 @@ export async function POST(request: Request) {
 
     if (!validation.ok) {
       const messages = {
+        contacts: 'Revisa los enlaces y contactos de la escuela.',
         name: 'Escribe un nombre de escuela válido.',
         slug: 'Elige un slug válido para tu escuela.',
         description: 'La descripción es demasiado larga.',
