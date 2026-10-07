@@ -12,6 +12,7 @@ import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { AuthedApiError, deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
 import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import {
@@ -311,6 +312,10 @@ export default function AthleteSchoolSchedule({
   useEffect(() => {
     void load()
   }, [load])
+
+  useSchoolAgendaUpdates(schoolId || schools.map((school) => school.id), () => {
+    void load()
+  })
 
   const week = useMemo(
     () =>
