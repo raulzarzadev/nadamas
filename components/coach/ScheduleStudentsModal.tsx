@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { FiClipboard } from 'react-icons/fi'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
+import StudentTag from '@/components/ui/student-tag'
 import type { Booking } from '@/lib/coach-booking'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import type { AgendaStudentAction } from './AgendaStudentActions'
@@ -79,7 +79,7 @@ export default function ScheduleStudentsModal({
                   booking.schoolClassStudents?.filter((student) => !student.pending).length || 1
                 }
               />
-              <ul className="grid gap-1 px-3 pb-2 text-sm">
+              <ul className="grid gap-2 pb-2 text-sm">
                 {(booking.schoolClassStudents?.length
                   ? booking.schoolClassStudents.map((student) => ({
                       id: student.id,
@@ -96,16 +96,12 @@ export default function ScheduleStudentsModal({
                       },
                     ]
                 ).map((student) => (
-                  <li key={student.id} className="flex items-center justify-between gap-2">
-                    <strong className="min-w-0 flex-1">{student.name}</strong>
-                    <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-800">
-                      Inscrito
-                    </span>
-                    <button
-                      type="button"
+                  <li key={student.id}>
+                    <StudentTag
+                      name={student.name}
                       disabled={busy}
-                      aria-label={`Editar la clase de ${student.name} del ${formatDate(booking.date)} a las ${booking.startTime}`}
-                      onClick={() =>
+                      editLabel={`Editar la clase de ${student.name} del ${formatDate(booking.date)} a las ${booking.startTime}`}
+                      onEdit={() =>
                         onEdit(booking, {
                           studentId: student.id,
                           studentName: student.name,
@@ -115,10 +111,7 @@ export default function ScheduleStudentsModal({
                           startTime: booking.startTime,
                         })
                       }
-                      className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
-                    >
-                      <FiClipboard aria-hidden="true" size={18} />
-                    </button>
+                    />
                   </li>
                 ))}
               </ul>
