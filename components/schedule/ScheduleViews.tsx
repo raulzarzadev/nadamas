@@ -69,7 +69,7 @@ export default function ScheduleViews({
   const groupOptions = optionGroup
     ? slots.filter((slot) => slot.date === optionGroup.date && slot.startTime === optionGroup.time)
     : []
-  const [view, setView] = useState<'vertical' | 'horizontal'>('vertical')
+  const [view, setView] = useState<'vertical' | 'horizontal'>('horizontal')
   const weekSlots = slots.filter((slot) => days.some((day) => dayKey(day) === slot.date))
   return (
     <div className="grid min-w-0 gap-3">
