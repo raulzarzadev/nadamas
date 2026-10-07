@@ -1,8 +1,11 @@
+import type { ReactNode } from 'react'
 import { FiUser, FiUsers } from 'react-icons/fi'
 import CoachBadge from './coach-badge'
 
 /** Shared class identity for options, summaries and other project surfaces. */
 export default function ScheduleTag({
+  date,
+  action,
   time,
   coachName,
   unassigned = false,
@@ -10,6 +13,8 @@ export default function ScheduleTag({
   selected = false,
   enrolledCount,
 }: {
+  date?: string
+  action?: ReactNode
   time: string
   coachName?: string
   unassigned?: boolean
@@ -20,8 +25,9 @@ export default function ScheduleTag({
   const typeLabel = groupType === 'grupal' ? 'Grupal' : 'Particular'
   return (
     <span
-      className={`inline-flex flex-wrap items-center gap-2 text-sm ${selected ? 'text-white' : 'text-(--c-ocean)'}`}
+      className={`inline-flex flex-wrap items-center gap-2 text-sm ${date ? 'w-full rounded-xl border border-(--c-border) bg-(--c-surface) px-3 py-2' : ''} ${selected ? 'text-white' : 'text-(--c-ocean)'}`}
     >
+      {date && <span className="text-xs text-(--c-text-2)">{date}</span>}
       <strong className="tabular-nums">{time}</strong>
       {coachName && <CoachBadge name={coachName} unassigned={unassigned} />}
       {(enrolledCount || 0) > 0 && (
@@ -45,6 +51,7 @@ export default function ScheduleTag({
           <FiUser aria-hidden="true" size={16} />
         )}
       </span>
+      {action && <span className="ml-auto inline-flex shrink-0">{action}</span>}
     </span>
   )
 }

@@ -2107,18 +2107,13 @@ export default function CoachAgenda({
             {[...batchSlots]
               .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
               .map((slot) => (
-                <li
-                  key={batchSlotKey(slot)}
-                  className="flex flex-wrap items-center gap-2 rounded-xl border border-(--c-border) bg-(--c-surface) px-3 py-2"
-                >
-                  <span className="text-xs text-(--c-text-2)">
-                    {new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
+                <li key={batchSlotKey(slot)}>
+                  <ScheduleTag
+                    date={new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
                       weekday: 'short',
                       day: 'numeric',
                       month: 'short',
                     })}
-                  </span>
-                  <ScheduleTag
                     time={slot.startTime}
                     coachName={
                       slot.coachName ||
@@ -2127,22 +2122,24 @@ export default function CoachAgenda({
                     }
                     unassigned={slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
                     groupType={slot.groupType}
+                    action={
+                      <button
+                        type="button"
+                        disabled={busy}
+                        aria-label={`Quitar de la selección ${slot.date} a las ${slot.startTime}, ${slot.coachName || 'Sin profe aún'}`}
+                        onClick={() => {
+                          const remaining = batchSlots.filter(
+                            (item) => batchSlotKey(item) !== batchSlotKey(slot)
+                          )
+                          setBatchSlots(remaining)
+                          if (!remaining.length) setShowBatchSummary(false)
+                        }}
+                        className="relative ml-auto inline-flex size-6 shrink-0 items-center justify-center rounded-full text-(--c-text-2) before:absolute before:-inset-2 hover:bg-white hover:text-(--c-ocean) disabled:opacity-50"
+                      >
+                        <FiX aria-hidden="true" size={18} />
+                      </button>
+                    }
                   />
-                  <button
-                    type="button"
-                    disabled={busy}
-                    aria-label={`Quitar de la selección ${slot.date} a las ${slot.startTime}, ${slot.coachName || 'Sin profe aún'}`}
-                    onClick={() => {
-                      const remaining = batchSlots.filter(
-                        (item) => batchSlotKey(item) !== batchSlotKey(slot)
-                      )
-                      setBatchSlots(remaining)
-                      if (!remaining.length) setShowBatchSummary(false)
-                    }}
-                    className="relative ml-auto inline-flex size-6 shrink-0 items-center justify-center rounded-full text-(--c-text-2) before:absolute before:-inset-2 hover:bg-white hover:text-(--c-ocean) disabled:opacity-50"
-                  >
-                    <FiX aria-hidden="true" size={18} />
-                  </button>
                 </li>
               ))}
           </ul>
@@ -2217,6 +2214,12 @@ export default function CoachAgenda({
           onClose={() => setBatchAction(null)}
           onAdd={(payloads) => void applyBatch(payloads)}
           onResolve={(booking, status) => void resolveBatchRequest(booking, status)}
+          onEdit={(booking, student) => {
+            setBatchAction(null)
+            setStudentActionError(null)
+            setNotice(null)
+            setStudentAction({ booking, student })
+          }}
         />
       )}
       {batchError && (

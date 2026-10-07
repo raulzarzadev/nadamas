@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { FiClipboard } from 'react-icons/fi'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
 import type { Booking } from '@/lib/coach-booking'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
+import type { AgendaStudentAction } from './AgendaStudentActions'
 
 export default function ScheduleStudentsModal({
   schoolId,
@@ -15,6 +17,7 @@ export default function ScheduleStudentsModal({
   onClose,
   onAdd,
   onResolve,
+  onEdit,
 }: {
   schoolId: string
   bookings: Booking[]
@@ -24,6 +27,7 @@ export default function ScheduleStudentsModal({
   onClose: () => void
   onAdd: (students: AddStudentPayload[]) => void
   onResolve: (booking: Booking, status: 'approved' | 'rejected') => void
+  onEdit: (booking: Booking, student: AgendaStudentAction) => void
 }) {
   const [adding, setAdding] = useState(false)
   const requests = bookings.filter(
@@ -64,27 +68,57 @@ export default function ScheduleStudentsModal({
             <p className="text-sm text-(--c-text-2)">No hay alumnos inscritos en estos horarios.</p>
           )}
           {enrolled.map((booking) => (
-            <div key={booking.id} className="grid gap-2 rounded-xl border border-(--c-border) p-3">
-              <span className="text-xs text-(--c-text-2)">{formatDate(booking.date)}</span>
+            <div key={`${booking.id}:${booking.coachId}`} className="grid gap-2">
               <ScheduleTag
+                date={formatDate(booking.date)}
                 time={booking.startTime}
                 coachName={booking.coachName || 'Sin profe aún'}
                 unassigned={booking.coachId === '__unassigned__'}
                 groupType={booking.groupType}
+                enrolledCount={
+                  booking.schoolClassStudents?.filter((student) => !student.pending).length || 1
+                }
               />
-              <ul className="grid gap-1 text-sm">
+              <ul className="grid gap-1 px-3 pb-2 text-sm">
                 {(booking.schoolClassStudents?.length
                   ? booking.schoolClassStudents.map((student) => ({
                       id: student.id,
                       name: student.name,
+                      attended: student.attended || false,
+                      note: student.note || '',
                     }))
-                  : [{ id: booking.athleteId || booking.id, name: booking.athleteName || 'Alumno' }]
+                  : [
+                      {
+                        id: booking.athleteId || booking.id,
+                        name: booking.athleteName || 'Alumno',
+                        attended: booking.attended || false,
+                        note: booking.studentNote || '',
+                      },
+                    ]
                 ).map((student) => (
                   <li key={student.id} className="flex items-center justify-between gap-2">
-                    <strong>{student.name}</strong>
+                    <strong className="min-w-0 flex-1">{student.name}</strong>
                     <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-800">
                       Inscrito
                     </span>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      aria-label={`Editar la clase de ${student.name} del ${formatDate(booking.date)} a las ${booking.startTime}`}
+                      onClick={() =>
+                        onEdit(booking, {
+                          studentId: student.id,
+                          studentName: student.name,
+                          attended: student.attended,
+                          note: student.note,
+                          date: booking.date,
+                          startTime: booking.startTime,
+                        })
+                      }
+                      className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
+                    >
+                      <FiClipboard aria-hidden="true" size={18} />
+                    </button>
                   </li>
                 ))}
               </ul>
