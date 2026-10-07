@@ -79,6 +79,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
         schoolAccess.membership.role === 'director')
   )
   const canShowWorkspaceNavigation =
+    pathname !== '/' &&
     (role !== 'coach' || roles.coach) &&
     (role !== 'school' || hasDirectorAccess) &&
     (!tenant ||
@@ -125,7 +126,9 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
           setSchoolAccess(selected)
         })
         .catch(() => {
-          if (active) setSchoolAccess(null)
+          if (active) {
+            setSchoolAccess(null)
+          }
         })
     }
 
@@ -176,12 +179,6 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
               />
             )}
           </Link>
-          {tenant && hasDirectorAccess && (
-            <span className="absolute left-1/2 inline-flex max-w-32 -translate-x-1/2 items-center gap-1 truncate rounded-full bg-[var(--c-ocean)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-white sm:max-w-64">
-              <FiShield aria-hidden="true" className="h-3 w-3 shrink-0" />
-              <span className="truncate">Director</span>
-            </span>
-          )}
           <div className="ml-auto flex items-center gap-2">
             <NotificationsBell />
             <RoleSwitcher

@@ -1,7 +1,9 @@
 'use client'
 
 import { type ReactNode, useState } from 'react'
-import { FiShield, FiUser, FiUsers } from 'react-icons/fi'
+import { FaPersonSwimming } from 'react-icons/fa6'
+import { FiUsers } from 'react-icons/fi'
+import { GiWhistle } from 'react-icons/gi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
@@ -211,17 +213,8 @@ export default function ScheduleViews({
                                   role="img"
                                   aria-label={`${choices.length} clases disponibles`}
                                 >
-                                  <FiShield aria-hidden="true" size={12} />
+                                  <GiWhistle aria-hidden="true" size={12} />
                                   {choices.length}
-                                </span>
-                              )}
-                              {enrolledCount > 0 && (
-                                <span
-                                  className="font-light"
-                                  role="img"
-                                  aria-label={`${enrolledCount} inscritos`}
-                                >
-                                  {enrolledCount}
                                 </span>
                               )}
                               {(hasGroup || enrolledCount > 0) && (
@@ -237,8 +230,17 @@ export default function ScheduleViews({
                                   {hasGroup ? (
                                     <FiUsers aria-hidden="true" size={12} />
                                   ) : (
-                                    <FiUser aria-hidden="true" size={12} />
+                                    <FaPersonSwimming aria-hidden="true" size={12} />
                                   )}
+                                </span>
+                              )}
+                              {enrolledCount > 0 && (
+                                <span
+                                  className="font-light"
+                                  role="img"
+                                  aria-label={`${enrolledCount} inscritos`}
+                                >
+                                  {enrolledCount}
                                 </span>
                               )}
                             </span>

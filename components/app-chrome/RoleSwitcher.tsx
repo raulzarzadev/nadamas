@@ -2,7 +2,9 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FiShare2 } from 'react-icons/fi'
+import { FaPersonSwimming } from 'react-icons/fa6'
+import { FiShare2, FiShield } from 'react-icons/fi'
+import { GiWhistle } from 'react-icons/gi'
 import ProfileShareDialog from '@/components/profile/ProfileShareDialog'
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -62,6 +64,12 @@ export default function RoleSwitcher({
   const router = useRouter()
   const pathname = usePathname()
   const displayedRole = currentRole ?? activeRole
+  const RoleIcon =
+    displayedRole === 'coach'
+      ? GiWhistle
+      : displayedRole === 'athlete'
+        ? FaPersonSwimming
+        : FiShield
   const coachRoleLabel = terminology.schoolId
     ? capitalizeSchoolTerm(terminology.coachSingular)
     : ROLE_LABEL.coach
@@ -189,7 +197,8 @@ export default function RoleSwitcher({
           aria-expanded={open}
           aria-label={`Rol actual: ${displayedRole === 'coach' ? coachRoleLabel : displayedRole === 'athlete' ? athleteRoleLabel : ROLE_LABEL[displayedRole]}. Cambiar rol o ir a otra sección`}
         >
-          <span className="text-sm font-semibold text-[var(--c-ocean)]">
+          <RoleIcon aria-hidden="true" className="size-4 shrink-0 text-(--c-ocean)" />
+          <span className="text-sm font-semibold uppercase text-[var(--c-ocean)]">
             {displayedRole === 'coach'
               ? coachRoleLabel.toLowerCase()
               : displayedRole === 'athlete'
@@ -243,7 +252,10 @@ export default function RoleSwitcher({
                 }}
                 className={modeItemClassName('athlete')}
               >
-                Modo {athleteRoleLabel}
+                <span className="flex items-center gap-2">
+                  <FaPersonSwimming aria-hidden="true" className="size-4 shrink-0" />
+                  Modo {athleteRoleLabel}
+                </span>
               </button>
               {displayedRole === 'athlete' && (
                 <button
@@ -294,7 +306,10 @@ export default function RoleSwitcher({
                 }}
                 className={modeItemClassName('coach')}
               >
-                Modo {coachRoleLabel}
+                <span className="flex items-center gap-2">
+                  <GiWhistle aria-hidden="true" className="size-4 shrink-0" />
+                  Modo {coachRoleLabel}
+                </span>
               </button>
               {displayedRole === 'coach' && roles.coach && (
                 <button
@@ -342,7 +357,10 @@ export default function RoleSwitcher({
                   }}
                   className={modeItemClassName('school')}
                 >
-                  Modo {ROLE_LABEL.school}
+                  <span className="flex items-center gap-2">
+                    <FiShield aria-hidden="true" className="size-4 shrink-0" />
+                    Modo {ROLE_LABEL.school}
+                  </span>
                 </button>
                 {displayedRole === 'school' && canAccessDirectorMode && shareSchool && (
                   <button

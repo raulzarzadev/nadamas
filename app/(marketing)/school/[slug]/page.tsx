@@ -1,25 +1,15 @@
-import SchoolPublicActions from '@comps/school/SchoolPublicActions'
 import type { Metadata } from 'next'
 import Image from 'next/image'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { CSSProperties } from 'react'
-import { FiArrowDown, FiCalendar, FiClock, FiMapPin, FiUser, FiUsers } from 'react-icons/fi'
-import type { SchoolClassOccurrence } from '@/lib/school'
-import { capitalizeSchoolTerm, SCHOOL_PALETTES, schoolTerminologyLabels } from '@/lib/school'
-import { listPublicSchoolClasses } from '@/lib/server/school-classes'
+import { FiArrowRight } from 'react-icons/fi'
+import { SCHOOL_PALETTES } from '@/lib/school'
 import { getSchoolBySlug } from '@/lib/server/schools'
 import { getTenantSchool } from '@/lib/server/tenant-school'
 
 interface SchoolPublicPageProps {
   params: Promise<{ slug: string }>
-}
-
-function publicDateLabel(occurrence: SchoolClassOccurrence) {
-  return new Date(`${occurrence.date}T12:00:00`).toLocaleDateString('es-MX', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
 }
 
 export async function generateMetadata({ params }: SchoolPublicPageProps): Promise<Metadata> {
@@ -50,10 +40,6 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
     '--school-accent': palette.accent,
     '--school-surface': palette.surface,
   } as CSSProperties
-  const terminology = schoolTerminologyLabels(school.terminology)
-  const publicClasses = await listPublicSchoolClasses(school.id)
-  const groupCount = publicClasses.filter((item) => item.type === 'group').length
-  const individualCount = publicClasses.filter((item) => item.type === 'individual').length
 
   return (
     <div style={schoolTheme} className="min-h-screen bg-(--school-surface)">
@@ -99,14 +85,20 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
                   'Una comunidad para aprender, entrenar y disfrutar la natación.'}
               </p>
               <div className="mt-9 flex flex-wrap items-center gap-3">
-                <a
-                  href="#clases"
+                <Link
+                  href="/athlete/find-coach"
                   className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 font-bold transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
                   style={{ color: 'var(--school-primary)' }}
                 >
-                  Explorar horarios <FiArrowDown aria-hidden="true" />
-                </a>
-                <SchoolPublicActions schoolId={school.id} authenticatedLabel="Ver mis horarios" />
+                  Explorar horarios <FiArrowRight aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/athlete/progress"
+                  className="btn min-h-12 border-0 px-7 text-white"
+                  style={{ backgroundColor: 'var(--school-primary)' }}
+                >
+                  Ver mi progreso
+                </Link>
               </div>
             </div>
             <div
@@ -142,129 +134,6 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
                 </div>
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-2 border-t border-white/15 bg-black/10 sm:grid-cols-3">
-            <div className="px-7 py-5 sm:px-12">
-              <p className="text-2xl font-black">{publicClasses.length}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/65">
-                Horarios publicados
-              </p>
-            </div>
-            <div className="border-l border-white/15 px-7 py-5 sm:px-12">
-              <p className="text-2xl font-black">{groupCount}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/65">
-                Clases grupales
-              </p>
-            </div>
-            <div className="col-span-2 border-t border-white/15 px-7 py-5 sm:col-span-1 sm:border-l sm:border-t-0 sm:px-12">
-              <p className="text-2xl font-black">{individualCount}</p>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-white/65">
-                Clases particulares
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section
-          id="clases"
-          aria-labelledby="classes-title"
-          className="scroll-mt-24 pt-12 sm:pt-16"
-        >
-          <div
-            className="overflow-hidden rounded-3xl border bg-white"
-            style={{ borderColor: 'color-mix(in srgb, var(--school-secondary) 38%, white)' }}
-          >
-            <div className="flex items-center justify-between gap-4 px-5 py-5 sm:px-8">
-              <h2
-                id="classes-title"
-                className="text-xl font-extrabold text-(--c-ocean) sm:text-2xl"
-              >
-                Horarios publicados
-              </h2>
-              <span
-                className="rounded-full px-3 py-1.5 text-xs font-bold"
-                style={{ backgroundColor: 'var(--school-surface)', color: 'var(--school-primary)' }}
-              >
-                {publicClasses.length}
-              </span>
-            </div>
-            {publicClasses.length ? (
-              <div
-                className="divide-y"
-                style={{ borderColor: 'color-mix(in srgb, var(--school-secondary) 24%, white)' }}
-              >
-                {publicClasses.map((occurrence) => {
-                  const occupied = occurrence.studentIds.length > 0
-                  const full = occurrence.type === 'individual' && occupied
-                  return (
-                    <article
-                      key={occurrence.id}
-                      className={`grid gap-4 px-5 py-5 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-center sm:px-8 ${full ? 'opacity-60' : ''}`}
-                    >
-                      <div className="flex items-center gap-2 text-sm font-bold tabular-nums text-(--c-ocean) sm:block">
-                        <FiClock aria-hidden="true" className="shrink-0 sm:mb-1" />
-                        <span>
-                          {occurrence.startTime}–{occurrence.endTime}
-                        </span>
-                      </div>
-                      <div className={full ? 'line-through' : ''}>
-                        <h3 className="font-extrabold text-(--c-ocean)">{occurrence.title}</h3>
-                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-(--c-text-2)">
-                          <span className="flex items-center gap-1.5">
-                            <FiCalendar aria-hidden="true" />
-                            {publicDateLabel(occurrence)}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            {occurrence.type === 'group' ? (
-                              <FiUsers aria-hidden="true" />
-                            ) : (
-                              <FiUser aria-hidden="true" />
-                            )}
-                            {occurrence.type === 'group' ? 'Grupal' : 'Particular'}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <FiUser aria-hidden="true" />
-                            {occurrence.teacherIds.length
-                              ? capitalizeSchoolTerm(terminology.coachSingular)
-                              : `${capitalizeSchoolTerm(terminology.coachSingular)} por asignar`}
-                          </span>
-                          {occurrence.location && (
-                            <span className="flex items-center gap-1.5">
-                              <FiMapPin aria-hidden="true" />
-                              {occurrence.location}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      <span
-                        className={`w-fit rounded-full px-3 py-1.5 text-xs font-bold ${full ? 'bg-slate-100 text-slate-600' : ''}`}
-                        style={
-                          full
-                            ? undefined
-                            : {
-                                backgroundColor: 'var(--school-accent)',
-                                color: 'var(--school-primary)',
-                              }
-                        }
-                      >
-                        {full
-                          ? 'Ocupado'
-                          : occurrence.type === 'group' && occupied
-                            ? `${occurrence.studentIds.length} inscritos`
-                            : 'Disponible'}
-                      </span>
-                    </article>
-                  )
-                })}
-              </div>
-            ) : (
-              <div
-                className="border-t px-5 py-6 text-sm text-(--c-text-2) sm:px-8"
-                style={{ borderColor: 'color-mix(in srgb, var(--school-secondary) 24%, white)' }}
-              >
-                Sin horarios publicados.
-              </div>
-            )}
           </div>
         </section>
       </div>
