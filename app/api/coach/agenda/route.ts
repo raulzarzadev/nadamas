@@ -23,6 +23,7 @@ import {
   schoolClassAgendaBooking,
 } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
+import { getTenantSchool } from '@/lib/server/tenant-school'
 
 export const runtime = 'nodejs'
 
@@ -72,7 +73,8 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url)
   const coachId = resolveCoachId(verification, url.searchParams.get('coachId'))
-  const schoolId = url.searchParams.get('schoolId') || null
+  const tenantSchool = await getTenantSchool()
+  const schoolId = tenantSchool?.id || url.searchParams.get('schoolId') || null
   const schoolError = await authorizeSchoolContext(
     schoolId,
     verification.caller.uid,
@@ -93,7 +95,10 @@ export async function GET(request: Request) {
     schoolRequestsSnapshot,
   ] = await Promise.all([
     adminDb.collection('coaches').doc(coachId).get(),
-    adminDb.collection('bookings').where('coachId', '==', coachId).get(),
+    adminDb
+      .collection('bookings')
+      .where(schoolId ? 'schoolId' : 'coachId', '==', schoolId || coachId)
+      .get(),
     adminDb.collection('coachScheduleBlocks').where('coachId', '==', coachId).get(),
     schoolId
       ? adminDb.collection('schoolCoachOfferings').doc(`${schoolId}_${coachId}`).get()
@@ -124,8 +129,10 @@ export async function GET(request: Request) {
   const regularBookings = bookingsSnapshot.docs
     .map((doc) => doc.data() as Booking)
     .filter((booking) => (schoolId ? booking.schoolId === schoolId : !booking.schoolId))
+    .filter((booking) => booking.coachId === coachId || booking.assignedCoachIds?.includes(coachId))
     .map((booking) => ({
       ...booking,
+      coachId,
       studentNote: studentRecords.get(`${booking.id}|${booking.athleteId}`)?.note || '',
     }))
   const studentNames = new Map(

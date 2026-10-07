@@ -128,7 +128,7 @@ export default function NotificationsBell() {
                 {schoolInvitations.slice(0, 3).map((invitation) => (
                   <Link
                     key={invitation.id}
-                    href={`/school/invitations/${invitation.id}`}
+                    href={`/${invitation.role === 'teacher' ? 'coach' : invitation.role === 'student' ? 'athlete' : 'school'}/invitations/${invitation.id}`}
                     onClick={() => setOpen(false)}
                     className="block px-3 py-3 hover:bg-[var(--c-surface)]"
                   >

@@ -1,5 +1,5 @@
 'use client'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import { enableCoach as enableCoachFb } from '@/firebase/users'
@@ -37,6 +37,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     refreshUser: () => Promise<AuthUser | null>
   }
   const router = useRouter()
+  const pathname = usePathname()
   const roles = useMemo(() => normalizeRoles(user), [user])
 
   const [stored, setStored] = useState<string | null>(null)
@@ -59,9 +60,10 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem(ACTIVE_ROLE_STORAGE_KEY, role)
       }
       setStored(role)
-      if (options?.navigate !== false) router.push(destinationForRole(role))
+      const destination = destinationForRole(role)
+      if (options?.navigate !== false && pathname !== destination) router.push(destination)
     },
-    [router]
+    [pathname, router]
   )
 
   const enableCoach = useCallback(async () => {

@@ -6,7 +6,9 @@ import { usePathname } from 'next/navigation'
 import TenantWorkspaceGate from '@/components/school/TenantWorkspaceGate'
 
 export default function CoachRouteAccess({ children }: { children: React.ReactNode }) {
-  const activationRoute = usePathname() === '/coach/activate'
+  const pathname = usePathname()
+  const activationRoute =
+    pathname === '/coach/activate' || pathname.startsWith('/coach/invitations/')
 
   if (activationRoute) return <AppChrome mode="coach">{children}</AppChrome>
 

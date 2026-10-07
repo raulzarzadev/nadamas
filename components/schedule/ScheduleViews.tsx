@@ -1,7 +1,7 @@
 'use client'
 
 import { type ReactNode, useState } from 'react'
-import { FiUser, FiUsers } from 'react-icons/fi'
+import { FiShield, FiUser, FiUsers } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
@@ -202,19 +202,29 @@ export default function ScheduleViews({
                                 ? { backgroundColor: '#eff6ff', borderColor: '#60a5fa' }
                                 : undefined
                             }
-                            className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-bold tabular-nums transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : hasGroup ? 'border-blue-300 bg-blue-50 text-(--c-ocean) hover:bg-blue-100' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'} ${hasGroup ? 'pt-1' : ''}`}
+                            className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-bold tabular-nums transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : hasGroup ? 'border-blue-300 bg-blue-50 text-(--c-ocean) hover:bg-blue-100' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
                           >
-                            {(hasGroup || enrolledCount > 0) && (
-                              <span className="mb-0.5 flex items-center justify-end gap-1">
-                                {enrolledCount > 0 && (
-                                  <span
-                                    className="font-light"
-                                    role="img"
-                                    aria-label={`${enrolledCount} inscritos`}
-                                  >
-                                    ({enrolledCount})
-                                  </span>
-                                )}
+                            <span className="mb-0.5 flex h-5 items-center justify-end gap-0.5">
+                              {choices.length > 1 && (
+                                <span
+                                  className="mr-auto inline-flex items-center gap-0.5 font-light"
+                                  role="img"
+                                  aria-label={`${choices.length} clases disponibles`}
+                                >
+                                  <FiShield aria-hidden="true" size={12} />
+                                  {choices.length}
+                                </span>
+                              )}
+                              {enrolledCount > 0 && (
+                                <span
+                                  className="font-light"
+                                  role="img"
+                                  aria-label={`${enrolledCount} inscritos`}
+                                >
+                                  {enrolledCount}
+                                </span>
+                              )}
+                              {(hasGroup || enrolledCount > 0) && (
                                 <span
                                   role="img"
                                   aria-label={hasGroup ? 'Grupal' : 'Particular'}
@@ -230,10 +240,9 @@ export default function ScheduleViews({
                                     <FiUser aria-hidden="true" size={12} />
                                   )}
                                 </span>
-                              </span>
-                            )}
+                              )}
+                            </span>
                             {time}
-                            {choices.length > 1 ? ` (${choices.length})` : ''}
                             {choices.some((slot) => slot.bookingStatus) && (
                               <span className="mt-1 block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-950">
                                 {choices.some((slot) => slot.bookingStatus === 'pending')

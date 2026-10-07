@@ -24,6 +24,7 @@ export interface CoachScheduleBlock {
 }
 
 export interface CoachAvailableSlot {
+  assignedCoachIds?: string[]
   id: string
   coachId: string
   schoolId?: string
@@ -110,6 +111,7 @@ export function buildAvailableSlots({
           id: [offering.id, schedule.id, key, schedule.startTime, schedule.endTime].join('::'),
           coachId,
           offeringId: offering.id,
+          ...(offering.assignedCoachIds ? { assignedCoachIds: offering.assignedCoachIds } : {}),
           scheduleId: schedule.id,
           date: key,
           startTime: schedule.startTime,

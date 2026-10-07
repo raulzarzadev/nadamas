@@ -83,6 +83,7 @@ export interface CoachOfferingSchedule {
 }
 
 export interface CoachClassOffering {
+  assignedCoachIds?: string[]
   id: string
   mode: CoachOfferingMode
   /** fixed mode */

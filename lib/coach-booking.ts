@@ -29,6 +29,7 @@ export type CoachBookingSelection = {
 }
 
 export interface Booking extends CoachBookingSelection {
+  assignedCoachIds?: string[]
   evaluation?: import('@/lib/class-evaluation').ClassEvaluation
   /** Set when this row mirrors an occurrence from the school's class scheduler. */
   schoolClassId?: string

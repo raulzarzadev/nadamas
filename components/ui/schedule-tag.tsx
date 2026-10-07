@@ -30,7 +30,7 @@ export default function ScheduleTag({
           role="img"
           aria-label={`${enrolledCount} inscritos`}
         >
-          ({enrolledCount})
+          {enrolledCount}
         </span>
       )}
       <span

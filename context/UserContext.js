@@ -84,16 +84,6 @@ export function UserProvider({ children }) {
     }
   }, [user, posthog])
 
-  useEffect(() => {
-    /**
-     * Redirect user if is comming from other page then after login turn it back
-     * if user is logged redirect to profile
-     */
-    if (user && redirectTo) {
-      router.push(redirectTo)
-    }
-  }, [user, router, redirectTo])
-
   return (
     <UserContext.Provider value={{ user, login, logout, refreshUser }}>
       {children}

@@ -3,7 +3,16 @@
 import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FiClipboard, FiLock, FiPlus, FiSettings, FiUnlock, FiUser, FiUsers } from 'react-icons/fi'
+import {
+  FiClipboard,
+  FiLock,
+  FiPlus,
+  FiSettings,
+  FiUnlock,
+  FiUser,
+  FiUsers,
+  FiX,
+} from 'react-icons/fi'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import CoachBadge from '@/components/ui/coach-badge'
@@ -214,17 +223,19 @@ export default function CoachAgenda({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [showBatchRequests, setShowBatchRequests] = useState(false)
   const [batchRequestError, setBatchRequestError] = useState('')
+  const [showBatchSummary, setShowBatchSummary] = useState(false)
   const [batchSlots, setBatchSlots] = useState<CoachAvailableSlot[]>([])
   const [batchAction, setBatchAction] = useState<'students' | 'coaches' | 'type' | 'status' | null>(
     null
   )
   const [batchValue, setBatchValue] = useState('')
+  const [batchCoachIds, setBatchCoachIds] = useState<string[]>([])
   const [batchError, setBatchError] = useState('')
   const [batchStudents, setBatchStudents] = useState<Array<{ id: string; name: string }>>([])
   const [batchStudentIds, setBatchStudentIds] = useState<string[]>([])
   const batchSlotKey = (slot: CoachAvailableSlot) =>
     `${slot.schoolId || schoolId || ''}|${slot.coachId}|${slot.date}|${slot.startTime}|${slot.groupType}`
-  const [horizontalDayOpen, setHorizontalDayOpen] = useState(false)
+  const [horizontalClass, setHorizontalClass] = useState<CoachAvailableSlot | null>(null)
   const [slotEditor, setSlotEditor] = useState<SlotEditorState | null>(null)
   const [slotAssignmentCoachId, setSlotAssignmentCoachId] = useState('')
   const [progressBooking, setProgressBooking] = useState<Booking | null>(null)
@@ -1156,15 +1167,6 @@ export default function CoachAgenda({
 
   // Single offering updated by the school hours editor.
   const offerings = agenda?.offerings || []
-  const offering = offerings[0] || null
-  const saveOfferings = (next: CoachClassOffering) =>
-    postAuthed(manageSchoolSchedule ? scheduleEndpoint : '/api/coach/offerings', {
-      ...(schoolId ? { schoolId } : {}),
-      ...(adminMode && !manageSchoolSchedule ? { coachId } : {}),
-      classOfferings: offerings.some((item) => item.id === next.id)
-        ? offerings.map((item) => (item.id === next.id ? next : item))
-        : [...offerings, next],
-    })
   const saveOfferingList = (next: CoachClassOffering[]) =>
     postAuthed(manageSchoolSchedule ? scheduleEndpoint : '/api/coach/offerings', {
       ...(schoolId ? { schoolId } : {}),
@@ -1240,15 +1242,27 @@ export default function CoachAgenda({
     }
     setNotice(null)
     run(async () => {
+      const latestEndpoint = schoolId
+        ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(coachId || selfUid)}`
+        : `/api/coach/agenda?month=${monthOfSelected}${coachQuery}`
+      const latestResponse = await getAuthed(latestEndpoint)
+      const latestAgenda = (await latestResponse.json()) as CoachAgendaPayload
+      const latestOfferings = latestAgenda.offerings || []
+      const latestOffering = latestOfferings[0]
       if (mode === 'add') {
-        const base = offering ?? createOffering()
+        const base = latestOffering ?? createOffering()
         // Quita bloqueos que tapan estas horas para que queden disponibles.
         await deleteBlocks(dates.flatMap((date) => times.map((time) => ({ date, time }))))
-        await saveOfferings(offeringWithHours(base, dates, times, base.durationMinutes ?? 60))
+        const next = offeringWithHours(base, dates, times, base.durationMinutes ?? 60)
+        await saveOfferingList(
+          latestOffering
+            ? latestOfferings.map((item) => (item.id === next.id ? next : item))
+            : [...latestOfferings, next]
+        )
         closeScheduleEditor()
         return
       }
-      if (!offering) {
+      if (!latestOffering) {
         closeScheduleEditor()
         return
       }
@@ -1264,7 +1278,7 @@ export default function CoachAgenda({
         }
       }
       await deleteBlocks(pairs)
-      await saveOfferingList(offeringsWithoutHours(offerings, pairs))
+      await saveOfferingList(offeringsWithoutHours(latestOfferings, pairs))
       closeScheduleEditor()
       if (skipped > 0) {
         setNotice(`No se quitaron ${skipped} hora(s) ocupada(s). Cancela la clase primero.`)
@@ -1279,6 +1293,27 @@ export default function CoachAgenda({
         action: 'Eliminar horario',
       }
     : null
+
+  const horizontalSlots = new Map<string, CoachAvailableSlot>()
+  for (const slot of agenda?.availableSlots || []) horizontalSlots.set(batchSlotKey(slot), slot)
+  for (const booking of activeBookings) {
+    const slot: CoachAvailableSlot = {
+      id: booking.id,
+      schoolId: booking.schoolId,
+      coachId: booking.coachId,
+      coachName: booking.coachName || undefined,
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      groupType: booking.groupType,
+      offeringId: booking.offeringId,
+      scheduleId: booking.scheduleId,
+      locationName: booking.locationName,
+      status: 'booked',
+    }
+    const key = batchSlotKey(slot)
+    if (!horizontalSlots.has(key)) horizontalSlots.set(key, slot)
+  }
 
   function enrolledCountForSlot(slot: CoachAvailableSlot) {
     const students = new Set<string>()
@@ -1338,6 +1373,14 @@ export default function CoachAgenda({
     setBatchError('')
     setBatchValue(action === 'type' ? 'particular' : action === 'status' ? 'available' : '')
     setBatchStudentIds([])
+    const assigned = [
+      ...new Set(batchSlots.flatMap((slot) => slot.assignedCoachIds || [slot.coachId])),
+    ]
+    setBatchCoachIds(
+      assigned.some((id) => id !== UNASSIGNED_SCHOOL_COACH_ID)
+        ? assigned.filter((id) => id !== UNASSIGNED_SCHOOL_COACH_ID)
+        : [UNASSIGNED_SCHOOL_COACH_ID]
+    )
     setBatchAction(action)
     if (action === 'students' && schoolId) {
       setBatchRequestError('')
@@ -1353,6 +1396,33 @@ export default function CoachAgenda({
   }
   async function applyBatch(studentPayloads?: AddStudentPayload[]) {
     if (busy || !schoolId || !batchAction) return
+    if (batchAction === 'coaches') {
+      if (!batchCoachIds.length) return
+      setBusy(true)
+      setBatchError('')
+      try {
+        await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/teachers`, {
+          coachIds: batchCoachIds,
+          slots: batchSlots.map(({ coachId, date, startTime, endTime, groupType, offeringId }) => ({
+            coachId,
+            date,
+            startTime,
+            endTime,
+            groupType,
+            offeringId,
+          })),
+        })
+        setBatchAction(null)
+        setBatchSlots([])
+        setNotice('Profes actualizados en los horarios seleccionados.')
+        await loadAgenda(monthOfSelected)
+      } catch {
+        setBatchError('No pudimos cambiar los profes. Actualiza la agenda y vuelve a intentarlo.')
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
     if (batchAction === 'type') {
       for (const slot of batchSlots) {
         if (!(await updateAvailableSlotGroupType(slot, batchValue === 'grupal'))) {
@@ -1406,17 +1476,6 @@ export default function CoachAgenda({
                 ],
               }
             )
-        } else if (batchAction === 'coaches') {
-          if (slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID) throw new Error('SLOT_ALREADY_ASSIGNED')
-          await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/assignments`, {
-            coachId: batchValue,
-            date: slot.date,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            groupType: slot.groupType,
-            offeringId: slot.offeringId,
-            scheduleId: slot.scheduleId,
-          })
         } else if (batchValue === 'blocked') {
           await postAuthed(scheduleEndpointFor(slot.coachId), {
             date: slot.date,
@@ -1463,12 +1522,22 @@ export default function CoachAgenda({
 
   if (agenda === undefined) return <Loading />
 
-  const dayCard = (
-    <section className="rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]">
+  const renderDayCard = (
+    displayRows: typeof rows,
+    showAssignedCoach = showCoachName,
+    classDetails = false
+  ) => (
+    <section
+      className={
+        classDetails
+          ? '@container bg-white'
+          : '@container rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]'
+      }
+    >
       {error && <p className="px-4 pb-2 text-sm text-[var(--c-error,#b91c1c)] sm:px-5">{error}</p>}
       {notice && <p className="px-4 pb-2 text-sm font-semibold text-amber-600 sm:px-5">{notice}</p>}
 
-      <div className="border-t border-[var(--c-border)]">
+      <div className={classDetails ? undefined : 'border-t border-[var(--c-border)]'}>
         {allDayBlock && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
             <span className="flex items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
@@ -1487,7 +1556,7 @@ export default function CoachAgenda({
           </div>
         )}
 
-        {!allDayBlock && rows.length === 0 && (
+        {!allDayBlock && displayRows.length === 0 && (
           <p className="px-4 py-8 text-center text-sm text-[var(--c-text-2)] sm:px-5">
             {selectedDate < dateKey(new Date())
               ? 'No hay clases registradas para este día.'
@@ -1498,9 +1567,9 @@ export default function CoachAgenda({
         )}
 
         {!allDayBlock &&
-          rows.map((row, rowIndex) => {
-            const showTime = rowIndex === 0 || rows[rowIndex - 1]?.sort !== row.sort
-            const showSeparator = rows[rowIndex + 1]?.sort !== row.sort
+          displayRows.map((row, rowIndex) => {
+            const showTime = rowIndex === 0 || displayRows[rowIndex - 1]?.sort !== row.sort
+            const showSeparator = displayRows[rowIndex + 1]?.sort !== row.sort
             if (row.kind === 'booked') {
               const firstBooking = row.bookings[0]
               if (!firstBooking) return null
@@ -1549,17 +1618,21 @@ export default function CoachAgenda({
               const isFocusTarget = row.bookings.some(bookingMatchesFocus)
               return (
                 <AgendaRow
+                  hideTimeColumn={false}
                   key={`b-${firstBooking.schoolId || 'personal'}-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
                   time={row.sort}
                   showTime={showTime}
-                  showSeparator={showSeparator}
+                  showSeparator={!classDetails && showSeparator}
                   cardStatus={classBlocked ? 'blocked' : isGroupClass ? 'group' : 'booked'}
                   cardCoachName={
-                    firstBooking.coachName ||
-                    agenda.coachNames?.[firstBooking.coachId] ||
-                    coachFallback
+                    firstBooking.coachId === UNASSIGNED_SCHOOL_COACH_ID
+                      ? 'Sin profe aún'
+                      : agenda.coachNames?.[firstBooking.coachId] ||
+                        firstBooking.coachName ||
+                        coachFallback
                   }
-                  cardShowCoachName={showCoachName}
+                  cardCoachUnassigned={firstBooking.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                  cardShowCoachName={showAssignedCoach}
                   cardGroupType={isGroupClass ? 'grupal' : 'particular'}
                   cardStatusLabel={classBlocked ? 'Bloqueado' : undefined}
                   cardAgendaLabel={combinedSources ? firstBooking.agendaLabel : undefined}
@@ -1734,17 +1807,20 @@ export default function CoachAgenda({
             if (row.kind === 'blocked') {
               const isBlockedGroup = row.slot.groupType === 'grupal'
               const blockedCoachName =
-                row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || coachFallback
+                row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID
+                  ? 'Sin profe aún'
+                  : agenda.coachNames?.[row.slot.coachId] || row.slot.coachName || coachFallback
               return (
                 <AgendaRow
+                  hideTimeColumn={false}
                   key={`x-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
                   time={row.slot.startTime}
                   showTime={showTime}
-                  showSeparator={showSeparator}
+                  showSeparator={!classDetails && showSeparator}
                   cardStatus="blocked"
                   cardCoachName={blockedCoachName}
                   cardShowCoachName={
-                    showCoachName && !readOnlyAgenda && !(adminMode && !manageSchoolSchedule)
+                    showAssignedCoach && !readOnlyAgenda && !(adminMode && !manageSchoolSchedule)
                   }
                   cardCoachUnassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
                   cardGroupType={isBlockedGroup ? 'grupal' : 'particular'}
@@ -1790,10 +1866,11 @@ export default function CoachAgenda({
               : HOUR_STATUS_STYLE.available
             return (
               <AgendaRow
+                hideTimeColumn={false}
                 key={`a-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
                 time={row.slot.startTime}
                 showTime={showTime}
-                showSeparator={showSeparator}
+                showSeparator={!classDetails && showSeparator}
               >
                 <div
                   className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
@@ -1814,7 +1891,7 @@ export default function CoachAgenda({
                     </span>
                   ) : (
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      {showCoachName && (
+                      {showAssignedCoach && (
                         <CoachBadge
                           name={
                             row.slot.coachName ||
@@ -1906,6 +1983,27 @@ export default function CoachAgenda({
     </section>
   )
 
+  const dayCard = renderDayCard(rows)
+  const selectedClassRows = horizontalClass
+    ? rows.flatMap<(typeof rows)[number]>((row) => {
+        const matches = (item: {
+          coachId: string
+          startTime: string
+          groupType: string
+          schoolId?: string
+        }) =>
+          item.coachId === horizontalClass.coachId &&
+          item.startTime === horizontalClass.startTime &&
+          item.groupType === horizontalClass.groupType &&
+          schoolIdForBooking(item) === schoolIdForSlot(horizontalClass)
+        if (row.kind === 'booked') {
+          const bookings = row.bookings.filter(matches)
+          return bookings.length ? [{ ...row, bookings }] : []
+        }
+        return matches(row.slot) ? [row] : []
+      })
+    : []
+
   return (
     <div className="flex flex-col gap-4">
       <ScheduleViews
@@ -1919,7 +2017,7 @@ export default function CoachAgenda({
         onChangeWeek={changeWeek}
         monthCount={`${monthStats.booked}/${monthStats.total}`}
         weekCount={`${weekStats.booked}/${weekStats.total}`}
-        slots={(agenda?.availableSlots || []).map((slot) => ({
+        slots={[...horizontalSlots.values()].map((slot) => ({
           key: batchSlotKey(slot),
           enrolledCount: enrolledCountForSlot(slot),
           date: slot.date,
@@ -1931,10 +2029,11 @@ export default function CoachAgenda({
           label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${slot.coachName || agenda?.coachNames?.[slot.coachId] || 'Sin profe aún'} · ${slot.groupType}${slot.status === 'blocked' ? ' · Bloqueado' : ''}`,
         }))}
         onSelectSlot={(key) => {
-          const slot = agenda?.availableSlots.find((item) => batchSlotKey(item) === key)
+          const slot = horizontalSlots.get(key)
           if (slot && !manageSchoolSchedule) {
+            setNotice(null)
             setSelectedDate(slot.date)
-            setHorizontalDayOpen(true)
+            setHorizontalClass(slot)
             return
           }
           if (slot)
@@ -1954,9 +2053,15 @@ export default function CoachAgenda({
       </ScheduleViews>
       {batchSlots.length > 0 && (
         <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3 shadow-lg">
-          <span className="mr-auto text-sm font-bold">
-            {batchSlots.length} horarios seleccionados
-          </span>
+          <button
+            type="button"
+            onClick={() => setShowBatchSummary(true)}
+            aria-haspopup="dialog"
+            className="mr-auto min-h-11 text-left text-sm font-bold underline-offset-4 hover:underline"
+          >
+            {batchSlots.length}{' '}
+            {batchSlots.length === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
+          </button>
           {batchRequests.length > 0 && (
             <button
               type="button"
@@ -1991,6 +2096,58 @@ export default function CoachAgenda({
           </button>
         </div>
       )}
+      <Sheet
+        open={showBatchSummary && batchSlots.length > 0}
+        onClose={() => setShowBatchSummary(false)}
+        label="Horarios seleccionados"
+      >
+        <div className="flex flex-col gap-4">
+          <h2 className="text-lg font-bold">Horarios seleccionados ({batchSlots.length})</h2>
+          <ul className="flex flex-col gap-2" aria-label="Resumen de horarios seleccionados">
+            {[...batchSlots]
+              .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+              .map((slot) => (
+                <li
+                  key={batchSlotKey(slot)}
+                  className="flex flex-wrap items-center gap-2 rounded-xl border border-(--c-border) bg-(--c-surface) px-3 py-2"
+                >
+                  <span className="text-xs text-(--c-text-2)">
+                    {new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </span>
+                  <ScheduleTag
+                    time={slot.startTime}
+                    coachName={
+                      slot.coachName ||
+                      agenda?.coachNames?.[slot.coachId] ||
+                      (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID ? 'Sin profe aún' : undefined)
+                    }
+                    unassigned={slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                    groupType={slot.groupType}
+                  />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={`Quitar de la selección ${slot.date} a las ${slot.startTime}, ${slot.coachName || 'Sin profe aún'}`}
+                    onClick={() => {
+                      const remaining = batchSlots.filter(
+                        (item) => batchSlotKey(item) !== batchSlotKey(slot)
+                      )
+                      setBatchSlots(remaining)
+                      if (!remaining.length) setShowBatchSummary(false)
+                    }}
+                    className="relative ml-auto inline-flex size-6 shrink-0 items-center justify-center rounded-full text-(--c-text-2) before:absolute before:-inset-2 hover:bg-white hover:text-(--c-ocean) disabled:opacity-50"
+                  >
+                    <FiX aria-hidden="true" size={18} />
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      </Sheet>
       <Sheet
         open={showBatchRequests}
         onClose={() => setShowBatchRequests(false)}
@@ -2074,7 +2231,9 @@ export default function CoachAgenda({
         label="Gestionar horarios seleccionados"
       >
         <div className="grid gap-3">
-          <h2 className="text-lg font-bold">Gestionar {batchSlots.length} horarios</h2>
+          <h2 className="text-lg font-bold">
+            Gestionar {batchSlots.length} {batchSlots.length === 1 ? 'horario' : 'horarios'}
+          </h2>
           {batchAction === 'students' ? (
             <fieldset className="grid gap-2">
               <legend>Alumnos</legend>
@@ -2096,26 +2255,49 @@ export default function CoachAgenda({
               ))}
             </fieldset>
           ) : batchAction === 'coaches' ? (
-            <label className="grid gap-2 rounded-[var(--r-md)] border border-(--c-border) p-3">
-              <span className="text-sm font-bold text-(--c-text-2)">
-                Asignar profe para estas fechas
-              </span>
-              <select
-                value={batchValue}
-                disabled={busy}
-                onChange={(event) => setBatchValue(event.target.value)}
-                className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 text-sm focus:outline-2 focus:outline-(--c-aqua-strong)"
-              >
-                <option value="">Seleccionar profe</option>
-                {scheduleCoachOptions
-                  .filter((coach) => coach.id !== UNASSIGNED_SCHOOL_COACH_ID)
-                  .map((coach) => (
-                    <option key={coach.id} value={coach.id}>
-                      {coach.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
+            <fieldset className="grid gap-3">
+              <legend className="mb-2 text-sm font-bold text-(--c-text-2)">
+                Profes de los horarios seleccionados
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ...scheduleCoachOptions.filter(
+                    (coach) => coach.id !== UNASSIGNED_SCHOOL_COACH_ID
+                  ),
+                  { id: UNASSIGNED_SCHOOL_COACH_ID, name: 'Sin profe aún' },
+                ].map((coach) => (
+                  <button
+                    key={coach.id}
+                    type="button"
+                    disabled={busy}
+                    aria-pressed={batchCoachIds.includes(coach.id)}
+                    onClick={() =>
+                      setBatchCoachIds((current) =>
+                        coach.id === UNASSIGNED_SCHOOL_COACH_ID
+                          ? [coach.id]
+                          : current.includes(coach.id)
+                            ? current.filter((id) => id !== coach.id)
+                            : [
+                                ...current.filter((id) => id !== UNASSIGNED_SCHOOL_COACH_ID),
+                                coach.id,
+                              ]
+                      )
+                    }
+                    className="inline-flex min-h-11 items-center rounded-full bg-transparent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
+                  >
+                    <CoachBadge
+                      name={coach.name}
+                      selected={batchCoachIds.includes(coach.id)}
+                      unassigned={coach.id === UNASSIGNED_SCHOOL_COACH_ID}
+                    />
+                  </button>
+                ))}
+              </div>
+              <p className="text-sm text-(--c-text-2)">
+                Puedes elegir varios profes. Al aplicar, esta selección sustituirá los profes de
+                todos estos horarios.
+              </p>
+            </fieldset>
           ) : batchAction === 'type' ? (
             <SlotSegmentedControl
               label="Tipo de clase"
@@ -2139,10 +2321,6 @@ export default function CoachAgenda({
               disabled={busy}
             />
           )}
-          {batchAction === 'coaches' &&
-            batchSlots.some((slot) => slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID) && (
-              <p>Selecciona únicamente horarios sin profesor para asignarlos.</p>
-            )}
           {batchAction === 'type' && (
             <p className="text-sm">
               El tipo se actualiza en el horario publicado y sus fechas recurrentes.
@@ -2154,9 +2332,11 @@ export default function CoachAgenda({
             className="btn btn-primary"
             disabled={
               busy ||
-              (batchAction === 'students' ? !batchStudentIds.length : !batchValue) ||
-              (batchAction === 'coaches' &&
-                batchSlots.some((slot) => slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID))
+              (batchAction === 'coaches'
+                ? !batchCoachIds.length
+                : batchAction === 'students'
+                  ? !batchStudentIds.length
+                  : !batchValue)
             }
             onClick={() => void applyBatch()}
           >
@@ -2165,9 +2345,12 @@ export default function CoachAgenda({
         </div>
       </Sheet>
       <Sheet
-        open={horizontalDayOpen}
-        onClose={() => setHorizontalDayOpen(false)}
-        label="Administrar horarios del día"
+        open={Boolean(horizontalClass)}
+        onClose={() => {
+          setHorizontalClass(null)
+          setNotice(null)
+        }}
+        label="Detalles de la clase"
         size="xl"
       >
         <h2 className="mb-3 text-lg font-bold">
@@ -2177,7 +2360,7 @@ export default function CoachAgenda({
             month: 'long',
           })}
         </h2>
-        {dayCard}
+        {renderDayCard(selectedClassRows, true, true)}
       </Sheet>
 
       <Sheet
@@ -2784,6 +2967,7 @@ export default function CoachAgenda({
 function AgendaRow({
   time,
   showTime = true,
+  hideTimeColumn = false,
   showSeparator = true,
   cardStatus,
   cardCoachName,
@@ -2801,6 +2985,7 @@ function AgendaRow({
 }: {
   time: string
   showTime?: boolean
+  hideTimeColumn?: boolean
   showSeparator?: boolean
   cardStatus?: HourStatus
   cardCoachName?: string
@@ -2827,14 +3012,16 @@ function AgendaRow({
   const isAvailableCard = cardStatus === 'available' || cardStatus === 'groupAvailable'
   return (
     <div
-      className={`flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:gap-3 sm:px-5 sm:py-1.5 ${
+      className={`flex flex-col gap-1 px-3 py-2 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:gap-3 sm:px-5 sm:py-1.5 ${
         showSeparator ? 'sm:border-b sm:border-[var(--c-border)]' : ''
       }`}
     >
-      <span className="w-fit text-sm font-extrabold text-[var(--c-ocean)] sm:w-12 sm:shrink-0 sm:text-sm sm:font-semibold sm:text-[var(--c-text-2)]">
-        {showTime ? time : <span className="sr-only">{time}</span>}
-      </span>
-      <div className="flex min-w-0 w-full sm:w-auto sm:flex-1">
+      {!hideTimeColumn && (
+        <span className="w-fit text-sm font-extrabold text-[var(--c-ocean)] @min-[640px]:w-12 @min-[640px]:shrink-0 @min-[640px]:text-sm @min-[640px]:font-semibold @min-[640px]:text-[var(--c-text-2)]">
+          {showTime ? time : <span className="sr-only">{time}</span>}
+        </span>
+      )}
+      <div className="flex min-w-0 w-full @min-[640px]:w-auto @min-[640px]:flex-1">
         {cardStatus && cardStyle ? (
           <div
             ref={cardRef}

@@ -160,7 +160,11 @@ export async function GET(request: Request, { params }: RouteProps) {
   const names = Object.fromEntries(teacherData.map(({ teacherId, name }) => [teacherId, name]))
   const bookings = bookingsSnapshot.docs
     .map((doc) => ({ id: doc.id, ...(doc.data() as Omit<Booking, 'id'>) }))
-    .filter((booking) => teacherIds.has(booking.coachId))
+    .flatMap((booking) =>
+      (booking.assignedCoachIds?.length ? booking.assignedCoachIds : [booking.coachId])
+        .filter((id) => teacherIds.has(id))
+        .map((coachId) => ({ ...booking, coachId }))
+    )
     .map((booking) => ({
       ...booking,
       coachName: booking.coachName || names[booking.coachId] || 'Coach',

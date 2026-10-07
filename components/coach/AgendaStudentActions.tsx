@@ -34,7 +34,6 @@ export default function AgendaStudentActions({
   onProgress?: () => void
   progressSaved?: boolean
 }) {
-  const [attended, setAttended] = useState(student.attended)
   const [note, setNote] = useState(student.note)
   const [confirmRemove, setConfirmRemove] = useState(false)
 
@@ -46,18 +45,6 @@ export default function AgendaStudentActions({
       label={`Ficha de ${student.studentName}`}
       closeDisabled={busy}
       onClose={onClose}
-      footer={
-        <div className=" border-t border-[var(--c-border)] bg-white px-4 py-3 sm:px-0">
-          <button
-            type="button"
-            onClick={() => onSave(attended, note)}
-            disabled={busy}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
-          >
-            <FiCheck aria-hidden="true" /> {busy ? 'Guardando…' : 'Guardar asistencia y nota'}
-          </button>
-        </div>
-      }
     >
       <div className="flex flex-col gap-5 px-4 pb-4 sm:px-0">
         <div>
@@ -69,17 +56,6 @@ export default function AgendaStudentActions({
 
         {error && <p className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">{error}</p>}
 
-        <label className="flex min-h-12 items-center gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] px-3 text-sm font-semibold text-[var(--c-ocean)]">
-          <input
-            type="checkbox"
-            checked={attended}
-            onChange={(event) => setAttended(event.currentTarget.checked)}
-            disabled={busy}
-            className="h-5 w-5 accent-[var(--c-aqua-strong)]"
-          />
-          Marcar asistencia
-        </label>
-
         <label className="flex flex-col gap-2 text-sm font-semibold text-[var(--c-ocean)]">
           Nota de esta clase
           <textarea
@@ -89,9 +65,17 @@ export default function AgendaStudentActions({
             rows={4}
             disabled={busy}
             placeholder="Escribe una observación sobre este alumno…"
-            className="w-full resize-y rounded-[var(--r-sm)] border border-[var(--c-border)] p-3 text-sm font-normal text-[var(--c-ocean)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+            className="w-full resize-y rounded-[var(--r-sm)] border border-[var(--c-border)] p-3 text-sm font-normal text-[var(--c-ocean)] focus-visible:outline-none focus-visible:border-[var(--c-aqua-strong)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--c-aqua-strong)] disabled:opacity-50"
           />
         </label>
+        <button
+          type="button"
+          onClick={() => onSave(student.attended, note)}
+          disabled={busy || note === student.note}
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:opacity-100"
+        >
+          <FiCheck aria-hidden="true" /> {busy ? 'Guardando…' : 'Guardar nota'}
+        </button>
 
         {onProgress && student.attended && (
           <button
@@ -104,7 +88,7 @@ export default function AgendaStudentActions({
           </button>
         )}
 
-        <div className="border-t border-[var(--c-border)] pt-4">
+        <div>
           <button
             type="button"
             onClick={onMove}

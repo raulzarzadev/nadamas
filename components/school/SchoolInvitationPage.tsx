@@ -4,9 +4,9 @@ import Link from 'next/link'
 import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiPlus, FiUsers } from 'react-icons/fi'
+import Sheet from '@/components/ui/sheet'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
-import Sheet from '@/components/ui/sheet'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { type SchoolTerminologyConfig, schoolTerminologyLabels } from '@/lib/school'
@@ -89,6 +89,11 @@ export default function SchoolInvitationPage() {
       .then((payload) => {
         setInvitation(payload.invitation)
         if (payload.invitation.acceptedByCurrentUser) setAccepted(true)
+        if (payload.invitation.role === 'teacher') {
+          if (pathname.startsWith('/school/invitations/')) {
+            router.replace(`/coach/invitations/${token}`)
+          }
+        }
         if (payload.invitation.role === 'student') {
           setActiveRole('athlete', { navigate: false })
           if (pathname.startsWith('/school/invitations/')) {
@@ -108,7 +113,10 @@ export default function SchoolInvitationPage() {
       await postAuthed(`/api/school-invitations/${token}`, {
         ...profile,
       })
-      if (invitation.role === 'teacher') await refreshUser()
+      if (invitation.role === 'teacher') {
+        await refreshUser()
+        setActiveRole('coach', { navigate: false })
+      }
       setAccepted(true)
     } catch {
       setError(GENERIC_USER_ERROR)
