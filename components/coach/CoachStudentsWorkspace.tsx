@@ -30,7 +30,7 @@ export default function CoachStudentsWorkspace() {
         <h1 className="text-3xl font-extrabold">{capitalizeSchoolTerm(participantPlural)}</h1>
         <p className="text-[var(--c-text-2)]">
           {hasActiveSchool
-            ? 'Aquí aparecen alumnos con una clase próxima y los últimos tres alumnos a quienes diste clase.'
+            ? 'Aquí aparecen atletas con clases próximas contigo y a quienes ya les diste clase.'
             : 'Personas de tus clases personales.'}
         </p>
       </div>

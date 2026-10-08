@@ -59,6 +59,7 @@ import ScheduleHoursEditor, {
 } from './ScheduleHoursEditor'
 import ScheduleStudentsModal from './ScheduleStudentsModal'
 import StudentProgressModal from './StudentProgressModal'
+import StudentProfileModal from './StudentProfileModal'
 
 function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
   return `${booking.date}|${booking.startTime}`
@@ -175,6 +176,11 @@ export default function CoachAgenda({
   // When an admin opens another coach's agenda, `coachId` targets that coach and
   // booking actions (add/cancel students) are hidden — admin mode manages
   // blocks only and does not edit the coach's offering here.
+  const [studentProfile, setStudentProfile] = useState<{
+    studentId: string
+    schoolId?: string
+    name: string
+  } | null>(null)
   const adminMode = Boolean(coachId)
   const readOnlyAgenda = readOnly || (aggregateSchool && !manageSchoolSchedule)
   const multiCoachAgenda = readOnlyAgenda || (aggregateSchool && !coachId)
@@ -1886,17 +1892,6 @@ export default function CoachAgenda({
                                 <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
                                   {studentName}
                                 </span>
-                                {!hideBookingActions &&
-                                  !manageSchoolSchedule &&
-                                  !booking.schoolClassId &&
-                                  !booking.schoolRequestId && (
-                                    <Link
-                                      href={`/coach/students?student=${encodeURIComponent(booking.athleteId)}`}
-                                      className="mt-1 inline-flex min-h-6 items-center text-sm font-semibold text-[var(--c-aqua-strong)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                                    >
-                                      ver perfil ›
-                                    </Link>
-                                  )}
                               </span>
                             </div>
                             <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
@@ -2989,6 +2984,30 @@ export default function CoachAgenda({
         <AgendaStudentActions
           key={`${studentAction.booking.id}:${studentAction.student.studentId}`}
           student={studentAction.student}
+          classTag={
+            <ScheduleTag
+              date={new Date(`${studentAction.student.date}T12:00:00`).toLocaleDateString('es-MX', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'short',
+              })}
+              time={`${studentAction.booking.startTime}–${studentAction.booking.endTime}`}
+              coachName={
+                studentAction.booking.coachName ||
+                agenda?.coachNames?.[studentAction.booking.coachId] ||
+                'Sin profe aún'
+              }
+              unassigned={studentAction.booking.coachId === '__unassigned__'}
+              groupType={studentAction.booking.groupType}
+            />
+          }
+          onProfile={() =>
+            setStudentProfile({
+              studentId: studentAction.student.studentId,
+              name: studentAction.student.studentName,
+              schoolId: schoolIdForBooking(studentAction.booking) || undefined,
+            })
+          }
           busy={busy}
           error={studentActionError}
           onClose={() => setStudentAction(null)}
@@ -3020,6 +3039,9 @@ export default function CoachAgenda({
         />
       )}
 
+      {studentProfile && (
+        <StudentProfileModal {...studentProfile} onClose={() => setStudentProfile(null)} />
+      )}
       {reassignBooking && schoolIdForBooking(reassignBooking) && (
         <SchoolReassignStudent
           schoolId={schoolIdForBooking(reassignBooking) as string}

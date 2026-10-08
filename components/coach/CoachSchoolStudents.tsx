@@ -160,12 +160,14 @@ export default function CoachSchoolStudents() {
         <div className="mt-5 rounded-[var(--r-sm)] border border-dashed border-(--c-border) bg-(--c-surface) p-8 text-center">
           <FiUser className="mx-auto text-3xl text-(--c-aqua-strong)" aria-hidden="true" />
           <p className="mt-3 font-bold text-(--c-ocean)">
-            {normalizedQuery ? 'No hay coincidencias' : 'No hay alumnos dentro de este criterio'}
+            {normalizedQuery
+              ? 'No hay coincidencias'
+              : 'Todavía no tienes atletas con clases asignadas'}
           </p>
           <p className="mt-1 text-sm text-(--c-text-2)">
             {normalizedQuery
               ? 'Prueba con otro nombre o correo.'
-              : 'Aquí aparecen alumnos con una clase próxima y los últimos tres alumnos a quienes diste clase.'}
+              : 'Aquí aparecen atletas con clases próximas contigo y a quienes ya les diste clase.'}
           </p>
         </div>
       )}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { FiArrowRight, FiCheck, FiEdit2, FiTrash2 } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 
@@ -25,6 +25,8 @@ export default function AgendaStudentActions({
   onChangeApproval,
   pending = false,
   progressSaved = false,
+  classTag,
+  onProfile,
 }: {
   student: AgendaStudentAction
   busy: boolean
@@ -37,6 +39,8 @@ export default function AgendaStudentActions({
   onChangeApproval?: () => void
   pending?: boolean
   progressSaved?: boolean
+  classTag?: ReactNode
+  onProfile?: () => void
 }) {
   const [note, setNote] = useState(student.note)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -96,10 +100,26 @@ export default function AgendaStudentActions({
     >
       <div className="flex flex-col gap-5 px-4 pb-4 sm:px-0">
         <div>
-          <h3 className="text-xl font-extrabold text-[var(--c-ocean)]">{student.studentName}</h3>
-          <p className="mt-1 text-sm text-[var(--c-text-2)]">
-            {student.date} · {student.startTime}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xl font-extrabold text-[var(--c-ocean)]">{student.studentName}</h3>
+            {onProfile && (
+              <button
+                type="button"
+                onClick={onProfile}
+                disabled={busy}
+                className="btn btn-outline shrink-0 h-8 min-h-8 border px-3 text-xs"
+              >
+                Ver perfil
+              </button>
+            )}
+          </div>
+          <div className="mt-2">
+            {classTag || (
+              <p className="text-sm text-[var(--c-text-2)]">
+                {student.date} · {student.startTime}
+              </p>
+            )}
+          </div>
         </div>
 
         {error && <p className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">{error}</p>}
@@ -151,7 +171,7 @@ export default function AgendaStudentActions({
             type="button"
             onClick={() => setConfirmRemove(true)}
             disabled={busy}
-            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-slate-400 bg-white px-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
           >
             <FiTrash2 aria-hidden="true" className="shrink-0" /> Cancelar clase
           </button>
