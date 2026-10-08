@@ -4,9 +4,9 @@ import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  FiCalendar,
   FiCheckSquare,
   FiClipboard,
-  FiEdit2,
   FiLock,
   FiPlus,
   FiSettings,
@@ -2215,7 +2215,7 @@ export default function CoachAgenda({
                       onClick={onScheduleEditorOpen}
                       className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
                     >
-                      <FiEdit2 aria-hidden="true" /> Editar horario
+                      <FiCalendar aria-hidden="true" /> Editar horario
                     </button>
                   )}
                 </div>

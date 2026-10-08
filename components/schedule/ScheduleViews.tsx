@@ -141,7 +141,7 @@ export default function ScheduleViews({
             onSelectDate={onSelectDate}
             onChangeWeek={onChangeWeek}
           />
-          <div className="@container grid gap-1 rounded-2xl bg-(--c-surface) p-3 sm:p-4">
+          <div className="@container grid gap-1 rounded-2xl bg-(--c-surface)">
             {loading ? (
               <p className="text-sm" role="status">
                 Cargando horarios…
