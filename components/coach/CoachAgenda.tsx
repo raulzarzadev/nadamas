@@ -2183,43 +2183,44 @@ export default function CoachAgenda({
           title={
             <>
               {' '}
-              {!readOnlyAgenda && (schoolId || agendaUpdateSchoolIds.length > 0) && (
-                <div className="flex items-center gap-2">
-                  {(schoolId
-                    ? [{ schoolId, label: 'Pase de lista' }]
-                    : (agendaSources || []).flatMap((source) =>
-                        source.schoolId
-                          ? [
-                              {
-                                schoolId: source.schoolId,
-                                label: `Pase de lista · ${source.label}`,
-                              },
-                            ]
-                          : []
-                      )
-                  ).map((source) => (
-                    <button
-                      type="button"
-                      key={source.schoolId}
-                      className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
-                      onClick={() =>
-                        setAttendanceTarget({ schoolId: source.schoolId, date: selectedDate })
-                      }
-                    >
-                      <FiCheckSquare aria-hidden="true" /> {source.label}
-                    </button>
-                  ))}
-                  {onScheduleEditorOpen && (
-                    <button
-                      type="button"
-                      onClick={onScheduleEditorOpen}
-                      className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
-                    >
-                      <FiCalendar aria-hidden="true" /> Editar horario
-                    </button>
-                  )}
-                </div>
-              )}{' '}
+              {!readOnlyAgenda &&
+                (onScheduleEditorOpen || schoolId || agendaUpdateSchoolIds.length > 0) && (
+                  <div className="contents">
+                    {(schoolId
+                      ? [{ schoolId, label: 'Pase de lista' }]
+                      : (agendaSources || []).flatMap((source) =>
+                          source.schoolId
+                            ? [
+                                {
+                                  schoolId: source.schoolId,
+                                  label: `Pase de lista · ${source.label}`,
+                                },
+                              ]
+                            : []
+                        )
+                    ).map((source) => (
+                      <button
+                        type="button"
+                        key={source.schoolId}
+                        className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
+                        onClick={() =>
+                          setAttendanceTarget({ schoolId: source.schoolId, date: selectedDate })
+                        }
+                      >
+                        <FiCheckSquare aria-hidden="true" /> {source.label}
+                      </button>
+                    ))}
+                    {onScheduleEditorOpen && (
+                      <button
+                        type="button"
+                        onClick={onScheduleEditorOpen}
+                        className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
+                      >
+                        <FiCalendar aria-hidden="true" /> Editar horario
+                      </button>
+                    )}
+                  </div>
+                )}{' '}
             </>
           }
           selectedDate={selectedDate}

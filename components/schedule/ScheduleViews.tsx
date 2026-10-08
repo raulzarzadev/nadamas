@@ -74,8 +74,8 @@ export default function ScheduleViews({
   const weekSlots = slots.filter((slot) => days.some((day) => dayKey(day) === slot.date))
   return (
     <div className="grid min-w-0 gap-3">
-      <div className="flex items-center justify-between gap-2 overflow-x-auto whitespace-nowrap">
-        <div className="ml-auto shrink-0">{title}</div>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="contents">{title}</div>
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-xs font-semibold text-(--c-text-2)">Vista</span>
           <fieldset

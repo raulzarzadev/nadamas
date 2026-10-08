@@ -1,7 +1,6 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { FiPlus } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useRole } from '@/context/RoleContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
@@ -83,10 +82,10 @@ export default function CoachAgendaWorkspace() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
         <nav
           aria-label="Filtrar mis horarios"
-          className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1"
+          className="flex w-full min-w-0 gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-1"
         >
           {[
             ...(!tenant
@@ -122,31 +121,22 @@ export default function CoachAgendaWorkspace() {
             </button>
           ))}
         </nav>
-        <div className="flex shrink-0 items-center gap-2 pb-1">
+        <div className="flex shrink-0 items-center justify-end gap-2 pb-1">
           {!tenant && <ShareScheduleButton />}
-          <button
-            type="button"
-            onClick={openEditor}
-            aria-label="Agregar horarios"
-            title="Agregar horarios"
-            className="btn btn-primary min-h-11 shrink-0 gap-2 px-3 sm:px-4"
-          >
-            <FiPlus aria-hidden="true" /> <span className="hidden sm:inline">Agregar horarios</span>
-            <span className="sm:hidden">Agregar</span>
-          </button>
         </div>
       </div>
 
       <section className="flex flex-col gap-3">
         <h1 className="sr-only">{effectiveLabel}</h1>
         {effectiveAggregate ? (
-          <CoachAgenda key="all" agendaSources={agendaSources} />
+          <CoachAgenda key="all" agendaSources={agendaSources} onScheduleEditorOpen={openEditor} />
         ) : (
           <CoachAgenda
             key={scheduleEditorOpen ? 'editor' : effectiveSchoolId || 'personal'}
             schoolId={effectiveSchoolId}
             scheduleEditorOpen={scheduleEditorOpen}
             onScheduleEditorClose={closeEditor}
+            onScheduleEditorOpen={openEditor}
             scheduleTarget={scheduleEditorOpen ? tenant?.id || editorTarget : undefined}
             scheduleTargetOptions={scheduleEditorOpen ? targetOptions : undefined}
             onScheduleTargetChange={scheduleEditorOpen && !tenant ? setEditorTarget : undefined}
