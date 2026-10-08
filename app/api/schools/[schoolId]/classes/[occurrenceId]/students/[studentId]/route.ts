@@ -32,9 +32,15 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   const input = remove ? {} : await request.json().catch(() => ({}))
   const body = input && typeof input === 'object' ? input : {}
+  const status = (body as { status?: unknown }).status
+  if (status !== undefined && (!isDirector || !['pending', 'scheduled'].includes(String(status))))
+    return NextResponse.json(
+      { error: 'No tienes permiso para cambiar esta inscripción.' },
+      { status: 403 }
+    )
   const attended = (body as { attended?: unknown }).attended
   const note = (body as { note?: unknown }).note
-  if (!remove && typeof attended !== 'boolean' && typeof note !== 'string')
+  if (!remove && status === undefined && typeof attended !== 'boolean' && typeof note !== 'string')
     return NextResponse.json({ error: 'Selecciona un cambio para este alumno.' }, { status: 400 })
   if (typeof note === 'string' && note.length > 1000)
     return NextResponse.json(
@@ -66,8 +72,46 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
       )
     })
     if (!matches.length) return 'missing' as const
+    const previousRecords =
+      status !== undefined
+        ? await Promise.all(
+            matches.map((doc) =>
+              transaction.get(
+                adminDb.collection('agendaStudentRecords').doc(`class-${doc.id}-${studentId}`)
+              )
+            )
+          )
+        : []
     const now = Date.now()
-    if (remove) {
+    if (status !== undefined) {
+      for (let index = 0; index < matches.length; index += 1) {
+        const doc = matches[index]
+        const item = doc.data() as SchoolClassOccurrence
+        if (item.status === status) continue
+        if (item.studentIds.length === 1) {
+          transaction.update(doc.ref, { status, updatedAt: now })
+        } else {
+          const target = adminDb.collection('schoolClassOccurrences').doc()
+          transaction.update(doc.ref, {
+            studentIds: item.studentIds.filter((id) => id !== studentId),
+            updatedAt: now,
+          })
+          transaction.set(target, {
+            ...item,
+            id: target.id,
+            studentIds: [studentId],
+            status,
+            updatedAt: now,
+          })
+          const record = previousRecords[index]?.data()
+          if (record)
+            transaction.set(
+              adminDb.collection('agendaStudentRecords').doc(`class-${target.id}-${studentId}`),
+              { ...record, sourceId: target.id, updatedAt: now }
+            )
+        }
+      }
+    } else if (remove) {
       for (const doc of matches) {
         const item = doc.data() as SchoolClassOccurrence
         transaction.update(doc.ref, {

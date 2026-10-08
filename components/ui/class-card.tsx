@@ -122,7 +122,7 @@ export default function ClassCard({
                     </button>
                   )}
                   {actions && (
-                    <div className="[&_button]:relative [&_button]:size-8! [&_button]:min-h-8! [&_button]:p-0! [&_button]:border-0! [&_button]:bg-transparent! [&_button]:before:absolute [&_button]:before:-inset-1.5 [&_svg]:size-3.5">
+                    <div className="flex shrink-0 items-center gap-1 [&_button]:relative [&_button]:size-8! [&_button]:min-h-8! [&_button]:p-0! [&_button]:border-0! [&_button]:bg-transparent! [&_button]:before:absolute [&_button]:before:-inset-1.5 [&_svg]:size-3.5">
                       {actions}
                     </div>
                   )}

@@ -263,7 +263,11 @@ export async function GET(request: Request, { params }: RouteProps) {
             date: occurrence.date,
             startTime: occurrence.startTime,
             endTime: occurrence.endTime,
-            status: occurrence.status === 'scheduled' ? 'confirmed' : occurrence.status,
+            status: occurrence.pendingStudentIds?.some((id) => viewerStudentIds.has(id))
+              ? 'pending'
+              : occurrence.status === 'scheduled'
+                ? 'confirmed'
+                : occurrence.status,
             groupType: occurrence.type === 'group' ? 'grupal' : 'particular',
             studentIds: occurrence.studentIds.filter((studentId) =>
               viewerStudentIds.has(studentId)
@@ -362,6 +366,21 @@ export async function GET(request: Request, { params }: RouteProps) {
     ...schoolClassBookings,
     ...pendingRequestBookings,
   ].sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+  const slotIsBlocked = (slot: {
+    coachId: string
+    date: string
+    startTime: string
+    endTime: string
+  }) =>
+    blocks.some(
+      (block) =>
+        block.coachId === slot.coachId &&
+        block.date === slot.date &&
+        (block.allDay ||
+          (block.startTime &&
+            block.endTime &&
+            timesOverlap(block.startTime, block.endTime, slot.startTime, slot.endTime)))
+    )
   const assignedSlots = assignmentsSnapshot.docs
     .map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }))
     .filter(({ data }) => {
@@ -409,8 +428,9 @@ export async function GET(request: Request, { params }: RouteProps) {
         groupOccupancy < groupCapacity
       return {
         ...slot,
-        status:
-          matchingBookings.length > 0 && !canJoinGroup
+        status: slotIsBlocked(slot)
+          ? ('blocked' as const)
+          : matchingBookings.length > 0 && !canJoinGroup
             ? ('booked' as const)
             : ('available' as const),
       }
@@ -477,27 +497,33 @@ export async function GET(request: Request, { params }: RouteProps) {
       endTime: booking.endTime,
       locationName: booking.locationName || '',
       groupType: booking.groupType,
-      status:
-        booking.groupType === 'grupal' &&
-        !booking.classFull &&
-        agendaBookings
-          .filter(
-            (other) =>
-              other.status !== 'cancelled' &&
-              other.coachId === booking.coachId &&
-              other.date === booking.date &&
-              timesOverlap(other.startTime, other.endTime, booking.startTime, booking.endTime)
-          )
-          .every((other) => other.groupType === 'grupal' && !other.classFull) &&
-        !blocks.some(
-          (block) =>
-            block.coachId === booking.coachId &&
-            block.date === booking.date &&
-            (block.allDay ||
-              (block.startTime &&
-                block.endTime &&
-                timesOverlap(block.startTime, block.endTime, booking.startTime, booking.endTime)))
-        )
+      status: slotIsBlocked(booking)
+        ? 'blocked'
+        : booking.groupType === 'grupal' &&
+            !booking.classFull &&
+            agendaBookings
+              .filter(
+                (other) =>
+                  other.status !== 'cancelled' &&
+                  other.coachId === booking.coachId &&
+                  other.date === booking.date &&
+                  timesOverlap(other.startTime, other.endTime, booking.startTime, booking.endTime)
+              )
+              .every((other) => other.groupType === 'grupal' && !other.classFull) &&
+            !blocks.some(
+              (block) =>
+                block.coachId === booking.coachId &&
+                block.date === booking.date &&
+                (block.allDay ||
+                  (block.startTime &&
+                    block.endTime &&
+                    timesOverlap(
+                      block.startTime,
+                      block.endTime,
+                      booking.startTime,
+                      booking.endTime
+                    )))
+            )
           ? 'available'
           : 'booked',
     })

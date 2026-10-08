@@ -167,6 +167,8 @@ function slotStatus(
   blocks: CoachScheduleBlock[],
   maxPeople?: number | null
 ) {
+  if (blocks.some((block) => blockOverlapsSlot(block, slot))) return 'blocked'
+
   const matchingBookings = bookings.filter(
     (booking) =>
       booking.status !== 'cancelled' &&
@@ -187,10 +189,6 @@ function slotStatus(
 
   if (matchingBookings.length > 0 && !canJoinExistingGroup) {
     return 'booked'
-  }
-
-  if (blocks.some((block) => blockOverlapsSlot(block, slot))) {
-    return 'blocked'
   }
 
   return 'available'

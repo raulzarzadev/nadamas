@@ -22,6 +22,8 @@ export default function AgendaStudentActions({
   onMove,
   onRemove,
   onProgress,
+  onChangeApproval,
+  pending = false,
   progressSaved = false,
 }: {
   student: AgendaStudentAction
@@ -32,10 +34,56 @@ export default function AgendaStudentActions({
   onMove: () => void
   onRemove: () => void
   onProgress?: () => void
+  onChangeApproval?: () => void
+  pending?: boolean
   progressSaved?: boolean
 }) {
   const [note, setNote] = useState(student.note)
   const [confirmRemove, setConfirmRemove] = useState(false)
+
+  if (confirmRemove) {
+    return (
+      <Sheet
+        open
+        label="Eliminar de la clase"
+        closeDisabled={busy}
+        onClose={() => setConfirmRemove(false)}
+        footer={
+          <div className="flex gap-2 px-4 sm:px-0">
+            <button
+              type="button"
+              onClick={() => setConfirmRemove(false)}
+              disabled={busy}
+              className="btn btn-outline min-h-11 flex-1"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              disabled={busy}
+              className="min-h-11 flex-1 rounded-full bg-[var(--rose-tx)] px-3 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50"
+            >
+              {busy ? 'Eliminando…' : 'Eliminar de la clase'}
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-3 px-4 pb-4 sm:px-0">
+          <h3 className="text-xl font-bold text-(--c-ocean)">Eliminar de la clase</h3>
+          <p className="text-sm text-(--c-text-2)">
+            ¿Quieres retirar a <strong>{student.studentName}</strong> de la clase del {student.date}{' '}
+            a las {student.startTime}?
+          </p>
+          {error && (
+            <p role="alert" className="text-sm text-[var(--c-error,#b91c1c)]">
+              {error}
+            </p>
+          )}
+        </div>
+      </Sheet>
+    )
+  }
 
   return (
     <Sheet
@@ -88,51 +136,34 @@ export default function AgendaStudentActions({
           </button>
         )}
 
-        <div>
+        {onChangeApproval && (
           <button
             type="button"
-            onClick={onMove}
+            onClick={onChangeApproval}
             disabled={busy}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[var(--c-border)] px-4 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+            className="btn btn-outline min-h-11"
           >
-            <FiArrowRight aria-hidden="true" /> Cambiar de clase
+            {pending ? 'Aprobar inscripción' : 'Cambiar a pendiente'}
           </button>
-        </div>
-
-        {confirmRemove ? (
-          <div className="rounded-[var(--r-sm)] border border-[var(--rose-bd)] bg-[var(--rose-bg)] p-3">
-            <p className="text-sm font-semibold text-[var(--rose-tx)]">
-              ¿Eliminar a {student.studentName} de esta clase?
-            </p>
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmRemove(false)}
-                disabled={busy}
-                className="min-h-11 flex-1 rounded-full border border-[var(--c-border)] bg-white px-3 text-sm font-bold"
-              >
-                Volver
-              </button>
-              <button
-                type="button"
-                onClick={onRemove}
-                disabled={busy}
-                className="min-h-11 flex-1 rounded-full bg-[var(--rose-tx)] px-3 text-sm font-bold text-white disabled:opacity-50"
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        ) : (
+        )}
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => setConfirmRemove(true)}
             disabled={busy}
-            className="inline-flex min-h-11 items-center justify-center gap-2 self-center px-4 text-sm font-bold text-[var(--rose-tx)] underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--rose-tx)] disabled:opacity-50"
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2 text-sm font-semibold text-slate-600 hover:bg-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
           >
-            <FiTrash2 aria-hidden="true" /> Eliminar de la clase
+            <FiTrash2 aria-hidden="true" className="shrink-0" /> Cancelar clase
           </button>
-        )}
+          <button
+            type="button"
+            onClick={onMove}
+            disabled={busy}
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-[var(--c-border)] px-2 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+          >
+            <FiArrowRight aria-hidden="true" className="shrink-0" /> Cambiar clase
+          </button>
+        </div>
       </div>
     </Sheet>
   )

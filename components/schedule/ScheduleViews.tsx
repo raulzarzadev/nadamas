@@ -21,6 +21,7 @@ export interface ScheduleViewSlot {
   enrolledCount?: number
   bookingStatus?: 'pending' | 'confirmed' | 'cancelled'
   pendingApproval?: boolean
+  blocked?: boolean
 }
 
 function dayKey(day: Date) {
@@ -198,7 +199,7 @@ export default function ScheduleViews({
                                   aria-pressed={Boolean(slot.selected)}
                                   disabled={disabled || slot.disabled}
                                   onClick={() => onSelectSlot(slot.key)}
-                                  className={`relative flex min-h-9 min-w-20 flex-col gap-1 rounded-lg border px-1.5 py-1 text-xs before:absolute before:-inset-y-1 before:inset-x-0 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 ${slot.selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : (slot.enrolledCount || 0) > 0 ? (slot.groupType === 'grupal' ? 'border-blue-400 bg-blue-200 text-(--c-ocean) hover:bg-blue-300' : 'border-emerald-400 bg-emerald-200 text-(--c-ocean) hover:bg-emerald-300') : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
+                                  className={`relative flex min-h-9 min-w-20 flex-col gap-1 rounded-lg border px-1.5 py-1 text-xs before:absolute before:-inset-y-1 before:inset-x-0 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 ${slot.selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : slot.blocked ? 'border-slate-400 bg-slate-200 text-slate-600 hover:bg-slate-300' : (slot.enrolledCount || 0) > 0 ? (slot.groupType === 'grupal' ? 'border-blue-400 bg-blue-200 text-(--c-ocean) hover:bg-blue-300' : 'border-emerald-400 bg-emerald-200 text-(--c-ocean) hover:bg-emerald-300') : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
                                 >
                                   <span className="flex w-full items-center justify-between gap-2">
                                     {slot.unassigned ? (
