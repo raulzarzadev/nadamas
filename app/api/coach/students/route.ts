@@ -32,6 +32,7 @@ interface CoachStudentSummary {
   lastClass?: Booking
   progress: StudentProgress | null
   entries: StudentProgressEntry[]
+  classes?: Booking[]
 }
 
 function getBearerToken(request: Request) {
@@ -57,6 +58,10 @@ export async function GET(request: Request) {
   if (verification.error) return verification.error
 
   const coachId = verification.caller.uid
+  const historyAthlete = new URL(request.url).searchParams.get('historyAthlete')
+  const historyRecords = historyAthlete
+    ? await adminDb.collection('agendaStudentRecords').where('coachId', '==', coachId).get()
+    : null
   const bookingsSnapshot = await adminDb
     .collection('bookings')
     .where('coachId', '==', coachId)
@@ -101,6 +106,18 @@ export async function GET(request: Request) {
         address: progress?.athleteAddress || '',
         location: progress?.athleteLocation || '',
         totalClasses: sorted.length,
+        ...(historyAthlete === first.athleteId
+          ? {
+              classes: [...sorted].reverse().map((booking) => {
+                const record = historyRecords?.docs
+                  .map((doc) => doc.data())
+                  .find(
+                    (item) => item.sourceId === booking.id && item.studentId === first.athleteId
+                  )
+                return { ...booking, studentNote: record?.note || booking.studentNote || '' }
+              }),
+            }
+          : {}),
         nextClass,
         upcomingClasses,
         lastClass,
