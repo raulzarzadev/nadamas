@@ -1,10 +1,10 @@
 'use client'
 
 import Loading from '@comps/Loading'
-import ClassNotesModal, { type ClassNotesTarget } from '@/components/coach/ClassNotesModal'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  FiCheckSquare,
   FiClipboard,
   FiLock,
   FiPlus,
@@ -14,6 +14,7 @@ import {
   FiUsers,
   FiX,
 } from 'react-icons/fi'
+import ClassNotesModal, { type ClassNotesTarget } from '@/components/coach/ClassNotesModal'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import ClassCard from '@/components/ui/class-card'
@@ -48,6 +49,7 @@ import { capitalizeSchoolTerm, UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import AgendaStudentActions, { type AgendaStudentAction } from './AgendaStudentActions'
+import AttendanceModal from './AttendanceModal'
 import CancelClassModal from './CancelClassModal'
 import { useCoachAgendaShare } from './CoachAgendaShareContext'
 import ScheduleHoursEditor, {
@@ -264,6 +266,12 @@ export default function CoachAgenda({
   const [studentAction, setStudentAction] = useState<{
     booking: Booking
     student: AgendaStudentAction
+  } | null>(null)
+  const [attendanceTarget, setAttendanceTarget] = useState<{
+    schoolId: string
+    date: string
+    occurrenceId?: string
+    initialSlot?: { coachId: string; startTime: string }
   } | null>(null)
   const [classNotesTarget, setClassNotesTarget] = useState<ClassNotesTarget | null>(null)
   const [studentActionError, setStudentActionError] = useState<string | null>(null)
@@ -1789,6 +1797,23 @@ export default function CoachAgenda({
                           <FiSettings aria-hidden="true" />
                         </RowIconButton>
                       )}
+                      {!readOnlyAgenda &&
+                        schoolClassBooking?.schoolClassId &&
+                        schoolIdForSlot(schoolClassBooking) && (
+                          <RowIconButton
+                            ariaLabel="Pase de lista"
+                            disabled={busy}
+                            onClick={() =>
+                              setAttendanceTarget({
+                                schoolId: schoolIdForSlot(schoolClassBooking) as string,
+                                date: schoolClassBooking.date,
+                                occurrenceId: schoolClassBooking.schoolClassId,
+                              })
+                            }
+                          >
+                            <FiCheckSquare aria-hidden="true" />
+                          </RowIconButton>
+                        )}
                       {!readOnlyAgenda && schoolIdForSlot(schoolClassBooking || firstBooking) && (
                         <RowIconButton
                           ariaLabel="Notas de la clase"
@@ -2062,6 +2087,24 @@ export default function CoachAgenda({
                       </RowIconButton>
                       {schoolIdForSlot(row.slot) && (
                         <RowIconButton
+                          ariaLabel="Pase de lista"
+                          disabled={busy}
+                          onClick={() =>
+                            setAttendanceTarget({
+                              schoolId: schoolIdForSlot(row.slot) as string,
+                              date: row.slot.date,
+                              initialSlot: {
+                                coachId: row.slot.coachId,
+                                startTime: row.slot.startTime,
+                              },
+                            })
+                          }
+                        >
+                          <FiCheckSquare aria-hidden="true" />
+                        </RowIconButton>
+                      )}
+                      {schoolIdForSlot(row.slot) && (
+                        <RowIconButton
                           ariaLabel="Notas de la clase"
                           disabled={busy}
                           onClick={() =>
@@ -2121,6 +2164,27 @@ export default function CoachAgenda({
 
   return (
     <div className="flex flex-col gap-4">
+      {!readOnlyAgenda && (schoolId || agendaUpdateSchoolIds.length > 0) && (
+        <div className="flex flex-wrap justify-end gap-2">
+          {(schoolId
+            ? [{ schoolId, label: 'Pase de lista' }]
+            : (agendaSources || []).flatMap((source) =>
+                source.schoolId
+                  ? [{ schoolId: source.schoolId, label: `Pase de lista · ${source.label}` }]
+                  : []
+              )
+          ).map((source) => (
+            <button
+              type="button"
+              key={source.schoolId}
+              className="btn btn-outline min-h-11"
+              onClick={() => setAttendanceTarget({ schoolId: source.schoolId, date: selectedDate })}
+            >
+              <FiCheckSquare aria-hidden="true" /> {source.label}
+            </button>
+          ))}
+        </div>
+      )}
       {detailTarget ? (
         !agenda ? (
           <Loading />
@@ -2880,6 +2944,15 @@ export default function CoachAgenda({
         )}
       </Sheet>
 
+      {attendanceTarget && (
+        <AttendanceModal
+          {...attendanceTarget}
+          onClose={() => setAttendanceTarget(null)}
+          onUpdated={() => {
+            void loadAgenda(monthOfSelected)
+          }}
+        />
+      )}
       {classNotesTarget && (
         <ClassNotesModal
           key={`${classNotesTarget.schoolId}|${classNotesTarget.coachId}|${classNotesTarget.date}|${classNotesTarget.startTime}`}

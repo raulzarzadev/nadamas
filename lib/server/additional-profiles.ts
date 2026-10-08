@@ -1,5 +1,6 @@
 import 'server-only'
 import type { AdditionalProfile } from '@/lib/additional-profile'
+import { ensureAthleteIdentity } from './athlete-identities'
 import { adminDb } from './firebase-admin'
 
 export async function listAdditionalProfiles(ownerId: string) {
@@ -33,6 +34,7 @@ export async function createAdditionalProfile(
     updatedAt: now,
   }
   await ref.set(profile)
+  await ensureAthleteIdentity('additional', ref.id)
   return profile
 }
 

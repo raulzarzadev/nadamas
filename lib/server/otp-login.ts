@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { ensureAthleteIdentity } from '@/lib/server/athlete-identities'
 import { type BookingInput, createConfirmedBookings } from '@/lib/server/bookings'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 
@@ -39,6 +40,7 @@ export async function signInOrCreateUser(email: string) {
     { merge: true }
   )
 
+  await ensureAthleteIdentity('user', user.uid)
   return { uid: user.uid }
 }
 

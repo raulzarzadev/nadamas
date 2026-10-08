@@ -2,7 +2,7 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { usePostHog } from 'posthog-js/react'
 import { createContext, useContext, useEffect, useState } from 'react'
-import { authStateChanged, googleLogin, logOut } from '@/firebase/index'
+import { auth, authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { getUser, loginUser } from '@/firebase/users'
 import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 import { normalizeRoles } from '@/lib/roles'
@@ -33,6 +33,15 @@ export function UserProvider({ children }) {
       unsubscribe?.()
     }
   }, [])
+
+  // Allocate permanent IDs for every signed-in user, including existing accounts.
+  useEffect(() => {
+    if (!user || !auth.currentUser) return
+    void auth.currentUser
+      .getIdToken()
+      .then((token) => fetch('/api/credentials', { headers: { Authorization: `Bearer ${token}` } }))
+      .catch(() => {})
+  }, [user])
 
   const logout = () => {
     logOut()

@@ -344,6 +344,8 @@ export interface SchoolClassOccurrence {
   teacherIds: string[]
   studentIds: string[]
   classFull?: boolean
+  /** Numeric capacity retained when a published hour becomes a class. */
+  capacity?: number
   classNote?: string
   location: string
   locationUrl: string

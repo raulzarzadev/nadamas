@@ -4,7 +4,8 @@ import { auth } from '@/firebase/index'
 export class AuthedApiError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
+    readonly code?: string
   ) {
     super(message)
     this.name = 'AuthedApiError'
@@ -40,13 +41,16 @@ async function requestAuthed(path: string, init?: RequestInit) {
 
   if (!response.ok) {
     let message = `request_failed:${response.status}`
+    let code: string | undefined
     try {
-      const payload = (await response.json()) as { error?: unknown }
+      const payload = (await response.json()) as { error?: unknown; code?: unknown }
       if (typeof payload.error === 'string' && payload.error.trim()) message = payload.error
+      if (typeof payload.code === 'string' && /^[a-z_]{1,40}$/.test(payload.code))
+        code = payload.code
     } catch {
       // Keep the status-based fallback when the response is not JSON.
     }
-    throw new AuthedApiError(message, response.status)
+    throw new AuthedApiError(message, response.status, code)
   }
 
   return response

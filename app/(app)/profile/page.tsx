@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import AdditionalProfiles from '@/components/profile/AdditionalProfiles'
+import AthleteCredentialButton from '@/components/profile/AthleteCredentialButton'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
 import { useAutosave } from '@/hooks/useAutosave'
@@ -94,6 +95,8 @@ export default function ProfilePage() {
             <p className="truncate text-[var(--c-text-2)]">{user.email}</p>
           </div>
         </div>
+
+        <AthleteCredentialButton />
 
         {roles.coach && (
           <Link

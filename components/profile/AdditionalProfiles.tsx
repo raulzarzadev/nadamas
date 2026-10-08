@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { FiEdit2, FiPlus } from 'react-icons/fi'
+import AthleteCredentialButton from '@/components/profile/AthleteCredentialButton'
 import DateInput from '@/components/ui/date-input'
 import GenderSelector from '@/components/ui/gender-selector'
 import Sheet from '@/components/ui/sheet'
@@ -131,13 +132,16 @@ export default function AdditionalProfiles() {
                   Adicional · {profile.birthDate || 'Fecha de nacimiento no registrada'}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => openEditModal(profile)}
-                className="btn btn-outline min-h-11"
-              >
-                <FiEdit2 aria-hidden="true" /> Editar Adicional
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <AthleteCredentialButton profileId={profile.id} />
+                <button
+                  type="button"
+                  onClick={() => openEditModal(profile)}
+                  className="btn btn-outline min-h-11"
+                >
+                  <FiEdit2 aria-hidden="true" /> Editar Adicional
+                </button>
+              </div>
             </li>
           ))}
         </ul>

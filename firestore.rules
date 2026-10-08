@@ -66,6 +66,8 @@ service cloud.firestore {
     function isLegacyCollection(collection) {
       return ![
         'additionalProfiles',
+        'athleteIdentityRegistry',
+        'schoolAttendance',
         'classEvaluations',
         'privateClassEvaluations',
         'schools',
