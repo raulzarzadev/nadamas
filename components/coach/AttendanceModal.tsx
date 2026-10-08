@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FiCheck, FiHash, FiSearch } from 'react-icons/fi'
+import { FiCheck, FiHash, FiRepeat, FiSearch } from 'react-icons/fi'
 import Avatar from '@/components/ui/avatar'
 import DateInput from '@/components/ui/date-input'
 import ScheduleTag from '@/components/ui/schedule-tag'
@@ -54,6 +54,7 @@ export default function AttendanceModal({
 }) {
   const [selectedDate, setSelectedDate] = useState(date)
   const [selectedClass, setSelectedClass] = useState(occurrenceId || '')
+  const [choosingClass, setChoosingClass] = useState(false)
   const [payload, setPayload] = useState<Payload>({ classes: [], coachNames: {} })
   const [mode, setMode] = useState<Mode>('name')
   const [query, setQuery] = useState('')
@@ -206,19 +207,50 @@ export default function AttendanceModal({
             Elige una clase y registra la asistencia de sus atletas.
           </p>
         </div>
-        <DateInput
-          label="Fecha de la clase"
-          value={selectedDate}
-          onChange={(value) => {
-            setSelectedDate(value)
-            changeClass('')
-          }}
-          disabled={busy}
-        />
+        {(!selected || choosingClass) && (
+          <DateInput
+            label="Fecha de la clase"
+            value={selectedDate}
+            onChange={(value) => {
+              setSelectedDate(value)
+              changeClass('')
+            }}
+            disabled={busy}
+          />
+        )}
         {loading ? (
           <p role="status">Cargando clases…</p>
         ) : !payload.classes.length ? (
           <p className="text-sm text-(--c-text-2)">No hay clases para esta fecha.</p>
+        ) : selected && !choosingClass ? (
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <ScheduleTag
+                date={new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                })}
+                time={`${selected.startTime}–${selected.endTime}`}
+                unassigned={!selected.teacherIds.length}
+                coachName={
+                  selected.teacherIds
+                    .map((id) => payload.coachNames[id])
+                    .filter(Boolean)
+                    .join(', ') || 'Sin profe aún'
+                }
+                groupType={selected.type === 'group' ? 'grupal' : 'particular'}
+              />
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setChoosingClass(true)}
+              className="btn btn-outline h-8 min-h-8 shrink-0 gap-1 border px-2 text-xs"
+            >
+              <FiRepeat aria-hidden="true" /> Cambiar
+            </button>
+          </div>
         ) : (
           <fieldset className="grid gap-2" aria-label="Clase para pasar lista">
             {payload.classes.map((item) => (
@@ -227,7 +259,10 @@ export default function AttendanceModal({
                 key={item.id}
                 disabled={busy}
                 aria-pressed={selected?.id === item.id}
-                onClick={() => changeClass(item.id)}
+                onClick={() => {
+                  changeClass(item.id)
+                  setChoosingClass(false)
+                }}
                 className={`min-h-11 rounded-xl border p-2 text-left ${selected?.id === item.id ? 'border-(--c-ocean) bg-(--c-surface) ring-1 ring-(--c-ocean)' : 'border-(--c-border) bg-white'}`}
               >
                 <ScheduleTag
@@ -245,7 +280,7 @@ export default function AttendanceModal({
             ))}
           </fieldset>
         )}
-        {selected && !loading && (
+        {selected && !loading && !choosingClass && (
           <>
             <p className="text-sm font-semibold">
               {(payload.roster || []).filter((item) => item.attended).length} asistencias
