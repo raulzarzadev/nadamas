@@ -140,7 +140,7 @@ export default function ScheduleViews({
             onSelectDate={onSelectDate}
             onChangeWeek={onChangeWeek}
           />
-          <div className="grid gap-1 rounded-2xl bg-(--c-surface) p-3 sm:p-4">
+          <div className="@container grid gap-1 rounded-2xl bg-(--c-surface) p-3 sm:p-4">
             {loading ? (
               <p className="text-sm" role="status">
                 Cargando horarios…
@@ -153,20 +153,25 @@ export default function ScheduleViews({
                 return (
                   <div
                     key={date}
-                    className={`grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-2 rounded-xl p-2 ${date === today ? 'bg-cyan-300' : ''}`}
+                    className={`grid grid-cols-1 items-start gap-2 rounded-xl p-2 @min-[420px]:grid-cols-[5.5rem_minmax(0,1fr)] ${date === today ? 'bg-cyan-300' : ''}`}
                   >
-                    <div>
-                      {date === today && (
-                        <span className="mb-1 inline-flex rounded-full bg-(--c-ocean) px-2 py-0.5 text-[9px] font-bold leading-none text-white">
-                          Hoy
-                        </span>
-                      )}
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 @min-[420px]:block">
                       <h3 className="text-sm font-bold capitalize">
                         {day.toLocaleDateString('es-MX', { weekday: 'long' })}
                       </h3>
                       <p className="text-xs text-(--c-text-2)">
-                        {day.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                        <span className="@min-[420px]:hidden">
+                          {day.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}
+                        </span>
+                        <span className="hidden @min-[420px]:inline">
+                          {day.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}
+                        </span>
                       </p>
+                      {date === today && (
+                        <span className="ml-auto inline-flex @min-[420px]:ml-0 rounded-full bg-(--c-ocean) @min-[420px]:mb-1 px-2 py-0.5 text-[9px] font-bold leading-none text-white">
+                          Hoy
+                        </span>
+                      )}
                     </div>
                     <div
                       className={`flex flex-wrap gap-2 ${!options.length ? 'self-stretch items-center' : ''}`}
@@ -193,7 +198,7 @@ export default function ScheduleViews({
                                   aria-pressed={Boolean(slot.selected)}
                                   disabled={disabled || slot.disabled}
                                   onClick={() => onSelectSlot(slot.key)}
-                                  className={`relative flex min-h-9 min-w-20 flex-col gap-1 rounded-lg border px-1.5 py-1 text-xs before:absolute before:-inset-y-1 before:inset-x-0 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 ${slot.selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
+                                  className={`relative flex min-h-9 min-w-20 flex-col gap-1 rounded-lg border px-1.5 py-1 text-xs before:absolute before:-inset-y-1 before:inset-x-0 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 ${slot.selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : (slot.enrolledCount || 0) > 0 ? (slot.groupType === 'grupal' ? 'border-blue-400 bg-blue-200 text-(--c-ocean) hover:bg-blue-300' : 'border-emerald-400 bg-emerald-200 text-(--c-ocean) hover:bg-emerald-300') : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
                                 >
                                   <span className="flex w-full items-center justify-between gap-2">
                                     {slot.unassigned ? (
