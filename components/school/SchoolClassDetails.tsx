@@ -54,6 +54,11 @@ export default function SchoolClassDetails() {
   const slots = parseSelections(params.get('slots'))
   const schoolAccess = schools.find(({ school }) => school.id === schoolId)
   const canManage = schoolMembershipHasRole(schoolAccess?.membership, 'director')
+  const groups = new Map<string, Selection[]>()
+  for (const slot of slots) {
+    const key = `${slot.date}|${slot.startTime}`
+    groups.set(key, [...(groups.get(key) || []), slot])
+  }
   const validSchool = schoolId && schoolId.length <= 128 && !schoolId.includes('/')
   return (
     <main className="mx-auto grid w-full max-w-5xl gap-5 p-4 sm:p-6">
@@ -76,27 +81,32 @@ export default function SchoolClassDetails() {
           Selecciona horarios en la agenda para consultar sus detalles.
         </p>
       ) : (
-        slots.map((slot) => (
+        [...groups.entries()].map(([key, group]) => (
           <section
-            key={`${slot.date}|${slot.startTime}|${slot.coachId}|${slot.groupType}`}
+            key={key}
             className="overflow-hidden rounded-2xl border border-(--c-border) bg-white"
           >
             <h2 className="border-b border-(--c-border) px-4 py-3 text-sm font-bold text-(--c-ocean)">
-              {new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
+              {new Date(`${group[0].date}T12:00:00`).toLocaleDateString('es-MX', {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
               })}{' '}
-              · {slot.startTime}
+              · {group[0].startTime}
             </h2>
-            <CoachAgenda
-              schoolId={schoolId}
-              aggregateSchool
-              manageSchoolSchedule={canManage}
-              readOnly={!canManage}
-              initialDate={slot.date}
-              detailTarget={slot}
-            />
+            <div className="grid gap-3 p-3">
+              {group.map((slot) => (
+                <CoachAgenda
+                  key={`${slot.coachId}|${slot.groupType}`}
+                  schoolId={schoolId}
+                  aggregateSchool
+                  manageSchoolSchedule={canManage}
+                  readOnly={!canManage}
+                  initialDate={slot.date}
+                  detailTarget={slot}
+                />
+              ))}
+            </div>
           </section>
         ))
       )}

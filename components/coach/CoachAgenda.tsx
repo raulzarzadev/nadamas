@@ -1685,7 +1685,8 @@ export default function CoachAgenda({
 
         {!allDayBlock &&
           displayRows.map((row, rowIndex) => {
-            const showTime = rowIndex === 0 || displayRows[rowIndex - 1]?.sort !== row.sort
+            const showTime =
+              !detailTarget && (rowIndex === 0 || displayRows[rowIndex - 1]?.sort !== row.sort)
             const showSeparator = displayRows[rowIndex + 1]?.sort !== row.sort
             if (row.kind === 'booked') {
               const firstBooking = row.bookings[0]
@@ -1735,7 +1736,7 @@ export default function CoachAgenda({
               const isFocusTarget = row.bookings.some(bookingMatchesFocus)
               return (
                 <ClassCard
-                  hideTimeColumn={false}
+                  hideTimeColumn={Boolean(detailTarget)}
                   key={`b-${firstBooking.schoolId || 'personal'}-${firstBooking.coachId}-${firstBooking.date}-${firstBooking.startTime}`}
                   time={row.sort}
                   showTime={showTime}
@@ -1943,7 +1944,7 @@ export default function CoachAgenda({
                   : agenda.coachNames?.[row.slot.coachId] || row.slot.coachName || coachFallback
               return (
                 <ClassCard
-                  hideTimeColumn={false}
+                  hideTimeColumn={Boolean(detailTarget)}
                   key={`x-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
                   time={row.slot.startTime}
                   showTime={showTime}
@@ -2006,72 +2007,29 @@ export default function CoachAgenda({
               )
             }
             const isAvailableGroup = row.slot.groupType === 'grupal'
-            const availableStyle = isAvailableGroup
-              ? HOUR_STATUS_STYLE.groupAvailable
-              : HOUR_STATUS_STYLE.available
             return (
               <ClassCard
-                hideTimeColumn={false}
+                hideTimeColumn={Boolean(detailTarget)}
                 key={`a-${row.slot.schoolId || 'personal'}-${row.slot.coachId}-${row.slot.id}`}
                 time={row.slot.startTime}
                 showTime={showTime}
                 showSeparator={!classDetails && showSeparator}
-              >
-                <div
-                  className={`flex min-w-0 flex-1 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-3 ${availableStyle.border} ${availableStyle.bg}`}
-                >
-                  {readOnlyAgenda || (adminMode && !manageSchoolSchedule) ? (
-                    <span className="flex min-h-11 items-center gap-2 text-sm font-bold text-[var(--c-ocean)]">
-                      <span
-                        className={`h-2 w-2 shrink-0 rounded-full ${availableStyle.dot}`}
-                        aria-hidden="true"
-                      />
-                      Disponible
-                      <span className="font-normal text-[var(--c-text-2)]">
-                        ·{' '}
-                        {row.slot.coachName ||
-                          agenda.coachNames?.[row.slot.coachId] ||
-                          coachFallback}
-                      </span>
-                    </span>
-                  ) : (
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      {showAssignedCoach && (
-                        <CoachBadge
-                          name={
-                            row.slot.coachName ||
-                            agenda.coachNames?.[row.slot.coachId] ||
-                            coachFallback
-                          }
-                          unassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
-                        />
-                      )}
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-[var(--c-text-2)]">
-                        <span className="inline-flex items-center gap-1">
-                          <FiUnlock aria-hidden="true" className="h-3.5 w-3.5" /> Disponible
-                        </span>
-                        <span aria-hidden="true">·</span>
-                        <span className="inline-flex items-center gap-1">
-                          {isAvailableGroup ? (
-                            <FiUsers aria-hidden="true" className="h-3.5 w-3.5" />
-                          ) : (
-                            <FiUser aria-hidden="true" className="h-3.5 w-3.5" />
-                          )}
-                          {isAvailableGroup ? 'Grupal' : 'Particular'}
-                        </span>
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex min-w-0 items-center justify-end gap-1.5 sm:shrink-0 sm:gap-2">
-                    {combinedSources && row.slot.agendaLabel && (
-                      <span className="w-fit shrink-0 rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">
-                        {row.slot.agendaLabel}
-                      </span>
-                    )}
-                    {!hideBookingActions && (
-                      <button
-                        type="button"
-                        onClick={() =>
+                status={isAvailableGroup ? 'groupAvailable' : 'available'}
+                coachName={
+                  row.slot.coachName || agenda.coachNames?.[row.slot.coachId] || coachFallback
+                }
+                showCoachName={showAssignedCoach}
+                unassigned={row.slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
+                groupType={row.slot.groupType}
+                statusLabel="Disponible"
+                agendaLabel={combinedSources ? row.slot.agendaLabel : undefined}
+                addStudent={
+                  !hideBookingActions
+                    ? {
+                        label: capitalizeSchoolTerm(participantSingular),
+                        ariaLabel: `Agregar ${participantSingular} a la clase`,
+                        disabled: busy,
+                        onClick: () =>
                           setAddStudentSlot({
                             coachId: row.slot.coachId,
                             schoolId: row.slot.schoolId,
@@ -2080,62 +2038,46 @@ export default function CoachAgenda({
                             endTime: row.slot.endTime,
                             locationName: row.slot.locationName,
                             groupType: row.slot.groupType,
-                          })
-                        }
-                        disabled={busy}
-                        className="inline-flex min-h-9 w-fit shrink-0 cursor-pointer items-center justify-center gap-1 rounded-full bg-[var(--c-aqua)] px-2.5 text-[11px] font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <FiPlus aria-hidden="true" /> {capitalizeSchoolTerm(participantSingular)}
-                      </button>
-                    )}
-                    {!readOnlyAgenda && (
-                      <span
-                        className="group relative"
-                        title={
+                          }),
+                      }
+                    : undefined
+                }
+                actions={
+                  !readOnlyAgenda ? (
+                    <>
+                      <RowIconButton
+                        ariaLabel="Configurar clase"
+                        onClick={() => openSlotEditor(row.slot)}
+                        disabled={
+                          busy ||
                           dayBookings.some(
                             (booking) =>
                               (!combinedSources || booking.schoolId === row.slot.schoolId) &&
                               booking.coachId === row.slot.coachId &&
                               booking.startTime === row.slot.startTime
                           )
-                            ? 'No se puede eliminar porque hay una clase asignada.'
-                            : undefined
                         }
                       >
+                        <FiSettings aria-hidden="true" />
+                      </RowIconButton>
+                      {schoolIdForSlot(row.slot) && (
                         <RowIconButton
-                          ariaLabel="Configurar clase"
-                          onClick={() => openSlotEditor(row.slot)}
-                          disabled={
-                            busy ||
-                            dayBookings.some(
-                              (booking) =>
-                                (!combinedSources || booking.schoolId === row.slot.schoolId) &&
-                                booking.coachId === row.slot.coachId &&
-                                booking.startTime === row.slot.startTime
-                            )
+                          ariaLabel="Notas de la clase"
+                          disabled={busy}
+                          onClick={() =>
+                            setClassNotesTarget({
+                              ...row.slot,
+                              schoolId: schoolIdForSlot(row.slot) as string,
+                            })
                           }
                         >
-                          <FiSettings aria-hidden="true" />
+                          <FiClipboard aria-hidden="true" />
                         </RowIconButton>
-                        {!readOnlyAgenda && schoolIdForSlot(row.slot) && (
-                          <RowIconButton
-                            ariaLabel="Notas de la clase"
-                            disabled={busy}
-                            onClick={() =>
-                              setClassNotesTarget({
-                                ...row.slot,
-                                schoolId: schoolIdForSlot(row.slot) as string,
-                              })
-                            }
-                          >
-                            <FiClipboard aria-hidden="true" />
-                          </RowIconButton>
-                        )}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </ClassCard>
+                      )}
+                    </>
+                  ) : undefined
+                }
+              />
             )
           })}
       </div>
