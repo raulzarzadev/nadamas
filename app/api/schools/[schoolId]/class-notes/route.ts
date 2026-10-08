@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { normalizeClassTraining } from '@/lib/class-training'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
@@ -46,7 +47,10 @@ export async function GET(request: Request, { params }: Props) {
   try {
     const snapshot = await access.ref.get()
     return NextResponse.json(
-      { note: snapshot.data()?.note || '' },
+      {
+        note: snapshot.data()?.note || '',
+        training: normalizeClassTraining(snapshot.data()?.training || []) || [],
+      },
       { headers: { 'Cache-Control': 'private, no-store' } }
     )
   } catch {
@@ -63,6 +67,12 @@ export async function PUT(request: Request, { params }: Props) {
       { error: 'La nota puede tener hasta 4000 caracteres.' },
       { status: 400 }
     )
+  const training = body.training === undefined ? undefined : normalizeClassTraining(body.training)
+  if (training === null)
+    return NextResponse.json(
+      { error: 'Revisa las series y las repeticiones del entrenamiento.' },
+      { status: 400 }
+    )
   try {
     await access.ref.set(
       {
@@ -71,6 +81,7 @@ export async function PUT(request: Request, { params }: Props) {
         date: access.date,
         startTime: access.startTime,
         note: body.note.trim(),
+        ...(training !== undefined ? { training } : {}),
         updatedAt: Date.now(),
         updatedBy: access.userId,
       },
