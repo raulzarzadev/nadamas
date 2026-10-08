@@ -2,7 +2,7 @@
 
 import { type ReactNode, useState } from 'react'
 import { FaPersonSwimming } from 'react-icons/fa6'
-import { FiUser, FiUsers } from 'react-icons/fi'
+import { FiUsers } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
 import Avatar from '@/components/ui/avatar'
 import StatusBadge from '@/components/ui/status-badge'
@@ -202,9 +202,10 @@ export default function ScheduleViews({
                                 >
                                   <span className="flex w-full items-center justify-between gap-2">
                                     {slot.unassigned ? (
-                                      <span className="grid size-5 place-items-center rounded-full border border-current">
-                                        <FiUser aria-hidden="true" size={14} />
-                                      </span>
+                                      <span
+                                        aria-hidden="true"
+                                        className="size-5 shrink-0 rounded-full border border-(--c-border) bg-white"
+                                      />
                                     ) : (
                                       <Avatar
                                         name={slot.coachName || 'Profe'}

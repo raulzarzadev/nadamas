@@ -30,9 +30,9 @@ export default function ScheduleTag({
       {date && <span className="text-xs text-(--c-text-2)">{date}</span>}
       <strong className="tabular-nums">{time}</strong>
       {coachName && <CoachBadge name={coachName} unassigned={unassigned} />}
-      {(enrolledCount || 0) > 0 && (
+      {enrolledCount !== undefined && (
         <span
-          className="text-[11px] font-light"
+          className="text-xs font-semibold tabular-nums"
           role="img"
           aria-label={`${enrolledCount} inscritos`}
         >

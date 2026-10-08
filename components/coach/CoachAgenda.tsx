@@ -1379,6 +1379,31 @@ export default function CoachAgenda({
         schoolIdForSlot(slot) === schoolIdForBooking(booking)
     )
   )
+  const selectedStudentIds = new Set<string>()
+  for (const booking of batchBookings) {
+    if (booking.status === 'cancelled' || booking.status === 'pending' || booking.schoolRequestId)
+      continue
+    if (booking.schoolClassStudents) {
+      for (const student of booking.schoolClassStudents)
+        if (!student.pending) selectedStudentIds.add(student.id)
+    } else if (booking.schoolClassStudentIds) {
+      for (const id of booking.schoolClassStudentIds) selectedStudentIds.add(id)
+    } else {
+      selectedStudentIds.add(
+        booking.additionalProfileId || booking.athleteProfileId || booking.athleteId || booking.id
+      )
+    }
+  }
+  const selectedCoachIds = new Set(
+    batchSlots
+      .flatMap((slot) => slot.assignedCoachIds || [slot.coachId])
+      .filter((id) => id !== UNASSIGNED_SCHOOL_COACH_ID)
+  )
+  const selectedGroupCount = batchSlots.filter((slot) => slot.groupType === 'grupal').length
+  const selectedIndividualCount = batchSlots.length - selectedGroupCount
+  const selectedAvailableCount = batchSlots.filter((slot) => slot.status === 'available').length
+  const selectedBookedCount = batchSlots.filter((slot) => slot.status === 'booked').length
+  const selectedBlockedCount = batchSlots.filter((slot) => slot.status === 'blocked').length
   const batchRequests = batchBookings.filter(
     (booking) => booking.schoolRequestId && booking.status === 'pending'
   )
@@ -2128,6 +2153,15 @@ export default function CoachAgenda({
             {batchSlots.length}{' '}
             {batchSlots.length === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
           </button>
+          <p className="basis-full text-xs text-(--c-text-2)" aria-live="polite">
+            {selectedIndividualCount}{' '}
+            {selectedIndividualCount === 1 ? 'particular' : 'particulares'} · {selectedGroupCount}{' '}
+            {selectedGroupCount === 1 ? 'grupal' : 'grupales'}
+          </p>
+          <p className="basis-full text-xs text-(--c-text-2)" aria-live="polite">
+            {selectedAvailableCount} disponibles · {selectedBookedCount} ocupados ·{' '}
+            {selectedBlockedCount} bloqueados
+          </p>
           {batchRequests.length > 0 && (
             <button
               type="button"
@@ -2149,7 +2183,14 @@ export default function CoachAgenda({
               onClick={() => void openBatchAction(action)}
               className="btn btn-outline min-h-11"
             >
-              {{ students: 'Alumnos', coaches: 'Profes', type: 'Tipo', status: 'Estado' }[action]}
+              {
+                {
+                  students: `Alumnos (${selectedStudentIds.size})`,
+                  coaches: `Profes (${selectedCoachIds.size})`,
+                  type: 'Tipo',
+                  status: 'Estado',
+                }[action]
+              }
             </button>
           ))}
           <button
@@ -2188,6 +2229,7 @@ export default function CoachAgenda({
                     }
                     unassigned={slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
                     groupType={slot.groupType}
+                    enrolledCount={enrolledCountForSlot(slot)}
                     action={
                       <button
                         type="button"
