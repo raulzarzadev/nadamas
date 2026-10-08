@@ -1,6 +1,7 @@
 import { SchoolTerminologyProvider } from '@/context/SchoolTerminologyContext'
 import type { RoleName } from '@/lib/roles'
 import AppNav from './AppNav'
+import FloatingAssistant from './FloatingAssistant'
 import PwaInstallPrompt from './PwaInstallPrompt'
 import ScrollToTop from './ScrollToTop'
 
@@ -22,6 +23,7 @@ export default function AppChrome({
         <main className="mx-auto max-w-5xl px-2.5 pb-20 pt-4 sm:px-4 sm:pb-24 sm:pt-6">
           {children}
         </main>
+        <FloatingAssistant />
       </div>
     </SchoolTerminologyProvider>
   )
