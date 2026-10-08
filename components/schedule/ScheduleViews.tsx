@@ -2,11 +2,9 @@
 
 import { type ReactNode, useState } from 'react'
 import { FaPersonSwimming } from 'react-icons/fa6'
-import { FiUsers } from 'react-icons/fi'
-import { GiWhistle } from 'react-icons/gi'
+import { FiUser, FiUsers } from 'react-icons/fi'
 import CoachAgendaDateSelector from '@/components/coach/CoachAgendaDateSelector'
-import ScheduleTag from '@/components/ui/schedule-tag'
-import Sheet from '@/components/ui/sheet'
+import Avatar from '@/components/ui/avatar'
 import StatusBadge from '@/components/ui/status-badge'
 import type { HourStatus } from '@/lib/coach-agenda-status'
 
@@ -45,6 +43,7 @@ export default function ScheduleViews({
   onSelectSlot,
   loading = false,
   disabled = false,
+  showStudentCounts = true,
   children,
   horizontalDetails,
   monthCount,
@@ -64,20 +63,17 @@ export default function ScheduleViews({
   onSelectSlot: (key: string) => void
   loading?: boolean
   disabled?: boolean
+  showStudentCounts?: boolean
   children: ReactNode
   horizontalDetails?: ReactNode
   monthCount?: string
   weekCount?: string
 }) {
-  const [optionGroup, setOptionGroup] = useState<{ date: string; time: string } | null>(null)
-  const groupOptions = optionGroup
-    ? slots.filter((slot) => slot.date === optionGroup.date && slot.startTime === optionGroup.time)
-    : []
   const [view, setView] = useState<'vertical' | 'horizontal'>('horizontal')
   const weekSlots = slots.filter((slot) => days.some((day) => dayKey(day) === slot.date))
   return (
     <div className="grid min-w-0 gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         {title || <span />}
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs font-semibold text-(--c-text-2)">Vista</span>
@@ -182,86 +178,73 @@ export default function ScheduleViews({
                       )}
                       {[...new Set(options.map((slot) => slot.startTime))].sort().map((time) => {
                         const choices = options.filter((slot) => slot.startTime === time)
-                        const selected = choices.some((slot) => slot.selected)
-                        const hasGroup = choices.some((slot) => slot.groupType === 'grupal')
-                        const enrolledCount = choices.reduce(
-                          (total, slot) => total + (slot.enrolledCount || 0),
-                          0
-                        )
                         return (
-                          <button
+                          <div
                             key={time}
-                            type="button"
-                            aria-label={`${date} · ${time}${choices.length > 1 ? ` · ${choices.length} opciones de clase` : ` · ${choices[0].label}`}`}
-                            aria-pressed={selected}
-                            aria-haspopup={choices.length > 1 ? 'dialog' : undefined}
-                            disabled={disabled || choices.every((slot) => slot.disabled)}
-                            onClick={() =>
-                              choices.length > 1
-                                ? setOptionGroup({ date, time })
-                                : onSelectSlot(choices[0].key)
-                            }
-                            style={
-                              hasGroup && !selected ? { backgroundColor: '#eff6ff' } : undefined
-                            }
-                            className={`min-h-11 rounded-xl border px-3 py-2 text-xs font-bold tabular-nums transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : hasGroup ? 'border-(--c-border) bg-blue-50 text-(--c-ocean) hover:bg-blue-100' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
+                            className={`flex flex-col gap-1 ${choices.length > 1 ? 'rounded-xl border border-dashed border-(--c-ocean)/40 p-1' : 'py-1'}`}
                           >
-                            <span className="mb-0.5 flex h-5 items-center justify-end gap-0.5">
-                              {choices.length > 1 && (
-                                <span
-                                  className="mr-auto inline-flex items-center gap-0.5 font-light"
-                                  role="img"
-                                  aria-label={`${choices.length} clases disponibles`}
+                            <span className="text-sm font-extrabold tabular-nums">{time}</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {choices.map((slot) => (
+                                <button
+                                  key={slot.key}
+                                  type="button"
+                                  aria-label={`${date} · ${time} · ${slot.coachName || 'Sin profe aún'} · ${slot.groupType}${slot.bookingStatus ? ` · ${slot.bookingStatus === 'pending' ? 'Pendiente' : slot.bookingStatus === 'confirmed' ? 'Inscrito' : 'Cancelada'}` : ''}`}
+                                  aria-pressed={Boolean(slot.selected)}
+                                  disabled={disabled || slot.disabled}
+                                  onClick={() => onSelectSlot(slot.key)}
+                                  className={`relative flex min-h-9 min-w-20 flex-col gap-1 rounded-lg border px-1.5 py-1 text-xs before:absolute before:-inset-y-1 before:inset-x-0 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 ${slot.selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
                                 >
-                                  <GiWhistle aria-hidden="true" size={12} />
-                                  {choices.length}
-                                </span>
-                              )}
-                              {(hasGroup || enrolledCount > 0) && (
-                                <span
-                                  role="img"
-                                  aria-label={hasGroup ? 'Grupal' : 'Particular'}
-                                  className={
-                                    hasGroup
-                                      ? 'inline-flex rounded-full bg-(--c-surface) p-1 text-(--c-ocean)'
-                                      : 'inline-flex'
-                                  }
-                                >
-                                  {hasGroup ? (
-                                    <FiUsers aria-hidden="true" size={12} />
-                                  ) : (
-                                    <FaPersonSwimming aria-hidden="true" size={12} />
-                                  )}
-                                </span>
-                              )}
-                              {enrolledCount > 0 && (
-                                <span
-                                  className="font-light"
-                                  role="img"
-                                  aria-label={`${enrolledCount} inscritos`}
-                                >
-                                  {enrolledCount}
-                                </span>
-                              )}
-                            </span>
-                            {time}
-                            {choices.some((slot) => slot.pendingApproval || slot.bookingStatus) && (
-                              <span className="mt-1 flex justify-center">
-                                <StatusBadge
-                                  status={
-                                    choices.some(
-                                      (slot) =>
-                                        slot.pendingApproval || slot.bookingStatus === 'pending'
-                                    )
-                                      ? 'pending'
-                                      : choices.some((slot) => slot.bookingStatus === 'confirmed')
-                                        ? 'confirmed'
-                                        : 'cancelled'
-                                  }
-                                />
-                              </span>
-                            )}
-                          </button>
+                                  <span className="flex w-full items-center justify-between gap-2">
+                                    {slot.unassigned ? (
+                                      <span className="grid size-5 place-items-center rounded-full border border-current">
+                                        <FiUser aria-hidden="true" size={14} />
+                                      </span>
+                                    ) : (
+                                      <Avatar
+                                        name={slot.coachName || 'Profe'}
+                                        size={20}
+                                        tone="white"
+                                      />
+                                    )}
+                                    <span className="inline-flex items-center gap-1">
+                                      {showStudentCounts && (
+                                        <span>{slot.enrolledCount ?? '—'}</span>
+                                      )}
+                                      {slot.groupType === 'grupal' ? (
+                                        <FiUsers aria-hidden="true" size={12} />
+                                      ) : showStudentCounts ? (
+                                        <FaPersonSwimming aria-hidden="true" size={12} />
+                                      ) : null}
+                                    </span>
+                                  </span>
+                                  {!showStudentCounts &&
+                                    (slot.pendingApproval || slot.bookingStatus) && (
+                                      <span className="pointer-events-none absolute -top-1.5 right-1 flex">
+                                        <StatusBadge
+                                          status={
+                                            slot.pendingApproval
+                                              ? 'pending'
+                                              : slot.bookingStatus || 'confirmed'
+                                          }
+                                          compact
+                                        />
+                                      </span>
+                                    )}
+                                  {showStudentCounts &&
+                                    (slot.pendingApproval || slot.bookingStatus) && (
+                                      <StatusBadge
+                                        status={
+                                          slot.pendingApproval
+                                            ? 'pending'
+                                            : slot.bookingStatus || 'confirmed'
+                                        }
+                                      />
+                                    )}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         )
                       })}
                     </div>
@@ -278,63 +261,6 @@ export default function ScheduleViews({
           {horizontalDetails}
         </>
       )}
-      <Sheet
-        open={optionGroup !== null}
-        onClose={() => setOptionGroup(null)}
-        label="Escoger clase"
-        keyboardAware
-        fullBleedMobile
-      >
-        <div className="grid gap-3 px-4 pb-3 sm:px-0">
-          <h2 className="text-xl font-bold">Clases disponibles · {optionGroup?.time}</h2>
-          {optionGroup && (
-            <p className="text-sm text-(--c-text-2)">
-              {new Date(`${optionGroup.date}T12:00:00`).toLocaleDateString('es-MX', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}
-            </p>
-          )}
-          <p className="text-sm text-(--c-text-2)">Elige una sola clase para este horario.</p>
-          {groupOptions.map((slot) => (
-            <button
-              key={slot.key}
-              type="button"
-              disabled={disabled || slot.disabled}
-              aria-pressed={slot.selected}
-              onClick={() => {
-                setOptionGroup(null)
-                onSelectSlot(slot.key)
-              }}
-              className={`flex min-h-12 items-center justify-between gap-3 rounded-xl border border-(--c-border) p-3 text-left text-sm focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${slot.selected ? 'bg-(--c-ocean) text-white' : 'bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
-            >
-              <ScheduleTag
-                time={slot.startTime}
-                coachName={slot.coachName}
-                unassigned={slot.unassigned}
-                groupType={slot.groupType}
-                selected={slot.selected}
-                enrolledCount={slot.enrolledCount}
-              />
-              <span className="shrink-0 text-xs font-bold">
-                {slot.pendingApproval || slot.bookingStatus ? (
-                  <StatusBadge
-                    status={slot.pendingApproval ? 'pending' : (slot.bookingStatus ?? 'pending')}
-                  />
-                ) : slot.selected ? (
-                  'Quitar'
-                ) : (
-                  'Elegir'
-                )}
-              </span>
-            </button>
-          ))}
-          {!groupOptions.length && (
-            <p className="text-sm">Estas opciones ya no están disponibles.</p>
-          )}
-        </div>
-      </Sheet>
     </div>
   )
 }

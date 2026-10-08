@@ -24,6 +24,7 @@ export interface CoachScheduleBlock {
 }
 
 export interface CoachAvailableSlot {
+  enrolledCount?: number
   assignedCoachIds?: string[]
   id: string
   coachId: string

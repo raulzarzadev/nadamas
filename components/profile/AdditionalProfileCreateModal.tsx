@@ -1,6 +1,8 @@
 'use client'
 
 import { useId, useState } from 'react'
+import DateInput from '@/components/ui/date-input'
+import GenderSelector from '@/components/ui/gender-selector'
 import Sheet from '@/components/ui/sheet'
 import { type AdditionalProfile, validProfileBirthDate } from '@/lib/additional-profile'
 import { postAuthed } from '@/lib/client/authed-api'
@@ -92,28 +94,14 @@ export default function AdditionalProfileCreateModal({
             className={fieldClass}
           />
         </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          Fecha de nacimiento
-          <input
-            required
-            type="date"
-            value={birthDate}
-            onChange={(event) => setBirthDate(event.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          Rama / género
-          <select
-            value={gender}
-            onChange={(event) => setGender(event.target.value as AdditionalProfile['gender'])}
-            className={fieldClass}
-          >
-            <option value="varonil">Varonil</option>
-            <option value="femenil">Femenil</option>
-            <option value="otro">Otro</option>
-          </select>
-        </label>
+        <DateInput
+          label="Fecha de nacimiento"
+          required
+          value={birthDate}
+          onChange={setBirthDate}
+          max={new Date().toLocaleDateString('en-CA')}
+        />
+        <GenderSelector value={gender} onChange={setGender} disabled={saving} />
         {error && (
           <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
             {error}

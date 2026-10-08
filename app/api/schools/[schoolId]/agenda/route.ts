@@ -55,6 +55,7 @@ export async function GET(request: Request, { params }: RouteProps) {
     !access.response &&
     (access.globalAdmin || schoolMembershipHasRole(access.membership, 'director'))
   const teacherOwnScheduleOnly =
+    !publicView &&
     !access.response &&
     !access.globalAdmin &&
     schoolMembershipHasRole(access.membership, 'teacher') &&
@@ -356,9 +357,11 @@ export async function GET(request: Request, { params }: RouteProps) {
       `${a.date} ${a.startTime || ''}`.localeCompare(`${b.date} ${b.startTime || ''}`)
     )
 
-  const agendaBookings = [...bookings, ...schoolClassBookings, ...pendingRequestBookings].sort(
-    (a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
-  )
+  const agendaBookings: Booking[] = [
+    ...bookings,
+    ...schoolClassBookings,
+    ...pendingRequestBookings,
+  ].sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
   const assignedSlots = assignmentsSnapshot.docs
     .map((doc) => ({ id: doc.id, data: doc.data() as Record<string, unknown> }))
     .filter(({ data }) => {
@@ -447,6 +450,90 @@ export async function GET(request: Request, { params }: RouteProps) {
     )
   )
 
+  // Assigned classes can exist without a published recurring schedule.
+  for (const booking of agendaBookings) {
+    if (
+      booking.status !== 'confirmed' ||
+      booking.date < startDate ||
+      booking.date > endDate ||
+      availableSlots.some(
+        (slot) =>
+          slot.coachId === booking.coachId &&
+          slot.date === booking.date &&
+          slot.startTime === booking.startTime &&
+          slot.groupType === booking.groupType
+      )
+    )
+      continue
+    availableSlots.push({
+      id: `occupied:${booking.id}`,
+      schoolId,
+      coachId: booking.coachId,
+      coachName: booking.coachName || names[booking.coachId] || 'Coach',
+      offeringId: booking.offeringId,
+      scheduleId: booking.scheduleId,
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      locationName: booking.locationName || '',
+      groupType: booking.groupType,
+      status:
+        booking.groupType === 'grupal' &&
+        !booking.classFull &&
+        agendaBookings
+          .filter(
+            (other) =>
+              other.status !== 'cancelled' &&
+              other.coachId === booking.coachId &&
+              other.date === booking.date &&
+              timesOverlap(other.startTime, other.endTime, booking.startTime, booking.endTime)
+          )
+          .every((other) => other.groupType === 'grupal' && !other.classFull) &&
+        !blocks.some(
+          (block) =>
+            block.coachId === booking.coachId &&
+            block.date === booking.date &&
+            (block.allDay ||
+              (block.startTime &&
+                block.endTime &&
+                timesOverlap(block.startTime, block.endTime, booking.startTime, booking.endTime)))
+        )
+          ? 'available'
+          : 'booked',
+    })
+  }
+
+  const enrolledCountForSlot = (slot: {
+    coachId: string
+    date: string
+    startTime: string
+    groupType: string
+  }) => {
+    const students = new Set<string>()
+    for (const booking of agendaBookings) {
+      if (
+        booking.status !== 'confirmed' ||
+        booking.schoolRequestId ||
+        booking.coachId !== slot.coachId ||
+        booking.date !== slot.date ||
+        booking.startTime !== slot.startTime ||
+        booking.groupType !== slot.groupType
+      )
+        continue
+      if (booking.schoolClassStudents) {
+        for (const student of booking.schoolClassStudents)
+          if (!student.pending) students.add(student.id)
+      } else if (booking.schoolClassStudentIds) {
+        for (const id of booking.schoolClassStudentIds) students.add(id)
+      } else {
+        students.add(
+          booking.additionalProfileId || booking.athleteProfileId || booking.athleteId || booking.id
+        )
+      }
+    }
+    return students.size
+  }
+
   return NextResponse.json({
     bookings: [
       ...(canManage
@@ -469,9 +556,17 @@ export async function GET(request: Request, { params }: RouteProps) {
           }))),
     ],
     blocks: canManage ? blocks : blocks.map(({ note: _note, ...block }) => block),
-    availableSlots,
-    myReservations,
-    offerings: targetCoachId ? teacherData[0]?.offerings || [] : [],
+    availableSlots: availableSlots.map((slot) => ({
+      ...slot,
+      enrolledCount: enrolledCountForSlot(slot),
+    })),
+    myReservations: myReservations.map((reservation) => ({
+      ...reservation,
+      enrolledCount: enrolledCountForSlot(reservation),
+    })),
+    offerings: targetCoachId
+      ? teacherData.find(({ teacherId }) => teacherId === targetCoachId)?.offerings || []
+      : [],
     coachNames: names,
     schoolId,
   })

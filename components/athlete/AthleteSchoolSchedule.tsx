@@ -45,6 +45,7 @@ interface PublicSchoolOption {
 }
 const EMPTY_SCHOOLS: PublicSchoolOption[] = []
 type SchoolReservation = {
+  enrolledCount?: number
   id: string
   schoolRequestId?: string
   schoolClassId?: string
@@ -136,6 +137,7 @@ export default function AthleteSchoolSchedule({
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
     () => new Set(HOUR_STATUSES)
   )
+  const [showSelectedSlots, setShowSelectedSlots] = useState(false)
   const [chosenSlots, setChosenSlots] = useState<CoachAvailableSlot[]>([])
   const completedBookings = useRef(new Set<string>())
   const selectionKey = (slot: CoachAvailableSlot) =>
@@ -293,6 +295,7 @@ export default function AthleteSchoolSchedule({
               ...slot,
               id: `${slot.coachId}:${slot.scheduleId}:${slot.date}`,
               status: 'available' as const,
+              enrolledCount: 0,
             }))
         )
       }
@@ -359,7 +362,8 @@ export default function AthleteSchoolSchedule({
         myGroupReservationKeys.has(reservationSlotKey(slot)) &&
         !fullGroupSlotKeys.has(reservationSlotKey(slot)))
   )
-  const eligibleSlots = selectableSlots.filter((slot) => {
+  const eligibleSlots = schoolSlots.filter((slot) => {
+    if (slot.status === 'blocked') return false
     if (!slotIsFuture(slot)) return false
     if (schoolFilter !== 'all') {
       return (
@@ -368,9 +372,18 @@ export default function AthleteSchoolSchedule({
     }
     return Boolean(slot.schoolId) || coachFilter === 'all' || slot.coachId === coachFilter
   })
-  const visibleSlots = eligibleSlots.filter((slot) =>
-    selectedStatuses.has(slot.groupType === 'grupal' ? 'groupAvailable' : 'available')
+  const slotStatus = (slot: CoachAvailableSlot): HourStatus =>
+    slot.status === 'booked'
+      ? slot.groupType === 'grupal'
+        ? 'group'
+        : 'booked'
+      : slot.groupType === 'grupal'
+        ? 'groupAvailable'
+        : 'available'
+  const visibleCalendarSlots = eligibleSlots.filter((slot) =>
+    selectedStatuses.has(slotStatus(slot))
   )
+  const visibleSlots = visibleCalendarSlots.filter((slot) => selectableSlots.includes(slot))
   const coachIdsWithSlots = new Set(
     selectableSlots
       .filter(
@@ -538,7 +551,15 @@ export default function AthleteSchoolSchedule({
     const seenReservations = new Set<string>()
     for (const slot of eligibleSlots) {
       const statuses = result.get(slot.date) || []
-      statuses.push(slot.groupType === 'grupal' ? 'groupAvailable' : 'available')
+      statuses.push(
+        slot.status === 'booked'
+          ? slot.groupType === 'grupal'
+            ? 'group'
+            : 'booked'
+          : slot.groupType === 'grupal'
+            ? 'groupAvailable'
+            : 'available'
+      )
       result.set(slot.date, statuses)
     }
     for (const reservation of myReservations) {
@@ -851,6 +872,7 @@ export default function AthleteSchoolSchedule({
         </p>
       )}
       <ScheduleViews
+        showStudentCounts={false}
         selectedDate={selectedDate}
         days={week}
         today={dateKey(new Date())}
@@ -861,7 +883,7 @@ export default function AthleteSchoolSchedule({
         onChangeWeek={changeWeek}
         loading={!agenda}
         slots={[
-          ...visibleSlots
+          ...visibleCalendarSlots
             .filter(
               (slot) =>
                 !visibleReservations.some(
@@ -873,6 +895,8 @@ export default function AthleteSchoolSchedule({
               date: slot.date,
               startTime: slot.startTime,
               groupType: slot.groupType,
+              enrolledCount: slot.enrolledCount,
+              disabled: busy || !selectableSlots.includes(slot),
               selected: chosenSlots.some((item) => selectionKey(item) === selectionKey(slot)),
               coachName: coachNames[slot.coachId] || 'Coach',
               unassigned: slot.coachId === '__unassigned__',
@@ -883,6 +907,7 @@ export default function AthleteSchoolSchedule({
             date: reservation.date,
             startTime: reservation.startTime,
             groupType: reservation.groupType,
+            enrolledCount: reservation.enrolledCount,
             coachName: reservation.coachName,
             unassigned: reservation.coachId === '__unassigned__',
             disabled: busy,
@@ -1022,7 +1047,15 @@ export default function AthleteSchoolSchedule({
       </ScheduleViews>
       {chosenSlots.length > 0 && (
         <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-(--c-border) bg-white p-3 shadow-lg">
-          <span className="text-sm font-bold">{chosenSlots.length} horarios seleccionados</span>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setShowSelectedSlots(true)}
+            className="min-h-11 text-left text-sm font-bold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+          >
+            {chosenSlots.length}{' '}
+            {chosenSlots.length === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
+          </button>
           <div className="flex gap-2">
             <button
               type="button"
@@ -1048,6 +1081,65 @@ export default function AthleteSchoolSchedule({
           </div>
         </div>
       )}
+      <Sheet
+        open={showSelectedSlots && chosenSlots.length > 0}
+        onClose={() => setShowSelectedSlots(false)}
+        label="Horarios seleccionados"
+        footer={
+          <div className="flex justify-end px-4 sm:px-0">
+            <button
+              type="button"
+              className="btn btn-primary min-h-11"
+              disabled={busy || !chosenSlots.length}
+              onClick={() => {
+                setShowSelectedSlots(false)
+                setError('')
+                setSelectedSlot(chosenSlots[0])
+                setStudentIds([])
+              }}
+            >
+              Continuar
+            </button>
+          </div>
+        }
+      >
+        <div className="grid gap-4 px-4 pb-4 sm:px-0">
+          <h2 className="text-xl font-bold">Horarios seleccionados ({chosenSlots.length})</h2>
+          <ul className="grid gap-2">
+            {[...chosenSlots]
+              .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+              .map((slot) => (
+                <li
+                  key={selectionKey(slot)}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-(--c-border) p-3"
+                >
+                  <ScheduleTag
+                    date={slot.date}
+                    time={`${slot.startTime}–${slot.endTime}`}
+                    coachName={coachNames[slot.coachId] || 'Coach'}
+                    unassigned={slot.coachId === '__unassigned__'}
+                    groupType={slot.groupType}
+                  />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    aria-label={`Quitar horario del ${slot.date} a las ${slot.startTime}`}
+                    className="grid size-11 shrink-0 place-items-center rounded-full text-(--c-text-2) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                    onClick={() => {
+                      const remaining = chosenSlots.filter(
+                        (chosen) => selectionKey(chosen) !== selectionKey(slot)
+                      )
+                      setChosenSlots(remaining)
+                      if (!remaining.length) setShowSelectedSlots(false)
+                    }}
+                  >
+                    <FiX aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+          </ul>
+        </div>
+      </Sheet>
       <Sheet
         open={Boolean(reservationToCancel)}
         onClose={() => setReservationToCancel(null)}

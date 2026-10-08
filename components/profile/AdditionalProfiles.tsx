@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { FiEdit2, FiPlus } from 'react-icons/fi'
+import DateInput from '@/components/ui/date-input'
+import GenderSelector from '@/components/ui/gender-selector'
 import Sheet from '@/components/ui/sheet'
-import type { AdditionalProfile } from '@/lib/additional-profile'
+import { type AdditionalProfile, validProfileBirthDate } from '@/lib/additional-profile'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 
 type AdditionalProfileForm = {
@@ -50,6 +52,10 @@ export default function AdditionalProfiles() {
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
+    if ((!editingProfile || form.birthDate) && !validProfileBirthDate(form.birthDate)) {
+      setFormError('La fecha de nacimiento debe ser válida y no puede ser posterior a hoy.')
+      return
+    }
     setSaving(true)
     setMessage('')
     setFormError('')
@@ -178,30 +184,18 @@ export default function AdditionalProfiles() {
               className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
             />
           </label>
-          <label className="grid gap-1 text-sm font-semibold">
-            Fecha de nacimiento{editingProfile ? ' (opcional)' : ''}
-            <input
-              required={!editingProfile}
-              type="date"
-              value={form.birthDate}
-              onChange={(event) => setForm({ ...form, birthDate: event.target.value })}
-              className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold">
-            Rama / género
-            <select
-              value={form.gender}
-              onChange={(event) =>
-                setForm({ ...form, gender: event.target.value as AdditionalProfile['gender'] })
-              }
-              className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-            >
-              <option value="varonil">Varonil</option>
-              <option value="femenil">Femenil</option>
-              <option value="otro">Otro</option>
-            </select>
-          </label>
+          <DateInput
+            label={editingProfile ? 'Fecha de nacimiento (opcional)' : 'Fecha de nacimiento'}
+            required={!editingProfile}
+            value={form.birthDate}
+            onChange={(birthDate) => setForm({ ...form, birthDate })}
+            max={new Date().toLocaleDateString('en-CA')}
+          />
+          <GenderSelector
+            value={form.gender}
+            onChange={(gender) => setForm({ ...form, gender })}
+            disabled={saving}
+          />
           {formError && (
             <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
               {formError}

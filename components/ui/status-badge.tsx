@@ -9,14 +9,20 @@ const statuses = {
   cancelled: { label: 'Cancelada', Icon: FiX, background: '#ffe4e6', color: '#881337' },
 }
 
-export default function StatusBadge({ status }: { status: ClassBadgeStatus }) {
+export default function StatusBadge({
+  status,
+  compact = false,
+}: {
+  status: ClassBadgeStatus
+  compact?: boolean
+}) {
   const { label, Icon, background, color } = statuses[status]
   return (
     <span
       style={{ backgroundColor: background, color }}
-      className="inline-flex w-fit shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold leading-none"
+      className={`inline-flex w-fit shrink-0 items-center rounded-full font-semibold leading-none ${compact ? 'gap-0.5 px-1 py-0.5 text-[8px]' : 'gap-1 px-2 py-1 text-[10px]'}`}
     >
-      <Icon aria-hidden="true" size={12} />
+      <Icon aria-hidden="true" size={compact ? 8 : 12} />
       {label}
     </span>
   )

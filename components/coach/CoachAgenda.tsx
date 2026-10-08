@@ -268,6 +268,7 @@ export default function CoachAgenda({
   } | null>(null)
   const [bookingToEdit, setBookingToEdit] = useState<Booking | null>(null)
   const [schoolRequestDraft, setSchoolRequestDraft] = useState<SchoolRequestDraft | null>(null)
+  const [classEditorConfiguration, setClassEditorConfiguration] = useState(false)
   const [schoolClassToEdit, setSchoolClassToEdit] = useState<Booking | null>(null)
   const [schoolClassToReassign, setSchoolClassToReassign] = useState<Booking | null>(null)
   const [schoolTeachers, setSchoolTeachers] = useState<Array<{ id: string; name: string }>>([])
@@ -887,7 +888,10 @@ export default function CoachAgenda({
     )
   }
 
-  const openSchoolClassEditor = (booking: Booking) => setSchoolClassToEdit(booking)
+  const openSchoolClassEditor = (booking: Booking, configure = false) => {
+    setClassEditorConfiguration(configure)
+    setSchoolClassToEdit(booking)
+  }
 
   const openSchoolClassAddStudent = (booking: Booking) => {
     const targetSchoolId = schoolIdForBooking(booking) || booking.schoolId
@@ -1201,14 +1205,14 @@ export default function CoachAgenda({
         }
         return
       }
-      if (combinedSources) {
+      if (manageSchoolSchedule && targetSchoolId) {
         const response = await getAuthed(
-          `/api/coach/agenda?month=${monthOfSelected}${schoolQueryFor(targetSchoolId)}`
+          `/api/schools/${encodeURIComponent(targetSchoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(slot.coachId)}`
         )
         targetOfferings = ((await response.json()) as CoachAgendaPayload).offerings || []
-      } else if (manageSchoolSchedule && schoolId) {
+      } else if (combinedSources) {
         const response = await getAuthed(
-          `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(slot.coachId)}`
+          `/api/coach/agenda?month=${monthOfSelected}${schoolQueryFor(targetSchoolId)}`
         )
         targetOfferings = ((await response.json()) as CoachAgendaPayload).offerings || []
       }
@@ -1723,7 +1727,7 @@ export default function CoachAgenda({
                           ariaLabel="Configurar clase"
                           onClick={() =>
                             schoolClassBooking
-                              ? openSchoolClassEditor(schoolClassBooking)
+                              ? openSchoolClassEditor(schoolClassBooking, true)
                               : setBookingToEdit(firstBooking)
                           }
                           disabled={busy}
@@ -1898,7 +1902,7 @@ export default function CoachAgenda({
                     <>
                       {!readOnlyAgenda && (
                         <RowIconButton
-                          ariaLabel="Configurar este horario"
+                          ariaLabel="Configurar clase"
                           onClick={() => openSlotEditor(row.slot, row.block)}
                           disabled={
                             busy ||
@@ -2016,7 +2020,7 @@ export default function CoachAgenda({
                         }
                       >
                         <RowIconButton
-                          ariaLabel="Configurar este horario"
+                          ariaLabel="Configurar clase"
                           onClick={() => openSlotEditor(row.slot)}
                           disabled={
                             busy ||
@@ -2107,12 +2111,7 @@ export default function CoachAgenda({
             setBatchSlots((current) =>
               current.some((item) => batchSlotKey(item) === key)
                 ? current.filter((item) => batchSlotKey(item) !== key)
-                : [
-                    ...current.filter(
-                      (item) => item.date !== slot.date || item.startTime !== slot.startTime
-                    ),
-                    slot,
-                  ]
+                : [...current, slot]
             )
         }}
       >
@@ -2558,13 +2557,13 @@ export default function CoachAgenda({
         onClose={() => {
           if (!busy) setBookingToEdit(null)
         }}
-        label="Editar clase"
+        label="Configurar clase"
         modalTopGap
       >
         {bookingToEdit && (
           <div className="flex flex-col gap-4">
             <div>
-              <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">Editar clase</h2>
+              <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">Configurar clase</h2>
               <p className="mt-1 text-sm text-[var(--c-text-2)]">
                 {bookingToEdit.athleteName} · {bookingToEdit.date} · {bookingToEdit.startTime}–
                 {bookingToEdit.endTime}
@@ -2671,16 +2670,18 @@ export default function CoachAgenda({
         onClose={() => {
           if (!busy) setSchoolClassToEdit(null)
         }}
-        label="Editar clase"
+        label={classEditorConfiguration ? 'Configurar clase' : 'Editar clase'}
         modalTopGap
       >
         {schoolClassToEdit && (
           <div className="flex flex-col gap-4">
             <div>
-              <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">Editar clase</h2>
+              <h2 className="text-xl font-extrabold text-[var(--c-ocean)]">
+                {classEditorConfiguration ? 'Configurar clase' : 'Editar clase'}
+              </h2>
               <p className="mt-1 text-sm text-[var(--c-text-2)]">
-                {schoolClassToEdit.athleteName} · {schoolClassToEdit.date} ·{' '}
-                {schoolClassToEdit.startTime}–{schoolClassToEdit.endTime}
+                {!classEditorConfiguration && `${schoolClassToEdit.athleteName} · `}
+                {schoolClassToEdit.date} · {schoolClassToEdit.startTime}–{schoolClassToEdit.endTime}
               </p>
             </div>
             <div className="flex flex-col gap-4 rounded-[var(--r-md)] border border-[var(--c-border)] p-3">
@@ -2929,12 +2930,12 @@ export default function CoachAgenda({
       <Sheet
         open={Boolean(slotEditor)}
         onClose={() => setSlotEditor(null)}
-        label="Configurar horario"
+        label="Configurar clase"
       >
         {slotEditor && (
           <div className="flex flex-col gap-4">
             <div>
-              <h3 className="text-xl font-bold text-[var(--c-ocean)]">Configurar horario</h3>
+              <h3 className="text-xl font-bold text-[var(--c-ocean)]">Configurar clase</h3>
               <p className="mt-1 text-sm text-[var(--c-text-2)]">
                 {slotEditor.slot.agendaLabel ? `${slotEditor.slot.agendaLabel} · ` : ''}
                 {slotEditor.slot.startTime}–{slotEditor.slot.endTime}
