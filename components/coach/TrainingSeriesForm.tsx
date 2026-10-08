@@ -7,10 +7,12 @@ import type { ClassTrainingSeries } from '@/lib/class-training'
 const STEPS = ['Repeticiones', 'Distancia', 'Técnica', 'Material', 'Intervalo']
 export default function TrainingSeriesForm({
   initial,
+  seriesNumber = 1,
   onSave,
   onCancel,
 }: {
   initial?: ClassTrainingSeries
+  seriesNumber?: number
   onSave: (series: ClassTrainingSeries) => void
   onCancel: () => void
 }) {
@@ -75,8 +77,8 @@ export default function TrainingSeriesForm({
   const selectedStyle = styles.find((style) =>
     draft.exercise.toLocaleLowerCase().includes(style.toLocaleLowerCase())
   )
-  const selectedComplement = ['Brazada', 'Patada', 'Catch-up', 'Técnica'].find((part) =>
-    draft.exercise.toLocaleLowerCase().includes(part.toLocaleLowerCase())
+  const selectedComplement = ['Brazada', 'Patada', 'Catch-up', 'Técnica', 'Velocidad'].find(
+    (part) => draft.exercise.toLocaleLowerCase().includes(part.toLocaleLowerCase())
   )
   const chooseTechnique = (style: string, complement?: string) =>
     setDraft({
@@ -87,6 +89,7 @@ export default function TrainingSeriesForm({
     'min-h-12 w-full rounded-xl border border-(--c-border) bg-white px-3 text-base focus-visible:outline-2 focus-visible:outline-(--c-ocean)'
   return (
     <section aria-label="Formulario de serie" className="grid gap-4">
+      <h2 className="text-xl font-bold">Serie {seriesNumber}</h2>
       <p className="text-xs font-semibold text-(--c-text-2)" aria-live="polite">
         Paso {step + 1} de 5
       </p>
@@ -123,7 +126,7 @@ export default function TrainingSeriesForm({
                 type="button"
                 aria-pressed={draft.repetitions === repetitions}
                 onClick={() => setDraft({ ...draft, repetitions })}
-                className={`btn min-h-11 px-2 ${draft.repetitions === repetitions ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn border min-h-11 px-2 ${draft.repetitions === repetitions ? 'btn-primary' : 'btn-outline'}`}
               >
                 {repetitions}
               </button>
@@ -159,7 +162,7 @@ export default function TrainingSeriesForm({
                 type="button"
                 aria-pressed={draft.distanceMeters === distanceMeters}
                 onClick={() => setDraft({ ...draft, distanceMeters })}
-                className={`btn min-h-11 px-2 ${draft.distanceMeters === distanceMeters ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn border min-h-11 px-2 ${draft.distanceMeters === distanceMeters ? 'btn-primary' : 'btn-outline'}`}
               >
                 {distanceMeters} m
               </button>
@@ -187,7 +190,7 @@ export default function TrainingSeriesForm({
                 type="button"
                 aria-pressed={selectedStyle === style}
                 onClick={() => chooseTechnique(style, selectedComplement)}
-                className={`btn min-h-11 ${selectedStyle === style ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn border min-h-11 ${selectedStyle === style ? 'btn-primary' : 'btn-outline'}`}
               >
                 {style}
               </button>
@@ -195,7 +198,7 @@ export default function TrainingSeriesForm({
           </fieldset>
           <p className="text-sm font-semibold">Complemento</p>
           <fieldset className="flex flex-wrap gap-2" aria-label="Complemento de técnica">
-            {['Brazada', 'Patada', 'Catch-up', 'Técnica'].map((complement) => (
+            {['Brazada', 'Patada', 'Catch-up', 'Técnica', 'Velocidad'].map((complement) => (
               <button
                 key={complement}
                 type="button"
@@ -212,7 +215,7 @@ export default function TrainingSeriesForm({
                       exercise: selectedComplement === complement ? '' : complement,
                     })
                 }}
-                className={`btn min-h-11 ${selectedComplement === complement ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn border min-h-11 ${selectedComplement === complement ? 'btn-primary' : 'btn-outline'}`}
               >
                 {complement}
               </button>
@@ -259,7 +262,7 @@ export default function TrainingSeriesForm({
                         ).join(', '),
                       })
                     }
-                    className={`btn min-h-11 gap-2 ${checked ? 'btn-primary' : 'btn-outline'}`}
+                    className={`btn border min-h-11 gap-2 ${checked ? 'btn-primary' : 'btn-outline'}`}
                   >
                     <SwimEquipmentIcon equipment={material} />
                     {material}
@@ -307,14 +310,14 @@ export default function TrainingSeriesForm({
         </div>
       )}
       <div className="flex flex-wrap gap-2 pt-2">
-        <button type="button" onClick={onCancel} className="btn btn-ghost min-h-11">
+        <button type="button" onClick={onCancel} className="btn border btn-ghost min-h-11">
           Cancelar
         </button>
         {step > 0 && (
           <button
             type="button"
             onClick={() => setStep(step - 1)}
-            className="btn btn-outline min-h-11"
+            className="btn border btn-outline min-h-11"
           >
             Atrás
           </button>
@@ -326,7 +329,7 @@ export default function TrainingSeriesForm({
               setDraft({ ...draft, distanceMeters: null })
               setStep(2)
             }}
-            className="btn btn-outline ml-auto min-h-11"
+            className="btn border btn-outline ml-auto min-h-11"
           >
             Sin distancia
           </button>
@@ -335,7 +338,7 @@ export default function TrainingSeriesForm({
           type="button"
           disabled={!valid}
           onClick={() => (step < 4 ? setStep(step + 1) : onSave(draft))}
-          className={`btn btn-primary min-h-11 ${step === 1 ? '' : 'ml-auto'}`}
+          className={`btn border btn-primary min-h-11 ${step === 1 ? '' : 'ml-auto'}`}
         >
           {step === 4 ? 'Guardar serie' : 'Siguiente'}
         </button>

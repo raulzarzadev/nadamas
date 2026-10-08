@@ -90,6 +90,7 @@ export default function ClassNotesModal({
       onClose={onClose}
       closeDisabled={saving}
       keyboardAware
+      fullBleedMobile
       label="Notas de la clase"
       footer={
         editingSeries ? undefined : (
@@ -144,7 +145,7 @@ export default function ClassNotesModal({
           aria-expanded={showTraining}
           aria-controls={`${id}-training`}
           onClick={() => setShowTraining(!showTraining)}
-          className="btn btn-outline min-h-11 justify-between"
+          className="btn btn-outline min-h-11 justify-between border"
         >
           Entrenamiento{' '}
           {showTraining ? <FiChevronUp aria-hidden="true" /> : <FiChevronDown aria-hidden="true" />}

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiCheckSquare,
   FiClipboard,
+  FiEdit2,
   FiLock,
   FiPlus,
   FiSettings,
@@ -132,6 +133,7 @@ export default function CoachAgenda({
   allowSchoolScheduleEdit = false,
   scheduleEditorOpen = false,
   onScheduleEditorClose,
+  onScheduleEditorOpen,
   scheduleCoachOptions = [],
   onScheduleCoachChange,
   initialDate,
@@ -154,6 +156,7 @@ export default function CoachAgenda({
   allowSchoolScheduleEdit?: boolean
   scheduleEditorOpen?: boolean
   onScheduleEditorClose?: () => void
+  onScheduleEditorOpen?: () => void
   scheduleCoachOptions?: ScheduleCoachOption[]
   onScheduleCoachChange?: (coachId: string) => void
   /** Deep link target date (YYYY-MM-DD) selected on mount. */
@@ -2164,27 +2167,6 @@ export default function CoachAgenda({
 
   return (
     <div className="flex flex-col gap-4">
-      {!readOnlyAgenda && (schoolId || agendaUpdateSchoolIds.length > 0) && (
-        <div className="flex flex-wrap justify-end gap-2">
-          {(schoolId
-            ? [{ schoolId, label: 'Pase de lista' }]
-            : (agendaSources || []).flatMap((source) =>
-                source.schoolId
-                  ? [{ schoolId: source.schoolId, label: `Pase de lista · ${source.label}` }]
-                  : []
-              )
-          ).map((source) => (
-            <button
-              type="button"
-              key={source.schoolId}
-              className="btn btn-outline min-h-11"
-              onClick={() => setAttendanceTarget({ schoolId: source.schoolId, date: selectedDate })}
-            >
-              <FiCheckSquare aria-hidden="true" /> {source.label}
-            </button>
-          ))}
-        </div>
-      )}
       {detailTarget ? (
         !agenda ? (
           <Loading />
@@ -2198,6 +2180,48 @@ export default function CoachAgenda({
         )
       ) : (
         <ScheduleViews
+          title={
+            <>
+              {' '}
+              {!readOnlyAgenda && (schoolId || agendaUpdateSchoolIds.length > 0) && (
+                <div className="flex items-center gap-2">
+                  {(schoolId
+                    ? [{ schoolId, label: 'Pase de lista' }]
+                    : (agendaSources || []).flatMap((source) =>
+                        source.schoolId
+                          ? [
+                              {
+                                schoolId: source.schoolId,
+                                label: `Pase de lista · ${source.label}`,
+                              },
+                            ]
+                          : []
+                      )
+                  ).map((source) => (
+                    <button
+                      type="button"
+                      key={source.schoolId}
+                      className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
+                      onClick={() =>
+                        setAttendanceTarget({ schoolId: source.schoolId, date: selectedDate })
+                      }
+                    >
+                      <FiCheckSquare aria-hidden="true" /> {source.label}
+                    </button>
+                  ))}
+                  {onScheduleEditorOpen && (
+                    <button
+                      type="button"
+                      onClick={onScheduleEditorOpen}
+                      className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
+                    >
+                      <FiEdit2 aria-hidden="true" /> Editar horario
+                    </button>
+                  )}
+                </div>
+              )}{' '}
+            </>
+          }
           selectedDate={selectedDate}
           days={weekDates}
           today={dateKey(new Date())}

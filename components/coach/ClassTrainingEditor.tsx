@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
+import { FiPlus, FiTrash2 } from 'react-icons/fi'
 import TrainingSeriesForm from '@/components/coach/TrainingSeriesForm'
 import Sheet from '@/components/ui/sheet'
 import type { ClassTrainingBlock, ClassTrainingSeries } from '@/lib/class-training'
@@ -68,50 +68,66 @@ export default function ClassTrainingEditor({
               <FiTrash2 aria-hidden="true" />
             </button>
           </div>
-          <div className="grid gap-3 border-l-2 border-(--c-ocean) pl-3">
-            {block.series.map((series, seriesIndex) => (
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 gap-y-3">
+            {block.series.length > 0 && (
               <div
-                key={series.id}
-                className="flex min-w-0 items-center gap-2 rounded-xl border border-(--c-border) bg-white p-2"
+                className="flex items-center gap-1 self-stretch text-lg font-bold"
+                title={`Repetir bloque ${block.repetitions} veces`}
               >
-                <span className="min-w-0 flex-1 text-sm">
-                  <strong>
-                    {series.repetitions} ×{' '}
-                    {series.distanceMeters !== null
-                      ? `${series.distanceMeters} m`
-                      : 'sin distancia'}
-                  </strong>{' '}
-                  {series.exercise}
-                  {series.material ? ` con ${series.material}` : ''}
-                  {series.interval ? ` a ${series.interval}` : ''}
-                </span>
-                <button
-                  type="button"
-                  aria-label={`Editar serie ${seriesIndex + 1}`}
-                  onClick={() => setEditing({ blockId: block.id, series })}
-                  className="grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-                >
-                  <FiEdit2 aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Eliminar serie ${seriesIndex + 1}`}
-                  onClick={() =>
-                    update(block.id, {
-                      series: block.series.filter((item) => item.id !== series.id),
-                    })
-                  }
-                  className="grid size-11 shrink-0 place-items-center rounded-full text-(--c-text-2) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-                >
-                  <FiTrash2 aria-hidden="true" />
-                </button>
+                <span>{block.repetitions}×</span>
+                <span
+                  aria-hidden="true"
+                  className="h-full min-h-12 w-2 rounded-l-lg border-y-2 border-l-2 border-(--c-ocean)"
+                />
               </div>
-            ))}
+            )}
+            <div className="min-w-0 divide-y divide-(--c-border)">
+              {block.series.map((series, seriesIndex) => (
+                <div key={series.id} className="flex items-center gap-1 py-1 first:pt-0">
+                  <button
+                    type="button"
+                    aria-label={`Editar serie ${seriesIndex + 1}`}
+                    onClick={() => setEditing({ blockId: block.id, series })}
+                    className="min-h-11 min-w-0 flex-1 rounded-lg text-left text-sm leading-snug focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                  >
+                    <strong className="mr-2 inline-block">
+                      {series.repetitions} ×{' '}
+                      {series.distanceMeters !== null
+                        ? `${series.distanceMeters} m`
+                        : 'sin distancia'}
+                    </strong>
+                    <span>{series.exercise}</span>
+                    {series.material && (
+                      <span className="block text-xs text-(--c-text-2)">Con {series.material}</span>
+                    )}
+                    {series.interval && (
+                      <span className="block text-xs text-(--c-text-2)">
+                        Cada {series.interval}
+                      </span>
+                    )}
+                  </button>
+                  <div className="shrink-0">
+                    <button
+                      type="button"
+                      aria-label={`Eliminar serie ${seriesIndex + 1}`}
+                      onClick={() =>
+                        update(block.id, {
+                          series: block.series.filter((item) => item.id !== series.id),
+                        })
+                      }
+                      className="grid size-11 place-items-center rounded-full text-(--c-text-2) hover:bg-white focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                    >
+                      <FiTrash2 aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
             <button
               type="button"
               disabled={block.series.length >= 30}
               onClick={() => setEditing({ blockId: block.id })}
-              className="btn btn-outline min-h-11 w-fit gap-2"
+              className="btn border btn-outline col-span-2 min-h-11 w-full gap-2"
             >
               <FiPlus aria-hidden="true" />
               Agregar serie
@@ -126,7 +142,7 @@ export default function ClassTrainingEditor({
           setRepetitions(1)
           setAddingBlock(true)
         }}
-        className="btn btn-outline min-h-11 w-fit gap-2"
+        className="btn border btn-outline min-h-11 w-full gap-2"
       >
         <FiPlus aria-hidden="true" />
         Agregar bloque
@@ -136,6 +152,7 @@ export default function ClassTrainingEditor({
           <Sheet
             open
             keyboardAware
+            fullBleedMobile
             label={editing.series ? 'Editar serie' : 'Agregar serie'}
             onClose={() => setEditing(null)}
           >
@@ -143,6 +160,13 @@ export default function ClassTrainingEditor({
               <TrainingSeriesForm
                 key={editing.series?.id || 'new'}
                 initial={editing.series}
+                seriesNumber={
+                  editing.series
+                    ? (blocks
+                        .find((block) => block.id === editing.blockId)
+                        ?.series.findIndex((series) => series.id === editing.series?.id) ?? 0) + 1
+                    : (blocks.find((block) => block.id === editing.blockId)?.series.length ?? 0) + 1
+                }
                 onCancel={() => setEditing(null)}
                 onSave={(series) => {
                   const block = blocks.find((item) => item.id === editing.blockId)
@@ -164,20 +188,21 @@ export default function ClassTrainingEditor({
           <Sheet
             open
             keyboardAware
+            fullBleedMobile
             label="Agregar bloque"
             onClose={() => setAddingBlock(false)}
             footer={
               <div className="flex justify-end gap-2 px-4 sm:px-0">
                 <button
                   type="button"
-                  className="btn btn-outline min-h-11"
+                  className="btn border btn-outline min-h-11"
                   onClick={() => setAddingBlock(false)}
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  className="btn btn-primary min-h-11"
+                  className="btn border btn-primary min-h-11"
                   disabled={!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 99}
                   onClick={() => {
                     const blockId = crypto.randomUUID()
@@ -205,6 +230,22 @@ export default function ClassTrainingEditor({
                   className="min-h-12 w-full rounded-xl border border-(--c-border) bg-white px-3 text-base focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
                 />
               </label>
+              <fieldset
+                aria-label="Sugerencias de repeticiones del bloque"
+                className="grid grid-cols-5 gap-2"
+              >
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={repetitions === value}
+                    onClick={() => setRepetitions(value)}
+                    className={`btn border min-h-11 px-2 ${repetitions === value ? 'btn-primary' : 'btn-outline'}`}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </fieldset>
             </div>
           </Sheet>,
           document.body

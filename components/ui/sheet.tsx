@@ -18,7 +18,8 @@ import { FiX } from 'react-icons/fi'
  *   or flex-1 spacers to children. max-height belongs to Sheet, not the form.
  * - Pass primary actions through `footer` to keep them outside the scrolling
  *   body and above the keyboard/safe area. Do not use fixed/sticky form footers.
- * - `fullBleedMobile` removes horizontal padding only; it is NOT fullscreen.
+ * - Mobile always opens edge-to-edge from the bottom, including keyboard-aware
+ *   forms. `fullBleedMobile` removes inner horizontal padding; it is NOT fullscreen.
  *   Give that variant's content/footer px-4 sm:px-0 as needed.
  * - `showFooterClose={false}` requires a visible cancel/close action of your own.
  * - Use `closeDisabled` while a mutation must finish, and `label` for an
@@ -139,7 +140,7 @@ export default function Sheet({
         keyboardAware
           ? fullBleedMobile
             ? 'items-end overflow-y-auto p-0 sm:items-center sm:p-4'
-            : 'items-end overflow-y-auto p-4 sm:items-center'
+            : 'items-end overflow-y-auto p-0 sm:items-center sm:p-4'
           : 'items-end sm:items-center sm:p-4'
       }`}
       style={viewportStyle}
@@ -200,7 +201,7 @@ export default function Sheet({
             ? `max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-hidden rounded-t-[26px] rounded-b-none px-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sheetAnimation} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-2 sm:pt-5'} sm:min-h-0 sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:px-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${desktopWidth} sm:[animation:none]`
             : `px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-5'} ${
                 keyboardAware
-                  ? `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] overflow-hidden rounded-[26px] ${desktopWidth} sm:[animation:none]`
+                  ? `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-hidden rounded-t-[26px] rounded-b-none ${desktopWidth} sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:[animation:none]`
                   : `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-hidden rounded-t-[26px] ${desktopWidth} sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:[animation:none]`
               }`
         }`}

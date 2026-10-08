@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { FiArrowLeft } from 'react-icons/fi'
+import { useState } from 'react'
+import { FiArrowLeft, FiCheckSquare } from 'react-icons/fi'
+import AttendanceModal from '@/components/coach/AttendanceModal'
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { useSchoolSelection } from './useSchoolSelection'
@@ -48,6 +50,8 @@ function parseSelections(value: string | null): Selection[] {
 }
 
 export default function SchoolClassDetails() {
+  const [attendanceDate, setAttendanceDate] = useState<string | null>(null)
+  const [attendanceRevision, setAttendanceRevision] = useState(0)
   const params = useSearchParams()
   const { schools, status } = useSchoolSelection()
   const schoolId = params.get('schoolId') || ''
@@ -86,18 +90,29 @@ export default function SchoolClassDetails() {
             key={key}
             className="overflow-hidden rounded-2xl border border-(--c-border) bg-white"
           >
-            <h2 className="border-b border-(--c-border) px-4 py-3 text-sm font-bold text-(--c-ocean)">
-              {new Date(`${group[0].date}T12:00:00`).toLocaleDateString('es-MX', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })}{' '}
-              · {group[0].startTime}
-            </h2>
+            <div className="flex items-center justify-between gap-2 border-b border-(--c-border) px-4 py-2">
+              <h2 className="min-w-0 text-sm font-bold text-(--c-ocean)">
+                {new Date(`${group[0].date}T12:00:00`).toLocaleDateString('es-MX', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                })}{' '}
+                · {group[0].startTime}
+              </h2>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setAttendanceDate(group[0].date)}
+                  className="btn btn-outline min-h-8 h-8 shrink-0 gap-1 rounded-lg border px-2 text-xs"
+                >
+                  <FiCheckSquare aria-hidden="true" /> Pase de lista
+                </button>
+              )}
+            </div>
             <div className="grid gap-3 p-3">
               {group.map((slot) => (
                 <CoachAgenda
-                  key={`${slot.coachId}|${slot.groupType}`}
+                  key={`${slot.coachId}|${slot.groupType}|${attendanceRevision}`}
                   schoolId={schoolId}
                   aggregateSchool
                   manageSchoolSchedule={canManage}
@@ -109,6 +124,14 @@ export default function SchoolClassDetails() {
             </div>
           </section>
         ))
+      )}
+      {attendanceDate && (
+        <AttendanceModal
+          schoolId={schoolId}
+          date={attendanceDate}
+          onClose={() => setAttendanceDate(null)}
+          onUpdated={() => setAttendanceRevision((current) => current + 1)}
+        />
       )}
     </main>
   )

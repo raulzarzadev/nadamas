@@ -3,7 +3,7 @@
 import Sheet from '@comps/ui/sheet'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { FiCheck, FiEdit2, FiMapPin, FiMessageSquare, FiPlus, FiX } from 'react-icons/fi'
+import { FiCheck, FiMapPin, FiMessageSquare, FiPlus, FiX } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import ClassCard from '@/components/ui/class-card'
 import ClassStudentRow from '@/components/ui/class-student-row'
@@ -569,14 +569,6 @@ export default function SchoolClasses() {
                   ))}
                 </div>
               </fieldset>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => setScheduleEditorOpen(true)}
-                className="btn btn-primary min-h-11 shrink-0 gap-1.5 px-3 text-xs sm:gap-2 sm:px-4 sm:text-sm"
-              >
-                <FiEdit2 aria-hidden="true" /> Editar horario
-              </button>
             </div>
           )}
         </div>
@@ -643,6 +635,7 @@ export default function SchoolClasses() {
           allowSchoolScheduleEdit={isDirector}
           scheduleEditorOpen={scheduleEditorOpen}
           onScheduleEditorClose={() => setScheduleEditorOpen(false)}
+          onScheduleEditorOpen={isDirector ? () => setScheduleEditorOpen(true) : undefined}
           scheduleCoachOptions={scheduleCoachOptions}
           onScheduleCoachChange={setScheduleCoachId}
           initialDate={validFocusDate}
