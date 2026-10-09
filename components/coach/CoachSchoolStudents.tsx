@@ -5,13 +5,11 @@ import { FiSearch, FiUser } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ClassStudentRow from '@/components/ui/class-student-row'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
-import { getAuthed } from '@/lib/client/authed-api'
-import type { SchoolClassOccurrence, SchoolStudent } from '@/lib/school'
+import { getAuthed, getCachedAuthedData } from '@/lib/client/authed-api'
+import type { SchoolStudent } from '@/lib/school'
 import { capitalizeSchoolTerm, schoolMembershipHasRole } from '@/lib/school'
-import { coachVisibleSchoolStudentIds } from '@/lib/school-coach-students'
-import type { SchoolStudentHistory } from '@/lib/school-student-history'
 import StudentLabels from './StudentLabels'
-import StudentLabelTools from './StudentLabelTools'
+import StudentLabelTools, { type LabelList } from './StudentLabelTools'
 import StudentProfileModal from './StudentProfileModal'
 
 export default function CoachSchoolStudents() {
@@ -31,63 +29,50 @@ export default function CoachSchoolStudents() {
     () => coachSchools.find(({ school }) => school.id === selectedId) || coachSchools[0] || null,
     [coachSchools, selectedId]
   )
-  const [students, setStudents] = useState<SchoolStudent[]>([])
-  const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
+  const endpoint = selected
+    ? `/api/schools/${selected.school.id}/students?includeSummary=true&coachOnly=true`
+    : ''
+  const cached = getCachedAuthedData<{
+    students: SchoolStudent[]
+    summaries: Record<string, { taken: number; scheduled: number }>
+  }>(endpoint)
+  const [students, setStudents] = useState<SchoolStudent[]>(cached?.students || [])
   const [counts, setCounts] = useState<Record<string, { taken: number; scheduled: number } | null>>(
-    {}
+    cached?.summaries || {}
   )
   const [filteredIds, setFilteredIds] = useState<string[] | null>(null)
+  const [labelData, setLabelData] = useState<LabelList | null>(null)
   const [labelRevision, setLabelRevision] = useState(0)
   const [query, setQuery] = useState('')
   const [profileStudent, setProfileStudent] = useState<SchoolStudent | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(!cached)
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (!selected) return
     let active = true
-    setLoading(true)
+    const saved = getCachedAuthedData<{
+      students: SchoolStudent[]
+      summaries: Record<string, { taken: number; scheduled: number }>
+    }>(endpoint)
+    setLoading(!saved)
     setMessage(null)
-    setCounts({})
-    Promise.all([
-      getAuthed(`/api/schools/${selected.school.id}/students`),
-      getAuthed(`/api/schools/${selected.school.id}/classes`),
-    ])
-      .then(async ([studentResponse, classResponse]) => {
-        const [studentPayload, classPayload] = await Promise.all([
-          studentResponse.json() as Promise<{ students?: SchoolStudent[] }>,
-          classResponse.json() as Promise<{ classes?: SchoolClassOccurrence[] }>,
-        ])
+    if (saved) {
+      setStudents(saved.students)
+      setCounts(saved.summaries)
+    } else setCounts({})
+    getAuthed(endpoint)
+      .then(
+        (response) =>
+          response.json() as Promise<{
+            students?: SchoolStudent[]
+            summaries?: Record<string, { taken: number; scheduled: number }>
+          }>
+      )
+      .then((payload) => {
         if (!active) return
-        setStudents(studentPayload.students || [])
-        setClasses(classPayload.classes || [])
-        const queue = [...(studentPayload.students || [])]
-        const schoolId = selected.school.id
-        await Promise.all(
-          Array.from({ length: Math.min(4, queue.length) }, async () => {
-            while (active && queue.length) {
-              const student = queue.shift()
-              if (!student) break
-              try {
-                const response = await getAuthed(
-                  `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(student.id)}/history`
-                )
-                const history = (await response.json()) as SchoolStudentHistory
-                if (active)
-                  setCounts((current) => ({
-                    ...current,
-                    [student.id]: {
-                      taken: history.classes.filter((item) => item.status === 'taken').length,
-                      scheduled: history.classes.filter((item) => item.status === 'scheduled')
-                        .length,
-                    },
-                  }))
-              } catch {
-                if (active) setCounts((current) => ({ ...current, [student.id]: null }))
-              }
-            }
-          })
-        )
+        setStudents(payload.students || [])
+        setCounts(payload.summaries || {})
       })
       .catch(() => {
         if (active) setMessage(`No se pudieron cargar ${participantPlural} de esta escuela.`)
@@ -98,15 +83,13 @@ export default function CoachSchoolStudents() {
     return () => {
       active = false
     }
-  }, [selected, participantPlural])
+  }, [selected, participantPlural, endpoint])
 
   if (status === 'loading' || !selected) return null
 
-  const includedStudentIds = coachVisibleSchoolStudentIds(classes, selected.school.timezone)
   const normalizedQuery = query.trim().toLowerCase()
   const visibleStudents = students.filter(
     (student) =>
-      includedStudentIds.has(student.id) &&
       (filteredIds === null || filteredIds.includes(student.id)) &&
       [student.name, student.studentEmail || '', student.guardianName, student.guardianEmail || '']
         .join(' ')
@@ -147,9 +130,10 @@ export default function CoachSchoolStudents() {
         <StudentLabelTools
           key={selected.school.id}
           schoolId={selected.school.id}
-          students={students.filter((student) => includedStudentIds.has(student.id))}
+          students={students}
           revision={labelRevision}
           onFilter={setFilteredIds}
+          onData={setLabelData}
           onUpdated={() => setLabelRevision((current) => current + 1)}
         />
       )}
@@ -171,6 +155,10 @@ export default function CoachSchoolStudents() {
                     key={`${student.id}:${labelRevision}`}
                     studentId={student.id}
                     schoolId={selected.school.id}
+                    data={{
+                      labels: labelData?.labels || [],
+                      selected: labelData?.assignments[student.id] || [],
+                    }}
                     readOnly
                   />
                 }

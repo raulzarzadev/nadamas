@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
-import { getAuthed } from '@/lib/client/authed-api'
+import { getAuthed, getCachedAuthedData } from '@/lib/client/authed-api'
 import { type School, type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
 
@@ -26,12 +26,44 @@ export function useSchoolSelection({
     : includePersonal
       ? 'nadamas.coachSelection'
       : 'nadamas.schoolId'
-  const [schools, setSchools] = useState<SchoolAccessClient[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [isPersonal, setIsPersonal] = useState(false)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [initial] = useState(() => {
+    const payload = getCachedAuthedData<{
+      schools?: SchoolAccessClient[]
+      ownedSchool?: School | null
+    }>('/api/schools')
+    if (!payload || typeof window === 'undefined') return null
+    const next = athleteMode
+      ? (payload.schools || []).filter(
+          ({ membership }) =>
+            membership.status === 'active' && schoolMembershipHasRole(membership, 'student')
+        )
+      : schoolsForWorkspace(payload.schools || [], includePersonal)
+    if (tenant) {
+      const scoped = next.filter((item) => item.school.id === tenant.id)
+      return { schools: scoped, selectedId: scoped[0]?.school.id || null, personal: false }
+    }
+    const storedSelection = window.localStorage.getItem(selectionKey)
+    if (
+      includePersonal &&
+      (!storedSelection ||
+        storedSelection === 'personal' ||
+        !next.some((item) => item.school.id === storedSelection))
+    )
+      return { schools: next, selectedId: null, personal: true }
+    const stored = window.localStorage.getItem('nadamas.schoolId')
+    const preferred =
+      next.find((item) => item.school.id === (includePersonal ? storedSelection : stored)) ||
+      next.find((item) => item.school.id === payload.ownedSchool?.id) ||
+      next[0]
+    return { schools: next, selectedId: preferred?.school.id || null, personal: false }
+  })
+  const [schools, setSchools] = useState<SchoolAccessClient[]>(initial?.schools || [])
+  const [selectedId, setSelectedId] = useState<string | null>(initial?.selectedId || null)
+  const [isPersonal, setIsPersonal] = useState(initial?.personal || false)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(initial ? 'ready' : 'loading')
 
   useEffect(() => {
+    let active = true
     const stored = window.localStorage.getItem('nadamas.schoolId')
     getAuthed('/api/schools')
       .then(
@@ -42,6 +74,7 @@ export function useSchoolSelection({
           }>
       )
       .then((payload) => {
+        if (!active) return
         const storedCoachSelection = window.localStorage.getItem(selectionKey)
         const next = athleteMode
           ? (payload.schools || []).filter(
@@ -89,7 +122,12 @@ export function useSchoolSelection({
         if (preferred) window.localStorage.setItem('nadamas.schoolId', preferred)
         setStatus('ready')
       })
-      .catch(() => setStatus('error'))
+      .catch(() => {
+        if (active) setStatus('error')
+      })
+    return () => {
+      active = false
+    }
   }, [athleteMode, includePersonal, selectionKey, tenant])
 
   useEffect(() => {

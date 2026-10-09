@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { schoolLabelList } from '@/lib/server/school-labels'
 import { STUDENT_LABEL_COLORS, studentLabelColor } from '@/lib/student-label-colors'
 
 export const runtime = 'nodejs'
@@ -11,9 +12,28 @@ async function authorize(request: Request) {
   const params = new URL(request.url).searchParams
   const studentId = params.get('studentId') || ''
   const schoolId = params.get('schoolId') || ''
+  const entity = params.get('entity') || 'students'
+  if (!['students', 'teachers'].includes(entity)) return null
   if (!studentId || studentId.includes('/') || studentId.length > 128 || schoolId.includes('/'))
     return null
   if (schoolId) {
+    if (entity === 'teachers') {
+      const access = await requireSchoolAccess(request, schoolId, ['director'])
+      if (access.response) return null
+      const membership = await adminDb
+        .collection('schoolMemberships')
+        .doc(`${schoolId}_${studentId}`)
+        .get()
+      const data = membership.data()
+      if (
+        !data ||
+        data.status !== 'active' ||
+        (!schoolMembershipHasRole(data as import('@/lib/school').SchoolMembership, 'teacher') &&
+          !schoolMembershipHasRole(data as import('@/lib/school').SchoolMembership, 'director'))
+      )
+        return null
+      return { scope: `school:${schoolId}:teachers`, studentId }
+    }
     const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
     if (access.response) return null
     const student = await adminDb.collection('schoolStudents').doc(studentId).get()
@@ -34,6 +54,7 @@ async function authorize(request: Request) {
     }
     return { scope: `school:${schoolId}`, studentId }
   }
+  if (entity !== 'students') return null
   const token = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1]
   if (!token) return null
   const caller = await adminAuth.verifyIdToken(token)
@@ -51,6 +72,21 @@ const key = (value: string) => createHash('sha256').update(value).digest('hex')
 
 export async function GET(request: Request) {
   try {
+    const params = new URL(request.url).searchParams
+    if (params.get('view') === 'list') {
+      const schoolId = params.get('schoolId') || ''
+      const entity = params.get('entity') || 'students'
+      if (
+        !schoolId ||
+        schoolId.includes('/') ||
+        schoolId.length > 128 ||
+        !['students', 'teachers'].includes(entity)
+      )
+        return NextResponse.json({ error: 'Consulta no válida.' }, { status: 400 })
+      const result = await schoolLabelList(request, schoolId, entity)
+      if (result.response) return result.response
+      return NextResponse.json(result.data, { headers: { 'Cache-Control': 'private, no-store' } })
+    }
     const access = await authorize(request)
     if (!access) return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
     const [labels, assignment] = await Promise.all([

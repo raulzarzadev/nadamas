@@ -8,19 +8,24 @@ import { studentLabelColor } from '@/lib/student-label-colors'
 import StudentLabelColorSelector from './StudentLabelColorSelector'
 
 type Student = { id: string; name: string }
+export type LabelList = { labels: Label[]; assignments: Record<string, string[]> }
 type Label = { id: string; name: string; color?: string }
 export default function StudentLabelTools({
   schoolId,
+  entity = 'students',
   students,
   revision,
   onFilter,
   onUpdated,
+  onData,
 }: {
+  entity?: 'students' | 'teachers'
   schoolId: string
   students: Student[]
   revision: number
   onFilter: (ids: string[] | null) => void
   onUpdated: () => void
+  onData?: (data: LabelList) => void
 }) {
   const nameInputId = useId()
   const [labels, setLabels] = useState<Label[]>([])
@@ -37,32 +42,19 @@ export default function StudentLabelTools({
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const idsKey = JSON.stringify(students.map((student) => student.id).sort())
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision reloads assignments after mutations.
   useEffect(() => {
     let active = true
     setLoading(true)
-    const queue = JSON.parse(idsKey) as string[]
-    const next: Record<string, string[]> = {}
-    const available = new Map<string, Label>()
-    Promise.all(
-      Array.from({ length: Math.min(4, queue.length) }, async () => {
-        while (active && queue.length) {
-          const id = queue.shift()
-          if (!id) break
-          const response = await getAuthed(
-            `/api/coach/student-tags?schoolId=${encodeURIComponent(schoolId)}&studentId=${encodeURIComponent(id)}`
-          )
-          const payload = (await response.json()) as { labels: Label[]; selected: string[] }
-          next[id] = payload.selected
-          for (const label of payload.labels) available.set(label.id, label)
-        }
-      })
+    getAuthed(
+      `/api/coach/student-tags?entity=${entity}&schoolId=${encodeURIComponent(schoolId)}&view=list`
     )
-      .then(() => {
+      .then((response) => response.json() as Promise<LabelList>)
+      .then((payload) => {
         if (active) {
-          setAssignments(next)
-          setLabels([...available.values()].sort((a, b) => a.name.localeCompare(b.name)))
+          setAssignments(payload.assignments)
+          setLabels(payload.labels.sort((a, b) => a.name.localeCompare(b.name)))
+          onData?.(payload)
           setError('')
         }
       })
@@ -75,7 +67,7 @@ export default function StudentLabelTools({
     return () => {
       active = false
     }
-  }, [schoolId, idsKey, revision])
+  }, [schoolId, entity, revision, onData])
   useEffect(() => {
     onFilter(
       filter ? Object.keys(assignments).filter((id) => assignments[id].includes(filter)) : null
@@ -93,7 +85,7 @@ export default function StudentLabelTools({
             const id = queue.shift()
             if (!id) break
             await postAuthed(
-              `/api/coach/student-tags?schoolId=${encodeURIComponent(schoolId)}&studentId=${encodeURIComponent(id)}`,
+              `/api/coach/student-tags?entity=${entity}&schoolId=${encodeURIComponent(schoolId)}&studentId=${encodeURIComponent(id)}`,
               { name: managedName, remove }
             )
           }
@@ -120,6 +112,7 @@ export default function StudentLabelTools({
           className={`btn min-h-8 h-8 border px-3 text-xs ${!filter ? 'btn-primary' : 'btn-outline'}`}
         >
           Todos
+          <span className="text-[10px] tabular-nums opacity-75">({students.length})</span>
         </button>
         {labels.map((label) => (
           <button
@@ -198,7 +191,7 @@ export default function StudentLabelTools({
             setError('')
             try {
               await postAuthed(
-                `/api/coach/student-tags?schoolId=${encodeURIComponent(schoolId)}&studentId=${encodeURIComponent(students[0].id)}`,
+                `/api/coach/student-tags?entity=${entity}&schoolId=${encodeURIComponent(schoolId)}&studentId=${encodeURIComponent(students[0].id)}`,
                 { name, color, ...(editingId ? { editId: editingId } : { createOnly: true }) }
               )
               setCreating(false)
@@ -245,7 +238,7 @@ export default function StudentLabelTools({
             }}
             className="btn btn-ghost min-h-11"
           >
-            Agregar o quitar etiquetas a alumnos
+            Agregar o quitar etiquetas a {entity === 'teachers' ? 'entrenadores' : 'alumnos'}
           </button>
           {editingId && (
             <button
@@ -280,7 +273,8 @@ export default function StudentLabelTools({
         <div className="grid gap-4 pb-4">
           <h2 className="text-xl font-bold">Eliminar etiqueta</h2>
           <p className="text-sm">
-            ¿Quieres eliminar «{name}»? Se quitará de todos los alumnos que la tienen.
+            ¿Quieres eliminar «{name}»? Se quitará de{' '}
+            {entity === 'teachers' ? 'los entrenadores' : 'los alumnos'} que la tienen.
           </p>
           <div className="flex gap-2">
             <button
@@ -303,7 +297,7 @@ export default function StudentLabelTools({
                 setError('')
                 try {
                   await deleteAuthed(
-                    `/api/coach/student-tags?schoolId=${encodeURIComponent(schoolId)}&studentId=${encodeURIComponent(students[0].id)}&labelId=${encodeURIComponent(editingId)}`
+                    `/api/coach/student-tags?entity=${entity}&schoolId=${encodeURIComponent(schoolId)}&studentId=${encodeURIComponent(students[0].id)}&labelId=${encodeURIComponent(editingId)}`
                   )
                   setConfirmDelete(false)
                   setEditingId(null)
@@ -360,7 +354,7 @@ export default function StudentLabelTools({
           </datalist>
           <fieldset className="grid gap-1" disabled={busy}>
             <legend className="mb-2 text-sm font-semibold">
-              Alumnos ({targets.length} seleccionados)
+              {entity === 'teachers' ? 'Entrenadores' : 'Alumnos'} ({targets.length} seleccionados)
             </legend>
             {students.map((student) => (
               <label key={student.id} className="flex min-h-11 items-center gap-2 text-sm">

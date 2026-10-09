@@ -14,6 +14,7 @@ import { createNotification } from '@/lib/server/notifications'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { listSchoolClasses } from '@/lib/server/school-classes'
 import { createSchoolInvitation } from '@/lib/server/school-invitations'
+import { getSchoolStudentSummaries } from '@/lib/server/school-student-summary'
 import { createSchoolStudent, listSchoolStudents } from '@/lib/server/school-students'
 import { getSchoolById } from '@/lib/server/schools'
 
@@ -36,6 +37,22 @@ export async function GET(request: Request, { params }: RouteProps) {
       undefined,
       isDirector || isTeacher ? undefined : access.caller.uid
     )
+    const query = new URL(request.url).searchParams
+    if (query.get('includeSummary') === 'true' && (isDirector || isTeacher)) {
+      const teacherId =
+        !isDirector || query.get('coachOnly') === 'true' ? access.caller.uid : undefined
+      const summaries = await getSchoolStudentSummaries(schoolId, students, teacherId)
+      if (teacherId) students = students.filter((student) => summaries[student.id]?.related)
+      return NextResponse.json(
+        {
+          students,
+          summaries: Object.fromEntries(
+            students.map((student) => [student.id, summaries[student.id]])
+          ),
+        },
+        { headers: { 'Cache-Control': 'private, no-store' } }
+      )
+    }
     if (!isDirector && isTeacher) {
       const [classes, school] = await Promise.all([
         listSchoolClasses({ schoolId, teacherId: access.caller.uid }),
@@ -44,7 +61,6 @@ export async function GET(request: Request, { params }: RouteProps) {
       const visibleIds = coachVisibleSchoolStudentIds(classes, school?.timezone || 'UTC')
       students = students.filter((student) => visibleIds.has(student.id))
     }
-    const query = new URL(request.url).searchParams
     if (query.get('includeAgendaStudents') === 'true' && (isDirector || isTeacher)) {
       const coachId = query.get('coachId')?.trim() || access.caller.uid
       if (!isDirector && coachId !== access.caller.uid)

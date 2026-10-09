@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { AgendaUpdatesCRUD } from '@/firebase/agenda-updates/main'
+import { invalidateAuthedCache } from './authed-api'
 
 export function useSchoolAgendaUpdates(
   schoolId: string | string[] | null | undefined,
@@ -18,7 +19,11 @@ export function useSchoolAgendaUpdates(
     const schoolIds = JSON.parse(schoolIdsKey) as string[]
     if (!schoolIds.length) return
     let unsubscribes: Array<() => void> = []
-    const update = () => callback.current()
+    const update = () => {
+      for (const id of schoolIds)
+        invalidateAuthedCache(`/api/schools/${encodeURIComponent(id)}/agenda`)
+      callback.current()
+    }
     const syncVisibility = () => {
       unsubscribes.forEach((unsubscribe) => {
         unsubscribe()

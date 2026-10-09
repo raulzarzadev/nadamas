@@ -12,24 +12,29 @@ type Label = { id: string; name: string; color?: string }
 export default function StudentLabels({
   studentId,
   schoolId,
+  entity = 'students',
   readOnly = false,
   compact = false,
+  data,
 }: {
   studentId: string
+  entity?: 'students' | 'teachers'
   schoolId?: string
   readOnly?: boolean
   compact?: boolean
+  data?: { labels: Label[]; selected: string[] }
 }) {
-  const [labels, setLabels] = useState<Label[]>([])
-  const [selected, setSelected] = useState<string[]>([])
+  const [storedLabels, setLabels] = useState<Label[]>([])
+  const [storedSelected, setSelected] = useState<string[]>([])
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [color, setColor] = useState('blue')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const endpoint = `/api/coach/student-tags?studentId=${encodeURIComponent(studentId)}${schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''}`
+  const endpoint = `/api/coach/student-tags?entity=${entity}&studentId=${encodeURIComponent(studentId)}${schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''}`
   useEffect(() => {
+    if (data) return
     let active = true
     getAuthed(endpoint)
       .then((response) => response.json())
@@ -48,7 +53,9 @@ export default function StudentLabels({
     return () => {
       active = false
     }
-  }, [endpoint])
+  }, [endpoint, data])
+  const labels = data?.labels || storedLabels
+  const selected = data?.selected || storedSelected
   const add = async (label: string) => {
     if (!label.trim() || busy) return
     setBusy(true)
