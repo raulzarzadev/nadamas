@@ -12,9 +12,11 @@ const statuses = {
 export default function StatusBadge({
   status,
   compact = false,
+  label: customLabel,
 }: {
   status: ClassBadgeStatus
   compact?: boolean
+  label?: string
 }) {
   const { label, Icon, background, color } = statuses[status]
   return (
@@ -23,7 +25,7 @@ export default function StatusBadge({
       className={`inline-flex w-fit shrink-0 items-center rounded-full font-semibold leading-none ${compact ? 'gap-0.5 px-1 py-0.5 text-[8px]' : 'gap-1 px-2 py-1 text-[10px]'}`}
     >
       <Icon aria-hidden="true" size={compact ? 8 : 12} />
-      {label}
+      {customLabel || label}
     </span>
   )
 }

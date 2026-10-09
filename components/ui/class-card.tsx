@@ -13,12 +13,14 @@ export default function ClassCard({
   showTime = true,
   hideTimeColumn = false,
   showSeparator = true,
+  compact = false,
   status,
   coachName,
   showCoachName = false,
   unassigned = false,
   groupType = 'particular',
   statusLabel,
+  statusBadge,
   agendaLabel,
   pending = false,
   addStudent,
@@ -32,12 +34,14 @@ export default function ClassCard({
   showTime?: boolean
   hideTimeColumn?: boolean
   showSeparator?: boolean
+  compact?: boolean
   status?: HourStatus
   coachName?: string
   showCoachName?: boolean
   unassigned?: boolean
   groupType?: 'particular' | 'grupal'
   statusLabel?: string
+  statusBadge?: ReactNode
   agendaLabel?: string
   pending?: boolean
   addStudent?: {
@@ -57,7 +61,7 @@ export default function ClassCard({
   const isAvailableCard = status === 'available' || status === 'groupAvailable'
   return (
     <div
-      className={`flex flex-col gap-1 px-3 py-2 @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:gap-3 sm:px-5 sm:py-1.5 ${
+      className={`flex flex-col gap-1 ${compact ? 'p-0' : 'px-3 py-2 sm:px-5 sm:py-1.5'} @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:gap-3 ${
         showSeparator ? 'sm:border-b sm:border-[var(--c-border)]' : ''
       }`}
     >
@@ -71,7 +75,7 @@ export default function ClassCard({
           <div
             ref={ref}
             tabIndex={focused ? -1 : undefined}
-            className={`flex min-w-0 flex-1 scroll-mt-32 flex-col gap-2 rounded-[var(--r-md)] border px-2.5 py-1 sm:px-3 ${cardStyle.border} ${cardStyle.bg} ${focused ? 'outline outline-2 outline-offset-2 outline-[var(--c-aqua-strong)]' : ''}`}
+            className={`flex min-w-0 flex-1 scroll-mt-32 flex-col gap-2 rounded-[var(--r-md)] border ${compact ? 'p-1.5' : 'px-2.5 py-1 sm:px-3'} ${cardStyle.border} ${cardStyle.bg} ${focused ? 'outline outline-2 outline-offset-2 outline-[var(--c-aqua-strong)]' : ''}`}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
@@ -100,6 +104,7 @@ export default function ClassCard({
                     {groupType === 'grupal' ? 'Grupal' : 'Particular'}
                   </span>
                 </span>
+                {statusBadge}
                 {pending && <StatusBadge status="pending" />}
                 {agendaLabel && (
                   <span className="w-fit rounded-full border border-[var(--c-border)] bg-white/80 px-2.5 py-1 text-xs font-bold text-[var(--c-ocean)]">

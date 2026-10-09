@@ -2,7 +2,7 @@
 
 import Loading from '@comps/Loading'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiCalendar,
   FiCheckSquare,
@@ -19,7 +19,7 @@ import ClassNotesModal, { type ClassNotesTarget } from '@/components/coach/Class
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
 import ClassCard from '@/components/ui/class-card'
-import ClassStudentRow from '@/components/ui/class-student-row'
+import ClassRequestCard from '@/components/ui/class-request-card'
 import CoachBadge from '@/components/ui/coach-badge'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
@@ -30,7 +30,7 @@ import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
 import { deleteAuthed, getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
-import { HOUR_STATUS_STYLE, HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
+import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import type { Booking } from '@/lib/coach-booking'
 import {
   addDays,
@@ -58,9 +58,9 @@ import ScheduleHoursEditor, {
   type ScheduleCoachOption,
 } from './ScheduleHoursEditor'
 import ScheduleStudentsModal from './ScheduleStudentsModal'
-import StudentProgressModal from './StudentProgressModal'
-import StudentProfileModal from './StudentProfileModal'
 import StudentLabels from './StudentLabels'
+import StudentProfileModal from './StudentProfileModal'
+import StudentProgressModal from './StudentProgressModal'
 
 function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
   return `${booking.date}|${booking.startTime}`
@@ -145,7 +145,9 @@ export default function CoachAgenda({
   scheduleTarget,
   scheduleTargetOptions,
   onScheduleTargetChange,
+  toolbarActions,
 }: {
+  toolbarActions?: ReactNode
   coachId?: string
   schoolId?: string
   agendaSources?: Array<{ schoolId?: string; label: string }>
@@ -2192,7 +2194,7 @@ export default function CoachAgenda({
         <ScheduleViews
           title={
             <>
-              {' '}
+              {toolbarActions}
               {!readOnlyAgenda &&
                 (onScheduleEditorOpen || schoolId || agendaUpdateSchoolIds.length > 0) && (
                   <div className="contents">
@@ -2408,7 +2410,7 @@ export default function CoachAgenda({
         closeDisabled={busy}
         label="Solicitudes de los horarios seleccionados"
       >
-        <div className="flex flex-col gap-3 px-4 sm:px-0">
+        <div className="flex flex-col gap-3">
           <h2 className="text-lg font-bold">Solicitudes ({batchRequests.length})</h2>
           {batchRequestError && (
             <p role="alert" className="text-sm text-rose-600">
@@ -2421,7 +2423,7 @@ export default function CoachAgenda({
             </p>
           )}
           {batchRequests.map((booking) => (
-            <ClassCard
+            <ClassRequestCard
               key={booking.schoolRequestId}
               time={booking.startTime}
               date={new Date(`${booking.date}T12:00:00`).toLocaleDateString('es-MX', {
@@ -2430,44 +2432,17 @@ export default function CoachAgenda({
                 month: 'short',
               })}
               coachName={booking.coachName || 'Sin profe aún'}
-              showCoachName
               unassigned={booking.coachId === UNASSIGNED_SCHOOL_COACH_ID}
               groupType={booking.groupType}
-              status={booking.groupType === 'grupal' ? 'group' : 'booked'}
-              pending
-              showSeparator={false}
-            >
-              <ClassStudentRow
-                name={booking.athleteName || 'Alumno'}
-                disabled={busy}
-                onEdit={() => {
-                  setShowBatchRequests(false)
-                  openSchoolClassEditor(booking)
-                }}
-                actions={
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void resolveBatchRequest(booking, 'approved')}
-                        className="relative h-8 min-h-8 rounded-full bg-(--c-ocean) px-3 text-xs before:absolute before:-inset-y-1.5 font-bold text-white disabled:opacity-50"
-                      >
-                        Aceptar
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => void resolveBatchRequest(booking, 'rejected')}
-                        className="relative h-8 min-h-8 rounded-full border border-rose-200 px-3 text-xs before:absolute before:-inset-y-1.5 font-bold text-rose-700 disabled:opacity-50"
-                      >
-                        Rechazar
-                      </button>
-                    </div>
-                  </>
-                }
-              />
-            </ClassCard>
+              studentName={booking.athleteName || 'Alumno'}
+              busy={busy}
+              onAccept={() => void resolveBatchRequest(booking, 'approved')}
+              onReject={() => void resolveBatchRequest(booking, 'rejected')}
+              onEdit={() => {
+                setShowBatchRequests(false)
+                openSchoolClassEditor(booking)
+              }}
+            />
           ))}
         </div>
       </Sheet>

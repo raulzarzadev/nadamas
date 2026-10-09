@@ -362,6 +362,9 @@ export function schoolClassDisplayTitle(title: string | null | undefined) {
 }
 
 export interface SchoolClassRequest {
+  classSeriesId?: string
+  classOccurrenceIds?: string[]
+  archivedBy?: string[]
   id: string
   schoolId: string
   studentId: string

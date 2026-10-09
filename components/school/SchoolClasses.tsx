@@ -4,9 +4,10 @@ import Sheet from '@comps/ui/sheet'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { FiCheck, FiMapPin, FiMessageSquare, FiPlus, FiX } from 'react-icons/fi'
+import { LuHourglass } from 'react-icons/lu'
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import ClassCard from '@/components/ui/class-card'
-import ClassStudentRow from '@/components/ui/class-student-row'
+import ClassRequestCard from '@/components/ui/class-request-card'
 import CoachBadge from '@/components/ui/coach-badge'
 import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
@@ -80,6 +81,13 @@ export default function SchoolClasses() {
   const [resolvingRequestId, setResolvingRequestId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [showClasses, setShowClasses] = useState(false)
+  const [showRequests, setShowRequests] = useState(false)
+  const [showArchivedRequests, setShowArchivedRequests] = useState(false)
+  const [archivedRequestLimit, setArchivedRequestLimit] = useState(10)
+  const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
+  const [archiveError, setArchiveError] = useState<string | null>(null)
+  const [changeRequest, setChangeRequest] = useState<SchoolClassRequest | null>(null)
+  const [requestDetails, setRequestDetails] = useState<SchoolClassRequest | null>(null)
   const [selectedRequest, setSelectedRequest] = useState<SchoolClassRequest | null>(null)
   const [commentClass, setCommentClass] = useState<SchoolClassOccurrence | null>(null)
   const [classNoteDraft, setClassNoteDraft] = useState('')
@@ -95,6 +103,10 @@ export default function SchoolClasses() {
     let active = true
     if (resetSelection) {
       setScheduleEditorOpen(false)
+      setShowRequests(false)
+      setRequestDetails(null)
+      setChangeRequest(null)
+      setShowArchivedRequests(false)
       setLoading(true)
     }
     setBookingMode(selected?.school.bookingMode || 'request')
@@ -193,6 +205,74 @@ export default function SchoolClasses() {
       (item.status !== 'cancelled' || item.date >= today())
   )
 
+  const viewerId = user?.uid || user?.id || ''
+  const activeRequests = requests.filter((request) => !request.archivedBy?.includes(viewerId))
+
+  const archivedRequests = requests
+    .filter((request) => request.archivedBy?.includes(viewerId))
+    .sort((a, b) => b.createdAt - a.createdAt)
+  const displayedRequests = showArchivedRequests
+    ? archivedRequests.slice(0, archivedRequestLimit)
+    : activeRequests
+
+  async function resolveRequest(request: SchoolClassRequest, nextStatus: 'approved' | 'rejected') {
+    setResolvingRequestId(request.id)
+    setMessage(null)
+    setArchiveError(null)
+    try {
+      const response = await patchAuthed(
+        `/api/schools/${selectedId}/class-requests/${request.id}`,
+        { status: nextStatus }
+      )
+      const result = (await response.json()) as {
+        occurrences?: SchoolClassOccurrence[]
+      }
+      setRequests((current) =>
+        current.map((item) => (item.id === request.id ? { ...item, status: nextStatus } : item))
+      )
+      if (result.occurrences)
+        setClasses((current) =>
+          [
+            ...current.filter(
+              (item) => !result.occurrences?.some((created) => created.id === item.id)
+            ),
+            ...(result.occurrences || []),
+          ].sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+        )
+      setAgendaRevision((current) => current + 1)
+      setMessage(nextStatus === 'approved' ? 'Solicitud aceptada.' : 'Solicitud rechazada.')
+      setChangeRequest(null)
+    } catch {
+      const errorText =
+        'No pudimos resolver la solicitud. Revisa el profesor y el horario e inténtalo de nuevo.'
+      setArchiveError(errorText)
+      setMessage(errorText)
+    } finally {
+      setResolvingRequestId(null)
+    }
+  }
+
+  async function archiveRequest(requestId: string) {
+    setArchivingRequestId(requestId)
+    setArchiveError(null)
+    try {
+      await patchAuthed(`/api/schools/${activeSchool.school.id}/class-requests/${requestId}`, {
+        action: 'archive',
+      })
+      setRequests((current) =>
+        current.map((item) =>
+          item.id === requestId
+            ? { ...item, archivedBy: [...(item.archivedBy || []), viewerId] }
+            : item
+        )
+      )
+    } catch {
+      setArchiveError('No pudimos archivar la solicitud. Inténtalo de nuevo.')
+    } finally {
+      setArchivingRequestId(null)
+    }
+  }
+
   async function updateClass(
     id: string,
     status: 'cancelled' | 'completed' | 'pending' | 'scheduled'
@@ -243,6 +323,58 @@ export default function SchoolClasses() {
     .filter((request) => request.status === 'pending')
     .sort((a, b) => b.createdAt - a.createdAt)
 
+  function renderRequestCard(request: SchoolClassRequest, grouped = false) {
+    return (
+      <ClassRequestCard
+        key={request.id}
+        time={request.preferredStartTime}
+        date={formatClassDate(request.startDate)}
+        coachName={
+          teachers.find((teacher) => teacher.id === request.preferredTeacherId)?.name ||
+          'Sin profe aún'
+        }
+        unassigned={
+          !request.preferredTeacherId || request.preferredTeacherId === UNASSIGNED_SCHOOL_COACH_ID
+        }
+        groupType={request.type === 'group' ? 'grupal' : 'particular'}
+        studentName={
+          request.studentName ||
+          students.find((student) => student.id === request.studentId)?.name ||
+          capitalizeSchoolTerm(participantSingular)
+        }
+        status={request.status}
+        busy={resolvingRequestId !== null || archivingRequestId !== null}
+        onAccept={isDirector ? () => void resolveRequest(request, 'approved') : undefined}
+        onReject={isDirector ? () => void resolveRequest(request, 'rejected') : undefined}
+        onArchive={
+          !grouped || !showArchivedRequests ? () => void archiveRequest(request.id) : undefined
+        }
+        onChange={
+          isDirector
+            ? () => {
+                setArchiveError(null)
+                setChangeRequest(request)
+              }
+            : undefined
+        }
+        onEdit={
+          request.status !== 'pending'
+            ? () => {
+                setRequestDetails(request)
+              }
+            : isDirector && request.status === 'pending'
+              ? () => {
+                  setSelectedRequest(request)
+                  setShowClasses(false)
+                  setShowRequests(false)
+                  setShowCreate(true)
+                }
+              : undefined
+        }
+      />
+    )
+  }
+
   return (
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">Horarios</h1>
@@ -277,126 +409,7 @@ export default function SchoolClasses() {
                 {isDirector && pendingRequests.length > 0 && (
                   <section aria-label="Solicitudes nuevas" className="flex flex-col gap-3">
                     <h2 className="font-bold text-(--c-ocean)">Solicitudes nuevas</h2>
-                    {pendingRequests.map((request) => (
-                      <ClassCard
-                        key={request.id}
-                        time={request.preferredStartTime}
-                        date={formatClassDate(request.startDate)}
-                        coachName={
-                          teachers.find((teacher) => teacher.id === request.preferredTeacherId)
-                            ?.name || 'Sin profe aún'
-                        }
-                        showCoachName
-                        unassigned={
-                          !request.preferredTeacherId ||
-                          request.preferredTeacherId === UNASSIGNED_SCHOOL_COACH_ID
-                        }
-                        groupType={request.type === 'group' ? 'grupal' : 'particular'}
-                        status={request.type === 'group' ? 'group' : 'booked'}
-                        pending
-                        showSeparator={false}
-                      >
-                        <ClassStudentRow
-                          name={
-                            request.studentName ||
-                            students.find((student) => student.id === request.studentId)?.name ||
-                            'Alumno'
-                          }
-                          disabled={resolvingRequestId !== null}
-                          onEdit={() => {
-                            setSelectedRequest(request)
-                            setShowClasses(false)
-                            setShowCreate(true)
-                          }}
-                          actions={
-                            <>
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  disabled={resolvingRequestId !== null}
-                                  className="btn btn-primary btn-sm"
-                                  onClick={async () => {
-                                    setResolvingRequestId(request.id)
-                                    setMessage(null)
-                                    try {
-                                      const response = await patchAuthed(
-                                        `/api/schools/${selectedId}/class-requests/${request.id}`,
-                                        { status: 'approved' }
-                                      )
-                                      const result = (await response.json()) as {
-                                        occurrences?: SchoolClassOccurrence[]
-                                      }
-                                      setRequests((current) =>
-                                        current.map((item) =>
-                                          item.id === request.id
-                                            ? { ...item, status: 'approved' }
-                                            : item
-                                        )
-                                      )
-                                      if (result.occurrences)
-                                        setClasses((current) =>
-                                          [
-                                            ...current.filter(
-                                              (item) =>
-                                                !result.occurrences?.some(
-                                                  (created) => created.id === item.id
-                                                )
-                                            ),
-                                            ...(result.occurrences || []),
-                                          ].sort((a, b) =>
-                                            `${a.date} ${a.startTime}`.localeCompare(
-                                              `${b.date} ${b.startTime}`
-                                            )
-                                          )
-                                        )
-                                      setAgendaRevision((current) => current + 1)
-                                      setMessage('Solicitud aceptada.')
-                                    } catch {
-                                      setMessage(
-                                        'No pudimos aceptar la solicitud. Revisa el profesor y el horario con el icono de edición.'
-                                      )
-                                    } finally {
-                                      setResolvingRequestId(null)
-                                    }
-                                  }}
-                                >
-                                  Aceptar
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={resolvingRequestId !== null}
-                                  className="btn btn-outline btn-sm"
-                                  onClick={async () => {
-                                    setResolvingRequestId(request.id)
-                                    try {
-                                      await patchAuthed(
-                                        `/api/schools/${selectedId}/class-requests/${request.id}`,
-                                        { status: 'rejected' }
-                                      )
-                                      setRequests((current) =>
-                                        current.map((item) =>
-                                          item.id === request.id
-                                            ? { ...item, status: 'rejected' }
-                                            : item
-                                        )
-                                      )
-                                    } catch {
-                                      setMessage(
-                                        'No pudimos rechazar la solicitud. Inténtalo de nuevo.'
-                                      )
-                                    } finally {
-                                      setResolvingRequestId(null)
-                                    }
-                                  }}
-                                >
-                                  Rechazar
-                                </button>
-                              </div>
-                            </>
-                          }
-                        />
-                      </ClassCard>
-                    ))}
+                    {pendingRequests.map((request) => renderRequestCard(request))}
                   </section>
                 )}
 
@@ -590,46 +603,188 @@ export default function SchoolClasses() {
           {message}
         </p>
       )}
-      <section
-        aria-label="Solicitudes y configuración de la escuela"
-        className="flex flex-col gap-4"
-      >
-        {isStudentAccount && requests.length > 0 && (
-          <div className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5">
-            <h2 className="font-bold text-(--c-ocean)">Mis solicitudes</h2>
-            <div className="mt-3 grid gap-2">
-              {requests.map((request) => (
-                <div
-                  key={request.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--r-sm)] bg-(--c-surface) px-3 py-2 text-sm"
-                >
-                  <span>
-                    {request.studentName ||
-                      students.find((student) => student.id === request.studentId)?.name ||
-                      capitalizeSchoolTerm(participantSingular)}{' '}
-                    · {request.preferredStartTime}–{request.preferredEndTime}
-                  </span>
-                  <span className="font-semibold text-(--c-text-2)">
-                    {request.status === 'pending'
-                      ? 'Pendiente'
-                      : request.status === 'approved'
-                        ? 'Aprobada'
-                        : request.status === 'rejected'
-                          ? 'Rechazada'
-                          : 'Cancelada'}
-                  </span>
-                </div>
-              ))}
+      {isStudentAccount && requests.length > 0 && (
+        <Sheet
+          open={showRequests}
+          onClose={() => setShowRequests(false)}
+          label={showArchivedRequests ? 'Solicitudes archivadas' : 'Mis solicitudes'}
+          size="lg"
+          showFooterClose={false}
+          footer={
+            <div className="flex flex-col items-center pt-2">
+              <button
+                type="button"
+                onClick={() => setShowRequests(false)}
+                className="min-h-11 px-4 text-sm font-medium text-(--c-text-2) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setArchivedRequestLimit(10)
+                  setShowArchivedRequests((current) => !current)
+                }}
+                className="min-h-11 px-3 text-[11px] text-(--c-text-2) underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                {showArchivedRequests ? 'Volver a mis solicitudes' : 'Archivadas'}
+              </button>
             </div>
+          }
+        >
+          <h2 className="text-xl font-bold text-(--c-ocean)">
+            {showArchivedRequests ? 'Solicitudes archivadas' : 'Mis solicitudes'}
+          </h2>
+          {showArchivedRequests && (
+            <p className="mt-1 text-xs text-(--c-text-2)">
+              Solicitudes archivadas, de la más reciente a la más antigua.
+            </p>
+          )}
+          {archiveError && (
+            <p role="alert" className="mt-3 text-sm text-(--c-error,#b91c1c)">
+              {archiveError}
+            </p>
+          )}
+          {displayedRequests.length === 0 && (
+            <p className="mt-4 text-sm text-(--c-text-2)">
+              {showArchivedRequests
+                ? 'No tienes solicitudes archivadas.'
+                : 'No tienes solicitudes sin archivar.'}
+            </p>
+          )}
+          <div className="mt-4 grid gap-3">
+            {displayedRequests.map((request) => renderRequestCard(request, true))}
+          </div>
+          {showArchivedRequests && archivedRequests.length > archivedRequestLimit && (
+            <div className="mt-3 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setArchivedRequestLimit((current) => current + 10)}
+                className="min-h-11 px-3 text-xs text-(--c-text-2) underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                Ver más
+              </button>
+            </div>
+          )}
+        </Sheet>
+      )}
+      <Sheet
+        open={Boolean(changeRequest)}
+        onClose={() => setChangeRequest(null)}
+        label="Cambiar estado de solicitud"
+        closeDisabled={resolvingRequestId !== null}
+      >
+        {changeRequest && (
+          <div className="grid gap-3">
+            <h2 className="text-xl font-bold text-(--c-ocean)">Cambiar estado</h2>
+            <StudentBadge
+              name={changeRequest.studentName || capitalizeSchoolTerm(participantSingular)}
+            />
+            <p className="text-sm text-(--c-text-2)">
+              {formatClassDate(changeRequest.startDate)} · {changeRequest.preferredStartTime}–
+              {changeRequest.preferredEndTime}
+            </p>
+            {changeRequest.status === 'approved' && (
+              <p className="text-sm text-(--c-text-2)">
+                Al rechazar, se retirará al alumno de las clases asignadas por esta solicitud.
+              </p>
+            )}
+            {archiveError && (
+              <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
+                {archiveError}
+              </p>
+            )}
+            <button
+              type="button"
+              disabled={resolvingRequestId !== null}
+              onClick={() =>
+                void resolveRequest(
+                  changeRequest,
+                  changeRequest.status === 'approved' ? 'rejected' : 'approved'
+                )
+              }
+              className="btn btn-primary min-h-11"
+            >
+              {resolvingRequestId
+                ? 'Guardando…'
+                : changeRequest.status === 'approved'
+                  ? 'Rechazar solicitud'
+                  : 'Aceptar solicitud'}
+            </button>
           </div>
         )}
-      </section>
+      </Sheet>
+      <Sheet
+        open={Boolean(requestDetails)}
+        onClose={() => setRequestDetails(null)}
+        label="Detalle de solicitud"
+      >
+        {requestDetails && (
+          <div className="grid gap-3">
+            <h2 className="text-xl font-bold text-(--c-ocean)">Detalle de solicitud</h2>
+            <StudentBadge
+              name={
+                requestDetails.studentName ||
+                students.find((student) => student.id === requestDetails.studentId)?.name ||
+                capitalizeSchoolTerm(participantSingular)
+              }
+            />
+            <CoachBadge
+              name={
+                teachers.find((teacher) => teacher.id === requestDetails.preferredTeacherId)
+                  ?.name || 'Sin profe aún'
+              }
+              unassigned={
+                !requestDetails.preferredTeacherId ||
+                requestDetails.preferredTeacherId === UNASSIGNED_SCHOOL_COACH_ID
+              }
+            />
+            <StatusBadge
+              status={requestDetails.status === 'approved' ? 'confirmed' : 'cancelled'}
+              label={
+                requestDetails.status === 'approved'
+                  ? 'Aprobada'
+                  : requestDetails.status === 'rejected'
+                    ? 'Rechazada'
+                    : 'Cancelada'
+              }
+            />
+            <p className="text-sm text-(--c-text-2)">
+              {formatClassDate(requestDetails.startDate)} · {requestDetails.preferredStartTime}–
+              {requestDetails.preferredEndTime}
+            </p>
+            {requestDetails.notes && (
+              <p className="whitespace-pre-wrap text-sm text-(--c-text-2)">
+                {requestDetails.notes}
+              </p>
+            )}
+          </div>
+        )}
+      </Sheet>
       <section aria-label="Agenda de la escuela" className="flex flex-col gap-4">
         <CoachAgenda
           key={selected.school.id}
           schoolId={selected.school.id}
           coachId={isDirector && scheduleCoachId ? scheduleCoachId : undefined}
           aggregateSchool
+          toolbarActions={
+            isStudentAccount && requests.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowArchivedRequests(false)
+                  setShowRequests(true)
+                }}
+                aria-haspopup="dialog"
+                className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
+              >
+                <LuHourglass aria-hidden="true" /> Mis solicitudes
+                <span className="rounded-full bg-(--c-surface) px-1.5 py-0.5 text-xs text-(--c-ocean)">
+                  {activeRequests.length}
+                </span>
+              </button>
+            ) : undefined
+          }
           readOnly={!isDirector}
           manageSchoolSchedule={isDirector}
           allowSchoolScheduleEdit={isDirector}

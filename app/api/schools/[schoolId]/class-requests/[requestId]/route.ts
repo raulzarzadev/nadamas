@@ -1,5 +1,7 @@
+import { FieldValue } from 'firebase-admin/firestore'
 import { NextResponse } from 'next/server'
 import {
+  type SchoolClassOccurrence,
   type SchoolClassRequest,
   schoolClassDisplayTitle,
   schoolMembershipHasRole,
@@ -18,7 +20,7 @@ interface RouteProps {
 
 async function handlePATCH(request: Request, { params }: RouteProps) {
   const { schoolId, requestId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'student'])
   if (access.response) return access.response
   const requestRef = adminDb.collection('schoolClassRequests').doc(requestId)
   const snapshot = await requestRef.get()
@@ -26,14 +28,8 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     return NextResponse.json({ error: 'Solicitud no encontrada.' }, { status: 404 })
   const record = snapshot.data() as SchoolClassRequest
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
-  if (!isDirector)
-    return NextResponse.json(
-      { error: 'No tienes permiso para aprobar reservas de esta escuela.' },
-      { status: 403 }
-    )
-  if (record.status !== 'pending')
-    return NextResponse.json({ error: 'Esta solicitud ya fue atendida.' }, { status: 409 })
   const body = (await request.json().catch(() => ({}))) as {
+    action?: unknown
     status?: unknown
     teacherIds?: unknown
     title?: unknown
@@ -46,11 +42,64 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     location?: unknown
     locationUrl?: unknown
   }
+  if (body.action === 'archive') {
+    if (!isDirector && record.requestedBy !== access.caller.uid)
+      return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+    if (!['approved', 'rejected', 'cancelled'].includes(record.status))
+      return NextResponse.json(
+        { error: 'Solo puedes archivar solicitudes resueltas.' },
+        { status: 409 }
+      )
+    await requestRef.update({ archivedBy: FieldValue.arrayUnion(access.caller.uid) })
+    return NextResponse.json({ archived: true })
+  }
+  if (!isDirector)
+    return NextResponse.json(
+      { error: 'No tienes permiso para aprobar reservas de esta escuela.' },
+      { status: 403 }
+    )
   const status =
     body.status === 'rejected' ? 'rejected' : body.status === 'approved' ? 'approved' : null
   if (!status) return NextResponse.json({ error: 'Estado inválido.' }, { status: 400 })
+  if (record.status === status) return NextResponse.json({ status })
   if (status === 'rejected') {
-    await requestRef.update({ status, updatedAt: Date.now() })
+    const occurrences: SchoolClassOccurrence[] = []
+    const now = Date.now()
+    await adminDb.runTransaction(async (transaction) => {
+      occurrences.length = 0
+      const fresh = await transaction.get(requestRef)
+      if (fresh.data()?.status !== record.status) throw new Error('REQUEST_CHANGED')
+      const assigned =
+        record.status === 'approved'
+          ? await transaction.get(
+              adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId)
+            )
+          : null
+      const changes = (assigned?.docs || []).filter((doc) => {
+        const item = doc.data() as SchoolClassOccurrence
+        return (
+          (record.classOccurrenceIds
+            ? record.classOccurrenceIds.includes(doc.id)
+            : Boolean(record.classSeriesId && item.seriesId === record.classSeriesId)) &&
+          item.studentIds.includes(record.studentId) &&
+          item.status !== 'completed'
+        )
+      })
+      for (const doc of changes) {
+        const item = doc.data() as SchoolClassOccurrence
+        const studentIds = item.studentIds.filter((id) => id !== record.studentId)
+        const updated = {
+          ...item,
+          id: doc.id,
+          studentIds,
+          status: studentIds.length ? item.status : ('cancelled' as const),
+          updatedAt: now,
+        }
+        transaction.update(doc.ref, { studentIds, status: updated.status, updatedAt: now })
+        occurrences.push(updated)
+      }
+      transaction.update(requestRef, { status, updatedAt: now })
+    })
     await createNotification({
       recipientId: record.requestedBy,
       actorId: access.caller.uid,
@@ -60,7 +109,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       body: 'El entrenador no pudo aceptar el horario solicitado.',
       link: '/athlete/progress',
     }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
-    return NextResponse.json({ status })
+    return NextResponse.json({ status, occurrences })
   }
   const teacherIds = Array.isArray(body.teacherIds)
     ? body.teacherIds.filter((id): id is string => typeof id === 'string')
@@ -104,7 +153,12 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       return NextResponse.json({ error: 'El cupo de esta clase está cerrado.' }, { status: 409 })
     throw error
   }
-  await requestRef.update({ status, updatedAt: Date.now(), classSeriesId: classResult.seriesId })
+  await requestRef.update({
+    status,
+    updatedAt: Date.now(),
+    classSeriesId: classResult.seriesId,
+    classOccurrenceIds: classResult.occurrences.map((item) => item.id),
+  })
   const classLink = classDeepLink(schoolId, classResult)
   const classLinkData = classDeepLinkData(classResult)
   await createNotification({

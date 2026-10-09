@@ -661,6 +661,7 @@ export default function AthleteSchoolSchedule({
     setMessage('')
     setBookingConfirmation('')
     let completed = 0
+    let pending = 0
     let failed = 0
     const failureStatuses = new Set<number>()
     const targets = chosenSlots.length ? chosenSlots : [selectedSlot]
@@ -714,30 +715,38 @@ export default function AthleteSchoolSchedule({
               completedBookings.current.add(operationKey)
               continue
             }
-            await postAuthed(`/api/schools/${encodeURIComponent(slot.schoolId)}/class-requests`, {
-              ...(linked
-                ? { studentId: linked.id }
-                : {
-                    participant: participant.additionalProfileId
-                      ? { type: 'additional', additionalProfileId: participant.additionalProfileId }
-                      : { type: 'self' },
-                  }),
-              teacherId: slot.coachId,
-              preferredTeacherId: slot.coachId,
-              title: schoolClassDisplayTitle(undefined),
-              type: slot.groupType === 'grupal' ? 'group' : 'individual',
-              preferredDays: [day],
-              preferredStartTime: slot.startTime,
-              preferredEndTime: slot.endTime,
-              startDate: slot.date,
-              endDate: slot.date,
-              durationMinutes: slotDurationMinutes(slot),
-              location: slot.locationName,
-              notes: `Horario elegido: ${slot.startTime}–${slot.endTime}.`,
-              directBooking:
-                (schools.find((school) => school.id === slot.schoolId)?.bookingMode ||
-                  bookingMode) === 'direct',
-            })
+            const response = await postAuthed(
+              `/api/schools/${encodeURIComponent(slot.schoolId)}/class-requests`,
+              {
+                ...(linked
+                  ? { studentId: linked.id }
+                  : {
+                      participant: participant.additionalProfileId
+                        ? {
+                            type: 'additional',
+                            additionalProfileId: participant.additionalProfileId,
+                          }
+                        : { type: 'self' },
+                    }),
+                teacherId: slot.coachId,
+                preferredTeacherId: slot.coachId,
+                title: schoolClassDisplayTitle(undefined),
+                type: slot.groupType === 'grupal' ? 'group' : 'individual',
+                preferredDays: [day],
+                preferredStartTime: slot.startTime,
+                preferredEndTime: slot.endTime,
+                startDate: slot.date,
+                endDate: slot.date,
+                durationMinutes: slotDurationMinutes(slot),
+                location: slot.locationName,
+                notes: `Horario elegido: ${slot.startTime}–${slot.endTime}.`,
+                directBooking:
+                  (schools.find((school) => school.id === slot.schoolId)?.bookingMode ||
+                    bookingMode) === 'direct',
+              }
+            )
+            const result = (await response.json()) as { pendingApproval?: boolean }
+            if (result.pendingApproval) pending++
           }
           completedBookings.current.add(operationKey)
           completed++
@@ -764,8 +773,22 @@ export default function AthleteSchoolSchedule({
       setSelectedSlot(null)
       setChosenSlots([])
       completedBookings.current.clear()
+      const confirmed = completed - pending
       const confirmation = completed
-        ? `${completed} inscripciones enviadas. Las solicitudes pendientes deben ser confirmadas por la escuela.`
+        ? [
+            confirmed > 0
+              ? confirmed === 1
+                ? 'La clase se agendó con éxito.'
+                : `${confirmed} clases se agendaron con éxito.`
+              : '',
+            pending > 0
+              ? pending === 1
+                ? 'Solicitud enviada. La escuela debe confirmar el horario.'
+                : `${pending} solicitudes enviadas. La escuela debe confirmar los horarios.`
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' ')
         : 'Las personas seleccionadas ya están inscritas en esos horarios.'
       setMessage(confirmation)
       setBookingConfirmation(confirmation)
