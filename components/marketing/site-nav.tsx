@@ -10,7 +10,7 @@ import { useTenantSchool } from '@/context/TenantSchoolContext'
 const ROLE_LINKS = [
   { href: '/#atletas', label: 'Atletas', detail: 'Clases y progreso' },
   { href: '/#entrenadores', label: 'Entrenadores', detail: 'Agenda y alumnos' },
-  { href: '/#directores', label: 'Directores de escuelas', detail: 'Equipo y horarios' },
+  { href: '/#directores', label: 'Coordinadores de escuelas', detail: 'Equipo y horarios' },
 ] as const
 
 export default function SiteNav() {

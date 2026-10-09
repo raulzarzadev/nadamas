@@ -19,7 +19,7 @@ import { ROLE_LABEL, SECONDARY_NAV_BY_ROLE } from './nav-config'
 const ROLE_PILL_LABEL: Record<RoleName, string> = {
   athlete: 'atleta',
   coach: 'coach',
-  school: 'director',
+  school: 'coordinador',
   admin: 'admin',
 }
 

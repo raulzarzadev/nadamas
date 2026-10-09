@@ -9,7 +9,7 @@ export default function SchoolNoSelection() {
     >
       <div>
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
-          Modo director
+          Modo coordinador
         </p>
         <h1
           id="school-setup-title"

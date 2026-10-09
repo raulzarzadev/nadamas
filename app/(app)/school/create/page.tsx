@@ -130,7 +130,9 @@ export default function CreateSchoolPage() {
               Modo escuela
             </p>
             <h1 className="mt-2 text-3xl font-extrabold">{ownedSchool.name}</h1>
-            <p className="mt-2 text-white/75">Ya tienes una escuela creada y eres su director.</p>
+            <p className="mt-2 text-white/75">
+              Ya tienes una escuela creada y eres su coordinador.
+            </p>
           </div>
           <div className="flex flex-col gap-4 p-6 sm:p-8">
             <div className="flex items-center gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-4">

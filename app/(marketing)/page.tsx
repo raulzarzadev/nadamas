@@ -9,7 +9,7 @@ import type { Metadata } from 'next'
 
 const title = 'nadamas.app | Clases, agenda y progreso de natación'
 const description =
-  'Una app de natación para atletas, entrenadores y directores de escuelas. Consulta horarios, reserva clases, gestiona alumnos y sigue su progreso.'
+  'Una app de natación para atletas, entrenadores y coordinadores de escuelas. Consulta horarios, reserva clases, gestiona alumnos y sigue su progreso.'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://nadamas.app'),

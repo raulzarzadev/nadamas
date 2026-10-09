@@ -1,7 +1,7 @@
 export const FAQ_ITEMS = [
   {
     q: '¿Puedo usar nadamas sin pertenecer a una escuela?',
-    a: 'Sí. Puedes explorar clases como atleta o activar el modo entrenador para gestionar tus propios horarios y alumnos. El modo director es para coordinar una escuela.',
+    a: 'Sí. Puedes explorar clases como atleta o activar el modo entrenador para gestionar tus propios horarios y alumnos. El modo coordinador es para coordinar una escuela.',
   },
   {
     q: '¿Hay clases particulares y grupales?',
@@ -9,10 +9,10 @@ export const FAQ_ITEMS = [
   },
   {
     q: '¿Quién puede agregar atletas a una clase grupal?',
-    a: 'El entrenador o el director de la escuela pueden añadir alumnos a una clase grupal desde su agenda.',
+    a: 'El entrenador o el coordinador de la escuela pueden añadir alumnos a una clase grupal desde su agenda.',
   },
   {
-    q: '¿Qué puede organizar un director?',
+    q: '¿Qué puede organizar un coordinador?',
     a: 'Puede crear una escuela, invitar entrenadores, gestionar alumnos, asignar horarios y administrar las clases y sus participantes.',
   },
   {

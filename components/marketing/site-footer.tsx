@@ -10,7 +10,7 @@ const COLUMNS = [
     links: [
       { label: 'Para atletas', href: '/#atletas' },
       { label: 'Para entrenadores', href: '/#entrenadores' },
-      { label: 'Para directores', href: '/#directores' },
+      { label: 'Para coordinadores', href: '/#directores' },
     ],
   },
   {

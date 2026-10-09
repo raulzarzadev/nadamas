@@ -3,7 +3,11 @@
 import Sheet from '@comps/ui/sheet'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiClock, FiEdit2, FiPhone, FiSend, FiShield } from 'react-icons/fi'
+import { FiClipboard, FiClock, FiEdit2, FiPhone, FiSend, FiShield } from 'react-icons/fi'
+import CoachAgenda from '@/components/coach/CoachAgenda'
+import StudentLabels from '@/components/coach/StudentLabels'
+import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
+import CoachBadge from '@/components/ui/coach-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { capitalizeSchoolTerm, type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
@@ -24,6 +28,11 @@ interface Teacher {
 export default function SchoolCoaches() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
   const terminology = useSchoolTerminology()
+  const [labelData, setLabelData] = useState<LabelList | null>(null)
+  const [labelRevision, setLabelRevision] = useState(0)
+  const [filteredIds, setFilteredIds] = useState<string[] | null>(null)
+  const [scheduleTeacher, setScheduleTeacher] = useState<Teacher | null>(null)
+  const [teacherProfile, setTeacherProfile] = useState<Teacher | null>(null)
   const [teachers, setTeachers] = useState<Teacher[]>([])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [showInvite, setShowInvite] = useState(false)
@@ -121,79 +130,74 @@ export default function SchoolCoaches() {
       {loading ? (
         <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
       ) : teachers.length ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          {teachers.map((teacher) =>
-            (() => {
-              const isOwnTeacher = teacher.id === selected.membership.userId
-              return (
-                <article
-                  key={teacher.id}
-                  className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#fff7e8] text-[#9a6b16]">
-                      <FiShield aria-hidden="true" />
-                    </span>
-                    <div className="min-w-0">
-                      <h2 className="font-bold text-(--c-ocean)">{teacher.name}</h2>
-                      <p className="mt-1 flex items-center gap-1 text-sm text-(--c-text-2)">
-                        <FiPhone aria-hidden="true" /> {teacher.phone || 'Sin teléfono'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center gap-2 text-sm text-(--c-text-2)">
-                    <FiClock aria-hidden="true" />{' '}
-                    {teacher.availability.length
-                      ? `${teacher.availability.length} horarios disponibles`
-                      : 'Disponibilidad pendiente'}
-                  </div>
-                  {!teacher.profileComplete && (
-                    <p className="mt-3 text-xs font-semibold text-[#9a6b16]">
-                      Perfil pendiente de completar
-                    </p>
-                  )}
-
-                  {isDirector && (
-                    <label className="mt-4 flex items-start gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
-                      <input
-                        type="checkbox"
-                        className="checkbox checkbox-sm mt-0.5"
-                        checked={teacher.canManageSchoolBookings}
-                        disabled={savingPermission === teacher.id}
-                        onChange={(event) =>
-                          void setBookingPermission(teacher, event.currentTarget.checked)
-                        }
-                      />
-                      <span>
-                        <span className="block font-semibold text-(--c-ocean)">
-                          Puede aprobar reservas de la escuela
-                        </span>
-                        Verá las solicitudes pendientes en su agenda personal y podrá aprobarlas,
-                        rechazarlas o proponer otro horario.
-                      </span>
-                    </label>
-                  )}
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <Link
-                      href={`/school/classes?school=${encodeURIComponent(selected.school.id)}&coach=${encodeURIComponent(teacher.id)}`}
-                      className="btn btn-outline min-h-11 gap-2 text-(--c-ocean)"
-                    >
-                      <FiClock aria-hidden="true" /> Ver horarios
-                    </Link>
-                    {isOwnTeacher && (
-                      <Link
-                        href="/profile"
-                        className="btn btn-ghost min-h-10 gap-2 text-(--c-ocean-mid)"
-                      >
-                        <FiEdit2 aria-hidden="true" /> Actualizar datos
-                      </Link>
-                    )}
-                  </div>
-                </article>
-              )
-            })()
+        <div className="grid gap-2">
+          {isDirector && (
+            <StudentLabelTools
+              key={schoolId}
+              schoolId={schoolId}
+              entity="teachers"
+              students={teachers}
+              revision={labelRevision}
+              onFilter={setFilteredIds}
+              onData={setLabelData}
+              onUpdated={() => setLabelRevision((current) => current + 1)}
+            />
           )}
+          {teachers
+            .filter(
+              (teacher) => !isDirector || filteredIds === null || filteredIds.includes(teacher.id)
+            )
+            .map((teacher) => (
+              <article
+                key={teacher.id}
+                className="flex flex-wrap items-center gap-2 rounded-xl border border-(--c-border) bg-white px-3 py-2"
+              >
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                  <CoachBadge name={teacher.name} />
+                  {isDirector && (
+                    <StudentLabels
+                      key={`${teacher.id}:${labelRevision}`}
+                      studentId={teacher.id}
+                      schoolId={schoolId}
+                      entity="teachers"
+                      data={{
+                        labels: labelData?.labels || [],
+                        selected: labelData?.assignments[teacher.id] || [],
+                      }}
+                      readOnly
+                    />
+                  )}
+                </div>
+                <span className="text-xs text-(--c-text-2)">
+                  {teacher.availability.length} horarios
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setScheduleTeacher(teacher)}
+                  aria-label={`Ver horarios de ${teacher.name}`}
+                  title="Ver horarios"
+                  className="grid size-8 place-items-center rounded-full border border-(--c-border) text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                >
+                  <FiClock aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTeacherProfile(teacher)}
+                  aria-label={`Abrir ficha de ${teacher.name}`}
+                  title="Abrir ficha"
+                  className="grid size-8 place-items-center rounded-full border border-(--c-border) text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                >
+                  <FiClipboard aria-hidden="true" />
+                </button>
+              </article>
+            ))}
+          {isDirector &&
+            filteredIds !== null &&
+            !teachers.some((teacher) => filteredIds.includes(teacher.id)) && (
+              <p className="py-4 text-sm text-(--c-text-2)">
+                No hay {coachPlural} con esta etiqueta.
+              </p>
+            )}
         </div>
       ) : (
         <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
@@ -227,6 +231,85 @@ export default function SchoolCoaches() {
             ))}
           </div>
         </div>
+      )}
+      {scheduleTeacher && (
+        <Sheet
+          open
+          onClose={() => setScheduleTeacher(null)}
+          label={`Horarios de ${scheduleTeacher.name}`}
+          size="2xl"
+        >
+          <div className="grid min-w-0 gap-4 pb-4">
+            <h2 className="text-xl font-bold">Horarios de {scheduleTeacher.name}</h2>
+            <CoachAgenda
+              key={scheduleTeacher.id}
+              schoolId={schoolId}
+              coachId={scheduleTeacher.id}
+              aggregateSchool
+              readOnly
+            />
+          </div>
+        </Sheet>
+      )}
+      {teacherProfile && (
+        <Sheet
+          open
+          onClose={() => {
+            setTeacherProfile(null)
+            setLabelRevision((current) => current + 1)
+          }}
+          label={`Ficha de ${teacherProfile.name}`}
+        >
+          <div className="grid gap-4 pb-4">
+            <h2 className="text-xl font-bold">{teacherProfile.name}</h2>
+            {isDirector && (
+              <StudentLabels studentId={teacherProfile.id} schoolId={schoolId} entity="teachers" />
+            )}
+            <p className="flex items-center gap-2 text-sm">
+              <FiPhone aria-hidden="true" />
+              {teacherProfile.phone || 'Sin teléfono'}
+            </p>
+            {teacherProfile.bio && (
+              <p className="text-sm whitespace-pre-wrap">{teacherProfile.bio}</p>
+            )}
+            {!teacherProfile.profileComplete && (
+              <p className="text-sm text-(--c-text-2)">Perfil pendiente de completar</p>
+            )}
+            {isDirector && (
+              <label className="flex min-h-11 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={
+                    teachers.find((teacher) => teacher.id === teacherProfile.id)
+                      ?.canManageSchoolBookings || false
+                  }
+                  disabled={savingPermission === teacherProfile.id}
+                  onChange={(event) =>
+                    void setBookingPermission(teacherProfile, event.currentTarget.checked)
+                  }
+                />
+                Puede aprobar reservas de la escuela
+              </label>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setScheduleTeacher(teacherProfile)
+                setTeacherProfile(null)
+              }}
+              className="btn btn-outline min-h-11 border"
+            >
+              <FiClock aria-hidden="true" />
+              Ver horarios
+            </button>
+            {teacherProfile.id === selected.membership.userId && (
+              <Link href="/profile" className="btn btn-ghost min-h-11">
+                <FiEdit2 aria-hidden="true" />
+                Actualizar datos
+              </Link>
+            )}
+          </div>
+        </Sheet>
       )}
       {showInvite && (
         <InviteCoach
@@ -267,8 +350,8 @@ function InviteCoach({
       })
       const payload = (await response.json()) as { invitation: SchoolInvitation }
       onCreated(payload.invitation)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se pudo enviar la invitación.')
+    } catch {
+      setError('No se pudo enviar la invitación. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }

@@ -68,6 +68,14 @@ Older non-class helpers still exist as loose JS in `firebase/*.js` (`teams.js`, 
 
 Known gotcha: `firebase/athletes/main.ts` instantiates the collection as `'atheltes'` (misspelled). Match existing data before "fixing" it.
 
+### Shared authenticated reads and list data
+
+- Follow [docs/data-fetching.md](docs/data-fetching.md) for authenticated reads, cache invalidation, and list loading. Reuse `getAuthed` and mutation helpers from `lib/client/authed-api.ts`; do not create parallel authenticated fetch/cache implementations.
+- Reuse `useSchoolSelection` and `getCachedAuthedData` to render available data during navigation. Cache keys are per user and exact URL; keep URL construction consistent.
+- Student lists must use `students?includeSummary=true&coachOnly=true` for coach counters and bulk `student-tags?entity=students&schoolId=...&view=list` for labels. Share labels through `StudentLabelTools.onData` and `StudentLabels.data`; do not fetch histories or labels once per row to render summaries.
+- After writes, update local state or reload affected consumers. API mutation helpers and `useSchoolAgendaUpdates` invalidate shared cache; other write paths must invalidate explicitly. New cached resources need an invalidation strategy and permission checks.
+- Validate changes to this pattern with `node --test scripts/tests/request-performance.test.mjs` and `pnpm typecheck`.
+
 ### Path aliases (tsconfig.json)
 
 `@comps/* → components/*`, `@/* → ./*`, `@utils/* → utils/*`, `@firebase/*` & `fb/* → firebase/*`, `Inputs/* → components/Inputs/*`, `@context → context/*`.

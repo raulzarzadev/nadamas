@@ -104,7 +104,7 @@ export default function CoachAgendaWorkspace() {
               key={option.id}
               type="button"
               aria-pressed={activeView === option.id}
-              title={'directs' in option && option.directs ? 'Abrir modo director' : undefined}
+              title={'directs' in option && option.directs ? 'Abrir modo coordinador' : undefined}
               onClick={() => {
                 if (!tenant && 'directs' in option && option.directs) {
                   const schoolId = option.id.slice('school:'.length)

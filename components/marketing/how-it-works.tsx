@@ -55,7 +55,7 @@ const JOURNEYS = [
   {
     id: 'directores',
     number: '03',
-    audience: 'Para directores de escuelas',
+    audience: 'Para coordinadores de escuelas',
     title: 'Coordina a todo tu equipo desde un lugar.',
     intro:
       'Crea tu escuela y administra las agendas de varios entrenadores y atletas sin perder de vista cada clase.',

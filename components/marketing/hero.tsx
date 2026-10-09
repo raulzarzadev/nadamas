@@ -43,7 +43,7 @@ export default function Hero() {
             className="mt-4 max-w-lg text-base leading-relaxed sm:text-lg"
             style={{ color: 'rgba(255,255,255,0.88)' }}
           >
-            Atletas encuentran horarios. Entrenadores organizan sus clases. Directores coordinan
+            Atletas encuentran horarios. Entrenadores organizan sus clases. Coordinadores coordinan
             escuelas y equipos.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
