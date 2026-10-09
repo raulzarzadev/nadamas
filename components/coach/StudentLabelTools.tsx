@@ -128,18 +128,17 @@ export default function StudentLabelTools({
             aria-pressed={filter === label.id}
             disabled={loading}
             onClick={() => setFilter(filter === label.id ? '' : label.id)}
-            className={`btn min-h-8 h-8 gap-1 border px-3 text-xs ${filter === label.id ? 'btn-primary' : 'btn-outline'}`}
-            style={
-              filter === label.id
-                ? undefined
-                : {
-                    backgroundColor: studentLabelColor(label.color).color,
-                    color: studentLabelColor(label.color).text,
-                  }
-            }
+            className={`btn btn-outline min-h-8 h-8 gap-1 border px-3 text-xs ${filter === label.id ? 'ring-2 ring-(--c-ocean) ring-offset-2' : ''}`}
+            style={{
+              backgroundColor: studentLabelColor(label.color).color,
+              color: studentLabelColor(label.color).text,
+            }}
           >
             <FiTag aria-hidden="true" />
             {label.name}
+            <span className="text-[10px] tabular-nums opacity-75">
+              ({students.filter((student) => assignments[student.id]?.includes(label.id)).length})
+            </span>
           </button>
         ))}
         {filter && (
