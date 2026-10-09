@@ -5,6 +5,7 @@ import Sheet from '@/components/ui/sheet'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
 import type { SchoolStudentHistory } from '@/lib/school-student-history'
+import StudentLabels from './StudentLabels'
 
 type Profile = {
   id?: string
@@ -38,6 +39,7 @@ export default function StudentProfileModal({
   const [error, setError] = useState('')
   const [history, setHistory] = useState<SchoolStudentHistory | null>(null)
   const [historyError, setHistoryError] = useState('')
+  const [panel, setPanel] = useState<'classes' | 'scheduled' | 'comments' | null>(null)
   useEffect(() => {
     let active = true
     const endpoint = schoolId
@@ -83,6 +85,8 @@ export default function StudentProfileModal({
   const classes = schoolId
     ? history?.classes.map((item) => ({
         id: item.id,
+        taken: item.status === 'taken',
+        scheduled: item.status === 'scheduled',
         date: item.date,
         startTime: item.startTime,
         endTime: item.endTime,
@@ -93,17 +97,108 @@ export default function StudentProfileModal({
       }))
     : profile?.classes?.map((item) => ({
         id: item.id,
+        taken: item.status === 'completed' || item.attended === true,
+        scheduled:
+          item.status !== 'cancelled' &&
+          item.status !== 'completed' &&
+          new Date(`${item.date}T${item.endTime}`).getTime() > Date.now(),
         date: item.date,
         startTime: item.startTime,
         endTime: item.endTime,
         note: item.studentNote || '',
         comments: [] as string[],
       }))
+  const takenClasses = (classes || [])
+    .filter((item) => item.taken)
+    .sort((a, b) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`))
+  const comments = [
+    ...(history?.comments || []).map((item) => ({
+      id: item.id,
+      text: item.text,
+      context: `${item.authorName} · ${new Date(item.createdAt).toLocaleDateString('es-MX')}`,
+    })),
+    ...(classes || []).flatMap((item) => [
+      ...(item.note
+        ? [{ id: `${item.id}:note`, text: item.note, context: `${item.date} · ${item.startTime}` }]
+        : []),
+      ...item.comments.map((text) => ({
+        id: `${item.id}:${text}`,
+        text,
+        context: `${item.date} · ${item.startTime}`,
+      })),
+    ]),
+  ]
+  const scheduledClasses = (classes || [])
+    .filter((item) => item.scheduled)
+    .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
+  const panelClasses = panel === 'scheduled' ? scheduledClasses : takenClasses
+  const panelTitle =
+    panel === 'scheduled'
+      ? 'Clases agendadas'
+      : panel === 'classes'
+        ? 'Clases tomadas'
+        : 'Comentarios'
+  if (panel)
+    return (
+      <Sheet open onClose={() => setPanel(null)} label={panelTitle}>
+        <div className="grid gap-3 pb-4">
+          <h2 className="text-xl font-bold">
+            {panelTitle} ({panel !== 'comments' ? panelClasses.length : comments.length})
+          </h2>
+          <p className="text-sm font-semibold">{profile?.name || name}</p>
+          {panel !== 'comments' ? (
+            <ul className="grid gap-2">
+              {panelClasses.map((item) => (
+                <li
+                  key={item.id}
+                  className="grid gap-2 rounded-xl border border-(--c-border) p-3 text-sm"
+                >
+                  <strong>
+                    {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}{' '}
+                    · {item.startTime}–{item.endTime}
+                  </strong>
+                  {item.note && <p className="whitespace-pre-wrap break-words">{item.note}</p>}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="grid gap-2">
+              {comments.map((item) => (
+                <li key={item.id} className="rounded-xl border border-(--c-border) p-3 text-sm">
+                  <p className="text-xs text-(--c-text-2)">{item.context}</p>
+                  <p className="mt-1 whitespace-pre-wrap break-words">{item.text}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {(panel !== 'comments' ? panelClasses.length : comments.length) === 0 && (
+            <p className="text-sm text-(--c-text-2)">
+              {panel !== 'comments'
+                ? 'No hay clases registradas en esta lista.'
+                : 'Todavía no hay comentarios.'}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => setPanel(null)}
+            className="btn btn-outline min-h-11 border"
+          >
+            Volver al perfil
+          </button>
+        </div>
+      </Sheet>
+    )
   return (
-    <Sheet open onClose={onClose} label="Perfil del atleta">
+    <Sheet open onClose={onClose} label={`Perfil de ${profile?.name || name}`}>
       <div className="grid gap-4 pb-4">
-        <h2 className="text-xl font-bold">Perfil del atleta</h2>
-        <h3 className="text-lg font-bold">{profile?.name || name}</h3>
+        <div className="flex items-start justify-between gap-3">
+          <h2 className="text-xl font-bold">Perfil de {profile?.name || name}</h2>
+          {profile && <StudentLabels studentId={profile.id || studentId} schoolId={schoolId} />}
+        </div>
         {loading && (
           <p role="status" className="text-sm">
             Cargando perfil…
@@ -139,72 +234,41 @@ export default function StudentProfileModal({
           </dl>
         )}
         {profile && (
-          <section className="grid gap-3" aria-label="Historial de clases">
-            <h3 className="text-lg font-bold">Historial de clases</h3>
+          <section className="grid gap-2" aria-label="Historial del atleta">
             {historyError && (
               <p role="alert" className="text-sm">
                 {historyError}
               </p>
             )}
-            {schoolId && !history && !historyError && (
+            {!classes && !historyError && (
               <p role="status" className="text-sm">
                 Cargando historial…
               </p>
             )}
-            {classes?.length === 0 && (
-              <p className="text-sm text-(--c-text-2)">Todavía no hay clases registradas.</p>
-            )}
-            {classes && (
-              <ul className="grid gap-2">
-                {[...classes]
-                  .sort((a, b) =>
-                    `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`)
-                  )
-                  .map((item) => (
-                    <li
-                      key={item.id}
-                      className="grid gap-2 rounded-xl border border-(--c-border) p-3 text-sm"
-                    >
-                      <strong>
-                        {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}{' '}
-                        · {item.startTime}–{item.endTime}
-                      </strong>
-                      {item.note ? (
-                        <p className="whitespace-pre-wrap break-words">{item.note}</p>
-                      ) : (
-                        <p className="text-xs text-(--c-text-2)">Sin nota de esta clase.</p>
-                      )}
-                      {[...new Set(item.comments)].map((comment) => (
-                        <p key={comment} className="whitespace-pre-wrap break-words">
-                          {comment}
-                        </p>
-                      ))}
-                    </li>
-                  ))}
-              </ul>
-            )}
-            {history && (
-              <>
-                <h3 className="text-lg font-bold">Comentarios</h3>
-                {history.comments.length ? (
-                  history.comments.map((comment) => (
-                    <div key={comment.id} className="rounded-xl bg-(--c-surface) p-3 text-sm">
-                      <p className="text-xs font-semibold">
-                        {comment.authorName} ·{' '}
-                        {new Date(comment.createdAt).toLocaleDateString('es-MX')}
-                      </p>
-                      <p className="mt-1 whitespace-pre-wrap break-words">{comment.text}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-(--c-text-2)">No hay comentarios generales.</p>
-                )}
-              </>
-            )}
+            <button
+              type="button"
+              disabled={!classes}
+              onClick={() => setPanel('scheduled')}
+              className="btn btn-outline min-h-11 justify-between border"
+            >
+              Clases agendadas <strong>{scheduledClasses.length}</strong>
+            </button>
+            <button
+              type="button"
+              disabled={!classes}
+              onClick={() => setPanel('classes')}
+              className="btn btn-outline min-h-11 justify-between border"
+            >
+              Clases tomadas <strong>{takenClasses.length}</strong>
+            </button>
+            <button
+              type="button"
+              disabled={!classes}
+              onClick={() => setPanel('comments')}
+              className="btn btn-outline min-h-11 justify-between border"
+            >
+              Comentarios <strong>{comments.length}</strong>
+            </button>
           </section>
         )}
       </div>

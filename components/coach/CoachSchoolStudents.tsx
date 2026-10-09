@@ -1,13 +1,18 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { FiCalendar, FiMail, FiPhone, FiSearch, FiUser } from 'react-icons/fi'
+import { FiSearch, FiUser } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import ClassStudentRow from '@/components/ui/class-student-row'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { SchoolClassOccurrence, SchoolStudent } from '@/lib/school'
 import { capitalizeSchoolTerm, schoolMembershipHasRole } from '@/lib/school'
 import { coachVisibleSchoolStudentIds } from '@/lib/school-coach-students'
+import type { SchoolStudentHistory } from '@/lib/school-student-history'
+import StudentLabels from './StudentLabels'
+import StudentLabelTools from './StudentLabelTools'
+import StudentProfileModal from './StudentProfileModal'
 
 export default function CoachSchoolStudents() {
   const { schools, selectedId, status } = useSchoolSelection({ includePersonal: true })
@@ -28,7 +33,13 @@ export default function CoachSchoolStudents() {
   )
   const [students, setStudents] = useState<SchoolStudent[]>([])
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
+  const [counts, setCounts] = useState<Record<string, { taken: number; scheduled: number } | null>>(
+    {}
+  )
+  const [filteredIds, setFilteredIds] = useState<string[] | null>(null)
+  const [labelRevision, setLabelRevision] = useState(0)
   const [query, setQuery] = useState('')
+  const [profileStudent, setProfileStudent] = useState<SchoolStudent | null>(null)
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -37,6 +48,7 @@ export default function CoachSchoolStudents() {
     let active = true
     setLoading(true)
     setMessage(null)
+    setCounts({})
     Promise.all([
       getAuthed(`/api/schools/${selected.school.id}/students`),
       getAuthed(`/api/schools/${selected.school.id}/classes`),
@@ -49,6 +61,33 @@ export default function CoachSchoolStudents() {
         if (!active) return
         setStudents(studentPayload.students || [])
         setClasses(classPayload.classes || [])
+        const queue = [...(studentPayload.students || [])]
+        const schoolId = selected.school.id
+        await Promise.all(
+          Array.from({ length: Math.min(4, queue.length) }, async () => {
+            while (active && queue.length) {
+              const student = queue.shift()
+              if (!student) break
+              try {
+                const response = await getAuthed(
+                  `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(student.id)}/history`
+                )
+                const history = (await response.json()) as SchoolStudentHistory
+                if (active)
+                  setCounts((current) => ({
+                    ...current,
+                    [student.id]: {
+                      taken: history.classes.filter((item) => item.status === 'taken').length,
+                      scheduled: history.classes.filter((item) => item.status === 'scheduled')
+                        .length,
+                    },
+                  }))
+              } catch {
+                if (active) setCounts((current) => ({ ...current, [student.id]: null }))
+              }
+            }
+          })
+        )
       })
       .catch(() => {
         if (active) setMessage(`No se pudieron cargar ${participantPlural} de esta escuela.`)
@@ -65,15 +104,10 @@ export default function CoachSchoolStudents() {
 
   const includedStudentIds = coachVisibleSchoolStudentIds(classes, selected.school.timezone)
   const normalizedQuery = query.trim().toLowerCase()
-  const classesByStudent = new Map<string, number>()
-  for (const item of classes) {
-    for (const studentId of item.studentIds) {
-      classesByStudent.set(studentId, (classesByStudent.get(studentId) || 0) + 1)
-    }
-  }
   const visibleStudents = students.filter(
     (student) =>
       includedStudentIds.has(student.id) &&
+      (filteredIds === null || filteredIds.includes(student.id)) &&
       [student.name, student.studentEmail || '', student.guardianName, student.guardianEmail || '']
         .join(' ')
         .toLowerCase()
@@ -109,6 +143,16 @@ export default function CoachSchoolStudents() {
         )}
       </div>
 
+      {students.length > 0 && (
+        <StudentLabelTools
+          key={selected.school.id}
+          schoolId={selected.school.id}
+          students={students.filter((student) => includedStudentIds.has(student.id))}
+          revision={labelRevision}
+          onFilter={setFilteredIds}
+          onUpdated={() => setLabelRevision((current) => current + 1)}
+        />
+      )}
       {message && (
         <p className="mt-4 rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
           {message}
@@ -117,42 +161,31 @@ export default function CoachSchoolStudents() {
       {loading ? (
         <p className="py-8 text-center text-sm text-(--c-text-2)">Cargando {participantPlural}…</p>
       ) : visibleStudents.length ? (
-        <ul className="mt-5 grid gap-3 md:grid-cols-2">
+        <ul className="mt-4 grid gap-2">
           {visibleStudents.map((student) => (
-            <li key={student.id} className="rounded-[var(--r-sm)] border border-(--c-border) p-4">
-              <div className="flex items-start gap-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean)">
-                  <FiUser aria-hidden="true" />
-                </span>
-                <div className="min-w-0">
-                  <h3 className="font-bold text-(--c-ocean)">{student.name}</h3>
-                  <p className="mt-1 text-xs text-(--c-text-2)">
-                    {classesByStudent.get(student.id) || 0} clase
-                    {(classesByStudent.get(student.id) || 0) === 1 ? '' : 's'} asignadas
-                  </p>
-                </div>
-              </div>
-              {student.studentEmail && (
-                <p className="mt-4 flex items-center gap-2 text-sm text-(--c-text-2)">
-                  <FiMail aria-hidden="true" /> {student.studentEmail}
-                </p>
-              )}
-              {student.guardianName && (
-                <p className="mt-2 text-sm text-(--c-text-2)">
-                  Contacto: <span className="font-semibold">{student.guardianName}</span>
-                </p>
-              )}
-              {student.guardianPhone && (
-                <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
-                  <FiPhone aria-hidden="true" /> {student.guardianPhone}
-                </p>
-              )}
-              <p className="mt-2 flex items-center gap-2 text-xs text-(--c-text-2)">
-                <FiCalendar aria-hidden="true" />
-                {student.status === 'active'
-                  ? `${capitalizeSchoolTerm(participantSingular)} activo`
-                  : `${capitalizeSchoolTerm(participantSingular)} inactivo`}
-              </p>
+            <li key={student.id} className="rounded-xl border border-(--c-border)">
+              <ClassStudentRow
+                name={student.name}
+                labels={
+                  <StudentLabels
+                    key={`${student.id}:${labelRevision}`}
+                    studentId={student.id}
+                    schoolId={selected.school.id}
+                    readOnly
+                  />
+                }
+                onEdit={() => setProfileStudent(student)}
+                editLabel={`Ver perfil de ${student.name}`}
+                actions={
+                  <span className="text-right text-xs text-(--c-text-2)">
+                    {counts[student.id]
+                      ? `${counts[student.id]?.taken} ${counts[student.id]?.taken === 1 ? 'tomada' : 'tomadas'} · ${counts[student.id]?.scheduled} ${counts[student.id]?.scheduled === 1 ? 'agendada' : 'agendadas'}`
+                      : counts[student.id] === null
+                        ? 'Historial no disponible'
+                        : 'Cargando historial…'}
+                  </span>
+                }
+              />
             </li>
           ))}
         </ul>
@@ -170,6 +203,18 @@ export default function CoachSchoolStudents() {
               : 'Aquí aparecen atletas con clases próximas contigo y a quienes ya les diste clase.'}
           </p>
         </div>
+      )}
+      {profileStudent && (
+        <StudentProfileModal
+          key={profileStudent.id}
+          studentId={profileStudent.id}
+          schoolId={selected.school.id}
+          name={profileStudent.name}
+          onClose={() => {
+            setProfileStudent(null)
+            setLabelRevision((current) => current + 1)
+          }}
+        />
       )}
     </section>
   )

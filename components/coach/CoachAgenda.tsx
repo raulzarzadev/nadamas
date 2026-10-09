@@ -60,6 +60,7 @@ import ScheduleHoursEditor, {
 import ScheduleStudentsModal from './ScheduleStudentsModal'
 import StudentProgressModal from './StudentProgressModal'
 import StudentProfileModal from './StudentProfileModal'
+import StudentLabels from './StudentLabels'
 
 function bookingSlotKey(booking: Pick<Booking, 'date' | 'startTime'>) {
   return `${booking.date}|${booking.startTime}`
@@ -181,6 +182,7 @@ export default function CoachAgenda({
     schoolId?: string
     name: string
   } | null>(null)
+  const [labelRevision, setLabelRevision] = useState(0)
   const adminMode = Boolean(coachId)
   const readOnlyAgenda = readOnly || (aggregateSchool && !manageSchoolSchedule)
   const multiCoachAgenda = readOnlyAgenda || (aggregateSchool && !coachId)
@@ -1880,19 +1882,32 @@ export default function CoachAgenda({
                             className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
                           >
                             <div className="flex min-w-0 items-center gap-2.5">
-                              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
-                                {initials(studentName)}
-                              </span>
-                              <span className="min-w-0 flex-1">
+                              <div className="relative size-9 shrink-0">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
+                                  {initials(studentName)}
+                                </span>
+                              </div>
+                              <div className="min-w-0 flex-1">
                                 {booking.schoolClassTitle && (
                                   <span className="block text-xs font-semibold text-[var(--c-text-2)]">
                                     {booking.schoolClassTitle}
                                   </span>
                                 )}
-                                <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
-                                  {studentName}
-                                </span>
-                              </span>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
+                                    {studentName}
+                                  </span>
+                                  {!hideBookingActions && (
+                                    <StudentLabels
+                                      key={`${studentId}:${labelRevision}`}
+                                      studentId={studentId}
+                                      schoolId={schoolIdForBooking(booking) || undefined}
+                                      compact
+                                      readOnly
+                                    />
+                                  )}
+                                </div>
+                              </div>
                             </div>
                             <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
                               {pending && <StatusBadge status="pending" />}
@@ -3040,7 +3055,13 @@ export default function CoachAgenda({
       )}
 
       {studentProfile && (
-        <StudentProfileModal {...studentProfile} onClose={() => setStudentProfile(null)} />
+        <StudentProfileModal
+          {...studentProfile}
+          onClose={() => {
+            setStudentProfile(null)
+            setLabelRevision((current) => current + 1)
+          }}
+        />
       )}
       {reassignBooking && schoolIdForBooking(reassignBooking) && (
         <SchoolReassignStudent

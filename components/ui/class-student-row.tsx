@@ -9,17 +9,22 @@ export default function ClassStudentRow({
   actions,
   onEdit,
   disabled = false,
+  editLabel,
+  labels,
 }: {
   name: string
   actions?: ReactNode
   onEdit?: () => void
   disabled?: boolean
+  editLabel?: string
+  labels?: ReactNode
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl bg-white/60 px-3 py-2">
-      <div className="flex min-w-0 basis-44 grow items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <Avatar name={name} size={36} tone="white" />
         <strong className="min-w-0 text-sm leading-snug">{name}</strong>
+        {labels}
       </div>
       <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
         {actions}
@@ -28,7 +33,7 @@ export default function ClassStudentRow({
             type="button"
             disabled={disabled}
             onClick={onEdit}
-            aria-label={`Editar la clase de ${name}`}
+            aria-label={editLabel || `Editar la clase de ${name}`}
             className="relative inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-(--c-border) bg-white text-(--c-ocean) before:absolute before:-inset-1.5 disabled:opacity-50"
           >
             <FiClipboard aria-hidden="true" size={14} />
