@@ -22,7 +22,7 @@ export default function Hero() {
         className="absolute inset-0 bg-[linear-gradient(0deg,rgba(5,24,42,0.55),transparent_55%)]"
       />
 
-      <div className="relative mx-auto flex min-h-[min(72svh,680px)] max-w-[1180px] items-end px-5 pb-12 pt-16 sm:px-8 sm:pb-16 lg:min-h-[650px]">
+      <div className="relative mx-auto flex min-h-[min(72svh,680px)] max-w-[1180px] items-end px-3 pb-8 pt-10 sm:px-8 sm:pt-16 sm:pb-16 lg:min-h-[650px]">
         <div className="min-w-0 w-full max-w-[42rem]">
           <p className="text-sm font-bold uppercase" style={{ color: '#9ceaf0' }}>
             Tu espacio para nadar y enseñar

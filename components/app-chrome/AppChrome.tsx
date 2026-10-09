@@ -20,7 +20,7 @@ export default function AppChrome({
         <ScrollToTop />
         <AppNav mode={mode} />
         <PwaInstallPrompt />
-        <main className="mx-auto max-w-5xl px-2.5 pb-20 pt-4 sm:px-4 sm:pb-24 sm:pt-6">
+        <main className="app-content mx-auto max-w-5xl px-0 pb-20 pt-2 sm:px-4 sm:pb-24 sm:pt-6">
           {children}
         </main>
         <FloatingAssistant />

@@ -151,21 +151,29 @@ export default function CoachSchoolStudents() {
               <ClassStudentRow
                 name={student.name}
                 labels={
-                  <StudentLabels
-                    key={`${student.id}:${labelRevision}`}
-                    studentId={student.id}
-                    schoolId={selected.school.id}
-                    data={{
-                      labels: labelData?.labels || [],
-                      selected: labelData?.assignments[student.id] || [],
-                    }}
-                    readOnly
-                  />
+                  <>
+                    <StudentLabels
+                      key={`${student.id}:${labelRevision}`}
+                      studentId={student.id}
+                      schoolId={selected.school.id}
+                      data={{
+                        labels: labelData?.labels || [],
+                        selected: labelData?.assignments[student.id] || [],
+                      }}
+                      readOnly
+                      compact
+                    />
+                    <span className="basis-full text-[10px] leading-tight text-(--c-text-2) sm:hidden">
+                      {counts[student.id]
+                        ? `${counts[student.id]?.taken} tomadas · ${counts[student.id]?.scheduled} agendadas`
+                        : 'Cargando historial…'}
+                    </span>
+                  </>
                 }
                 onEdit={() => setProfileStudent(student)}
                 editLabel={`Ver perfil de ${student.name}`}
                 actions={
-                  <span className="text-right text-xs text-(--c-text-2)">
+                  <span className="hidden text-right text-xs text-(--c-text-2) sm:inline">
                     {counts[student.id]
                       ? `${counts[student.id]?.taken} ${counts[student.id]?.taken === 1 ? 'tomada' : 'tomadas'} · ${counts[student.id]?.scheduled} ${counts[student.id]?.scheduled === 1 ? 'agendada' : 'agendadas'}`
                       : counts[student.id] === null

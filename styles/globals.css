@@ -148,3 +148,15 @@ button:not(:disabled),
   --color-base-content: var(--tenant-primary);
   --grad-brand: linear-gradient(135deg, var(--tenant-primary), var(--tenant-secondary));
 }
+
+/* Mobile pages share one compact content gutter. Large content panels should
+   not add a second desktop-sized gutter or an outer card frame. Controls and
+   dialogs retain their own spacing and visible borders. */
+@media (width < 40rem) {
+  .app-content :where(section, article, div):is(.p-4, .p-5, .p-6, .p-8):not([role="dialog"] *) {
+    padding: 0.75rem;
+    border-width: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

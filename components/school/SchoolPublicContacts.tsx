@@ -39,7 +39,7 @@ export default function SchoolPublicContacts({
   if (!visible.length) return null
   return (
     <section
-      className="mt-8 rounded-3xl border border-(--c-border) bg-white p-5 sm:p-8"
+      className="mt-3 rounded-none border-0 bg-white p-3 sm:mt-8 sm:rounded-3xl sm:border sm:border-(--c-border) sm:p-8"
       aria-labelledby="school-contacts-title"
     >
       <h2 id="school-contacts-title" className="text-xl font-extrabold text-(--c-ocean)">

@@ -65,7 +65,7 @@ export default function PwaInstallPrompt() {
   }
 
   return (
-    <aside className="mx-auto mt-3 max-w-5xl px-3 sm:px-4">
+    <aside className="mx-auto mt-3 max-w-5xl px-0 sm:px-4">
       <div className="flex items-start gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-3 text-[var(--c-ocean)] shadow-[var(--shadow-sm)]">
         <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--c-aqua-light)] text-[var(--c-ocean)]">
           <FiDownload aria-hidden="true" />

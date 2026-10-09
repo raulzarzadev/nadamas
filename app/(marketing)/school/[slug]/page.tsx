@@ -45,18 +45,18 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
 
   return (
     <div style={schoolTheme} className="min-h-screen bg-(--school-surface)">
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-7 sm:px-8 sm:pt-10">
+      <div className="mx-auto max-w-7xl px-0 pb-8 pt-0 sm:px-8 sm:pb-16 sm:pt-10">
         <section
           aria-labelledby="school-title"
-          className="relative isolate overflow-hidden rounded-[2rem] bg-(--school-primary) text-white"
+          className="relative isolate overflow-hidden rounded-none sm:rounded-[2rem] bg-(--school-primary) text-white"
           style={{
             backgroundImage:
               'radial-gradient(ellipse at 80% 0%, color-mix(in srgb, var(--school-secondary) 55%, transparent), transparent 44%)',
           }}
         >
-          <div className="grid min-h-[28rem] items-center gap-10 px-7 py-10 sm:px-12 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:px-16">
+          <div className="grid min-h-[28rem] items-center gap-6 px-4 py-6 sm:gap-10 sm:px-12 sm:py-14 lg:grid-cols-[1.1fr_0.9fr] lg:px-16">
             <div className="relative z-10 max-w-2xl">
-              <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/90">
+              <div className="mb-5 sm:mb-8 inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white/90">
                 {school.logoUrl ? (
                   <Image
                     src={school.logoUrl}
@@ -86,7 +86,7 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
                 {school.description ||
                   'Una comunidad para aprender, entrenar y disfrutar la natación.'}
               </p>
-              <div className="mt-9 flex flex-wrap items-center gap-3">
+              <div className="mt-6 sm:mt-9 flex flex-wrap items-center gap-3">
                 <Link
                   href="/athlete/find-coach"
                   className="inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 font-bold transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
