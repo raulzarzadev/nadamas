@@ -1,3 +1,4 @@
+import { FieldPath, FieldValue } from 'firebase-admin/firestore'
 import { NextResponse } from 'next/server'
 import { buildAvailableSlots, type CoachScheduleBlock } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
@@ -33,6 +34,23 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   const isStudentAccount =
     !isDirector && !isTeacher && schoolMembershipHasRole(access.membership, 'student')
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
+  if (body.action === 'archive') {
+    if (!isDirector && !isTeacher)
+      return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+    if (occurrence.status !== 'cancelled' && occurrence.status !== 'completed')
+      return NextResponse.json({ error: 'Solo puedes archivar clases resueltas.' }, { status: 409 })
+    const archivedAt = occurrence.archivedAtBy?.[access.caller.uid] || Date.now()
+    await adminDb
+      .collection('schoolClassOccurrences')
+      .doc(occurrenceId)
+      .update(
+        'archivedBy',
+        FieldValue.arrayUnion(access.caller.uid),
+        new FieldPath('archivedAtBy', access.caller.uid),
+        archivedAt
+      )
+    return NextResponse.json({ archived: true, archivedAt })
+  }
   const status =
     body.status === 'cancelled' ||
     body.status === 'completed' ||
@@ -237,7 +255,11 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   }
   await adminDb.collection('schoolClassOccurrences').doc(occurrenceId).update(update)
   if (status || hasScheduleChange)
-    for (const teacherId of new Set([...occurrence.teacherIds, ...(teacherIds || [])]))
+    for (const teacherId of new Set([
+      ...occurrence.teacherIds,
+      ...(teacherIds || []),
+      ...(status === 'cancelled' ? [access.caller.uid] : []),
+    ]))
       await createNotification({
         recipientId: teacherId,
         classEvent: {

@@ -83,7 +83,10 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
       },
       { status: result.error === 'unauthorized' ? 403 : 409 }
     )
-  for (const teacherId of result.occurrence.teacherIds) {
+  for (const teacherId of new Set([
+    ...result.occurrence.teacherIds,
+    ...(result.cancelled ? [access.caller.uid] : []),
+  ])) {
     await createNotification({
       recipientId: teacherId,
       actorId: access.caller.uid,

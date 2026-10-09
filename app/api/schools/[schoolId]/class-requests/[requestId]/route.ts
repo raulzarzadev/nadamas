@@ -1,4 +1,4 @@
-import { FieldValue } from 'firebase-admin/firestore'
+import { FieldPath, FieldValue } from 'firebase-admin/firestore'
 import { NextResponse } from 'next/server'
 import {
   type SchoolClassOccurrence,
@@ -50,8 +50,14 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
         { error: 'Solo puedes archivar solicitudes resueltas.' },
         { status: 409 }
       )
-    await requestRef.update({ archivedBy: FieldValue.arrayUnion(access.caller.uid) })
-    return NextResponse.json({ archived: true })
+    const archivedAt = record.archivedAtBy?.[access.caller.uid] || Date.now()
+    await requestRef.update(
+      'archivedBy',
+      FieldValue.arrayUnion(access.caller.uid),
+      new FieldPath('archivedAtBy', access.caller.uid),
+      archivedAt
+    )
+    return NextResponse.json({ archived: true, archivedAt })
   }
   if (!isDirector)
     return NextResponse.json(
@@ -109,6 +115,31 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       body: 'El entrenador no pudo aceptar el horario solicitado.',
       link: '/athlete/progress',
     }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
+    for (const occurrence of occurrences) {
+      for (const recipientId of new Set([...occurrence.teacherIds, access.caller.uid])) {
+        await createNotification({
+          recipientId,
+          actorId: access.caller.uid,
+          actorName: access.caller.name || null,
+          type:
+            occurrence.status === 'cancelled' ? 'school_class_cancelled' : 'school_class_assigned',
+          title: occurrence.status === 'cancelled' ? 'Clase cancelada' : 'Clase actualizada',
+          body:
+            occurrence.status === 'cancelled'
+              ? `Se canceló la clase del ${occurrence.date} a las ${occurrence.startTime}.`
+              : `Se retiró a un alumno de la clase del ${occurrence.date} a las ${occurrence.startTime}.`,
+          link: `/coach/agenda?${new URLSearchParams({ school: schoolId, date: occurrence.date, time: occurrence.startTime }).toString()}`,
+          data: { date: occurrence.date, startTime: occurrence.startTime },
+          classEvent: {
+            schoolId,
+            date: occurrence.date,
+            startTime: occurrence.startTime,
+            endTime: occurrence.endTime,
+            groupType: occurrence.type === 'group' ? 'grupal' : 'particular',
+          },
+        }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
+      }
+    }
     return NextResponse.json({ status, occurrences })
   }
   const teacherIds = Array.isArray(body.teacherIds)

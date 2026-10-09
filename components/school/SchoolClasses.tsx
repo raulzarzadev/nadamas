@@ -80,7 +80,6 @@ export default function SchoolClasses() {
   const [requests, setRequests] = useState<SchoolClassRequest[]>([])
   const [resolvingRequestId, setResolvingRequestId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
-  const [showClasses, setShowClasses] = useState(false)
   const [showRequests, setShowRequests] = useState(false)
   const [showArchivedRequests, setShowArchivedRequests] = useState(false)
   const [archivedRequestLimit, setArchivedRequestLimit] = useState(10)
@@ -198,19 +197,28 @@ export default function SchoolClasses() {
   ]
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
+  const viewerId = user?.uid || user?.id || ''
   const visibleClasses = classes.filter(
     (item) =>
+      !item.archivedBy?.includes(viewerId) &&
       item.status !== 'scheduled' &&
       item.status !== 'completed' &&
       (item.status !== 'cancelled' || item.date >= today())
   )
 
-  const viewerId = user?.uid || user?.id || ''
+  const archivedClasses = classes
+    .filter((item) => item.archivedBy?.includes(viewerId))
+    .sort((a, b) => (b.archivedAtBy?.[viewerId] || 0) - (a.archivedAtBy?.[viewerId] || 0))
+  const displayedClasses = showArchivedRequests ? archivedClasses : visibleClasses
   const activeRequests = requests.filter((request) => !request.archivedBy?.includes(viewerId))
 
   const archivedRequests = requests
     .filter((request) => request.archivedBy?.includes(viewerId))
-    .sort((a, b) => b.createdAt - a.createdAt)
+    .sort(
+      (a, b) =>
+        (b.archivedAtBy?.[viewerId] || 0) - (a.archivedAtBy?.[viewerId] || 0) ||
+        b.createdAt - a.createdAt
+    )
   const displayedRequests = showArchivedRequests
     ? archivedRequests.slice(0, archivedRequestLimit)
     : activeRequests
@@ -256,13 +264,21 @@ export default function SchoolClasses() {
     setArchivingRequestId(requestId)
     setArchiveError(null)
     try {
-      await patchAuthed(`/api/schools/${activeSchool.school.id}/class-requests/${requestId}`, {
-        action: 'archive',
-      })
+      const response = await patchAuthed(
+        `/api/schools/${activeSchool.school.id}/class-requests/${requestId}`,
+        {
+          action: 'archive',
+        }
+      )
+      const { archivedAt } = (await response.json()) as { archivedAt: number }
       setRequests((current) =>
         current.map((item) =>
           item.id === requestId
-            ? { ...item, archivedBy: [...(item.archivedBy || []), viewerId] }
+            ? {
+                ...item,
+                archivedBy: [...(item.archivedBy || []), viewerId],
+                archivedAtBy: { ...item.archivedAtBy, [viewerId]: archivedAt },
+              }
             : item
         )
       )
@@ -319,10 +335,6 @@ export default function SchoolClasses() {
     return new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'long' }).format(value)
   }
 
-  const pendingRequests = requests
-    .filter((request) => request.status === 'pending')
-    .sort((a, b) => b.createdAt - a.createdAt)
-
   function renderRequestCard(request: SchoolClassRequest, grouped = false) {
     return (
       <ClassRequestCard
@@ -343,6 +355,8 @@ export default function SchoolClasses() {
           capitalizeSchoolTerm(participantSingular)
         }
         status={request.status}
+        archived={grouped && showArchivedRequests}
+        archivedAt={request.archivedAtBy?.[viewerId]}
         busy={resolvingRequestId !== null || archivingRequestId !== null}
         onAccept={isDirector ? () => void resolveRequest(request, 'approved') : undefined}
         onReject={isDirector ? () => void resolveRequest(request, 'rejected') : undefined}
@@ -365,7 +379,6 @@ export default function SchoolClasses() {
             : isDirector && request.status === 'pending'
               ? () => {
                   setSelectedRequest(request)
-                  setShowClasses(false)
                   setShowRequests(false)
                   setShowCreate(true)
                 }
@@ -378,175 +391,6 @@ export default function SchoolClasses() {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">Horarios</h1>
-      {!loading && (visibleClasses.length > 0 || (isDirector && pendingRequests.length > 0)) && (
-        <>
-          <button
-            type="button"
-            onClick={() => setShowClasses(true)}
-            className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-4 text-left font-bold text-(--c-ocean)"
-          >
-            Clases y solicitudes (
-            {visibleClasses.length + (isDirector ? pendingRequests.length : 0)})
-          </button>
-          <Sheet
-            open={showClasses}
-            onClose={() => setShowClasses(false)}
-            label="Clases y solicitudes"
-            size="xl"
-            closeDisabled={resolvingRequestId !== null}
-          >
-            <div className="px-4 sm:px-0">
-              <h2 className="text-lg font-bold">
-                Clases y solicitudes (
-                {visibleClasses.length + (isDirector ? pendingRequests.length : 0)})
-              </h2>
-              {message && (
-                <p role="status" className="mt-2 text-sm text-(--c-text-2)">
-                  {message}
-                </p>
-              )}
-              <div className="mt-4 grid gap-3">
-                {isDirector && pendingRequests.length > 0 && (
-                  <section aria-label="Solicitudes nuevas" className="flex flex-col gap-3">
-                    <h2 className="font-bold text-(--c-ocean)">Solicitudes nuevas</h2>
-                    {pendingRequests.map((request) => renderRequestCard(request))}
-                  </section>
-                )}
-
-                {visibleClasses.map((item) => {
-                  const coachName =
-                    item.teacherIds
-                      .map(
-                        (teacherId) => teachers.find((teacher) => teacher.id === teacherId)?.name
-                      )
-                      .filter((name): name is string => Boolean(name))
-                      .join(', ') || 'Sin profe aún'
-                  const studentBadges = item.studentIds.flatMap((studentId) => {
-                    const student = students.find((entry) => entry.id === studentId)
-                    return student ? [{ id: studentId, name: student.name }] : []
-                  })
-                  const canComment =
-                    isDirector || (isTeacher && item.teacherIds.includes(user?.uid || ''))
-                  const locationLabel = item.location.trim()
-                  const hasLocation =
-                    locationLabel &&
-                    !['lugar por definir', 'lugar por confirmar'].includes(
-                      locationLabel.toLocaleLowerCase('es-MX')
-                    )
-                  return (
-                    <ClassCard
-                      key={item.id}
-                      time={item.startTime}
-                      date={formatClassDate(item.date)}
-                      coachName={coachName}
-                      showCoachName
-                      unassigned={item.teacherIds.length === 0}
-                      groupType={item.type === 'group' ? 'grupal' : 'particular'}
-                      status={item.type === 'group' ? 'group' : 'booked'}
-                      pending={item.status === 'pending'}
-                      agendaLabel={`${classDuration(item.startTime, item.endTime)} min`}
-                      showSeparator={false}
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        {studentBadges.length > 0 ? (
-                          studentBadges.map((student) => (
-                            <StudentBadge key={student.id} name={student.name} />
-                          ))
-                        ) : (
-                          <StudentBadge name="Sin alumno" />
-                        )}
-                        {item.status !== 'pending' && (
-                          <StatusBadge
-                            status={item.status === 'cancelled' ? 'cancelled' : 'confirmed'}
-                          />
-                        )}
-                        {item.status === 'completed' && (
-                          <span className="text-xs text-(--c-text-2)">Completada</span>
-                        )}
-                      </div>
-                      {hasLocation && (
-                        <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
-                          <FiMapPin aria-hidden="true" /> {locationLabel}
-                          {item.locationUrl && (
-                            <a
-                              href={item.locationUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-semibold text-(--c-ocean-mid)"
-                            >
-                              Ver mapa
-                            </a>
-                          )}
-                        </p>
-                      )}
-                      {item.classNote && (
-                        <p className="mt-2 text-sm text-(--c-text-2)">{item.classNote}</p>
-                      )}
-                      <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-x-auto">
-                        {(isDirector || isTeacher) && item.status === 'scheduled' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => void updateClass(item.id, 'completed')}
-                              className="btn btn-outline btn-sm shrink-0 gap-1 px-2 text-xs"
-                            >
-                              <FiCheck aria-hidden="true" /> Completar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void updateClass(item.id, 'cancelled')}
-                              className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs text-(--c-error,#b91c1c)"
-                            >
-                              <FiX aria-hidden="true" /> Cancelar
-                            </button>
-                          </>
-                        )}
-                        {canManageBookings && item.status === 'pending' && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => void updateClass(item.id, 'scheduled')}
-                              className="btn btn-primary btn-sm shrink-0 px-2 text-xs"
-                            >
-                              Aprobar clase
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void updateClass(item.id, 'cancelled')}
-                              className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs text-(--c-error,#b91c1c)"
-                            >
-                              <FiX aria-hidden="true" /> Rechazar
-                            </button>
-                          </>
-                        )}
-                        {canComment && (
-                          <button
-                            type="button"
-                            aria-label={
-                              item.classNote
-                                ? 'Editar comentario de clase'
-                                : 'Agregar comentario a la clase'
-                            }
-                            onClick={() => {
-                              setShowClasses(false)
-                              setCommentClass(item)
-                              setClassNoteDraft(item.classNote || '')
-                            }}
-                            className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs"
-                          >
-                            <FiMessageSquare aria-hidden="true" />{' '}
-                            {item.classNote ? 'Editar nota' : 'Comentar'}
-                          </button>
-                        )}
-                      </div>
-                    </ClassCard>
-                  )
-                })}
-              </div>
-            </div>
-          </Sheet>
-        </>
-      )}
       <div className="flex min-w-0 flex-col gap-3">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
           <SchoolSelector
@@ -603,12 +447,12 @@ export default function SchoolClasses() {
           {message}
         </p>
       )}
-      {isStudentAccount && requests.length > 0 && (
+      {(requests.length > 0 || visibleClasses.length > 0 || archivedClasses.length > 0) && (
         <Sheet
           open={showRequests}
           onClose={() => setShowRequests(false)}
           label={showArchivedRequests ? 'Solicitudes archivadas' : 'Mis solicitudes'}
-          size="lg"
+          size="xl"
           showFooterClose={false}
           footer={
             <div className="flex flex-col items-center pt-2">
@@ -637,7 +481,7 @@ export default function SchoolClasses() {
           </h2>
           {showArchivedRequests && (
             <p className="mt-1 text-xs text-(--c-text-2)">
-              Solicitudes archivadas, de la más reciente a la más antigua.
+              Ordenadas por fecha de archivo, de la más reciente a la más antigua.
             </p>
           )}
           {archiveError && (
@@ -645,7 +489,7 @@ export default function SchoolClasses() {
               {archiveError}
             </p>
           )}
-          {displayedRequests.length === 0 && (
+          {displayedRequests.length === 0 && displayedClasses.length === 0 && (
             <p className="mt-4 text-sm text-(--c-text-2)">
               {showArchivedRequests
                 ? 'No tienes solicitudes archivadas.'
@@ -655,6 +499,205 @@ export default function SchoolClasses() {
           <div className="mt-4 grid gap-3">
             {displayedRequests.map((request) => renderRequestCard(request, true))}
           </div>
+          {displayedClasses.length > 0 && (
+            <section aria-label="Clases" className="mt-4 grid gap-3">
+              <h3 className="font-bold text-(--c-ocean)">Clases ({displayedClasses.length})</h3>
+              {displayedClasses.map((item) => {
+                const coachName =
+                  item.teacherIds
+                    .map((teacherId) => teachers.find((teacher) => teacher.id === teacherId)?.name)
+                    .filter((name): name is string => Boolean(name))
+                    .join(', ') || 'Sin profe aún'
+                const studentBadges = item.studentIds.flatMap((studentId) => {
+                  const student = students.find((entry) => entry.id === studentId)
+                  return student ? [{ id: studentId, name: student.name }] : []
+                })
+                const canComment =
+                  isDirector || (isTeacher && item.teacherIds.includes(user?.uid || ''))
+                const locationLabel = item.location.trim()
+                const hasLocation =
+                  locationLabel &&
+                  !['lugar por definir', 'lugar por confirmar'].includes(
+                    locationLabel.toLocaleLowerCase('es-MX')
+                  )
+                if (item.status === 'cancelled')
+                  return (
+                    <ClassRequestCard
+                      key={item.id}
+                      time={item.startTime}
+                      date={formatClassDate(item.date)}
+                      coachName={coachName}
+                      unassigned={item.teacherIds.length === 0}
+                      groupType={item.type === 'group' ? 'grupal' : 'particular'}
+                      studentName={
+                        studentBadges.map((student) => student.name).join(', ') || 'Sin alumno'
+                      }
+                      archived={showArchivedRequests}
+                      archivedAt={item.archivedAtBy?.[viewerId]}
+                      status="cancelled"
+                      statusLabel="Clase cancelada"
+                      busy={archivingRequestId !== null || resolvingRequestId !== null}
+                      onChange={
+                        !showArchivedRequests && canComment
+                          ? () => {
+                              const related = requests.find(
+                                (request) =>
+                                  request.classSeriesId === item.seriesId ||
+                                  request.classOccurrenceIds?.includes(item.id)
+                              )
+                              if (related) {
+                                setArchiveError(null)
+                                setChangeRequest(related)
+                              } else void updateClass(item.id, 'scheduled')
+                            }
+                          : undefined
+                      }
+                      onArchive={
+                        !showArchivedRequests && canComment
+                          ? async () => {
+                              setArchivingRequestId(item.id)
+                              setArchiveError(null)
+                              try {
+                                const response = await patchAuthed(
+                                  `/api/schools/${selectedId}/classes/${item.id}`,
+                                  {
+                                    action: 'archive',
+                                  }
+                                )
+                                const { archivedAt } = (await response.json()) as {
+                                  archivedAt: number
+                                }
+                                setClasses((current) =>
+                                  current.map((entry) =>
+                                    entry.id === item.id
+                                      ? {
+                                          ...entry,
+                                          archivedBy: [...(entry.archivedBy || []), viewerId],
+                                          archivedAtBy: {
+                                            ...entry.archivedAtBy,
+                                            [viewerId]: archivedAt,
+                                          },
+                                        }
+                                      : entry
+                                  )
+                                )
+                              } catch {
+                                setArchiveError('No pudimos archivar la clase. Inténtalo de nuevo.')
+                              } finally {
+                                setArchivingRequestId(null)
+                              }
+                            }
+                          : undefined
+                      }
+                    />
+                  )
+                return (
+                  <ClassCard
+                    key={item.id}
+                    time={item.startTime}
+                    date={formatClassDate(item.date)}
+                    coachName={coachName}
+                    showCoachName
+                    unassigned={item.teacherIds.length === 0}
+                    groupType={item.type === 'group' ? 'grupal' : 'particular'}
+                    status={item.type === 'group' ? 'group' : 'booked'}
+                    pending={item.status === 'pending'}
+                    agendaLabel={`${classDuration(item.startTime, item.endTime)} min`}
+                    showSeparator={false}
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      {studentBadges.length > 0 ? (
+                        studentBadges.map((student) => (
+                          <StudentBadge key={student.id} name={student.name} />
+                        ))
+                      ) : (
+                        <StudentBadge name="Sin alumno" />
+                      )}
+                      {item.status !== 'pending' && <StatusBadge status="confirmed" />}
+                      {item.status === 'completed' && (
+                        <span className="text-xs text-(--c-text-2)">Completada</span>
+                      )}
+                    </div>
+                    {hasLocation && (
+                      <p className="mt-2 flex items-center gap-2 text-sm text-(--c-text-2)">
+                        <FiMapPin aria-hidden="true" /> {locationLabel}
+                        {item.locationUrl && (
+                          <a
+                            href={item.locationUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-semibold text-(--c-ocean-mid)"
+                          >
+                            Ver mapa
+                          </a>
+                        )}
+                      </p>
+                    )}
+                    {item.classNote && (
+                      <p className="mt-2 text-sm text-(--c-text-2)">{item.classNote}</p>
+                    )}
+                    <div className="mt-3 flex flex-nowrap items-center gap-1.5 overflow-x-auto">
+                      {(isDirector || isTeacher) && item.status === 'scheduled' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => void updateClass(item.id, 'completed')}
+                            className="btn btn-outline btn-sm shrink-0 gap-1 px-2 text-xs"
+                          >
+                            <FiCheck aria-hidden="true" /> Completar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void updateClass(item.id, 'cancelled')}
+                            className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs text-(--c-error,#b91c1c)"
+                          >
+                            <FiX aria-hidden="true" /> Cancelar
+                          </button>
+                        </>
+                      )}
+                      {canManageBookings && item.status === 'pending' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => void updateClass(item.id, 'scheduled')}
+                            className="btn btn-primary btn-sm shrink-0 px-2 text-xs"
+                          >
+                            Aprobar clase
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void updateClass(item.id, 'cancelled')}
+                            className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs text-(--c-error,#b91c1c)"
+                          >
+                            <FiX aria-hidden="true" /> Rechazar
+                          </button>
+                        </>
+                      )}
+                      {canComment && (
+                        <button
+                          type="button"
+                          aria-label={
+                            item.classNote
+                              ? 'Editar comentario de clase'
+                              : 'Agregar comentario a la clase'
+                          }
+                          onClick={() => {
+                            setShowRequests(false)
+                            setCommentClass(item)
+                            setClassNoteDraft(item.classNote || '')
+                          }}
+                          className="btn btn-ghost btn-sm shrink-0 gap-1 px-2 text-xs"
+                        >
+                          <FiMessageSquare aria-hidden="true" />{' '}
+                          {item.classNote ? 'Editar nota' : 'Comentar'}
+                        </button>
+                      )}
+                    </div>
+                  </ClassCard>
+                )
+              })}
+            </section>
+          )}
           {showArchivedRequests && archivedRequests.length > archivedRequestLimit && (
             <div className="mt-3 flex justify-center">
               <button
@@ -768,7 +811,7 @@ export default function SchoolClasses() {
           coachId={isDirector && scheduleCoachId ? scheduleCoachId : undefined}
           aggregateSchool
           toolbarActions={
-            isStudentAccount && requests.length > 0 ? (
+            requests.length > 0 || visibleClasses.length > 0 || archivedClasses.length > 0 ? (
               <button
                 type="button"
                 onClick={() => {
@@ -780,7 +823,7 @@ export default function SchoolClasses() {
               >
                 <LuHourglass aria-hidden="true" /> Mis solicitudes
                 <span className="rounded-full bg-(--c-surface) px-1.5 py-0.5 text-xs text-(--c-ocean)">
-                  {activeRequests.length}
+                  {activeRequests.length + visibleClasses.length}
                 </span>
               </button>
             ) : undefined

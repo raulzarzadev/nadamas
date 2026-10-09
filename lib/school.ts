@@ -330,6 +330,8 @@ export interface SchoolLocation {
 }
 
 export interface SchoolClassOccurrence {
+  archivedBy?: string[]
+  archivedAtBy?: Record<string, number>
   /** Roster at cancellation, retained for the subscribed calendar's event history. */
   cancelledStudentIds?: string[]
   id: string
@@ -365,6 +367,7 @@ export interface SchoolClassRequest {
   classSeriesId?: string
   classOccurrenceIds?: string[]
   archivedBy?: string[]
+  archivedAtBy?: Record<string, number>
   id: string
   schoolId: string
   studentId: string

@@ -1,6 +1,7 @@
 'use client'
 
 import { FiArchive, FiCheck, FiRefreshCw, FiX } from 'react-icons/fi'
+import { notificationTimeAgo } from '@/lib/notification'
 import ClassCard from './class-card'
 import ClassStudentRow from './class-student-row'
 import StatusBadge from './status-badge'
@@ -19,7 +20,13 @@ export default function ClassRequestCard({
   onArchive,
   onEdit,
   onChange,
+  statusLabel,
+  archived = false,
+  archivedAt,
 }: {
+  archived?: boolean
+  archivedAt?: number
+  statusLabel?: string
   time: string
   date: string
   coachName: string
@@ -53,7 +60,12 @@ export default function ClassRequestCard({
           <StatusBadge
             status={status === 'approved' ? 'confirmed' : 'cancelled'}
             label={
-              status === 'approved' ? 'Aprobada' : status === 'rejected' ? 'Rechazada' : 'Cancelada'
+              statusLabel ||
+              (status === 'approved'
+                ? 'Aprobada'
+                : status === 'rejected'
+                  ? 'Rechazada'
+                  : 'Cancelada')
             }
           />
         ) : undefined
@@ -118,6 +130,13 @@ export default function ClassRequestCard({
           </div>
         )}
       </div>
+      {archived && (
+        <p className="text-[10px] text-(--c-text-2)">
+          {archivedAt
+            ? `Archivada ${notificationTimeAgo(archivedAt)}`
+            : 'Archivada · fecha no disponible'}
+        </p>
+      )}
     </ClassCard>
   )
 }
