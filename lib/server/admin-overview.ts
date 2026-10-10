@@ -10,48 +10,92 @@ import { adminDb } from './firebase-admin'
 // requests; no per-school or per-person listener is mounted in the browser.
 export async function getAdminOverview(): Promise<AdminOverview> {
   const count = async (query: Query) => (await query.count().get()).data().count
-  const [users, schools, memberships, profiles, products, students, coaches, totals] =
-    await Promise.all([
-      adminDb
-        .collection('users')
-        .select('displayName', 'name', 'email', 'roles', 'isCoach', 'accountDisabled')
-        .get(),
-      adminDb.collection('schools').select('name', 'slug', 'directorId', 'isPublic').get(),
-      adminDb
-        .collection('schoolMemberships')
-        .select('schoolId', 'userId', 'role', 'roles', 'status')
-        .get(),
-      adminDb.collection('additionalProfiles').select('name', 'ownerId').get(),
-      adminDb
-        .collection('paymentProducts')
-        .select(
-          'scope',
-          'name',
-          'mode',
-          'priceCents',
-          'active',
-          'classes',
-          'months',
-          'expiryDays',
-          'perDay',
-          'perWeek',
-          'perPeriod'
-        )
-        .get(),
-      adminDb
-        .collection('schoolStudents')
-        .select('schoolId', 'name', 'status', 'studentUserId', 'additionalProfileId')
-        .get(),
-      adminDb.collection('coaches').select().get(),
-      Promise.all([
-        count(adminDb.collection('bookings')),
-        count(adminDb.collection('schoolClassOccurrences')),
-        count(adminDb.collection('schoolClassRequests').where('status', '==', 'pending')),
-        count(adminDb.collection('paymentOrders').where('status', '==', 'pending')),
-        count(adminDb.collection('paymentOrders').where('status', '==', 'approved')),
-        count(adminDb.collection('paymentOrders').where('status', '==', 'rejected')),
-      ]),
-    ])
+  const [
+    users,
+    schools,
+    memberships,
+    profiles,
+    products,
+    students,
+    coaches,
+    totals,
+    bookings,
+    attendance,
+    occurrences,
+  ] = await Promise.all([
+    adminDb
+      .collection('users')
+      .select(
+        'displayName',
+        'name',
+        'email',
+        'roles',
+        'isCoach',
+        'accountDisabled',
+        'createdAt',
+        'updatedAt'
+      )
+      .get(),
+    adminDb.collection('schools').select('name', 'slug', 'directorId', 'isPublic').get(),
+    adminDb
+      .collection('schoolMemberships')
+      .select('schoolId', 'userId', 'role', 'roles', 'status')
+      .get(),
+    adminDb.collection('additionalProfiles').select('name', 'ownerId').get(),
+    adminDb
+      .collection('paymentProducts')
+      .select(
+        'scope',
+        'name',
+        'mode',
+        'priceCents',
+        'active',
+        'classes',
+        'months',
+        'expiryDays',
+        'perDay',
+        'perWeek',
+        'perPeriod'
+      )
+      .get(),
+    adminDb
+      .collection('schoolStudents')
+      .select('schoolId', 'name', 'status', 'studentUserId', 'additionalProfileId')
+      .get(),
+    adminDb.collection('coaches').select().get(),
+    Promise.all([
+      count(adminDb.collection('bookings')),
+      count(adminDb.collection('schoolClassOccurrences')),
+      count(adminDb.collection('schoolClassRequests').where('status', '==', 'pending')),
+      count(adminDb.collection('paymentOrders').where('status', '==', 'pending')),
+      count(adminDb.collection('paymentOrders').where('status', '==', 'approved')),
+      count(adminDb.collection('paymentOrders').where('status', '==', 'rejected')),
+    ]),
+    adminDb
+      .collection('bookings')
+      .select(
+        'athleteId',
+        'additionalProfileId',
+        'athleteProfileId',
+        'coachId',
+        'assignedCoachIds',
+        'schoolId',
+        'schoolClassId',
+        'date',
+        'startTime',
+        'status',
+        'attended'
+      )
+      .get(),
+    adminDb
+      .collection('agendaStudentRecords')
+      .select('sourceId', 'studentId', 'coachId', 'schoolId', 'attended', 'updatedAt')
+      .get(),
+    adminDb
+      .collection('schoolClassOccurrences')
+      .select('teacherIds', 'date', 'startTime', 'status', 'schoolId')
+      .get(),
+  ])
 
   const text = (value: unknown) => (typeof value === 'string' ? value : '')
   const userNames = new Map(
@@ -107,6 +151,74 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     }
   }
 
+  const taken = new Map<string, Set<string>>()
+  const given = new Map<string, Set<string>>()
+  const addClass = (map: Map<string, Set<string>>, id: string, key: string) => {
+    if (!id) return
+    if (!map.has(id)) map.set(id, new Set())
+    map.get(id)?.add(key)
+  }
+  const schoolStudentUsers = new Map(
+    students.docs.map((doc) => [
+      doc.id,
+      doc.data().additionalProfileId ? '' : text(doc.data().studentUserId),
+    ])
+  )
+  const classDocs = new Map(occurrences.docs.map((doc) => [doc.id, doc.data()]))
+  const bookingDocs = new Map(bookings.docs.map((doc) => [doc.id, doc.data()]))
+  for (const doc of bookings.docs) {
+    const booking = doc.data()
+    if (booking.attended !== true || booking.status === 'cancelled') continue
+    const key = booking.schoolClassId ? `class:${booking.schoolClassId}` : `booking:${doc.id}`
+    if (
+      !booking.additionalProfileId &&
+      (!booking.athleteProfileId || booking.athleteProfileId === booking.athleteId)
+    )
+      addClass(taken, text(booking.athleteId), key)
+    const slotKey = booking.schoolClassId
+      ? key
+      : `${text(booking.schoolId)}|${text(booking.coachId)}|${text(booking.date)}|${text(booking.startTime)}`
+    for (const id of new Set([
+      booking.coachId,
+      ...(Array.isArray(booking.assignedCoachIds) ? booking.assignedCoachIds : []),
+    ]))
+      addClass(given, text(id), slotKey)
+  }
+  const latestAttendance = new Map<string, (typeof attendance.docs)[number]>()
+  for (const doc of attendance.docs) {
+    const record = doc.data(),
+      key = `${record.sourceId}|${record.studentId}`
+    if ((record.updatedAt || 0) >= (latestAttendance.get(key)?.data().updatedAt || 0))
+      latestAttendance.set(key, doc)
+  }
+  for (const doc of latestAttendance.values()) {
+    const record = doc.data()
+    const occurrence = classDocs.get(text(record.sourceId))
+    // Booking attendance is read from its canonical booking document above.
+    if (
+      !occurrence ||
+      bookingDocs.has(text(record.sourceId)) ||
+      record.attended !== true ||
+      occurrence.status === 'cancelled'
+    )
+      continue
+    const key = `class:${record.sourceId}`
+    addClass(taken, schoolStudentUsers.get(text(record.studentId)) || '', key)
+    for (const id of Array.isArray(occurrence.teacherIds) ? occurrence.teacherIds : [])
+      addClass(given, text(id), key)
+  }
+  const timestamp = (value: unknown): number | null => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value
+    if (
+      value &&
+      typeof value === 'object' &&
+      'toMillis' in value &&
+      typeof value.toMillis === 'function'
+    )
+      return value.toMillis()
+    return null
+  }
+
   const people: AdminPerson[] = users.docs
     .map((doc) => {
       const user = doc.data(),
@@ -117,6 +229,10 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         name: userNames.get(doc.id) || 'Usuario sin nombre',
         email: text(user.email),
         disabled: user.accountDisabled === true,
+        createdAt: timestamp(user.createdAt),
+        updatedAt: timestamp(user.updatedAt),
+        classesTaken: taken.get(doc.id)?.size || 0,
+        classesGiven: given.get(doc.id)?.size || 0,
         roles: [
           ...(coordinatorIds.has(doc.id) ? ['coordinator' as const] : []),
           ...(roles.coach || teacherIds.has(doc.id) ? ['coach' as const] : []),

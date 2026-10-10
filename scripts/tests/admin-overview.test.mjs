@@ -167,7 +167,7 @@ function fixture() {
       }))
     },
   }
-  return { db, calls }
+  return { db, calls, rows }
 }
 
 test('admin overview counts distinct active roles, deduplicates students and projects safe fields', async () => {
@@ -201,6 +201,29 @@ test('admin overview counts distinct active roles, deduplicates students and pro
   assert.ok(!JSON.stringify(data).includes('SECRET'))
   assert.equal(calls.filter((call) => call.privateRefs).length, 1)
   assert.equal(calls.filter((call) => call.name === 'users').length, 1)
+})
+
+test('admin activity counts confirmed attendance, separates additional profiles and deduplicates group teaching', async () => {
+  const { db, rows } = fixture()
+  rows.users[0].createdAt = 1000
+  rows.users[0].updatedAt = { toMillis: () => 2000 }
+  rows.bookings = [
+    { id: 'b1', athleteId: 'athlete', athleteProfileId: 'athlete', coachId: 'coach', date: '2026-10-10', startTime: '10:00', status: 'confirmed', attended: true },
+    { id: 'b2', athleteId: 'owner', coachId: 'coach', date: '2026-10-10', startTime: '10:00', status: 'confirmed', attended: true },
+    { id: 'b3', athleteId: 'athlete', additionalProfileId: 'p1', coachId: 'coach', date: '2026-10-10', startTime: '11:00', status: 'confirmed', attended: true },
+    { id: 'b4', athleteId: 'athlete', coachId: 'coach', status: 'cancelled', attended: true },
+    { id: 'b5', athleteId: 'athlete', coachId: 'coach', status: 'confirmed', attended: false },
+  ]
+  const { getAdminOverview } = load('../../lib/server/admin-overview.ts', {
+    './firebase-admin': { adminDb: db }, '@/lib/roles': roles, '@/lib/school': school,
+  })
+  const data = await getAdminOverview()
+  assert.equal(data.people.find(p => p.id === 'athlete').classesTaken, 1)
+  assert.equal(data.people.find(p => p.id === 'owner').classesTaken, 1)
+  assert.equal(data.people.find(p => p.id === 'coach').classesGiven, 2)
+  assert.equal(data.people.find(p => p.id === 'owner').createdAt, 1000)
+  assert.equal(data.people.find(p => p.id === 'owner').updatedAt, 2000)
+  assert.equal(data.people.find(p => p.id === 'athlete').createdAt, null)
 })
 
 test('admin overview requires an enabled admin and rejects missing, invalid and revoked sessions', async () => {

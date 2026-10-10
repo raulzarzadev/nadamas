@@ -33,6 +33,8 @@ export default function AdminOverviewLists({
   role: AdminPersonRole | 'all'
 }) {
   const [page, setPage] = useState(0)
+  const [sort, setSort] = useState('name')
+  const [direction, setDirection] = useState<'asc' | 'desc'>('desc')
   const needle = normalize(query.trim())
   const matches = (...values: string[]) =>
     !needle || values.some((value) => normalize(value).includes(needle))
@@ -44,6 +46,15 @@ export default function AdminOverviewLists({
       (role === 'all' || person.roles.includes(role)) &&
       matches(person.name, person.email, ...person.schools.map((school) => school.name))
   )
+  people.sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name, 'es') * (direction === 'asc' ? -1 : 1)
+    const key = sort as 'createdAt' | 'updatedAt' | 'classesTaken' | 'classesGiven'
+    const av = a[key],
+      bv = b[key]
+    if (av == null) return bv == null ? a.name.localeCompare(b.name, 'es') : 1
+    if (bv == null) return -1
+    return (av - bv) * (direction === 'asc' ? 1 : -1) || a.name.localeCompare(b.name, 'es')
+  })
   const profiles = data.profiles.filter((profile) => matches(profile.name, profile.ownerName))
   const products = data.products.filter((product) => matches(product.name, product.scopeName))
   const total =
@@ -113,6 +124,47 @@ export default function AdminOverviewLists({
           perfiles adicionales. Los perfiles principales se consultan en Personas.
         </p>
       )}
+      {tab === 'people' && (
+        <div className="mb-4 flex flex-wrap items-end gap-3">
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold">
+            Ordenar por
+            <select
+              value={sort}
+              onChange={(event) => {
+                setSort(event.target.value)
+                setPage(0)
+              }}
+              className="min-h-11 rounded-xl border border-(--c-border) bg-white px-3 text-sm focus-visible:outline-2"
+            >
+              <option value="name">Nombre</option>
+              <option value="createdAt">Fecha de registro</option>
+              <option value="updatedAt">Última actualización</option>
+              <option value="classesTaken">Clases tomadas</option>
+              <option value="classesGiven">Clases dadas</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              setDirection((value) => (value === 'desc' ? 'asc' : 'desc'))
+              setPage(0)
+            }}
+            className="min-h-11 rounded-full bg-white px-4 text-sm font-semibold focus-visible:outline-2"
+          >
+            {sort === 'name'
+              ? direction === 'desc'
+                ? 'A → Z'
+                : 'Z → A'
+              : direction === 'desc'
+                ? 'Mayor a menor ↓'
+                : 'Menor a mayor ↑'}
+          </button>
+          <p className="basis-full text-xs text-(--c-text-2)">
+            Las clases cuentan asistencia confirmada; las clases grupales se cuentan una vez por
+            entrenador. Las fechas no registradas aparecen al final.
+          </p>
+        </div>
+      )}
       <p className="mb-3 text-xs font-semibold text-(--c-text-2)">{total} resultados</p>
       {total === 0 ? (
         <div className="bg-white p-6 text-center text-sm text-(--c-text-2) sm:rounded-2xl">
@@ -180,6 +232,22 @@ export default function AdminOverviewLists({
                       <Badge key={value}>{ADMIN_ROLE_LABELS[value]}</Badge>
                     ))}
                     {person.disabled && <Badge>Cuenta desactivada</Badge>}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-(--c-text-2)">
+                    <span>{person.classesTaken ?? 0} clases tomadas</span>
+                    <span>{person.classesGiven ?? 0} clases dadas</span>
+                    <span>
+                      Registro:{' '}
+                      {person.createdAt
+                        ? new Date(person.createdAt).toLocaleDateString('es-MX')
+                        : 'Sin fecha'}
+                    </span>
+                    <span>
+                      Actualización:{' '}
+                      {person.updatedAt
+                        ? new Date(person.updatedAt).toLocaleDateString('es-MX')
+                        : 'Sin fecha'}
+                    </span>
                   </div>
                   {person.schools.length > 0 && (
                     <p className="mt-3 break-words text-xs text-(--c-text-2)">

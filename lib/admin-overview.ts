@@ -5,6 +5,10 @@ export interface AdminPerson {
   name: string
   email: string
   disabled: boolean
+  createdAt: number | null
+  updatedAt: number | null
+  classesTaken: number
+  classesGiven: number
   roles: AdminPersonRole[]
   schools: { id: string; name: string }[]
 }
