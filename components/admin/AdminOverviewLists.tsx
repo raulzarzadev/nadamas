@@ -9,6 +9,7 @@ import {
   type AdminPersonRole,
 } from '@/lib/admin-overview'
 import { NADAMAS_PRICING } from '@/lib/pricing'
+import AdminSchoolDetails from './AdminSchoolDetails'
 
 export type AdminOverviewTab = 'schools' | 'people' | 'profiles' | 'payments' | 'subscription'
 const PAGE_SIZE = 20
@@ -149,6 +150,12 @@ export default function AdminOverviewLists({
                         ))
                       : 'Sin coordinador activo'}
                   </div>
+                  <AdminSchoolDetails
+                    school={school}
+                    products={data.products.filter(
+                      (product) => product.scope === `school:${school.id}`
+                    )}
+                  />
                 </div>
                 {school.slug && school.isPublic && (
                   <Link

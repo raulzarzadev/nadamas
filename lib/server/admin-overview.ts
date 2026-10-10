@@ -40,7 +40,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         .get(),
       adminDb
         .collection('schoolStudents')
-        .select('schoolId', 'status', 'studentUserId', 'additionalProfileId')
+        .select('schoolId', 'name', 'status', 'studentUserId', 'additionalProfileId')
         .get(),
       adminDb.collection('coaches').select().get(),
       Promise.all([
@@ -170,6 +170,8 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     .sort((a, b) => a.name.localeCompare(b.name, 'es'))
 
   const schoolStudents = new Map<string, Set<string>>()
+  const roster = new Map<string, Map<string, { id: string; name: string; userId: string }>>()
+  const profileNames = new Map(profiles.docs.map((doc) => [doc.id, text(doc.data().name)]))
   const enrolledAccounts = new Set(
     students.docs
       .filter((doc) => text(doc.data().studentUserId))
@@ -179,6 +181,23 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     const student = doc.data()
     if (student.status !== 'active') continue
     const schoolId = text(student.schoolId)
+    const profileId = text(student.additionalProfileId)
+    const userId = text(student.studentUserId)
+    const key = profileId
+      ? `additional:${profileId}`
+      : userId
+        ? `user:${userId}`
+        : `record:${doc.id}`
+    if (!roster.has(schoolId)) roster.set(schoolId, new Map())
+    roster.get(schoolId)?.set(key, {
+      id: key,
+      name:
+        text(student.name) ||
+        profileNames.get(profileId) ||
+        userNames.get(userId) ||
+        'Alumno sin nombre',
+      userId: profileId ? '' : userId,
+    })
     if (!schoolStudents.has(schoolId)) schoolStudents.set(schoolId, new Set())
     schoolStudents
       .get(schoolId)
@@ -199,6 +218,12 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     ) {
       if (!schoolStudents.has(member.schoolId)) schoolStudents.set(member.schoolId, new Set())
       schoolStudents.get(member.schoolId)?.add(`user:${member.userId}`)
+      if (!roster.has(member.schoolId)) roster.set(member.schoolId, new Map())
+      roster.get(member.schoolId)?.set(`user:${member.userId}`, {
+        id: `user:${member.userId}`,
+        name: userNames.get(member.userId) || 'Alumno sin nombre',
+        userId: member.userId,
+      })
     }
 
   // Match the verification queue's private status without retrieving documents
@@ -246,6 +271,13 @@ export async function getAdminOverview(): Promise<AdminOverview> {
           id,
           name: userNames.get(id) || 'Usuario sin nombre',
         })),
+        teachers: [...(schoolPeople.get(doc.id)?.coaches || [])].map((id) => ({
+          id,
+          name: userNames.get(id) || 'Entrenador sin nombre',
+        })),
+        roster: [...(roster.get(doc.id)?.values() || [])].sort((a, b) =>
+          a.name.localeCompare(b.name, 'es')
+        ),
         coaches: schoolPeople.get(doc.id)?.coaches.size || 0,
         students: schoolStudents.get(doc.id)?.size || 0,
         products: paymentProducts.filter((product) => product.scope === `school:${doc.id}`).length,

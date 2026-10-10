@@ -15,6 +15,8 @@ export interface AdminSchool {
   slug: string
   isPublic: boolean
   coordinators: { id: string; name: string }[]
+  teachers: { id: string; name: string }[]
+  roster: { id: string; name: string; userId: string }[]
   coaches: number
   students: number
   products: number
