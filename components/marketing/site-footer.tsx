@@ -17,6 +17,7 @@ const COLUMNS = [
     title: 'Explorar',
     links: [
       { label: 'Entrenadores', href: '/coaches' },
+      { label: 'Precios', href: '/precio' },
       { label: 'Preguntas frecuentes', href: '/#faq' },
       { label: 'Ingresar', href: '/login' },
     ],

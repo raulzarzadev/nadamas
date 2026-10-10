@@ -118,6 +118,12 @@ export default function SiteNav() {
                 </Link>
               ))}
               <Link
+                href="/precio"
+                className="text-sm font-semibold text-(--c-ocean) transition-colors hover:text-(--c-aqua-strong) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--c-aqua-strong)"
+              >
+                Precios
+              </Link>
+              <Link
                 href="/login"
                 className="ml-2 inline-flex min-h-11 items-center rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white transition-colors hover:bg-[#164263] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
               >
@@ -172,6 +178,14 @@ export default function SiteNav() {
               </li>
             ))}
           </ul>
+          <Link
+            href="/precio"
+            onClick={() => setOpen(false)}
+            className="flex min-h-12 items-center justify-between gap-4 rounded-[var(--r-sm)] px-3 py-2 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-(--c-aqua-strong)"
+          >
+            Precios
+            <FiArrowRight aria-hidden="true" className="text-(--c-aqua-strong)" />
+          </Link>
           <div className="mt-2 border-t border-(--c-border) pt-3">
             <Link
               href="/login"
