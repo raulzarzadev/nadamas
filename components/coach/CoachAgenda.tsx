@@ -2237,7 +2237,7 @@ export default function CoachAgenda({
                       <button
                         type="button"
                         onClick={onScheduleEditorOpen}
-                        className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
+                        className="btn btn-primary min-h-11 gap-2 px-5 text-sm font-bold shadow-sm focus-visible:outline-2 focus-visible:outline-offset-4"
                       >
                         <FiCalendar aria-hidden="true" /> Editar horario
                       </button>
@@ -2245,6 +2245,34 @@ export default function CoachAgenda({
                   </div>
                 )}{' '}
             </>
+          }
+          description={
+            agenda &&
+            !error &&
+            !readOnlyAgenda &&
+            onScheduleEditorOpen &&
+            !agenda.availableSlots.some(
+              (slot) => slot.date >= dateKey(new Date()) && slot.status !== 'blocked'
+            ) && (
+              <section
+                className="flex flex-col items-center gap-4 bg-white px-4 py-8 text-center sm:rounded-2xl"
+                aria-label="Agregar próximos horarios"
+              >
+                <span className="grid h-12 w-12 place-items-center rounded-full bg-(--c-surface) text-2xl text-(--c-ocean)">
+                  <FiCalendar aria-hidden="true" />
+                </span>
+                <h2 className="text-lg font-bold">
+                  No tienes horarios disponibles en los próximos días.
+                </h2>
+                <button
+                  type="button"
+                  onClick={onScheduleEditorOpen}
+                  className="btn btn-primary min-h-12 px-6 font-bold focus-visible:outline-2 focus-visible:outline-offset-4"
+                >
+                  Agregar horarios
+                </button>
+              </section>
+            )
           }
           selectedDate={selectedDate}
           days={weekDates}

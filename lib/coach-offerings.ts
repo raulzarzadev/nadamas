@@ -347,9 +347,9 @@ export function scheduleIsAvailableOn(schedule: CoachOfferingSchedule, date: Dat
 /** Weekday short labels indexed by Date.getDay() (0 = Sunday). */
 export const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
-/** Selectable hour slots for the schedule editors (06:00–21:30). */
-export const HOUR_OPTIONS = Array.from({ length: 32 }, (_, index) => {
-  const totalMinutes = (index + 12) * 30
+/** Selectable hour slots for the schedule editors (05:00–22:00). */
+export const HOUR_OPTIONS = Array.from({ length: 35 }, (_, index) => {
+  const totalMinutes = (index + 10) * 30
   return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`
 })
 

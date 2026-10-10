@@ -9,9 +9,9 @@ const focusClass =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-ocean)]'
 
 const HOUR_GROUPS = [
-  { label: 'Mañana', range: '06:00 – 11:30', from: '06:00', to: '12:00' },
+  { label: 'Mañana', range: '05:00 – 11:30', from: '05:00', to: '12:00' },
   { label: 'Tarde', range: '12:00 – 17:30', from: '12:00', to: '18:00' },
-  { label: 'Noche', range: '18:00 – 21:30', from: '18:00', to: '22:00' },
+  { label: 'Noche', range: '18:00 – 22:00', from: '18:00', to: '22:30' },
 ] as const
 
 export default function HourPickerModal({
