@@ -231,7 +231,7 @@ test('evalúa una clase desde el historial en móvil y conserva los datos al edi
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(`/auth/link?email=${encodeURIComponent(email)}&token=${token}`)
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
-    await page.waitForURL('**/athlete/bookings')
+    await page.waitForURL('**/athlete/progress')
     await page.getByRole('button', { name: /Clases pasadas/ }).click()
     await page.getByRole('button', { name: 'Evaluar clase', exact: true }).click()
     await expect(page.getByRole('dialog', { name: 'Evaluar clase' })).toBeVisible()

@@ -247,9 +247,14 @@ export async function settleOverduePayments(scope?: string) {
     ? adminDb
         .collection('paymentReservations')
         .where('scope', '==', scope)
+        .where('state', '==', 'reserved')
         .where('endsAt', '<=', Date.now())
         .limit(200)
-    : adminDb.collection('paymentReservations').where('endsAt', '<=', Date.now()).limit(200)
+    : adminDb
+        .collection('paymentReservations')
+        .where('state', '==', 'reserved')
+        .where('endsAt', '<=', Date.now())
+        .limit(200)
   const snapshot = await query.get()
   const overdue = snapshot.docs
     .map((doc) => doc.data() as PaymentReservation)

@@ -29,13 +29,18 @@ service cloud.firestore {
     // each user writes only their own doc (doc id == uid).
     match /users/{uid} {
       allow read: if signedIn();
-      allow create, delete: if signedIn() && request.auth.uid == uid;
-      allow update: if (signedIn() && request.auth.uid == uid) || isAdmin();
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.get('roles', {}).get('admin', false) == false;
+      allow delete: if signedIn() && request.auth.uid == uid;
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
+        && request.resource.data.get('roles', {}).get('admin', false)
+          == resource.data.get('roles', {}).get('admin', false));
     }
 
     function isSchoolMember(schoolId) {
       return signedIn()
-        && exists(/databases/$(database)/documents/schoolMemberships/$(schoolId + '_' + request.auth.uid));
+        && exists(/databases/$(database)/documents/schoolMemberships/$(schoolId + '_' + request.auth.uid))
+        && get(/databases/$(database)/documents/schoolMemberships/$(schoolId + '_' + request.auth.uid)).data.status == 'active';
     }
 
     // Schools are written through authenticated server routes. Public school
@@ -64,7 +69,34 @@ service cloud.firestore {
     }
 
     function isLegacyCollection(collection) {
+      // Specific matches do not override a wildcard allow: exclude their
+      // collections here, including server-only financial/authentication data.
       return ![
+        'users',
+        'coaches',
+        'events',
+        'entries',
+        'notifications',
+        'otpLoginCodes',
+        'bookings',
+        'calendarFeeds',
+        'pushSubscriptions',
+        'slugs',
+        'agendaStudentRecords',
+        'coachStudentProgress',
+        'coachStudentProgressEntries',
+        'studentLabels',
+        'studentLabelAssignments',
+        'schoolScheduleAssignments',
+        'schoolStudentComments',
+        'schoolClassNotes',
+        'paymentSettings',
+        'paymentProducts',
+        'paymentAccounts',
+        'paymentOrders',
+        'paymentMovements',
+        'paymentReservations',
+        'paymentParticipants',
         'additionalProfiles',
         'athleteIdentityRegistry',
         'schoolAttendance',
@@ -104,7 +136,8 @@ service cloud.firestore {
       allow update, delete: if isOwner(resource);
     }
     match /entries/{id} {
-      allow read: if signedIn() || resource.data.isPublic == true;
+      allow read: if signedIn() || resource.data.get('isPublic', false) == true
+        || resource.data.get('options', {}).get('isPublic', false) == true;
       allow create: if isOwner(request.resource);
       allow update, delete: if isOwner(resource);
     }
@@ -112,7 +145,7 @@ service cloud.firestore {
     // Coach profile. Public doc (coaches/{uid}, doc id == uid):
     // any signed-in user may read (athletes browse coaches); only the
     // owner may write. The catch-all below would also match this, but
-    // it is declared explicitly for clarity + to anchor the subcollection.
+    // it is excluded from the generic rule to enforce UID ownership.
     match /coaches/{uid} {
       allow read: if signedIn();
       allow create, update, delete: if signedIn() && request.auth.uid == uid;
@@ -127,6 +160,15 @@ service cloud.firestore {
         allow create, delete: if signedIn() && request.auth.uid == uid;
         allow update: if (signedIn() && request.auth.uid == uid) || isAdmin();
       }
+    }
+
+    // Both notification listeners constrain one of these fields to the caller.
+    match /notifications/{id} {
+      allow read: if signedIn() && (
+        resource.data.get('recipientId', '') == request.auth.uid ||
+        resource.data.get('actorId', '') == request.auth.uid
+      );
+      allow write: if false;
     }
 
     // Owner-scoped domain collections (athletes, atheltes [sic], teams,

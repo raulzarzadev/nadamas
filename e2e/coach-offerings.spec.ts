@@ -5,7 +5,9 @@ test('marketplace preview renders after offerings refactor', async ({ page }) =>
   page.on('pageerror', (error) => errors.push(String(error)))
 
   await page.goto('/#coaches')
-  await expect(page.getByRole('heading', { name: /Encuentra un coach/i })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: /Explora entrenadores de natación/i })
+  ).toBeVisible()
   await expect(
     page.locator('text=/Cargando coaches|coach|Aún no encontramos/i').first()
   ).toBeVisible()

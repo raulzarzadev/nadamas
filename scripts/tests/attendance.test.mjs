@@ -135,6 +135,8 @@ function fixture(classes = [exampleClass()]) {
     '@/lib/coach-offerings': offeringsHelpers,
     '@/lib/school': { UNASSIGNED_SCHOOL_COACH_ID: '__unassigned__' },
     './firebase-admin': { adminDb },
+    // These attendance fixtures have billing disabled; billing is covered separately.
+    './payments/reservations': { preparePaymentEvents: async () => () => {} },
     './athlete-identities': {
       ensureAthleteIdentity: async () => ({ numericId: '000123', qrToken: 'secret-must-not-leak' }),
       findAthleteIdentity: async ({ numericId, qrToken }) =>

@@ -61,7 +61,7 @@ test('magic link signs in and completes the pending booking', async ({ page, bas
   await expect(page.getByRole('heading', { name: 'Confirma tu acceso' })).toBeVisible()
   await page.getByRole('button', { name: 'Confirmar' }).click()
 
-  await page.waitForURL('**/athlete/bookings')
+  await page.waitForURL('**/athlete/progress')
 
   // Single use: the OTP doc must be gone after a successful confirmation.
   expect(await readOtpDoc(email)).toBeNull()
