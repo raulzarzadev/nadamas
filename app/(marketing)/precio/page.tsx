@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FiArrowRight, FiCheck, FiGlobe, FiLayers, FiSmartphone } from 'react-icons/fi'
+import { NADAMAS_PRICING } from '@/lib/pricing'
 
 export const metadata: Metadata = {
   title: 'Precios · Oferta de lanzamiento',
@@ -62,11 +63,11 @@ export default function PricingPage() {
 
           <div className="mt-7">
             <p className="text-base text-(--c-text-2)">
-              Antes <s className="decoration-2">$299 MXN / mes</s>
+              Antes <s className="decoration-2">${NADAMAS_PRICING.regularMonthly} MXN / mes</s>
             </p>
             <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
               <span className="text-[5rem] font-extrabold leading-none tracking-tight sm:text-[6rem]">
-                $49
+                ${NADAMAS_PRICING.launchMonthly}
               </span>
               <span className="text-base font-semibold text-(--c-text-2)">MXN / mes</span>
             </p>

@@ -9,6 +9,7 @@ Las pantallas autenticadas deben reutilizar `lib/client/authed-api.ts`. Usar `ge
 | Recurso | Vigencia en memoria |
 | --- | --- |
 | `/api/schools` | 60 segundos |
+| `/api/admin/overview` | 15 segundos; acceso exclusivo de administrador |
 | `/api/schools/:id/students`, `classes`, `teachers`, `agenda` y sus subrutas | 15 segundos |
 | `/api/coach/student-tags`, `/api/coach/students` | 15 segundos |
 | Otras rutas | Solo comparte peticiones pendientes |

@@ -143,6 +143,12 @@ test('auth API cache isolates users and invalidates only changed school labels',
   authListener(auth.currentUser)
   await api.getAuthed(b)
   assert.equal(calls.length, 5)
+  await api.getAuthed('/api/admin/overview')
+  await api.getAuthed('/api/admin/overview')
+  assert.equal(calls.length, 6)
+  await api.patchAuthed('/api/admin/users/first', { disabled: false })
+  await api.getAuthed('/api/admin/overview')
+  assert.equal(calls.length, 8)
 })
 const history = load('../../lib/school-student-history.ts')
 const { schoolStudentSummaries } = load('../../lib/school-student-summary.ts', {

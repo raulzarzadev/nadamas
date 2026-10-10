@@ -34,6 +34,7 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     { href: '/school/classes', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
   ],
   admin: [
+    { href: '/admin/home', label: 'Resumen', mobileLabel: 'Resumen', icon: 'home' },
     {
       href: '/admin/verify-queue',
       label: 'Verificaciones',
