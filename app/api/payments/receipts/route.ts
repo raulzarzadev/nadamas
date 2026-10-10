@@ -4,6 +4,7 @@ import { getStorage } from 'firebase-admin/storage'
 import { NextResponse } from 'next/server'
 import type { PaymentOrder } from '@/lib/payments/model'
 import { paymentAccess } from '@/lib/server/payments/access'
+import { notifyPendingPayment } from '@/lib/server/payments/notifications'
 import { orderRef } from '@/lib/server/payments/store'
 import { runPaymentTransaction } from '@/lib/server/payments/transaction'
 
@@ -87,6 +88,9 @@ export async function POST(request: Request) {
       await file.delete().catch(() => {})
       throw error
     }
+    await notifyPendingPayment(access.scope, access.caller.uid, order.studentName, true).catch(
+      (error) => console.error('[PAYMENT_RECEIPT_NOTIFICATION]', error)
+    )
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('[PAYMENT_RECEIPT_WRITE]', error)

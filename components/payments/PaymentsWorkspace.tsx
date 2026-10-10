@@ -93,7 +93,11 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
         </p>
       )}
       {endpoint ? (
-        <PaymentsPanel key={endpoint} endpoint={endpoint} />
+        <PaymentsPanel
+          key={`${endpoint}:${params.get('tab') === 'orders' ? 'orders' : 'account'}`}
+          endpoint={endpoint}
+          initialTab={params.get('tab') === 'orders' ? 'orders' : 'account'}
+        />
       ) : (
         <p className="p-3 text-sm text-(--c-text-2)">
           Selecciona una escuela o un entrenador para consultar tus pagos.

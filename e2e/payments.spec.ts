@@ -187,6 +187,42 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
     },
   })
   expect(validReceipt.ok(), await validReceipt.text()).toBe(true)
+  const paymentNotices = await (
+    await fetch(`${root.replace('/documents', '')}/documents:runQuery`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer owner', 'content-type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'notifications' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'recipientId' },
+              op: 'EQUAL',
+              value: { stringValue: manager.localId },
+            },
+          },
+        },
+      }),
+    })
+  ).json()
+  const notices = paymentNotices
+    .map(
+      (item: { document?: { fields: Record<string, { stringValue?: string }> } }) =>
+        item.document?.fields
+    )
+    .filter(Boolean)
+  expect(
+    notices.some(
+      (item: Record<string, { stringValue?: string }>) =>
+        item.title?.stringValue === 'Pago por confirmar'
+    )
+  ).toBe(true)
+  expect(
+    notices.some(
+      (item: Record<string, { stringValue?: string }>) =>
+        item.title?.stringValue === 'Comprobante por verificar'
+    )
+  ).toBe(true)
   const downloaded = await request.get(receiptEndpoint, { headers: headers(athlete) })
   expect(downloaded.ok(), await downloaded.text()).toBe(true)
   expect(downloaded.headers()['cache-control']).toContain('private')
