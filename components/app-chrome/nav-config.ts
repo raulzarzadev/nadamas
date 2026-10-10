@@ -12,12 +12,22 @@ export interface NavLink {
 // actions, not frequent navigation.
 export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
-    { href: '/athlete/payments', label: 'Pagos', mobileLabel: 'Pagos', icon: 'payments' },
+    {
+      href: '/athlete/payments',
+      label: 'Pagos y planes',
+      mobileLabel: 'Pagos y planes',
+      icon: 'payments',
+    },
     { href: '/athlete/find-coach', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
     { href: '/athlete/progress', label: 'Progreso', mobileLabel: 'Progreso', icon: 'chart' },
   ],
   coach: [
-    { href: '/coach/payments', label: 'Pagos', mobileLabel: 'Pagos', icon: 'payments' },
+    {
+      href: '/coach/payments',
+      label: 'Pagos y planes',
+      mobileLabel: 'Pagos y planes',
+      icon: 'payments',
+    },
     { href: '/coach/agenda', label: 'Mis horarios', mobileLabel: 'Horarios', icon: 'calendar' },
     { href: '/coach/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
     {
@@ -28,7 +38,12 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     },
   ],
   school: [
-    { href: '/school/payments', label: 'Pagos', mobileLabel: 'Pagos', icon: 'payments' },
+    {
+      href: '/school/payments',
+      label: 'Pagos y planes',
+      mobileLabel: 'Pagos y planes',
+      icon: 'payments',
+    },
     { href: '/school/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
     { href: '/school/coaches', label: 'Profes', mobileLabel: 'Profes', icon: 'badge' },
     { href: '/school/classes', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
