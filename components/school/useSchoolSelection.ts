@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { useUser } from '@/context/UserContext'
 import { getAuthed, getCachedAuthedData } from '@/lib/client/authed-api'
 import { type School, type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
@@ -21,6 +22,8 @@ export function useSchoolSelection({
   athleteMode?: boolean
 } = {}) {
   const tenant = useTenantSchool()
+  const { user } = useUser() as { user: { uid?: string; id?: string } | null | undefined }
+  const userId = user?.uid || user?.id
   const selectionKey = athleteMode
     ? 'nadamas.athleteSelection'
     : includePersonal
@@ -63,6 +66,7 @@ export function useSchoolSelection({
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(initial ? 'ready' : 'loading')
 
   useEffect(() => {
+    if (!userId) return
     let active = true
     const stored = window.localStorage.getItem('nadamas.schoolId')
     getAuthed('/api/schools')
@@ -128,7 +132,7 @@ export function useSchoolSelection({
     return () => {
       active = false
     }
-  }, [athleteMode, includePersonal, selectionKey, tenant])
+  }, [athleteMode, includePersonal, selectionKey, tenant, userId])
 
   useEffect(() => {
     function handleSelectionChange(event: Event) {
@@ -188,7 +192,7 @@ export function useSchoolSelection({
     selected,
     selectedId: selected?.school.id || null,
     isPersonal,
-    status,
+    status: user === undefined ? ('loading' as const) : status,
     selectSchool,
     selectPersonal,
   }

@@ -3,15 +3,19 @@ import { buildAvailableSlots, type CoachScheduleBlock, localDateKey } from '@/li
 import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { bookingPaymentEvent } from '@/lib/server/payments/booking-events'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
+import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const token = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1]
   if (!token) return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
   const caller = await adminAuth.verifyIdToken(token)
   const input = await request.json().catch(() => ({}))
   const body = (input && typeof input === 'object' ? input : {}) as {
+    allowPackage?: unknown
     bookingId?: unknown
     date?: unknown
     startTime?: unknown
@@ -81,6 +85,21 @@ export async function POST(request: Request) {
     const groupType = classmates[0]?.groupType || target.groupType
     if (classmates.some((item) => item.classFull) || (groupType !== 'grupal' && classmates.length))
       return 'unavailable' as const
+    const apply = await preparePaymentEvents(transaction, [
+      bookingPaymentEvent(source, 'release', caller.uid, { organizerCancelled: true }),
+      bookingPaymentEvent(
+        {
+          ...source,
+          date: body.date as string,
+          startTime: target.startTime,
+          endTime: target.endTime,
+        },
+        'reserve',
+        caller.uid,
+        { allowPackage: body.allowPackage === true }
+      ),
+    ])
+    apply()
     transaction.update(ref, {
       date: body.date,
       startTime: target.startTime,
@@ -106,3 +125,5 @@ export async function POST(request: Request) {
   const [error, status] = errors[result]
   return NextResponse.json({ error }, { status })
 }
+
+export const POST = withSchoolAgendaUpdate(handlePOST)

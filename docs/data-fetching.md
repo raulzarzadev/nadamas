@@ -65,3 +65,7 @@ pnpm typecheck
 ```
 
 Las pruebas cubren deduplicación, expiración, errores, aislamiento por usuario, invalidación durante peticiones pendientes, permisos de etiquetas y contadores. Al modificar el patrón, mantener estas garantías y comprobar en Network que navegar o pintar filas no multiplique las consultas por alumno.
+
+## Pagos
+
+Para saldos, catálogo y movimientos, reutiliza `PaymentCRUD` y el snapshot autenticado de `/api/payments?schoolId=...` o `?coachId=...`; conserva exactamente la URL para compartir la caché. No cargues cuentas o movimientos por alumno desde cada fila. Las mutaciones invalidan la caché compartida. Las reglas transaccionales y los requisitos de producción están en [payments.md](payments.md).

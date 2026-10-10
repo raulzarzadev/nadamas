@@ -6,15 +6,18 @@ import { useEffect, useRef, useState } from 'react'
 import { FiCheck, FiMapPin, FiMessageSquare, FiPlus, FiX } from 'react-icons/fi'
 import { LuHourglass } from 'react-icons/lu'
 import CoachAgenda from '@/components/coach/CoachAgenda'
+import PaymentBookingOptions from '@/components/payments/PaymentBookingOptions'
 import ClassCard from '@/components/ui/class-card'
 import ClassRequestCard from '@/components/ui/class-request-card'
 import CoachBadge from '@/components/ui/coach-badge'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
+import { paymentMessage } from '@/lib/payments/messages'
 import {
   capitalizeSchoolTerm,
   type SchoolBookingMode,
@@ -169,8 +172,7 @@ export default function SchoolClasses() {
     }
   }, [agendaRevision, selectedId, selected?.membership, selected?.school.bookingMode])
 
-  if (schoolStatus === 'loading')
-    return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando clases…</div>
+  if (schoolStatus === 'loading') return <ProfileLoadingSkeleton />
   if (schoolStatus === 'error')
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
   if (!selected) return <SchoolNoSelection />
@@ -953,6 +955,8 @@ function CreateClassModal({
   const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
   const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
   const [form, setForm] = useState({
+    allowPackage: false,
+    paymentExceptionReason: '',
     title: request ? 'Clase solicitada' : '',
     type: (request?.type || 'individual') as 'individual' | 'group',
     visibility: 'private' as 'public' | 'private',
@@ -996,6 +1000,8 @@ function CreateClassModal({
       }
       const response = request
         ? await patchAuthed(`/api/schools/${schoolId}/class-requests/${request.id}`, {
+            allowPackage: form.allowPackage,
+            paymentExceptionReason: form.paymentExceptionReason,
             status: 'approved',
             teacherIds: form.teacherIds,
             title: form.title,
@@ -1015,7 +1021,9 @@ function CreateClassModal({
       }
       onCreated(result)
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'No se pudo crear la clase.')
+      setError(
+        paymentMessage(reason, 'No se pudo crear la clase. Revisa los datos e inténtalo de nuevo.')
+      )
     } finally {
       setSaving(false)
     }
@@ -1023,6 +1031,11 @@ function CreateClassModal({
   return (
     <Modal title={request ? 'Asignar solicitud' : 'Crear clase'} onClose={onClose}>
       <form onSubmit={submit} className="grid max-h-[75vh] gap-3 overflow-y-auto">
+        <PaymentBookingOptions
+          value={form}
+          onChange={(value) => setForm({ ...form, ...value })}
+          canOverride
+        />
         <Text
           label="Nombre de la clase"
           value={form.title}

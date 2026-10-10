@@ -3,6 +3,7 @@
 import Sheet from '@comps/ui/sheet'
 import { useEffect, useState } from 'react'
 import { FiPlus, FiSearch, FiX } from 'react-icons/fi'
+import PaymentBookingOptions from '@/components/payments/PaymentBookingOptions'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed } from '@/lib/client/authed-api'
@@ -18,6 +19,8 @@ interface CoachStudent {
 }
 
 export interface AddStudentPayload {
+  allowPackage?: boolean
+  paymentExceptionReason?: string
   athleteId?: string
   athleteName: string
   athleteEmail?: string | null
@@ -66,6 +69,7 @@ export default function AgendaAddStudentModal({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [createNames, setCreateNames] = useState<string[]>([])
   const [query, setQuery] = useState('')
+  const [payment, setPayment] = useState({ allowPackage: false, paymentExceptionReason: '' })
 
   useEffect(() => {
     let active = true
@@ -166,12 +170,13 @@ export default function AgendaAddStudentModal({
     if (!canSubmit) return
     onSubmit([
       ...selectedStudents.map((student) => ({
+        ...payment,
         athleteId: student.athleteId,
         athleteName: student.name,
         athleteEmail: student.email,
         athletePhone: student.phone,
       })),
-      ...createNames.map((name) => ({ athleteName: name })),
+      ...createNames.map((name) => ({ ...payment, athleteName: name })),
     ])
   }
 
@@ -243,6 +248,7 @@ export default function AgendaAddStudentModal({
         </div>
 
         <div className="flex flex-col px-4 py-4 sm:px-0">
+          <PaymentBookingOptions value={payment} onChange={setPayment} canOverride={!schoolId} />
           {(promotionRequired || occupiedIndividual) && (
             <p
               role="status"

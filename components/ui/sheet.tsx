@@ -1,3 +1,18 @@
+/**
+ * Formularios dentro de Sheet:
+ * - Usa grid min-w-0 grid-cols-1 en el formulario y en cada label; columnas
+ *   múltiples deben usar minmax(0, 1fr), nunca mínimos intrínsecos de inputs.
+ * - Campos: box-border w-full min-w-0 max-w-full, altura mínima 44px,
+ *   fondo y borde explícitos visibles también sin foco. No dependas solo de
+ *   la clase DaisyUI input/textarea para mostrar el borde.
+ * - Usa focus:ring-inset y outline-none junto a un foco visible interior:
+ *   un outline exterior se recorta en el contenedor con scroll del modal.
+ * - Reutiliza los estilos compartidos del formulario (por ejemplo,
+ *   components/payments/payment-field.ts). Incluye file inputs y textarea.
+ * - Pon Guardar/Crear en footer con form=id para mantenerlo accesible.
+ * - Verifica visualmente con y sin foco, a 320px y en escritorio; comprobar
+ *   solo scrollWidth no detecta bordes invisibles ni outlines recortados.
+ */
 'use client'
 
 import {

@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server'
+import type { Booking } from '@/lib/coach-booking'
 import { formatSlotLabel } from '@/lib/coach-booking'
 import { publicNameFromUser } from '@/lib/public-name'
 import { sendBookingCancelledEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingCancelled } from '@/lib/server/notifications'
+import { bookingPaymentEvent } from '@/lib/server/payments/booking-events'
+import { paymentTransaction } from '@/lib/server/payments/reservations'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
 export const runtime = 'nodejs'
@@ -48,7 +51,12 @@ async function handleDELETE(request: Request, { params }: { params: Promise<{ id
   }
 
   const now = Date.now()
-  await bookingRef.set({ status: 'cancelled', cancelledAt: now, updatedAt: now }, { merge: true })
+  await paymentTransaction(
+    [bookingPaymentEvent({ ...booking, id } as Booking, 'release', caller.uid)],
+    (tx) => {
+      tx.set(bookingRef, { status: 'cancelled', cancelledAt: now, updatedAt: now }, { merge: true })
+    }
+  )
 
   // Notify the coach. Best-effort: a failed email must not fail the cancel.
   try {

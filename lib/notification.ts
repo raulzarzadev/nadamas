@@ -1,4 +1,6 @@
 export type NotificationType =
+  | 'payment_reviewed'
+  | 'payment_pending'
   | 'booking_confirmed' // athlete booked -> coach
   | 'booking_cancelled' // athlete cancelled -> coach
   | 'booking_created_by_coach' // coach added student -> athlete

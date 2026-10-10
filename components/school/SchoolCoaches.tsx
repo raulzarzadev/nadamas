@@ -8,6 +8,7 @@ import CoachAgenda from '@/components/coach/CoachAgenda'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
 import CoachBadge from '@/components/ui/coach-badge'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { capitalizeSchoolTerm, type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
@@ -66,12 +67,7 @@ export default function SchoolCoaches() {
       .finally(() => setLoading(false))
   }, [selectedId, selected?.membership, terminology.coachPlural, terminology.schoolId])
 
-  if (schoolStatus === 'loading')
-    return (
-      <div className="py-16 text-center text-sm text-(--c-text-2)">
-        Cargando {terminology.schoolId ? terminology.coachPlural : 'coaches'}…
-      </div>
-    )
+  if (schoolStatus === 'loading') return <ProfileLoadingSkeleton />
   if (schoolStatus === 'error')
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
   if (!selected) return <SchoolNoSelection />

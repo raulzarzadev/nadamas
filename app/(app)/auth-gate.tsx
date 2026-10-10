@@ -1,8 +1,8 @@
 'use client'
-import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useUser } from '@/context/UserContext'
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
@@ -17,7 +17,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     }
   }, [user, pathname, router])
 
-  if (user === undefined) return <Loading size="lg" fullScreen />
+  if (user === undefined) return <ProfileLoadingSkeleton />
   if (user === null)
     return (
       <div className="grid min-h-[calc(100vh-2rem)] place-items-center px-5 py-10">

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { FiClipboard, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import Sheet from '@/components/ui/sheet'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
@@ -60,12 +61,7 @@ export default function SchoolStudents() {
       .finally(() => setLoading(false))
   }, [selectedId, selected?.membership, terminology.participantPlural, terminology.schoolId])
 
-  if (schoolStatus === 'loading')
-    return (
-      <div className="py-16 text-center text-sm text-(--c-text-2)">
-        Cargando {terminology.schoolId ? terminology.participantPlural : 'alumnos'}…
-      </div>
-    )
+  if (schoolStatus === 'loading') return <ProfileLoadingSkeleton />
   if (schoolStatus === 'error')
     return <p className="text-sm text-(--c-error,#b91c1c)">No pudimos cargar tus escuelas.</p>
   if (!selected) return <SchoolNoSelection />

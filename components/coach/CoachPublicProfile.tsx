@@ -6,6 +6,7 @@ import { TextField } from '@comps/Inputs/FormFields'
 import Avatar from '@comps/ui/avatar'
 import Sheet from '@comps/ui/sheet'
 import { onAuthStateChanged, signInWithCustomToken } from 'firebase/auth'
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiCheck, FiCopy } from 'react-icons/fi'
 import ClassEvaluationList from '@/components/bookings/ClassEvaluationList'
@@ -13,6 +14,7 @@ import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth, googleLogin } from '@/firebase/index'
 import { loginUser } from '@/firebase/users'
+import { postAuthed } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import {
   bookingSelectionKey,
@@ -33,6 +35,7 @@ import {
 } from '@/lib/coach-offerings'
 import { coachDisplayPhoto } from '@/lib/coach-photo'
 import { DAY_LABELS, formatWhatsappScheduleText } from '@/lib/coach-whatsapp-schedule'
+import { paymentMessage } from '@/lib/payments/messages'
 import CoachScheduleRows from './CoachScheduleRows'
 import VerifiedBadge from './VerifiedBadge'
 
@@ -335,22 +338,11 @@ export default function CoachPublicProfile({
   const loggedBookingEmail = (user?.email || auth.currentUser?.email || '').trim()
 
   async function createBookings(selections: CoachBookingSelection[], bookerName: string) {
-    const token = await auth.currentUser?.getIdToken()
-    if (!token) throw new Error('auth_required')
-
-    const response = await fetch('/api/bookings', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        selections,
-        athleteProfile: { name: bookerName },
-      }),
+    const response = await postAuthed('/api/bookings', {
+      selections,
+      allowPackage: true,
+      athleteProfile: { name: bookerName },
     })
-
-    if (!response.ok) throw new Error('booking_failed')
     return response.json()
   }
 
@@ -371,9 +363,9 @@ export default function CoachPublicProfile({
       await refreshUser?.()
       setBookingStep('done')
       setSelectedSlots({})
-    } catch {
+    } catch (error) {
       setBookingStatus('error')
-      setBookingMessage('Ups, algo salió mal. Inténtalo de nuevo más tarde.')
+      setBookingMessage(paymentMessage(error, 'Ups, algo salió mal. Inténtalo de nuevo más tarde.'))
     } finally {
       setBookingStatus('idle')
     }
@@ -404,9 +396,9 @@ export default function CoachPublicProfile({
       setOtpCode(/^\d{6}$/.test(payload.devCode || '') ? payload.devCode || '' : '')
       setBookingStep('otp')
       setBookingMessage('Te enviamos un correo con un botón para entrar y un código.')
-    } catch {
+    } catch (error) {
       setBookingStatus('error')
-      setBookingMessage('Ups, algo salió mal. Inténtalo de nuevo más tarde.')
+      setBookingMessage(paymentMessage(error, 'Ups, algo salió mal. Inténtalo de nuevo más tarde.'))
     } finally {
       setBookingStatus('idle')
     }
@@ -468,9 +460,9 @@ export default function CoachPublicProfile({
       setBookingStep('done')
       setSelectedSlots({})
       setBookingStatus('idle')
-    } catch {
+    } catch (error) {
       setBookingStatus('error')
-      setBookingMessage('Ups, algo salió mal. Inténtalo de nuevo más tarde.')
+      setBookingMessage(paymentMessage(error, 'Ups, algo salió mal. Inténtalo de nuevo más tarde.'))
     }
   }
 
@@ -797,6 +789,12 @@ export default function CoachPublicProfile({
                 </div>
               )}
 
+              <Link
+                className="btn btn-ghost min-h-11 text-xs"
+                href={`/athlete/payments?coachId=${encodeURIComponent(coach.id || '')}`}
+              >
+                Consultar saldo y adquirir clases
+              </Link>
               {bookingMessage && (
                 <p
                   className={`mt-3 text-sm ${

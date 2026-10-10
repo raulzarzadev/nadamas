@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { FiSearch, FiUser } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ClassStudentRow from '@/components/ui/class-student-row'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, getCachedAuthedData } from '@/lib/client/authed-api'
 import type { SchoolStudent } from '@/lib/school'
@@ -85,7 +86,8 @@ export default function CoachSchoolStudents() {
     }
   }, [selected, participantPlural, endpoint])
 
-  if (status === 'loading' || !selected) return null
+  if (status === 'loading') return <ProfileLoadingSkeleton />
+  if (!selected) return null
 
   const normalizedQuery = query.trim().toLowerCase()
   const visibleStudents = students.filter(

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { listSchoolStudents } from '@/lib/server/school-students'
 
@@ -40,6 +41,21 @@ async function handlePOST(request: Request, { params }: { params: Promise<{ scho
       if (record.status !== 'pending') return 409
       transaction.update(ref, { status: 'cancelled', updatedAt: now })
     } else {
+      const apply = await preparePaymentEvents(
+        transaction,
+        ids
+          .filter((id) => ownedIds.has(id))
+          .map((studentId) => ({
+            scope: `school:${schoolId}`,
+            studentId,
+            sourceId: ref.id,
+            date: record.date,
+            startTime: record.startTime,
+            actorId: caller.uid,
+            action: 'release' as const,
+          }))
+      )
+      apply()
       const remaining = ids.filter((id) => !ownedIds.has(id))
       transaction.update(ref, {
         studentIds: remaining,

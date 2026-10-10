@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useRole } from '@/context/RoleContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { schoolMembershipHasRole } from '@/lib/school'
@@ -48,7 +49,9 @@ export default function CoachAgendaWorkspace() {
     [coachSchools, tenant]
   )
 
-  if (status !== 'ready') return null
+  if (status === 'loading') return <ProfileLoadingSkeleton />
+  if (status === 'error')
+    return <p role="alert">No pudimos cargar tus datos. Inténtalo de nuevo.</p>
 
   const openEditor = () => {
     setEditorTarget(

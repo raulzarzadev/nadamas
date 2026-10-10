@@ -4,7 +4,7 @@ export interface NavLink {
   href: string
   label: string
   mobileLabel: string
-  icon: 'home' | 'search' | 'chart' | 'calendar' | 'users' | 'badge' | 'user' | 'bell'
+  icon: 'home' | 'search' | 'chart' | 'calendar' | 'users' | 'badge' | 'user' | 'bell' | 'payments'
 }
 
 // Primary nav = the role-specific destinations shown as the sub-navbar directly
@@ -12,10 +12,12 @@ export interface NavLink {
 // actions, not frequent navigation.
 export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
+    { href: '/athlete/payments', label: 'Pagos', mobileLabel: 'Pagos', icon: 'payments' },
     { href: '/athlete/find-coach', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
     { href: '/athlete/progress', label: 'Progreso', mobileLabel: 'Progreso', icon: 'chart' },
   ],
   coach: [
+    { href: '/coach/payments', label: 'Pagos', mobileLabel: 'Pagos', icon: 'payments' },
     { href: '/coach/agenda', label: 'Mis horarios', mobileLabel: 'Horarios', icon: 'calendar' },
     { href: '/coach/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
     {
@@ -26,6 +28,7 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     },
   ],
   school: [
+    { href: '/school/payments', label: 'Pagos', mobileLabel: 'Pagos', icon: 'payments' },
     { href: '/school/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
     { href: '/school/coaches', label: 'Profes', mobileLabel: 'Profes', icon: 'badge' },
     { href: '/school/classes', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },

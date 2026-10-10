@@ -10,6 +10,7 @@ import {
 } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
+import { type PaymentEvent, paymentTransaction } from '@/lib/server/payments/reservations'
 import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
 import { legacySchoolOfferings, schoolClassAgendaBooking } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
@@ -66,8 +67,12 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     !isStudentAccount
   )
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
+  let cancellingStudentIds: string[] | null = null
   if (isStudentAccount) {
     const students = await listSchoolStudents(schoolId, access.caller.uid)
+    cancellingStudentIds = students
+      .filter((student) => occurrence.studentIds.includes(student.id))
+      .map((student) => student.id)
     const canCancel = students.some((student) => occurrence.studentIds.includes(student.id))
     if (!canCancel || status !== 'cancelled')
       return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
@@ -236,7 +241,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       )
   }
   const editable = isStudentAccount ? {} : body
-  const update = {
+  const update: Partial<SchoolClassOccurrence> = {
     ...(status ? { status } : {}),
     ...(classNote !== null ? { classNote } : {}),
     ...(typeof editable.date === 'string' ? { date: editable.date } : {}),
@@ -244,7 +249,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     ...(typeof editable.endTime === 'string' ? { endTime: editable.endTime } : {}),
     ...(requestedType ? { type: requestedType } : {}),
     ...(requestedClassFull !== null || requestedType === 'individual'
-      ? { classFull: requestedType === 'individual' ? false : requestedClassFull }
+      ? { classFull: requestedType === 'individual' ? false : requestedClassFull === true }
       : {}),
     ...(teacherIds ? { teacherIds } : {}),
     ...(typeof editable.location === 'string' ? { location: editable.location.slice(0, 200) } : {}),
@@ -253,7 +258,70 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
       : {}),
     updatedAt: Date.now(),
   }
-  await adminDb.collection('schoolClassOccurrences').doc(occurrenceId).update(update)
+  if (
+    status === 'scheduled' &&
+    occurrence.status === 'cancelled' &&
+    !occurrence.studentIds.length &&
+    occurrence.cancelledStudentIds?.length
+  )
+    update.studentIds = occurrence.cancelledStudentIds
+  if (cancellingStudentIds && status === 'cancelled' && occurrence.type === 'group') {
+    const remaining = occurrence.studentIds.filter((id) => !cancellingStudentIds.includes(id))
+    if (remaining.length) {
+      update.status = occurrence.status
+      update.studentIds = remaining
+      update.cancelledStudentIds = [
+        ...new Set([...(occurrence.cancelledStudentIds || []), ...cancellingStudentIds]),
+      ]
+    }
+  }
+  const action =
+    status === 'cancelled'
+      ? 'release'
+      : status === 'completed'
+        ? 'consume'
+        : status === 'scheduled' && occurrence.status === 'cancelled'
+          ? 'reserve'
+          : null
+  const billingStudentIds =
+    action === 'release'
+      ? cancellingStudentIds || occurrence.studentIds
+      : update.studentIds || occurrence.studentIds
+  const billingEvents: PaymentEvent[] = billingStudentIds.flatMap((studentId) => {
+    const base = {
+      scope: `school:${schoolId}`,
+      studentId,
+      sourceId: occurrenceId,
+      date: occurrence.date,
+      startTime: occurrence.startTime,
+      endTime: occurrence.endTime,
+      actorId: access.caller.uid,
+      allowPackage: body.allowPackage === true,
+      organizerCancelled: isDirector || isTeacher,
+      exceptionReason:
+        isDirector && typeof body.paymentExceptionReason === 'string'
+          ? body.paymentExceptionReason.trim().slice(0, 300)
+          : undefined,
+    }
+    if (action) return [{ ...base, action }]
+    if (hasScheduleChange && occurrence.status !== 'cancelled')
+      return [
+        { ...base, action: 'release' as const, organizerCancelled: true },
+        {
+          ...base,
+          action: 'reserve' as const,
+          date: update.date || occurrence.date,
+          startTime: update.startTime || occurrence.startTime,
+          endTime: update.endTime || occurrence.endTime,
+        },
+      ]
+    return []
+  })
+  await paymentTransaction(billingEvents, async (tx) => {
+    const fresh = await tx.get(adminDb.collection('schoolClassOccurrences').doc(occurrenceId))
+    if (fresh.data()?.updatedAt !== occurrence.updatedAt) throw new Error('CLASS_CHANGED')
+    tx.update(fresh.ref, update)
+  })
   if (status || hasScheduleChange)
     for (const teacherId of new Set([
       ...occurrence.teacherIds,

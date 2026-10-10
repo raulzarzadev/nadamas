@@ -1,7 +1,7 @@
 'use client'
-import Loading from '@comps/Loading'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useUser } from '@/context/UserContext'
 import type { CoachPrivate, CoachPublic } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
@@ -37,7 +37,7 @@ export default function CoachProfileGate({
     }
   }, [uid])
 
-  if (!uid || pub === undefined || priv === undefined) return <Loading />
+  if (!uid || pub === undefined || priv === undefined) return <ProfileLoadingSkeleton />
 
   const missing = coachMissingItems({
     pub,

@@ -8,6 +8,7 @@ import {
 } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { createSchoolClass, validateClassInput } from '@/lib/server/school-classes'
@@ -29,6 +30,8 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   const record = snapshot.data() as SchoolClassRequest
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   const body = (await request.json().catch(() => ({}))) as {
+    allowPackage?: unknown
+    paymentExceptionReason?: unknown
     action?: unknown
     status?: unknown
     teacherIds?: unknown
@@ -91,6 +94,23 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
           item.status !== 'completed'
         )
       })
+      const apply = await preparePaymentEvents(
+        transaction,
+        changes.map((doc) => {
+          const item = doc.data() as SchoolClassOccurrence
+          return {
+            scope: `school:${schoolId}`,
+            studentId: record.studentId,
+            sourceId: doc.id,
+            date: item.date,
+            startTime: item.startTime,
+            actorId: access.caller.uid,
+            action: 'release' as const,
+            organizerCancelled: true,
+          }
+        })
+      )
+      apply()
       for (const doc of changes) {
         const item = doc.data() as SchoolClassOccurrence
         const studentIds = item.studentIds.filter((id) => id !== record.studentId)
@@ -178,7 +198,15 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     return NextResponse.json({ error: 'Revisa los datos del horario.' }, { status: 400 })
   let classResult: Awaited<ReturnType<typeof createSchoolClass>>
   try {
-    classResult = await createSchoolClass(classValidation.value)
+    classResult = await createSchoolClass(classValidation.value, {
+      idempotencyKey: `request:${record.id}:${record.updatedAt}`,
+      actorId: access.caller.uid,
+      allowPackage: body.allowPackage === true,
+      exceptionReason:
+        isDirector && typeof body.paymentExceptionReason === 'string'
+          ? body.paymentExceptionReason.trim().slice(0, 300)
+          : undefined,
+    })
   } catch (error) {
     if (error instanceof Error && error.message === 'GROUP_CLASS_FULL')
       return NextResponse.json({ error: 'El cupo de esta clase está cerrado.' }, { status: 409 })

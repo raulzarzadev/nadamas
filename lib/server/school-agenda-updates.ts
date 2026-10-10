@@ -1,7 +1,9 @@
 import 'server-only'
 import { randomUUID } from 'node:crypto'
 import { FieldValue } from 'firebase-admin/firestore'
+import { NextResponse } from 'next/server'
 import { adminDb } from './firebase-admin'
+import { paymentErrorResponse } from './payments/reservations'
 
 /** Publish only after an authorized mutation succeeds; never expose agenda data. */
 export function withSchoolAgendaUpdate<Args extends unknown[]>(
@@ -15,7 +17,14 @@ export function withSchoolAgendaUpdate<Args extends unknown[]>(
             .clone()
             .json()
             .catch(() => ({}))
-    const response = await handler(request, ...args)
+    let response: Response
+    try {
+      response = await handler(request, ...args)
+    } catch (error) {
+      const paymentError = paymentErrorResponse(error)
+      if (paymentError) return NextResponse.json(paymentError, { status: 409 })
+      throw error
+    }
     if (!response.ok) return response
     const pathSchoolId = new URL(request.url).pathname.match(/^\/api\/schools\/([^/]+)\//)?.[1]
     const schoolIds = new Set<string>()

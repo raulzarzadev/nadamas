@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { capitalizeSchoolTerm, schoolMembershipHasRole } from '@/lib/school'
 import CoachSchoolStudents from './CoachSchoolStudents'
@@ -22,7 +23,9 @@ export default function CoachStudentsWorkspace() {
   )
   const hasActiveSchool = !isPersonal && hasSchoolSelection
 
-  if (status !== 'ready') return null
+  if (status === 'loading') return <ProfileLoadingSkeleton />
+  if (status === 'error')
+    return <p role="alert">No pudimos cargar tus datos. Inténtalo de nuevo.</p>
   const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
   return (
     <>

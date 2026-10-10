@@ -11,6 +11,8 @@ import { publicNameFromUser } from '@/lib/public-name'
 import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingByCoach } from '@/lib/server/notifications'
+import { bookingPaymentEvent } from '@/lib/server/payments/booking-events'
+import { paymentTransaction, preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { getSchoolMembership } from '@/lib/server/school-access'
 import { legacySchoolOfferings } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
@@ -80,6 +82,8 @@ function weekdayLabel(date: string) {
 }
 
 type CoachBookingInput = {
+  allowPackage?: boolean
+  paymentExceptionReason?: string
   coachId?: string
   date?: string
   startTime?: string
@@ -240,7 +244,20 @@ async function handlePOST(request: Request) {
     ...(schoolId ? { schoolId } : {}),
   }
 
-  await ref.set(booking)
+  await paymentTransaction(
+    [
+      bookingPaymentEvent(booking, 'reserve', coachId, {
+        allowPackage: body.allowPackage === true,
+        exceptionReason:
+          !schoolId && typeof body.paymentExceptionReason === 'string'
+            ? body.paymentExceptionReason.trim().slice(0, 300)
+            : undefined,
+      }),
+    ],
+    (tx) => {
+      tx.set(ref, booking)
+    }
+  )
   await syncCoachCreatedSlotGroupType(coachId, date, startTime, schoolId)
 
   const progressRef = adminDb
@@ -317,7 +334,12 @@ async function handlePATCH(request: Request) {
     }
     const now = Date.now()
     if (typeof body.attended === 'boolean')
-      await bookingRef.set({ attended: body.attended, updatedAt: now }, { merge: true })
+      await paymentTransaction(
+        [bookingPaymentEvent(booking, 'consume', verification.caller.uid)],
+        (tx) => {
+          tx.set(bookingRef, { attended: body.attended, updatedAt: now }, { merge: true })
+        }
+      )
     if (typeof body.note === 'string')
       await adminDb
         .collection('agendaStudentRecords')
@@ -489,6 +511,18 @@ async function handleDELETE(request: Request) {
       if ([...selected].some((id) => !active.some((doc) => doc.data().athleteId === id)))
         return null
       const removed = active.filter((doc) => selected.has(doc.data().athleteId))
+      const apply = await preparePaymentEvents(
+        transaction,
+        removed.map((doc) =>
+          bookingPaymentEvent(
+            { ...doc.data(), id: doc.id } as Booking,
+            'release',
+            verification.caller.uid,
+            { organizerCancelled: true }
+          )
+        )
+      )
+      apply()
       for (const doc of removed)
         transaction.update(doc.ref, { status: 'cancelled', cancelledAt: now, updatedAt: now })
       return {
@@ -519,7 +553,19 @@ async function handleDELETE(request: Request) {
       removedCount: result.removed.length,
     })
   }
-  await ref.set({ status: 'cancelled', cancelledAt: now, updatedAt: now }, { merge: true })
+  await paymentTransaction(
+    [
+      bookingPaymentEvent(
+        { ...current.data(), id: ref.id } as Booking,
+        'release',
+        verification.caller.uid,
+        { organizerCancelled: true }
+      ),
+    ],
+    (tx) => {
+      tx.set(ref, { status: 'cancelled', cancelledAt: now, updatedAt: now }, { merge: true })
+    }
+  )
 
   const cancelled = current.data() as Booking
   await syncCoachCreatedSlotGroupType(

@@ -1,10 +1,8 @@
 import { initializeApp } from 'firebase/app'
 import {
-  browserSessionPersistence,
   connectAuthEmulator,
   GoogleAuthProvider,
   getAuth,
-  initializeAuth,
   onAuthStateChanged,
   signInWithPopup,
   signOut,
@@ -14,7 +12,7 @@ import { connectStorageEmulator, getStorage } from 'firebase/storage'
 import { getUser } from './users'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
-const USER_PROFILE_TIMEOUT_MS = 5000
+const _USER_PROFILE_TIMEOUT_MS = 5000
 
 export const app = initializeApp(JSON.parse(firebaseConfig))
 export const auth = getAuth(app)
@@ -61,10 +59,8 @@ export const authStateChanged = (cb = () => {}) => {
     }
 
     try {
-      const userData = await Promise.race([
-        getUser(user.uid),
-        new Promise((resolve) => setTimeout(() => resolve(null), USER_PROFILE_TIMEOUT_MS)),
-      ])
+      const userData = await getUser(user.uid)
+      if (auth.currentUser?.uid !== user.uid) return
       cb(userData || fallbackUser)
     } catch (err) {
       console.error('authStateChanged:getUser', err?.code || 'error')
@@ -89,7 +85,7 @@ export const googleLogin = async () => {
     const result = await signInWithPopup(auth, provider)
     // This gives you a Google Access Token. You can use it to access the Google API.
     const credential = GoogleAuthProvider.credentialFromResult(result)
-    const token = credential.accessToken
+    const _token = credential.accessToken
     // The signed-in user info.
     const user = result.user
     // console.log(user)
@@ -120,5 +116,5 @@ export const googleLogin = async () => {
 
 export const logOut = () =>
   signOut(auth)
-    .then((res) => console.log(`signout`))
+    .then((_res) => console.log(`signout`))
     .catch((err) => console.error(`err`, err))

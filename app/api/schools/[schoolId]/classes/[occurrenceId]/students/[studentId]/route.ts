@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
@@ -82,6 +83,31 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
             )
           )
         : []
+    const billingAction =
+      remove || status === 'cancelled'
+        ? 'release'
+        : status === 'completed' || typeof attended === 'boolean'
+          ? 'consume'
+          : null
+    const applyPayment = await preparePaymentEvents(
+      transaction,
+      billingAction
+        ? matches.map((doc) => {
+            const item = doc.data() as SchoolClassOccurrence
+            return {
+              scope: `school:${schoolId}`,
+              studentId,
+              sourceId: doc.id,
+              date: item.date,
+              startTime: item.startTime,
+              actorId: access.caller.uid,
+              action: billingAction,
+              organizerCancelled: true,
+            }
+          })
+        : []
+    )
+    applyPayment()
     const now = Date.now()
     if (status !== undefined) {
       for (let index = 0; index < matches.length; index += 1) {

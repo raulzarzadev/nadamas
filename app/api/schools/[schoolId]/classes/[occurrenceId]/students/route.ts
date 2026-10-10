@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { requireSchoolAccess, schoolPeopleAreValid } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
@@ -17,6 +18,8 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   if (access.response) return access.response
 
   const body = (await request.json().catch(() => ({}))) as {
+    allowPackage?: unknown
+    paymentExceptionReason?: unknown
     studentIds?: unknown
     promoteToGroup?: unknown
   }
@@ -61,6 +64,27 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     const nextIds = [...new Set([...currentIds, ...studentIds])]
     if (nextIds.length > 100) return { status: 'limit' as const }
     const addedCount = nextIds.length - currentIds.length
+    const apply = await preparePaymentEvents(
+      transaction,
+      studentIds
+        .filter((id) => !currentIds.includes(id))
+        .map((studentId) => ({
+          scope: `school:${schoolId}`,
+          studentId,
+          sourceId: occurrenceId,
+          date: occurrence.date,
+          startTime: occurrence.startTime,
+          endTime: occurrence.endTime,
+          actorId: access.caller.uid,
+          action: 'reserve',
+          allowPackage: body.allowPackage === true,
+          exceptionReason:
+            isDirector && typeof body.paymentExceptionReason === 'string'
+              ? body.paymentExceptionReason.trim().slice(0, 300)
+              : undefined,
+        }))
+    )
+    apply()
     if (addedCount > 0 || shouldPromote)
       transaction.update(classRef, {
         studentIds: nextIds,

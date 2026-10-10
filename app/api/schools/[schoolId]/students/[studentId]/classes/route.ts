@@ -10,6 +10,7 @@ import {
 } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
 import { legacySchoolOfferings } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
@@ -51,7 +52,8 @@ async function assignToExistingClass(
   studentId: string,
   slot: SlotInput,
   callerId: string,
-  isDirector: boolean
+  isDirector: boolean,
+  billing: { allowPackage?: boolean; exceptionReason?: string }
 ) {
   if (!slot.schoolClassId) return false
   const classRef = adminDb.collection('schoolClassOccurrences').doc(slot.schoolClassId)
@@ -79,6 +81,20 @@ async function assignToExistingClass(
     const currentIds = Array.isArray(occurrence.studentIds) ? occurrence.studentIds : []
     if (currentIds.includes(studentId)) return true
     if (occurrence.classFull === true || currentIds.length >= 100) return false
+    const apply = await preparePaymentEvents(transaction, [
+      {
+        scope: `school:${schoolId}`,
+        studentId,
+        sourceId: classRef.id,
+        date: slot.date,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        actorId: callerId,
+        action: 'reserve',
+        ...billing,
+      },
+    ])
+    apply()
     transaction.update(classRef, {
       studentIds: [...currentIds, studentId],
       updatedAt: Date.now(),
@@ -93,7 +109,8 @@ async function assignToOpenSlot(
   slot: SlotInput,
   timezone: string,
   isDirector: boolean,
-  callerId: string
+  callerId: string,
+  billing: { allowPackage?: boolean; exceptionReason?: string }
 ) {
   if (slot.coachId !== UNASSIGNED_SCHOOL_COACH_ID) {
     const membership = await getSchoolMembership(schoolId, slot.coachId)
@@ -133,7 +150,8 @@ async function assignToOpenSlot(
       studentId,
       { ...slot, schoolClassId: matchingClass.id },
       callerId,
-      isDirector
+      isDirector,
+      billing
     )
 
   if (slot.groupType === 'particular') {
@@ -182,28 +200,30 @@ async function assignToOpenSlot(
   if (!available) return false
 
   const parsedDate = new Date(`${slot.date}T00:00:00Z`)
-  await createSchoolClass({
-    schoolId,
-    title: slot.groupType === 'grupal' ? 'Clase grupal' : 'Clase particular',
-    type: slot.groupType === 'grupal' ? 'group' : 'individual',
-    teacherIds:
-      slot.coachId === UNASSIGNED_SCHOOL_COACH_ID
-        ? []
-        : offerings.find((offering) => offering.id === available.offeringId)?.assignedCoachIds || [
-            slot.coachId,
-          ],
-    studentIds: [studentId],
-    startDate: slot.date,
-    endDate: slot.date,
-    daysOfWeek: [parsedDate.getUTCDay()],
-    startTime: slot.startTime,
-    endTime: slot.endTime,
-    timezone,
-    location: '',
-    locationUrl: '',
-    visibility: 'private',
-    recurring: false,
-  })
+  await createSchoolClass(
+    {
+      schoolId,
+      title: slot.groupType === 'grupal' ? 'Clase grupal' : 'Clase particular',
+      type: slot.groupType === 'grupal' ? 'group' : 'individual',
+      teacherIds:
+        slot.coachId === UNASSIGNED_SCHOOL_COACH_ID
+          ? []
+          : offerings.find((offering) => offering.id === available.offeringId)
+              ?.assignedCoachIds || [slot.coachId],
+      studentIds: [studentId],
+      startDate: slot.date,
+      endDate: slot.date,
+      daysOfWeek: [parsedDate.getUTCDay()],
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      timezone,
+      location: '',
+      locationUrl: '',
+      visibility: 'private',
+      recurring: false,
+    },
+    { actorId: callerId, ...billing }
+  )
   return true
 }
 
@@ -213,6 +233,13 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
   if (access.response) return access.response
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   const body = await request.json().catch(() => ({}))
+  const billing = {
+    allowPackage: body.allowPackage === true,
+    exceptionReason:
+      isDirector && typeof body.paymentExceptionReason === 'string'
+        ? body.paymentExceptionReason.trim().slice(0, 300)
+        : undefined,
+  }
   const slots = body && typeof body === 'object' ? (body as { slots?: unknown }).slots : undefined
   if (!Array.isArray(slots) || !slots.length || slots.length > 30 || !slots.every(validSlot))
     return NextResponse.json(
@@ -246,7 +273,8 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
             studentSnapshot.id,
             slot,
             access.caller.uid,
-            isDirector
+            isDirector,
+            billing
           )
         : await assignToOpenSlot(
             schoolId,
@@ -254,7 +282,8 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
             slot,
             timezone,
             isDirector,
-            access.caller.uid
+            access.caller.uid,
+            billing
           )
       if (assigned) {
         assignedCount += 1

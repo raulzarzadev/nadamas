@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useRole } from '@/context/RoleContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { SchoolAccessRequestCard } from './SchoolAccessRequests'
@@ -39,7 +40,7 @@ function ScopedWorkspaceGate({
   })
   const { setActiveRole } = useRole()
   if (!tenant) return children
-  if (status === 'loading') return <p className="py-12 text-center">Cargando escuela…</p>
+  if (status === 'loading') return <ProfileLoadingSkeleton />
   if (status === 'error')
     return (
       <p role="alert">

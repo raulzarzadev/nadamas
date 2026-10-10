@@ -11,6 +11,7 @@ import {
 import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import {
   getSchoolCaller,
   getSchoolMembership,
@@ -275,6 +276,20 @@ async function handlePOST(request: Request, { params }: RouteProps) {
           if (occurrence.studentIds.includes(studentId)) return { kind: 'duplicate' as const }
           const studentIds = [...occurrence.studentIds, studentId]
           const updatedAt = Date.now()
+          const apply = await preparePaymentEvents(transaction, [
+            {
+              scope: `school:${schoolId}`,
+              studentId,
+              sourceId: existingGroup.id,
+              date: occurrence.date,
+              startTime: occurrence.startTime,
+              endTime: occurrence.endTime,
+              actorId: caller.uid,
+              action: 'reserve',
+              allowPackage: body.allowPackage === true,
+            },
+          ])
+          apply()
           transaction.update(existingGroup.ref, { studentIds, updatedAt })
           return {
             kind: 'updated' as const,
@@ -296,10 +311,16 @@ async function handlePOST(request: Request, { params }: RouteProps) {
           occurrences: [result.occurrence],
         }
       } else {
-        classResult = await createSchoolClass(directClassValidation.value)
+        classResult = await createSchoolClass(directClassValidation.value, {
+          actorId: caller.uid,
+          allowPackage: body.allowPackage === true,
+        })
       }
     } else {
-      classResult = await createSchoolClass(directClassValidation.value)
+      classResult = await createSchoolClass(directClassValidation.value, {
+        actorId: caller.uid,
+        allowPackage: body.allowPackage === true,
+      })
     }
     await createNotification({
       recipientId: student.studentUserId || caller.uid,
@@ -335,23 +356,26 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       { status: 201 }
     )
   }
-  const requestRecord = await createClassRequest({
-    schoolId,
-    studentId,
-    studentName: student.name,
-    requestedBy: caller.uid,
-    preferredTeacherId: teacherId,
-    type: body.type === 'group' ? 'group' : 'individual',
-    preferredDays,
-    preferredStartTime: classValidation.value.startTime,
-    preferredEndTime: classValidation.value.endTime,
-    startDate: requestedDate,
-    endDate: typeof body.endDate === 'string' ? body.endDate : '',
-    durationMinutes: typeof body.durationMinutes === 'number' ? body.durationMinutes : 60,
-    location: typeof body.location === 'string' ? body.location.slice(0, 200) : '',
-    locationUrl: typeof body.locationUrl === 'string' ? body.locationUrl.slice(0, 500) : '',
-    notes: typeof body.notes === 'string' ? body.notes.slice(0, 500) : '',
-  })
+  const requestRecord = await createClassRequest(
+    {
+      schoolId,
+      studentId,
+      studentName: student.name,
+      requestedBy: caller.uid,
+      preferredTeacherId: teacherId,
+      type: body.type === 'group' ? 'group' : 'individual',
+      preferredDays,
+      preferredStartTime: classValidation.value.startTime,
+      preferredEndTime: classValidation.value.endTime,
+      startDate: requestedDate,
+      endDate: typeof body.endDate === 'string' ? body.endDate : '',
+      durationMinutes: typeof body.durationMinutes === 'number' ? body.durationMinutes : 60,
+      location: typeof body.location === 'string' ? body.location.slice(0, 200) : '',
+      locationUrl: typeof body.locationUrl === 'string' ? body.locationUrl.slice(0, 500) : '',
+      notes: typeof body.notes === 'string' ? body.notes.slice(0, 500) : '',
+    },
+    { allowPackage: body.allowPackage === true }
+  )
   if (school)
     await createNotification({
       recipientId: school.directorId,

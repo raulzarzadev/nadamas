@@ -4,6 +4,8 @@ import { publicNameFromUser } from '@/lib/public-name'
 import { sendBookingConfirmedEmail } from '@/lib/server/emails'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingConfirmed } from '@/lib/server/notifications'
+import { bookingPaymentEvent } from './payments/booking-events'
+import { paymentTransaction } from './payments/reservations'
 
 export type BookingInput = Partial<CoachBookingSelection> & { locationId?: string }
 
@@ -46,6 +48,7 @@ export function validateSelections(selections: BookingInput[]) {
 
 export async function createConfirmedBookings(params: {
   uid: string
+  allowPackage?: boolean
   selections: BookingInput[]
   profileName: string
   profilePhone?: string
@@ -118,10 +121,16 @@ export async function createConfirmedBookings(params: {
     id: bookingIdFor(uid, booking, params.additionalProfileId),
     ...booking,
   }))
-  await Promise.all(
+  await paymentTransaction(
     savedBookings.map((booking) =>
-      adminDb.collection('bookings').doc(booking.id).set(booking, { merge: true })
-    )
+      bookingPaymentEvent(booking as import('@/lib/coach-booking').Booking, 'reserve', uid, {
+        allowPackage: params.allowPackage,
+      })
+    ),
+    (tx) => {
+      for (const booking of savedBookings)
+        tx.set(adminDb.collection('bookings').doc(booking.id), booking, { merge: true })
+    }
   )
 
   try {

@@ -1,8 +1,12 @@
 import 'server-only'
 
 import type { QuerySnapshot } from 'firebase-admin/firestore'
+import { PaymentRuleError } from '@/lib/payments/engine'
 import { isSafeSchoolUrl, type SchoolClassOccurrence, type SchoolClassRequest } from '@/lib/school'
 import { adminDb } from './firebase-admin'
+import { type PaymentEvent, preparePaymentEvents } from './payments/reservations'
+import { paymentId, settingsRef } from './payments/store'
+import { runPaymentTransaction } from './payments/transaction'
 
 export interface CreateSchoolClassInput {
   schoolId: string
@@ -117,112 +121,148 @@ export function validateClassInput(input: Partial<CreateSchoolClassInput>) {
   }
 }
 
-export async function createSchoolClass(input: CreateSchoolClassInput) {
+export async function createSchoolClass(
+  input: CreateSchoolClassInput,
+  billing: {
+    actorId?: string
+    allowPackage?: boolean
+    exceptionReason?: string
+    idempotencyKey?: string
+  } = {}
+) {
   const now = Date.now()
-  const seriesRef = adminDb.collection('schoolClassSeries').doc()
+  const seriesRef = adminDb
+    .collection('schoolClassSeries')
+    .doc(
+      billing.idempotencyKey
+        ? paymentId(input.schoolId, billing.idempotencyKey)
+        : adminDb.collection('schoolClassSeries').doc().id
+    )
   const dates = datesForInput(input)
-  if (input.type === 'group') {
-    return adminDb.runTransaction(async (transaction) => {
-      const existingSnapshot = await transaction.get(
-        adminDb.collection('schoolClassOccurrences').where('schoolId', '==', input.schoolId)
-      )
-      const existing = existingSnapshot.docs.map((doc) => ({
-        ref: doc.ref,
-        occurrence: doc.data() as SchoolClassOccurrence,
-      }))
-      const teacherKey = [...input.teacherIds].sort().join('|')
-      const occurrences: SchoolClassOccurrence[] = []
-      let created = false
-      for (const date of dates) {
-        const matches = existing.filter(
-          ({ occurrence }) =>
-            occurrence.type === 'group' &&
-            (occurrence.status === 'scheduled' || occurrence.status === 'pending') &&
-            occurrence.date === date &&
-            occurrence.startTime === input.startTime &&
-            occurrence.endTime === input.endTime &&
-            occurrence.title.trim().toLocaleLowerCase('es') ===
-              input.title.trim().toLocaleLowerCase('es') &&
-            [...occurrence.teacherIds].sort().join('|') === teacherKey
-        )
-        if (matches.length) {
-          if (matches.some(({ occurrence }) => occurrence.classFull === true))
-            throw new Error('GROUP_CLASS_FULL')
-          const match = matches.reduce((primary, candidate) =>
-            candidate.occurrence.studentIds.length > primary.occurrence.studentIds.length
-              ? candidate
-              : primary
-          )
-          const studentIds = [
-            ...new Set([
-              ...matches.flatMap(({ occurrence }) => occurrence.studentIds),
-              ...input.studentIds,
-            ]),
-          ]
-          if (studentIds.length > 100) throw new Error('GROUP_CLASS_FULL')
-          if (studentIds.length !== match.occurrence.studentIds.length)
-            transaction.update(match.ref, { studentIds, updatedAt: now })
-          occurrences.push({ ...match.occurrence, studentIds })
-          continue
+  return adminDb.runTransaction(async (tx) => {
+    if (billing.idempotencyKey) {
+      const previous = await tx.get(seriesRef)
+      if (previous.exists) {
+        const ids = previous.data()?.occurrenceIds as string[] | undefined
+        const docs = ids?.length
+          ? await tx.getAll(
+              ...ids.map((id) => adminDb.collection('schoolClassOccurrences').doc(id))
+            )
+          : (
+              await tx.get(
+                adminDb.collection('schoolClassOccurrences').where('seriesId', '==', seriesRef.id)
+              )
+            ).docs
+        return {
+          seriesId: docs[0]?.data()?.seriesId || seriesRef.id,
+          occurrences: docs
+            .filter((doc) => doc.exists)
+            .map((doc) => doc.data() as SchoolClassOccurrence),
         }
-        const ref = adminDb.collection('schoolClassOccurrences').doc()
-        const occurrence: SchoolClassOccurrence = {
-          id: ref.id,
-          seriesId: seriesRef.id,
-          schoolId: input.schoolId,
-          title: input.title,
-          type: input.type,
+      }
+    }
+    const snapshot =
+      input.type === 'group'
+        ? await tx.get(
+            adminDb.collection('schoolClassOccurrences').where('schoolId', '==', input.schoolId)
+          )
+        : null
+    const existing = (snapshot?.docs || []).map((doc) => ({
+      ref: doc.ref,
+      occurrence: doc.data() as SchoolClassOccurrence,
+    }))
+    const teacherKey = [...input.teacherIds].sort().join('|')
+    const operations: Array<{
+      ref: ReturnType<typeof adminDb.doc>
+      occurrence: SchoolClassOccurrence
+      create: boolean
+    }> = []
+    const events: PaymentEvent[] = []
+    for (const date of dates) {
+      const matches = existing.filter(
+        ({ occurrence }) =>
+          occurrence.type === 'group' &&
+          ['scheduled', 'pending'].includes(occurrence.status) &&
+          occurrence.date === date &&
+          occurrence.startTime === input.startTime &&
+          occurrence.endTime === input.endTime &&
+          occurrence.title.trim().toLocaleLowerCase('es') ===
+            input.title.trim().toLocaleLowerCase('es') &&
+          [...occurrence.teacherIds].sort().join('|') === teacherKey
+      )
+      if (matches.some(({ occurrence }) => occurrence.classFull))
+        throw new Error('GROUP_CLASS_FULL')
+      const match = matches.sort(
+        (a, b) => b.occurrence.studentIds.length - a.occurrence.studentIds.length
+      )[0]
+      const ref = match?.ref || adminDb.collection('schoolClassOccurrences').doc()
+      const studentIds = [
+        ...new Set([
+          ...matches.flatMap(({ occurrence }) => occurrence.studentIds),
+          ...input.studentIds,
+        ]),
+      ]
+      if (studentIds.length > 100) throw new Error('GROUP_CLASS_FULL')
+      const occurrence: SchoolClassOccurrence = match
+        ? { ...match.occurrence, studentIds, updatedAt: now }
+        : {
+            id: ref.id,
+            seriesId: seriesRef.id,
+            schoolId: input.schoolId,
+            title: input.title,
+            type: input.type,
+            date,
+            startTime: input.startTime,
+            endTime: input.endTime,
+            timezone: input.timezone,
+            teacherIds: input.teacherIds,
+            studentIds,
+            location: input.location,
+            locationUrl: input.locationUrl,
+            visibility: input.visibility,
+            status: 'scheduled',
+            createdAt: now,
+            updatedAt: now,
+          }
+      operations.push({ ref, occurrence, create: !match })
+      for (const studentId of input.studentIds.filter(
+        (id) => !match?.occurrence.studentIds.includes(id)
+      ))
+        events.push({
+          scope: `school:${input.schoolId}`,
+          studentId,
+          sourceId: ref.id,
           date,
           startTime: input.startTime,
           endTime: input.endTime,
-          timezone: input.timezone,
-          teacherIds: input.teacherIds,
-          studentIds: input.studentIds,
-          location: input.location,
-          locationUrl: input.locationUrl,
-          visibility: input.visibility,
-          status: 'scheduled',
-          createdAt: now,
-          updatedAt: now,
-        }
-        transaction.set(ref, occurrence)
-        occurrences.push(occurrence)
-        created = true
-      }
-      if (created)
-        transaction.set(seriesRef, { ...input, id: seriesRef.id, createdAt: now, updatedAt: now })
-      return { seriesId: created ? seriesRef.id : occurrences[0]?.seriesId || '', occurrences }
-    })
-  }
-  const batch = adminDb.batch()
-  batch.set(seriesRef, { ...input, id: seriesRef.id, createdAt: now, updatedAt: now })
-  const occurrences: SchoolClassOccurrence[] = []
-  for (const date of dates) {
-    const ref = adminDb.collection('schoolClassOccurrences').doc()
-    const occurrence: SchoolClassOccurrence = {
-      id: ref.id,
-      seriesId: seriesRef.id,
-      schoolId: input.schoolId,
-      title: input.title,
-      type: input.type,
-      date,
-      startTime: input.startTime,
-      endTime: input.endTime,
-      timezone: input.timezone,
-      teacherIds: input.teacherIds,
-      studentIds: input.studentIds,
-      location: input.location,
-      locationUrl: input.locationUrl,
-      visibility: input.visibility,
-      status: 'scheduled',
-      createdAt: now,
-      updatedAt: now,
+          actorId: billing.actorId || 'system',
+          action: 'reserve',
+          allowPackage: billing.allowPackage,
+          exceptionReason: billing.exceptionReason,
+        })
     }
-    batch.set(ref, occurrence)
-    occurrences.push(occurrence)
-  }
-  await batch.commit()
-  return { seriesId: seriesRef.id, occurrences }
+    if (events.length > 100) {
+      const settings = await tx.get(settingsRef(`school:${input.schoolId}`))
+      if (settings.data()?.classesEnabled || settings.data()?.periodsEnabled)
+        throw new PaymentRuleError('payment_limit')
+    }
+    const apply = await preparePaymentEvents(tx, events)
+    for (const operation of operations) tx.set(operation.ref, operation.occurrence)
+    const created = operations.some((operation) => operation.create)
+    if (created || billing.idempotencyKey)
+      tx.set(seriesRef, {
+        ...input,
+        id: seriesRef.id,
+        occurrenceIds: operations.map((operation) => operation.ref.id),
+        createdAt: now,
+        updatedAt: now,
+      })
+    apply()
+    return {
+      seriesId: created ? seriesRef.id : operations[0]?.occurrence.seriesId || '',
+      occurrences: operations.map((operation) => operation.occurrence),
+    }
+  })
 }
 
 export async function listSchoolClasses(args: {
@@ -299,7 +339,8 @@ export async function listClassRequests(schoolId: string, requestedBy?: string) 
 }
 
 export async function createClassRequest(
-  input: Omit<SchoolClassRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>
+  input: Omit<SchoolClassRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>,
+  billing?: { allowPackage: boolean }
 ) {
   const now = Date.now()
   const ref = adminDb.collection('schoolClassRequests').doc()
@@ -310,6 +351,26 @@ export async function createClassRequest(
     createdAt: now,
     updatedAt: now,
   }
-  await ref.set(request)
+  await runPaymentTransaction(async (transaction) => {
+    if (billing) {
+      // Pending requests validate eligibility without holding credits. Approval
+      // rechecks availability and reserves the actual assigned classes atomically.
+      await preparePaymentEvents(transaction, [
+        {
+          scope: `school:${input.schoolId}`,
+          studentId: input.studentId,
+          schoolStudentId: true,
+          sourceId: ref.id,
+          date: input.startDate,
+          startTime: input.preferredStartTime,
+          endTime: input.preferredEndTime,
+          actorId: input.requestedBy,
+          action: 'reserve',
+          allowPackage: billing.allowPackage,
+        },
+      ])
+    }
+    transaction.set(ref, request)
+  })
   return request
 }

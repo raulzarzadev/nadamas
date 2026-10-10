@@ -4,6 +4,7 @@ import Sheet from '@comps/ui/sheet'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiUser, FiUsers, FiX } from 'react-icons/fi'
+import PaymentsPanel from '@/components/payments/PaymentsPanel'
 import AdditionalProfileCreateModal from '@/components/profile/AdditionalProfileCreateModal'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import ScheduleTag from '@/components/ui/schedule-tag'
@@ -25,6 +26,14 @@ import {
   hasPublishedOfferingSchedules,
   resolveOfferings,
 } from '@/lib/coach-offerings'
+import {
+  changeGrantUsage,
+  PaymentRuleError,
+  paymentAvailable,
+  reserveGrant,
+} from '@/lib/payments/engine'
+import { paymentMessage } from '@/lib/payments/messages'
+import type { PaymentSnapshot } from '@/lib/payments/model'
 import { type SchoolBookingMode, type SchoolStudent, schoolClassDisplayTitle } from '@/lib/school'
 
 const dateKey = (date: Date) => {
@@ -162,6 +171,51 @@ export default function AthleteSchoolSchedule({
   const [message, setMessage] = useState('')
   const [bookingConfirmation, setBookingConfirmation] = useState('')
   const [error, setError] = useState('')
+  const [purchaseTarget, setPurchaseTarget] = useState<{
+    endpoint: string
+    studentId?: string
+  } | null>(null)
+  const [paymentRefresh, setPaymentRefresh] = useState(0)
+  const [bookingPayments, setBookingPayments] = useState<{
+    key: string
+    snapshots: Record<string, PaymentSnapshot>
+    failed: boolean
+  }>({ key: '', snapshots: {}, failed: false })
+  const paymentScope = (slot: CoachAvailableSlot) =>
+    slot.schoolId
+      ? `/api/payments?schoolId=${encodeURIComponent(slot.schoolId)}&view=student`
+      : `/api/payments?coachId=${encodeURIComponent(slot.coachId)}&view=student`
+  const paymentScopeKey = selectedSlot
+    ? JSON.stringify(
+        [...new Set((chosenSlots.length ? chosenSlots : [selectedSlot]).map(paymentScope))].sort()
+      )
+    : ''
+  const paymentLoadKey = `${paymentScopeKey}:${paymentRefresh}`
+  useEffect(() => {
+    if (!paymentScopeKey) return
+    let active = true
+    const endpoints = JSON.parse(paymentScopeKey) as string[]
+    Promise.all(
+      endpoints.map(async (endpoint) => {
+        const response = await getAuthed(endpoint)
+        return [endpoint, await response.json()] as const
+      })
+    )
+      .then((entries) => {
+        if (active)
+          setBookingPayments({
+            key: paymentLoadKey,
+            snapshots: Object.fromEntries(entries),
+            failed: false,
+          })
+      })
+      .catch(() => {
+        if (active) setBookingPayments({ key: paymentLoadKey, snapshots: {}, failed: true })
+      })
+    return () => {
+      active = false
+    }
+  }, [paymentScopeKey, paymentLoadKey])
   const month = selectedDate.slice(0, 7)
 
   useEffect(() => {
@@ -654,8 +708,64 @@ export default function AthleteSchoolSchedule({
     a.startTime.localeCompare(b.startTime)
   )
 
+  const checkingBookingPayment = Boolean(selectedSlot && bookingPayments.key !== paymentLoadKey)
+  let bookingPaymentMessage = ''
+  let hasBookingPaymentError = false
+  let bookingPurchaseTarget: { endpoint: string; studentId?: string } | undefined
+  const paymentUsage = new Map<string, { name: string; plans: number; classes: number }>()
+  if (selectedSlot && !checkingBookingPayment) {
+    if (bookingPayments.failed) {
+      hasBookingPaymentError = true
+      bookingPaymentMessage =
+        'No pudimos verificar tu saldo. Cierra el formulario e inténtalo de nuevo.'
+    } else {
+      const snapshots = structuredClone(bookingPayments.snapshots)
+      for (const slot of chosenSlots.length ? chosenSlots : [selectedSlot]) {
+        const snapshot = snapshots[paymentScope(slot)]
+        if (!snapshot) continue
+        const settings = snapshot.settings
+        if (!settings.classesEnabled && !settings.periodsEnabled) continue
+        for (const participant of selectedParticipants) {
+          if (isParticipantBookedInGroup(participant)) continue
+          const participantId = slot.schoolId
+            ? participant.schoolStudentId
+            : participant.additionalProfileId || accountId
+          const account = participantId
+            ? snapshot.accounts[participantId] || { grants: [] }
+            : { grants: [] }
+          try {
+            const grant = reserveGrant(account, slot.date, settings, true)
+            if (grant) {
+              changeGrantUsage(grant, slot.date, 1, 0)
+              const usage = paymentUsage.get(participant.value) || {
+                name: participant.name,
+                plans: 0,
+                classes: 0,
+              }
+              if (grant.product.mode === 'period') usage.plans++
+              else usage.classes++
+              paymentUsage.set(participant.value, usage)
+            }
+          } catch (error) {
+            hasBookingPaymentError = true
+            bookingPaymentMessage = `${participant.name}: ${paymentMessage(error)}`
+            if (error instanceof PaymentRuleError && error.code === 'payment_required')
+              bookingPurchaseTarget ||= { endpoint: paymentScope(slot), studentId: participantId }
+          }
+        }
+      }
+    }
+  }
+
   async function submitBooking() {
-    if (!selectedSlot || !selectedParticipants.length || busy) return
+    if (
+      !selectedSlot ||
+      !selectedParticipants.length ||
+      busy ||
+      checkingBookingPayment ||
+      bookingPaymentMessage
+    )
+      return
     setBusy(true)
     setError('')
     setMessage('')
@@ -664,6 +774,7 @@ export default function AthleteSchoolSchedule({
     let pending = 0
     let failed = 0
     const failureStatuses = new Set<number>()
+    let paymentFailure: string | undefined
     const targets = chosenSlots.length ? chosenSlots : [selectedSlot]
     for (const slot of targets) {
       const day = new Date(`${slot.date}T12:00:00`).getDay()
@@ -673,6 +784,7 @@ export default function AthleteSchoolSchedule({
         try {
           if (!slot.schoolId) {
             await postAuthed('/api/bookings', {
+              allowPackage: true,
               coachId: slot.coachId,
               offeringId: slot.offeringId,
               scheduleId: slot.scheduleId,
@@ -718,6 +830,7 @@ export default function AthleteSchoolSchedule({
             const response = await postAuthed(
               `/api/schools/${encodeURIComponent(slot.schoolId)}/class-requests`,
               {
+                allowPackage: true,
                 ...(linked
                   ? { studentId: linked.id }
                   : {
@@ -752,20 +865,29 @@ export default function AthleteSchoolSchedule({
           completed++
         } catch (error) {
           failed++
-          if (error instanceof AuthedApiError) failureStatuses.add(error.status)
+          if (error instanceof AuthedApiError) {
+            failureStatuses.add(error.status)
+            if (
+              error.code?.startsWith('payment_') ||
+              error.code === 'package_confirmation_required'
+            )
+              paymentFailure = error.code
+          }
         }
       }
     }
     if (failed) {
-      const guidance = failureStatuses.has(401)
-        ? 'Tu sesión venció. Vuelve a iniciar sesión.'
-        : failureStatuses.has(403)
-          ? 'No tienes acceso para solicitar estos horarios en la escuela.'
-          : failureStatuses.has(409)
-            ? 'Uno o más horarios ya no están disponibles. Actualiza la agenda y elige otro horario.'
-            : failureStatuses.has(400)
-              ? 'Revisa los horarios y las personas seleccionadas antes de reintentar.'
-              : 'Inténtalo de nuevo más tarde.'
+      const guidance = paymentFailure
+        ? paymentMessage({ code: paymentFailure })
+        : failureStatuses.has(401)
+          ? 'Tu sesión venció. Vuelve a iniciar sesión.'
+          : failureStatuses.has(403)
+            ? 'No tienes acceso para solicitar estos horarios en la escuela.'
+            : failureStatuses.has(409)
+              ? 'Uno o más horarios ya no están disponibles. Actualiza la agenda y elige otro horario.'
+              : failureStatuses.has(400)
+                ? 'Revisa los horarios y las personas seleccionadas antes de reintentar.'
+                : 'Inténtalo de nuevo más tarde.'
       setError(
         `No pudimos completar ${failed} inscripciones. ${guidance} Las que se enviaron correctamente no se repetirán.`
       )
@@ -1356,12 +1478,65 @@ export default function AthleteSchoolSchedule({
                     está sujeta a cambios sin previo aviso.
                   </p>
                 )}
-              <p className="text-sm leading-relaxed text-[var(--c-text-2)]">
-                {!selectedSlot.schoolId || selectedBookingMode === 'direct'
-                  ? 'La clase se agregará directamente a tu agenda.'
-                  : 'La escuela debe confirmar la solicitud antes de agregar la clase.'}
-              </p>
+              {!checkingBookingPayment &&
+                !bookingPayments.failed &&
+                selectedParticipants.map((participant) => {
+                  const snapshot = bookingPayments.snapshots[paymentScope(selectedSlot)]
+                  const participantId = selectedSlot.schoolId
+                    ? participant.schoolStudentId
+                    : participant.additionalProfileId || accountId
+                  if (!snapshot?.settings.classesEnabled) return null
+                  const available = paymentAvailable(
+                    participantId
+                      ? snapshot.accounts[participantId] || { grants: [] }
+                      : { grants: [] },
+                    selectedSlot.date
+                  )
+                  return (
+                    <p key={participant.value} role="status" className="text-sm font-bold">
+                      {selectedParticipants.length > 1 ? `${participant.name} · ` : ''}Clases
+                      disponibles: {available}
+                    </p>
+                  )
+                })}
               {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
+              {checkingBookingPayment && (
+                <p role="status" className="text-sm">
+                  Verificando saldo y planes…
+                </p>
+              )}
+              {bookingPaymentMessage && hasBookingPaymentError && (
+                <div
+                  role="status"
+                  className="grid gap-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"
+                >
+                  <p>{bookingPaymentMessage}</p>
+                  {bookingPurchaseTarget && (
+                    <button
+                      type="button"
+                      className="min-h-11 justify-self-start text-left font-bold underline"
+                      onClick={() => setPurchaseTarget(bookingPurchaseTarget || null)}
+                    >
+                      Ver planes y adquirir clases
+                    </button>
+                  )}
+                </div>
+              )}
+              {!checkingBookingPayment &&
+                !bookingPaymentMessage &&
+                [...paymentUsage].map(([key, usage]) => (
+                  <p key={key} role="status" className="text-sm text-(--c-text-2)">
+                    {selectedParticipants.length > 1 ? `${usage.name} · ` : ''}
+                    {[
+                      usage.plans > 0 ? 'Se usará su plan para estas clases' : '',
+                      usage.classes > 0
+                        ? `Se ${usage.classes === 1 ? 'usará 1 clase disponible' : `usarán ${usage.classes} clases disponibles`}`
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </p>
+                ))}
               <footer className="flex justify-end gap-2 border-t border-[var(--c-border)] pt-3">
                 <button
                   type="button"
@@ -1375,6 +1550,8 @@ export default function AthleteSchoolSchedule({
                   type="button"
                   disabled={
                     busy ||
+                    checkingBookingPayment ||
+                    Boolean(bookingPaymentMessage) ||
                     (selectedSlot.schoolId
                       ? !selectedParticipants.length ||
                         selectedParticipants.every(isParticipantBookedInGroup)
@@ -1392,6 +1569,23 @@ export default function AthleteSchoolSchedule({
               </footer>
             </div>
           </div>
+        )}
+      </Sheet>
+      <Sheet
+        open={Boolean(purchaseTarget)}
+        label="Conseguir más clases"
+        size="xl"
+        onClose={() => {
+          setPurchaseTarget(null)
+          setPaymentRefresh((value) => value + 1)
+        }}
+      >
+        {purchaseTarget && (
+          <PaymentsPanel
+            endpoint={purchaseTarget.endpoint}
+            initialStudentId={purchaseTarget.studentId}
+            initialTab="plans"
+          />
         )}
       </Sheet>
       <Sheet

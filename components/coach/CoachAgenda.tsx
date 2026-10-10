@@ -1175,7 +1175,12 @@ export default function CoachAgenda({
           throw new Error('SCHOOL_CLASS_STUDENT_REQUIRED')
         await postAuthed(
           `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(slot.schoolClassId)}/students`,
-          { studentIds, ...(slot.promoteToGroup ? { promoteToGroup: true } : {}) }
+          {
+            studentIds,
+            allowPackage: payloads[0]?.allowPackage,
+            paymentExceptionReason: payloads[0]?.paymentExceptionReason,
+            ...(slot.promoteToGroup ? { promoteToGroup: true } : {}),
+          }
         )
       } else if (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID) {
         const targetSchoolId = slot.schoolId || schoolId
@@ -1185,6 +1190,8 @@ export default function CoachAgenda({
           const response = await postAuthed(
             `/api/schools/${encodeURIComponent(targetSchoolId)}/students/${encodeURIComponent(payload.athleteId as string)}/classes`,
             {
+              allowPackage: payload.allowPackage,
+              paymentExceptionReason: payload.paymentExceptionReason,
               slots: [
                 {
                   date: slot.date,
@@ -1575,6 +1582,8 @@ export default function CoachAgenda({
               `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(existingClass.schoolClassId)}/students`,
               {
                 studentIds: selectedStudentIds,
+                allowPackage: studentPayloads?.[0]?.allowPackage,
+                paymentExceptionReason: studentPayloads?.[0]?.paymentExceptionReason,
                 ...(slot.groupType === 'particular' ? { promoteToGroup: true } : {}),
               }
             )
@@ -1584,6 +1593,8 @@ export default function CoachAgenda({
             const response = await postAuthed(
               `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(studentId)}/classes`,
               {
+                allowPackage: studentPayloads?.[0]?.allowPackage,
+                paymentExceptionReason: studentPayloads?.[0]?.paymentExceptionReason,
                 slots: [
                   {
                     date: slot.date,

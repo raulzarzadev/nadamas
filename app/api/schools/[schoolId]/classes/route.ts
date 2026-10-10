@@ -80,7 +80,14 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   }
   let result: Awaited<ReturnType<typeof createSchoolClass>>
   try {
-    result = await createSchoolClass(validation.value)
+    result = await createSchoolClass(validation.value, {
+      actorId: access.caller.uid,
+      allowPackage: body.allowPackage === true,
+      exceptionReason:
+        typeof body.paymentExceptionReason === 'string'
+          ? body.paymentExceptionReason.trim().slice(0, 300)
+          : undefined,
+    })
   } catch (error) {
     if (error instanceof Error && error.message === 'GROUP_CLASS_FULL')
       return NextResponse.json({ error: 'El cupo de esta clase está cerrado.' }, { status: 409 })

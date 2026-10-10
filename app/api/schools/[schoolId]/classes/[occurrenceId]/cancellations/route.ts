@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 
@@ -63,6 +64,25 @@ export const POST = withSchoolAgendaUpdate(async (request: Request, { params }: 
     )
       return { error: 'changed' as const }
     const cancelled = [...currentIds].every((id) => selected.has(id))
+    const apply = await preparePaymentEvents(
+      transaction,
+      matches.flatMap((item) => {
+        const current = item.data() as SchoolClassOccurrence
+        return current.studentIds
+          .filter((id) => selected.has(id))
+          .map((studentId) => ({
+            scope: `school:${schoolId}`,
+            studentId,
+            sourceId: item.id,
+            date: current.date,
+            startTime: current.startTime,
+            actorId: access.caller.uid,
+            action: 'release' as const,
+            organizerCancelled: true,
+          }))
+      })
+    )
+    apply()
     for (const item of matches) {
       const current = item.data() as SchoolClassOccurrence
       transaction.update(item.ref, {

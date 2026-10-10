@@ -6,5 +6,11 @@
     "deploymentEnabled": {
       "main": true
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/payments/settle",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }

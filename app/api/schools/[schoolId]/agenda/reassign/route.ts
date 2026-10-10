@@ -4,6 +4,8 @@ import type { Booking } from '@/lib/coach-booking'
 import { DAY_TO_INDEX, resolveOfferings } from '@/lib/coach-offerings'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
+import { bookingPaymentEvent } from '@/lib/server/payments/booking-events'
+import { type PaymentEvent, preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
 import { legacySchoolOfferings } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
@@ -70,6 +72,39 @@ async function handlePOST(request: Request, { params }: RouteProps) {
           ...(Array.isArray(source.studentIds) ? source.studentIds : []),
         ]),
       ]
+      if (destination.classFull === true || studentIds.length > 100) return 'invalid'
+      const events: PaymentEvent[] = source.studentIds.flatMap((studentId: string) => {
+        const base = {
+          scope: `school:${schoolId}`,
+          studentId,
+          actorId: access.caller.uid,
+          organizerCancelled: true,
+          allowPackage: body.allowPackage === true,
+        }
+        return [
+          {
+            ...base,
+            sourceId: sourceRef.id,
+            date: source.date,
+            startTime: source.startTime,
+            action: 'release' as const,
+          },
+          ...(!destination.studentIds.includes(studentId)
+            ? [
+                {
+                  ...base,
+                  sourceId: destinationRef.id,
+                  date: destination.date,
+                  startTime: destination.startTime,
+                  endTime: destination.endTime,
+                  action: 'reserve' as const,
+                },
+              ]
+            : []),
+        ]
+      })
+      const apply = await preparePaymentEvents(transaction, events)
+      apply()
       transaction.update(destinationRef, { studentIds, updatedAt: Date.now() })
       transaction.update(sourceRef, { status: 'cancelled', updatedAt: Date.now() })
       return 'ok'
@@ -140,6 +175,21 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       if (!studentSnapshot.exists || studentSnapshot.data()?.schoolId !== schoolId)
         return 'unavailable' as const
       const now = Date.now()
+      const apply = await preparePaymentEvents(transaction, [
+        bookingPaymentEvent(booking, 'release', access.caller.uid, { organizerCancelled: true }),
+        {
+          scope: `school:${schoolId}`,
+          studentId: booking.athleteId,
+          sourceId: classRef.id,
+          date: destination.date,
+          startTime: destination.startTime,
+          endTime: destination.endTime,
+          actorId: access.caller.uid,
+          action: 'reserve',
+          allowPackage: body.allowPackage === true,
+        },
+      ])
+      apply()
       transaction.update(classRef, {
         studentIds: [...studentIds, booking.athleteId],
         updatedAt: now,
@@ -260,6 +310,22 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     const nextRef = adminDb.collection('bookings').doc()
     const { evaluation: _evaluation, ...previous } = booking
     const now = Date.now()
+    const apply = await preparePaymentEvents(transaction, [
+      bookingPaymentEvent(booking, 'release', access.caller.uid, { organizerCancelled: true }),
+      bookingPaymentEvent(
+        {
+          ...booking,
+          id: nextRef.id,
+          date: body.date,
+          startTime: target.startTime,
+          endTime: target.endTime,
+        },
+        'reserve',
+        access.caller.uid,
+        { allowPackage: body.allowPackage === true }
+      ),
+    ])
+    apply()
     transaction.set(nextRef, {
       ...previous,
       id: nextRef.id,

@@ -125,7 +125,8 @@ export async function getAuthed(path: string) {
       ? 60_000
       : /^\/api\/schools\/[^/]+\/(students|classes|teachers|agenda)(?:\/|$)/.test(pathname) ||
           pathname === '/api/coach/student-tags' ||
-          pathname === '/api/coach/students'
+          pathname === '/api/coach/students' ||
+          pathname === '/api/payments'
         ? 15_000
         : 0
   return requestCache.get(`${userId}|${path}`, () => requestAuthed(path, undefined, token), ttl)

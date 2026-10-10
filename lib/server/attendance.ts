@@ -22,6 +22,7 @@ import {
   getIdentityProfile,
 } from './athlete-identities'
 import { adminDb } from './firebase-admin'
+import { preparePaymentEvents } from './payments/reservations'
 import {
   coalesceGroupClassOccurrences,
   legacySchoolOfferings,
@@ -468,6 +469,23 @@ export async function recordAttendance(args: {
         studentId,
         record: existingRecord.data() as AttendanceRecord | undefined,
       }
+    const paymentEvents = [
+      {
+        schoolStudentId: true,
+        scope: `school:${args.schoolId}`,
+        studentId,
+        sourceId: target.id,
+        date: targetOccurrence.date,
+        startTime: targetOccurrence.startTime,
+        endTime: targetOccurrence.endTime,
+        actorId: args.actorId,
+        action: 'consume' as const,
+      },
+    ]
+    const applyPayment = await preparePaymentEvents(transaction, [
+      ...(!enrolled ? [{ ...paymentEvents[0], action: 'reserve' as const }] : []),
+      ...paymentEvents,
+    ])
     const now = Date.now()
     if (!args.student && !studentSnapshot.exists && args.profile) {
       // This is a roster relationship only; it does not grant account roles or school access.
@@ -538,6 +556,7 @@ export async function recordAttendance(args: {
       recordedAt: now,
       method: args.method,
     }
+    applyPayment()
     transaction.set(recordRef, record)
     transaction.set(
       agendaRef,

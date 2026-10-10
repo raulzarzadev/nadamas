@@ -4,6 +4,7 @@ import type { Booking } from '@/lib/coach-booking'
 import { resolveOfferings } from '@/lib/coach-offerings'
 import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
+import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { getSchoolMembership, requireSchoolAccess } from '@/lib/server/school-access'
 import { legacySchoolOfferings, schoolClassAgendaBooking } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
@@ -21,6 +22,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
   const input = await request.json().catch(() => ({}))
   const body = (input && typeof input === 'object' ? input : {}) as {
+    allowPackage?: unknown
     destinationSchoolClassId?: unknown
     coachId?: unknown
     date?: unknown
@@ -199,6 +201,35 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       )
         return 'unavailable' as const
     }
+    const paymentTarget = destination || availableSlot
+    if (!paymentTarget) return 'unavailable' as const
+    const applyPayment = await preparePaymentEvents(transaction, [
+      ...sourceMatches.map((doc) => {
+        const item = doc.data() as SchoolClassOccurrence
+        return {
+          scope: `school:${schoolId}`,
+          studentId,
+          sourceId: doc.id,
+          date: item.date,
+          startTime: item.startTime,
+          actorId: access.caller.uid,
+          action: 'release' as const,
+          organizerCancelled: true,
+        }
+      }),
+      {
+        scope: `school:${schoolId}`,
+        studentId,
+        sourceId: destinationDoc?.id || newClassRef.id,
+        date: paymentTarget.date,
+        startTime: paymentTarget.startTime,
+        endTime: paymentTarget.endTime,
+        actorId: access.caller.uid,
+        action: 'reserve',
+        allowPackage: body.allowPackage === true,
+      },
+    ])
+    applyPayment()
     const now = Date.now()
     for (const doc of sourceMatches) {
       const item = doc.data() as SchoolClassOccurrence

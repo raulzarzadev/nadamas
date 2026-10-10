@@ -9,6 +9,7 @@ import {
   FiBarChart2,
   FiBell,
   FiCalendar,
+  FiDollarSign,
   FiHome,
   FiSearch,
   FiSettings,
@@ -16,6 +17,7 @@ import {
   FiUser,
   FiUsers,
 } from 'react-icons/fi'
+import PaymentBalanceButton from '@/components/payments/PaymentBalanceButton'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -37,6 +39,7 @@ const NAV_ICONS = {
   badge: FiShield,
   user: FiUser,
   bell: FiBell,
+  payments: FiDollarSign,
 }
 
 // Shared top bar: logo + role pill + the two primary destinations as a
@@ -50,25 +53,36 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const role = modeProp ?? activeRole
   const pathname = usePathname()
   const schoolPathname = role === 'school' ? pathname : ''
-  const { selected: selectedSchool, status: schoolSelectionStatus } = useSchoolSelection({
+  const {
+    selected: selectedSchool,
+    isPersonal: personalWorkspace,
+    status: schoolSelectionStatus,
+  } = useSchoolSelection({
     includePersonal: role === 'coach' || role === 'athlete',
     athleteMode: role === 'athlete',
   })
   const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/find-coach'
-  const primary = PRIMARY_NAV_BY_ROLE[role].map((item) => {
-    if (
-      terminology.schoolId &&
-      (item.href === '/coach/students' || item.href === '/school/students')
-    ) {
-      const label = capitalizeSchoolTerm(terminology.participantPlural)
-      return { ...item, label, mobileLabel: label }
-    }
-    if (terminology.schoolId && item.href === '/school/coaches') {
-      const label = capitalizeSchoolTerm(terminology.coachPlural)
-      return { ...item, label, mobileLabel: label }
-    }
-    return item
-  })
+  const primary = PRIMARY_NAV_BY_ROLE[role]
+    .filter(
+      (item) =>
+        item.icon !== 'payments' ||
+        role !== 'coach' ||
+        (!tenant && personalWorkspace && schoolSelectionStatus === 'ready')
+    )
+    .map((item) => {
+      if (
+        terminology.schoolId &&
+        (item.href === '/coach/students' || item.href === '/school/students')
+      ) {
+        const label = capitalizeSchoolTerm(terminology.participantPlural)
+        return { ...item, label, mobileLabel: label }
+      }
+      if (terminology.schoolId && item.href === '/school/coaches') {
+        const label = capitalizeSchoolTerm(terminology.coachPlural)
+        return { ...item, label, mobileLabel: label }
+      }
+      return item
+    })
   const [schoolAccess, setSchoolAccess] = useState<{
     school: School
     membership: SchoolMembership
@@ -144,7 +158,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="relative flex items-center gap-4">
+        <div className="relative flex items-center gap-2 sm:gap-4">
           <Link
             href="/"
             className={tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'}
@@ -180,6 +194,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
             )}
           </Link>
           <div className="ml-auto flex items-center gap-2">
+            {role === 'athlete' && <PaymentBalanceButton />}
             <NotificationsBell />
             <RoleSwitcher
               currentRole={role}
@@ -201,7 +216,10 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
         {canShowWorkspaceNavigation && (
           <nav
             aria-label="Navegación principal"
-            className={`grid gap-2 ${role === 'school' ? 'grid-cols-[repeat(3,minmax(0,1fr))_3rem]' : role === 'athlete' ? 'grid-cols-2' : 'grid-cols-3'}`}
+            className="grid gap-1.5 sm:gap-2"
+            style={{
+              gridTemplateColumns: `repeat(${primary.length},minmax(0,1fr))${role === 'school' ? ' 2.5rem' : ''}`,
+            }}
           >
             {primary.map((l) => {
               const active = pathname.startsWith(l.href)
@@ -211,7 +229,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
                   key={l.href}
                   href={l.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`flex min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border px-1.5 py-3 text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:px-4 sm:text-sm ${
+                  className={`flex min-w-0 min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border px-1.5 py-3 text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:px-4 sm:text-sm ${
                     active
                       ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
                       : 'border-[var(--c-border)] bg-white text-[var(--c-text-2)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]'

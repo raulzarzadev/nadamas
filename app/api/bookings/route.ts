@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { Booking } from '@/lib/coach-booking'
 import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
+import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 import {
   type BookingInput,
   createConfirmedBookings,
@@ -11,7 +12,6 @@ import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { listClassRequests, listSchoolClasses } from '@/lib/server/school-classes'
 import { listSchoolStudents } from '@/lib/server/school-students'
-import { getAdditionalProfile } from '@/lib/server/additional-profiles'
 
 export const runtime = 'nodejs'
 
@@ -166,6 +166,7 @@ async function handlePOST(request: Request) {
 
   const caller = await adminAuth.verifyIdToken(token)
   const body = (await request.json()) as BookingInput & {
+    allowPackage?: boolean
     selections?: BookingInput[]
     locationId?: string
     athleteProfile?: {
@@ -194,6 +195,7 @@ async function handlePOST(request: Request) {
 
   const { bookings } = await createConfirmedBookings({
     uid: caller.uid,
+    allowPackage: body.allowPackage === true,
     selections,
     profileName,
     profilePhone: body.athleteProfile?.phone?.trim(),
