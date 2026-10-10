@@ -120,7 +120,7 @@ export default function ScheduleHoursEditor({
             </InfoModal>
           </div>
 
-          {targetOptions.length > 0 && onTargetChange && (
+          {targetOptions.length > 1 && onTargetChange && (
             <fieldset className="flex flex-col gap-2">
               <legend className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
                 Dónde se agregan

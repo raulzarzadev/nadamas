@@ -39,8 +39,7 @@ export const loginUser = async (user) => {
     return createNewUser(user)
   } else {
     console.log('Getting user')
-    const u = getUser(user.id)
-    return u
+    return normalizedUser
   }
   // cconsole.log(normalizedUser)
 }

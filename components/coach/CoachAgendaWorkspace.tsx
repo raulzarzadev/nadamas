@@ -86,44 +86,46 @@ export default function CoachAgendaWorkspace() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-        <nav
-          aria-label="Filtrar mis horarios"
-          className="flex w-full min-w-0 gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-1"
-        >
-          {[
-            ...(!tenant
-              ? [
-                  { id: ALL_VIEW, label: 'Todos' },
-                  { id: PERSONAL_VIEW, label: 'Míos' },
-                ]
-              : []),
-            ...coachSchools.map(({ school, membership }) => ({
-              id: `school:${school.id}`,
-              label: school.name,
-              directs: schoolMembershipHasRole(membership, 'director'),
-            })),
-          ].map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              aria-pressed={activeView === option.id}
-              title={'directs' in option && option.directs ? 'Abrir modo coordinador' : undefined}
-              onClick={() => {
-                if (!tenant && 'directs' in option && option.directs) {
-                  const schoolId = option.id.slice('school:'.length)
-                  window.localStorage.setItem('nadamas.schoolId', schoolId)
-                  setActiveRole('school')
-                  return
-                }
-                setView(option.id)
-                setScheduleEditorOpen(false)
-              }}
-              className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${activeView === option.id ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:border-(--c-aqua-strong) hover:bg-(--c-surface)'}`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </nav>
+        {coachSchools.length > 0 && (
+          <nav
+            aria-label="Filtrar mis horarios"
+            className="flex w-full min-w-0 gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-1"
+          >
+            {[
+              ...(!tenant
+                ? [
+                    { id: ALL_VIEW, label: 'Todos' },
+                    { id: PERSONAL_VIEW, label: 'Míos' },
+                  ]
+                : []),
+              ...coachSchools.map(({ school, membership }) => ({
+                id: `school:${school.id}`,
+                label: school.name,
+                directs: schoolMembershipHasRole(membership, 'director'),
+              })),
+            ].map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={activeView === option.id}
+                title={'directs' in option && option.directs ? 'Abrir modo coordinador' : undefined}
+                onClick={() => {
+                  if (!tenant && 'directs' in option && option.directs) {
+                    const schoolId = option.id.slice('school:'.length)
+                    window.localStorage.setItem('nadamas.schoolId', schoolId)
+                    setActiveRole('school')
+                    return
+                  }
+                  setView(option.id)
+                  setScheduleEditorOpen(false)
+                }}
+                className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${activeView === option.id ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:border-(--c-aqua-strong) hover:bg-(--c-surface)'}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </nav>
+        )}
         <div className="flex shrink-0 items-center justify-end gap-2 pb-1">
           {!tenant && <ShareScheduleButton />}
         </div>

@@ -14,7 +14,7 @@ export default function AuthenticatedLandingGate({ children }: { children: React
     if (user) router.replace('/dashboard')
   }, [router, user])
 
-  if (user !== null) {
+  if (user) {
     return <Loading size="lg" fullScreen label="Cargando tu espacio…" sublabel="" />
   }
 

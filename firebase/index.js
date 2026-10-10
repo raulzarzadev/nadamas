@@ -12,7 +12,7 @@ import { connectStorageEmulator, getStorage } from 'firebase/storage'
 import { getUser } from './users'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
-const _USER_PROFILE_TIMEOUT_MS = 5000
+const USER_PROFILE_TIMEOUT_MS = 5000
 
 export const app = initializeApp(JSON.parse(firebaseConfig))
 export const auth = getAuth(app)
@@ -58,13 +58,21 @@ export const authStateChanged = (cb = () => {}) => {
       photoURL: user.photoURL,
     }
 
+    // Firestore can keep a read pending while offline. Resolve the session
+    // within a bounded time, then apply the full profile if it arrives later.
+    const timeout = setTimeout(() => {
+      if (auth.currentUser?.uid === user.uid) cb(fallbackUser)
+    }, USER_PROFILE_TIMEOUT_MS)
+
     try {
       const userData = await getUser(user.uid)
       if (auth.currentUser?.uid !== user.uid) return
       cb(userData || fallbackUser)
     } catch (err) {
-      console.error('authStateChanged:getUser', err?.code || 'error')
-      cb(fallbackUser)
+      console.error('AUTH_PROFILE_READ')
+      if (auth.currentUser?.uid === user.uid) cb(fallbackUser)
+    } finally {
+      clearTimeout(timeout)
     }
   })
 }
