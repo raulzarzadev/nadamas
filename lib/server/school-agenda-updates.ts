@@ -2,6 +2,7 @@ import 'server-only'
 import { randomUUID } from 'node:crypto'
 import { FieldValue } from 'firebase-admin/firestore'
 import { NextResponse } from 'next/server'
+import { reportServerError } from '@/lib/analytics/server'
 import { adminDb } from './firebase-admin'
 import { paymentErrorResponse } from './payments/reservations'
 
@@ -61,7 +62,7 @@ export function withSchoolAgendaUpdate<Args extends unknown[]>(
       }
     } catch (error) {
       // The mutation already committed; do not tell the user it failed.
-      console.error('[SCHOOL_AGENDA_UPDATE]', error)
+      reportServerError('SCHOOL_AGENDA_UPDATE', error, request)
     }
     return response
   }

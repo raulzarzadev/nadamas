@@ -1,11 +1,13 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { usePostHog } from 'posthog-js/react'
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { auth, authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { getUser, loginUser } from '@/firebase/users'
+import { analyticsEnabled, trackEvent } from '@/lib/analytics/client'
 import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 import { normalizeRoles } from '@/lib/roles'
+import { reportInternalError } from '@/lib/user-facing-error'
 
 const UserContext = createContext()
 
@@ -13,6 +15,7 @@ export function UserProvider({ children }) {
   const [user, setUser] = useState(undefined)
   const router = useRouter()
   const posthog = usePostHog()
+  const analyticsUser = useRef(null)
   const searchParams = useSearchParams()
   const redirectTo = searchParams?.get('redirectTo')
 
@@ -37,6 +40,7 @@ export function UserProvider({ children }) {
   }, [user])
 
   const logout = () => {
+    trackEvent('logout')
     logOut()
   }
 
@@ -50,38 +54,44 @@ export function UserProvider({ children }) {
 
   const login = async (provider = 'google') => {
     if (provider === 'google') {
-      posthog?.capture('login_attempt', { provider })
+      trackEvent('login_attempt', { provider })
       return googleLogin()
         .then((user) => {
           if (!user) return
           loginUser(user)
             .then((res) => {
               setUser(res)
-              posthog?.capture('login_success', { provider })
+              trackEvent('login_success', { provider })
               redirectTo
                 ? router.push(redirectTo)
                 : router.push(destinationForRole(entryRoleForSession(normalizeRoles(res))))
             })
             .catch((err) => {
-              console.error(err)
-              posthog?.capture('login_failed', { provider, stage: 'loginUser', error: String(err) })
+              reportInternalError('AUTH_PROFILE', err)
+              trackEvent('login_failed', { provider, stage: 'profile' })
             })
         })
         .catch((err) => {
-          console.log(`err`, err)
-          posthog?.capture('login_failed', { provider, stage: 'googleLogin', error: String(err) })
+          reportInternalError('AUTH_GOOGLE', err)
+          trackEvent('login_failed', { provider, stage: 'provider' })
         })
     }
   }
 
   useEffect(() => {
-    if (!posthog) return
+    if (!posthog || !analyticsEnabled()) return
     if (user) {
-      posthog.identify(user.uid || user.id, {
-        email: user.email,
-        name: user.displayName || user.name,
+      const id = user.uid || user.id
+      posthog.identify(id, {
+        is_coach: normalizeRoles(user).coach,
+        is_admin: normalizeRoles(user).admin,
       })
+      if (analyticsUser.current !== id) {
+        analyticsUser.current = id
+        trackEvent('auth_session_started')
+      }
     } else if (user === null) {
+      analyticsUser.current = null
       posthog.reset()
     }
   }, [user, posthog])

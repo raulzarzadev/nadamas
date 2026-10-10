@@ -1,5 +1,6 @@
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/firebase/index'
+import { analyticsRequestHeaders, mutationAction, recordApiRequest } from '@/lib/analytics/client'
 import { AuthedRequestCache } from './authed-request-cache'
 
 export class AuthedApiError extends Error {
@@ -39,16 +40,33 @@ async function requestAuthed(path: string, init?: RequestInit, providedToken?: s
   const token = providedToken || (await getAuthToken())
   const mutates = Boolean(init?.method && init.method !== 'GET')
   if (mutates) invalidateAuthedCache(path)
+  const started = performance.now()
+  const requestId = crypto.randomUUID()
+  const method = init?.method || 'GET'
+  const action = mutationAction(init?.body)
   let response: Response
   try {
     response = await fetch(path, {
       ...init,
       headers: {
+        ...analyticsRequestHeaders(),
+        'x-nadamas-request-id': requestId,
         ...(init?.body ? { 'content-type': 'application/json' } : {}),
         ...(token ? { authorization: `Bearer ${token}` } : {}),
         ...init?.headers,
       },
     })
+  } catch (error) {
+    recordApiRequest({
+      path,
+      method,
+      action,
+      requestId,
+      duration: performance.now() - started,
+      status: 0,
+      code: 'network_error',
+    })
+    throw error
   } finally {
     if (mutates) invalidateAuthedCache(path)
   }
@@ -64,9 +82,26 @@ async function requestAuthed(path: string, init?: RequestInit, providedToken?: s
     } catch {
       // Keep the status-based fallback when the response is not JSON.
     }
+    recordApiRequest({
+      path,
+      method,
+      action,
+      requestId,
+      duration: performance.now() - started,
+      status: response.status,
+      code,
+    })
     throw new AuthedApiError(message, response.status, code)
   }
 
+  recordApiRequest({
+    path,
+    method,
+    action,
+    requestId,
+    duration: performance.now() - started,
+    status: response.status,
+  })
   return response
 }
 

@@ -1,8 +1,10 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
+import posthog from 'posthog-js'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import { enableCoach as enableCoachFb } from '@/firebase/users'
+import { analyticsEnabled, trackEvent } from '@/lib/analytics/client'
 import { destinationForRole } from '@/lib/role-destination'
 import {
   ACTIVE_ROLE_STORAGE_KEY,
@@ -53,12 +55,16 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
 
   const activeRole = useMemo(() => resolveActiveRole(stored, roles), [stored, roles])
   const hasActiveRolePreference = stored === activeRole
+  useEffect(() => {
+    if (analyticsEnabled()) posthog.register({ active_role: activeRole })
+  }, [activeRole])
 
   const setActiveRole = useCallback(
     (role: RoleName, options?: { navigate?: boolean }) => {
       if (typeof window !== 'undefined') {
         localStorage.setItem(ACTIVE_ROLE_STORAGE_KEY, role)
       }
+      trackEvent('role_changed', { role })
       setStored(role)
       const destination = destinationForRole(role)
       if (options?.navigate !== false && pathname !== destination) router.push(destination)

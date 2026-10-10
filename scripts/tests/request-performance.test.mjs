@@ -118,6 +118,11 @@ test('auth API cache isolates users and invalidates only changed school labels',
         },
       },
       '@/firebase/index': { auth },
+      '@/lib/analytics/client': {
+        analyticsRequestHeaders: () => ({}),
+        mutationAction: () => undefined,
+        recordApiRequest: () => {},
+      },
       './authed-request-cache': { AuthedRequestCache },
     },
     async (path, init) => {

@@ -23,3 +23,7 @@ src/
 
 
  -->
+
+## Analytics
+
+PostHog registra navegación, acciones, rendimiento y errores de cliente/servidor. La configuración, eventos, privacidad y pasos del panel se describen en [docs/analytics.md](docs/analytics.md).

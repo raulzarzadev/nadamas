@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { getApps } from 'firebase-admin/app'
 import { getStorage } from 'firebase-admin/storage'
 import { NextResponse } from 'next/server'
+import { reportServerError } from '@/lib/analytics/server'
 import type { PaymentOrder } from '@/lib/payments/model'
 import { paymentAccess } from '@/lib/server/payments/access'
 import { notifyPendingPayment } from '@/lib/server/payments/notifications'
@@ -93,7 +94,7 @@ export async function POST(request: Request) {
     )
     return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('[PAYMENT_RECEIPT_WRITE]', error)
+    reportServerError('PAYMENT_RECEIPT_WRITE', error, request)
     return NextResponse.json(
       { error: 'No pudimos guardar el comprobante. Inténtalo de nuevo.' },
       { status: 500 }
@@ -116,7 +117,7 @@ export async function GET(request: Request) {
       },
     })
   } catch (error) {
-    console.error('[PAYMENT_RECEIPT_READ]', error)
+    reportServerError('PAYMENT_RECEIPT_READ', error, request)
     return NextResponse.json(
       { error: 'No pudimos abrir el comprobante. Inténtalo de nuevo.' },
       { status: 500 }

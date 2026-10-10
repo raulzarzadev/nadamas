@@ -17,6 +17,8 @@ import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage'
 // import { deepFormatFirebaseDates } from "./deepFormatFirebaseDates";
 import { Dates } from 'firebase-dates-util'
 import { v4 as uidGenerator } from 'uuid'
+import { trackEvent } from '@/lib/analytics/client'
+import { reportInternalError } from '@/lib/user-facing-error'
 import { db, storage } from '.'
 
 interface FirebaseResponse {
@@ -53,7 +55,13 @@ export class FirebaseCRUD {
       .then((res) =>
         this.CRUDResponse(true, `CREATED`, { id: res.id, item: { ...newItem, id: res.id } })
       )
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        trackEvent('firebase_mutation_failed', {
+          collection: this.collectionName,
+          action: 'create',
+        })
+        reportInternalError(`FIRESTORE_${this.collectionName.toUpperCase()}`, err)
+      })
   }
 
   async update(itemId: string, item: object) {
@@ -69,13 +77,25 @@ export class FirebaseCRUD {
     // console.log(newItem)
     return await updateDoc(doc(db, this.collectionName, itemId), newItem)
       .then((res) => this.CRUDResponse(true, `UPDATED`, { id: itemId }))
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        trackEvent('firebase_mutation_failed', {
+          collection: this.collectionName,
+          action: 'update',
+        })
+        reportInternalError(`FIRESTORE_${this.collectionName.toUpperCase()}`, err)
+      })
   }
 
   async delete(itemId: string) {
     return await deleteDoc(doc(db, this.collectionName, itemId))
       .then((res) => this.CRUDResponse(true, `DELETED`, { id: itemId }))
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        trackEvent('firebase_mutation_failed', {
+          collection: this.collectionName,
+          action: 'delete',
+        })
+        reportInternalError(`FIRESTORE_${this.collectionName.toUpperCase()}`, err)
+      })
   }
 
   async get(itemId: string) {
@@ -125,6 +145,11 @@ export class FirebaseCRUD {
   }
 
   CRUDResponse(ok: boolean, type: string, res: FirebaseResponse): CRUDResponseType {
+    if (['CREATED', 'UPDATED', 'DELETED'].includes(type))
+      trackEvent(ok ? 'firebase_mutation_succeeded' : 'firebase_mutation_failed', {
+        collection: this.collectionName,
+        action: type.toLowerCase(),
+      })
     const formatType =
       `${!ok ? `ERROR_` : ''}${this.collectionName.slice(0, -1)}_${type}`.toUpperCase()
     return {
@@ -205,27 +230,20 @@ export class FirebaseCRUD {
         // Observe state change events such as progress, pause, and resume
         // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
         const progress = (snapshot.bytesTransferred / (snapshot.totalBytes + 1)) * 100
-        console.log('Upload is ' + progress + '% done')
         cb(progress, null)
-        switch (snapshot.state) {
-          case 'paused':
-            console.log('Upload is paused')
-            break
-          case 'running':
-            console.log('Upload is running')
-            break
-        }
       },
       (error) => {
-        // Handle unsuccessful uploads
+        reportInternalError('FIREBASE_UPLOAD', error)
       },
       () => {
         // Handle successful uploads on complete
         // For instance, get the download URL: https://firebasestorage.googleapis.com/...
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          console.log('File available at', downloadURL)
-          cb(100, downloadURL)
-        })
+        getDownloadURL(uploadTask.snapshot.ref)
+          .then((downloadURL) => {
+            cb(100, downloadURL)
+            trackEvent('file_upload_succeeded')
+          })
+          .catch((error) => reportInternalError('FIREBASE_DOWNLOAD_URL', error))
       }
     )
     /*   uploadBytes(storageRef(storagePath), file).then((snapshot) => {

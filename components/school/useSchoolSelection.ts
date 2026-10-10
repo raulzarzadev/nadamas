@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
+import { trackEvent } from '@/lib/analytics/client'
 import { getAuthed, getCachedAuthedData } from '@/lib/client/authed-api'
 import { type School, type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
@@ -168,6 +169,7 @@ export function useSchoolSelection({
       if (tenant) return
       if (!schools.some((item) => item.school.id === schoolId)) return
       setIsPersonal(false)
+      trackEvent('school_selected', { school_id: schoolId, workspace: 'school' })
       setSelectedId(schoolId)
       window.localStorage.setItem(selectionKey, schoolId)
       window.dispatchEvent(
@@ -180,6 +182,7 @@ export function useSchoolSelection({
   const selectPersonal = useCallback(() => {
     if (tenant) return
     setIsPersonal(true)
+    trackEvent('school_selected', { workspace: 'personal' })
     setSelectedId(null)
     window.localStorage.setItem(selectionKey, 'personal')
     window.dispatchEvent(

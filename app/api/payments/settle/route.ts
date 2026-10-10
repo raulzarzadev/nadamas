@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { reportServerError } from '@/lib/analytics/server'
 import { settleOverduePayments } from '@/lib/server/payments/reservations'
 export const runtime = 'nodejs'
 export async function GET(request: Request) {
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
   try {
     return NextResponse.json({ settled: await settleOverduePayments() })
   } catch (error) {
-    console.error('[PAYMENTS_SETTLE]', error)
+    reportServerError('PAYMENTS_SETTLE', error, request)
     return NextResponse.json({ error: 'No pudimos actualizar los pagos.' }, { status: 500 })
   }
 }

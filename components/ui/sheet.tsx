@@ -23,6 +23,8 @@ import {
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiX } from 'react-icons/fi'
+import { trackEvent } from '@/lib/analytics/client'
+import { analyticsModal } from '@/lib/analytics/privacy'
 
 /**
  * Shared responsive modal. On mobile it opens from the bottom and closes via
@@ -130,6 +132,13 @@ export default function Sheet({
     },
     []
   )
+
+  const analyticsName = analyticsModal(label || '')
+  useEffect(() => {
+    if (!open) return
+    trackEvent('modal_opened', { modal: analyticsName })
+    return () => trackEvent('modal_closed', { modal: analyticsName })
+  }, [open, analyticsName])
 
   if (!open) return null
   const desktopWidth = {

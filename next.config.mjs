@@ -18,6 +18,10 @@ const frameDenyHeader = { key: 'X-Frame-Options', value: 'DENY' }
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_RELEASE:
+      process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_APP_RELEASE || 'local',
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     // Storage emulator serves from a private IP (127.0.0.1); the optimizer
@@ -108,4 +112,28 @@ const nextConfig = {
     ]
   },
 }
-export default nextConfig
+// Personal API keys stay in the build environment, never in NEXT_PUBLIC_*.
+const sourceMapsEnabled =
+  process.env.NODE_ENV === 'production' &&
+  process.env.POSTHOG_PERSONAL_API_KEY &&
+  process.env.POSTHOG_PROJECT_ID &&
+  process.env.NEXT_PUBLIC_POSTHOG_ENABLED !== '0'
+const configured = sourceMapsEnabled
+  ? (await import('@posthog/nextjs-config')).withPostHogConfig(nextConfig, {
+      personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY,
+      projectId: process.env.POSTHOG_PROJECT_ID,
+      host:
+        process.env.POSTHOG_UI_HOST ||
+        (process.env.NEXT_PUBLIC_POSTHOG_HOST?.includes('eu.')
+          ? 'https://eu.posthog.com'
+          : 'https://us.posthog.com'),
+      sourcemaps: {
+        enabled: true,
+        deleteAfterUpload: true,
+        releaseName: 'nadamas',
+        releaseVersion:
+          process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_APP_RELEASE || 'local',
+      },
+    })
+  : nextConfig
+export default configured

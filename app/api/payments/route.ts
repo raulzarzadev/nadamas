@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { reportServerError } from '@/lib/analytics/server'
 import { PaymentRuleError, validateProduct } from '@/lib/payments/engine'
 import type {
   PaymentAccount,
@@ -94,7 +95,7 @@ export async function GET(request: Request) {
       { headers: { 'Cache-Control': 'private, no-store' } }
     )
   } catch (error) {
-    console.error('[PAYMENTS_READ]', error)
+    reportServerError('PAYMENTS_READ', error, request)
     return NextResponse.json(
       { error: 'No pudimos cargar los pagos. Inténtalo de nuevo.' },
       { status: 500 }
@@ -298,7 +299,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const paymentError = paymentErrorResponse(error)
     if (paymentError) return NextResponse.json(paymentError, { status: 409 })
-    console.error('[PAYMENTS_WRITE]', error)
+    reportServerError('PAYMENTS_WRITE', error, request)
     return NextResponse.json(
       { error: 'No pudimos guardar el pago. Inténtalo de nuevo.' },
       { status: 500 }
