@@ -32,6 +32,7 @@ function dayKey(day: Date) {
 export default function ScheduleViews({
   title,
   description,
+  afterDateNavigation,
   selectedDate,
   days,
   today,
@@ -52,6 +53,7 @@ export default function ScheduleViews({
 }: {
   title?: ReactNode
   description?: ReactNode
+  afterDateNavigation?: ReactNode
   selectedDate: string
   days: Date[]
   today: string
@@ -127,6 +129,7 @@ export default function ScheduleViews({
             onSelectDate={onSelectDate}
             onChangeWeek={onChangeWeek}
           />
+          {afterDateNavigation}
           {children}
         </>
       ) : (
@@ -141,6 +144,7 @@ export default function ScheduleViews({
             onSelectDate={onSelectDate}
             onChangeWeek={onChangeWeek}
           />
+          {afterDateNavigation}
           <div className="@container grid gap-1 rounded-2xl bg-(--c-surface)">
             {loading ? (
               <p className="text-sm" role="status">

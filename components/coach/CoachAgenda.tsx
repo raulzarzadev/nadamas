@@ -2246,7 +2246,7 @@ export default function CoachAgenda({
                 )}{' '}
             </>
           }
-          description={
+          afterDateNavigation={
             agenda &&
             !error &&
             !readOnlyAgenda &&
