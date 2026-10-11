@@ -2251,9 +2251,7 @@ export default function CoachAgenda({
             !error &&
             !readOnlyAgenda &&
             onScheduleEditorOpen &&
-            !agenda.availableSlots.some(
-              (slot) => slot.date >= dateKey(new Date()) && slot.status !== 'blocked'
-            ) && (
+            horizontalSlots.size === 0 && (
               <section
                 className="flex flex-col items-center gap-4 bg-white px-4 py-8 text-center sm:rounded-2xl"
                 aria-label="Agregar próximos horarios"
