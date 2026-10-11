@@ -424,7 +424,7 @@ export default function AthleteSchoolSchedule({
         slot.schoolId === schoolFilter && (coachFilter === 'all' || slot.coachId === coachFilter)
       )
     }
-    return Boolean(slot.schoolId) || coachFilter === 'all' || slot.coachId === coachFilter
+    return coachFilter === 'all' || (!slot.schoolId && slot.coachId === coachFilter)
   })
   const slotStatus = (slot: CoachAvailableSlot): HourStatus =>
     slot.status === 'booked'
@@ -657,9 +657,7 @@ export default function AthleteSchoolSchedule({
         (schoolFilter !== 'all'
           ? reservation.schoolId === schoolFilter &&
             (coachFilter === 'all' || reservation.coachId === coachFilter)
-          : Boolean(reservation.schoolId) ||
-            coachFilter === 'all' ||
-            reservation.coachId === coachFilter)
+          : coachFilter === 'all' || (!reservation.schoolId && reservation.coachId === coachFilter))
     )
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
   const personalReservations = visibleReservations.filter(

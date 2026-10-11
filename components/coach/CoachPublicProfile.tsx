@@ -247,6 +247,7 @@ export default function CoachPublicProfile({
       groupSelectionsByDay(bookingSelections)
         .map((group) => ({
           key: group.date,
+          isToday: group.date === dateKey(new Date()),
           dayLabel: DAY_LABELS[group.day] || group.day,
           dateLabel: new Date(`${group.date}T12:00:00`).toLocaleDateString('es-MX', {
             day: 'numeric',
@@ -289,6 +290,22 @@ export default function CoachPublicProfile({
         .filter((day) => day.times.some((time) => !time.disabled)),
     [bookingSelections, coach, bookedSlotCounts, bookedHours, isBlocked, selectedKeys]
   )
+  const todayKey = dateKey(new Date())
+  const showTodayRow =
+    todayKey >= dateKey(periodStart) && todayKey <= dateKey(addDays(periodStart, 6))
+  const visibleDayRows =
+    showTodayRow && !dayRows.some((day) => day.key === todayKey)
+      ? [
+          {
+            key: todayKey,
+            isToday: true,
+            dayLabel: todayStart().toLocaleDateString('es-MX', { weekday: 'long' }),
+            dateLabel: todayStart().toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }),
+            times: [],
+          },
+          ...dayRows,
+        ].sort((a, b) => a.key.localeCompare(b.key))
+      : dayRows
   const whatsappDayRows = useMemo(
     () =>
       groupSelectionsByDay(bookingSelections)
@@ -574,11 +591,18 @@ export default function CoachPublicProfile({
               >
                 &#8594;
               </button>
+              <button
+                type="button"
+                onClick={() => setPeriodStart(todayStart())}
+                className="ml-2 inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-aqua-light) bg-(--c-surface) px-4 text-sm font-bold text-(--c-ocean) hover:bg-(--c-aqua-light) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                Hoy
+              </button>
             </div>
           </div>
 
-          {dayRows.length > 0 ? (
-            <CoachScheduleRows days={dayRows} />
+          {visibleDayRows.length > 0 ? (
+            <CoachScheduleRows days={visibleDayRows} />
           ) : (
             openOfferings.length === 0 && (
               <p className="text-sm text-[var(--c-text-2)]">

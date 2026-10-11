@@ -13,6 +13,7 @@ export interface CoachScheduleRowDay {
   key: string
   dayLabel: string
   dateLabel: string
+  isToday?: boolean
   times: CoachScheduleRowTime[]
 }
 
@@ -34,12 +35,24 @@ export default function CoachScheduleRows({
   return (
     <div className="my-3 space-y-4 rounded-[24px] border border-[var(--c-border)] bg-[var(--c-surface)] px-5 py-5 sm:px-6">
       {days.map((day) => (
-        <div key={day.key} className="grid gap-1 sm:grid-cols-[7rem_1fr]">
+        <div
+          key={day.key}
+          aria-current={day.isToday ? 'date' : undefined}
+          className={`grid gap-1 sm:grid-cols-[7rem_1fr] ${day.isToday ? 'rounded-xl bg-(--c-aqua-light) p-2' : ''}`}
+        >
           <div>
             <p className="text-sm font-extrabold text-[var(--c-ocean)]">{day.dayLabel}</p>
             <p className="text-[10px] font-semibold text-[var(--c-text-2)]">{day.dateLabel}</p>
+            {day.isToday && (
+              <span className="mt-1 inline-flex rounded-full bg-(--c-ocean) px-2 py-0.5 text-[10px] font-bold text-white">
+                Hoy
+              </span>
+            )}
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            {day.isToday && day.times.length === 0 && (
+              <p className="text-sm text-(--c-text-2)">Sin horarios disponibles para hoy.</p>
+            )}
             {day.times.map((time) => {
               const isInteractive = Boolean(time.onClick)
 
