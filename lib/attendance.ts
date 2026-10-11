@@ -12,6 +12,7 @@ export interface AttendanceRecord {
 }
 export interface AttendanceCandidate {
   studentId?: string
+  athleteId?: string
   name: string
   numericId?: string
   photoURL?: string

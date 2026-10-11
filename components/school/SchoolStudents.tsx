@@ -2,12 +2,15 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiClipboard, FiMail, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiClipboard, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import StudentLabels from '@/components/coach/StudentLabels'
+import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import Sheet from '@/components/ui/sheet'
+import StudentListRow from '@/components/ui/student-list-row'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
-import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { deleteAuthed, getAuthed, getCachedAuthedData, postAuthed } from '@/lib/client/authed-api'
 import {
   capitalizeSchoolTerm,
   type SchoolGender,
@@ -24,6 +27,9 @@ import { useSchoolSelection } from './useSchoolSelection'
 export default function SchoolStudents() {
   const { schools, selected, selectedId, status: schoolStatus, selectSchool } = useSchoolSelection()
   const terminology = useSchoolTerminology()
+  const [labelData, setLabelData] = useState<LabelList>({ labels: [], assignments: {} })
+  const [labelFilter, setLabelFilter] = useState<string[] | null>(null)
+  const [labelRevision, setLabelRevision] = useState(0)
   const [students, setStudents] = useState<SchoolStudent[]>([])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,31 +40,50 @@ export default function SchoolStudents() {
 
   useEffect(() => {
     if (!selectedId) return
+    let active = true
+    const studentsPath = `/api/schools/${selectedId}/students`
+    const invitationsPath = `/api/schools/${selectedId}/invitations`
+    const cachedStudents = getCachedAuthedData<{ students?: SchoolStudent[] }>(studentsPath)
+    const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
+    const cachedInvitations = isDirector
+      ? getCachedAuthedData<{ invitations?: SchoolInvitation[] }>(invitationsPath)
+      : undefined
     setHistoryStudent(null)
-    setLoading(true)
-    async function load() {
-      const studentResponse = await getAuthed(`/api/schools/${selectedId}/students`)
-      const studentPayload = (await studentResponse.json()) as { students?: SchoolStudent[] }
-      let invitationPayload: { invitations?: SchoolInvitation[] } | null = null
-      if (schoolMembershipHasRole(selected?.membership, 'director')) {
-        const invitationResponse = await getAuthed(`/api/schools/${selectedId}/invitations`)
-        invitationPayload = (await invitationResponse.json()) as {
-          invitations?: SchoolInvitation[]
-        }
-      }
-      return { studentPayload, invitationPayload }
-    }
-    load()
-      .then(({ studentPayload, invitationPayload }) => {
-        setStudents(studentPayload.students || [])
-        setInvitations(invitationPayload?.invitations || [])
+    setLabelData({ labels: [], assignments: {} })
+    setLabelFilter(null)
+    setMessage(null)
+    setStudents(cachedStudents?.students || [])
+    setInvitations(cachedInvitations?.invitations || [])
+    setLoading(!cachedStudents)
+
+    getAuthed(studentsPath)
+      .then((response) => response.json() as Promise<{ students?: SchoolStudent[] }>)
+      .then((payload) => {
+        if (active) setStudents(payload.students || [])
       })
-      .catch(() =>
-        setMessage(
-          `No se pudieron cargar ${terminology.schoolId ? terminology.participantPlural : 'los alumnos'}.`
-        )
-      )
-      .finally(() => setLoading(false))
+      .catch(() => {
+        if (active)
+          setMessage(
+            `No se pudieron cargar ${terminology.schoolId ? terminology.participantPlural : 'los alumnos'}.`
+          )
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    if (isDirector) {
+      getAuthed(invitationsPath)
+        .then((response) => response.json() as Promise<{ invitations?: SchoolInvitation[] }>)
+        .then((payload) => {
+          if (active) setInvitations(payload.invitations || [])
+        })
+        .catch(() => {
+          if (active) setMessage('No se pudieron cargar las invitaciones.')
+        })
+    }
+    return () => {
+      active = false
+    }
   }, [selectedId, selected?.membership, terminology.participantPlural, terminology.schoolId])
 
   if (schoolStatus === 'loading') return <ProfileLoadingSkeleton />
@@ -114,7 +139,7 @@ export default function SchoolStudents() {
       </div>
       {isDirector && (
         <SchoolAccessRequests
-          key={selected.school.id}
+          key={`access-requests:${selected.school.id}`}
           schoolId={selected.school.id}
           onApproved={async () => {
             const response = await getAuthed(`/api/schools/${activeSchool.school.id}/students`)
@@ -128,45 +153,56 @@ export default function SchoolStudents() {
           {message}
         </p>
       )}
+      {canAssignClasses && (
+        <StudentLabelTools
+          key={`student-labels:${activeSchool.school.id}`}
+          schoolId={activeSchool.school.id}
+          students={students.map((student) => ({ id: student.id, name: student.name }))}
+          revision={labelRevision}
+          onFilter={setLabelFilter}
+          onData={setLabelData}
+          onUpdated={() => setLabelRevision((current) => current + 1)}
+        />
+      )}
       {loading ? (
         <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
       ) : students.length ? (
         <div className="overflow-hidden rounded-[var(--r-md)] border border-(--c-border) bg-white shadow-[var(--shadow-sm)]">
-          {students.map((student) => (
-            <article
-              key={student.id}
-              className="flex items-center gap-3 border-b border-(--c-border) px-4 py-3 last:border-b-0 sm:gap-4 sm:px-5"
-            >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
-                <FiUsers aria-hidden="true" />
-              </span>
-              <div className="min-w-0 flex-1 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-center sm:gap-4">
-                <div className="min-w-0">
-                  <h2 className="truncate font-bold text-(--c-ocean)">{student.name}</h2>
-                  <p className="text-sm text-(--c-text-2)">
-                    {student.additionalProfileId && 'Adicional · '}
-                    {student.gender}
-                    {student.birthDate && ` · Nacimiento: ${student.birthDate}`}
-                  </p>
-                </div>
-                <p className="mt-1 flex min-w-0 items-center gap-1 text-xs text-(--c-text-2) sm:mt-0">
-                  <FiMail className="shrink-0" aria-hidden="true" />
-                  <span className="truncate">
-                    {student.studentEmail || student.guardianEmail || 'Sin correo'}
-                  </span>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setHistoryStudent(student)}
-                aria-label={`Abrir historial y clases de ${student.name}`}
-                title={`Historial y clases de ${student.name}`}
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) transition hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-              >
-                <FiClipboard aria-hidden="true" />
-              </button>
-            </article>
-          ))}
+          {students
+            .filter((student) => !labelFilter || labelFilter.includes(student.id))
+            .map((student) => (
+              <StudentListRow
+                key={student.id}
+                student={{ ...student, email: student.studentEmail || student.guardianEmail }}
+                labels={
+                  canAssignClasses && labelData.assignments[student.id]?.length ? (
+                    <StudentLabels
+                      studentId={student.id}
+                      schoolId={activeSchool.school.id}
+                      readOnly
+                      compact
+                      tiny
+                      horizontal
+                      data={{
+                        labels: labelData.labels,
+                        selected: labelData.assignments[student.id] || [],
+                      }}
+                    />
+                  ) : undefined
+                }
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setHistoryStudent(student)}
+                    aria-label={`Abrir historial y clases de ${student.name}`}
+                    title={`Historial y clases de ${student.name}`}
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) transition hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                  >
+                    <FiClipboard aria-hidden="true" />
+                  </button>
+                }
+              />
+            ))}
         </div>
       ) : (
         <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
@@ -238,7 +274,10 @@ export default function SchoolStudents() {
           canAssign={canAssignClasses}
           isDirector={isDirector}
           viewerId={selected.membership.userId}
-          onClose={() => setHistoryStudent(null)}
+          onClose={() => {
+            setHistoryStudent(null)
+            setLabelRevision((current) => current + 1)
+          }}
         />
       )}
       {showStudent && (

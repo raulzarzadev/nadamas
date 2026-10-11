@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
+import { requirePersonalCoach } from '@/lib/server/personal-class-access'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { schoolLabelList } from '@/lib/server/school-labels'
 import { STUDENT_LABEL_COLORS, studentLabelColor } from '@/lib/student-label-colors'
@@ -76,6 +77,28 @@ export async function GET(request: Request) {
     if (params.get('view') === 'list') {
       const schoolId = params.get('schoolId') || ''
       const entity = params.get('entity') || 'students'
+      if (!schoolId && entity === 'students') {
+        const access = await requirePersonalCoach(request)
+        if (access.response) return access.response
+        const scope = `coach:${access.uid}`
+        const [labels, assignments] = await Promise.all([
+          adminDb.collection('studentLabels').where('scope', '==', scope).get(),
+          adminDb.collection('studentLabelAssignments').where('scope', '==', scope).get(),
+        ])
+        return NextResponse.json(
+          {
+            labels: labels.docs.map((doc) => ({
+              id: doc.id,
+              name: String(doc.data().name),
+              color: studentLabelColor(doc.data().color).id,
+            })),
+            assignments: Object.fromEntries(
+              assignments.docs.map((doc) => [doc.data().studentId, doc.data().labelIds || []])
+            ),
+          },
+          { headers: { 'Cache-Control': 'private, no-store' } }
+        )
+      }
       if (
         !schoolId ||
         schoolId.includes('/') ||

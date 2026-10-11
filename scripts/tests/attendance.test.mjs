@@ -113,6 +113,10 @@ function fixture(classes = [exampleClass()]) {
               )
             )
           },
+          delete(reference) {
+            writing = true
+            staged.push(() => data.delete(reference.path))
+          },
           update(reference, value) {
             writing = true
             assert.equal(data.has(reference.path), true)
@@ -210,6 +214,23 @@ test('attendance is idempotent, including simultaneous requests, and preserves n
   assert.equal(f.data.get('agendaStudentRecords/class-class-student').note, 'Conservar esta nota')
   assert.equal(f.data.get('agendaStudentRecords/class-class-student').grade, 4)
   assert.equal(f.data.get('agendaStudentRecords/class-class-student').attended, true)
+})
+
+test('unmarking attendance preserves enrollment and notes and permits marking again', async () => {
+  const f = fixture()
+  f.data.set('agendaStudentRecords/class-class-student', { note: 'Conservar' })
+  await f.record()
+  assert.equal((await f.record({ attended: false })).code, 'ok')
+  assert.equal(f.data.get('agendaStudentRecords/class-class-student').attended, false)
+  assert.equal(f.data.get('agendaStudentRecords/class-class-student').note, 'Conservar')
+  assert.deepEqual(f.data.get('schoolClassOccurrences/class').studentIds, ['student'])
+  assert.equal(
+    [...f.data.keys()].filter((key) => key.startsWith('schools/school/attendance/')).length,
+    0
+  )
+  assert.equal((await f.record()).alreadyRecorded, false)
+  assert.equal(f.data.get('agendaStudentRecords/class-class-student').attended, true)
+  assert.equal((await f.record({ attended: false, actorId: 'other' })).code, 'unauthorized')
 })
 
 test('outsider needs explicit school and class consent; never grants account access', async () => {

@@ -17,5 +17,13 @@ export const STUDENT_LABEL_COLORS = [
   { id: 'purple', name: 'Lavanda', color: '#cdbff0', background: '#eae3fa', text: '#4c1d95' },
 ] as const
 export function studentLabelColor(id?: string) {
+  if (id === 'system-gray')
+    return {
+      id: 'system-gray',
+      name: 'Gris claro',
+      color: '#f1f2f4',
+      background: '#f1f2f4',
+      text: '#475569',
+    }
   return STUDENT_LABEL_COLORS.find((color) => color.id === id) || STUDENT_LABEL_COLORS[1]
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiPlus, FiTag } from 'react-icons/fi'
+import LabelChip from '@/components/ui/label-chip'
 import Sheet from '@/components/ui/sheet'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { studentLabelColor } from '@/lib/student-label-colors'
@@ -15,6 +16,8 @@ export default function StudentLabels({
   entity = 'students',
   readOnly = false,
   compact = false,
+  horizontal = false,
+  tiny = false,
   data,
 }: {
   studentId: string
@@ -22,6 +25,8 @@ export default function StudentLabels({
   schoolId?: string
   readOnly?: boolean
   compact?: boolean
+  horizontal?: boolean
+  tiny?: boolean
   data?: { labels: Label[]; selected: string[] }
 }) {
   const [storedLabels, setLabels] = useState<Label[]>([])
@@ -56,12 +61,12 @@ export default function StudentLabels({
   }, [endpoint, data])
   const labels = data?.labels || storedLabels
   const selected = data?.selected || storedSelected
-  const add = async (label: string) => {
+  const add = async (label: string, labelColor = color) => {
     if (!label.trim() || busy) return
     setBusy(true)
     setError('')
     try {
-      await postAuthed(endpoint, { name: label, color })
+      await postAuthed(endpoint, { name: label, color: labelColor })
       const response = await getAuthed(endpoint)
       const payload = (await response.json()) as { labels: Label[]; selected: string[] }
       setLabels(payload.labels)
@@ -74,37 +79,41 @@ export default function StudentLabels({
       setBusy(false)
     }
   }
+  async function removeLabel(label: Label) {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await postAuthed(endpoint, { name: label.name, remove: true })
+      setSelected((current) => current.filter((id) => id !== label.id))
+    } catch {
+      setError('No pudimos quitar la etiqueta. Inténtalo de nuevo.')
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
     <>
       <div
-        className={`flex flex-wrap items-center gap-1.5 ${readOnly ? 'min-w-0' : 'max-w-44 shrink-0 justify-end'}`}
+        className={`flex items-center gap-1.5 ${horizontal ? (tiny ? 'min-w-0 flex-wrap justify-end py-0' : 'min-w-0 flex-nowrap overflow-x-auto py-1 [&>span]:shrink-0') : `flex-wrap ${readOnly ? 'min-w-0' : 'max-w-44 shrink-0 justify-end'}`}`}
       >
         {labels
           .filter((label) => selected.includes(label.id))
           .map((label) => (
-            <span
+            <LabelChip
               key={label.id}
-              title={label.name}
-              style={{
-                backgroundColor: studentLabelColor(label.color).color,
-                color: studentLabelColor(label.color).text,
-              }}
-              className={
-                compact
-                  ? 'inline-flex max-w-20 items-center gap-0.5 rounded-full bg-white/70 px-1.5 py-0.5 text-[9px] leading-tight text-(--c-text-2)'
-                  : 'inline-flex items-center gap-1 rounded-full border border-(--c-border) bg-(--c-surface) px-3 py-1 text-xs font-semibold'
-              }
-            >
-              <FiTag aria-hidden="true" className="shrink-0" />
-              <span className="truncate">{label.name}</span>
-            </span>
+              label={label}
+              size={tiny ? 'tiny' : 'compact'}
+              disabled={busy}
+              onRemove={!readOnly ? () => void removeLabel(label) : undefined}
+            />
           ))}
         {!readOnly && (
           <button
             type="button"
             onClick={() => setOpen(true)}
             disabled={loading}
-            className="relative inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-xs text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 before:absolute before:-inset-y-1.5"
+            className={`relative inline-flex shrink-0 items-center gap-1 rounded-full text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 before:absolute before:-inset-y-1.5 ${compact ? 'h-6 min-h-6 border border-(--c-border) px-1.5 text-[10px] leading-tight' : 'min-h-8 px-2 text-xs'}`}
           >
             <FiPlus aria-hidden="true" />
             <FiTag aria-hidden="true" />
@@ -137,7 +146,11 @@ export default function StudentLabels({
                       key={label.id}
                       type="button"
                       disabled={busy}
-                      onClick={() => void add(label.name)}
+                      onClick={() => void add(label.name, label.color || 'blue')}
+                      style={{
+                        backgroundColor: studentLabelColor(label.color).color,
+                        color: studentLabelColor(label.color).text,
+                      }}
                       className="btn btn-outline min-h-11 gap-1 border"
                     >
                       <FiTag aria-hidden="true" />
@@ -161,7 +174,7 @@ export default function StudentLabels({
                     required
                     disabled={busy}
                     placeholder="Nombre de la etiqueta"
-                    className="min-h-11 min-w-0 w-full rounded-xl border border-(--c-border) px-3 focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                    className="h-11 min-w-0 w-full max-w-full box-border rounded-xl border border-(--c-border) bg-white px-3 text-sm font-normal text-(--c-ocean) outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-border) disabled:opacity-50"
                   />
                 </label>
                 <StudentLabelColorSelector value={color} onChange={setColor} disabled={busy} />

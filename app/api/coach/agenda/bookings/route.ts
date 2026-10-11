@@ -8,7 +8,7 @@ import {
 } from '@/lib/coach-offerings'
 import { type StudentProgress, studentProgressId } from '@/lib/coach-student-progress'
 import { publicNameFromUser } from '@/lib/public-name'
-import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
+import { type SchoolMembership, type SchoolStudent, schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingByCoach } from '@/lib/server/notifications'
 import { bookingPaymentEvent } from '@/lib/server/payments/booking-events'
@@ -84,6 +84,7 @@ function weekdayLabel(date: string) {
 type CoachBookingInput = {
   allowPackage?: boolean
   paymentExceptionReason?: string
+  attended?: boolean
   coachId?: string
   date?: string
   startTime?: string
@@ -215,10 +216,10 @@ async function handlePOST(request: Request) {
   const athletePhone = body.athletePhone?.trim()
   const booking: Booking = {
     id: ref.id,
-    athleteId: requestedAthleteId || `manual:${ref.id}`,
+    athleteId: requestedAthleteId || (schoolId ? `agenda_${ref.id}` : `manual:${ref.id}`),
     athleteName,
     classFull: false,
-    attended: false,
+    attended: body.attended === true,
     // Firestore rejects `undefined`; only include the field when present.
     ...(athletePhone ? { athletePhone } : {}),
     athleteEmail: body.athleteEmail?.trim() || null,
@@ -244,18 +245,48 @@ async function handlePOST(request: Request) {
     ...(schoolId ? { schoolId } : {}),
   }
 
+  const newSchoolStudent: SchoolStudent | null =
+    schoolId && !requestedAthleteId
+      ? {
+          id: booking.athleteId,
+          schoolId,
+          name: athleteName,
+          birthDate: '',
+          gender: 'otro',
+          guardianIds: [],
+          managerIds: [],
+          guardianName: '',
+          guardianRelationship: '',
+          guardianPhone: athletePhone || '',
+          guardianEmail: '',
+          studentEmail: booking.athleteEmail || '',
+          status: 'active',
+          createdAt: now,
+          updatedAt: now,
+        }
+      : null
+  const studentPaymentOptions = newSchoolStudent ? { schoolStudentId: true } : {}
   await paymentTransaction(
     [
       bookingPaymentEvent(booking, 'reserve', coachId, {
+        ...studentPaymentOptions,
         allowPackage: body.allowPackage === true,
         exceptionReason:
-          !schoolId && typeof body.paymentExceptionReason === 'string'
+          (!schoolId ||
+            verification.isAdmin ||
+            ('directorMode' in verification && verification.directorMode)) &&
+          typeof body.paymentExceptionReason === 'string'
             ? body.paymentExceptionReason.trim().slice(0, 300)
             : undefined,
       }),
+      ...(body.attended === true
+        ? [bookingPaymentEvent(booking, 'consume', coachId, studentPaymentOptions)]
+        : []),
     ],
     (tx) => {
       tx.set(ref, booking)
+      if (newSchoolStudent)
+        tx.set(adminDb.collection('schoolStudents').doc(newSchoolStudent.id), newSchoolStudent)
     }
   )
   await syncCoachCreatedSlotGroupType(coachId, date, startTime, schoolId)
@@ -335,7 +366,13 @@ async function handlePATCH(request: Request) {
     const now = Date.now()
     if (typeof body.attended === 'boolean')
       await paymentTransaction(
-        [bookingPaymentEvent(booking, 'consume', verification.caller.uid)],
+        [
+          bookingPaymentEvent(
+            booking,
+            body.attended ? 'consume' : 'unconsume',
+            verification.caller.uid
+          ),
+        ],
         (tx) => {
           tx.set(bookingRef, { attended: body.attended, updatedAt: now }, { merge: true })
         }

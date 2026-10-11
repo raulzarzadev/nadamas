@@ -25,7 +25,7 @@ export type PaymentEvent = {
   startTime: string
   endTime?: string
   actorId: string
-  action: 'reserve' | 'consume' | 'release'
+  action: 'reserve' | 'consume' | 'release' | 'unconsume'
   allowPackage?: boolean
   exceptionReason?: string
   organizerCancelled?: boolean
@@ -144,6 +144,27 @@ export async function preparePaymentEvents(tx: Transaction, events: PaymentEvent
       }
     } else {
       if (!hold || hold.state === 'exception') return
+      if (event.action === 'unconsume') {
+        if (hold.state !== 'consumed') return
+        const grantId = hold.grantId
+        const grant = account.grants.find((item) => item.id === grantId)
+        if (!grant) throw new PaymentRuleError('payment_invalid')
+        changeGrantUsage(grant, hold.date, 1, -1)
+        hold.state = 'reserved'
+        dirty.add(key)
+        changed.set(hold.id, hold)
+        entries.push(
+          movement(
+            event.scope,
+            event.studentId,
+            event.actorId,
+            'reserved',
+            `Asistencia desmarcada · ${event.date} ${event.startTime}`,
+            1
+          )
+        )
+        return
+      }
       const startsAt = paymentStartsAt(hold.date, hold.startTime, settings.timezone)
       const late =
         event.action === 'release' &&

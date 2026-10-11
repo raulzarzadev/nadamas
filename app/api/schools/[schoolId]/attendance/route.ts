@@ -187,6 +187,7 @@ async function handlePOST(request: Request, { params }: Props) {
       actorId: access.caller.uid,
       director,
       method,
+      attended: body.attended !== false,
       virtualOccurrence,
       ...person,
       addToClass: body.addToClass === true,

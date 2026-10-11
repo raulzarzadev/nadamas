@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { parseCredentialQr } from '@/lib/athlete-identity'
 import type { Booking } from '@/lib/coach-booking'
+import { schoolMembershipHasRole } from '@/lib/school'
 import { ensureAthleteIdentity, findAthleteIdentity } from '@/lib/server/athlete-identities'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requirePersonalCoach } from '@/lib/server/personal-class-access'
+import { requireSchoolAccess } from '@/lib/server/school-access'
 import { PATCH as updateBooking } from '../agenda/bookings/route'
 
 export const runtime = 'nodejs'
@@ -17,22 +19,46 @@ const profile = (booking: Booking) => ({
       ? ('additional' as const)
       : ('user' as const),
 })
-async function personalBookings(uid: string) {
+async function personalBookings(uid: string, schoolId?: string) {
   const snapshot = await adminDb.collection('bookings').where('coachId', '==', uid).get()
   return snapshot.docs
     .map((doc) => ({ ...doc.data(), id: doc.id }) as Booking)
-    .filter((booking) => !booking.schoolId && booking.status !== 'cancelled')
+    .filter(
+      (booking) =>
+        (schoolId ? booking.schoolId === schoolId : !booking.schoolId) &&
+        !booking.schoolClassId &&
+        booking.status !== 'cancelled'
+    )
+}
+async function authorize(request: Request) {
+  const query = new URL(request.url).searchParams
+  const schoolId = query.get('schoolId') || undefined
+  if (!schoolId) return requirePersonalCoach(request)
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
+  if (access.response) return { response: access.response }
+  const uid = query.get('coachId') || access.caller.uid
+  if (
+    uid !== access.caller.uid &&
+    !access.globalAdmin &&
+    !schoolMembershipHasRole(access.membership, 'director')
+  )
+    return {
+      response: NextResponse.json({ error: 'No tienes acceso a esta clase.' }, { status: 403 }),
+    }
+  return { uid, schoolId, user: { displayName: 'Entrenador', name: '' }, response: undefined }
 }
 export async function GET(request: Request) {
   try {
-    const access = await requirePersonalCoach(request)
+    const access = await authorize(request)
     if (access.response) return access.response
     const query = new URL(request.url).searchParams
     const occurrenceId = query.get('occurrenceId') || ''
     const date = occurrenceId.split('|')[0] || query.get('date') || ''
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date))
       return NextResponse.json({ error: 'Selecciona una fecha.' }, { status: 400 })
-    const bookings = (await personalBookings(access.uid)).filter((booking) => booking.date === date)
+    const bookings = (
+      await personalBookings(access.uid, 'schoolId' in access ? access.schoolId : undefined)
+    ).filter((booking) => booking.date === date)
     const groups = new Map<string, Booking[]>()
     for (const booking of bookings)
       groups.set(classId(booking), [...(groups.get(classId(booking)) || []), booking])
@@ -48,7 +74,13 @@ export async function GET(request: Request) {
     }))
     const base = {
       classes,
-      coachNames: { [access.uid]: access.user.displayName || access.user.name || 'Entrenador' },
+      coachNames: {
+        [access.uid]:
+          bookings.find((booking) => booking.coachName)?.coachName ||
+          access.user.displayName ||
+          access.user.name ||
+          'Entrenador',
+      },
     }
     if (!occurrenceId) return NextResponse.json(base, { headers })
     const selected = groups.get(occurrenceId)
@@ -60,6 +92,7 @@ export async function GET(request: Request) {
         const credential = await ensureAthleteIdentity(identity.type, identity.id).catch(() => null)
         return {
           studentId: booking.id,
+          athleteId: booking.athleteId,
           name: booking.athleteName,
           numericId: credential?.numericId,
           inSchool: true,
@@ -110,12 +143,15 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   try {
-    const access = await requirePersonalCoach(request)
+    const access = await authorize(request)
     if (access.response) return access.response
     const body = await request.json().catch(() => null)
     if (!body || typeof body.occurrenceId !== 'string')
       return NextResponse.json({ error: 'Revisa la clase.' }, { status: 400 })
-    const bookings = await personalBookings(access.uid)
+    const bookings = await personalBookings(
+      access.uid,
+      'schoolId' in access ? access.schoolId : undefined
+    )
     let booking = bookings.find(
       (item) => item.id === body.studentId && classId(item) === body.occurrenceId
     )
@@ -148,7 +184,7 @@ export async function POST(request: Request) {
       blocks.docs.some((doc) => {
         const block = doc.data()
         return (
-          !block.schoolId &&
+          ('schoolId' in access ? block.schoolId === access.schoolId : !block.schoolId) &&
           block.date === booking.date &&
           (block.allDay ||
             (block.startTime <= booking.startTime && booking.startTime < block.endTime))
@@ -159,7 +195,8 @@ export async function POST(request: Request) {
         { error: 'La clase está bloqueada.', code: 'blocked' },
         { status: 409 }
       )
-    if (booking.attended) return NextResponse.json({ alreadyRecorded: true })
+    const attended = body.attended !== false
+    if (Boolean(booking.attended) === attended) return NextResponse.json({ alreadyRecorded: true })
     const result = await updateBooking(
       new Request(new URL('/api/coach/agenda/bookings', request.url), {
         method: 'PATCH',
@@ -167,7 +204,11 @@ export async function POST(request: Request) {
           authorization: request.headers.get('authorization') || '',
           'content-type': 'application/json',
         },
-        body: JSON.stringify({ id: booking.id, attended: true }),
+        body: JSON.stringify({
+          id: booking.id,
+          attended,
+          ...('schoolId' in access ? { schoolId: access.schoolId, coachId: access.uid } : {}),
+        }),
       })
     )
     if (!result.ok) return result

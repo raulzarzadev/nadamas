@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { type ComponentProps, useEffect, useId, useState } from 'react'
+import { type ComponentProps, type ReactNode, useEffect, useId, useState } from 'react'
 import { FiActivity, FiCheckSquare, FiEye, FiSettings } from 'react-icons/fi'
 import AttendanceModal from '@/components/coach/AttendanceModal'
 import ClassTrainingEditor from '@/components/coach/ClassTrainingEditor'
@@ -19,6 +19,8 @@ export type ClassNotesTarget = {
   date: string
   startTime: string
   endTime?: string
+  enrolledCount?: number
+  schoolClassId?: string
   groupType: 'particular' | 'grupal'
 }
 
@@ -36,6 +38,8 @@ export default function ClassNotesModal({
   onClose,
   onUpdated,
   onConfigure,
+  onAddStudents,
+  addStudentsContent,
   suspended = false,
   embedded = false,
 }: {
@@ -43,6 +47,8 @@ export default function ClassNotesModal({
   onClose: () => void
   onUpdated?: () => void
   onConfigure?: () => void
+  onAddStudents?: () => void
+  addStudentsContent?: ReactNode
   suspended?: boolean
   embedded?: boolean
 }) {
@@ -148,17 +154,29 @@ export default function ClassNotesModal({
       }
     >
       <div className="grid gap-4 px-4 pb-4 sm:px-0">
-        <h2 className="text-xl font-bold">Detalles del horario</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold">Detalles del horario</h2>
+          {!embedded && (
+            <Link href={classLink} className="btn btn-outline min-h-11 w-fit">
+              <FiEye aria-hidden="true" /> Ver
+            </Link>
+          )}
+        </div>
         <ScheduleTag
-          date={new Date(`${target.date}T12:00:00`).toLocaleDateString('es-MX', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-          })}
-          time={target.endTime ? `${target.startTime}–${target.endTime}` : target.startTime}
+          date={new Date(`${target.date}T12:00:00`)
+            .toLocaleDateString('es-MX', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+            })
+            .replaceAll(' de ', ' ')
+            .replaceAll('.', '')
+            .replace(/^./, (letter) => letter.toLocaleUpperCase())}
+          time={target.startTime}
           coachName={target.coachName || 'Sin profe aún'}
           unassigned={target.coachId === UNASSIGNED_SCHOOL_COACH_ID}
           groupType={target.groupType}
+          enrolledCount={target.enrolledCount}
         />
         <div className="class-detail-actions flex items-center gap-2">
           {onConfigure && (
@@ -173,7 +191,10 @@ export default function ClassNotesModal({
           )}
           <button
             type="button"
-            onClick={() => setAttendanceOpen(true)}
+            onClick={() => {
+              if (onAddStudents) onAddStudents()
+              else setAttendanceOpen(true)
+            }}
             disabled={loading || saving || !loaded}
             className="btn btn-outline min-h-11 w-fit"
           >
@@ -189,11 +210,6 @@ export default function ClassNotesModal({
             >
               <FiActivity aria-hidden="true" /> Entrenamiento
             </button>
-          )}
-          {!embedded && (
-            <Link href={classLink} className="btn btn-outline min-h-11 w-fit">
-              <FiEye aria-hidden="true" /> Ver
-            </Link>
           )}
         </div>
         {loading ? (
@@ -344,9 +360,13 @@ export default function ClassNotesModal({
         <AttendanceModal
           schoolId={target.schoolId}
           date={target.date}
+          occurrenceId={target.schoolClassId}
+          bookingBased={Boolean(target.schoolId && !target.schoolClassId && target.enrolledCount)}
           initialSlot={{ coachId: target.coachId, startTime: target.startTime }}
           onClose={() => setAttendanceOpen(false)}
           onUpdated={() => onUpdated?.()}
+          onAddStudents={onAddStudents}
+          addStudentsContent={addStudentsContent}
         />
       )}
     </Container>

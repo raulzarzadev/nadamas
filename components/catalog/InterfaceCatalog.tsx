@@ -10,12 +10,17 @@ import Chip from '@/components/ui/chip'
 import ClassCard from '@/components/ui/class-card'
 import ClassStudentRow from '@/components/ui/class-student-row'
 import CoachBadge from '@/components/ui/coach-badge'
+import DateInput from '@/components/ui/date-input'
+import GenderSelector from '@/components/ui/gender-selector'
 import InfoModal from '@/components/ui/info-modal'
+import PhoneNumberInput from '@/components/ui/phone-number-input'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
 import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
 import StudentTag from '@/components/ui/student-tag'
+import type { SchoolGender } from '@/lib/school'
+import LabelSystemDemo from './LabelSystemDemo'
 
 const sections = [
   ['classes', 'Tarjetas de clase'],
@@ -46,6 +51,9 @@ function Example({
 }
 
 export default function InterfaceCatalog() {
+  const [birthDate, setBirthDate] = useState('2017-02-02')
+  const [gender, setGender] = useState<SchoolGender>('otro')
+  const [phone, setPhone] = useState('')
   const [modal, setModal] = useState<'class' | 'note' | 'info' | null>(null)
   const [selected, setSelected] = useState(false)
   const [note, setNote] = useState('')
@@ -209,6 +217,15 @@ export default function InterfaceCatalog() {
             <Chip icon={<FiUsers />}>Clase grupal</Chip>
           </Example>
         </div>
+        <div className="mt-4">
+          <Example title="Sistema de etiquetas" component="LabelChip · LabelFilterBar">
+            <LabelSystemDemo />
+            <p className="mt-4 text-xs text-(--c-text-2)">
+              Componentes controlados en components/ui. StudentLabels y StudentLabelTools conectan
+              estos componentes con los datos y permisos de la aplicación.
+            </p>
+          </Example>
+        </div>
       </section>
 
       <section id="people" className="mb-10 scroll-mt-6">
@@ -296,6 +313,37 @@ export default function InterfaceCatalog() {
             >
               Guardar nota
             </button>
+          </Example>
+        </div>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Example title="Fecha" component="DateInput">
+            <DateInput
+              label="Fecha de nacimiento"
+              value={birthDate}
+              onChange={setBirthDate}
+              max={new Date().toISOString().slice(0, 10)}
+            />
+            <p className="mt-3 text-xs text-(--c-text-2)">
+              components/ui/date-input.tsx · value y onChange usan YYYY-MM-DD. Admite label,
+              required, disabled, minYear, max y name.
+            </p>
+          </Example>
+          <Example title="Rama / género" component="GenderSelector">
+            <GenderSelector value={gender} onChange={setGender} />
+            <p className="mt-3 text-xs text-(--c-text-2)">
+              components/ui/gender-selector.tsx · value: varonil, femenil u otro. Admite onChange y
+              disabled.
+            </p>
+          </Example>
+          <Example title="Teléfono internacional" component="PhoneNumberInput">
+            <label htmlFor="catalog-phone" className="mb-1 block text-sm font-semibold">
+              Teléfono
+            </label>
+            <PhoneNumberInput id="catalog-phone" value={phone} onChange={setPhone} />
+            <p className="mt-3 text-xs text-(--c-text-2)">
+              components/ui/phone-number-input.tsx · value y onChange usan formato E.164. Admite id,
+              disabled, required y defaultCountry (MX por defecto).
+            </p>
           </Example>
         </div>
       </section>

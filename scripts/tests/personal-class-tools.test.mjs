@@ -86,6 +86,13 @@ test('personal attendance isolates school bookings, resolves own roster and uses
   const routes = load('../../app/api/coach/attendance/route.ts', {
     ...next,
     '@/lib/athlete-identity': { parseCredentialQr: () => null },
+    '@/lib/school': { schoolMembershipHasRole: () => false },
+    '@/lib/server/school-access': {
+      requireSchoolAccess: async () =>
+        allowed
+          ? { caller: { uid: 'coach' }, membership: {}, globalAdmin: false }
+          : { response: Response.json({}, { status: 403 }) },
+    },
     '@/lib/server/athlete-identities': {
       ensureAthleteIdentity: async () => ({ numericId: '123456' }),
       findAthleteIdentity: async () => null,
@@ -130,6 +137,32 @@ test('personal attendance isolates school bookings, resolves own roster and uses
     true
   )
   assert.equal(writes.length, 1)
+  assert.equal((await post({ occurrenceId: id, studentId: 'own', attended: false })).status, 200)
+  assert.deepEqual(writes.at(-1), { id: 'own', attended: false })
+  rows[0].attended = false
+  assert.equal(
+    (await (await post({ occurrenceId: id, studentId: 'own', attended: false })).json())
+      .alreadyRecorded,
+    true
+  )
+  assert.equal(writes.length, 2)
+  const schoolPayload = await (
+    await get(`schoolId=s&coachId=coach&occurrenceId=${encodeURIComponent(id)}`)
+  ).json()
+  assert.deepEqual(
+    schoolPayload.roster.map((person) => person.studentId),
+    ['school']
+  )
+  assert.equal((await get('schoolId=s&coachId=other&date=2026-10-10')).status, 403)
+  const schoolPost = await routes.POST(
+    new Request('http://localhost/api/coach/attendance?schoolId=s&coachId=coach', {
+      method: 'POST',
+      headers: { authorization: 'Bearer test', 'content-type': 'application/json' },
+      body: JSON.stringify({ occurrenceId: id, studentId: 'school', method: 'name' }),
+    })
+  )
+  assert.equal(schoolPost.status, 200)
+  assert.deepEqual(writes.at(-1), { id: 'school', attended: true, schoolId: 's', coachId: 'coach' })
   allowed = false
   assert.equal((await get('date=2026-10-10')).status, 403)
   assert.equal((await post({ occurrenceId: id, studentId: 'own' })).status, 403)

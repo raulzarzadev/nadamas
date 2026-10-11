@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useId, useState } from 'react'
-import { FiEdit2, FiPlus, FiTag } from 'react-icons/fi'
+import LabelFilterBar from '@/components/ui/label-filter-bar'
 import Sheet from '@/components/ui/sheet'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
-import { studentLabelColor } from '@/lib/student-label-colors'
 import StudentLabelColorSelector from './StudentLabelColorSelector'
 
 type Student = { id: string; name: string }
@@ -104,72 +103,38 @@ export default function StudentLabelTools({
   }
   return (
     <>
-      <section className="mt-4 flex flex-wrap items-center gap-2" aria-label="Filtrar por etiqueta">
-        <button
-          type="button"
-          aria-pressed={!filter}
-          onClick={() => setFilter('')}
-          className={`btn min-h-8 h-8 border px-3 text-xs ${!filter ? 'btn-primary' : 'btn-outline'}`}
-        >
-          Todos
-          <span className="text-[10px] tabular-nums opacity-75">({students.length})</span>
-        </button>
-        {labels.map((label) => (
-          <button
-            key={label.id}
-            type="button"
-            aria-pressed={filter === label.id}
-            disabled={loading}
-            onClick={() => setFilter(filter === label.id ? '' : label.id)}
-            className={`btn btn-outline min-h-8 h-8 gap-1 border px-3 text-xs ${filter === label.id ? 'ring-2 ring-(--c-ocean) ring-offset-2' : ''}`}
-            style={{
-              backgroundColor: studentLabelColor(label.color).color,
-              color: studentLabelColor(label.color).text,
-            }}
-          >
-            <FiTag aria-hidden="true" />
-            {label.name}
-            <span className="text-[10px] tabular-nums opacity-75">
-              ({students.filter((student) => assignments[student.id]?.includes(label.id)).length})
-            </span>
-          </button>
-        ))}
-        {filter && (
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => {
-              const label = labels.find((item) => item.id === filter)
-              if (!label) return
-              setEditingId(label.id)
-              setName(label.name)
-              setColor(label.color || 'blue')
-              setError('')
-              setCreating(true)
-            }}
-            aria-label="Editar etiqueta seleccionada"
-            title="Editar etiqueta"
-            className="btn btn-ghost size-8 min-h-8 p-0"
-          >
-            <FiEdit2 aria-hidden="true" />
-          </button>
-        )}
-        <button
-          type="button"
-          disabled={loading || !students.length}
-          onClick={() => {
-            setName('')
-            setEditingId(null)
+      <div className="mt-4">
+        <LabelFilterBar
+          labels={labels}
+          value={filter}
+          onChange={setFilter}
+          total={students.length}
+          counts={Object.fromEntries(
+            labels.map((label) => [
+              label.id,
+              students.filter((student) => assignments[student.id]?.includes(label.id)).length,
+            ])
+          )}
+          disabled={loading}
+          onEdit={(label) => {
+            setEditingId(label.id)
+            setName(label.name)
+            setColor(label.color || 'blue')
             setError('')
             setCreating(true)
           }}
-          aria-label="Crear etiqueta"
-          title="Crear etiqueta"
-          className="btn btn-ghost size-8 min-h-8 p-0"
-        >
-          <FiPlus aria-hidden="true" />
-        </button>
-      </section>
+          onCreate={
+            students.length
+              ? () => {
+                  setName('')
+                  setEditingId(null)
+                  setError('')
+                  setCreating(true)
+                }
+              : undefined
+          }
+        />
+      </div>
       {error && !open && !creating && !confirmDelete && (
         <p role="alert" className="mt-2 text-sm">
           {error}

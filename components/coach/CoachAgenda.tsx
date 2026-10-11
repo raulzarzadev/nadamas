@@ -27,7 +27,13 @@ import StatusBadge from '@/components/ui/status-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
-import { deleteAuthed, getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
+import {
+  AuthedApiError,
+  deleteAuthed,
+  getAuthed,
+  patchAuthed,
+  postAuthed,
+} from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { CoachAgendaPayload, CoachAvailableSlot, CoachScheduleBlock } from '@/lib/coach-agenda'
 import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
@@ -241,7 +247,15 @@ export default function CoachAgenda({
   )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [attendanceStudentMode, setAttendanceStudentMode] = useState(false)
+  const [addingFromAttendance, setAddingFromAttendance] = useState(false)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
+  useEffect(() => {
+    if (!addStudentSlot) {
+      setAddingFromAttendance(false)
+      setAttendanceStudentMode(false)
+    }
+  }, [addStudentSlot])
   const [cancelClassTarget, setCancelClassTarget] = useState<Booking | null>(null)
   const [cancelClassError, setCancelClassError] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
@@ -609,6 +623,7 @@ export default function CoachAgenda({
 
   useEffect(() => {
     setScheduleText(whatsappScheduleText)
+
     return () => setScheduleText('')
   }, [setScheduleText, whatsappScheduleText])
 
@@ -780,7 +795,11 @@ export default function CoachAgenda({
       return true
     } catch (err) {
       reportInternalError('COACH_AGENDA_ACTION', err)
-      setError(GENERIC_USER_ERROR)
+      setError(
+        err instanceof AuthedApiError && err.code === 'payment_required'
+          ? 'Este alumno no tiene saldo o un plan vigente. Revisa sus pagos o autoriza una excepción en Opciones de pago.'
+          : GENERIC_USER_ERROR
+      )
       return false
     } finally {
       setBusy(false)
@@ -1224,11 +1243,25 @@ export default function CoachAgenda({
             ...(manageSchoolSchedule && coachId ? { coachId } : {}),
             ...slot,
             ...payload,
+            ...(attendanceStudentMode ? { attended: true } : {}),
             ...(slot.schoolId || schoolId ? { schoolId: slot.schoolId || schoolId } : {}),
           })
         }
       }
-      setAddStudentSlot(null)
+      if (attendanceStudentMode && slot.schoolClassId) {
+        const targetSchoolId = slot.schoolId || schoolId
+        for (const payload of payloads) {
+          await postAuthed(
+            `/api/schools/${encodeURIComponent(targetSchoolId as string)}/attendance`,
+            {
+              occurrenceId: slot.schoolClassId,
+              studentId: payload.athleteId,
+              method: 'name',
+            }
+          )
+        }
+      }
+      if (!attendanceStudentMode) setAddStudentSlot(null)
     })
 
   // Single offering updated by the school hours editor.
@@ -1833,6 +1866,7 @@ export default function CoachAgenda({
                           onClick={() =>
                             setClassNotesTarget({
                               ...(schoolClassBooking || firstBooking),
+                              enrolledCount: classStudentCount,
                               schoolId:
                                 schoolIdForSlot(schoolClassBooking || firstBooking) || undefined,
                             })
@@ -2128,10 +2162,82 @@ export default function CoachAgenda({
     : []
 
   const detailRow = showClassDetails ? detailRows[0] : undefined
-  const fixedClass = detailRow?.kind === 'booked' ? detailRow.bookings[0] : detailRow?.slot
+  const fixedClass =
+    detailRow?.kind === 'booked'
+      ? detailRow.bookings.find((booking) => booking.schoolClassId && !booking.schoolRequestId) ||
+        detailRow.bookings[0]
+      : detailRow?.slot
   const activeNotesTarget: ClassNotesTarget | null = fixedClass
-    ? { ...fixedClass, schoolId: schoolIdForSlot(fixedClass) || undefined }
+    ? {
+        ...fixedClass,
+        enrolledCount:
+          detailRow?.kind === 'booked'
+            ? detailRow.bookings.reduce(
+                (count, booking) => count + (booking.schoolClassStudentCount ?? 1),
+                0
+              )
+            : detailRow
+              ? detailRow.slot.enrolledCount
+              : undefined,
+        schoolId: schoolIdForSlot(fixedClass) || undefined,
+      }
     : classNotesTarget
+
+  const addStudentsContent = addStudentSlot ? (
+    <AgendaAddStudentModal
+      attendance={
+        attendanceStudentMode
+          ? {
+              date: addStudentSlot.date,
+              startTime: addStudentSlot.startTime,
+              schoolClassId: addStudentSlot.schoolClassId,
+              onUpdated: () => void loadAgenda(monthOfSelected),
+            }
+          : undefined
+      }
+      canOverridePayments={manageSchoolSchedule}
+      submitError={error || undefined}
+      embedded={addingFromAttendance}
+      coachId={addStudentSlot.coachId}
+      schoolId={addStudentSlot.schoolId || schoolId}
+      allowCreate={
+        !addStudentSlot.schoolClassId && addStudentSlot.coachId !== UNASSIGNED_SCHOOL_COACH_ID
+      }
+      slotLabel={`${new Date(`${addStudentSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+      })} · ${addStudentSlot.startTime}`}
+      busy={busy}
+      promotionRequired={Boolean(addStudentSlot.promoteToGroup)}
+      takenAthleteIds={activeBookings
+        .filter(
+          (booking) =>
+            booking.date === addStudentSlot.date &&
+            (!combinedSources || booking.schoolId === addStudentSlot.schoolId) &&
+            (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
+            booking.startTime === addStudentSlot.startTime
+        )
+        .flatMap((booking) =>
+          addStudentSlot.schoolClassId && booking.schoolClassId
+            ? booking.schoolClassStudentIds || []
+            : booking.athleteId
+              ? [booking.athleteId]
+              : []
+        )}
+      takenNames={activeBookings
+        .filter(
+          (booking) =>
+            booking.date === addStudentSlot.date &&
+            (!combinedSources || booking.schoolId === addStudentSlot.schoolId) &&
+            (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
+            booking.startTime === addStudentSlot.startTime
+        )
+        .map((booking) => booking.athleteName)}
+      onClose={() => setAddStudentSlot(null)}
+      onSubmit={(payloads) => submitAddStudent(addStudentSlot, payloads)}
+    />
+  ) : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -3025,6 +3131,35 @@ export default function CoachAgenda({
                 }
               : undefined
           }
+          addStudentsContent={addingFromAttendance ? addStudentsContent : undefined}
+          onAddStudents={
+            !hideBookingActions
+              ? () => {
+                  setAddingFromAttendance(false)
+                  setAttendanceStudentMode(true)
+                  const target = activeNotesTarget
+                  const booking = (agenda?.bookings || []).find(
+                    (item) =>
+                      item.status !== 'cancelled' &&
+                      item.date === target.date &&
+                      item.startTime === target.startTime &&
+                      item.coachId === target.coachId &&
+                      (schoolIdForBooking(item) || '') === (target.schoolId || '')
+                  )
+                  if (booking) openGroupClassAddStudent(booking)
+                  else {
+                    const slot = (agenda?.availableSlots || []).find(
+                      (item) =>
+                        item.date === target.date &&
+                        item.startTime === target.startTime &&
+                        item.coachId === target.coachId &&
+                        (schoolIdForSlot(item) || '') === (target.schoolId || '')
+                    )
+                    if (slot) setAddStudentSlot({ ...slot, schoolId: target.schoolId })
+                  }
+                }
+              : undefined
+          }
           onUpdated={() => void loadAgenda(monthOfSelected)}
           onClose={() => setClassNotesTarget(null)}
         />
@@ -3138,48 +3273,7 @@ export default function CoachAgenda({
         />
       )}
 
-      {addStudentSlot && (
-        <AgendaAddStudentModal
-          coachId={addStudentSlot.coachId}
-          schoolId={addStudentSlot.schoolId || schoolId}
-          allowCreate={
-            !addStudentSlot.schoolClassId && addStudentSlot.coachId !== UNASSIGNED_SCHOOL_COACH_ID
-          }
-          slotLabel={`${new Date(`${addStudentSlot.date}T12:00:00`).toLocaleDateString('es-MX', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-          })} · ${addStudentSlot.startTime}`}
-          busy={busy}
-          promotionRequired={Boolean(addStudentSlot.promoteToGroup)}
-          takenAthleteIds={activeBookings
-            .filter(
-              (booking) =>
-                booking.date === addStudentSlot.date &&
-                (!combinedSources || booking.schoolId === addStudentSlot.schoolId) &&
-                (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
-                booking.startTime === addStudentSlot.startTime
-            )
-            .flatMap((booking) =>
-              addStudentSlot.schoolClassId && booking.schoolClassId
-                ? booking.schoolClassStudentIds || []
-                : booking.athleteId
-                  ? [booking.athleteId]
-                  : []
-            )}
-          takenNames={activeBookings
-            .filter(
-              (booking) =>
-                booking.date === addStudentSlot.date &&
-                (!combinedSources || booking.schoolId === addStudentSlot.schoolId) &&
-                (!addStudentSlot.coachId || booking.coachId === addStudentSlot.coachId) &&
-                booking.startTime === addStudentSlot.startTime
-            )
-            .map((booking) => booking.athleteName)}
-          onClose={() => setAddStudentSlot(null)}
-          onSubmit={(payloads) => submitAddStudent(addStudentSlot, payloads)}
-        />
-      )}
+      {addStudentSlot && !addingFromAttendance && addStudentsContent}
 
       {/* Editor de horas: Quitar / Agregar */}
       {hoursEditorOpen && (

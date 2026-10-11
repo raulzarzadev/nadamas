@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { FiCheck, FiHash, FiRepeat, FiSearch } from 'react-icons/fi'
 import Avatar from '@/components/ui/avatar'
 import DateInput from '@/components/ui/date-input'
@@ -42,16 +42,27 @@ export default function AttendanceModal({
   date,
   occurrenceId,
   initialSlot,
+  bookingBased = false,
   onClose,
   onUpdated,
+  onAddStudents,
+  addStudentsContent,
+  initiallyAdding = false,
 }: {
   schoolId?: string
   date: string
   occurrenceId?: string
   initialSlot?: { coachId: string; startTime: string }
+  bookingBased?: boolean
   onClose: () => void
   onUpdated: () => void
+  onAddStudents?: () => void
+  addStudentsContent?: ReactNode
+  initiallyAdding?: boolean
 }) {
+  const [adding, setAdding] = useState(initiallyAdding)
+  const hadAddForm = useRef(false)
+  const fixedClass = Boolean(occurrenceId || initialSlot)
   const [selectedDate, setSelectedDate] = useState(date)
   const [selectedClass, setSelectedClass] = useState(occurrenceId || '')
   const [choosingClass, setChoosingClass] = useState(false)
@@ -65,9 +76,12 @@ export default function AttendanceModal({
   const [error, setError] = useState('')
   const [confirmation, setConfirmation] = useState<(Selection & { code: string }) | null>(null)
   const requestVersion = useRef(0)
-  const endpoint = schoolId
-    ? `/api/schools/${encodeURIComponent(schoolId)}/attendance`
-    : '/api/coach/attendance'
+  const endpoint =
+    schoolId && !bookingBased
+      ? `/api/schools/${encodeURIComponent(schoolId)}/attendance`
+      : schoolId
+        ? `/api/coach/attendance?${new URLSearchParams({ schoolId, coachId: initialSlot?.coachId || '' })}`
+        : '/api/coach/attendance'
   const selected = payload.classes.find(
     (item) => item.id === selectedClass || item.sourceOccurrenceIds?.includes(selectedClass)
   )
@@ -79,7 +93,7 @@ export default function AttendanceModal({
     try {
       const params = new URLSearchParams({ date: selectedDate })
       if (selectedClass) params.set('occurrenceId', selectedClass)
-      const response = await getAuthed(`${endpoint}?${params}`)
+      const response = await getAuthed(`${endpoint}${endpoint.includes('?') ? '&' : '?'}${params}`)
       const next = (await response.json()) as Payload
       if (version === requestVersion.current) {
         setPayload(next)
@@ -107,6 +121,17 @@ export default function AttendanceModal({
       requestVersion.current += 1
     }
   }, [refresh])
+
+  useEffect(() => {
+    if (addStudentsContent) {
+      hadAddForm.current = true
+      setAdding(true)
+    } else if (hadAddForm.current) {
+      hadAddForm.current = false
+      setAdding(false)
+      void refresh()
+    }
+  }, [addStudentsContent, refresh])
 
   function changeClass(id: string) {
     setSelectedClass(id)
@@ -177,7 +202,7 @@ export default function AttendanceModal({
         mode: searchMode,
         query: raw.trim(),
       })
-      const response = await getAuthed(`${endpoint}?${params}`)
+      const response = await getAuthed(`${endpoint}${endpoint.includes('?') ? '&' : '?'}${params}`)
       const found = ((await response.json()) as Payload).candidates || []
       setCandidates(found)
       if (searchMode === 'qr' && found.length === 1) {
@@ -201,15 +226,18 @@ export default function AttendanceModal({
       size="lg"
       keyboardAware
       closeDisabled={busy}
+      showFooterClose={!adding || !addStudentsContent}
     >
       <div className="grid gap-4">
         <div>
           <h2 className="text-xl font-bold text-(--c-ocean)">Pase de lista</h2>
           <p className="mt-1 text-sm text-(--c-text-2)">
-            Elige una clase y registra la asistencia de sus atletas.
+            {fixedClass
+              ? 'Registra la asistencia de los alumnos de esta clase.'
+              : 'Elige una clase y registra la asistencia de sus atletas.'}
           </p>
         </div>
-        {(!selected || choosingClass) && (
+        {!fixedClass && (!selected || choosingClass) && (
           <DateInput
             label="Fecha de la clase"
             value={selectedDate}
@@ -220,231 +248,284 @@ export default function AttendanceModal({
             disabled={busy}
           />
         )}
-        {loading ? (
-          <p role="status">Cargando clases…</p>
-        ) : !payload.classes.length ? (
-          <p className="text-sm text-(--c-text-2)">No hay clases para esta fecha.</p>
-        ) : selected && !choosingClass ? (
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1">
-              <ScheduleTag
-                date={new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                })}
-                time={`${selected.startTime}–${selected.endTime}`}
-                unassigned={!selected.teacherIds.length}
-                coachName={
-                  selected.teacherIds
-                    .map((id) => payload.coachNames[id])
-                    .filter(Boolean)
-                    .join(', ') || 'Sin profe aún'
-                }
-                groupType={selected.type === 'group' ? 'grupal' : 'particular'}
-              />
-            </div>
+        {(onAddStudents || addStudentsContent) && (
+          <fieldset className="flex gap-2" aria-label="Acciones de la clase">
             <button
               type="button"
+              className={`btn ${adding ? 'btn-outline' : 'btn-primary'}`}
+              aria-pressed={!adding}
               disabled={busy}
-              onClick={() => setChoosingClass(true)}
-              className="btn btn-outline h-8 min-h-8 shrink-0 gap-1 border px-2 text-xs"
+              onClick={() => setAdding(false)}
             >
-              <FiRepeat aria-hidden="true" /> Cambiar
+              Pasar lista
             </button>
-          </div>
-        ) : (
-          <fieldset className="grid gap-2" aria-label="Clase para pasar lista">
-            {payload.classes.map((item) => (
-              <button
-                type="button"
-                key={item.id}
-                disabled={busy}
-                aria-pressed={selected?.id === item.id}
-                onClick={() => {
-                  changeClass(item.id)
-                  setChoosingClass(false)
-                }}
-                className={`min-h-11 rounded-xl border p-2 text-left ${selected?.id === item.id ? 'border-(--c-ocean) bg-(--c-surface) ring-1 ring-(--c-ocean)' : 'border-(--c-border) bg-white'}`}
-              >
-                <ScheduleTag
-                  time={`${item.startTime}–${item.endTime}`}
-                  unassigned={!item.teacherIds.length}
-                  coachName={
-                    item.teacherIds
-                      .map((id) => payload.coachNames[id])
-                      .filter(Boolean)
-                      .join(', ') || 'Sin profe aún'
-                  }
-                  groupType={item.type === 'group' ? 'grupal' : 'particular'}
-                />
-              </button>
-            ))}
+            <button
+              type="button"
+              className={`btn ${adding ? 'btn-primary' : 'btn-outline'}`}
+              aria-pressed={adding}
+              disabled={busy}
+              onClick={() => {
+                setAdding(true)
+                if (!addStudentsContent) onAddStudents?.()
+              }}
+            >
+              Agregar alumnos
+            </button>
           </fieldset>
         )}
-        {selected && !loading && !choosingClass && (
+        {adding && addStudentsContent ? (
+          addStudentsContent
+        ) : (
           <>
-            <p className="text-sm font-semibold">
-              {(payload.roster || []).filter((item) => item.attended).length} asistencias
-              registradas · {payload.roster?.length || 0} alumnos en la clase
-            </p>
-            <fieldset className="flex flex-wrap gap-2" aria-label="Método para pasar lista">
-              {(
-                [
-                  { id: 'qr', label: 'Escanear QR' },
-                  { id: 'name', label: 'Nombre' },
-                  { id: 'id', label: 'ID del atleta' },
-                ] as const
-              ).map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  aria-pressed={mode === item.id}
-                  disabled={busy}
-                  className={`btn min-h-11 ${mode === item.id ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => {
-                    setMode(item.id)
-                    setCandidates(null)
-                    setQuery('')
-                    setError('')
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </fieldset>
-            {mode === 'qr' ? (
-              !busy &&
-              !confirmation && <QrCameraScanner onScan={(value) => void search(value, 'qr')} />
-            ) : (
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  void search()
-                }}
-                className="flex items-end gap-2"
-              >
-                <label className="grid min-w-0 flex-1 gap-1 text-sm font-semibold">
-                  {mode === 'id' ? 'ID de seis dígitos' : 'Nombre del atleta'}
-                  <input
-                    value={query}
-                    onChange={(event) =>
-                      setQuery(
-                        mode === 'id'
-                          ? event.target.value.replace(/\D/g, '').slice(0, 6)
-                          : event.target.value
-                      )
+            {loading ? (
+              <p role="status">Cargando clases…</p>
+            ) : !payload.classes.length ? (
+              <p className="text-sm text-(--c-text-2)">No hay clases para esta fecha.</p>
+            ) : selected && !choosingClass ? (
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <ScheduleTag
+                    date={new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                    time={`${selected.startTime}–${selected.endTime}`}
+                    unassigned={!selected.teacherIds.length}
+                    coachName={
+                      selected.teacherIds
+                        .map((id) => payload.coachNames[id])
+                        .filter(Boolean)
+                        .join(', ') || 'Sin profe aún'
                     }
-                    maxLength={mode === 'id' ? 6 : 100}
-                    inputMode={mode === 'id' ? 'numeric' : 'text'}
-                    autoComplete="off"
-                    disabled={busy}
-                    className="min-h-11 min-w-0 rounded-xl border border-(--c-border) bg-white px-3 font-normal"
+                    groupType={selected.type === 'group' ? 'grupal' : 'particular'}
                   />
-                </label>
-                <button
-                  type="submit"
-                  className="btn btn-outline min-h-11"
-                  aria-label="Buscar atleta"
-                  disabled={busy || (mode === 'id' ? query.length !== 6 : query.trim().length < 2)}
-                >
-                  {mode === 'id' ? <FiHash /> : <FiSearch />}
-                </button>
-              </form>
-            )}
-            {busy && <p role="status">Procesando…</p>}
-            {confirmation && (
-              <div className="grid gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-4">
-                <strong>{confirmation.candidate.name}</strong>
-                <p className="text-sm">
-                  {confirmation.code === 'outside_school'
-                    ? 'Este atleta no pertenece a la escuela. ¿Vincularlo a la escuela, incorporarlo a esta clase y registrar su asistencia?'
-                    : confirmation.code === 'promote_required'
-                      ? 'Esta clase particular ya tiene un alumno. ¿Convertirla en grupal, incorporar al atleta y registrar su asistencia?'
-                      : 'Este atleta no está inscrito. ¿Incorporarlo a la clase y registrar su asistencia?'}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className="btn btn-outline min-h-11"
-                    onClick={() => setConfirmation(null)}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className="btn btn-primary min-h-11"
-                    onClick={() =>
-                      void register({
-                        ...confirmation,
-                        flags: {
-                          ...confirmation.flags,
-                          addToClass: true,
-                          ...(confirmation.code === 'outside_school' ? { linkToSchool: true } : {}),
-                          ...(confirmation.code === 'promote_required'
-                            ? { promoteToGroup: true }
-                            : {}),
-                        },
-                      })
-                    }
-                  >
-                    Confirmar y registrar
-                  </button>
                 </div>
-              </div>
-            )}
-            {!confirmation && (
-              <ul className="grid gap-2">
-                {list.map((candidate, index) => (
-                  <li
-                    key={candidate.studentId || candidate.numericId || index}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-(--c-surface) p-3"
+                {!fixedClass && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setChoosingClass(true)}
+                    className="btn btn-outline h-8 min-h-8 shrink-0 gap-1 border px-2 text-xs"
                   >
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Avatar
-                        name={candidate.name}
-                        src={candidate.photoURL}
-                        size={36}
-                        tone="white"
+                    <FiRepeat aria-hidden="true" /> Cambiar
+                  </button>
+                )}
+              </div>
+            ) : fixedClass ? (
+              <p className="text-sm text-(--c-text-2)">
+                No encontramos esta clase en el pase de lista. Vuelve a abrirla desde la agenda.
+              </p>
+            ) : (
+              <fieldset className="grid gap-2" aria-label="Clase para pasar lista">
+                {payload.classes.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    disabled={busy}
+                    aria-pressed={selected?.id === item.id}
+                    onClick={() => {
+                      changeClass(item.id)
+                      setChoosingClass(false)
+                    }}
+                    className={`min-h-11 rounded-xl border p-2 text-left ${selected?.id === item.id ? 'border-(--c-ocean) bg-(--c-surface) ring-1 ring-(--c-ocean)' : 'border-(--c-border) bg-white'}`}
+                  >
+                    <ScheduleTag
+                      time={`${item.startTime}–${item.endTime}`}
+                      unassigned={!item.teacherIds.length}
+                      coachName={
+                        item.teacherIds
+                          .map((id) => payload.coachNames[id])
+                          .filter(Boolean)
+                          .join(', ') || 'Sin profe aún'
+                      }
+                      groupType={item.type === 'group' ? 'grupal' : 'particular'}
+                    />
+                  </button>
+                ))}
+              </fieldset>
+            )}
+            {selected && !loading && !choosingClass && (
+              <>
+                <p className="text-sm font-semibold">
+                  {(payload.roster || []).filter((item) => item.attended).length} asistencias
+                  registradas · {payload.roster?.length || 0} alumnos en la clase
+                </p>
+                <fieldset className="flex flex-wrap gap-2" aria-label="Método para pasar lista">
+                  {(
+                    [
+                      { id: 'qr', label: 'Escanear QR' },
+                      { id: 'name', label: 'Nombre' },
+                      { id: 'id', label: 'ID del atleta' },
+                    ] as const
+                  ).map((item) => (
+                    <button
+                      type="button"
+                      key={item.id}
+                      aria-pressed={mode === item.id}
+                      disabled={busy}
+                      className={`btn min-h-11 ${mode === item.id ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => {
+                        setMode(item.id)
+                        setCandidates(null)
+                        setQuery('')
+                        setError('')
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </fieldset>
+                {mode === 'qr' ? (
+                  !busy &&
+                  !confirmation && <QrCameraScanner onScan={(value) => void search(value, 'qr')} />
+                ) : (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      void search()
+                    }}
+                    className="flex items-end gap-2"
+                  >
+                    <label className="grid min-w-0 flex-1 gap-1 text-sm font-semibold">
+                      {mode === 'id' ? 'ID de seis dígitos' : 'Nombre del atleta'}
+                      <input
+                        value={query}
+                        onChange={(event) =>
+                          setQuery(
+                            mode === 'id'
+                              ? event.target.value.replace(/\D/g, '').slice(0, 6)
+                              : event.target.value
+                          )
+                        }
+                        maxLength={mode === 'id' ? 6 : 100}
+                        inputMode={mode === 'id' ? 'numeric' : 'text'}
+                        autoComplete="off"
+                        disabled={busy}
+                        className="min-h-11 min-w-0 rounded-xl border border-(--c-border) bg-white px-3 font-normal"
                       />
-                      <div>
-                        <strong className="break-words">{candidate.name}</strong>
-                        <p className="text-xs text-(--c-text-2)">
-                          {candidate.numericId || 'ID por asignar'}
-                          {candidate.pending ? ' · Inscripción pendiente' : ''}
-                        </p>
-                      </div>
-                    </div>
-                    {candidate.attended ? (
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-(--c-ocean)">
-                        <FiCheck aria-hidden="true" /> Presente
-                      </span>
-                    ) : (
+                    </label>
+                    <button
+                      type="submit"
+                      className="btn btn-outline min-h-11"
+                      aria-label="Buscar atleta"
+                      disabled={
+                        busy || (mode === 'id' ? query.length !== 6 : query.trim().length < 2)
+                      }
+                    >
+                      {mode === 'id' ? <FiHash /> : <FiSearch />}
+                    </button>
+                  </form>
+                )}
+                {busy && <p role="status">Procesando…</p>}
+                {confirmation && (
+                  <div className="grid gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-4">
+                    <strong>{confirmation.candidate.name}</strong>
+                    <p className="text-sm">
+                      {confirmation.code === 'outside_school'
+                        ? 'Este atleta no pertenece a la escuela. ¿Vincularlo a la escuela, incorporarlo a esta clase y registrar su asistencia?'
+                        : confirmation.code === 'promote_required'
+                          ? 'Esta clase particular ya tiene un alumno. ¿Convertirla en grupal, incorporar al atleta y registrar su asistencia?'
+                          : 'Este atleta no está inscrito. ¿Incorporarlo a la clase y registrar su asistencia?'}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        className="btn btn-outline min-h-11"
                         disabled={busy}
+                        className="btn btn-outline min-h-11"
+                        onClick={() => setConfirmation(null)}
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="btn btn-primary min-h-11"
                         onClick={() =>
                           void register({
-                            candidate,
-                            method: mode === 'qr' ? 'name' : mode,
-                            flags: {},
+                            ...confirmation,
+                            flags: {
+                              ...confirmation.flags,
+                              addToClass: true,
+                              ...(confirmation.code === 'outside_school'
+                                ? { linkToSchool: true }
+                                : {}),
+                              ...(confirmation.code === 'promote_required'
+                                ? { promoteToGroup: true }
+                                : {}),
+                            },
                           })
                         }
                       >
-                        Registrar
+                        Confirmar y registrar
                       </button>
-                    )}
-                  </li>
-                ))}
-                {candidates && !list.length && (
-                  <li className="text-sm text-(--c-text-2)">
-                    No encontramos atletas con esos datos.
-                  </li>
+                    </div>
+                  </div>
                 )}
-              </ul>
+                {!confirmation && (
+                  <ul className="grid gap-2">
+                    {list.map((candidate, index) => (
+                      <li
+                        key={candidate.studentId || candidate.numericId || index}
+                        className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-(--c-surface) p-3"
+                      >
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Avatar
+                            name={candidate.name}
+                            src={candidate.photoURL}
+                            size={36}
+                            tone="white"
+                          />
+                          <div>
+                            <strong className="break-words">{candidate.name}</strong>
+                            <p className="text-xs text-(--c-text-2)">
+                              {candidate.numericId || 'ID por asignar'}
+                              {candidate.pending ? ' · Inscripción pendiente' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        {candidate.attended ? (
+                          <span className="inline-flex items-center gap-1 text-sm font-semibold text-(--c-ocean)">
+                            <FiCheck aria-hidden="true" /> Presente
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-outline min-h-11"
+                            disabled={busy}
+                            onClick={() =>
+                              void register({
+                                candidate,
+                                method: mode === 'qr' ? 'name' : mode,
+                                flags: {},
+                              })
+                            }
+                          >
+                            Registrar
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                    {candidates && !list.length && (
+                      <li className="text-sm text-(--c-text-2)">
+                        No encontramos atletas con esos datos.
+                        {mode === 'name' && onAddStudents && (
+                          <button
+                            type="button"
+                            className="btn btn-subtle ml-2"
+                            onClick={() => {
+                              setAdding(true)
+                              onAddStudents()
+                            }}
+                          >
+                            Buscar o crear alumno
+                          </button>
+                        )}
+                      </li>
+                    )}
+                  </ul>
+                )}
+              </>
             )}
           </>
         )}

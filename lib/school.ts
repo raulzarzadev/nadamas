@@ -299,6 +299,7 @@ export interface SchoolStudent {
   guardianRelationship: string
   guardianPhone: string
   guardianEmail: string
+  phone?: string
   studentEmail?: string
   studentUserId?: string
   accountParticipant?: boolean

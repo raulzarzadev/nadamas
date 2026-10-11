@@ -280,6 +280,7 @@ export async function recordAttendance(args: {
   actorId: string
   director: boolean
   method: AttendanceMethod
+  attended?: boolean
   student: SchoolStudent | null
   profile: AthleteCredential | null
   addToClass: boolean
@@ -392,6 +393,26 @@ export async function recordAttendance(args: {
       transaction.get(recordRef),
       transaction.get(agendaRef),
     ])
+    if (args.attended === false) {
+      if (!enrolled) return { code: 'missing_person' as const }
+      const apply = await preparePaymentEvents(transaction, [
+        {
+          schoolStudentId: true,
+          scope: `school:${args.schoolId}`,
+          studentId,
+          sourceId: target.id,
+          date: targetOccurrence.date,
+          startTime: targetOccurrence.startTime,
+          endTime: targetOccurrence.endTime,
+          actorId: args.actorId,
+          action: 'unconsume',
+        },
+      ])
+      apply()
+      transaction.delete(recordRef)
+      transaction.set(agendaRef, { attended: false, updatedAt: Date.now() }, { merge: true })
+      return { code: 'ok' as const, alreadyRecorded: false, studentId }
+    }
     const blocked = blocks.docs.some((doc) => {
       const block = doc.data()
       return (

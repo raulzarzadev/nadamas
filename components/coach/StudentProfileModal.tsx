@@ -1,9 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import DateInput from '@/components/ui/date-input'
+import GenderSelector from '@/components/ui/gender-selector'
+import PhoneNumberInput from '@/components/ui/phone-number-input'
 import Sheet from '@/components/ui/sheet'
-import { getAuthed } from '@/lib/client/authed-api'
+import { getAuthed, patchAuthed, putAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
+import type { SchoolGender } from '@/lib/school'
 import type { SchoolStudentHistory } from '@/lib/school-student-history'
 import StudentLabels from './StudentLabels'
 
@@ -15,6 +19,9 @@ type Profile = {
   studentEmail?: string
   phone?: string
   address?: string
+  gender?: string
+  location?: string
+  guardianRelationship?: string
   birthDate?: string
   guardianName?: string
   guardianPhone?: string
@@ -28,12 +35,18 @@ export default function StudentProfileModal({
   schoolId,
   name,
   onClose,
+  onUpdated,
 }: {
   studentId: string
   schoolId?: string
   name: string
   onClose: () => void
+  onUpdated?: () => void
 }) {
+  const editId = useId()
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [draft, setDraft] = useState<Record<string, string>>({})
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -82,6 +95,55 @@ export default function StudentProfileModal({
       active = false
     }
   }, [schoolId, profile, studentId])
+  const editFields = schoolId
+    ? [
+        ['name', 'Nombre'],
+        ['studentEmail', 'Correo'],
+        ['phone', 'Teléfono'],
+        ['birthDate', 'Fecha de nacimiento'],
+        ['gender', 'Género'],
+      ]
+    : [
+        ['name', 'Nombre'],
+        ['email', 'Correo'],
+        ['phone', 'Teléfono'],
+        ['address', 'Dirección'],
+        ['location', 'Ubicación'],
+      ]
+  function editProfile() {
+    if (!profile) return
+    setDraft(
+      Object.fromEntries(
+        editFields.map(([key]) => [key, String(profile[key as keyof Profile] || '')])
+      )
+    )
+    setError('')
+    setEditing(true)
+  }
+  async function saveProfile() {
+    if (!profile || saving) return
+    setSaving(true)
+    setError('')
+    try {
+      const response = schoolId
+        ? await patchAuthed(
+            `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(profile.id || studentId)}`,
+            draft
+          )
+        : await putAuthed('/api/coach/students', {
+            ...draft,
+            athleteId: profile.athleteId || studentId,
+          })
+      const result = await response.json()
+      setProfile((current) => ({ ...(current as Profile), ...draft, ...(result.student || {}) }))
+      setEditing(false)
+      onUpdated?.()
+    } catch {
+      setError('No pudimos guardar los datos. Revisa los campos e inténtalo de nuevo.')
+    } finally {
+      setSaving(false)
+    }
+  }
   const classes = schoolId
     ? history?.classes.map((item) => ({
         id: item.id,
@@ -193,12 +255,30 @@ export default function StudentProfileModal({
       </Sheet>
     )
   return (
-    <Sheet open onClose={onClose} label={`Perfil de ${profile?.name || name}`}>
+    <Sheet
+      open
+      onClose={onClose}
+      label={`Perfil de ${profile?.name || name}`}
+      keyboardAware
+      closeDisabled={saving}
+    >
       <div className="grid gap-4 pb-4">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-xl font-bold">Perfil de {profile?.name || name}</h2>
-          {profile && <StudentLabels studentId={profile.id || studentId} schoolId={schoolId} />}
+          {profile && (
+            <button type="button" className="btn btn-subtle shrink-0 text-xs" onClick={editProfile}>
+              Editar
+            </button>
+          )}
         </div>
+        {profile && (
+          <StudentLabels
+            studentId={profile.id || studentId}
+            schoolId={schoolId}
+            compact
+            horizontal
+          />
+        )}
         {loading && (
           <p role="status" className="text-sm">
             Cargando perfil…
@@ -209,6 +289,105 @@ export default function StudentProfileModal({
             {error}
           </p>
         )}
+        {profile && editing && (
+          <Sheet
+            open
+            onClose={() => {
+              setEditing(false)
+              setError('')
+            }}
+            label="Editar datos del atleta"
+            keyboardAware
+            closeDisabled={saving}
+            footer={
+              <button
+                type="submit"
+                form={editId}
+                className="btn btn-primary min-h-11 w-full"
+                disabled={saving || (draft.name || '').trim().length < 2}
+              >
+                {saving ? 'Guardando…' : 'Guardar cambios'}
+              </button>
+            }
+          >
+            <h2 className="mb-4 text-xl font-bold">Editar datos del atleta</h2>
+            {error && (
+              <p role="alert" className="mb-3 text-sm">
+                {error}
+              </p>
+            )}
+            <form
+              id={editId}
+              className="grid min-w-0 gap-3"
+              onSubmit={(event) => {
+                event.preventDefault()
+                void saveProfile()
+              }}
+            >
+              {editFields.map(([key, label]) => {
+                const change = (value: string) =>
+                  setDraft((current) => ({ ...current, [key]: value }))
+                if (key === 'birthDate')
+                  return (
+                    <DateInput
+                      key={key}
+                      label={label}
+                      name={key}
+                      value={draft[key] || ''}
+                      disabled={saving}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={change}
+                    />
+                  )
+                if (key === 'gender')
+                  return (
+                    <GenderSelector
+                      key={key}
+                      value={(draft[key] || 'otro') as SchoolGender}
+                      disabled={saving}
+                      onChange={change}
+                    />
+                  )
+                return (
+                  <div key={key} className="grid min-w-0 gap-1 text-sm font-semibold">
+                    <label htmlFor={`${editId}-${key}`}>{label}</label>
+                    {key.toLowerCase().includes('phone') ? (
+                      <PhoneNumberInput
+                        id={`${editId}-${key}`}
+                        value={draft[key] || ''}
+                        disabled={saving}
+                        onChange={change}
+                      />
+                    ) : (
+                      <input
+                        id={`${editId}-${key}`}
+                        className="h-11 min-w-0 w-full max-w-full box-border rounded-xl border border-(--c-border) bg-white px-3 text-sm font-normal text-(--c-ocean) outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-border) disabled:opacity-50"
+                        value={draft[key] || ''}
+                        required={key === 'name'}
+                        minLength={key === 'name' ? 2 : undefined}
+                        maxLength={240}
+                        type={key.toLowerCase().includes('email') ? 'email' : 'text'}
+                        disabled={saving}
+                        onChange={(event) => change(event.target.value)}
+                      />
+                    )}
+                  </div>
+                )
+              })}
+              <button
+                type="button"
+                className="btn btn-subtle w-fit justify-self-end"
+                disabled={saving}
+                onClick={() => {
+                  setEditing(false)
+                  setError('')
+                }}
+              >
+                Cancelar edición
+              </button>
+            </form>
+          </Sheet>
+        )}
         {profile && (
           <dl className="grid gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-4 text-sm">
             {[
@@ -216,9 +395,6 @@ export default function StudentProfileModal({
               ['Teléfono', profile.phone],
               ['Fecha de nacimiento', profile.birthDate],
               ['Dirección', profile.address],
-              ['Responsable', profile.guardianName],
-              ['Teléfono del responsable', profile.guardianPhone],
-              ['Correo del responsable', profile.guardianEmail],
               [
                 'Clases registradas contigo',
                 profile.totalClasses === undefined ? undefined : String(profile.totalClasses),
