@@ -86,6 +86,9 @@ export async function GET(request: Request) {
         return [
           {
             id: `school-class-${item.id}-${caller.uid}`,
+            evaluation: evaluations.find(
+              (evaluation) => evaluation.id === `school-class-${item.id}-${caller.uid}`
+            ),
             schoolId,
             schoolClassId: item.id,
             schoolClassTitle: item.title,
@@ -110,7 +113,10 @@ export async function GET(request: Request) {
             priceCents: null,
             currency: 'MXN',
             unit: 'clase',
-            status: item.status === 'scheduled' ? 'confirmed' : item.status,
+            status:
+              item.status === 'scheduled' || item.status === 'completed'
+                ? 'confirmed'
+                : item.status,
             source: 'school-class',
             createdAt: item.createdAt || 0,
             updatedAt: item.updatedAt || 0,

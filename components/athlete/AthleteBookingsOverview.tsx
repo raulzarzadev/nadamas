@@ -137,6 +137,15 @@ function BookingGroupRow({
                     Cancelar
                   </button>
                 )}
+                {onEvaluate && canEvaluateBooking(item) && (
+                  <button
+                    type="button"
+                    onClick={() => onEvaluate(item)}
+                    className="min-h-9 px-2 text-xs font-semibold text-(--c-aqua-strong)"
+                  >
+                    {item.evaluation ? 'Editar evaluación' : 'Evaluar'}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -290,6 +299,7 @@ export default function AthleteBookingsOverview({
 }) {
   const showUpcoming = view === 'upcoming'
   const [upcomingOpen, setUpcomingOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const terminology = useSchoolTerminology()
   const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
   const [evaluationSaved, setEvaluationSaved] = useState(false)
@@ -424,6 +434,9 @@ export default function AthleteBookingsOverview({
     bookings?.filter((booking) => !selectedSchoolId || booking.schoolId === selectedSchoolId) ?? []
   const upcomingBookings = selectedBookings.filter((booking) => !isPastBooking(booking))
   const pastBookings = selectedBookings.filter(isPastBooking)
+  const pendingEvaluations = pastBookings.filter(
+    (booking) => !booking.evaluation && canEvaluateBooking(booking)
+  )
   const upcomingGroups = groupByClassTime(upcomingBookings)
   const activeCount = upcomingBookings.length
   useEffect(() => {
@@ -565,11 +578,72 @@ export default function AthleteBookingsOverview({
         </>
       )}
 
+      {showUpcoming && bookings !== undefined && !error && (
+        <section className="grid gap-3 border-t border-(--c-border) pt-4">
+          <h2 className="font-bold text-(--c-ocean)">
+            Pendientes de evaluación ({pendingEvaluations.length})
+          </h2>
+          {pendingEvaluations.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {groupByClassTime(pendingEvaluations).map((group) => (
+                <BookingGroupRow
+                  compact
+                  key={group[0].id}
+                  bookings={group}
+                  coach={coaches[group[0].coachId]}
+                  onEvaluate={(booking) => {
+                    setEvaluationSaved(false)
+                    setToEvaluate(booking)
+                  }}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-(--c-text-2)">No tienes clases pendientes de evaluación.</p>
+          )}
+          <button
+            type="button"
+            onClick={() => setHistoryOpen(true)}
+            aria-haspopup="dialog"
+            className="btn btn-outline min-h-11 w-full"
+          >
+            Historial <FiChevronRight aria-hidden="true" />
+          </button>
+        </section>
+      )}
+
       {evaluationSaved && (
         <p role="status" className="text-sm text-[var(--c-ocean)]">
           Evaluación guardada.
         </p>
       )}
+      <Sheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        label="Historial de clases"
+        size="xl"
+      >
+        <div className="grid gap-4">
+          <h2 className="text-2xl font-extrabold text-(--c-ocean)">Historial</h2>
+          {pastBookings.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {groupByClassTime(pastBookings).map((group) => (
+                <BookingGroupRow
+                  key={group[0].id}
+                  bookings={group}
+                  coach={coaches[group[0].coachId]}
+                  onEvaluate={(booking) => {
+                    setEvaluationSaved(false)
+                    setToEvaluate(booking)
+                  }}
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-(--c-text-2)">Todavía no tienes clases en tu historial.</p>
+          )}
+        </div>
+      </Sheet>
       {toEvaluate && (
         <ClassEvaluationForm
           key={toEvaluate.id}

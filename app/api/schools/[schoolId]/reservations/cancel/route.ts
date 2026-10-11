@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { hasClassEnded } from '@/lib/class-evaluation'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { preparePaymentEvents } from '@/lib/server/payments/reservations'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
@@ -37,6 +38,16 @@ async function handlePOST(request: Request, { params }: { params: Promise<{ scho
     if (!ownsRequest && (requestId || !ids.some((id) => ownedIds.has(id)))) return 403
     if (record.status === 'cancelled') return 200
     const now = Date.now()
+    if (
+      hasClassEnded(
+        {
+          date: requestId ? record.startDate : record.date,
+          endTime: requestId ? record.preferredEndTime : record.endTime,
+        },
+        now
+      )
+    )
+      return 409
     if (requestId) {
       if (record.status !== 'pending') return 409
       transaction.update(ref, { status: 'cancelled', updatedAt: now })

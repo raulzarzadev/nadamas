@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { hasClassEnded } from '@/lib/class-evaluation'
 import type { Booking } from '@/lib/coach-booking'
 import { formatSlotLabel } from '@/lib/coach-booking'
 import { publicNameFromUser } from '@/lib/public-name'
@@ -38,6 +39,7 @@ async function handleDELETE(request: Request, { params }: { params: Promise<{ id
     locationName: string
     days: string[]
     startTime: string
+    date: string
     endTime: string
     status: string
   }
@@ -51,6 +53,11 @@ async function handleDELETE(request: Request, { params }: { params: Promise<{ id
   }
 
   const now = Date.now()
+  if (hasClassEnded(booking, now))
+    return NextResponse.json(
+      { error: 'Esta clase ya terminó. Puedes evaluarla desde tu historial.' },
+      { status: 409 }
+    )
   await paymentTransaction(
     [bookingPaymentEvent({ ...booking, id } as Booking, 'release', caller.uid)],
     (tx) => {

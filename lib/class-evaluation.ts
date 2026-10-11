@@ -25,13 +25,11 @@ export function canEvaluateBooking(
   booking: Pick<Booking, 'date' | 'endTime' | 'status' | 'attended'>,
   now = Date.now()
 ) {
+  return booking.status === 'confirmed' && booking.attended !== false && hasClassEnded(booking, now)
+}
+export function hasClassEnded(booking: Pick<Booking, 'date' | 'endTime'>, now = Date.now()) {
   const end = fromZonedTime(`${booking.date}T${booking.endTime}`, 'America/Mazatlan').getTime()
-  return (
-    booking.status === 'confirmed' &&
-    booking.attended !== false &&
-    Number.isFinite(end) &&
-    end < now
-  )
+  return Number.isFinite(end) && end < now
 }
 export function parseClassEvaluation(value: unknown): ClassEvaluation | null {
   if (!value || typeof value !== 'object') return null

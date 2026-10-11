@@ -5,13 +5,41 @@ import {
   publicClassEvaluation,
 } from '@/lib/class-evaluation'
 import type { Booking } from '@/lib/coach-booking'
+import type { SchoolClassOccurrence } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
+import { listSchoolStudents } from '@/lib/server/school-students'
 
 export async function saveClassEvaluation(id: string, uid: string, evaluation: ClassEvaluation) {
   return adminDb.runTransaction(async (transaction) => {
     const bookingRef = adminDb.collection('bookings').doc(id)
     const snapshot = await transaction.get(bookingRef)
-    const booking = snapshot.data() as Booking | undefined
+    let booking = snapshot.data() as Booking | undefined
+    if (!booking && id.startsWith('school-class-') && id.endsWith(`-${uid}`)) {
+      const classId = id.slice('school-class-'.length, -`-${uid}`.length)
+      if (!classId || classId.includes('/')) return 404
+      const occurrenceSnapshot = await transaction.get(
+        adminDb.collection('schoolClassOccurrences').doc(classId)
+      )
+      const occurrence = occurrenceSnapshot.data() as SchoolClassOccurrence | undefined
+      if (!occurrence) return 404
+      const students = await listSchoolStudents(occurrence.schoolId, uid)
+      const relevantStudents = students.filter((student) =>
+        occurrence.studentIds.includes(student.id)
+      )
+      if (!relevantStudents.length || !occurrence.teacherIds[0]) return 404
+      booking = {
+        id,
+        athleteId: uid,
+        athleteName: relevantStudents.map((student) => student.name).join(', '),
+        coachId: occurrence.teacherIds[0],
+        date: occurrence.date,
+        endTime: occurrence.endTime,
+        status:
+          occurrence.status === 'scheduled' || occurrence.status === 'completed'
+            ? 'confirmed'
+            : occurrence.status,
+      } as Booking
+    }
     if (!booking || booking.athleteId !== uid) return 404
     if (!canEvaluateBooking(booking)) return 409
     const { privateComment, ...publicFields } = evaluation

@@ -4,6 +4,7 @@ import Sheet from '@comps/ui/sheet'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiUser, FiUsers, FiX } from 'react-icons/fi'
+import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import PaymentsPanel from '@/components/payments/PaymentsPanel'
 import AdditionalProfileCreateModal from '@/components/profile/AdditionalProfileCreateModal'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
@@ -12,6 +13,7 @@ import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
 import type { AdditionalProfile } from '@/lib/additional-profile'
+import { canEvaluateBooking, hasClassEnded } from '@/lib/class-evaluation'
 import {
   AuthedApiError,
   deleteAuthed,
@@ -177,6 +179,11 @@ export default function AthleteSchoolSchedule({
       }))
   }, [bookingState, accountId, schoolId, loadedReservations])
   const [reservationToCancel, setReservationToCancel] = useState<SchoolReservation | null>(null)
+  const [bookingToEvaluate, setBookingToEvaluate] = useState<Booking | null>(null)
+  const detailBooking = bookingState.bookings.find(
+    (booking) => booking.id === reservationToCancel?.id
+  )
+  const detailIsPast = Boolean(reservationToCancel && hasClassEnded(reservationToCancel))
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
   const [filterModal, setFilterModal] = useState<'schools' | 'coaches' | null>(null)
@@ -1416,52 +1423,98 @@ export default function AthleteSchoolSchedule({
         open={Boolean(reservationToCancel)}
         onClose={() => setReservationToCancel(null)}
         closeDisabled={busy}
-        label="Cancelar inscripción"
+        label={detailIsPast ? 'Evaluar clase' : 'Mi inscripción'}
       >
         {reservationToCancel && (
           <div className="grid gap-4 px-4 sm:px-0">
-            <h2 className="text-xl font-bold">Mi inscripción</h2>
+            <h2 className="text-xl font-bold">
+              {detailIsPast ? 'Clase pasada' : 'Mi inscripción'}
+            </h2>
             <ScheduleTag
               date={reservationToCancel.date}
               time={reservationToCancel.startTime}
               coachName={reservationToCancel.coachName}
               groupType={reservationToCancel.groupType}
             />
-            <p className="text-sm text-(--c-text-2)">
-              Puedes cancelar tu inscripción aunque la haya asignado otra persona. Los demás alumnos
-              conservarán su lugar.
-            </p>
-            <button
-              type="button"
-              disabled={busy}
-              className="btn btn-outline text-rose-700"
-              onClick={async () => {
-                setBusy(true)
-                try {
-                  const reservation = reservationToCancel
-                  if (
-                    reservation.schoolId &&
-                    (reservation.schoolClassId || reservation.schoolRequestId)
-                  ) {
-                    await postAuthed(`/api/schools/${reservation.schoolId}/reservations/cancel`, {
-                      schoolClassId: reservation.schoolClassId,
-                      schoolRequestId: reservation.schoolRequestId,
-                    })
-                  } else await deleteAuthed(`/api/bookings/${reservation.id}`)
-                  setReservationToCancel(null)
-                  dispatch(bookingActions.cancelled(reservation.id))
-                } catch {
-                  setError('No pudimos cancelar tu inscripción. Inténtalo de nuevo.')
-                } finally {
-                  setBusy(false)
-                }
-              }}
-            >
-              {busy ? 'Cancelando…' : 'Cancelar mi inscripción'}
-            </button>
+            {detailIsPast ? (
+              <>
+                <p className="text-sm text-(--c-text-2)">
+                  Esta clase ya terminó y no se puede cancelar.
+                </p>
+                {detailBooking && canEvaluateBooking(detailBooking) ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary min-h-11"
+                    onClick={() => {
+                      setBookingToEvaluate(detailBooking)
+                      setReservationToCancel(null)
+                    }}
+                  >
+                    {detailBooking.evaluation ? 'Editar evaluación' : 'Evaluar clase'}
+                  </button>
+                ) : (
+                  <p className="text-sm text-(--c-text-2)">
+                    Esta clase no está disponible para evaluar.
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-(--c-text-2)">
+                  Puedes cancelar tu inscripción aunque la haya asignado otra persona. Los demás
+                  alumnos conservarán su lugar.
+                </p>
+                <button
+                  type="button"
+                  disabled={busy}
+                  className="btn btn-outline text-rose-700"
+                  onClick={async () => {
+                    setBusy(true)
+                    try {
+                      const reservation = reservationToCancel
+                      if (hasClassEnded(reservation)) return
+                      if (
+                        reservation.schoolId &&
+                        (reservation.schoolClassId || reservation.schoolRequestId)
+                      ) {
+                        await postAuthed(
+                          `/api/schools/${reservation.schoolId}/reservations/cancel`,
+                          {
+                            schoolClassId: reservation.schoolClassId,
+                            schoolRequestId: reservation.schoolRequestId,
+                          }
+                        )
+                      } else await deleteAuthed(`/api/bookings/${reservation.id}`)
+                      setReservationToCancel(null)
+                      dispatch(bookingActions.cancelled(reservation.id))
+                    } catch {
+                      setError('No pudimos cancelar tu inscripción. Inténtalo de nuevo.')
+                    } finally {
+                      setBusy(false)
+                    }
+                  }}
+                >
+                  {busy ? 'Cancelando…' : 'Cancelar mi inscripción'}
+                </button>
+              </>
+            )}
           </div>
         )}
       </Sheet>
+      {bookingToEvaluate && (
+        <ClassEvaluationForm
+          key={bookingToEvaluate.id}
+          booking={bookingToEvaluate}
+          coachName={
+            bookingToEvaluate.coachName || coachNames[bookingToEvaluate.coachId] || 'Entrenador'
+          }
+          onClose={() => setBookingToEvaluate(null)}
+          onSaved={(evaluation) => {
+            dispatch(bookingActions.upsert([{ ...bookingToEvaluate, evaluation }]))
+            setBookingToEvaluate(null)
+          }}
+        />
+      )}
       <Sheet
         open={Boolean(selectedSlot) && !showAdditionalForm}
         closeDisabled={busy}
