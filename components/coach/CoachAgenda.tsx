@@ -142,6 +142,7 @@ export default function CoachAgenda({
   focusClassId,
   focusTime,
   detailTarget,
+  showClassDetails = false,
   scheduleTarget,
   scheduleTargetOptions,
   onScheduleTargetChange,
@@ -171,6 +172,7 @@ export default function CoachAgenda({
   focusTime?: string
   /** Render a single class on the dedicated details page. */
   detailTarget?: { coachId: string; startTime: string; groupType: 'particular' | 'grupal' }
+  showClassDetails?: boolean
   /** Destination selector shown inside the hours editor (personal or school id). */
   scheduleTarget?: string
   scheduleTargetOptions?: Array<{ id: string; label: string }>
@@ -2092,11 +2094,13 @@ export default function CoachAgenda({
   const selectedClassRows = horizontalClass
     ? rows.flatMap<(typeof rows)[number]>((row) => {
         const matches = (item: {
+          date: string
           coachId: string
           startTime: string
           groupType: string
           schoolId?: string
         }) =>
+          item.date === horizontalClass.date &&
           item.coachId === horizontalClass.coachId &&
           item.startTime === horizontalClass.startTime &&
           item.groupType === horizontalClass.groupType &&
@@ -2123,13 +2127,21 @@ export default function CoachAgenda({
       })
     : []
 
+  const detailRow = showClassDetails ? detailRows[0] : undefined
+  const fixedClass = detailRow?.kind === 'booked' ? detailRow.bookings[0] : detailRow?.slot
+  const activeNotesTarget: ClassNotesTarget | null = fixedClass
+    ? { ...fixedClass, schoolId: schoolIdForSlot(fixedClass) || undefined }
+    : classNotesTarget
+
   return (
     <div className="flex flex-col gap-4">
       {detailTarget ? (
         !agenda ? (
           <Loading />
         ) : detailRows.length ? (
-          renderDayCard(detailRows, true, true)
+          showClassDetails ? null : (
+            renderDayCard(detailRows, true, true)
+          )
         ) : (
           <p className="p-4 text-sm text-(--c-text-2)">
             {error ||
@@ -2970,15 +2982,16 @@ export default function CoachAgenda({
           }}
         />
       )}
-      {classNotesTarget && (
+      {activeNotesTarget && (
         <ClassNotesModal
-          key={`${classNotesTarget.schoolId}|${classNotesTarget.coachId}|${classNotesTarget.date}|${classNotesTarget.startTime}`}
-          target={classNotesTarget}
+          key={`${activeNotesTarget.schoolId}|${activeNotesTarget.coachId}|${activeNotesTarget.date}|${activeNotesTarget.startTime}`}
+          target={activeNotesTarget}
+          embedded={Boolean(showClassDetails && fixedClass)}
           suspended={Boolean(bookingToEdit || schoolClassToEdit || slotEditor)}
           onConfigure={
             !hideBookingActions
               ? () => {
-                  const target = classNotesTarget
+                  const target = activeNotesTarget
                   const booking = (agenda?.bookings || []).find(
                     (item) =>
                       item.status !== 'cancelled' &&

@@ -61,7 +61,7 @@ export default function SchoolClassDetails() {
   }
   const validSchool = schoolId && schoolId.length <= 128 && !schoolId.includes('/')
   return (
-    <main className="mx-auto grid w-full max-w-5xl gap-5 p-4 sm:p-6">
+    <main className="mx-auto grid w-full max-w-5xl gap-2 px-3 py-1 sm:px-2 sm:py-1">
       <Link
         href={`/school/classes${validSchool ? `?school=${encodeURIComponent(schoolId)}` : ''}`}
         className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-semibold text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean)"
@@ -69,7 +69,6 @@ export default function SchoolClassDetails() {
         <FiArrowLeft aria-hidden="true" />
         Volver a horarios
       </Link>
-      <h1 className="text-2xl font-bold text-(--c-ocean)">Clases seleccionadas ({slots.length})</h1>
       {status === 'loading' ? (
         <p role="status" className="text-sm">
           Cargando clases…

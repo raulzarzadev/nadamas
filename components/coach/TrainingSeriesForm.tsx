@@ -168,16 +168,19 @@ export default function TrainingSeriesForm({
               className={inputClass}
             />
           </label>
-          <fieldset aria-label="Sugerencias de distancia" className="grid grid-cols-4 gap-2">
-            {[25, 50, 100, 200].map((distanceMeters) => (
+          <fieldset
+            aria-label="Sugerencias de distancia"
+            className="series-distance-options grid grid-cols-5 gap-1"
+          >
+            {[null, 25, 50, 100, 200].map((distanceMeters) => (
               <button
-                key={distanceMeters}
+                key={distanceMeters ?? 'none'}
                 type="button"
                 aria-pressed={draft.distanceMeters === distanceMeters}
                 onClick={() => setDraft({ ...draft, distanceMeters })}
                 className={`btn border min-h-11 px-2 ${draft.distanceMeters === distanceMeters ? 'btn-primary' : 'btn-outline'}`}
               >
-                {distanceMeters} m
+                {distanceMeters === null ? 'Sin' : `${distanceMeters} m`}
               </button>
             ))}
           </fieldset>
@@ -250,39 +253,39 @@ export default function TrainingSeriesForm({
             />
           </label>
           <fieldset aria-label="Sugerencias de material" className="flex flex-wrap gap-2">
-            {(['Tabla', 'Aletas', 'Paletas', 'Pull', 'Snorkel'] as SwimEquipment[]).map(
-              (material) => {
-                const selected = (draft.material || '')
-                  .split(',')
-                  .map((item) => item.trim())
-                  .filter(Boolean)
-                const checked = selected.some(
-                  (item) => item.toLocaleLowerCase() === material.toLocaleLowerCase()
-                )
-                return (
-                  <button
-                    key={material}
-                    type="button"
-                    aria-pressed={checked}
-                    onClick={() =>
-                      setDraft({
-                        ...draft,
-                        material: (checked
-                          ? selected.filter(
-                              (item) => item.toLocaleLowerCase() !== material.toLocaleLowerCase()
-                            )
-                          : [...selected, material]
-                        ).join(', '),
-                      })
-                    }
-                    className={`btn border min-h-11 gap-2 ${checked ? 'btn-primary' : 'btn-outline'}`}
-                  >
-                    <SwimEquipmentIcon equipment={material} />
-                    {material}
-                  </button>
-                )
-              }
-            )}
+            {(
+              ['Tabla', 'Aletas', 'Paletas', 'Pull', 'Snorkel', 'Paracaídas'] as SwimEquipment[]
+            ).map((material) => {
+              const selected = (draft.material || '')
+                .split(',')
+                .map((item) => item.trim())
+                .filter(Boolean)
+              const checked = selected.some(
+                (item) => item.toLocaleLowerCase() === material.toLocaleLowerCase()
+              )
+              return (
+                <button
+                  key={material}
+                  type="button"
+                  aria-pressed={checked}
+                  onClick={() =>
+                    setDraft({
+                      ...draft,
+                      material: (checked
+                        ? selected.filter(
+                            (item) => item.toLocaleLowerCase() !== material.toLocaleLowerCase()
+                          )
+                        : [...selected, material]
+                      ).join(', '),
+                    })
+                  }
+                  className={`btn border min-h-11 gap-2 ${checked ? 'btn-primary' : 'btn-outline'}`}
+                >
+                  <SwimEquipmentIcon equipment={material} />
+                  {material}
+                </button>
+              )
+            })}
           </fieldset>
           <p className="text-xs text-(--c-text-2)">
             Puedes elegir varios materiales o escribir otro.
@@ -335,23 +338,11 @@ export default function TrainingSeriesForm({
             Atrás
           </button>
         )}
-        {step === 1 && (
-          <button
-            type="button"
-            onClick={() => {
-              setDraft({ ...draft, distanceMeters: null })
-              setStep(2)
-            }}
-            className="btn border btn-outline ml-auto min-h-11"
-          >
-            Sin distancia
-          </button>
-        )}
         <button
           type="button"
           disabled={!valid}
           onClick={() => (step < 4 ? setStep(step + 1) : onSave(draft))}
-          className={`btn border btn-primary min-h-11 ${step === 1 ? '' : 'ml-auto'}`}
+          className="btn border btn-primary ml-auto min-h-11"
         >
           {step === 4 ? 'Guardar serie' : 'Siguiente'}
         </button>

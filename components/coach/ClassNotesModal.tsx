@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useId, useState } from 'react'
-import { FiActivity, FiCheckSquare, FiSettings } from 'react-icons/fi'
+import Link from 'next/link'
+import { type ComponentProps, useEffect, useId, useState } from 'react'
+import { FiActivity, FiCheckSquare, FiEye, FiSettings } from 'react-icons/fi'
 import AttendanceModal from '@/components/coach/AttendanceModal'
 import ClassTrainingEditor from '@/components/coach/ClassTrainingEditor'
 import ScheduleTag from '@/components/ui/schedule-tag'
@@ -21,18 +22,29 @@ export type ClassNotesTarget = {
   groupType: 'particular' | 'grupal'
 }
 
+function InlineClassDetails({ children, footer }: ComponentProps<typeof Sheet>) {
+  return (
+    <section className="grid gap-4 rounded-2xl border border-(--c-border) bg-white p-4">
+      {children}
+      {footer}
+    </section>
+  )
+}
+
 export default function ClassNotesModal({
   target,
   onClose,
   onUpdated,
   onConfigure,
   suspended = false,
+  embedded = false,
 }: {
   target: ClassNotesTarget
   onClose: () => void
   onUpdated?: () => void
   onConfigure?: () => void
   suspended?: boolean
+  embedded?: boolean
 }) {
   const id = useId()
   const [attendanceOpen, setAttendanceOpen] = useState(false)
@@ -48,9 +60,23 @@ export default function ClassNotesModal({
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const classLink = target.schoolId
+    ? `/school/classes/details?${new URLSearchParams({ schoolId: target.schoolId, slots: JSON.stringify([{ coachId: target.coachId, date: target.date, startTime: target.startTime, groupType: target.groupType }]) })}`
+    : `/coach/classes/details?${new URLSearchParams({ coachId: target.coachId, date: target.date, time: target.startTime, type: target.groupType })}`
   const endpoint = `${target.schoolId ? `/api/schools/${encodeURIComponent(target.schoolId)}/class-notes` : '/api/coach/class-notes'}?coachId=${encodeURIComponent(target.coachId)}&date=${encodeURIComponent(target.date)}&time=${encodeURIComponent(target.startTime)}`
   useEffect(() => {
     let active = true
+    setLoading(true)
+    setLoaded(false)
+    setNote('')
+    setOriginal('')
+    setTraining([])
+    setOriginalTraining('[]')
+    setShowTraining(false)
+    setAttendanceOpen(false)
+    setEditingNote(false)
+    setEditingSeries(false)
+    setError('')
     getAuthed(endpoint)
       .then((response) => response.json())
       .then((payload) => {
@@ -60,7 +86,6 @@ export default function ClassNotesModal({
         const blocks = normalizeClassTraining(payload.training || []) || []
         setTraining(blocks)
         setOriginalTraining(JSON.stringify(blocks))
-        setShowTraining(blocks.length > 0)
         setLoaded(true)
       })
       .catch(() => {
@@ -87,15 +112,20 @@ export default function ClassNotesModal({
     setError('')
     try {
       await putAuthed(endpoint, { note, training: validTraining })
-      onClose()
+      setOriginal(note)
+      setOriginalTraining(JSON.stringify(validTraining))
+      setShowTraining(false)
+      onUpdated?.()
+      if (!embedded) onClose()
     } catch {
       setError('No pudimos guardar las notas. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }
   }
+  const Container = embedded ? InlineClassDetails : Sheet
   return (
-    <Sheet
+    <Container
       open={!suspended}
       onClose={onClose}
       closeDisabled={saving}
@@ -152,13 +182,18 @@ export default function ClassNotesModal({
           {!training.some((block) => block.series.length > 0) && (
             <button
               type="button"
+              className="btn btn-outline min-h-11 w-fit"
               disabled={!loaded || saving}
               aria-haspopup="dialog"
               onClick={() => setShowTraining(true)}
-              className="btn btn-outline min-h-11 w-fit"
             >
               <FiActivity aria-hidden="true" /> Entrenamiento
             </button>
+          )}
+          {!embedded && (
+            <Link href={classLink} className="btn btn-outline min-h-11 w-fit">
+              <FiEye aria-hidden="true" /> Ver
+            </Link>
           )}
         </div>
         {loading ? (
@@ -314,6 +349,6 @@ export default function ClassNotesModal({
           onUpdated={() => onUpdated?.()}
         />
       )}
-    </Sheet>
+    </Container>
   )
 }

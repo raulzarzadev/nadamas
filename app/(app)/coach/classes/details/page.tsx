@@ -22,7 +22,7 @@ function ClassDetails() {
   )
     return <p>Esta clase no está disponible.</p>
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-2 px-3 py-1 sm:px-2">
       <Link href="/coach/agenda" className="inline-flex min-h-11 items-center font-bold underline">
         ← Volver a horarios
       </Link>

@@ -3,6 +3,7 @@ import { modalViewportStyle, useKeyboardSafeArea } from '@comps/hooks/useKeyboar
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { lockBodyScroll } from '@/lib/client/body-scroll-lock'
 import Modal from '../Modal'
 
 /**
@@ -34,8 +35,7 @@ const PreviewImage = ({
   useEffect(() => {
     if (!openModal || variant !== 'lightbox') return
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const releaseScroll = lockBodyScroll()
 
     function handleKeyDown(event) {
       if (event.key === 'Escape') setOpenModal(false)
@@ -44,7 +44,7 @@ const PreviewImage = ({
     window.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      document.body.style.overflow = previousOverflow
+      releaseScroll()
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [openModal, variant])

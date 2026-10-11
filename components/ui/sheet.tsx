@@ -25,6 +25,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiX } from 'react-icons/fi'
 import { trackEvent } from '@/lib/analytics/client'
 import { analyticsModal } from '@/lib/analytics/privacy'
+import { lockBodyScroll } from '@/lib/client/body-scroll-lock'
 
 /**
  * Shared responsive modal. On mobile it opens from the bottom and closes via
@@ -100,11 +101,10 @@ export default function Sheet({
   useEffect(() => {
     if (!open) return
     const previousFocus = document.activeElement as HTMLElement | null
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    const releaseScroll = lockBodyScroll()
     dialogRef.current?.focus({ preventScroll: true })
     return () => {
-      document.body.style.overflow = previousOverflow
+      releaseScroll()
       if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true })
     }
   }, [open])

@@ -138,10 +138,8 @@ export default function ClassTrainingEditor({
                         className="min-h-6 min-w-0 flex-1 rounded-lg py-0.5 text-left text-xs leading-tight focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
                       >
                         <strong className="mr-1 inline-block">
-                          {series.repetitions} ×{' '}
-                          {series.distanceMeters !== null
-                            ? `${series.distanceMeters} m`
-                            : 'sin distancia'}
+                          {series.repetitions}×
+                          {series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
                         </strong>
                         <span>{series.exercise}</span>
                         {series.material && (

@@ -1,4 +1,4 @@
-export type SwimEquipment = 'Tabla' | 'Aletas' | 'Paletas' | 'Pull' | 'Snorkel'
+export type SwimEquipment = 'Tabla' | 'Aletas' | 'Paletas' | 'Pull' | 'Snorkel' | 'Paracaídas'
 
 const paths: Record<SwimEquipment, string> = {
   Tabla: 'M8 3h8a4 4 0 0 1 4 4v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a4 4 0 0 1 4-4Z M8 8h8 M8 12h8',
@@ -6,6 +6,8 @@ const paths: Record<SwimEquipment, string> = {
   Paletas:
     'M8 3h8a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5V8a5 5 0 0 1 5-5Z M8 10h8 M8 14h8 M8 6v1 M16 6v1 M8 17v1 M16 17v1',
   Pull: 'M7 3c4 0 3 5 5 5s1-5 5-5c3 0 4 4 4 9s-1 9-4 9c-4 0-3-5-5-5s-1 5-5 5c-3 0-4-4-4-9s1-9 4-9Z',
+  Paracaídas:
+    'M3 11a9 9 0 0 1 18 0H3Z M7 11c0-5 2-9 5-9s5 4 5 9 M3 11l8 9h2l8-9 M7 11l4 9 M17 11l-4 9 M11 20v2h2v-2',
   Snorkel: 'M16 3v12a6 6 0 0 1-12 0v-2h4v2a2 2 0 0 0 4 0V3Z M12 6h4 M4 13H2v4h3',
 }
 
