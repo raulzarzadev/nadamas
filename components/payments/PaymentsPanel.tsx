@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { FiDollarSign, FiEdit2, FiPlus, FiSettings } from 'react-icons/fi'
+import { TbClockCheck } from 'react-icons/tb'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
@@ -20,13 +21,23 @@ import PaymentProductForm, { money } from './PaymentProductForm'
 import { paymentInputClass, paymentTextareaClass } from './payment-field'
 import ReceiptPreview from './ReceiptPreview'
 
+function formatPlanDate(value: string) {
+  return new Intl.DateTimeFormat('es-MX', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${value}T12:00:00`))
+}
+
 export default function PaymentsPanel({
   endpoint,
   initialStudentId,
   initialTab = 'account',
+  hideTitle = false,
 }: {
   endpoint: string
   initialStudentId?: string
+  hideTitle?: boolean
   initialTab?: 'account' | 'plans' | 'orders' | 'history'
 }) {
   const { user } = useUser()
@@ -73,6 +84,24 @@ export default function PaymentsPanel({
       active = false
     }
   }, [endpoint, initialStudentId])
+  useEffect(() => {
+    let active = true
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return
+      PaymentCRUD.get(endpoint)
+        .then((next) => {
+          if (active) setData(next)
+        })
+        .catch(() => {})
+    }
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      active = false
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [endpoint])
   async function perform(action: () => Promise<void>) {
     if (busy) return
     setBusy(true)
@@ -131,12 +160,7 @@ export default function PaymentsPanel({
   const visibleStudents = data.students.filter((item) =>
     item.name.toLocaleLowerCase('es').includes(studentSearch.trim().toLocaleLowerCase('es'))
   )
-  const products = data.products.filter(
-    (product) =>
-      (data.manager || product.active) &&
-      (data.manager ||
-        (product.mode === 'classes' ? data.settings.classesEnabled : data.settings.periodsEnabled))
-  )
+  const products = data.products.filter((product) => data.manager || product.active)
   const submitFooter = (form: string, label: string) => (
     <button
       type="submit"
@@ -150,17 +174,14 @@ export default function PaymentsPanel({
   const input = paymentInputClass
   return (
     <div className="grid w-full min-w-0 grid-cols-1 gap-4">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold">Planes y pagos</h1>
-        {!data.manager && (
-          <button
-            type="button"
-            onClick={() => setTab('plans')}
-            className="btn btn-primary min-h-11 max-w-full px-3 text-xs"
-          >
-            Conseguir más clases
-          </button>
-        )}
+      <div
+        className={
+          hideTitle && !data.manager
+            ? 'hidden'
+            : 'flex min-w-0 flex-wrap items-center justify-between gap-3'
+        }
+      >
+        {!hideTitle && <h1 className="text-2xl font-extrabold">Planes y pagos</h1>}
         {data.manager && (
           <button
             type="button"
@@ -235,31 +256,55 @@ export default function PaymentsPanel({
       {!data.manager && !data.students.length && (
         <p className="text-sm">Todavía no tienes un perfil de alumno vinculado en este espacio.</p>
       )}
-      <nav aria-label="Secciones de pagos" className="flex flex-wrap gap-2">
-        {(
-          [
-            ['account', 'Saldos'],
-            ['plans', 'Planes'],
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <nav aria-label="Secciones de pagos" className="flex flex-wrap gap-2">
+          {(
             [
-              'orders',
-              `Pagos${orders.some((order) => order.status === 'pending') ? ` · ${orders.filter((order) => order.status === 'pending').length} pendientes` : ''}`,
-            ],
-            ['history', 'Movimientos'],
-          ] as const
-        )
-          .filter(([value]) => data.manager || value !== 'history')
-          .map(([value, label]) => (
-            <button
-              type="button"
-              key={value}
-              onClick={() => setTab(value)}
-              aria-pressed={tab === value}
-              className={`btn min-h-9 h-9 text-xs ${tab === value ? 'btn-primary' : 'btn-ghost'}`}
-            >
-              {label}
-            </button>
-          ))}
-      </nav>
+              ['account', 'Saldos'],
+              ['plans', 'Planes'],
+              [
+                'orders',
+                `Pagos${orders.some((order) => order.status === 'pending') ? ` · ${orders.filter((order) => order.status === 'pending').length} pendientes` : ''}`,
+              ],
+              ['history', 'Movimientos'],
+            ] as const
+          )
+            .filter(([value]) => data.manager || value !== 'history')
+            .map(([value, label]) => (
+              <button
+                type="button"
+                key={value}
+                onClick={() => setTab(value)}
+                aria-pressed={tab === value}
+                title={value === 'account' ? 'Saldos' : undefined}
+                aria-label={
+                  value === 'account'
+                    ? `Saldos (${account ? paymentAvailable(account, today) : 0} clases disponibles)`
+                    : undefined
+                }
+                className={`btn min-h-9 h-9 text-xs ${tab === value ? 'btn-primary' : 'btn-ghost'}`}
+              >
+                {value === 'account' ? (
+                  <>
+                    Saldos <TbClockCheck aria-hidden="true" className="size-4" /> (
+                    {account ? paymentAvailable(account, today) : 0})
+                  </>
+                ) : (
+                  label
+                )}
+              </button>
+            ))}
+        </nav>
+        {!data.manager && (
+          <button
+            type="button"
+            onClick={() => setTab('plans')}
+            className="btn btn-primary min-h-9 h-9 gap-1 px-3 text-xs"
+          >
+            <FiPlus aria-hidden="true" /> Adquirir más clases
+          </button>
+        )}
+      </div>
       {tab === 'account' && (
         <>
           {!data.settings.classesEnabled && !data.settings.periodsEnabled && (
@@ -270,27 +315,26 @@ export default function PaymentsPanel({
             </p>
           )}
           {student && account ? (
-            <section
-              aria-label="Saldo del alumno"
-              className="grid gap-3 rounded-xl bg-(--c-surface) p-3"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <strong className="flex items-center gap-2">
-                  <FiDollarSign aria-hidden="true" />
-                  {paymentAvailable(account, today)} clases disponibles
-                </strong>
-                {data.manager && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      operationId.current = crypto.randomUUID()
-                      setAdjust(true)
-                    }}
-                    className="btn btn-ghost min-h-11 text-xs"
-                  >
-                    Ajustar saldo
-                  </button>
-                )}
+            <section aria-label="Saldo del alumno" className="grid gap-3">
+              <div className="rounded-xl border border-(--c-border) bg-(--c-surface) p-3">
+                <h2 className="mb-2 text-xs font-semibold text-(--c-text-2)">Saldo de clases</h2>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <strong className="text-base">
+                    {paymentAvailable(account, today)} clases disponibles
+                  </strong>
+                  {data.manager && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        operationId.current = crypto.randomUUID()
+                        setAdjust(true)
+                      }}
+                      className="btn btn-ghost min-h-11 text-xs"
+                    >
+                      Ajustar saldo
+                    </button>
+                  )}
+                </div>
               </div>
               {account.grants
                 .filter(
@@ -300,12 +344,23 @@ export default function PaymentsPanel({
                     (!grant.endsBefore || today < grant.endsBefore)
                 )
                 .map((grant) => (
-                  <div key={grant.id} className="rounded-lg bg-white p-3">
-                    <strong className="text-sm">{grant.product.name}</strong>
-                    <p className="text-xs text-(--c-text-2)">
-                      Desde {grant.startsOn} · Vence {grant.endsBefore}
+                  <div
+                    key={grant.id}
+                    className="rounded-xl border border-(--c-border) bg-(--c-surface) p-3"
+                  >
+                    <h2 className="mb-2 text-xs font-semibold text-(--c-text-2)">Plan vigente</h2>
+                    <strong className="block text-base">{grant.product.name}</strong>
+                    <p className="mt-2 text-xs text-(--c-text-2)">
+                      Vigencia: {grant.product.months}{' '}
+                      {grant.product.months === 1 ? 'mes' : 'meses'}
                     </p>
-                    <p className="text-xs">
+                    <p className="text-xs text-(--c-text-2)">
+                      Inicia el {formatPlanDate(grant.startsOn)}
+                      {grant.endsBefore
+                        ? ` · Vence el ${formatPlanDate(grant.endsBefore)}`
+                        : ' · Sin vencimiento'}
+                    </p>
+                    <p className="mt-2 text-xs text-(--c-text-2)">
                       {grant.used} consumidas · {grant.reserved} reservadas
                       {grant.product.perPeriod
                         ? ` · ${Math.max(0, grant.product.perPeriod - grant.used - grant.reserved)} disponibles en el periodo`
@@ -399,6 +454,14 @@ export default function PaymentsPanel({
                       .join(' · ')}
                   </p>
                 )}
+                {!data.manager &&
+                  !(product.mode === 'classes'
+                    ? data.settings.classesEnabled
+                    : data.settings.periodsEnabled) && (
+                    <p className="mt-1 text-xs text-(--c-text-2)">
+                      El entrenador todavía no habilita el cobro de este plan.
+                    </p>
+                  )}
               </div>
               {data.manager && (
                 <button
@@ -415,6 +478,10 @@ export default function PaymentsPanel({
                 disabled={
                   !student ||
                   !product.active ||
+                  (!data.manager &&
+                    !(product.mode === 'classes'
+                      ? data.settings.classesEnabled
+                      : data.settings.periodsEnabled)) ||
                   busy ||
                   (!data.manager && student.ownerId !== viewerId)
                 }

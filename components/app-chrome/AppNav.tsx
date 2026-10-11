@@ -22,7 +22,14 @@ import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { useUser } from '@/context/UserContext'
+import {
+  ATHLETE_UPCOMING_COUNT_EVENT,
+  type AthleteUpcomingCountUpdate,
+  isPastAthleteBooking,
+} from '@/lib/athlete-upcoming-count'
 import { getAuthed } from '@/lib/client/authed-api'
+import type { Booking } from '@/lib/coach-booking'
 import type { RoleName } from '@/lib/roles'
 import { capitalizeSchoolTerm, type School, type SchoolMembership } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
@@ -61,6 +68,41 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
     includePersonal: role === 'coach' || role === 'athlete',
     athleteMode: role === 'athlete',
   })
+  const { user } = useUser()
+  const uid = user?.uid || user?.id
+  const selectedSchoolId = selectedSchool?.school.id || null
+  const [upcomingCount, setUpcomingCount] = useState<number | null>(null)
+  useEffect(() => {
+    setUpcomingCount(null)
+    if (role !== 'athlete' || !uid) return
+    let active = true
+    let receivedUpdate = false
+    const update = (event: Event) => {
+      const detail = (event as CustomEvent<AthleteUpcomingCountUpdate>).detail
+      if (detail.uid === uid && detail.schoolId === selectedSchoolId) {
+        receivedUpdate = true
+        setUpcomingCount(detail.count)
+      }
+    }
+    window.addEventListener(ATHLETE_UPCOMING_COUNT_EVENT, update)
+    getAuthed('/api/bookings')
+      .then((response) => response.json() as Promise<{ bookings?: Booking[] }>)
+      .then((payload) => {
+        if (active && !receivedUpdate && payload.bookings)
+          setUpcomingCount(
+            payload.bookings.filter(
+              (booking) =>
+                (!selectedSchoolId || booking.schoolId === selectedSchoolId) &&
+                !isPastAthleteBooking(booking)
+            ).length
+          )
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+      window.removeEventListener(ATHLETE_UPCOMING_COUNT_EVENT, update)
+    }
+  }, [uid, role, selectedSchoolId])
   const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/schedule'
   const primary = PRIMARY_NAV_BY_ROLE[role]
     .filter(
@@ -224,12 +266,15 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
             {primary.map((l) => {
               const active = pathname.startsWith(l.href)
               const Icon = NAV_ICONS[l.icon]
+              const count =
+                role === 'athlete' && l.href === '/athlete/schedule' ? upcomingCount : null
+              const label = count === null ? l.label : `${l.label} (${count})`
               return (
                 <Link
                   key={l.href}
                   href={l.href}
-                  aria-label={l.label}
-                  title={l.label}
+                  aria-label={label}
+                  title={label}
                   aria-current={active ? 'page' : undefined}
                   className={`@container flex min-w-0 min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border ${l.icon === 'payments' ? 'size-12 p-0' : 'px-1.5 py-3 sm:px-4'} text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:text-sm ${
                     active
@@ -238,8 +283,13 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
                   }`}
                 >
                   <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                  {count !== null && (
+                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-current/10 px-1 text-[10px] @min-[9rem]:hidden">
+                      {count}
+                    </span>
+                  )}
                   {l.icon !== 'payments' && (
-                    <span className="hidden whitespace-nowrap @min-[9rem]:inline">{l.label}</span>
+                    <span className="hidden whitespace-nowrap @min-[9rem]:inline">{label}</span>
                   )}
                 </Link>
               )
@@ -262,6 +312,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
           role === 'athlete' &&
           !publicAthleteSchedule &&
           !pathname.startsWith('/athlete/search') &&
+          pathname !== '/athlete/payments' &&
           (!tenant || selectedSchool !== null) && <AthleteSchoolSwitcher />}
         {publicAthleteSchedule && <div id="athlete-coach-filters" className="min-w-0" />}
       </div>

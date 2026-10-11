@@ -187,3 +187,21 @@ export function paymentAvailable(account: PaymentAccount, date: string) {
       0
     )
 }
+
+export function planAvailable(account: PaymentAccount, date: string) {
+  return account.grants
+    .filter((grant) => grantAvailable(grant, date, 'period'))
+    .reduce((total, grant) => {
+      const remaining = [
+        grant.product.perPeriod ? grant.product.perPeriod - grant.used - grant.reserved : Infinity,
+        ...[
+          [`d:${date}`, grant.product.perDay],
+          [`w:${paymentWeek(date)}`, grant.product.perWeek],
+        ].map(([key, limit]) => {
+          const bucket = grant.buckets[String(key)] || { used: 0, reserved: 0 }
+          return limit ? Number(limit) - bucket.used - bucket.reserved : Infinity
+        }),
+      ]
+      return total + Math.max(0, Math.min(...remaining))
+    }, 0)
+}

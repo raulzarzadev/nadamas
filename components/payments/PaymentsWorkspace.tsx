@@ -9,14 +9,16 @@ import { getAuthed } from '@/lib/client/authed-api'
 import PaymentsPanel from './PaymentsPanel'
 
 export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' | 'athlete' }) {
-  const { selectedId, selected, isPersonal, status } = useSchoolSelection({
-    includePersonal: mode !== 'school',
-    athleteMode: mode === 'athlete',
-  })
+  const { selectedId, isPersonal, status, schools, selectSchool, selectPersonal } =
+    useSchoolSelection({
+      includePersonal: mode !== 'school',
+      athleteMode: mode === 'athlete',
+    })
   const { user } = useUser() as { user: { uid?: string; id?: string } | undefined | null }
   const tenant = useTenantSchool()
   const params = useSearchParams()
   const [coaches, setCoaches] = useState<Array<{ id: string; name: string }>>([])
+  const [scopeChoice, setScopeChoice] = useState<string | null>(null)
   const [coachId, setCoachId] = useState(params.get('coachId') || '')
   const [loadingCoaches, setLoadingCoaches] = useState(mode === 'athlete')
   const [error, setError] = useState('')
@@ -57,10 +59,20 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
         Los pagos de la escuela solo están disponibles en Modo Coordinador.
       </p>
     )
-  const scopeSchool = params.get('coachId')
-    ? null
-    : params.get('schoolId') || (!isPersonal ? selectedId : null)
-  const scopeCoach = mode === 'coach' ? user.uid || user.id : coachId
+  const scopeSchool =
+    scopeChoice !== null
+      ? scopeChoice.startsWith('school:')
+        ? scopeChoice.slice(7)
+        : null
+      : params.get('coachId')
+        ? null
+        : params.get('schoolId') || (!isPersonal ? selectedId : null)
+  const scopeCoach =
+    mode === 'coach'
+      ? user.uid || user.id
+      : scopeChoice?.startsWith('coach:')
+        ? scopeChoice.slice(6)
+        : coachId
   const scopeEndpoint = scopeSchool
     ? `/api/payments?schoolId=${encodeURIComponent(scopeSchool)}`
     : scopeCoach
@@ -70,27 +82,54 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     scopeEndpoint && mode === 'athlete' ? `${scopeEndpoint}&view=student` : scopeEndpoint
   return (
     <div className="grid gap-4">
-      {!scopeSchool && mode === 'athlete' && (
-        <label className="grid gap-1 text-sm">
-          Planes y pagos con el coach
-          <select
-            className="select w-full"
-            value={coachId}
-            onChange={(event) => setCoachId(event.target.value)}
-          >
-            {!coaches.length && <option value="">Selecciona un entrenador</option>}
-            {coaches.map((coach) => (
-              <option key={coach.id} value={coach.id}>
-                {coach.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-      {scopeSchool && mode === 'athlete' && (
-        <p className="text-sm font-semibold text-(--c-ocean)">
-          Planes y pagos de {tenant?.name || selected?.school.name || 'la escuela seleccionada'}
-        </p>
+      {mode === 'athlete' && (
+        <div className="grid gap-3">
+          <h1 className="text-2xl font-extrabold text-(--c-ocean)">Planes y pagos</h1>
+          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+            <span className="sr-only">Escuela o entrenador</span>
+            <select
+              className="min-h-11 w-full min-w-0 rounded-xl border border-(--c-border) bg-white px-3 text-sm"
+              value={
+                scopeSchool ? `school:${scopeSchool}` : scopeCoach ? `coach:${scopeCoach}` : ''
+              }
+              onChange={(event) => {
+                const value = event.target.value
+                setScopeChoice(value)
+                if (value.startsWith('school:')) selectSchool(value.slice(7))
+                else {
+                  setCoachId(value.slice(6))
+                  selectPersonal()
+                }
+              }}
+            >
+              {!scopeSchool && !scopeCoach && (
+                <option value="">Elige una escuela o entrenador</option>
+              )}
+              {(tenant || schools.length > 0) && (
+                <optgroup label="Mis escuelas">
+                  {tenant ? (
+                    <option value={`school:${tenant.id}`}>{tenant.name}</option>
+                  ) : (
+                    schools.map(({ school }) => (
+                      <option key={school.id} value={`school:${school.id}`}>
+                        {school.name}
+                      </option>
+                    ))
+                  )}
+                </optgroup>
+              )}
+              {coaches.length > 0 && !tenant && (
+                <optgroup label="Mis entrenadores">
+                  {coaches.map((coach) => (
+                    <option key={coach.id} value={`coach:${coach.id}`}>
+                      {coach.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </label>
+        </div>
       )}
       {error && (
         <p role="alert" className="text-sm">
@@ -99,6 +138,7 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
       )}
       {endpoint ? (
         <PaymentsPanel
+          hideTitle={mode === 'athlete'}
           key={`${endpoint}:${params.get('tab') === 'orders' ? 'orders' : 'account'}`}
           endpoint={endpoint}
           initialTab={params.get('tab') === 'orders' ? 'orders' : 'account'}

@@ -9,6 +9,7 @@ import type {
   PaymentReservation,
   PaymentSettings,
 } from '@/lib/payments/model'
+import { DEFAULT_PAYMENT_SETTINGS } from '@/lib/payments/model'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
 import { paymentAccess } from '@/lib/server/payments/access'
@@ -255,7 +256,7 @@ export async function POST(request: Request) {
       )
       if (existing.exists) return false
       const product = productDoc.data() as PaymentProduct & { scope: string }
-      const config = settingsDoc.data()
+      const config = { ...DEFAULT_PAYMENT_SETTINGS, ...settingsDoc.data() }
       if (
         !product ||
         product.scope !== access.key ||

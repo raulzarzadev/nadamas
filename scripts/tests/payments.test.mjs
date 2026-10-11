@@ -19,6 +19,7 @@ const {
   changeGrantUsage,
   settleGrant,
   paymentAvailable,
+  planAvailable,
   validateProduct,
   paymentWeek,
 } = module.exports
@@ -35,6 +36,16 @@ const product = (extra = {}) =>
   )
 const grant = (p = product()) =>
   activateGrant('grant', p, Date.parse('2026-01-31T18:00:00Z'), config.timezone)
+test('plan availability respects daily, weekly and period limits independently of packages', () => {
+  const plan = grant(product({ mode: 'period', months: 1, perDay: 3, perWeek: 4, perPeriod: 8 }))
+  const account = { grants: [grant(), plan] }
+  changeGrantUsage(plan, '2026-02-02', 1, 0)
+  assert.equal(planAvailable(account, '2026-02-02'), 2)
+  assert.equal(paymentAvailable(account, '2026-02-02'), 5)
+  changeGrantUsage(plan, '2026-02-03', 2, 0)
+  assert.equal(planAvailable(account, '2026-02-02'), 1)
+  assert.equal(planAvailable(account, '2026-02-28'), 0)
+})
 test('activation-relative months clamp month ends and leap years', () => {
   assert.equal(addMonths('2026-01-31', 1), '2026-02-28')
   assert.equal(addMonths('2024-01-31', 1), '2024-02-29')

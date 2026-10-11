@@ -13,6 +13,11 @@ import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { auth } from '@/firebase/index'
+import {
+  ATHLETE_UPCOMING_COUNT_EVENT,
+  type AthleteUpcomingCountUpdate,
+  isPastAthleteBooking as isPastBooking,
+} from '@/lib/athlete-upcoming-count'
 import { type ClassEvaluation, canEvaluateBooking } from '@/lib/class-evaluation'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
@@ -59,13 +64,6 @@ function timeLabel(booking: Booking) {
 
 function modalityLabel(booking: Booking) {
   return booking.groupType === 'grupal' ? 'Clase grupal' : 'Clase individual'
-}
-
-function isPastBooking(booking: Booking) {
-  if (booking.status === 'cancelled') return true
-  const endTime = booking.endTime || booking.startTime || '23:59'
-  const endTimestamp = Date.parse(`${booking.date}T${endTime}`)
-  return Number.isFinite(endTimestamp) && endTimestamp < Date.now()
 }
 
 function BookingGroupRow({
@@ -282,9 +280,11 @@ function PastBookings({
 export default function AthleteBookingsOverview({
   view = 'progress',
   onUpcomingCountChange,
+  compact = false,
 }: {
   view?: 'upcoming' | 'progress'
   onUpcomingCountChange?: (count: number) => void
+  compact?: boolean
 }) {
   const showUpcoming = view === 'upcoming'
   const [upcomingOpen, setUpcomingOpen] = useState(false)
@@ -421,8 +421,17 @@ export default function AthleteBookingsOverview({
   const upcomingGroups = groupByClassTime(upcomingBookings)
   const activeCount = upcomingBookings.length
   useEffect(() => {
-    if (bookings !== undefined) onUpcomingCountChange?.(activeCount)
-  }, [bookings, activeCount, onUpcomingCountChange])
+    if (bookings !== undefined) {
+      onUpcomingCountChange?.(activeCount)
+      const uid = auth.currentUser?.uid
+      if (uid)
+        window.dispatchEvent(
+          new CustomEvent<AthleteUpcomingCountUpdate>(ATHLETE_UPCOMING_COUNT_EVENT, {
+            detail: { uid, schoolId: selectedSchoolId || null, count: activeCount },
+          })
+        )
+    }
+  }, [bookings, activeCount, onUpcomingCountChange, selectedSchoolId])
 
   const calendarSheet = (
     <Sheet
@@ -663,11 +672,21 @@ export default function AthleteBookingsOverview({
   if (!showUpcoming) return content
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3">
+      <div
+        className={
+          compact
+            ? 'mr-auto flex min-w-0 items-center gap-2'
+            : 'flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3'
+        }
+      >
         <button
           type="button"
           onClick={() => setUpcomingOpen(true)}
-          className="min-h-11 flex-1 text-left font-bold text-(--c-ocean)"
+          className={
+            compact
+              ? 'min-h-9 text-left text-xs font-semibold text-(--c-text-2) hover:text-(--c-ocean)'
+              : 'min-h-11 flex-1 text-left font-bold text-(--c-ocean)'
+          }
         >
           Próximas clases{bookings !== undefined ? ` (${activeCount})` : ''}
         </button>
@@ -676,9 +695,16 @@ export default function AthleteBookingsOverview({
           aria-haspopup="dialog"
           aria-controls="class-calendar-subscription"
           onClick={() => setCalendarOpen(true)}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-4 py-2 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+          title="Suscribirme al calendario"
+          aria-label="Suscribirme al calendario"
+          className={
+            compact
+              ? 'inline-flex min-h-9 items-center justify-center gap-1 rounded-lg px-2 text-xs text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean)'
+              : 'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-4 py-2 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface)'
+          }
         >
-          <FiCalendar aria-hidden="true" /> Suscribirme al calendario
+          <FiCalendar aria-hidden="true" className="shrink-0" />
+          <span className={compact ? 'hidden sm:inline' : ''}>Suscribirme al calendario</span>
         </button>
       </div>
       {calendarSheet}

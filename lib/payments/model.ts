@@ -16,9 +16,9 @@ export type PaymentSettings = {
   timezone: string
 }
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
-  classesEnabled: false,
-  periodsEnabled: false,
-  allowBookingWithoutBalance: false,
+  classesEnabled: true,
+  periodsEnabled: true,
+  allowBookingWithoutBalance: true,
   cancellationHours: 24,
   transferInstructions: '',
   transferDetails: { bank: '', holder: '', account: '', clabe: '', reference: '' },

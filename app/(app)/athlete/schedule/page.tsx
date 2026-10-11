@@ -34,10 +34,10 @@ export default function FindCoachPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <AthleteBookingsOverview view="upcoming" />
       {!loading &&
         (tenant ? (
           <AthleteSchoolSchedule
+            toolbarActions={<AthleteBookingsOverview view="upcoming" compact />}
             key={tenant.id}
             schoolId={tenant.id}
             schoolName={tenant.name}
@@ -47,6 +47,7 @@ export default function FindCoachPage() {
           />
         ) : (
           <AthleteSchoolSchedule
+            toolbarActions={<AthleteBookingsOverview view="upcoming" compact />}
             key={`public-directory-${initialSchoolId || 'all'}`}
             initialSchoolId={initialSchoolId}
             schoolId={null}

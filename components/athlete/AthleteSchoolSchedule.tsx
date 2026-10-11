@@ -1,7 +1,7 @@
 'use client'
 
 import Sheet from '@comps/ui/sheet'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiUser, FiUsers, FiX } from 'react-icons/fi'
 import PaymentsPanel from '@/components/payments/PaymentsPanel'
@@ -12,7 +12,13 @@ import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth } from '@/firebase/index'
 import type { AdditionalProfile } from '@/lib/additional-profile'
-import { AuthedApiError, deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
+import {
+  AuthedApiError,
+  deleteAuthed,
+  getAuthed,
+  invalidateAuthedCache,
+  postAuthed,
+} from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
 import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
@@ -31,6 +37,7 @@ import {
   changeGrantUsage,
   PaymentRuleError,
   paymentAvailable,
+  planAvailable,
   reserveGrant,
 } from '@/lib/payments/engine'
 import { paymentMessage } from '@/lib/payments/messages'
@@ -96,6 +103,7 @@ export default function AthleteSchoolSchedule({
   description = '',
   bookingMode,
   schools = EMPTY_SCHOOLS,
+  toolbarActions,
   initialSchoolId,
   coachId,
 }: {
@@ -105,6 +113,7 @@ export default function AthleteSchoolSchedule({
   description?: string
   bookingMode: SchoolBookingMode
   schools?: PublicSchoolOption[]
+  toolbarActions?: ReactNode
   initialSchoolId?: string
   coachId?: string
 }) {
@@ -197,6 +206,7 @@ export default function AthleteSchoolSchedule({
     const endpoints = JSON.parse(paymentScopeKey) as string[]
     Promise.all(
       endpoints.map(async (endpoint) => {
+        invalidateAuthedCache(endpoint)
         const response = await getAuthed(endpoint)
         return [endpoint, await response.json()] as const
       })
@@ -1029,6 +1039,7 @@ export default function AthleteSchoolSchedule({
         </p>
       )}
       <ScheduleViews
+        toolbarActions={toolbarActions}
         showAllDays
         showStudentCounts={false}
         selectedDate={selectedDate}
@@ -1430,36 +1441,45 @@ export default function AthleteSchoolSchedule({
                   groupType={selectedSlot.groupType}
                 />
               )}
-              <fieldset className="grid gap-2 text-sm">
-                <legend className="mb-1 font-semibold">¿A quiénes vas a inscribir?</legend>
-                {bookingParticipants.map((participant) => {
-                  const alreadyBooked = isParticipantBookedInGroup(participant)
-                  return (
-                    <label
-                      key={participant.value}
-                      className={`flex min-h-12 items-center gap-3 rounded-xl border px-3 py-2 font-semibold ${alreadyBooked ? 'cursor-not-allowed border-[var(--c-border)] bg-[var(--c-surface)] opacity-60' : 'cursor-pointer border-[var(--c-border)] bg-white has-[:checked]:border-[var(--c-aqua-strong)] has-[:checked]:bg-[var(--c-surface)]'}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={studentIds.includes(participant.value)}
-                        disabled={alreadyBooked}
-                        onChange={() =>
-                          setStudentIds((current) =>
-                            current.includes(participant.value)
-                              ? current.filter((id) => id !== participant.value)
-                              : [...current, participant.value]
-                          )
-                        }
-                        className="size-5 accent-[var(--c-aqua-strong)]"
-                      />
-                      <span>
-                        {participant.name}
-                        {participant.account ? ' (tú)' : ''}
-                        {alreadyBooked ? ' · Ya inscrito' : ''}
-                      </span>
-                    </label>
-                  )
-                })}
+              <fieldset className="grid gap-1.5 text-sm">
+                <legend className="mb-1 font-semibold">¿A quién vas a inscribir?</legend>
+                {[...bookingParticipants]
+                  .sort((a, b) => Number(b.account) - Number(a.account))
+                  .map((participant, index, participants) => {
+                    const alreadyBooked = isParticipantBookedInGroup(participant)
+                    return (
+                      <div key={participant.value} className="grid gap-1">
+                        {!participant.account &&
+                          (index === 0 || participants[index - 1].account) && (
+                            <h3 className="mt-0.5 text-xs font-semibold text-[var(--c-text-2)]">
+                              Adicionales
+                            </h3>
+                          )}
+                        <label
+                          className={`${participant.account ? '' : 'ml-3'} flex min-h-9 items-center gap-2 rounded-xl border px-3 py-1.5 font-semibold ${alreadyBooked ? 'cursor-not-allowed border-[var(--c-border)] bg-[var(--c-surface)] opacity-60' : 'cursor-pointer border-[var(--c-border)] bg-white has-[:checked]:border-[var(--c-aqua-strong)] has-[:checked]:bg-[var(--c-surface)]'}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={studentIds.includes(participant.value)}
+                            disabled={alreadyBooked}
+                            onChange={() =>
+                              setStudentIds((current) =>
+                                current.includes(participant.value)
+                                  ? current.filter((id) => id !== participant.value)
+                                  : [...current, participant.value]
+                              )
+                            }
+                            className="size-5 accent-[var(--c-aqua-strong)]"
+                          />
+                          <span>
+                            {participant.name}
+                            {participant.account ? ' (yo)' : ''}
+                            {alreadyBooked ? ' · Ya inscrito' : ''}
+                          </span>
+                        </label>
+                      </div>
+                    )
+                  })}
                 {bookingParticipants.length === 0 && (
                   <p className="text-[var(--c-text-2)]">
                     No hay personas disponibles para reservar en esta escuela.
@@ -1498,18 +1518,35 @@ export default function AthleteSchoolSchedule({
                   const participantId = selectedSlot.schoolId
                     ? participant.schoolStudentId
                     : participant.additionalProfileId || accountId
-                  if (!snapshot?.settings.classesEnabled) return null
-                  const available = paymentAvailable(
-                    participantId
-                      ? snapshot.accounts[participantId] || { grants: [] }
-                      : { grants: [] },
-                    selectedSlot.date
-                  )
+                  if (!snapshot) return null
+                  const account = participantId
+                    ? snapshot.accounts[participantId] || { grants: [] }
+                    : { grants: [] }
+                  const available = paymentAvailable(account, selectedSlot.date)
+                  const plan = planAvailable(account, selectedSlot.date)
                   return (
-                    <p key={participant.value} role="status" className="text-sm font-bold">
-                      {selectedParticipants.length > 1 ? `${participant.name} · ` : ''}Clases
-                      disponibles: {available}
-                    </p>
+                    <div
+                      key={participant.value}
+                      role="status"
+                      className="grid gap-1 text-sm font-semibold"
+                    >
+                      <p className="text-xs font-normal text-(--c-text-2)">
+                        Saldo con{' '}
+                        {selectedSlot.schoolId
+                          ? schoolName || schoolLabels[selectedSlot.schoolId] || 'esta escuela'
+                          : coachNames[selectedSlot.coachId] || 'este entrenador'}
+                      </p>
+                      {selectedParticipants.length > 1 && <p>{participant.name}</p>}
+                      {snapshot.settings.periodsEnabled && (
+                        <p>
+                          Clases disponibles del plan ({Number.isFinite(plan) ? plan : 'Sin límite'}
+                          )
+                        </p>
+                      )}
+                      {snapshot.settings.classesEnabled && (
+                        <p>Clases disponibles del paquete ({available})</p>
+                      )}
+                    </div>
                   )
                 })}
               {error && <p className="mt-2 text-sm text-rose-600">{error}</p>}
@@ -1541,7 +1578,9 @@ export default function AthleteSchoolSchedule({
                   <p key={key} role="status" className="text-sm text-(--c-text-2)">
                     {selectedParticipants.length > 1 ? `${usage.name} · ` : ''}
                     {[
-                      usage.plans > 0 ? 'Se usará su plan para estas clases' : '',
+                      usage.plans > 0
+                        ? `Se usará el plan vigente${usage.classes === 0 ? ' sin descontar clases del saldo' : ''}`
+                        : '',
                       usage.classes > 0
                         ? `Se ${usage.classes === 1 ? 'usará 1 clase disponible' : `usarán ${usage.classes} clases disponibles`}`
                         : '',
