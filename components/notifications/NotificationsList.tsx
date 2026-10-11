@@ -6,12 +6,14 @@ import { useUser } from '@/context/UserContext'
 import { NotificationCRUD } from '@/firebase/notifications/main'
 import { postAuthed } from '@/lib/client/authed-api'
 import type { AppNotification } from '@/lib/notification'
+import useProfileInvitations from './useProfileInvitations'
 
 type Tab = 'received' | 'sent'
 
 export default function NotificationsList() {
   const { user } = useUser() as { user: { uid?: string; id?: string } | null | undefined }
   const uid = user?.uid || user?.id
+  const profileInvitations = useProfileInvitations(uid)
   const [tab, setTab] = useState<Tab>('received')
   const [received, setReceived] = useState<AppNotification[]>([])
   const [sent, setSent] = useState<AppNotification[]>([])
@@ -31,7 +33,7 @@ export default function NotificationsList() {
     postAuthed('/api/notifications/read', { all: true }).catch(() => {})
   }
 
-  const items = tab === 'received' ? received : sent
+  const items = tab === 'received' ? [...profileInvitations, ...received] : sent
 
   return (
     <div className="flex flex-col gap-3">

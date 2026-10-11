@@ -193,12 +193,13 @@ export default function RoleSwitcher({
               ? 'border-[#cf9b3f] ring-1 ring-[#cf9b3f]'
               : 'border-[var(--c-border)]'
           }`}
+          title={`Modo ${displayedRole === 'coach' ? coachRoleLabel : displayedRole === 'athlete' ? athleteRoleLabel : ROLE_LABEL[displayedRole]}`}
           aria-haspopup="menu"
           aria-expanded={open}
           aria-label={`Rol actual: ${displayedRole === 'coach' ? coachRoleLabel : displayedRole === 'athlete' ? athleteRoleLabel : ROLE_LABEL[displayedRole]}. Cambiar rol o ir a otra sección`}
         >
           <RoleIcon aria-hidden="true" className="size-4 shrink-0 text-(--c-ocean)" />
-          <span className="text-sm font-semibold uppercase text-[var(--c-ocean)]">
+          <span className="hidden text-sm font-semibold uppercase text-[var(--c-ocean)] sm:inline">
             {displayedRole === 'coach'
               ? coachRoleLabel.toLowerCase()
               : displayedRole === 'athlete'

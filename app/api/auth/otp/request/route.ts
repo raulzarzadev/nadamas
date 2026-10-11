@@ -35,7 +35,11 @@ function sanitizePendingBooking(pendingBooking?: PendingBooking) {
 }
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as { email?: string; pendingBooking?: PendingBooking }
+  const body = (await request.json()) as {
+    email?: string
+    pendingBooking?: PendingBooking
+    redirectTo?: string
+  }
   const email = normalizeEmail(body.email || '')
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -65,6 +69,16 @@ export async function POST(request: Request) {
     })
 
   const link = `${siteUrl()}/auth/link?email=${encodeURIComponent(email)}&token=${linkToken}`
-  await sendOtpEmail(email, code, link)
+  const redirectTo = body.redirectTo
+  const invitationPath =
+    typeof redirectTo === 'string' &&
+    /^\/athlete\/profile-invitations\/(?:[A-Za-z0-9_-]{43}|[a-f0-9]{64})$/.test(redirectTo)
+      ? redirectTo
+      : null
+  await sendOtpEmail(
+    email,
+    code,
+    invitationPath ? `${link}&redirectTo=${encodeURIComponent(invitationPath)}` : link
+  )
   return NextResponse.json({ ok: true, ...(isEmulator ? { devCode: code } : {}) })
 }

@@ -105,6 +105,7 @@ export async function GET(request: Request) {
         phone: progress?.athletePhone || first.athletePhone,
         address: progress?.athleteAddress || '',
         location: progress?.athleteLocation || '',
+        gender: progress?.gender || '',
         totalClasses: sorted.length,
         ...(historyAthlete === first.athleteId
           ? {
@@ -140,7 +141,9 @@ export async function GET(request: Request) {
       phone: progress.athletePhone,
       address: progress.athleteAddress || '',
       location: progress.athleteLocation || '',
+      gender: progress.gender || '',
       totalClasses: 0,
+      ...(historyAthlete === progress.athleteId ? { classes: [] } : {}),
       upcomingClasses: [],
       progress,
       entries: (entriesByAthlete.get(progress.athleteId) || []).sort(
@@ -163,10 +166,23 @@ export async function POST(request: Request) {
     name?: unknown
     email?: unknown
     phone?: unknown
+    birthDate?: unknown
+    gender?: unknown
   }
   const name = typeof body.name === 'string' ? body.name.trim().slice(0, 120) : ''
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase().slice(0, 160) : ''
   const phone = typeof body.phone === 'string' ? body.phone.trim().slice(0, 40) : ''
+  const birthDate = typeof body.birthDate === 'string' ? body.birthDate.trim() : ''
+  const gender = body.gender
+  if (
+    (birthDate && !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) ||
+    (gender !== undefined && !['varonil', 'femenil', 'otro'].includes(String(gender)))
+  ) {
+    return NextResponse.json(
+      { error: 'Revisa la fecha de nacimiento y el género.' },
+      { status: 400 }
+    )
+  }
 
   if (name.length < 2) {
     return NextResponse.json({ error: 'Nombre inválido.' }, { status: 400 })
@@ -191,6 +207,8 @@ export async function POST(request: Request) {
     athleteName: name,
     athleteEmail: email || null,
     ...(phone ? { athletePhone: phone } : {}),
+    ...(birthDate ? { birthDate } : {}),
+    ...(gender ? { gender: gender as StudentProgress['gender'] } : {}),
     level: 1,
     coachAssessment: 1,
     lastNote: '',
@@ -260,6 +278,10 @@ export async function PUT(request: Request) {
   }
 
   const details = sanitizeStudentDetails(body)
+  const gender = (body as { gender?: unknown }).gender
+  if (gender !== undefined && !['varonil', 'femenil', 'otro'].includes(String(gender))) {
+    return NextResponse.json({ error: 'Selecciona un género válido.' }, { status: 400 })
+  }
   if (details.name.length < 2) {
     return NextResponse.json({ error: 'Nombre inválido.' }, { status: 400 })
   }
@@ -289,6 +311,7 @@ export async function PUT(request: Request) {
     athletePhone: details.phone,
     athleteAddress: details.address,
     athleteLocation: details.location,
+    ...(gender ? { gender: gender as StudentProgress['gender'] } : {}),
     level: normalizeLevelValue(current?.level),
     coachAssessment: clampScale(current?.coachAssessment, 1),
     // Firestore rejects `undefined`; only include result when the doc has one.

@@ -138,6 +138,7 @@ export default function CoachAgenda({
   manageSchoolSchedule = false,
   allowSchoolScheduleEdit = false,
   scheduleEditorOpen = false,
+  editorOnly = false,
   onScheduleEditorClose,
   onScheduleEditorOpen,
   scheduleCoachOptions = [],
@@ -164,6 +165,8 @@ export default function CoachAgenda({
   /** A school director may open the hours editor while viewing all coaches. */
   allowSchoolScheduleEdit?: boolean
   scheduleEditorOpen?: boolean
+  /** Render only the existing hours editor for embedded entry points. */
+  editorOnly?: boolean
   onScheduleEditorClose?: () => void
   onScheduleEditorOpen?: () => void
   scheduleCoachOptions?: ScheduleCoachOption[]
@@ -2232,6 +2235,26 @@ export default function CoachAgenda({
     />
   ) : null
 
+  const hoursEditor = hoursEditorOpen ? (
+    <ScheduleHoursEditor
+      defaultDate={selectedDate}
+      existingTimesByDate={existingTimesByDate}
+      busy={busy || !agenda || (manageSchoolSchedule && loadedCoachId !== requestCoachId)}
+      error={error}
+      coachOptions={allowSchoolScheduleEdit ? scheduleCoachOptions : []}
+      selectedCoachId={coachId}
+      onCoachChange={onScheduleCoachChange}
+      onWeekChange={(weekStart) => setSelectedDate(dateKey(weekStart))}
+      onClose={closeScheduleEditor}
+      onSubmit={applyHours}
+      targetOptions={scheduleTargetOptions}
+      selectedTarget={scheduleTarget}
+      onTargetChange={onScheduleTargetChange}
+    />
+  ) : null
+
+  if (editorOnly) return hoursEditor
+
   return (
     <div className="flex flex-col gap-4">
       {detailTarget ? (
@@ -3232,23 +3255,7 @@ export default function CoachAgenda({
       {addStudentSlot && !addingFromAttendance && addStudentsContent}
 
       {/* Editor de horas: Quitar / Agregar */}
-      {hoursEditorOpen && (
-        <ScheduleHoursEditor
-          defaultDate={selectedDate}
-          existingTimesByDate={existingTimesByDate}
-          busy={busy || (manageSchoolSchedule && loadedCoachId !== requestCoachId)}
-          error={error}
-          coachOptions={allowSchoolScheduleEdit ? scheduleCoachOptions : []}
-          selectedCoachId={coachId}
-          onCoachChange={onScheduleCoachChange}
-          onWeekChange={(weekStart) => setSelectedDate(dateKey(weekStart))}
-          onClose={closeScheduleEditor}
-          onSubmit={applyHours}
-          targetOptions={scheduleTargetOptions}
-          selectedTarget={scheduleTarget}
-          onTargetChange={onScheduleTargetChange}
-        />
-      )}
+      {hoursEditor}
 
       <Sheet
         open={Boolean(slotEditor)}

@@ -15,6 +15,12 @@ export default function ConfirmLink() {
   const searchParams = useSearchParams()
   const linkEmail = (searchParams.get('email') || '').trim().toLowerCase()
   const token = (searchParams.get('token') || '').trim()
+  const redirectTo = searchParams.get('redirectTo') || ''
+  const destination = /^\/athlete\/profile-invitations\/(?:[A-Za-z0-9_-]{43}|[a-f0-9]{64})$/.test(
+    redirectTo
+  )
+    ? redirectTo
+    : '/athlete/progress'
 
   const [status, setStatus] = useState<Status>(linkEmail && token ? 'idle' : 'error')
   const [bookingCompleted, setBookingCompleted] = useState(false)
@@ -27,7 +33,7 @@ export default function ConfirmLink() {
     setBookingCompleted(completed)
     await signInWithCustomToken(auth, customToken)
     setStatus('success')
-    router.replace('/athlete/progress')
+    router.replace(destination)
   }
 
   async function confirmLink() {

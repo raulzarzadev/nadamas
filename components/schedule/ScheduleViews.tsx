@@ -33,6 +33,7 @@ function dayKey(day: Date) {
 export default function ScheduleViews({
   title,
   description,
+  toolbarActions,
   afterDateNavigation,
   selectedDate,
   days,
@@ -47,6 +48,7 @@ export default function ScheduleViews({
   loading = false,
   disabled = false,
   showStudentCounts = true,
+  showAllDays = false,
   children,
   horizontalDetails,
   monthCount,
@@ -54,6 +56,7 @@ export default function ScheduleViews({
 }: {
   title?: ReactNode
   description?: ReactNode
+  toolbarActions?: ReactNode
   afterDateNavigation?: ReactNode
   selectedDate: string
   days: Date[]
@@ -68,6 +71,7 @@ export default function ScheduleViews({
   loading?: boolean
   disabled?: boolean
   showStudentCounts?: boolean
+  showAllDays?: boolean
   children: ReactNode
   horizontalDetails?: ReactNode
   monthCount?: string
@@ -79,6 +83,7 @@ export default function ScheduleViews({
     <div className="grid min-w-0 gap-3">
       <div className="flex flex-wrap items-center justify-end gap-2">
         <div className="contents">{title}</div>
+        {toolbarActions}
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-xs font-semibold text-(--c-text-2)">Vista</span>
           <fieldset
@@ -155,11 +160,11 @@ export default function ScheduleViews({
               days.map((day) => {
                 const date = dayKey(day)
                 const options = weekSlots.filter((slot) => slot.date === date)
-                if (!options.length && date !== today) return null
+                if (!showAllDays && !options.length && date !== today) return null
                 return (
                   <div
                     key={date}
-                    className={`grid grid-cols-1 items-start gap-2 rounded-xl p-2 @min-[420px]:grid-cols-[5.5rem_minmax(0,1fr)] ${date === today ? 'bg-cyan-300' : ''}`}
+                    className={`grid grid-cols-1 items-start gap-2 rounded-xl p-2 @min-[420px]:grid-cols-[5.5rem_minmax(0,1fr)] ${date === today ? 'bg-cyan-300' : day.getDay() === 0 || day.getDay() === 6 ? 'bg-slate-200/70' : ''}`}
                   >
                     <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 @min-[420px]:block">
                       <h3 className="text-sm font-bold capitalize">
@@ -184,7 +189,7 @@ export default function ScheduleViews({
                     >
                       {!options.length && (
                         <p className="text-center text-xs text-(--c-ocean)">
-                          Sin horarios para hoy
+                          {date === today ? 'Sin horarios para hoy' : 'Sin horarios para este día'}
                         </p>
                       )}
                       {[
@@ -286,7 +291,7 @@ export default function ScheduleViews({
                 )
               })
             )}
-            {!loading && !weekSlots.length && (
+            {!loading && !showAllDays && !weekSlots.length && (
               <p className="text-sm text-(--c-text-2)">
                 No hay horarios disponibles esta semana. Elige otra semana.
               </p>

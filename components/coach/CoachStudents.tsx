@@ -76,7 +76,9 @@ export default function CoachStudents() {
 
   const addStudent = (student: CreatedStudentPayload) => {
     setStudents((current) =>
-      [...(current || []), student].sort((a, b) => a.name.localeCompare(b.name))
+      [...(current || []).filter((item) => item.athleteId !== student.athleteId), student].sort(
+        (a, b) => a.name.localeCompare(b.name)
+      )
     )
     setAddModalOpen(false)
   }

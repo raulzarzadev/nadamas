@@ -27,7 +27,7 @@ const ACTION_CARDS = [
     icon: FiSearch,
   },
   {
-    href: '/athlete/find-coach',
+    href: '/athlete/schedule',
     title: 'Horarios',
     body: 'Consulta horarios disponibles en tus escuelas y con coaches abiertos.',
     icon: FiCalendar,
@@ -112,7 +112,7 @@ export default function AthleteHomeDashboard() {
         </Link>
       ) : (
         <Link
-          href="/athlete/find-coach"
+          href="/athlete/schedule"
           className="flex items-center gap-4 rounded-[var(--r-md)] border border-dashed border-(--c-border) bg-(--c-surface) p-5 transition-colors hover:bg-white"
         >
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white text-(--c-aqua-strong) shadow-[var(--shadow-sm)]">
@@ -171,7 +171,7 @@ export default function AthleteHomeDashboard() {
                   />
                 </span>
                 <span className="mt-1 block text-sm text-(--c-text-2)">
-                  {card.href === '/athlete/find-coach' && terminology.schoolId
+                  {card.href === '/athlete/schedule' && terminology.schoolId
                     ? `Consulta horarios de tus ${coachPlural} de la escuela o filtra otra escuela.`
                     : card.body}
                 </span>

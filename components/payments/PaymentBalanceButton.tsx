@@ -35,16 +35,17 @@ export default function PaymentBalanceButton() {
   const student = snapshot?.students[0]
   const content = (
     <>
-      <FiDollarSign aria-hidden="true" />
-      Planes y pagos
+      <FiDollarSign aria-hidden="true" className="size-4 shrink-0" />
+      <span className="hidden sm:inline">Planes y pagos</span>
     </>
   )
   if (!endpoint)
     return (
       <Link
         href="/athlete/payments"
-        className="btn btn-outline h-8 min-h-8 gap-1 px-2 text-xs"
+        className="btn btn-outline h-11 min-h-11 w-11 shrink-0 gap-1 px-0! text-xs sm:w-auto sm:px-2!"
         aria-label="Planes y pagos"
+        title="Planes y pagos"
       >
         {content}
       </Link>
@@ -53,7 +54,8 @@ export default function PaymentBalanceButton() {
     <>
       <button
         type="button"
-        className="btn btn-outline h-8 min-h-8 gap-1 px-2 text-xs"
+        className="btn btn-outline h-11 min-h-11 w-11 shrink-0 gap-1 px-0! text-xs sm:w-auto sm:px-2!"
+        title="Planes y pagos"
         aria-label={student ? `Planes y pagos de ${student.name}` : 'Planes y pagos'}
         onClick={() => setOpen(true)}
       >

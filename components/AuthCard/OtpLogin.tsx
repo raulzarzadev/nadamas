@@ -2,11 +2,13 @@
 
 import { TextField } from '@comps/Inputs/FormFields'
 import { signInWithCustomToken } from 'firebase/auth'
+import { useSearchParams } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 import { auth } from '@/firebase/index'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 export default function OtpLogin({ disabled }: { disabled: boolean }) {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [step, setStep] = useState<'email' | 'code'>('email')
@@ -24,7 +26,7 @@ export default function OtpLogin({ disabled }: { disabled: boolean }) {
       const response = await fetch('/api/auth/otp/request', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, redirectTo: searchParams.get('redirectTo') }),
       })
       if (!response.ok) throw new Error('request_failed')
       const payload = (await response.json()) as { devCode?: string }

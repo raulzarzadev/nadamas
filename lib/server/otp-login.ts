@@ -21,6 +21,8 @@ export async function signInOrCreateUser(email: string) {
     user = await adminAuth.createUser({ email, emailVerified: true })
   }
 
+  if (!user.emailVerified) await adminAuth.updateUser(user.uid, { emailVerified: true })
+
   const userRef = adminDb.collection('users').doc(user.uid)
   const userDoc = await userRef.get()
   await userRef.set(

@@ -17,6 +17,7 @@ import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
 import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
 import {
+  type Booking,
   flattenCoachBookingSelections,
   type PublicBlockedSlot,
   type PublicBookedSlot,
@@ -39,12 +40,6 @@ import { type SchoolBookingMode, type SchoolStudent, schoolClassDisplayTitle } f
 const dateKey = (date: Date) => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
   return local.toISOString().slice(0, 10)
-}
-const weekStart = (date: Date) => {
-  const result = new Date(date)
-  result.setHours(12, 0, 0, 0)
-  result.setDate(result.getDate() - ((result.getDay() + 6) % 7))
-  return result
 }
 interface PublicSchoolOption {
   id: string
@@ -101,6 +96,7 @@ export default function AthleteSchoolSchedule({
   description = '',
   bookingMode,
   schools = EMPTY_SCHOOLS,
+  initialSchoolId,
 }: {
   schoolId: string | null
   schoolName?: string
@@ -108,6 +104,7 @@ export default function AthleteSchoolSchedule({
   description?: string
   bookingMode: SchoolBookingMode
   schools?: PublicSchoolOption[]
+  initialSchoolId?: string
 }) {
   const { user } = useUser() as {
     user:
@@ -140,8 +137,9 @@ export default function AthleteSchoolSchedule({
   const [reservationToCancel, setReservationToCancel] = useState<SchoolReservation | null>(null)
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
+  const [filterModal, setFilterModal] = useState<'schools' | 'coaches' | null>(null)
   const [coachFilter, setCoachFilter] = useState('all')
-  const [schoolFilter, setSchoolFilter] = useState('all')
+  const [schoolFilter, setSchoolFilter] = useState(initialSchoolId || 'all')
   const [coachFiltersTarget, setCoachFiltersTarget] = useState<HTMLElement | null>(null)
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
     () => new Set(HOUR_STATUSES)
@@ -254,27 +252,31 @@ export default function AthleteSchoolSchedule({
         return
       }
 
-      const [schoolsData, directoryResponse, profilesResponse] = await Promise.all([
-        Promise.all(
-          schools.map(async (school) => {
-            const [response, studentResponse] = await Promise.all([
-              getAuthed(
-                `/api/schools/${encodeURIComponent(school.id)}/agenda?month=${month}&view=public`
-              ),
-              getAuthed(`/api/schools/${encodeURIComponent(school.id)}/students`).catch(() => null),
-            ])
-            const [agenda, studentPayload] = await Promise.all([
-              response.json() as Promise<CoachAgendaPayload>,
-              studentResponse?.ok
-                ? (studentResponse.json() as Promise<{ students?: SchoolStudent[] }>)
-                : Promise.resolve({ students: [] as SchoolStudent[] }),
-            ])
-            return { school, agenda, students: studentPayload.students || [] }
-          })
-        ),
-        fetch('/api/public/coaches'),
-        getAuthed('/api/additional-profiles').catch(() => null),
-      ])
+      const [schoolsData, directoryResponse, profilesResponse, bookingsResponse] =
+        await Promise.all([
+          Promise.all(
+            schools.map(async (school) => {
+              const [response, studentResponse] = await Promise.all([
+                getAuthed(
+                  `/api/schools/${encodeURIComponent(school.id)}/agenda?month=${month}&view=public`
+                ),
+                getAuthed(`/api/schools/${encodeURIComponent(school.id)}/students`).catch(
+                  () => null
+                ),
+              ])
+              const [agenda, studentPayload] = await Promise.all([
+                response.json() as Promise<CoachAgendaPayload>,
+                studentResponse?.ok
+                  ? (studentResponse.json() as Promise<{ students?: SchoolStudent[] }>)
+                  : Promise.resolve({ students: [] as SchoolStudent[] }),
+              ])
+              return { school, agenda, students: studentPayload.students || [] }
+            })
+          ),
+          fetch('/api/public/coaches'),
+          getAuthed('/api/additional-profiles').catch(() => null),
+          getAuthed('/api/bookings'),
+        ])
       const profilesPayload = profilesResponse?.ok
         ? ((await profilesResponse.json()) as { profiles?: AdditionalProfile[] })
         : {}
@@ -311,6 +313,26 @@ export default function AthleteSchoolSchedule({
         allReservations.push(
           ...reservations.map((reservation) => ({ ...reservation, schoolId: school.id }))
         )
+      }
+      if (!bookingsResponse.ok) throw new Error('bookings_unavailable')
+      const bookingsPayload = (await bookingsResponse.json()) as { bookings?: Booking[] }
+      for (const booking of bookingsPayload.bookings || []) {
+        if (booking.schoolId || booking.status === 'cancelled') continue
+        const coachName = booking.coachName || names[booking.coachId] || 'Coach'
+        names[booking.coachId] = coachName
+        allReservations.push({
+          id: booking.id,
+          coachId: booking.coachId,
+          coachName,
+          date: booking.date,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          status: booking.status,
+          groupType: booking.groupType,
+          studentIds: [booking.athleteProfileId || booking.athleteId],
+          studentNames: [booking.athleteName],
+          enrolledCount: 1,
+        })
       }
       setMyReservations(allReservations)
       setStudents(
@@ -377,7 +399,7 @@ export default function AthleteSchoolSchedule({
   const week = useMemo(
     () =>
       Array.from({ length: 7 }, (_, index) => {
-        const date = weekStart(new Date(`${selectedDate}T12:00:00`))
+        const date = new Date(`${selectedDate}T12:00:00`)
         date.setDate(date.getDate() + index)
         return date
       }),
@@ -922,88 +944,73 @@ export default function AthleteSchoolSchedule({
       {!schoolId &&
         coachFiltersTarget &&
         createPortal(
-          <div className="-mx-1 flex min-w-0 flex-col gap-3 px-1">
-            {schools.length > 0 && (
-              <section className="min-w-0">
-                <div className="flex items-baseline gap-2 overflow-x-auto whitespace-nowrap">
-                  <h2 className="text-sm font-extrabold text-[var(--c-ocean)]">Escuelas</h2>
-                  <p className="text-[11px] text-[var(--c-text-2)]">
-                    Horarios disponibles de escuelas públicas.
-                  </p>
-                </div>
-                <nav
-                  aria-label="Filtrar por escuela"
-                  className="mt-2 flex gap-2 overflow-x-auto py-1"
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSchoolFilter('all')
-                      setCoachFilter('all')
-                    }}
-                    aria-pressed={schoolFilter === 'all'}
-                    className={`min-h-11 shrink-0 rounded-[var(--r-sm)] border px-5 py-2 text-sm font-bold transition ${schoolFilter === 'all' ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]' : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]'}`}
-                  >
-                    Todas las escuelas
-                  </button>
-                  {schools.map((school) => (
-                    <button
-                      key={school.id}
-                      type="button"
-                      onClick={() => {
-                        setSchoolFilter(school.id)
-                        setCoachFilter('all')
-                      }}
-                      aria-pressed={schoolFilter === school.id}
-                      className={`min-h-11 shrink-0 rounded-[var(--r-sm)] border px-5 py-2 text-sm font-bold transition ${schoolFilter === school.id ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]' : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]'}`}
-                    >
-                      {school.name}
-                    </button>
-                  ))}
-                </nav>
-              </section>
-            )}
-            <section className="min-w-0">
-              <div className="flex items-baseline gap-2 overflow-x-auto whitespace-nowrap">
-                <h2 className="text-sm font-extrabold text-[var(--c-ocean)]">
-                  {selectedSchoolName ? `Coaches de ${selectedSchoolName}` : title}
-                </h2>
-                {description && !selectedSchoolName && (
-                  <p className="text-[11px] text-[var(--c-text-2)]">{description}</p>
-                )}
-              </div>
-              <nav
-                aria-label={
-                  selectedSchoolName
-                    ? `Filtrar por coach de ${selectedSchoolName}`
-                    : 'Filtrar por coach independiente'
-                }
-                className="mt-2 flex gap-2 overflow-x-auto py-1"
-              >
-                <button
-                  type="button"
-                  onClick={() => setCoachFilter('all')}
-                  aria-pressed={coachFilter === 'all'}
-                  className={`min-h-11 shrink-0 rounded-[var(--r-sm)] border px-5 py-2 text-sm font-bold transition ${coachFilter === 'all' ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]' : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]'}`}
-                >
-                  Todos
-                </button>
-                {coaches.map(([id, name]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setCoachFilter(id)}
-                    aria-pressed={coachFilter === id}
-                    className={`min-h-11 shrink-0 rounded-[var(--r-sm)] border px-5 py-2 text-sm font-bold transition ${coachFilter === id ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white shadow-[var(--shadow-sm)]' : 'border-[var(--c-border)] bg-white text-[var(--c-ocean)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]'}`}
-                  >
-                    {name}
-                  </button>
-                ))}
-              </nav>
-            </section>
+          <div className="grid min-w-0 grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="min-h-11 min-w-0 rounded-xl border border-(--c-border) bg-white px-2 py-2 text-xs font-semibold text-(--c-ocean) sm:text-sm"
+              onClick={() => setFilterModal('schools')}
+              aria-haspopup="dialog"
+              title={selectedSchoolName || 'Mis escuelas'}
+            >
+              <span className="block truncate">{selectedSchoolName || 'Mis escuelas'}</span>
+            </button>
+            <button
+              type="button"
+              className="min-h-11 min-w-0 rounded-xl border border-(--c-border) bg-white px-2 py-2 text-xs font-semibold text-(--c-ocean) sm:text-sm"
+              onClick={() => setFilterModal('coaches')}
+              aria-haspopup="dialog"
+              title={
+                coachFilter === 'all' ? 'Mis entrenadores' : coachNames[coachFilter] || 'Entrenador'
+              }
+            >
+              <span className="block truncate">
+                {coachFilter === 'all'
+                  ? 'Mis entrenadores'
+                  : coachNames[coachFilter] || 'Entrenador'}
+              </span>
+            </button>
           </div>,
           coachFiltersTarget
         )}
+      <Sheet
+        open={filterModal !== null}
+        onClose={() => setFilterModal(null)}
+        label={filterModal === 'schools' ? 'Filtrar escuelas' : 'Filtrar entrenadores'}
+      >
+        <div className="grid gap-3">
+          <h2 className="text-xl font-bold text-(--c-ocean)">
+            {filterModal === 'schools' ? 'Escuelas' : 'Entrenadores'}
+          </h2>
+          {filterModal === 'coaches' && description && (
+            <p className="text-sm text-(--c-text-2)">
+              {selectedSchoolName ? `Entrenadores de ${selectedSchoolName}` : title}
+            </p>
+          )}
+          {(filterModal === 'schools'
+            ? [['all', 'Mis escuelas'], ...schools.map((school) => [school.id, school.name])]
+            : [['all', 'Mis entrenadores'], ...coaches]
+          ).map(([id, name]) => {
+            const selected = (filterModal === 'schools' ? schoolFilter : coachFilter) === id
+            return (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={selected}
+                className={`min-h-11 rounded-xl border px-4 py-3 text-left text-sm font-semibold ${selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean)'}`}
+                onClick={() => {
+                  if (filterModal === 'schools') {
+                    setSchoolFilter(id)
+                    setCoachFilter('all')
+                  } else setCoachFilter(id)
+                  setFilterModal(null)
+                }}
+              >
+                {name}
+              </button>
+            )
+          })}
+        </div>
+      </Sheet>
       {error && (
         <p role="alert" className="text-sm text-rose-600">
           {error}
@@ -1015,6 +1022,7 @@ export default function AthleteSchoolSchedule({
         </p>
       )}
       <ScheduleViews
+        showAllDays
         showStudentCounts={false}
         selectedDate={selectedDate}
         days={week}

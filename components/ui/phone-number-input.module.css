@@ -9,11 +9,14 @@
   color: var(--c-ocean);
   font-weight: 400;
   padding: 0 0.75rem;
+  transition:
+    border-color 150ms,
+    box-shadow 150ms;
 }
 
 .field:focus-within {
-  outline: 2px solid var(--c-ocean);
-  outline-offset: 2px;
+  border-color: var(--c-ocean);
+  box-shadow: 0 0 0 2px var(--c-border);
 }
 
 .field:has(input:disabled) {

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { studentProgressId } from '@/lib/coach-student-progress'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { requirePersonalCoach } from '@/lib/server/personal-class-access'
@@ -64,8 +65,14 @@ async function authorize(request: Request) {
     !bookings.docs.some(
       (doc) => doc.data().athleteId === studentId && doc.data().status !== 'cancelled'
     )
-  )
-    return null
+  ) {
+    const student = await adminDb
+      .collection('coachStudentProgress')
+      .doc(studentProgressId(caller.uid, studentId))
+      .get()
+    const data = student.data()
+    if (!data || data.coachId !== caller.uid || data.athleteId !== studentId) return null
+  }
   return { scope: `coach:${caller.uid}`, studentId }
 }
 

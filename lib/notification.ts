@@ -1,4 +1,5 @@
 export type NotificationType =
+  | 'athlete_profile_invitation'
   | 'payment_reviewed'
   | 'payment_pending'
   | 'booking_confirmed' // athlete booked -> coach
@@ -60,8 +61,7 @@ export function notificationDestination(notification: AppNotification, role: str
     notification.type === 'school_class_assigned' || notification.type === 'school_class_cancelled'
   if (classUpdate && notification.link.startsWith('/school/classes')) {
     if (role === 'coach') return notification.link.replace('/school/classes', '/coach/agenda')
-    if (role === 'athlete')
-      return notification.link.replace('/school/classes', '/athlete/find-coach')
+    if (role === 'athlete') return notification.link.replace('/school/classes', '/athlete/schedule')
   }
   return notification.link
 }

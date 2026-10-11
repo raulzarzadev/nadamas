@@ -1,10 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { FiClipboard, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
+import DateInput from '@/components/ui/date-input'
+import GenderSelector from '@/components/ui/gender-selector'
+import PhoneNumberInput from '@/components/ui/phone-number-input'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import Sheet from '@/components/ui/sheet'
 import StudentListRow from '@/components/ui/student-list-row'
@@ -300,21 +303,31 @@ export default function SchoolStudents() {
   )
 }
 
-function StudentForm({
+export function StudentForm({
   schoolId,
+  initialName = '',
+  onPersonalCreated,
   canInvite,
   onClose,
   onCreated,
 }: {
-  schoolId: string
+  schoolId?: string
+  initialName?: string
+  onPersonalCreated?: (student: {
+    athleteId: string
+    name: string
+    email: string | null
+    phone?: string
+  }) => void
   canInvite: boolean
   onClose: () => void
   onCreated: (student: SchoolStudent | null, invitation?: SchoolInvitation | null) => void
 }) {
+  const phoneId = useId()
   const terminology = useSchoolTerminology()
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const [form, setForm] = useState({
-    name: '',
+    name: initialName,
     birthDate: '',
     gender: 'varonil' as SchoolGender,
     guardianName: '',
@@ -344,6 +357,18 @@ function StudentForm({
     setSaving(true)
     setError(null)
     try {
+      if (!schoolId) {
+        const response = await postAuthed('/api/coach/students', {
+          name: form.name,
+          email: form.studentEmail,
+          phone: form.guardianPhone,
+          birthDate: form.birthDate,
+          gender: form.gender,
+        })
+        const payload = await response.json()
+        onPersonalCreated?.(payload.student)
+        return
+      }
       const response = await postAuthed(`/api/schools/${schoolId}/students`, {
         ...form,
         additionalProfileId,
@@ -368,6 +393,14 @@ function StudentForm({
   async function sendInvitationOnly() {
     if (!validEmail) {
       setError('Escribe un correo válido para enviar la invitación.')
+      return
+    }
+    if (!schoolId) {
+      if (form.name.trim().length < 2) {
+        setError('Escribe el nombre del atleta para enviar la invitación.')
+        return
+      }
+      await save(true)
       return
     }
     const hasStudentData = form.name.trim().length >= 2 && form.birthDate && form.gender
@@ -464,27 +497,28 @@ function StudentForm({
               onChange={(value) => setForm({ ...form, name: value })}
               required
             />
-            <Text
+            <div className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+              <label htmlFor={phoneId}>Teléfono (opcional)</label>
+              <PhoneNumberInput
+                id={phoneId}
+                value={form.guardianPhone}
+                onChange={(value) => setForm((current) => ({ ...current, guardianPhone: value }))}
+                disabled={saving}
+              />
+            </div>
+            <DateInput
               label="Fecha de nacimiento"
-              type="date"
               value={form.birthDate}
-              onChange={(value) => setForm({ ...form, birthDate: value })}
+              onChange={(value) => setForm((current) => ({ ...current, birthDate: value }))}
               required
+              disabled={saving}
+              max={new Date().toLocaleDateString('en-CA')}
             />
-            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-              Rama / género
-              <select
-                value={form.gender}
-                onChange={(event) =>
-                  setForm({ ...form, gender: event.target.value as SchoolGender })
-                }
-                className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-              >
-                <option value="varonil">Varonil</option>
-                <option value="femenil">Femenil</option>
-                <option value="otro">Otro</option>
-              </select>
-            </label>
+            <GenderSelector
+              value={form.gender}
+              onChange={(value) => setForm((current) => ({ ...current, gender: value }))}
+              disabled={saving}
+            />
           </>
         )}
         {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}

@@ -21,6 +21,7 @@ export interface SchoolHistorySharedComment {
 }
 
 export interface SchoolHistoryClass {
+  groupType?: 'particular' | 'grupal'
   id: string
   title: string
   date: string

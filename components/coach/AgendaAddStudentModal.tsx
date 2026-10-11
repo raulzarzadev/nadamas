@@ -4,6 +4,7 @@ import Sheet from '@comps/ui/sheet'
 import { type ComponentProps, useEffect, useState } from 'react'
 import { FiClipboard, FiPlus, FiSearch, FiX } from 'react-icons/fi'
 import PaymentBookingOptions from '@/components/payments/PaymentBookingOptions'
+import { StudentForm } from '@/components/school/SchoolStudents'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import StudentListRow from '@/components/ui/student-list-row'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -45,6 +46,7 @@ function InlineStudentForm({ children, footer }: ComponentProps<typeof Sheet>) {
 }
 
 export default function AgendaAddStudentModal({
+  standalone = false,
   canOverridePayments = false,
   attendance,
   embedded = false,
@@ -62,6 +64,7 @@ export default function AgendaAddStudentModal({
   onClose,
   onSubmit,
 }: {
+  standalone?: boolean
   canOverridePayments?: boolean
   attendance?: { date: string; startTime: string; schoolClassId?: string; onUpdated: () => void }
   embedded?: boolean
@@ -82,6 +85,7 @@ export default function AgendaAddStudentModal({
   onClose: () => void
   onSubmit: (payloads: AddStudentPayload[]) => unknown
 }) {
+  const [creatingName, setCreatingName] = useState<string | null>(null)
   const terminology = useSchoolTerminology()
   const participantSingular =
     schoolId && terminology.schoolId ? terminology.participantSingular : 'alumno'
@@ -324,18 +328,9 @@ export default function AgendaAddStudentModal({
       return next
     })
 
-  const addCreateName = async () => {
+  const addCreateName = () => {
     if (!canCreate || busy) return
-    if (attendance) {
-      const saved = await onSubmit([{ ...payment, athleteName: trimmedQuery }])
-      if (saved) {
-        setQuery('')
-        setAttendanceRevision((current) => current + 1)
-      }
-      return
-    }
-    setCreateNames((current) => [...current, trimmedQuery])
-    setQuery('')
+    setCreatingName(trimmedQuery)
   }
 
   const submit = async () => {
@@ -356,6 +351,37 @@ export default function AgendaAddStudentModal({
       setQuery('')
       setAttendanceRevision((current) => current + 1)
     }
+  }
+
+  if (creatingName !== null) {
+    const selectCreated = (student: CoachStudent) => {
+      setStudents((current) => [
+        ...(current || []).filter((item) => item.athleteId !== student.athleteId),
+        student,
+      ])
+      setSelectedIds((current) => new Set([...current, student.athleteId]))
+      setQuery('')
+      setCreatingName(null)
+    }
+    return (
+      <StudentForm
+        schoolId={schoolId}
+        canInvite
+        initialName={creatingName}
+        onClose={() => setCreatingName(null)}
+        onPersonalCreated={(student) => selectCreated({ ...student, phone: student.phone || null })}
+        onCreated={(student) => {
+          if (student)
+            selectCreated({
+              athleteId: student.id,
+              name: student.name,
+              email: student.studentEmail || null,
+              phone: student.guardianPhone || null,
+            })
+          else setCreatingName(null)
+        }}
+      />
+    )
   }
 
   const Container = embedded ? InlineStudentForm : Sheet
@@ -421,17 +447,19 @@ export default function AgendaAddStudentModal({
                   </li>
                 ))}
             </ul>
-          ) : (
+          ) : slotLabel ? (
             <p className="mt-1 text-sm text-[var(--c-text-2)]">{slotLabel}</p>
-          )}
+          ) : null}
         </div>
 
         <div className="flex flex-col px-4 py-4 sm:px-0">
-          <PaymentBookingOptions
-            value={payment}
-            onChange={setPayment}
-            canOverride={!schoolId || canOverridePayments}
-          />
+          {!standalone && (
+            <PaymentBookingOptions
+              value={payment}
+              onChange={setPayment}
+              canOverride={!schoolId || canOverridePayments}
+            />
+          )}
           {(promotionRequired || occupiedIndividual) && (
             <p
               role="status"

@@ -222,7 +222,7 @@ export default function SchoolInvitationPage() {
     return (
       <section className="mx-auto flex max-w-xl flex-col gap-5">
         <Link
-          href="/athlete/find-coach"
+          href="/athlete/schedule"
           className="inline-flex items-center gap-2 text-sm font-semibold text-(--c-ocean-mid)"
         >
           <FiArrowLeft aria-hidden="true" /> Regresar

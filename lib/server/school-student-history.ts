@@ -130,6 +130,7 @@ export async function getSchoolStudentHistory(
         })
       return {
         id: booking.schoolClassId ? `class:${booking.schoolClassId}` : `booking:${booking.id}`,
+        groupType: booking.groupType,
         title:
           booking.schoolClassTitle ||
           (booking.groupType === 'grupal' ? 'Clase grupal' : 'Clase particular'),
@@ -147,6 +148,7 @@ export async function getSchoolStudentHistory(
   const classes: SchoolHistoryClass[] = [
     ...occurrences.map((item) => ({
       id: `class:${item.id}`,
+      groupType: item.type === 'group' ? ('grupal' as const) : ('particular' as const),
       title: schoolClassDisplayTitle(item.title),
       date: item.date,
       startTime: item.startTime,

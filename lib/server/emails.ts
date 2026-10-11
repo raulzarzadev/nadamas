@@ -281,3 +281,20 @@ export function sendVerificationReviewedEmail({
       : '<p>Tu solicitud fue rechazada.</p><p>Sube una imagen más clara de tu INE para intentarlo de nuevo.</p>',
   })
 }
+
+export function sendAthleteProfileInvitationEmail({
+  email,
+  name,
+  inviteUrl,
+}: {
+  email: string
+  name: string
+  inviteUrl: string
+}) {
+  return sendEmail({
+    to: [{ email }],
+    subject: 'Verifica tu correo y completa tu perfil de atleta',
+    textContent: `Hola ${name},\n\nTu entrenador te invita a verificar tu correo y revisar o completar tu perfil de atleta. Inicia sesión con este correo y acepta la invitación para vincular tu cuenta al registro existente:\n${inviteUrl}\n\nEl enlace vence en 7 días. Si no reconoces esta invitación, puedes ignorarla.`,
+    htmlContent: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#102a43"><h1>Completa tu perfil de atleta</h1><p>Hola ${escapeHtml(name)},</p><p>Tu entrenador te invita a verificar tu correo y revisar o completar tus datos. Inicia sesión con este mismo correo y acepta la invitación para vincular tu cuenta al registro existente.</p><p><a href="${escapeHtml(inviteUrl)}">Verificar correo y completar mi perfil</a></p><p>El enlace vence en 7 días. Si no reconoces esta invitación, puedes ignorarla.</p></div>`,
+  })
+}

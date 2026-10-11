@@ -424,6 +424,34 @@ export default function AthleteBookingsOverview({
     if (bookings !== undefined) onUpcomingCountChange?.(activeCount)
   }, [bookings, activeCount, onUpcomingCountChange])
 
+  const calendarSheet = (
+    <Sheet
+      open={calendarOpen}
+      onClose={() => setCalendarOpen(false)}
+      label="Suscribirme al calendario"
+      keyboardAware
+      fullBleedMobile
+      size="xl"
+    >
+      <div id="class-calendar-subscription" className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="class-calendar-title" className="text-xl font-bold">
+            Suscribirme al calendario
+          </h2>
+          <button
+            type="button"
+            aria-label="Cerrar calendario"
+            onClick={() => setCalendarOpen(false)}
+            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+          >
+            <FiX aria-hidden="true" size={22} />
+          </button>
+        </div>
+        {calendarOpen && <CalendarConnectionCard calendarRole="athlete" embedded />}
+      </div>
+    </Sheet>
+  )
+
   const content = (
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -449,18 +477,6 @@ export default function AthleteBookingsOverview({
               <FiEdit3 aria-hidden="true" />
             </button>
           )}
-          {showUpcoming && (
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              aria-controls="class-calendar-subscription"
-              onClick={() => setCalendarOpen(true)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-4 py-2 text-sm font-bold text-[var(--c-ocean)] hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-            >
-              <FiCalendar aria-hidden="true" />
-              Suscribirme al calendario
-            </button>
-          )}
         </div>
       </header>
 
@@ -477,32 +493,6 @@ export default function AthleteBookingsOverview({
           </ul>
         </section>
       )}
-
-      <Sheet
-        open={calendarOpen}
-        onClose={() => setCalendarOpen(false)}
-        label="Suscribirme al calendario"
-        keyboardAware
-        fullBleedMobile
-        size="xl"
-      >
-        <div id="class-calendar-subscription" className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="class-calendar-title" className="text-xl font-bold">
-              Suscribirme al calendario
-            </h2>
-            <button
-              type="button"
-              aria-label="Cerrar calendario"
-              onClick={() => setCalendarOpen(false)}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-            >
-              <FiX aria-hidden="true" size={22} />
-            </button>
-          </div>
-          {calendarOpen && <CalendarConnectionCard calendarRole="athlete" embedded />}
-        </div>
-      </Sheet>
 
       {bookings === undefined ? (
         <Loading />
@@ -523,7 +513,7 @@ export default function AthleteBookingsOverview({
               : 'Encuentra un coach y reserva tu primer entrenamiento.'}
           </p>
           <Link
-            href="/athlete/find-coach"
+            href="/athlete/schedule"
             className="inline-flex items-center justify-center rounded-full bg-[var(--c-ocean)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
           >
             Buscar {terminology.schoolId ? terminology.coachSingular : 'coach'}
@@ -673,13 +663,25 @@ export default function AthleteBookingsOverview({
   if (!showUpcoming) return content
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setUpcomingOpen(true)}
-        className="min-h-11 rounded-2xl border border-(--c-border) bg-white p-4 text-left font-bold text-(--c-ocean)"
-      >
-        Próximas clases{bookings !== undefined ? ` (${activeCount})` : ''}
-      </button>
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3">
+        <button
+          type="button"
+          onClick={() => setUpcomingOpen(true)}
+          className="min-h-11 flex-1 text-left font-bold text-(--c-ocean)"
+        >
+          Próximas clases{bookings !== undefined ? ` (${activeCount})` : ''}
+        </button>
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-controls="class-calendar-subscription"
+          onClick={() => setCalendarOpen(true)}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-4 py-2 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+        >
+          <FiCalendar aria-hidden="true" /> Suscribirme al calendario
+        </button>
+      </div>
+      {calendarSheet}
       <Sheet
         open={upcomingOpen}
         onClose={() => setUpcomingOpen(false)}

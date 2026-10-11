@@ -2,6 +2,7 @@
 
 import NotificationItem from '@comps/notifications/NotificationItem'
 import PushNotificationsControl from '@comps/notifications/PushNotificationsControl'
+import useProfileInvitations from '@comps/notifications/useProfileInvitations'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { FiBell } from 'react-icons/fi'
@@ -30,6 +31,7 @@ export default function NotificationsBell() {
   const [items, setItems] = useState<AppNotification[]>([])
   const [schoolInvitations, setSchoolInvitations] = useState<SchoolInvitationPreview[]>([])
   const [open, setOpen] = useState(false)
+  const profileInvitations = useProfileInvitations(uid, open)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function NotificationsBell() {
   if (!uid) return null
 
   const unreadCount = items.reduce((count, item) => count + (item.readAt ? 0 : 1), 0)
-  const pendingInvitationCount = schoolInvitations.length
+  const pendingInvitationCount = schoolInvitations.length + profileInvitations.length
 
   const toggle = () => {
     setOpen((wasOpen) => {
@@ -89,7 +91,7 @@ export default function NotificationsBell() {
     })
   }
 
-  const preview = items.slice(0, PREVIEW_COUNT)
+  const preview = [...profileInvitations, ...items].slice(0, PREVIEW_COUNT)
 
   return (
     <div ref={ref} className="relative">

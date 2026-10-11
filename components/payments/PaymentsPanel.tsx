@@ -150,13 +150,13 @@ export default function PaymentsPanel({
   const input = paymentInputClass
   return (
     <div className="grid w-full min-w-0 grid-cols-1 gap-4">
-      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-extrabold">Planes y pagos</h1>
         {!data.manager && (
           <button
             type="button"
             onClick={() => setTab('plans')}
-            className="btn btn-primary min-h-11 shrink-0 justify-self-end px-3 text-xs"
+            className="btn btn-primary min-h-11 max-w-full px-3 text-xs"
           >
             Conseguir más clases
           </button>

@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { FiUser, FiUsers } from 'react-icons/fi'
+import { FiCheckCircle, FiUser, FiUsers } from 'react-icons/fi'
+import CoachAgenda from '@/components/coach/CoachAgenda'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import CoachBadge from '@/components/ui/coach-badge'
 import Sheet from '@/components/ui/sheet'
+import StatusBadge from '@/components/ui/status-badge'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAgendaPayload, CoachAvailableSlot } from '@/lib/coach-agenda'
 import { HOUR_STATUSES, type HourStatus } from '@/lib/coach-agenda-status'
@@ -28,6 +30,8 @@ interface AssignmentSlot {
   schoolClassTitle?: string
   studentCount?: number
   classFull?: boolean
+  disabled?: boolean
+  disabledReason?: string
 }
 
 function dateInTimezone(timezone: string) {
@@ -83,13 +87,14 @@ export default function SchoolStudentClassAssignment({
   onClose,
   onAssigned,
 }: {
-  schoolId: string
+  schoolId?: string
   timezone: string
-  student: SchoolStudent
+  student: Pick<SchoolStudent, 'id' | 'name' | 'studentEmail' | 'phone'>
   open: boolean
   onClose: () => void
   onAssigned: () => void
 }) {
+  const [editingHours, setEditingHours] = useState(false)
   const [date, setDate] = useState(() => dateInTimezone(timezone))
   const [agenda, setAgenda] = useState<CoachAgendaPayload | null>(null)
   const [classes, setClasses] = useState<SchoolClassOccurrence[]>([])
@@ -110,10 +115,14 @@ export default function SchoolStudentClassAssignment({
     setAgenda(null)
     setLoadingError(false)
     Promise.all([
-      getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}`).then((r) =>
-        r.json()
-      ),
-      getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/classes`).then((r) => r.json()),
+      getAuthed(
+        schoolId
+          ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}`
+          : `/api/coach/agenda?month=${month}`
+      ).then((r) => r.json()),
+      schoolId
+        ? getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/classes`).then((r) => r.json())
+        : Promise.resolve({ classes: [] }),
     ])
       .then(
         ([agendaPayload, classPayload]: [
@@ -137,47 +146,56 @@ export default function SchoolStudentClassAssignment({
     if (!agenda) return []
     const slots = new Map<string, AssignmentSlot>()
     for (const slot of agenda.availableSlots) {
-      if (slot.status === 'available') {
-        const normalized = asAssignmentSlot(slot, agenda)
-        slots.set(normalized.key, normalized)
-      }
+      const normalized = asAssignmentSlot(slot, agenda)
+      slots.set(normalized.key, {
+        ...normalized,
+        disabled: slot.status !== 'available',
+        disabledReason:
+          slot.status === 'blocked'
+            ? 'Bloqueado'
+            : slot.status === 'booked'
+              ? 'Sin espacio'
+              : undefined,
+      })
     }
     for (const item of agenda.bookings) {
-      if (
-        item.schoolClassId &&
-        item.groupType === 'grupal' &&
-        item.status !== 'cancelled' &&
-        !item.classFull &&
-        !item.schoolClassStudentIds?.includes(student.id) &&
-        !classes.some(
+      if (item.status === 'cancelled') continue
+      const key = `${item.coachId}|${item.date}|${item.startTime}|${item.groupType}`
+      const current = slots.get(key)
+      const assigned =
+        current?.disabledReason === 'Ya asignado' ||
+        item.athleteId === student.id ||
+        item.schoolClassStudentIds?.includes(student.id) ||
+        classes.some(
           (classItem) =>
             classItem.id === item.schoolClassId && classItem.studentIds.includes(student.id)
         )
-      ) {
-        const slot: AssignmentSlot = {
-          key: `${item.coachId}|${item.date}|${item.startTime}|grupal`,
-          date: item.date,
-          startTime: item.startTime,
-          endTime: item.endTime,
-          coachId: item.coachId,
-          coachName: item.coachName || agenda.coachNames?.[item.coachId] || 'Profesor',
-          groupType: 'grupal',
-          locationName: item.locationName || '',
-          schoolClassId: item.schoolClassId,
-          schoolClassTitle: item.schoolClassTitle || 'Clase grupal',
-          studentCount: item.schoolClassStudentCount,
-          classFull: item.classFull,
-        }
-        slots.set(slot.key, slot)
-      }
+      const full =
+        item.groupType === 'particular' ||
+        item.classFull ||
+        (!item.schoolClassId && current?.disabled)
+      slots.set(key, {
+        key,
+        date: item.date,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        coachId: item.coachId,
+        coachName: item.coachName || agenda.coachNames?.[item.coachId] || 'Profesor',
+        groupType: item.groupType,
+        locationName: item.locationName || '',
+        schoolClassId: item.schoolClassId,
+        schoolClassTitle: item.schoolClassTitle,
+        studentCount: item.schoolClassStudentCount,
+        classFull: item.classFull,
+        disabled: Boolean(assigned || full),
+        disabledReason: assigned ? 'Ya asignado' : full ? 'Sin espacio' : undefined,
+      })
     }
     for (const item of classes) {
       if (
         item.type !== 'group' ||
         (item.status !== 'scheduled' && item.status !== 'pending') ||
-        item.date < dateInTimezone(timezone) ||
-        item.classFull ||
-        item.studentIds.includes(student.id)
+        item.date < dateInTimezone(timezone)
       )
         continue
       const coachId = item.teacherIds[0] || UNASSIGNED_SCHOOL_COACH_ID
@@ -196,6 +214,12 @@ export default function SchoolStudentClassAssignment({
         schoolClassTitle: schoolClassDisplayTitle(item.title),
         studentCount: item.studentIds.length,
         classFull: item.classFull,
+        disabled: item.studentIds.includes(student.id) || item.classFull,
+        disabledReason: item.studentIds.includes(student.id)
+          ? 'Ya asignado'
+          : item.classFull
+            ? 'Sin espacio'
+            : undefined,
       })
       if (!current) continue
     }
@@ -231,6 +255,7 @@ export default function SchoolStudentClassAssignment({
   }, [agenda])
 
   function toggleSlot(slot: AssignmentSlot) {
+    if (slot.disabled) return
     setSelectedSlots((current) =>
       current.some((item) => item.key === slot.key)
         ? current.filter((item) => item.key !== slot.key)
@@ -249,6 +274,37 @@ export default function SchoolStudentClassAssignment({
     setSaveError(false)
     setNotice('')
     try {
+      if (!schoolId) {
+        const failed: AssignmentSlot[] = []
+        let assigned = 0
+        for (const slot of selectedSlots) {
+          try {
+            const response = await postAuthed('/api/coach/agenda/bookings', {
+              date: slot.date,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              locationName: slot.locationName,
+              groupType: slot.groupType,
+              athleteId: student.id,
+              athleteName: student.name,
+              athleteEmail: student.studentEmail || null,
+              athletePhone: student.phone || null,
+            })
+            if (!response.ok) throw new Error('assignment_failed')
+            assigned++
+          } catch {
+            failed.push(slot)
+          }
+        }
+        setSelectedSlots(failed)
+        setSaveError(failed.length > 0)
+        if (assigned) {
+          setNotice(`Se asignó a ${assigned} ${assigned === 1 ? 'clase' : 'clases'}.`)
+          onAssigned()
+          setAttempt((value) => value + 1)
+        }
+        return
+      }
       const response = await postAuthed(
         `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(student.id)}/classes`,
         {
@@ -283,6 +339,20 @@ export default function SchoolStudentClassAssignment({
     }
   }
 
+  if (editingHours)
+    return (
+      <CoachAgenda
+        schoolId={schoolId}
+        initialDate={date}
+        editorOnly
+        scheduleEditorOpen
+        onScheduleEditorClose={() => {
+          setEditingHours(false)
+          setAttempt((value) => value + 1)
+        }}
+      />
+    )
+
   return (
     <Sheet
       open={open}
@@ -294,6 +364,7 @@ export default function SchoolStudentClassAssignment({
       size="xl"
     >
       <div className="flex min-h-0 flex-col gap-3 px-4 pb-3 sm:px-0 sm:pb-0">
+        <h2 className="text-xl font-bold text-(--c-ocean)">Asignar clases a: {student.name}</h2>
         {loadingError ? (
           <div role="alert" className="text-sm text-(--c-text-2)">
             <p>No pudimos cargar los horarios disponibles.</p>
@@ -308,10 +379,19 @@ export default function SchoolStudentClassAssignment({
         ) : (
           <>
             <ScheduleViews
-              title={<h2 className="text-xl font-bold text-(--c-ocean)">Asignar clases</h2>}
+              toolbarActions={
+                <button
+                  type="button"
+                  className="btn btn-outline min-h-11 "
+                  disabled={saving}
+                  onClick={() => setEditingHours(true)}
+                >
+                  Editar horarios
+                </button>
+              }
               description={
                 <p className="text-sm text-(--c-text-2)">
-                  {student.name} · Selecciona uno o varios horarios grupales o particulares.
+                  Selecciona uno o varios horarios grupales o particulares.
                 </p>
               }
               selectedDate={date}
@@ -335,10 +415,12 @@ export default function SchoolStudentClassAssignment({
               disabled={saving}
               slots={availableSlots.map((slot) => ({
                 ...slot,
+                bookingStatus:
+                  slot.disabledReason === 'Ya asignado' ? ('confirmed' as const) : undefined,
                 selected: selectedSlots.some((item) => item.key === slot.key),
                 coachName: slot.coachName,
                 unassigned: slot.coachId === '__unassigned__',
-                label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${slot.coachName} · ${slot.groupType}`,
+                label: `${slot.date} · ${slot.startTime}–${slot.endTime} · ${slot.coachName} · ${slot.groupType}${slot.disabledReason ? ` · ${slot.disabledReason}` : ''}`,
               }))}
               onSelectSlot={(key) => {
                 const slot = availableSlots.find((item) => item.key === key)
@@ -393,11 +475,15 @@ export default function SchoolStudentClassAssignment({
                         <button
                           type="button"
                           onClick={() => toggleSlot(slot)}
-                          disabled={saving}
+                          disabled={saving || slot.disabled}
                           aria-pressed={selected}
-                          className={`min-h-10 whitespace-nowrap rounded-full px-3 text-xs font-bold sm:px-4 sm:text-sm ${selected ? 'bg-(--c-ocean) text-white' : 'border border-(--c-border) text-(--c-ocean)'}`}
+                          className={`min-h-10 whitespace-nowrap rounded-full px-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-sm ${selected ? 'bg-(--c-ocean) text-white' : 'border border-(--c-border) text-(--c-ocean)'}`}
                         >
-                          {selected ? 'Seleccionado' : 'Seleccionar'}
+                          {slot.disabledReason === 'Ya asignado' ? (
+                            <StatusBadge status="confirmed" />
+                          ) : (
+                            slot.disabledReason || (selected ? 'Seleccionado' : 'Seleccionar')
+                          )}
                         </button>
                       </div>
                     )
@@ -418,8 +504,12 @@ export default function SchoolStudentClassAssignment({
               </p>
             )}
             {notice && (
-              <p role="status" className="shrink-0 text-sm font-semibold text-(--c-ocean)">
-                {notice}
+              <p
+                role="status"
+                className="flex shrink-0 items-center gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-4 text-base font-bold text-emerald-900"
+              >
+                <FiCheckCircle aria-hidden="true" className="size-6 shrink-0 text-emerald-600" />
+                <span>{notice}</span>
               </p>
             )}
             {saveError && (

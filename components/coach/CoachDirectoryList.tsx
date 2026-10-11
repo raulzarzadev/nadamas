@@ -144,11 +144,14 @@ export default function CoachDirectoryList({
           {visible.map((coach) => {
             const tag = skillTag(coach)
             const availability = offeringsAvailabilitySummary(resolveOfferings(coach))
-            const coachHref = schoolId
-              ? `/athlete/coach/${coach.id}?schoolId=${encodeURIComponent(schoolId)}`
-              : coach.slug
-                ? `/${coach.slug}`
-                : `${coachHrefBase}/${coach.id}`
+            const coachHref =
+              coachHrefBase === '/athlete/search/coach'
+                ? `${coachHrefBase}/${encodeURIComponent(coach.id)}/schedule${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`
+                : schoolId
+                  ? `/athlete/coach/${coach.id}?schoolId=${encodeURIComponent(schoolId)}`
+                  : coach.slug
+                    ? `/${coach.slug}`
+                    : `${coachHrefBase}/${coach.id}`
             return (
               <li
                 key={coach.id}

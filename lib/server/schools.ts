@@ -138,6 +138,7 @@ export async function listPublicSchools() {
       return {
         id: doc.id,
         name: typeof school.name === 'string' ? school.name : '',
+        slug: typeof school.slug === 'string' ? school.slug : '',
         bookingMode: school.bookingMode === 'direct' ? ('direct' as const) : ('request' as const),
         showCoachesSchedules: school.showCoachesSchedules !== false,
       }

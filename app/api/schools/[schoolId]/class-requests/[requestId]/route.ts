@@ -227,7 +227,7 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
     type: 'school_class_assigned',
     title: 'Solicitud aprobada',
     body: 'La dirección asignó un horario para tu solicitud.',
-    link: classLink.replace('/school/classes', '/athlete/find-coach'),
+    link: classLink.replace('/school/classes', '/athlete/schedule'),
     ...(classLinkData ? { data: classLinkData } : {}),
   }).catch((error) => console.error('[SCHOOL_CLASS_NOTIFICATION]', error))
   for (const teacherId of teacherIds) {

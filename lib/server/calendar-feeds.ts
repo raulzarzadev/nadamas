@@ -233,7 +233,7 @@ export function buildCalendarIcs(feed: CalendarFeed, bookings: Booking[]) {
     const baseSummary = event.grouped
       ? `Clase grupal (${event.names.length})`
       : eventSummary(feed, booking)
-    const summary = cancelled ? `Cancelada · ${baseSummary}` : baseSummary
+    const summary = cancelled ? `(CANCELADA) ${baseSummary}` : baseSummary
     const description = event.grouped
       ? [
           `Alumnos (${event.names.length}):`,

@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { randomBytes } from 'node:crypto'
-import { schoolClassDisplayTitle, type SchoolClassOccurrence } from '@/lib/school'
+import { type SchoolClassOccurrence, schoolClassDisplayTitle } from '@/lib/school'
 import { adminDb } from './firebase-admin'
 import { listSchoolClasses } from './school-classes'
 import { listSchoolStudents } from './school-students'
@@ -156,7 +156,9 @@ export function buildSchoolCalendarIcs(
       `LAST-MODIFIED:${utcStamp(new Date(occurrence.updatedAt || occurrence.createdAt))}`,
       'END:VEVENT'
     )
-    const title = schoolClassDisplayTitle(occurrence.title)
+    const baseTitle = schoolClassDisplayTitle(occurrence.title)
+    const title =
+      occurrence.status === 'cancelled' ? `(CANCELADA) ${baseTitle || 'Clase'}` : baseTitle
     if (title) lines.splice(lines.length - 6, 0, `SUMMARY:${escapeIcsText(title)}`)
   }
   lines.push('END:VCALENDAR')

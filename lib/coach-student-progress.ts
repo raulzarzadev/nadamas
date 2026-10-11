@@ -16,6 +16,8 @@ export interface StudentProgress {
   athletePhone?: string
   athleteAddress?: string
   athleteLocation?: string
+  birthDate?: string
+  gender?: 'varonil' | 'femenil' | 'otro'
   /** 1-4. Legacy docs may still hold a string; normalize with normalizeLevelValue. */
   level: number
   /** Sub-level 1-4 (field name kept for data compatibility). */

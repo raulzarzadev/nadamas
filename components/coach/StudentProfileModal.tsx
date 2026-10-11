@@ -1,11 +1,23 @@
 'use client'
 
 import { useEffect, useId, useState } from 'react'
+import { FiUser, FiUsers } from 'react-icons/fi'
+import SchoolStudentClassAssignment from '@/components/school/SchoolStudentClassAssignment'
+import CoachBadge from '@/components/ui/coach-badge'
 import DateInput from '@/components/ui/date-input'
+import EmailInput from '@/components/ui/email-input'
 import GenderSelector from '@/components/ui/gender-selector'
 import PhoneNumberInput from '@/components/ui/phone-number-input'
 import Sheet from '@/components/ui/sheet'
-import { getAuthed, patchAuthed, putAuthed } from '@/lib/client/authed-api'
+import StatusBadge from '@/components/ui/status-badge'
+import { useUser } from '@/context/UserContext'
+import {
+  deleteAuthed,
+  getAuthed,
+  patchAuthed,
+  postAuthed,
+  putAuthed,
+} from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
 import type { SchoolGender } from '@/lib/school'
 import type { SchoolStudentHistory } from '@/lib/school-student-history'
@@ -43,9 +55,17 @@ export default function StudentProfileModal({
   onClose: () => void
   onUpdated?: () => void
 }) {
+  const { user } = useUser()
   const editId = useId()
+  const [cancelTarget, setCancelTarget] = useState<string | null>(null)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelError, setCancelError] = useState('')
+  const [assignmentOpen, setAssignmentOpen] = useState(false)
+  const [reload, setReload] = useState(0)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [verifying, setVerifying] = useState(false)
+  const [verificationMessage, setVerificationMessage] = useState('')
   const [draft, setDraft] = useState<Record<string, string>>({})
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,8 +73,10 @@ export default function StudentProfileModal({
   const [history, setHistory] = useState<SchoolStudentHistory | null>(null)
   const [historyError, setHistoryError] = useState('')
   const [panel, setPanel] = useState<'classes' | 'scheduled' | 'comments' | null>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reload refreshes the profile after assigning classes.
   useEffect(() => {
     let active = true
+    setLoading(true)
     const endpoint = schoolId
       ? `/api/schools/${encodeURIComponent(schoolId)}/students?includeAgendaStudents=true`
       : `/api/coach/students?historyAthlete=${encodeURIComponent(studentId)}`
@@ -77,7 +99,7 @@ export default function StudentProfileModal({
     return () => {
       active = false
     }
-  }, [studentId, schoolId])
+  }, [studentId, schoolId, reload])
   useEffect(() => {
     if (!schoolId || !profile) return
     let active = true
@@ -109,6 +131,7 @@ export default function StudentProfileModal({
         ['phone', 'Teléfono'],
         ['address', 'Dirección'],
         ['location', 'Ubicación'],
+        ['gender', 'Género'],
       ]
   function editProfile() {
     if (!profile) return
@@ -119,6 +142,27 @@ export default function StudentProfileModal({
     )
     setError('')
     setEditing(true)
+  }
+  async function verifyEmail(email: string) {
+    if (!profile || verifying || !/^\S+@\S+\.\S+$/.test(email.trim())) return
+    setVerifying(true)
+    setVerificationMessage('')
+    try {
+      await postAuthed('/api/coach/athlete-invitations', {
+        studentId: schoolId ? profile.id || studentId : profile.athleteId || studentId,
+        schoolId: schoolId || '',
+        email,
+      })
+      setVerificationMessage(
+        'Invitación enviada. La persona podrá verificar su correo, completar sus datos y vincular su perfil.'
+      )
+    } catch {
+      setVerificationMessage(
+        'No pudimos enviar la invitación. Espera un momento e inténtalo de nuevo.'
+      )
+    } finally {
+      setVerifying(false)
+    }
   }
   async function saveProfile() {
     if (!profile || saving) return
@@ -144,9 +188,45 @@ export default function StudentProfileModal({
       setSaving(false)
     }
   }
+  async function cancelClass(id: string) {
+    if (cancelling) return
+    setCancelling(true)
+    setCancelError('')
+    try {
+      const endpoint =
+        schoolId && id.startsWith('class:')
+          ? `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(id.slice(6))}/students/${encodeURIComponent(profile?.id || studentId)}`
+          : `/api/coach/agenda/bookings?id=${encodeURIComponent(id.replace(/^booking:/, ''))}${schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''}`
+      const response = await deleteAuthed(endpoint)
+      if (!response.ok) throw new Error('cancel_failed')
+      setProfile((current) =>
+        current
+          ? { ...current, classes: current.classes?.filter((item) => item.id !== id) }
+          : current
+      )
+      setHistory((current) =>
+        current
+          ? { ...current, classes: current.classes.filter((item) => item.id !== id) }
+          : current
+      )
+      setCancelTarget(null)
+      setReload((value) => value + 1)
+      onUpdated?.()
+    } catch {
+      setCancelError('No pudimos cancelar la clase. Inténtalo de nuevo.')
+    } finally {
+      setCancelling(false)
+    }
+  }
   const classes = schoolId
     ? history?.classes.map((item) => ({
         id: item.id,
+        groupType: item.groupType,
+        coachName: item.coachIds
+          .map((id) => history?.coachNames[id])
+          .filter(Boolean)
+          .join(', '),
+        badgeStatus: item.status === 'cancelled' ? ('cancelled' as const) : ('confirmed' as const),
         taken: item.status === 'taken',
         scheduled: item.status === 'scheduled',
         date: item.date,
@@ -157,8 +237,16 @@ export default function StudentProfileModal({
           .filter((evaluation) => evaluation.direction === 'from-coach' && evaluation.comment)
           .map((evaluation) => evaluation.comment),
       }))
-    : profile?.classes?.map((item) => ({
+    : (profile?.classes || []).map((item) => ({
         id: item.id,
+        groupType: item.groupType,
+        coachName: item.coachName || user?.name || user?.displayName || '',
+        badgeStatus:
+          item.status === 'pending'
+            ? ('pending' as const)
+            : item.status === 'cancelled'
+              ? ('cancelled' as const)
+              : ('confirmed' as const),
         taken: item.status === 'completed' || item.attended === true,
         scheduled:
           item.status !== 'cancelled' &&
@@ -202,7 +290,7 @@ export default function StudentProfileModal({
         : 'Comentarios'
   if (panel)
     return (
-      <Sheet open onClose={() => setPanel(null)} label={panelTitle}>
+      <Sheet open onClose={() => setPanel(null)} label={panelTitle} closeDisabled={cancelling}>
         <div className="grid gap-3 pb-4">
           <h2 className="text-xl font-bold">
             {panelTitle} ({panel !== 'comments' ? panelClasses.length : comments.length})
@@ -213,17 +301,92 @@ export default function StudentProfileModal({
               {panelClasses.map((item) => (
                 <li
                   key={item.id}
-                  className="grid gap-2 rounded-xl border border-(--c-border) p-3 text-sm"
+                  className="min-w-0 rounded-xl border border-(--c-border) bg-(--c-surface) px-3 py-2"
                 >
-                  <strong>
-                    {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}{' '}
-                    · {item.startTime}–{item.endTime}
-                  </strong>
-                  {item.note && <p className="whitespace-pre-wrap break-words">{item.note}</p>}
+                  <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-(--c-text-2)">
+                    <span className="shrink-0 whitespace-nowrap">
+                      {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>
+                    <span
+                      className="shrink-0 tabular-nums"
+                      title={`${item.startTime}–${item.endTime}`}
+                    >
+                      {item.startTime}
+                    </span>
+                    <span className="min-w-0 flex-1 [&>span]:max-w-full">
+                      <CoachBadge
+                        name={item.coachName || 'Sin profe aún'}
+                        unassigned={!item.coachName}
+                      />
+                    </span>
+                    <span
+                      className="inline-flex shrink-0 items-center gap-1"
+                      role="img"
+                      aria-label={item.groupType === 'grupal' ? 'Grupal' : 'Particular'}
+                    >
+                      {item.groupType === 'grupal' ? (
+                        <FiUsers aria-hidden="true" />
+                      ) : (
+                        <FiUser aria-hidden="true" />
+                      )}
+                      {item.groupType === 'grupal' ? 'Grupal' : null}
+                    </span>
+                    <StatusBadge
+                      status={item.badgeStatus}
+                      label={item.taken ? 'Tomada' : undefined}
+                    />
+                  </div>
+                  {panel === 'scheduled' && (
+                    <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                      {cancelTarget === item.id ? (
+                        <>
+                          <span className="text-xs text-(--c-text-2)">
+                            ¿Cancelar la clase para este alumno?
+                          </span>
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            disabled={cancelling}
+                            onClick={() => setCancelTarget(null)}
+                          >
+                            Volver
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm border-rose-200 bg-rose-50 text-rose-700"
+                            disabled={cancelling}
+                            onClick={() => void cancelClass(item.id)}
+                          >
+                            {cancelling ? 'Cancelando…' : 'Sí, cancelar'}
+                          </button>
+                          {cancelError && (
+                            <p role="alert" className="w-full text-xs text-rose-700">
+                              {cancelError}
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-rose-700 underline underline-offset-2 disabled:opacity-50"
+                          disabled={cancelling}
+                          onClick={() => {
+                            setCancelTarget(item.id)
+                            setCancelError('')
+                          }}
+                        >
+                          Cancelar clase
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {item.note && (
+                    <p className="mt-2 whitespace-pre-wrap break-words text-sm">{item.note}</p>
+                  )}
                 </li>
               ))}
             </ul>
@@ -254,13 +417,32 @@ export default function StudentProfileModal({
         </div>
       </Sheet>
     )
+  if (assignmentOpen && profile)
+    return (
+      <SchoolStudentClassAssignment
+        schoolId={schoolId}
+        timezone={Intl.DateTimeFormat().resolvedOptions().timeZone}
+        student={{
+          id: profile.id || profile.athleteId || studentId,
+          name: profile.name,
+          studentEmail: profile.studentEmail || profile.email || undefined,
+          phone: profile.phone,
+        }}
+        open
+        onClose={() => setAssignmentOpen(false)}
+        onAssigned={() => {
+          setReload((value) => value + 1)
+          onUpdated?.()
+        }}
+      />
+    )
   return (
     <Sheet
       open
       onClose={onClose}
       label={`Perfil de ${profile?.name || name}`}
       keyboardAware
-      closeDisabled={saving}
+      closeDisabled={saving || verifying}
     >
       <div className="grid gap-4 pb-4">
         <div className="flex items-start justify-between gap-3">
@@ -298,13 +480,13 @@ export default function StudentProfileModal({
             }}
             label="Editar datos del atleta"
             keyboardAware
-            closeDisabled={saving}
+            closeDisabled={saving || verifying}
             footer={
               <button
                 type="submit"
                 form={editId}
                 className="btn btn-primary min-h-11 w-full"
-                disabled={saving || (draft.name || '').trim().length < 2}
+                disabled={saving || verifying || (draft.name || '').trim().length < 2}
               >
                 {saving ? 'Guardando…' : 'Guardar cambios'}
               </button>
@@ -358,6 +540,40 @@ export default function StudentProfileModal({
                         disabled={saving}
                         onChange={change}
                       />
+                    ) : key.toLowerCase().includes('email') ? (
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <EmailInput
+                          id={`${editId}-${key}`}
+                          className="flex-1 basis-48"
+                          value={draft[key] || ''}
+                          maxLength={160}
+                          aria-describedby={
+                            verifying || verificationMessage ? `${editId}-${key}-helper` : undefined
+                          }
+                          disabled={saving || verifying}
+                          onChange={(value) => {
+                            change(value)
+                            setVerificationMessage('')
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-outline min-h-11 shrink-0"
+                          disabled={saving || verifying || !/^\S+@\S+\.\S+$/.test(draft[key] || '')}
+                          onClick={() => void verifyEmail(draft[key] || '')}
+                        >
+                          Verificar
+                        </button>
+                        {(verifying || verificationMessage) && (
+                          <p
+                            id={`${editId}-${key}-helper`}
+                            role="status"
+                            className="w-full text-xs font-normal text-(--c-text-2)"
+                          >
+                            {verifying ? 'Verificando…' : verificationMessage}
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <input
                         id={`${editId}-${key}`}
@@ -411,6 +627,13 @@ export default function StudentProfileModal({
         )}
         {profile && (
           <section className="grid gap-2" aria-label="Historial del atleta">
+            <button
+              type="button"
+              className="btn btn-primary min-h-11"
+              onClick={() => setAssignmentOpen(true)}
+            >
+              + Asignar clases
+            </button>
             {historyError && (
               <p role="alert" className="text-sm">
                 {historyError}

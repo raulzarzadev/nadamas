@@ -61,7 +61,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
     includePersonal: role === 'coach' || role === 'athlete',
     athleteMode: role === 'athlete',
   })
-  const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/find-coach'
+  const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/schedule'
   const primary = PRIMARY_NAV_BY_ROLE[role]
     .filter(
       (item) =>
@@ -228,10 +228,10 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
                 <Link
                   key={l.href}
                   href={l.href}
-                  aria-label={l.icon === 'payments' ? l.label : undefined}
-                  title={l.icon === 'payments' ? l.label : undefined}
+                  aria-label={l.label}
+                  title={l.label}
                   aria-current={active ? 'page' : undefined}
-                  className={`flex min-w-0 min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border ${l.icon === 'payments' ? 'size-12 p-0' : 'px-1.5 py-3 sm:px-4'} text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:text-sm ${
+                  className={`@container flex min-w-0 min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border ${l.icon === 'payments' ? 'size-12 p-0' : 'px-1.5 py-3 sm:px-4'} text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:text-sm ${
                     active
                       ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
                       : 'border-[var(--c-border)] bg-white text-[var(--c-text-2)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]'
@@ -239,10 +239,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
                 >
                   <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
                   {l.icon !== 'payments' && (
-                    <>
-                      <span className="min-w-0 truncate sm:hidden">{l.mobileLabel}</span>
-                      <span className="hidden min-w-0 truncate sm:inline">{l.label}</span>
-                    </>
+                    <span className="hidden whitespace-nowrap @min-[9rem]:inline">{l.label}</span>
                   )}
                 </Link>
               )
@@ -264,6 +261,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
         {canShowWorkspaceNavigation &&
           role === 'athlete' &&
           !publicAthleteSchedule &&
+          !pathname.startsWith('/athlete/search') &&
           (!tenant || selectedSchool !== null) && <AthleteSchoolSwitcher />}
         {publicAthleteSchedule && <div id="athlete-coach-filters" className="min-w-0" />}
       </div>
