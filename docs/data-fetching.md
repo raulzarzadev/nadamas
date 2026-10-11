@@ -48,6 +48,8 @@ const { labels, assignments } = await response.json()
 
 ## Guardar y actualizar
 
+Las reservas del atleta se comparten en Redux (`lib/store/athlete-bookings.ts`), mediante el provider de la aplicación. La navegación, agenda, resumen y selector de entrenadores reutilizan `ensureAthleteBookings(uid)`; la primera carga usa `getAuthed` y las siguientes reutilizan el estado. El contador de Horarios se deriva de esa misma lista, sin peticiones propias ni eventos del navegador. Después de inscribir, aplicar `bookingActions.upsert` con las reservas devueltas por la mutación; después de cancelar, aplicar `bookingActions.cancelled`. No volver a consultar reservas para actualizar el contador. El estado se limpia al cambiar de usuario; una respuesta de la sesión anterior no puede poblar la nueva. Las notificaciones externas de agenda pueden pedir una actualización explícita con `ensureAthleteBookings(uid, true)`.
+
 Los helpers de mutación invalidan la caché antes de la petición y al terminar, incluso si falla:
 
 - Cambios en etiquetas invalidan las consultas de etiquetas de esa escuela.

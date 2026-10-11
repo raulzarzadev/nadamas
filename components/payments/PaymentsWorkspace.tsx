@@ -5,7 +5,7 @@ import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
-import { getAuthed } from '@/lib/client/authed-api'
+import { ensureAthleteBookings, useAppDispatch } from '@/lib/store/athlete-bookings'
 import PaymentsPanel from './PaymentsPanel'
 
 export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' | 'athlete' }) {
@@ -15,6 +15,8 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
       athleteMode: mode === 'athlete',
     })
   const { user } = useUser() as { user: { uid?: string; id?: string } | undefined | null }
+  const dispatch = useAppDispatch()
+  const uid = user?.uid || user?.id || ''
   const tenant = useTenantSchool()
   const params = useSearchParams()
   const [coaches, setCoaches] = useState<Array<{ id: string; name: string }>>([])
@@ -23,14 +25,13 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
   const [loadingCoaches, setLoadingCoaches] = useState(mode === 'athlete')
   const [error, setError] = useState('')
   useEffect(() => {
-    if (mode !== 'athlete') return
+    if (mode !== 'athlete' || !uid) return
     let active = true
-    getAuthed('/api/bookings')
-      .then((response) => response.json())
-      .then((payload) => {
+    dispatch(ensureAthleteBookings(uid))
+      .then((bookings) => {
         if (!active) return
         const map = new Map<string, string>()
-        for (const booking of payload.bookings || [])
+        for (const booking of bookings)
           if (!booking.schoolId && booking.coachId)
             map.set(booking.coachId, booking.coachName || 'Entrenador')
         const next = [...map].map(([id, name]) => ({ id, name }))
@@ -48,7 +49,7 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     return () => {
       active = false
     }
-  }, [mode, params])
+  }, [mode, params, uid, dispatch])
   if (status === 'loading' || !user || (mode === 'athlete' && isPersonal && loadingCoaches))
     return <ProfileLoadingSkeleton />
   if (status === 'error')

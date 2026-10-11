@@ -90,6 +90,7 @@ export async function GET(request: Request) {
             schoolClassId: item.id,
             schoolClassTitle: item.title,
             schoolClassStudentCount: relevantStudentIds.length,
+            schoolClassStudentIds: relevantStudentIds,
             coachId,
             coachName: coachNames[coachId] || 'Entrenador',
             athleteId: caller.uid,

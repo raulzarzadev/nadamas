@@ -42,7 +42,14 @@ import {
 } from '@/lib/payments/engine'
 import { paymentMessage } from '@/lib/payments/messages'
 import type { PaymentSnapshot } from '@/lib/payments/model'
+import type { SchoolClassOccurrence, SchoolClassRequest } from '@/lib/school'
 import { type SchoolBookingMode, type SchoolStudent, schoolClassDisplayTitle } from '@/lib/school'
+import {
+  bookingActions,
+  ensureAthleteBookings,
+  useAppDispatch,
+  useAppSelector,
+} from '@/lib/store/athlete-bookings'
 
 const dateKey = (date: Date) => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
@@ -141,10 +148,34 @@ export default function AthleteSchoolSchedule({
     auth.currentUser?.email?.split('@')[0] ||
     ''
   ).trim()
+  const dispatch = useAppDispatch()
   const accountId = user?.uid || user?.id || auth.currentUser?.uid || ''
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()))
   const [agenda, setAgenda] = useState<CoachAgendaPayload | null>(null)
-  const [myReservations, setMyReservations] = useState<SchoolReservation[]>([])
+  const [loadedReservations, setMyReservations] = useState<SchoolReservation[]>([])
+  const bookingState = useAppSelector((state) => state.athleteBookings)
+  const myReservations = useMemo<SchoolReservation[]>(() => {
+    if (!bookingState.loaded || bookingState.uid !== accountId) return loadedReservations
+    return bookingState.bookings
+      .filter((booking) => !schoolId || booking.schoolId === schoolId)
+      .map((booking) => ({
+        id: booking.id,
+        schoolId: booking.schoolId,
+        schoolClassId: booking.schoolClassId,
+        schoolRequestId: booking.schoolRequestId,
+        coachId: booking.coachId,
+        coachName: booking.coachName || 'Entrenador',
+        date: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        status: booking.status,
+        groupType: booking.groupType,
+        studentIds: booking.schoolClassStudentIds || [
+          booking.athleteProfileId || booking.athleteId,
+        ],
+        studentNames: [booking.athleteName],
+      }))
+  }, [bookingState, accountId, schoolId, loadedReservations])
   const [reservationToCancel, setReservationToCancel] = useState<SchoolReservation | null>(null)
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
@@ -289,7 +320,7 @@ export default function AthleteSchoolSchedule({
             coachId ? `/api/public/coaches/${encodeURIComponent(coachId)}` : '/api/public/coaches'
           ),
           getAuthed('/api/additional-profiles').catch(() => null),
-          getAuthed('/api/bookings'),
+          dispatch(ensureAthleteBookings(accountId)),
         ])
       const profilesPayload = profilesResponse?.ok
         ? ((await profilesResponse.json()) as { profiles?: AdditionalProfile[] })
@@ -330,9 +361,7 @@ export default function AthleteSchoolSchedule({
           ...reservations.map((reservation) => ({ ...reservation, schoolId: school.id }))
         )
       }
-      if (!bookingsResponse.ok) throw new Error('bookings_unavailable')
-      const bookingsPayload = (await bookingsResponse.json()) as { bookings?: Booking[] }
-      for (const booking of bookingsPayload.bookings || []) {
+      for (const booking of bookingsResponse) {
         if (booking.schoolId || booking.status === 'cancelled') continue
         const coachName = booking.coachName || names[booking.coachId] || 'Coach'
         names[booking.coachId] = coachName
@@ -402,7 +431,7 @@ export default function AthleteSchoolSchedule({
     } catch {
       setError('No se pudieron cargar los horarios. Inténtalo de nuevo.')
     }
-  }, [schoolId, month, schools, coachId])
+  }, [schoolId, month, schools, coachId, accountId, dispatch])
 
   useEffect(() => {
     void load()
@@ -819,7 +848,7 @@ export default function AthleteSchoolSchedule({
         if (completedBookings.current.has(operationKey)) continue
         try {
           if (!slot.schoolId) {
-            await postAuthed('/api/bookings', {
+            const response = await postAuthed('/api/bookings', {
               allowPackage: true,
               coachId: slot.coachId,
               offeringId: slot.offeringId,
@@ -837,6 +866,8 @@ export default function AthleteSchoolSchedule({
                 name: participant.name,
               },
             })
+            const result = (await response.json()) as { bookings: Booking[] }
+            dispatch(bookingActions.upsert(result.bookings))
           } else {
             const linked = students.find(
               (student) =>
@@ -894,8 +925,81 @@ export default function AthleteSchoolSchedule({
                     bookingMode) === 'direct',
               }
             )
-            const result = (await response.json()) as { pendingApproval?: boolean }
+            const result = (await response.json()) as {
+              pendingApproval?: boolean
+              occurrences?: SchoolClassOccurrence[]
+              request?: SchoolClassRequest
+            }
             if (result.pendingApproval) pending++
+            const records =
+              result.occurrences ||
+              (result.request
+                ? [
+                    {
+                      ...result.request,
+                      date: result.request.startDate,
+                      startTime: result.request.preferredStartTime,
+                      endTime: result.request.preferredEndTime,
+                    },
+                  ]
+                : [])
+            dispatch(
+              bookingActions.upsert(
+                records.map(
+                  (item) =>
+                    ({
+                      id: result.pendingApproval
+                        ? `school-request-${item.id}`
+                        : `school-class-${item.id}-${accountId}`,
+                      schoolId: slot.schoolId,
+                      schoolClassId: result.pendingApproval ? undefined : item.id,
+                      schoolRequestId: result.pendingApproval ? item.id : undefined,
+                      schoolClassTitle:
+                        'title' in item ? item.title : schoolClassDisplayTitle(undefined),
+                      schoolClassStudentCount: 'studentIds' in item ? item.studentIds.length : 1,
+                      schoolClassStudentIds:
+                        'studentIds' in item
+                          ? item.studentIds.filter(
+                              (id) =>
+                                students.some((student) => student.id === id) || id === linked?.id
+                            )
+                          : linked
+                            ? [linked.id]
+                            : [],
+                      coachId: slot.coachId,
+                      coachName: coachNames[slot.coachId] || 'Entrenador',
+                      athleteId: accountId,
+                      athleteName:
+                        'studentIds' in item
+                          ? item.studentIds
+                              .map(
+                                (id) =>
+                                  students.find((student) => student.id === id)?.name ||
+                                  participant.name
+                              )
+                              .join(', ')
+                          : participant.name,
+                      athleteEmail: null,
+                      date: item.date,
+                      startTime: item.startTime,
+                      endTime: item.endTime,
+                      offeringId: `school-${result.pendingApproval ? 'request' : 'class'}:${item.id}`,
+                      scheduleId: `school-${result.pendingApproval ? 'request' : 'class'}:${item.id}`,
+                      locationName: slot.locationName || '',
+                      mode: 'fixed',
+                      groupType: slot.groupType,
+                      days: [],
+                      priceCents: null,
+                      currency: 'MXN',
+                      unit: 'clase',
+                      status: result.pendingApproval ? 'pending' : 'confirmed',
+                      source: result.pendingApproval ? 'school-request' : 'school-class',
+                      createdAt: item.createdAt || 0,
+                      updatedAt: item.updatedAt || 0,
+                    }) as Booking
+                )
+              )
+            )
           }
           completedBookings.current.add(operationKey)
           completed++
@@ -952,7 +1056,6 @@ export default function AthleteSchoolSchedule({
       setBookingConfirmation(confirmation)
     }
     setBusy(false)
-    if (!failed) void load()
   }
 
   return (
@@ -1346,7 +1449,7 @@ export default function AthleteSchoolSchedule({
                     })
                   } else await deleteAuthed(`/api/bookings/${reservation.id}`)
                   setReservationToCancel(null)
-                  await load()
+                  dispatch(bookingActions.cancelled(reservation.id))
                 } catch {
                   setError('No pudimos cancelar tu inscripción. Inténtalo de nuevo.')
                 } finally {

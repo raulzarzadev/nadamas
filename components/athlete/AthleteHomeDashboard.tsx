@@ -15,9 +15,8 @@ import {
 } from 'react-icons/fi'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
-import { getAuthed } from '@/lib/client/authed-api'
-import type { Booking } from '@/lib/coach-booking'
 import { capitalizeSchoolTerm } from '@/lib/school'
+import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/store/athlete-bookings'
 
 const ACTION_CARDS = [
   {
@@ -60,16 +59,24 @@ export default function AthleteHomeDashboard() {
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   const coachPlural = terminology.schoolId ? terminology.coachPlural : 'coaches'
   const { user } = useUser() as {
-    user: { nickname?: string; displayName?: string; name?: string } | null
+    user: {
+      uid?: string
+      id?: string
+      nickname?: string
+      displayName?: string
+      name?: string
+    } | null
   }
-  const [bookings, setBookings] = useState<Booking[] | null>(null)
-
+  const dispatch = useAppDispatch()
+  const uid = user?.uid || user?.id || ''
+  const bookingState = useAppSelector((state) => state.athleteBookings)
+  const [failed, setFailed] = useState(false)
+  const bookings =
+    bookingState.uid === uid && bookingState.loaded ? bookingState.bookings : failed ? [] : null
   useEffect(() => {
-    getAuthed('/api/bookings')
-      .then((response) => response.json() as Promise<{ bookings?: Booking[] }>)
-      .then((payload) => setBookings(payload.bookings || []))
-      .catch(() => setBookings([]))
-  }, [])
+    setFailed(false)
+    if (uid) void dispatch(ensureAthleteBookings(uid)).catch(() => setFailed(true))
+  }, [uid, dispatch])
 
   const today = todayKey()
   const active = (bookings || []).filter((booking) => booking.status !== 'cancelled')

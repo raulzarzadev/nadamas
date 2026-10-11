@@ -23,16 +23,12 @@ import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
-import {
-  ATHLETE_UPCOMING_COUNT_EVENT,
-  type AthleteUpcomingCountUpdate,
-  isPastAthleteBooking,
-} from '@/lib/athlete-upcoming-count'
+import { isPastAthleteBooking } from '@/lib/athlete-upcoming-count'
 import { getAuthed } from '@/lib/client/authed-api'
-import type { Booking } from '@/lib/coach-booking'
 import type { RoleName } from '@/lib/roles'
 import { capitalizeSchoolTerm, type School, type SchoolMembership } from '@/lib/school'
 import { schoolsForWorkspace } from '@/lib/school-workspace'
+import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/store/athlete-bookings'
 import NotificationsBell from './NotificationsBell'
 import { PRIMARY_NAV_BY_ROLE } from './nav-config'
 import RoleSwitcher from './RoleSwitcher'
@@ -71,38 +67,19 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const { user } = useUser()
   const uid = user?.uid || user?.id
   const selectedSchoolId = selectedSchool?.school.id || null
-  const [upcomingCount, setUpcomingCount] = useState<number | null>(null)
+  const dispatch = useAppDispatch()
+  const bookingState = useAppSelector((state) => state.athleteBookings)
+  const upcomingCount =
+    bookingState.uid === uid && bookingState.loaded
+      ? bookingState.bookings.filter(
+          (booking) =>
+            (!selectedSchoolId || booking.schoolId === selectedSchoolId) &&
+            !isPastAthleteBooking(booking)
+        ).length
+      : null
   useEffect(() => {
-    setUpcomingCount(null)
-    if (role !== 'athlete' || !uid) return
-    let active = true
-    let receivedUpdate = false
-    const update = (event: Event) => {
-      const detail = (event as CustomEvent<AthleteUpcomingCountUpdate>).detail
-      if (detail.uid === uid && detail.schoolId === selectedSchoolId) {
-        receivedUpdate = true
-        setUpcomingCount(detail.count)
-      }
-    }
-    window.addEventListener(ATHLETE_UPCOMING_COUNT_EVENT, update)
-    getAuthed('/api/bookings')
-      .then((response) => response.json() as Promise<{ bookings?: Booking[] }>)
-      .then((payload) => {
-        if (active && !receivedUpdate && payload.bookings)
-          setUpcomingCount(
-            payload.bookings.filter(
-              (booking) =>
-                (!selectedSchoolId || booking.schoolId === selectedSchoolId) &&
-                !isPastAthleteBooking(booking)
-            ).length
-          )
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-      window.removeEventListener(ATHLETE_UPCOMING_COUNT_EVENT, update)
-    }
-  }, [uid, role, selectedSchoolId])
+    if (role === 'athlete' && uid) void dispatch(ensureAthleteBookings(uid)).catch(() => {})
+  }, [uid, role, dispatch])
   const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/schedule'
   const primary = PRIMARY_NAV_BY_ROLE[role]
     .filter(

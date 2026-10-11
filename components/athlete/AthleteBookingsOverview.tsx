@@ -13,16 +13,18 @@ import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { auth } from '@/firebase/index'
-import {
-  ATHLETE_UPCOMING_COUNT_EVENT,
-  type AthleteUpcomingCountUpdate,
-  isPastAthleteBooking as isPastBooking,
-} from '@/lib/athlete-upcoming-count'
+import { isPastAthleteBooking as isPastBooking } from '@/lib/athlete-upcoming-count'
 import { type ClassEvaluation, canEvaluateBooking } from '@/lib/class-evaluation'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import type { Booking } from '@/lib/coach-booking'
 import type { SchoolHistorySharedComment } from '@/lib/school-student-history'
+import {
+  bookingActions,
+  ensureAthleteBookings,
+  useAppDispatch,
+  useAppSelector,
+} from '@/lib/store/athlete-bookings'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 interface CoachInfo {
@@ -292,7 +294,12 @@ export default function AthleteBookingsOverview({
   const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
   const [evaluationSaved, setEvaluationSaved] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
-  const [bookings, setBookings] = useState<Booking[] | undefined>(undefined)
+  const dispatch = useAppDispatch()
+  const bookingState = useAppSelector((state) => state.athleteBookings)
+  const bookings =
+    bookingState.uid === auth.currentUser?.uid && bookingState.loaded
+      ? bookingState.bookings
+      : undefined
   const [coaches, setCoaches] = useState<Record<string, CoachInfo>>({})
   const { selectedId: selectedSchoolId } = useSchoolSelection({
     includePersonal: true,
@@ -310,9 +317,9 @@ export default function AthleteBookingsOverview({
   const load = useCallback(async () => {
     setError(null)
     try {
-      const response = await getAuthed('/api/bookings')
-      const payload = (await response.json()) as { bookings: Booking[] }
-      const list = payload.bookings || []
+      const uid = auth.currentUser?.uid
+      if (!uid) return
+      const list = await dispatch(ensureAthleteBookings(uid))
       const linkedStudentId = auth.currentUser?.uid
       const schoolIds = [
         ...new Set(
@@ -340,7 +347,6 @@ export default function AthleteBookingsOverview({
           : []
       )
       setStudentComments(histories.flat().sort((a, b) => a.createdAt - b.createdAt))
-      setBookings(list)
 
       const coachIds = [...new Set(list.map((b) => b.coachId))]
       const entries = await Promise.all(
@@ -358,17 +364,17 @@ export default function AthleteBookingsOverview({
       setCoaches(Object.fromEntries(entries.filter((entry) => entry !== null)))
     } catch (loadError) {
       reportInternalError('ATHLETE_BOOKINGS', loadError)
-      setBookings([])
       setError(GENERIC_USER_ERROR)
     }
-  }, [selectedSchoolId])
+  }, [selectedSchoolId, dispatch])
 
   useEffect(() => {
     void load()
   }, [load])
 
   useSchoolAgendaUpdates(selectedSchoolId, () => {
-    void load()
+    const uid = auth.currentUser?.uid
+    if (uid) void dispatch(ensureAthleteBookings(uid, true)).catch(() => {})
   })
 
   async function cancelBooking(booking: Booking) {
@@ -380,8 +386,8 @@ export default function AthleteBookingsOverview({
           schoolClassId: booking.schoolClassId,
         })
       } else await deleteAuthed(`/api/bookings/${booking.id}`)
+      dispatch(bookingActions.cancelled(booking.id))
       setToCancel(null)
-      await load()
     } catch (cancelError) {
       reportInternalError('ATHLETE_BOOKING_CANCEL', cancelError)
       setError(GENERIC_USER_ERROR)
@@ -423,15 +429,8 @@ export default function AthleteBookingsOverview({
   useEffect(() => {
     if (bookings !== undefined) {
       onUpcomingCountChange?.(activeCount)
-      const uid = auth.currentUser?.uid
-      if (uid)
-        window.dispatchEvent(
-          new CustomEvent<AthleteUpcomingCountUpdate>(ATHLETE_UPCOMING_COUNT_EVENT, {
-            detail: { uid, schoolId: selectedSchoolId || null, count: activeCount },
-          })
-        )
     }
-  }, [bookings, activeCount, onUpcomingCountChange, selectedSchoolId])
+  }, [bookings, activeCount, onUpcomingCountChange])
 
   const calendarSheet = (
     <Sheet
@@ -582,11 +581,7 @@ export default function AthleteBookingsOverview({
           }
           onClose={() => setToEvaluate(null)}
           onSaved={(evaluation: ClassEvaluation) => {
-            setBookings((current) =>
-              current?.map((booking) =>
-                booking.id === toEvaluate.id ? { ...booking, evaluation } : booking
-              )
-            )
+            dispatch(bookingActions.upsert([{ ...toEvaluate, evaluation }]))
             setToEvaluate(null)
             setEvaluationSaved(true)
           }}
