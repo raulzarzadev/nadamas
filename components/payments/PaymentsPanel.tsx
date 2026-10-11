@@ -151,7 +151,7 @@ export default function PaymentsPanel({
   return (
     <div className="grid w-full min-w-0 grid-cols-1 gap-4">
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <h1 className="text-2xl font-extrabold">Pagos</h1>
+        <h1 className="text-2xl font-extrabold">Planes y pagos</h1>
         {!data.manager && (
           <button
             type="button"
@@ -211,9 +211,9 @@ export default function PaymentsPanel({
           )}
         </div>
       )}
-      {!data.manager && data.students.length > 0 && (
+      {!data.manager && data.students.length > 1 && (
         <section aria-label="Elegir perfil de alumno" className="grid gap-2">
-          <p className="text-xs font-semibold text-(--c-text-2)">Adicionales</p>
+          <p className="text-xs font-semibold text-(--c-text-2)">Consultar para</p>
           <div className="flex flex-wrap gap-2">
             {[...data.students]
               .sort((a, b) => Number(Boolean(b.isSelf)) - Number(Boolean(a.isSelf)))
@@ -240,7 +240,10 @@ export default function PaymentsPanel({
           [
             ['account', 'Saldos'],
             ['plans', 'Planes'],
-            ['orders', `Pagos (${orders.filter((order) => order.status === 'pending').length})`],
+            [
+              'orders',
+              `Pagos${orders.some((order) => order.status === 'pending') ? ` · ${orders.filter((order) => order.status === 'pending').length} pendientes` : ''}`,
+            ],
             ['history', 'Movimientos'],
           ] as const
         )

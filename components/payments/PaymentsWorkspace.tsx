@@ -9,7 +9,7 @@ import { getAuthed } from '@/lib/client/authed-api'
 import PaymentsPanel from './PaymentsPanel'
 
 export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' | 'athlete' }) {
-  const { selectedId, isPersonal, status } = useSchoolSelection({
+  const { selectedId, selected, isPersonal, status } = useSchoolSelection({
     includePersonal: mode !== 'school',
     athleteMode: mode === 'athlete',
   })
@@ -72,7 +72,7 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     <div className="grid gap-4">
       {!scopeSchool && mode === 'athlete' && (
         <label className="grid gap-1 text-sm">
-          Entrenador
+          Planes y pagos con el coach
           <select
             className="select w-full"
             value={coachId}
@@ -86,6 +86,11 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
             ))}
           </select>
         </label>
+      )}
+      {scopeSchool && mode === 'athlete' && (
+        <p className="text-sm font-semibold text-(--c-ocean)">
+          Planes y pagos de {tenant?.name || selected?.school.name || 'la escuela seleccionada'}
+        </p>
       )}
       {error && (
         <p role="alert" className="text-sm">

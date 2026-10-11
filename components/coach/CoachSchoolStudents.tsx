@@ -8,12 +8,12 @@ import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, getCachedAuthedData } from '@/lib/client/authed-api'
 import type { SchoolStudent } from '@/lib/school'
-import { capitalizeSchoolTerm, schoolMembershipHasRole } from '@/lib/school'
+import { schoolMembershipHasRole } from '@/lib/school'
 import StudentLabels from './StudentLabels'
 import StudentLabelTools, { type LabelList } from './StudentLabelTools'
 import StudentProfileModal from './StudentProfileModal'
 
-export default function CoachSchoolStudents() {
+export default function CoachSchoolStudents({ schoolId }: { schoolId?: string } = {}) {
   const { schools, selectedId, status } = useSchoolSelection({ includePersonal: true })
   const terminology = useSchoolTerminology()
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
@@ -27,8 +27,11 @@ export default function CoachSchoolStudents() {
     [schools]
   )
   const selected = useMemo(
-    () => coachSchools.find(({ school }) => school.id === selectedId) || coachSchools[0] || null,
-    [coachSchools, selectedId]
+    () =>
+      coachSchools.find(({ school }) => school.id === (schoolId || selectedId)) ||
+      coachSchools[0] ||
+      null,
+    [coachSchools, selectedId, schoolId]
   )
   const endpoint = selected
     ? `/api/schools/${selected.school.id}/students?includeSummary=true&coachOnly=true`
@@ -100,19 +103,10 @@ export default function CoachSchoolStudents() {
   )
 
   return (
-    <section className="rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-6">
+    <section>
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-(--c-aqua-strong)">
-            {capitalizeSchoolTerm(participantPlural)}
-          </p>
-          <h2 className="mt-1 text-xl font-extrabold text-(--c-ocean)">
-            {capitalizeSchoolTerm(participantPlural)} de la escuela
-          </h2>
-          <p className="mt-1 text-sm text-(--c-text-2)">{selected.school.name}</p>
-        </div>
         {!loading && students.length > 0 && (
-          <label className="relative min-w-56">
+          <label className="relative min-w-0 flex-1">
             <FiSearch
               aria-hidden="true"
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--c-text-2)"

@@ -10,7 +10,7 @@ type Student = { id: string; name: string }
 export type LabelList = { labels: Label[]; assignments: Record<string, string[]> }
 type Label = { id: string; name: string; color?: string }
 export default function StudentLabelTools({
-  schoolId,
+  schoolId = '',
   entity = 'students',
   students,
   revision,
@@ -19,7 +19,7 @@ export default function StudentLabelTools({
   onData,
 }: {
   entity?: 'students' | 'teachers'
-  schoolId: string
+  schoolId?: string
   students: Student[]
   revision: number
   onFilter: (ids: string[] | null) => void
@@ -52,7 +52,7 @@ export default function StudentLabelTools({
       .then((payload) => {
         if (active) {
           setAssignments(payload.assignments)
-          setLabels(payload.labels.sort((a, b) => a.name.localeCompare(b.name)))
+          setLabels([...payload.labels].sort((a, b) => a.name.localeCompare(b.name)))
           onData?.(payload)
           setError('')
         }

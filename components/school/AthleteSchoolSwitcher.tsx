@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 
 import SchoolWorkspaceTabs from './SchoolWorkspaceTabs'
@@ -11,6 +12,8 @@ export default function AthleteSchoolSwitcher() {
 }
 
 function GlobalAthleteSchoolSwitcher() {
+  const pathname = usePathname()
+  const payments = pathname === '/athlete/payments'
   const { schools, selectedId, status, selectSchool, selectPersonal } = useSchoolSelection({
     includePersonal: true,
     athleteMode: true,
@@ -20,8 +23,12 @@ function GlobalAthleteSchoolSwitcher() {
     <SchoolWorkspaceTabs
       schools={schools.map(({ school }) => ({ id: school.id, name: school.name }))}
       selectedId={selectedId}
-      personalLabel="Todos"
-      description="Horarios de tus escuelas o coaches disponibles."
+      personalLabel={payments ? 'Coaches independientes' : 'Todos'}
+      description={
+        payments
+          ? 'Elige con quién consultar tus planes y pagos.'
+          : 'Horarios de tus escuelas o coaches disponibles.'
+      }
       onChange={(id) => (id ? selectSchool(id) : selectPersonal())}
     />
   )

@@ -1,7 +1,6 @@
 'use client'
 
 import Loading from '@comps/Loading'
-import Avatar from '@comps/ui/avatar'
 import { useSearchParams } from 'next/navigation'
 import type React from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -19,6 +18,7 @@ import {
   FiTrendingUp,
 } from 'react-icons/fi'
 import { progressResultEmoji } from '@/CONSTANTS/PROGRESS_SCALE'
+import ClassStudentRow from '@/components/ui/class-student-row'
 import { getAuthed } from '@/lib/client/authed-api'
 import type { Booking } from '@/lib/coach-booking'
 import {
@@ -29,6 +29,8 @@ import {
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AddStudentModal, { type CreatedStudentPayload } from './AddStudentModal'
 import EditStudentModal, { type UpdatedStudentPayload } from './EditStudentModal'
+import StudentLabels from './StudentLabels'
+import StudentLabelTools, { type LabelList } from './StudentLabelTools'
 import StudentProgressModal from './StudentProgressModal'
 
 interface StudentSummary {
@@ -53,6 +55,9 @@ export default function CoachStudents() {
   const [error, setError] = useState<string | null>(null)
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [filteredIds, setFilteredIds] = useState<string[] | null>(null)
+  const [labelData, setLabelData] = useState<LabelList | null>(null)
+  const [labelRevision, setLabelRevision] = useState(0)
   // Deep link from the agenda ("ver perfil") to open a student's card directly.
   const focusId = useSearchParams().get('student')
 
@@ -139,7 +144,7 @@ export default function CoachStudents() {
     )
 
   const normalizedQuery = query.trim().toLowerCase()
-  const visibleStudents = normalizedQuery
+  const matchingStudents = normalizedQuery
     ? students.filter((student) =>
         [
           student.name,
@@ -153,9 +158,12 @@ export default function CoachStudents() {
           .includes(normalizedQuery)
       )
     : students
+  const visibleStudents = matchingStudents.filter(
+    (student) => filteredIds === null || filteredIds.includes(student.athleteId)
+  )
 
   return (
-    <>
+    <section>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <label className="relative min-w-0 flex-1">
           <FiSearch
@@ -179,16 +187,26 @@ export default function CoachStudents() {
         </button>
       </div>
 
+      <StudentLabelTools
+        students={students.map((student) => ({ id: student.athleteId, name: student.name }))}
+        revision={labelRevision}
+        onFilter={setFilteredIds}
+        onData={setLabelData}
+        onUpdated={() => setLabelRevision((current) => current + 1)}
+      />
       {visibleStudents.length === 0 ? (
         <p className="rounded-[var(--r-md)] border border-dashed border-(--c-border) bg-(--c-surface) p-6 text-center text-sm text-(--c-text-2)">
-          No hay alumnos que coincidan con “{query.trim()}”.
+          {query.trim()
+            ? `No hay alumnos que coincidan con “${query.trim()}”.`
+            : 'No hay alumnos con esta etiqueta.'}
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="mt-4 grid gap-2">
           {visibleStudents.map((student) => (
             <StudentCard
               key={student.athleteId}
               student={student}
+              labelData={labelData}
               focused={student.athleteId === focusId}
               onProgressSaved={(entry, progress) =>
                 updateStudent(student.athleteId, entry, progress)
@@ -202,17 +220,19 @@ export default function CoachStudents() {
       {addModalOpen && (
         <AddStudentModal onClose={() => setAddModalOpen(false)} onCreated={addStudent} />
       )}
-    </>
+    </section>
   )
 }
 
 function StudentCard({
   student,
+  labelData,
   focused = false,
   onProgressSaved,
   onDetailsSaved,
 }: {
   student: StudentSummary
+  labelData: LabelList | null
   focused?: boolean
   onProgressSaved: (entry: StudentProgressEntry, progress: StudentProgress) => void
   onDetailsSaved: (student: UpdatedStudentPayload) => void
@@ -247,26 +267,34 @@ function StudentCard({
   return (
     <li
       ref={ref}
-      className={`overflow-hidden rounded-[var(--r-md)] border bg-white shadow-[var(--shadow-sm)] ${
+      className={`overflow-hidden rounded-xl border bg-white ${
         focused ? 'border-(--c-aqua)' : 'border-(--c-border)'
       }`}
     >
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center gap-3 p-3.5 text-left transition-colors hover:bg-(--c-surface)"
-      >
-        <Avatar name={student.name} size={46} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-bold text-(--c-ocean)">{student.name}</p>
-          <p className="mt-0.5 truncate text-xs text-(--c-text-2)">{summary}</p>
-        </div>
-        <FiChevronDown
-          aria-hidden="true"
-          className={`shrink-0 text-(--c-ocean-mid) transition-transform ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
+      <ClassStudentRow
+        name={student.name}
+        onEdit={() => setOpen((current) => !current)}
+        editLabel={`${open ? 'Cerrar' : 'Ver'} perfil de ${student.name}`}
+        labels={
+          <>
+            <StudentLabels
+              studentId={student.athleteId}
+              data={{
+                labels: labelData?.labels || [],
+                selected: labelData?.assignments[student.athleteId] || [],
+              }}
+              readOnly
+              compact
+            />
+            <span className="basis-full text-[10px] leading-tight text-(--c-text-2) sm:hidden">
+              {summary}
+            </span>
+          </>
+        }
+        actions={
+          <span className="hidden text-right text-xs text-(--c-text-2) sm:inline">{summary}</span>
+        }
+      />
 
       {open && (
         <div className="flex flex-col gap-4 border-t border-(--c-border) p-4 sm:p-5">

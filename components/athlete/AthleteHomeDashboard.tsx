@@ -21,6 +21,12 @@ import { capitalizeSchoolTerm } from '@/lib/school'
 
 const ACTION_CARDS = [
   {
+    href: '/athlete/search-coaches',
+    title: 'Buscar coaches',
+    body: 'Encuentra un coach y consulta su perfil y horarios.',
+    icon: FiSearch,
+  },
+  {
     href: '/athlete/find-coach',
     title: 'Horarios',
     body: 'Consulta horarios disponibles en tus escuelas y con coaches abiertos.',

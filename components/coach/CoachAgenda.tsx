@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiCalendar,
-  FiCheckSquare,
   FiClipboard,
   FiLock,
   FiPlus,
@@ -56,7 +55,6 @@ import { capitalizeSchoolTerm, UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
 import AgendaStudentActions, { type AgendaStudentAction } from './AgendaStudentActions'
-import AttendanceModal from './AttendanceModal'
 import CancelClassModal from './CancelClassModal'
 import { useCoachAgendaShare } from './CoachAgendaShareContext'
 import ScheduleHoursEditor, {
@@ -302,12 +300,6 @@ export default function CoachAgenda({
   const [studentAction, setStudentAction] = useState<{
     booking: Booking
     student: AgendaStudentAction
-  } | null>(null)
-  const [attendanceTarget, setAttendanceTarget] = useState<{
-    schoolId?: string
-    date: string
-    occurrenceId?: string
-    initialSlot?: { coachId: string; startTime: string }
   } | null>(null)
   const [classNotesTarget, setClassNotesTarget] = useState<ClassNotesTarget | null>(null)
   const [studentActionError, setStudentActionError] = useState<string | null>(null)
@@ -1417,6 +1409,7 @@ export default function CoachAgenda({
     const slot: CoachAvailableSlot = {
       id: booking.id,
       schoolId: booking.schoolId,
+      agendaLabel: booking.agendaLabel,
       coachId: booking.coachId,
       coachName: booking.coachName || undefined,
       date: booking.date,
@@ -2259,44 +2252,15 @@ export default function CoachAgenda({
           title={
             <>
               {toolbarActions}
-              {!readOnlyAgenda &&
-                (onScheduleEditorOpen || schoolId || agendaUpdateSchoolIds.length > 0) && (
-                  <div className="contents">
-                    {(schoolId
-                      ? [{ schoolId, label: 'Pase de lista' }]
-                      : (agendaSources || []).flatMap((source) =>
-                          source.schoolId
-                            ? [
-                                {
-                                  schoolId: source.schoolId,
-                                  label: `Pase de lista · ${source.label}`,
-                                },
-                              ]
-                            : []
-                        )
-                    ).map((source) => (
-                      <button
-                        type="button"
-                        key={source.schoolId}
-                        className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
-                        onClick={() =>
-                          setAttendanceTarget({ schoolId: source.schoolId, date: selectedDate })
-                        }
-                      >
-                        <FiCheckSquare aria-hidden="true" /> {source.label}
-                      </button>
-                    ))}
-                    {onScheduleEditorOpen && (
-                      <button
-                        type="button"
-                        onClick={onScheduleEditorOpen}
-                        className="btn btn-primary min-h-11 gap-2 px-5 text-sm font-bold shadow-sm focus-visible:outline-2 focus-visible:outline-offset-4"
-                      >
-                        <FiCalendar aria-hidden="true" /> Editar horario
-                      </button>
-                    )}
-                  </div>
-                )}{' '}
+              {!readOnlyAgenda && onScheduleEditorOpen && (
+                <button
+                  type="button"
+                  onClick={onScheduleEditorOpen}
+                  className="btn btn-primary min-h-11 gap-2 px-5 text-sm font-bold shadow-sm focus-visible:outline-2 focus-visible:outline-offset-4"
+                >
+                  <FiCalendar aria-hidden="true" /> Editar horario
+                </button>
+              )}{' '}
             </>
           }
           afterDateNavigation={
@@ -2350,6 +2314,7 @@ export default function CoachAgenda({
             ),
             date: slot.date,
             startTime: slot.startTime,
+            agendaLabel: combinedSources && slot.schoolId ? slot.agendaLabel : undefined,
             groupType: slot.groupType,
             selected: batchSlots.some((item) => batchSlotKey(item) === batchSlotKey(slot)),
             coachName: slot.coachName || agenda?.coachNames?.[slot.coachId] || 'Sin profe aún',
@@ -3079,15 +3044,6 @@ export default function CoachAgenda({
         )}
       </Sheet>
 
-      {attendanceTarget && (
-        <AttendanceModal
-          {...attendanceTarget}
-          onClose={() => setAttendanceTarget(null)}
-          onUpdated={() => {
-            void loadAgenda(monthOfSelected)
-          }}
-        />
-      )}
       {activeNotesTarget && (
         <ClassNotesModal
           key={`${activeNotesTarget.schoolId}|${activeNotesTarget.coachId}|${activeNotesTarget.date}|${activeNotesTarget.startTime}`}

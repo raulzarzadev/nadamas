@@ -19,6 +19,12 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
       icon: 'payments',
     },
     { href: '/athlete/find-coach', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
+    {
+      href: '/athlete/search-coaches',
+      label: 'Buscar coaches',
+      mobileLabel: 'Buscar coaches',
+      icon: 'search',
+    },
     { href: '/athlete/progress', label: 'Progreso', mobileLabel: 'Progreso', icon: 'chart' },
   ],
   coach: [

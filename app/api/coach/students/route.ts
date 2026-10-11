@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     .get()
   const bookings = bookingsSnapshot.docs
     .map((doc) => doc.data() as Booking)
-    .filter((booking) => booking.status !== 'cancelled')
+    .filter((booking) => booking.status !== 'cancelled' && !booking.schoolId)
 
   const [progressSnapshot, entriesSnapshot] = await Promise.all([
     adminDb.collection('coachStudentProgress').where('coachId', '==', coachId).get(),

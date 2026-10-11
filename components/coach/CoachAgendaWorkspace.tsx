@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
-import { useRole } from '@/context/RoleContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { schoolMembershipHasRole } from '@/lib/school'
 import CoachAgenda from './CoachAgenda'
@@ -15,7 +14,6 @@ const PERSONAL_VIEW = 'personal'
 export default function CoachAgendaWorkspace() {
   const tenant = useTenantSchool()
   const { schools, status } = useSchoolSelection({ includePersonal: true })
-  const { setActiveRole } = useRole()
   const coachSchools = useMemo(() => {
     const seen = new Set<string>()
     return schools.filter(({ school, membership }) => {
@@ -98,24 +96,16 @@ export default function CoachAgendaWorkspace() {
                     { id: PERSONAL_VIEW, label: 'Míos' },
                   ]
                 : []),
-              ...coachSchools.map(({ school, membership }) => ({
+              ...coachSchools.map(({ school }) => ({
                 id: `school:${school.id}`,
                 label: school.name,
-                directs: schoolMembershipHasRole(membership, 'director'),
               })),
             ].map((option) => (
               <button
                 key={option.id}
                 type="button"
                 aria-pressed={activeView === option.id}
-                title={'directs' in option && option.directs ? 'Abrir modo coordinador' : undefined}
                 onClick={() => {
-                  if (!tenant && 'directs' in option && option.directs) {
-                    const schoolId = option.id.slice('school:'.length)
-                    window.localStorage.setItem('nadamas.schoolId', schoolId)
-                    setActiveRole('school')
-                    return
-                  }
                   setView(option.id)
                   setScheduleEditorOpen(false)
                 }}

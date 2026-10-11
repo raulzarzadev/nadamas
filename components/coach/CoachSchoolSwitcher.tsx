@@ -10,7 +10,11 @@ import { schoolMembershipHasRole } from '@/lib/school'
 export default function CoachSchoolSwitcher() {
   const tenant = useTenantSchool()
   const pathname = usePathname()
-  return tenant || pathname.startsWith('/coach/agenda') ? null : <GlobalCoachSchoolSwitcher />
+  return tenant ||
+    pathname.startsWith('/coach/agenda') ||
+    pathname.startsWith('/coach/students') ? null : (
+    <GlobalCoachSchoolSwitcher />
+  )
 }
 
 function GlobalCoachSchoolSwitcher() {

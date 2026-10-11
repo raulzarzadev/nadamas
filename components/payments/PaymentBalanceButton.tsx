@@ -5,7 +5,6 @@ import { FiDollarSign } from 'react-icons/fi'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import Sheet from '@/components/ui/sheet'
 import { PaymentCRUD } from '@/firebase/payments/main'
-import { localPaymentDate, paymentAvailable } from '@/lib/payments/engine'
 import type { PaymentSnapshot } from '@/lib/payments/model'
 import PaymentsPanel from './PaymentsPanel'
 
@@ -34,17 +33,10 @@ export default function PaymentBalanceButton() {
     }
   }, [endpoint, status, open])
   const student = snapshot?.students[0]
-  const balance =
-    student && snapshot
-      ? paymentAvailable(
-          snapshot.accounts[student.id] || { grants: [] },
-          localPaymentDate(Date.now(), snapshot.settings.timezone)
-        )
-      : null
   const content = (
     <>
       <FiDollarSign aria-hidden="true" />
-      {balance === null ? 'Pagos' : `${balance} clases`}
+      Planes y pagos
     </>
   )
   if (!endpoint)
@@ -52,7 +44,7 @@ export default function PaymentBalanceButton() {
       <Link
         href="/athlete/payments"
         className="btn btn-outline h-8 min-h-8 gap-1 px-2 text-xs"
-        aria-label="Mis pagos"
+        aria-label="Planes y pagos"
       >
         {content}
       </Link>
@@ -62,7 +54,7 @@ export default function PaymentBalanceButton() {
       <button
         type="button"
         className="btn btn-outline h-8 min-h-8 gap-1 px-2 text-xs"
-        aria-label={student ? `Pagos de ${student.name}` : 'Mis pagos'}
+        aria-label={student ? `Planes y pagos de ${student.name}` : 'Planes y pagos'}
         onClick={() => setOpen(true)}
       >
         {content}
