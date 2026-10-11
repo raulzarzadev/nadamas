@@ -2,10 +2,8 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { useState } from 'react'
-import { FiArrowLeft, FiCheckSquare } from 'react-icons/fi'
-import AttendanceModal from '@/components/coach/AttendanceModal'
-import CoachAgenda from '@/components/coach/CoachAgenda'
+import { FiArrowLeft } from 'react-icons/fi'
+import ClassDetailsSection from '@/components/coach/ClassDetailsSection'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { useSchoolSelection } from './useSchoolSelection'
 
@@ -50,14 +48,12 @@ function parseSelections(value: string | null): Selection[] {
 }
 
 export default function SchoolClassDetails() {
-  const [attendanceDate, setAttendanceDate] = useState<string | null>(null)
-  const [attendanceRevision, setAttendanceRevision] = useState(0)
   const params = useSearchParams()
   const { schools, status } = useSchoolSelection()
   const schoolId = params.get('schoolId') || ''
   const slots = parseSelections(params.get('slots'))
   const schoolAccess = schools.find(({ school }) => school.id === schoolId)
-  const canManage = schoolMembershipHasRole(schoolAccess?.membership, 'director')
+  const canManage = schoolMembershipHasRole(schoolAccess?.membership, 'teacher')
   const groups = new Map<string, Selection[]>()
   for (const slot of slots) {
     const key = `${slot.date}|${slot.startTime}`
@@ -86,52 +82,8 @@ export default function SchoolClassDetails() {
         </p>
       ) : (
         [...groups.entries()].map(([key, group]) => (
-          <section
-            key={key}
-            className="overflow-hidden rounded-2xl border border-(--c-border) bg-white"
-          >
-            <div className="flex items-center justify-between gap-2 border-b border-(--c-border) px-4 py-2">
-              <h2 className="min-w-0 text-sm font-bold text-(--c-ocean)">
-                {new Date(`${group[0].date}T12:00:00`).toLocaleDateString('es-MX', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                })}{' '}
-                · {group[0].startTime}
-              </h2>
-              {canManage && (
-                <button
-                  type="button"
-                  onClick={() => setAttendanceDate(group[0].date)}
-                  className="btn btn-outline min-h-8 h-8 shrink-0 gap-1 rounded-lg border px-2 text-xs"
-                >
-                  <FiCheckSquare aria-hidden="true" /> Pase de lista
-                </button>
-              )}
-            </div>
-            <div className="grid gap-3 p-3">
-              {group.map((slot) => (
-                <CoachAgenda
-                  key={`${slot.coachId}|${slot.groupType}|${attendanceRevision}`}
-                  schoolId={schoolId}
-                  aggregateSchool
-                  manageSchoolSchedule={canManage}
-                  readOnly={!canManage}
-                  initialDate={slot.date}
-                  detailTarget={slot}
-                />
-              ))}
-            </div>
-          </section>
+          <ClassDetailsSection key={key} slots={group} schoolId={schoolId} canManage={canManage} />
         ))
-      )}
-      {attendanceDate && (
-        <AttendanceModal
-          schoolId={schoolId}
-          date={attendanceDate}
-          onClose={() => setAttendanceDate(null)}
-          onUpdated={() => setAttendanceRevision((current) => current + 1)}
-        />
       )}
     </main>
   )

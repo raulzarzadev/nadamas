@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useId, useState } from 'react'
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi'
+import { FiCheckSquare, FiChevronDown, FiChevronUp, FiSettings } from 'react-icons/fi'
+import AttendanceModal from '@/components/coach/AttendanceModal'
 import ClassTrainingEditor from '@/components/coach/ClassTrainingEditor'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
@@ -10,23 +11,30 @@ import { getAuthed, putAuthed } from '@/lib/client/authed-api'
 import { UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 
 export type ClassNotesTarget = {
-  schoolId: string
+  schoolId?: string
   coachId: string
   coachName?: string | null
   date: string
   startTime: string
-  endTime: string
+  endTime?: string
   groupType: 'particular' | 'grupal'
 }
 
 export default function ClassNotesModal({
   target,
   onClose,
+  onUpdated,
+  onConfigure,
+  suspended = false,
 }: {
   target: ClassNotesTarget
   onClose: () => void
+  onUpdated?: () => void
+  onConfigure?: () => void
+  suspended?: boolean
 }) {
   const id = useId()
+  const [attendanceOpen, setAttendanceOpen] = useState(false)
   const [note, setNote] = useState('')
   const [original, setOriginal] = useState('')
   const [training, setTraining] = useState<ClassTrainingBlock[]>([])
@@ -38,7 +46,7 @@ export default function ClassNotesModal({
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const endpoint = `/api/schools/${encodeURIComponent(target.schoolId)}/class-notes?coachId=${encodeURIComponent(target.coachId)}&date=${encodeURIComponent(target.date)}&time=${encodeURIComponent(target.startTime)}`
+  const endpoint = `${target.schoolId ? `/api/schools/${encodeURIComponent(target.schoolId)}/class-notes` : '/api/coach/class-notes'}?coachId=${encodeURIComponent(target.coachId)}&date=${encodeURIComponent(target.date)}&time=${encodeURIComponent(target.startTime)}`
   useEffect(() => {
     let active = true
     getAuthed(endpoint)
@@ -86,12 +94,12 @@ export default function ClassNotesModal({
   }
   return (
     <Sheet
-      open
+      open={!suspended}
       onClose={onClose}
       closeDisabled={saving}
       keyboardAware
       fullBleedMobile
-      label="Notas de la clase"
+      label="Detalles del horario"
       footer={
         editingSeries ? undefined : (
           <div className="flex justify-end px-4 sm:px-0">
@@ -108,18 +116,36 @@ export default function ClassNotesModal({
       }
     >
       <div className="grid gap-4 px-4 pb-4 sm:px-0">
-        <h2 className="text-xl font-bold">Notas de la clase</h2>
+        <h2 className="text-xl font-bold">Detalles del horario</h2>
         <ScheduleTag
           date={new Date(`${target.date}T12:00:00`).toLocaleDateString('es-MX', {
             weekday: 'short',
             day: 'numeric',
             month: 'short',
           })}
-          time={`${target.startTime}–${target.endTime}`}
+          time={target.endTime ? `${target.startTime}–${target.endTime}` : target.startTime}
           coachName={target.coachName || 'Sin profe aún'}
           unassigned={target.coachId === UNASSIGNED_SCHOOL_COACH_ID}
           groupType={target.groupType}
         />
+        {onConfigure && (
+          <button
+            type="button"
+            onClick={onConfigure}
+            disabled={saving}
+            className="btn btn-outline min-h-11 w-fit"
+          >
+            <FiSettings aria-hidden="true" /> Configurar
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setAttendanceOpen(true)}
+          disabled={loading || saving || !loaded}
+          className="btn btn-primary min-h-11 w-fit"
+        >
+          <FiCheckSquare aria-hidden="true" /> Pasar lista
+        </button>
         <label htmlFor={id} className="text-sm font-semibold">
           Notas generales
         </label>
@@ -166,6 +192,15 @@ export default function ClassNotesModal({
           </p>
         )}
       </div>
+      {attendanceOpen && (
+        <AttendanceModal
+          schoolId={target.schoolId}
+          date={target.date}
+          initialSlot={{ coachId: target.coachId, startTime: target.startTime }}
+          onClose={() => setAttendanceOpen(false)}
+          onUpdated={() => onUpdated?.()}
+        />
+      )}
     </Sheet>
   )
 }

@@ -61,8 +61,57 @@ export default function HourPickerModal({
       label="Agregar horas"
       keyboardAware
       fullBleedMobile
+      closeDisabled={busy}
+      showFooterClose={false}
+      footer={
+        <footer className="flex shrink-0 flex-col gap-3 border-t border-[var(--c-border)] px-4 py-3 text-[var(--c-ocean)] sm:px-0 sm:pb-0">
+          <div
+            className="px-1 text-xs leading-relaxed text-[var(--c-text-2)]"
+            role="status"
+            aria-live="polite"
+          >
+            <p>
+              {times.length
+                ? `${times.length} ${times.length === 1 ? 'horario para agregar' : 'horarios para agregar'}`
+                : 'Selecciona al menos un horario nuevo'}
+            </p>
+            {times.length > 0 && (
+              <p className="max-h-12 overflow-y-auto break-words tabular-nums">
+                {times.join(' · ')}
+              </p>
+            )}
+          </div>
+          {error && (
+            <p role="alert" className="mt-3 text-sm text-[var(--c-error,#b91c1c)]">
+              {error}
+            </p>
+          )}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onClose}
+              className={`min-h-12 rounded-xl px-3 text-sm font-semibold hover:bg-[var(--c-surface)] ${focusClass}`}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={!times.length || busy}
+              onClick={() => onSubmit(times)}
+              className={`min-h-12 flex-1 rounded-xl bg-[var(--c-ocean)] px-3 font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600 ${focusClass}`}
+            >
+              {busy
+                ? 'Agregando…'
+                : times.length
+                  ? `Agregar ${times.length} ${times.length === 1 ? 'horario' : 'horarios'}`
+                  : 'Agregar horarios'}
+            </button>
+          </div>
+        </footer>
+      }
     >
-      <div className="flex max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden text-[var(--c-ocean)] sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),44rem)]">
+      <div className="flex w-full flex-col text-[var(--c-ocean)]">
         <header className="flex shrink-0 items-start justify-between gap-3 px-4 pt-2 sm:px-0 sm:pt-0">
           <div>
             <h3 id={`${id}-title`} className="text-xl font-bold">
@@ -83,18 +132,18 @@ export default function HourPickerModal({
           </button>
         </header>
 
-        <div className="min-h-0 overflow-y-auto px-4 py-4 sm:px-0">
+        <div className="px-4 pt-1 pb-3 sm:px-0">
           <button
             type="button"
             onClick={toggleHalfHours}
             aria-pressed={showHalfHours}
-            className={`inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-xs font-bold text-[var(--c-text-2)] underline decoration-[var(--c-aqua)] decoration-2 underline-offset-4 transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] ${focusClass}`}
+            className={`ml-auto flex min-h-8 items-center gap-1 rounded-lg px-1 text-[11px] font-normal text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] ${focusClass}`}
           >
-            <FiPlus aria-hidden="true" className="text-sm" />
+            <FiPlus aria-hidden="true" className="text-xs" />
             {showHalfHours ? 'Ocultar medias horas' : 'Agregar medias horas'}
           </button>
 
-          <div className="mt-5 space-y-5">
+          <div className="mt-0 space-y-4">
             {HOUR_GROUPS.map((group) => {
               const groupTimes = hourOptions.filter((time) => time >= group.from && time < group.to)
               return (
@@ -115,7 +164,7 @@ export default function HourPickerModal({
                           aria-label={`${time}${alreadyAdded ? ', ya agregado' : ''}`}
                           aria-pressed={active}
                           onClick={() => toggleTime(time)}
-                          className={`flex min-h-12 items-center justify-center gap-1 rounded-xl border text-sm font-bold transition-colors ${focusClass} ${
+                          className={`flex min-h-9 items-center justify-center gap-1 rounded-lg border text-xs font-bold transition-colors ${focusClass} ${
                             alreadyAdded
                               ? 'cursor-not-allowed border-[var(--c-border)] bg-slate-100 text-slate-400'
                               : active
@@ -133,52 +182,7 @@ export default function HourPickerModal({
               )
             })}
           </div>
-
-          <div
-            className="mt-5 rounded-xl bg-[var(--c-surface)] p-4"
-            role="status"
-            aria-live="polite"
-          >
-            <p className="text-sm font-bold">
-              {times.length
-                ? `${times.length} ${times.length === 1 ? 'horario para agregar' : 'horarios para agregar'}`
-                : 'Selecciona al menos un horario nuevo'}
-            </p>
-            {times.length > 0 && (
-              <p className="mt-1 text-sm tabular-nums text-[var(--c-text-2)]">
-                {times.join(' · ')}
-              </p>
-            )}
-          </div>
-          {error && (
-            <p role="alert" className="mt-3 text-sm text-[var(--c-error,#b91c1c)]">
-              {error}
-            </p>
-          )}
         </div>
-
-        <footer className="flex shrink-0 items-center gap-3 border-t border-[var(--c-border)] px-4 py-3 sm:px-0 sm:pb-0">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onClose}
-            className={`min-h-12 rounded-xl px-3 text-sm font-semibold hover:bg-[var(--c-surface)] ${focusClass}`}
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={!times.length || busy}
-            onClick={() => onSubmit(times)}
-            className={`min-h-12 flex-1 rounded-xl bg-[var(--c-ocean)] px-3 font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600 ${focusClass}`}
-          >
-            {busy
-              ? 'Agregando…'
-              : times.length
-                ? `Agregar ${times.length} ${times.length === 1 ? 'horario' : 'horarios'}`
-                : 'Agregar horarios'}
-          </button>
-        </footer>
       </div>
     </Sheet>
   )

@@ -45,7 +45,7 @@ export default function AttendanceModal({
   onClose,
   onUpdated,
 }: {
-  schoolId: string
+  schoolId?: string
   date: string
   occurrenceId?: string
   initialSlot?: { coachId: string; startTime: string }
@@ -65,7 +65,9 @@ export default function AttendanceModal({
   const [error, setError] = useState('')
   const [confirmation, setConfirmation] = useState<(Selection & { code: string }) | null>(null)
   const requestVersion = useRef(0)
-  const endpoint = `/api/schools/${encodeURIComponent(schoolId)}/attendance`
+  const endpoint = schoolId
+    ? `/api/schools/${encodeURIComponent(schoolId)}/attendance`
+    : '/api/coach/attendance'
   const selected = payload.classes.find(
     (item) => item.id === selectedClass || item.sourceOccurrenceIds?.includes(selectedClass)
   )

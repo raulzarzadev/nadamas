@@ -21,7 +21,7 @@ export default function ScheduleStudentsModal({
   onResolve,
   onEdit,
 }: {
-  schoolId: string
+  schoolId?: string
   bookings: Booking[]
   slotCount: number
   selectedSlots: CoachAvailableSlot[]

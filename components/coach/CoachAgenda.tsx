@@ -192,10 +192,10 @@ export default function CoachAgenda({
   const hideBookingActions = readOnlyAgenda || (adminMode && !manageSchoolSchedule)
   const scheduleEndpoint =
     manageSchoolSchedule && schoolId && coachId
-      ? `/api/schools/${encodeURIComponent(schoolId)}/teachers/${encodeURIComponent(coachId)}/schedule`
+      ? `/api/schools/${encodeURIComponent(schoolId as string)}/teachers/${encodeURIComponent(coachId)}/schedule`
       : '/api/coach/agenda'
   const coachQuery = coachId ? `&coachId=${encodeURIComponent(coachId)}` : ''
-  const schoolQuery = schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''
+  const schoolQuery = schoolId ? `&schoolId=${encodeURIComponent(schoolId as string)}` : ''
   const contextQuery = `${coachQuery}${schoolQuery}`
   const combinedSources = agendaSources !== undefined
   const agendaUpdateSchoolIds = useMemo(
@@ -257,6 +257,13 @@ export default function CoachAgenda({
   const [batchStudentIds, setBatchStudentIds] = useState<string[]>([])
   const batchSlotKey = (slot: CoachAvailableSlot) =>
     `${slot.schoolId || schoolId || ''}|${slot.coachId}|${slot.date}|${slot.startTime}|${slot.groupType}`
+  const [multiSelect, setMultiSelect] = useState(false)
+  useEffect(() => {
+    if (!batchSlots.length) {
+      setMultiSelect(false)
+      setShowBatchSummary(false)
+    }
+  }, [batchSlots.length])
   const [horizontalClass, setHorizontalClass] = useState<CoachAvailableSlot | null>(null)
   const [slotEditor, setSlotEditor] = useState<SlotEditorState | null>(null)
   const [slotAssignmentCoachId, setSlotAssignmentCoachId] = useState('')
@@ -281,7 +288,7 @@ export default function CoachAgenda({
     student: AgendaStudentAction
   } | null>(null)
   const [attendanceTarget, setAttendanceTarget] = useState<{
-    schoolId: string
+    schoolId?: string
     date: string
     occurrenceId?: string
     initialSlot?: { coachId: string; startTime: string }
@@ -403,7 +410,7 @@ export default function CoachAgenda({
         }
         const endpoint =
           (aggregateSchool || manageSchoolSchedule) && schoolId
-            ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${month}${requestCoachQuery}${readOnly ? '&view=public' : ''}`
+            ? `/api/schools/${encodeURIComponent(schoolId as string)}/agenda?month=${month}${requestCoachQuery}${readOnly ? '&view=public' : ''}`
             : `/api/coach/agenda?month=${month}${requestContextQuery}`
         const response = await getAuthed(endpoint)
         const nextAgenda = (await response.json()) as CoachAgendaPayload
@@ -780,7 +787,7 @@ export default function CoachAgenda({
 
   const scheduleEndpointFor = (targetCoachId?: string) =>
     manageSchoolSchedule && schoolId && targetCoachId
-      ? `/api/schools/${encodeURIComponent(schoolId)}/teachers/${encodeURIComponent(targetCoachId)}/schedule`
+      ? `/api/schools/${encodeURIComponent(schoolId as string)}/teachers/${encodeURIComponent(targetCoachId)}/schedule`
       : scheduleEndpoint
   const schoolIdForSlot = (slot: Pick<CoachAvailableSlot, 'schoolId'>) =>
     combinedSources ? slot.schoolId : schoolId
@@ -1132,15 +1139,18 @@ export default function CoachAgenda({
     if (!slotEditor || !schoolId || !slotAssignmentCoachId) return
     const slot = slotEditor.slot
     void run(async () => {
-      await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/assignments`, {
-        coachId: slotAssignmentCoachId,
-        date: slot.date,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        groupType: slot.groupType,
-        offeringId: slot.offeringId,
-        scheduleId: slot.scheduleId,
-      })
+      await postAuthed(
+        `/api/schools/${encodeURIComponent(schoolId as string)}/agenda/assignments`,
+        {
+          coachId: slotAssignmentCoachId,
+          date: slot.date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          groupType: slot.groupType,
+          offeringId: slot.offeringId,
+          scheduleId: slot.scheduleId,
+        }
+      )
       setSlotEditor(null)
     })
   }
@@ -1255,9 +1265,9 @@ export default function CoachAgenda({
           `/api/schools/${encodeURIComponent(targetSchoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(slot.coachId)}`
         )
         targetOfferings = ((await response.json()) as CoachAgendaPayload).offerings || []
-      } else if (combinedSources) {
+      } else {
         const response = await getAuthed(
-          `/api/coach/agenda?month=${monthOfSelected}${schoolQueryFor(targetSchoolId)}`
+          `/api/coach/agenda?month=${slot.date.slice(0, 7)}${schoolQueryFor(targetSchoolId)}`
         )
         targetOfferings = ((await response.json()) as CoachAgendaPayload).offerings || []
       }
@@ -1315,7 +1325,7 @@ export default function CoachAgenda({
     setNotice(null)
     run(async () => {
       const latestEndpoint = schoolId
-        ? `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(coachId || selfUid)}`
+        ? `/api/schools/${encodeURIComponent(schoolId as string)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(coachId || selfUid)}`
         : `/api/coach/agenda?month=${monthOfSelected}${coachQuery}`
       const latestResponse = await getAuthed(latestEndpoint)
       const latestAgenda = (await latestResponse.json()) as CoachAgendaPayload
@@ -1494,7 +1504,9 @@ export default function CoachAgenda({
       setBatchRequestError('')
       await loadAgenda(monthOfSelected)
       try {
-        const response = await getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/students`)
+        const response = await getAuthed(
+          `/api/schools/${encodeURIComponent(schoolId as string)}/students`
+        )
         const payload = await response.json()
         setBatchStudents(payload.students || [])
       } catch {
@@ -1503,13 +1515,14 @@ export default function CoachAgenda({
     }
   }
   async function applyBatch(studentPayloads?: AddStudentPayload[]) {
-    if (busy || !schoolId || !batchAction) return
+    if (busy || !batchAction) return
+    if (!schoolId && batchAction === 'coaches') return
     if (batchAction === 'coaches') {
       if (!batchCoachIds.length) return
       setBusy(true)
       setBatchError('')
       try {
-        await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/teachers`, {
+        await postAuthed(`/api/schools/${encodeURIComponent(schoolId as string)}/agenda/teachers`, {
           coachIds: batchCoachIds,
           slots: batchSlots.map(({ coachId, date, startTime, endTime, groupType, offeringId }) => ({
             coachId,
@@ -1545,14 +1558,14 @@ export default function CoachAgenda({
     setBusy(true)
     setBatchError('')
     const selectedStudentIds = [...batchStudentIds]
-    if (batchAction === 'students' && studentPayloads) {
+    if (batchAction === 'students' && studentPayloads && schoolId) {
       try {
         for (const payload of studentPayloads) {
           if (payload.athleteId && !/^manual[:_]/.test(payload.athleteId))
             selectedStudentIds.push(payload.athleteId)
           else {
             const response = await postAuthed(
-              `/api/schools/${encodeURIComponent(schoolId)}/students/quick`,
+              `/api/schools/${encodeURIComponent(schoolId as string)}/students/quick`,
               { name: payload.athleteName }
             )
             const { student } = await response.json()
@@ -1568,7 +1581,10 @@ export default function CoachAgenda({
     const failed: CoachAvailableSlot[] = []
     for (const slot of batchSlots) {
       try {
-        if (batchAction === 'students') {
+        if (batchAction === 'students' && !schoolId) {
+          for (const payload of studentPayloads || [])
+            await postAuthed('/api/coach/agenda/bookings', { ...slot, ...payload })
+        } else if (batchAction === 'students') {
           const existingClass = batchBookings.find(
             (booking) =>
               booking.schoolClassId &&
@@ -1579,7 +1595,7 @@ export default function CoachAgenda({
           )
           if (existingClass?.schoolClassId) {
             await postAuthed(
-              `/api/schools/${encodeURIComponent(schoolId)}/classes/${encodeURIComponent(existingClass.schoolClassId)}/students`,
+              `/api/schools/${encodeURIComponent(schoolId as string)}/classes/${encodeURIComponent(existingClass.schoolClassId)}/students`,
               {
                 studentIds: selectedStudentIds,
                 allowPackage: studentPayloads?.[0]?.allowPackage,
@@ -1591,7 +1607,7 @@ export default function CoachAgenda({
           }
           for (const studentId of selectedStudentIds) {
             const response = await postAuthed(
-              `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(studentId)}/classes`,
+              `/api/schools/${encodeURIComponent(schoolId as string)}/students/${encodeURIComponent(studentId)}/classes`,
               {
                 allowPackage: studentPayloads?.[0]?.allowPackage,
                 paymentExceptionReason: studentPayloads?.[0]?.paymentExceptionReason,
@@ -1636,7 +1652,7 @@ export default function CoachAgenda({
           )
           for (const block of blocks)
             await deleteAuthed(
-              `${scheduleEndpointFor(slot.coachId)}?id=${encodeURIComponent(block.id)}&schoolId=${encodeURIComponent(schoolId)}`
+              `${scheduleEndpointFor(slot.coachId)}?id=${encodeURIComponent(block.id)}&schoolId=${encodeURIComponent(schoolId as string)}`
             )
         }
       } catch {
@@ -1808,46 +1824,15 @@ export default function CoachAgenda({
                   }
                   actions={
                     <>
-                      {!hideBookingActions && (hasSchoolClass || !hasPendingRequest) && (
+                      {!readOnlyAgenda && (
                         <RowIconButton
-                          ariaLabel="Configurar clase"
-                          onClick={() =>
-                            schoolClassBooking
-                              ? openSchoolClassEditor(schoolClassBooking, true)
-                              : setBookingToEdit(firstBooking)
-                          }
-                          disabled={busy}
-                        >
-                          <FiSettings aria-hidden="true" />
-                        </RowIconButton>
-                      )}
-                      {!readOnlyAgenda &&
-                        schoolClassBooking?.schoolClassId &&
-                        schoolIdForSlot(schoolClassBooking) && (
-                          <RowIconButton
-                            ariaLabel="Pase de lista"
-                            disabled={busy}
-                            onClick={() =>
-                              setAttendanceTarget({
-                                schoolId: schoolIdForSlot(schoolClassBooking) as string,
-                                date: schoolClassBooking.date,
-                                occurrenceId: schoolClassBooking.schoolClassId,
-                              })
-                            }
-                          >
-                            <FiCheckSquare aria-hidden="true" />
-                          </RowIconButton>
-                        )}
-                      {!readOnlyAgenda && schoolIdForSlot(schoolClassBooking || firstBooking) && (
-                        <RowIconButton
-                          ariaLabel="Notas de la clase"
+                          ariaLabel="Detalles del horario"
                           disabled={busy}
                           onClick={() =>
                             setClassNotesTarget({
                               ...(schoolClassBooking || firstBooking),
-                              schoolId: schoolIdForSlot(
-                                schoolClassBooking || firstBooking
-                              ) as string,
+                              schoolId:
+                                schoolIdForSlot(schoolClassBooking || firstBooking) || undefined,
                             })
                           }
                         >
@@ -2023,29 +2008,12 @@ export default function CoachAgenda({
                     <>
                       {!readOnlyAgenda && (
                         <RowIconButton
-                          ariaLabel="Configurar clase"
-                          onClick={() => openSlotEditor(row.slot, row.block)}
-                          disabled={
-                            busy ||
-                            dayBookings.some(
-                              (booking) =>
-                                (!combinedSources || booking.schoolId === row.slot.schoolId) &&
-                                booking.coachId === row.slot.coachId &&
-                                booking.startTime === row.slot.startTime
-                            )
-                          }
-                        >
-                          <FiSettings aria-hidden="true" />
-                        </RowIconButton>
-                      )}
-                      {!readOnlyAgenda && schoolIdForSlot(row.slot) && (
-                        <RowIconButton
-                          ariaLabel="Notas de la clase"
+                          ariaLabel="Detalles del horario"
                           disabled={busy}
                           onClick={() =>
                             setClassNotesTarget({
                               ...row.slot,
-                              schoolId: schoolIdForSlot(row.slot) as string,
+                              schoolId: schoolIdForSlot(row.slot) || undefined,
                             })
                           }
                         >
@@ -2096,53 +2064,20 @@ export default function CoachAgenda({
                 actions={
                   !readOnlyAgenda ? (
                     <>
-                      <RowIconButton
-                        ariaLabel="Configurar clase"
-                        onClick={() => openSlotEditor(row.slot)}
-                        disabled={
-                          busy ||
-                          dayBookings.some(
-                            (booking) =>
-                              (!combinedSources || booking.schoolId === row.slot.schoolId) &&
-                              booking.coachId === row.slot.coachId &&
-                              booking.startTime === row.slot.startTime
-                          )
-                        }
-                      >
-                        <FiSettings aria-hidden="true" />
-                      </RowIconButton>
-                      {schoolIdForSlot(row.slot) && (
+                      {
                         <RowIconButton
-                          ariaLabel="Pase de lista"
-                          disabled={busy}
-                          onClick={() =>
-                            setAttendanceTarget({
-                              schoolId: schoolIdForSlot(row.slot) as string,
-                              date: row.slot.date,
-                              initialSlot: {
-                                coachId: row.slot.coachId,
-                                startTime: row.slot.startTime,
-                              },
-                            })
-                          }
-                        >
-                          <FiCheckSquare aria-hidden="true" />
-                        </RowIconButton>
-                      )}
-                      {schoolIdForSlot(row.slot) && (
-                        <RowIconButton
-                          ariaLabel="Notas de la clase"
+                          ariaLabel="Detalles del horario"
                           disabled={busy}
                           onClick={() =>
                             setClassNotesTarget({
                               ...row.slot,
-                              schoolId: schoolIdForSlot(row.slot) as string,
+                              schoolId: schoolIdForSlot(row.slot) || undefined,
                             })
                           }
                         >
                           <FiClipboard aria-hidden="true" />
                         </RowIconButton>
-                      )}
+                      }
                     </>
                   ) : undefined
                 }
@@ -2305,7 +2240,7 @@ export default function CoachAgenda({
           }))}
           onSelectSlot={(key) => {
             const slot = horizontalSlots.get(key)
-            if (slot && !manageSchoolSchedule) {
+            if (slot && !multiSelect) {
               setNotice(null)
               setSelectedDate(slot.date)
               setHorizontalClass(slot)
@@ -2324,23 +2259,21 @@ export default function CoachAgenda({
       )}
       {batchSlots.length > 0 && (
         <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3 shadow-lg">
-          <button
-            type="button"
-            onClick={() => setShowBatchSummary(true)}
-            aria-haspopup="dialog"
-            className="mr-auto min-h-11 text-left text-sm font-bold underline-offset-4 hover:underline"
-          >
-            {batchSlots.length}{' '}
-            {batchSlots.length === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
-          </button>
           <p className="basis-full text-xs text-(--c-text-2)" aria-live="polite">
-            {selectedIndividualCount}{' '}
-            {selectedIndividualCount === 1 ? 'particular' : 'particulares'} · {selectedGroupCount}{' '}
-            {selectedGroupCount === 1 ? 'grupal' : 'grupales'}
-          </p>
-          <p className="basis-full text-xs text-(--c-text-2)" aria-live="polite">
-            {selectedAvailableCount} disponibles · {selectedBookedCount} ocupados ·{' '}
-            {selectedBlockedCount} bloqueados
+            {[
+              selectedIndividualCount > 0 &&
+                `${selectedIndividualCount} ${selectedIndividualCount === 1 ? 'particular' : 'particulares'}`,
+              selectedGroupCount > 0 &&
+                `${selectedGroupCount} ${selectedGroupCount === 1 ? 'grupal' : 'grupales'}`,
+              selectedAvailableCount > 0 &&
+                `${selectedAvailableCount} ${selectedAvailableCount === 1 ? 'disponible' : 'disponibles'}`,
+              selectedBookedCount > 0 &&
+                `${selectedBookedCount} ${selectedBookedCount === 1 ? 'ocupado' : 'ocupados'}`,
+              selectedBlockedCount > 0 &&
+                `${selectedBlockedCount} ${selectedBlockedCount === 1 ? 'bloqueado' : 'bloqueados'}`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
           {batchRequests.length > 0 && (
             <button
@@ -2355,37 +2288,41 @@ export default function CoachAgenda({
               Solicitudes ({batchRequests.length})
             </button>
           )}
-          {schoolId && (
-            <Link
-              href={`/school/classes/details?schoolId=${encodeURIComponent(schoolId)}&slots=${encodeURIComponent(JSON.stringify(batchSlots.map(({ coachId, date, startTime, groupType }) => ({ coachId, date, startTime, groupType }))))}`}
-              className="btn btn-outline min-h-11"
-            >
-              Ver
-            </Link>
-          )}
-          {(['students', 'coaches', 'type', 'status'] as const).map((action) => (
-            <button
-              key={action}
-              type="button"
-              disabled={busy}
-              onClick={() => void openBatchAction(action)}
-              className="btn btn-outline min-h-11"
-            >
-              {
+          <button
+            type="button"
+            onClick={() => setShowBatchSummary(true)}
+            className="btn btn-outline min-h-11"
+          >
+            Ver ({batchSlots.length})
+          </button>
+          {(['students', 'coaches', 'type', 'status'] as const)
+            .filter((action) => !hideBookingActions && (action !== 'coaches' || Boolean(schoolId)))
+            .map((action) => (
+              <button
+                key={action}
+                type="button"
+                disabled={busy}
+                onClick={() => void openBatchAction(action)}
+                className="btn btn-outline min-h-11"
+              >
                 {
-                  students: `Alumnos (${selectedStudentIds.size})`,
-                  coaches: `Profes (${selectedCoachIds.size})`,
-                  type: 'Tipo',
-                  status: 'Estado',
-                }[action]
-              }
-            </button>
-          ))}
+                  {
+                    students: `Alumnos (${selectedStudentIds.size})`,
+                    coaches: `Profes (${selectedCoachIds.size})`,
+                    type: 'Tipo',
+                    status: 'Estado',
+                  }[action]
+                }
+              </button>
+            ))}
           <button
             type="button"
             disabled={busy}
             className="btn btn-ghost"
-            onClick={() => setBatchSlots([])}
+            onClick={() => {
+              setBatchSlots([])
+              setMultiSelect(false)
+            }}
           >
             Limpiar
           </button>
@@ -2398,47 +2335,58 @@ export default function CoachAgenda({
       >
         <div className="flex flex-col gap-4">
           <h2 className="text-lg font-bold">Horarios seleccionados ({batchSlots.length})</h2>
-          <ul className="flex flex-col gap-2" aria-label="Resumen de horarios seleccionados">
+          <div className="grid gap-4">
             {[...batchSlots]
               .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
               .map((slot) => (
-                <li key={batchSlotKey(slot)}>
-                  <ScheduleTag
-                    date={new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                    time={slot.startTime}
-                    coachName={
-                      slot.coachName ||
-                      agenda?.coachNames?.[slot.coachId] ||
-                      (slot.coachId === UNASSIGNED_SCHOOL_COACH_ID ? 'Sin profe aún' : undefined)
-                    }
-                    unassigned={slot.coachId === UNASSIGNED_SCHOOL_COACH_ID}
-                    groupType={slot.groupType}
-                    enrolledCount={enrolledCountForSlot(slot)}
-                    action={
-                      <button
-                        type="button"
-                        disabled={busy}
-                        aria-label={`Quitar de la selección ${slot.date} a las ${slot.startTime}, ${slot.coachName || 'Sin profe aún'}`}
-                        onClick={() => {
-                          const remaining = batchSlots.filter(
-                            (item) => batchSlotKey(item) !== batchSlotKey(slot)
-                          )
-                          setBatchSlots(remaining)
-                          if (!remaining.length) setShowBatchSummary(false)
-                        }}
-                        className="relative ml-auto inline-flex size-6 shrink-0 items-center justify-center rounded-full text-(--c-text-2) before:absolute before:-inset-2 hover:bg-white hover:text-(--c-ocean) disabled:opacity-50"
-                      >
-                        <FiX aria-hidden="true" size={18} />
-                      </button>
-                    }
+                <section key={batchSlotKey(slot)} className="grid gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold">
+                      {new Date(`${slot.date}T12:00:00`).toLocaleDateString('es-MX', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                      })}{' '}
+                      · {slot.startTime}
+                    </h3>
+                    <button
+                      type="button"
+                      className="btn btn-ghost min-h-11"
+                      aria-label={`Quitar horario ${slot.date} ${slot.startTime}`}
+                      onClick={() =>
+                        setBatchSlots((current) =>
+                          current.filter((item) => batchSlotKey(item) !== batchSlotKey(slot))
+                        )
+                      }
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                  <CoachAgenda
+                    schoolId={schoolIdForSlot(slot) || undefined}
+                    aggregateSchool={Boolean(schoolIdForSlot(slot))}
+                    manageSchoolSchedule={manageSchoolSchedule}
+                    readOnly={readOnlyAgenda}
+                    initialDate={slot.date}
+                    detailTarget={{
+                      coachId: slot.coachId,
+                      startTime: slot.startTime,
+                      groupType: slot.groupType,
+                    }}
                   />
-                </li>
+                </section>
               ))}
-          </ul>
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline min-h-11"
+            onClick={() => {
+              setShowBatchSummary(false)
+              setMultiSelect(true)
+            }}
+          >
+            Seleccionar más horarios
+          </button>
         </div>
       </Sheet>
       <Sheet
@@ -2483,7 +2431,7 @@ export default function CoachAgenda({
           ))}
         </div>
       </Sheet>
-      {batchAction === 'students' && schoolId && (
+      {batchAction === 'students' && (
         <ScheduleStudentsModal
           bookings={batchBookings}
           slotCount={batchSlots.length}
@@ -2653,17 +2601,35 @@ export default function CoachAgenda({
           setHorizontalClass(null)
           setNotice(null)
         }}
-        label="Detalles de la clase"
+        label="Horario seleccionado"
         size="xl"
       >
-        <h2 className="mb-3 text-lg font-bold">
+        <h2 className="mb-1 text-lg font-bold">Horario seleccionado</h2>
+        <p className="mb-3 text-sm text-(--c-text-2)">
           {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
           })}
-        </h2>
+        </p>
         {renderDayCard(selectedClassRows, true, true)}
+        {!readOnlyAgenda && horizontalClass && (
+          <button
+            type="button"
+            className="btn btn-outline mt-4 min-h-11 w-full"
+            onClick={() => {
+              setBatchSlots((current) =>
+                current.some((slot) => batchSlotKey(slot) === batchSlotKey(horizontalClass))
+                  ? current
+                  : [...current, horizontalClass]
+              )
+              setMultiSelect(true)
+              setHorizontalClass(null)
+            }}
+          >
+            Seleccionar más horarios
+          </button>
+        )}
       </Sheet>
 
       <Sheet
@@ -3004,6 +2970,45 @@ export default function CoachAgenda({
         <ClassNotesModal
           key={`${classNotesTarget.schoolId}|${classNotesTarget.coachId}|${classNotesTarget.date}|${classNotesTarget.startTime}`}
           target={classNotesTarget}
+          suspended={Boolean(bookingToEdit || schoolClassToEdit || slotEditor)}
+          onConfigure={
+            !hideBookingActions
+              ? () => {
+                  const target = classNotesTarget
+                  const booking = (agenda?.bookings || []).find(
+                    (item) =>
+                      item.status !== 'cancelled' &&
+                      item.date === target.date &&
+                      item.startTime === target.startTime &&
+                      item.coachId === target.coachId &&
+                      (schoolIdForBooking(item) || '') === (target.schoolId || '')
+                  )
+                  if (booking) {
+                    if (booking.schoolClassId) openSchoolClassEditor(booking, true)
+                    else setBookingToEdit(booking)
+                    return
+                  }
+                  const slot = (agenda?.availableSlots || []).find(
+                    (item) =>
+                      item.date === target.date &&
+                      item.startTime === target.startTime &&
+                      item.coachId === target.coachId &&
+                      (schoolIdForSlot(item) || '') === (target.schoolId || '')
+                  )
+                  if (slot)
+                    openSlotEditor(
+                      slot,
+                      (agenda?.blocks || []).find(
+                        (block) =>
+                          block.coachId === slot.coachId &&
+                          block.date === slot.date &&
+                          blockCoversClassAt(block, slot.date, slot.startTime)
+                      )
+                    )
+                }
+              : undefined
+          }
+          onUpdated={() => void loadAgenda(monthOfSelected)}
           onClose={() => setClassNotesTarget(null)}
         />
       )}
