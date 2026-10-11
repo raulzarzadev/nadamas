@@ -97,6 +97,7 @@ export default function AthleteSchoolSchedule({
   bookingMode,
   schools = EMPTY_SCHOOLS,
   initialSchoolId,
+  coachId,
 }: {
   schoolId: string | null
   schoolName?: string
@@ -105,6 +106,7 @@ export default function AthleteSchoolSchedule({
   bookingMode: SchoolBookingMode
   schools?: PublicSchoolOption[]
   initialSchoolId?: string
+  coachId?: string
 }) {
   const { user } = useUser() as {
     user:
@@ -138,7 +140,7 @@ export default function AthleteSchoolSchedule({
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
   const [filterModal, setFilterModal] = useState<'schools' | 'coaches' | null>(null)
-  const [coachFilter, setCoachFilter] = useState('all')
+  const [coachFilter, setCoachFilter] = useState(coachId || 'all')
   const [schoolFilter, setSchoolFilter] = useState(initialSchoolId || 'all')
   const [coachFiltersTarget, setCoachFiltersTarget] = useState<HTMLElement | null>(null)
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
@@ -273,7 +275,9 @@ export default function AthleteSchoolSchedule({
               return { school, agenda, students: studentPayload.students || [] }
             })
           ),
-          fetch('/api/public/coaches'),
+          fetch(
+            coachId ? `/api/public/coaches/${encodeURIComponent(coachId)}` : '/api/public/coaches'
+          ),
           getAuthed('/api/additional-profiles').catch(() => null),
           getAuthed('/api/bookings'),
         ])
@@ -283,10 +287,12 @@ export default function AthleteSchoolSchedule({
       setAdditionalProfiles(profilesPayload.profiles || [])
       const directory = (await directoryResponse.json()) as {
         coaches?: Array<CoachPublic & { id: string; name?: string }>
+        coach?: CoachPublic & { id: string }
+        name?: string
       }
-      const publicCoaches = (directory.coaches || []).filter((coach) =>
-        hasPublishedOfferingSchedules(resolveOfferings(coach))
-      )
+      const publicCoaches = (
+        directory.coach ? [{ ...directory.coach, name: directory.name }] : directory.coaches || []
+      ).filter((coach) => hasPublishedOfferingSchedules(resolveOfferings(coach)))
       const publicData = await Promise.all(
         publicCoaches.map(async (coach) => {
           const response = await fetch(`/api/public/coaches/${encodeURIComponent(coach.id)}`)
@@ -386,7 +392,7 @@ export default function AthleteSchoolSchedule({
     } catch {
       setError('No se pudieron cargar los horarios. Inténtalo de nuevo.')
     }
-  }, [schoolId, month, schools])
+  }, [schoolId, month, schools, coachId])
 
   useEffect(() => {
     void load()
@@ -942,6 +948,7 @@ export default function AthleteSchoolSchedule({
   return (
     <section className="flex flex-col gap-4">
       {!schoolId &&
+        !coachId &&
         coachFiltersTarget &&
         createPortal(
           <div className="grid min-w-0 grid-cols-2 gap-2">
