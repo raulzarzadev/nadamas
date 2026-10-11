@@ -1,7 +1,8 @@
 'use client'
 
 import type { ReactNode, Ref } from 'react'
-import { FiLock, FiPlus, FiUnlock, FiUser, FiUsers } from 'react-icons/fi'
+import { FiLock, FiUnlock, FiUser, FiUsers } from 'react-icons/fi'
+import AddStudentButton from '@/components/ui/add-student-button'
 import CoachBadge from '@/components/ui/coach-badge'
 import StatusBadge from '@/components/ui/status-badge'
 import { HOUR_STATUS_STYLE, type HourStatus } from '@/lib/coach-agenda-status'
@@ -115,16 +116,14 @@ export default function ClassCard({
               {(actions || addStudent) && (
                 <div className="ml-auto flex shrink-0 items-center justify-end gap-1.5">
                   {addStudent && (
-                    <button
-                      type="button"
+                    <AddStudentButton
                       onClick={addStudent.onClick}
-                      disabled={addStudent.disabled}
+                      disabled={addStudent.disabled || isBlockedCard}
                       aria-label={addStudent.ariaLabel}
                       title={addStudent.title}
-                      className={`relative inline-flex h-7 min-h-7 items-center justify-center gap-1 rounded-full px-2 text-[10px] before:absolute before:-inset-y-2 before:inset-x-0 font-bold sm:flex-none ${isBlockedCard ? 'cursor-not-allowed bg-slate-200 text-slate-500 opacity-70' : 'bg-[var(--c-aqua)] text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50'}`}
                     >
-                      <FiPlus aria-hidden="true" /> {addStudent.label}
-                    </button>
+                      {addStudent.label}
+                    </AddStudentButton>
                   )}
                   {actions && (
                     <div className="flex shrink-0 items-center gap-1 [&_button]:relative [&_button]:size-8! [&_button]:min-h-8! [&_button]:p-0! [&_button]:border-0! [&_button]:bg-transparent! [&_button]:before:absolute [&_button]:before:-inset-1.5 [&_svg]:size-3.5">

@@ -128,24 +128,26 @@ export default function ClassNotesModal({
           unassigned={target.coachId === UNASSIGNED_SCHOOL_COACH_ID}
           groupType={target.groupType}
         />
-        {onConfigure && (
+        <div className="flex items-center gap-3">
+          {onConfigure && (
+            <button
+              type="button"
+              onClick={onConfigure}
+              disabled={saving}
+              className="btn btn-outline min-h-11 w-fit"
+            >
+              <FiSettings aria-hidden="true" /> Configurar
+            </button>
+          )}
           <button
             type="button"
-            onClick={onConfigure}
-            disabled={saving}
-            className="btn btn-outline min-h-11 w-fit"
+            onClick={() => setAttendanceOpen(true)}
+            disabled={loading || saving || !loaded}
+            className="btn btn-primary min-h-11 w-fit"
           >
-            <FiSettings aria-hidden="true" /> Configurar
+            <FiCheckSquare aria-hidden="true" /> Pasar lista
           </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setAttendanceOpen(true)}
-          disabled={loading || saving || !loaded}
-          className="btn btn-primary min-h-11 w-fit"
-        >
-          <FiCheckSquare aria-hidden="true" /> Pasar lista
-        </button>
+        </div>
         <label htmlFor={id} className="text-sm font-semibold">
           Notas generales
         </label>

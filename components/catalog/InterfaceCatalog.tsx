@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { type ReactNode, useState } from 'react'
 import { FiArrowLeft, FiPlus, FiSettings, FiUsers } from 'react-icons/fi'
+import AddStudentButton from '@/components/ui/add-student-button'
 import Avatar from '@/components/ui/avatar'
+import Button from '@/components/ui/button'
 import Chip from '@/components/ui/chip'
 import ClassCard from '@/components/ui/class-card'
 import ClassStudentRow from '@/components/ui/class-student-row'
@@ -241,33 +243,34 @@ export default function InterfaceCatalog() {
       <section id="controls" className="mb-10 scroll-mt-6">
         <h2 className="mb-4 text-xl font-bold">Botones y campos</h2>
         <div className="grid gap-4 md:grid-cols-2">
-          <Example title="Acciones y estados" component="btn">
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => setFeedback('Acción de ejemplo completada.')}
-              >
-                Guardar
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline"
+          <Example title="Acciones y estados" component="Button">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={() => setFeedback('Acción de ejemplo completada.')}>Guardar</Button>
+              <Button
+                variant="secondary"
                 onClick={() => setFeedback('Selección de ejemplo limpiada.')}
               >
                 Limpiar
-              </button>
-              <button type="button" className="btn btn-primary" disabled>
-                Sin cambios
-              </button>
-              <button
-                type="button"
-                className="btn btn-circle btn-outline"
+              </Button>
+              <AddStudentButton
+                aria-label="Agregar alumno de ejemplo"
+                onClick={() => setFeedback('Ejemplo: aquí se abre la selección de alumnos.')}
+              />
+              <Button disabled>Sin cambios</Button>
+              <Button
+                variant="subtle"
+                onClick={() => setFeedback('Ejemplo: puedes seleccionar más horarios.')}
+              >
+                Seleccionar más horarios
+              </Button>
+              <Button
+                variant="secondary"
+                iconOnly
                 aria-label="Agregar ejemplo"
                 onClick={() => setModal('class')}
               >
-                <FiPlus aria-hidden="true" />
-              </button>
+                <FiPlus aria-hidden="true" className="size-4" />
+              </Button>
             </div>
           </Example>
           <Example title="Nota con guardado" component="textarea + btn">

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FaPersonSwimming } from 'react-icons/fa6'
-import { FiShare2, FiShield } from 'react-icons/fi'
+import { FiGrid, FiShare2, FiShield } from 'react-icons/fi'
 import { GiWhistle } from 'react-icons/gi'
 import ProfileShareDialog from '@/components/profile/ProfileShareDialog'
 import { useRole } from '@/context/RoleContext'
@@ -396,6 +396,21 @@ export default function RoleSwitcher({
                 >
                   Modo {ROLE_LABEL.admin}
                 </button>
+              </div>
+            )}
+
+            {roles.admin && !tenant && (
+              <div role="none">
+                <Link
+                  href="/interfaces"
+                  role="menuitem"
+                  aria-current={pathname === '/interfaces' ? 'page' : undefined}
+                  onClick={() => setOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)]"
+                >
+                  <FiGrid aria-hidden="true" className="size-4 shrink-0" />
+                  Componentes
+                </Link>
               </div>
             )}
 

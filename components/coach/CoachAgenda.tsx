@@ -2334,7 +2334,19 @@ export default function CoachAgenda({
         label="Horarios seleccionados"
       >
         <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-bold">Horarios seleccionados ({batchSlots.length})</h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-lg font-bold">Horarios seleccionados ({batchSlots.length})</h2>
+            <button
+              type="button"
+              className="btn btn-subtle ml-auto shrink-0"
+              onClick={() => {
+                setShowBatchSummary(false)
+                setMultiSelect(true)
+              }}
+            >
+              Seleccionar más horarios
+            </button>
+          </div>
           <div className="grid gap-4">
             {[...batchSlots]
               .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
@@ -2377,16 +2389,6 @@ export default function CoachAgenda({
                 </section>
               ))}
           </div>
-          <button
-            type="button"
-            className="btn btn-outline min-h-11"
-            onClick={() => {
-              setShowBatchSummary(false)
-              setMultiSelect(true)
-            }}
-          >
-            Seleccionar más horarios
-          </button>
         </div>
       </Sheet>
       <Sheet
@@ -2604,7 +2606,26 @@ export default function CoachAgenda({
         label="Horario seleccionado"
         size="xl"
       >
-        <h2 className="mb-1 text-lg font-bold">Horario seleccionado</h2>
+        <div className="mb-1 flex items-start justify-between gap-3">
+          <h2 className="text-lg font-bold">Horario seleccionado</h2>
+          {!readOnlyAgenda && horizontalClass && (
+            <button
+              type="button"
+              className="btn btn-subtle ml-auto shrink-0"
+              onClick={() => {
+                setBatchSlots((current) =>
+                  current.some((slot) => batchSlotKey(slot) === batchSlotKey(horizontalClass))
+                    ? current
+                    : [...current, horizontalClass]
+                )
+                setMultiSelect(true)
+                setHorizontalClass(null)
+              }}
+            >
+              Seleccionar más horarios
+            </button>
+          )}
+        </div>
         <p className="mb-3 text-sm text-(--c-text-2)">
           {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
             weekday: 'long',
@@ -2613,23 +2634,6 @@ export default function CoachAgenda({
           })}
         </p>
         {renderDayCard(selectedClassRows, true, true)}
-        {!readOnlyAgenda && horizontalClass && (
-          <button
-            type="button"
-            className="btn btn-outline mt-4 min-h-11 w-full"
-            onClick={() => {
-              setBatchSlots((current) =>
-                current.some((slot) => batchSlotKey(slot) === batchSlotKey(horizontalClass))
-                  ? current
-                  : [...current, horizontalClass]
-              )
-              setMultiSelect(true)
-              setHorizontalClass(null)
-            }}
-          >
-            Seleccionar más horarios
-          </button>
-        )}
       </Sheet>
 
       <Sheet
