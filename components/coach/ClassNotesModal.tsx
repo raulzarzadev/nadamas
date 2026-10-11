@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useId, useState } from 'react'
-import { FiCheckSquare, FiChevronDown, FiChevronUp, FiSettings } from 'react-icons/fi'
+import { FiActivity, FiCheckSquare, FiSettings } from 'react-icons/fi'
 import AttendanceModal from '@/components/coach/AttendanceModal'
 import ClassTrainingEditor from '@/components/coach/ClassTrainingEditor'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import Sheet from '@/components/ui/sheet'
+import TrainingBrace from '@/components/ui/training-brace'
 import { type ClassTrainingBlock, normalizeClassTraining } from '@/lib/class-training'
 import { getAuthed, putAuthed } from '@/lib/client/authed-api'
 import { UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
@@ -36,6 +37,7 @@ export default function ClassNotesModal({
   const id = useId()
   const [attendanceOpen, setAttendanceOpen] = useState(false)
   const [note, setNote] = useState('')
+  const [editingNote, setEditingNote] = useState(false)
   const [original, setOriginal] = useState('')
   const [training, setTraining] = useState<ClassTrainingBlock[]>([])
   const [originalTraining, setOriginalTraining] = useState('[]')
@@ -128,7 +130,7 @@ export default function ClassNotesModal({
           unassigned={target.coachId === UNASSIGNED_SCHOOL_COACH_ID}
           groupType={target.groupType}
         />
-        <div className="flex items-center gap-3">
+        <div className="class-detail-actions flex items-center gap-2">
           {onConfigure && (
             <button
               type="button"
@@ -143,50 +145,118 @@ export default function ClassNotesModal({
             type="button"
             onClick={() => setAttendanceOpen(true)}
             disabled={loading || saving || !loaded}
-            className="btn btn-primary min-h-11 w-fit"
+            className="btn btn-outline min-h-11 w-fit"
           >
             <FiCheckSquare aria-hidden="true" /> Pasar lista
           </button>
+          {!training.some((block) => block.series.length > 0) && (
+            <button
+              type="button"
+              disabled={!loaded || saving}
+              aria-haspopup="dialog"
+              onClick={() => setShowTraining(true)}
+              className="btn btn-outline min-h-11 w-fit"
+            >
+              <FiActivity aria-hidden="true" /> Entrenamiento
+            </button>
+          )}
         </div>
-        <label htmlFor={id} className="text-sm font-semibold">
-          Notas generales
-        </label>
         {loading ? (
           <p role="status" className="text-sm">
             Cargando notas…
           </p>
-        ) : (
-          <textarea
-            id={id}
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            disabled={saving || !loaded}
-            maxLength={4000}
-            rows={6}
-            placeholder="Escribe observaciones generales sobre esta clase…"
-            className="min-h-40 w-full resize-y rounded-xl border border-(--c-border) bg-white p-3 text-sm focus-visible:outline-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
-          />
-        )}
-        <button
-          type="button"
-          disabled={!loaded || saving}
-          aria-expanded={showTraining}
-          aria-controls={`${id}-training`}
-          onClick={() => setShowTraining(!showTraining)}
-          className="btn btn-outline min-h-11 justify-between border"
-        >
-          Entrenamiento{' '}
-          {showTraining ? <FiChevronUp aria-hidden="true" /> : <FiChevronDown aria-hidden="true" />}
-        </button>
-        {showTraining && (
-          <div id={`${id}-training`}>
-            <ClassTrainingEditor
-              blocks={training}
-              onChange={setTraining}
-              disabled={saving}
-              onEditingChange={setEditingSeries}
+        ) : editingNote ? (
+          <div className="grid gap-2">
+            <label htmlFor={id} className="text-sm font-semibold">
+              Notas generales
+            </label>
+            <textarea
+              id={id}
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              disabled={saving || !loaded}
+              maxLength={4000}
+              rows={4}
+              placeholder="Escribe observaciones generales sobre esta clase…"
+              className="w-full resize-y rounded-xl border border-(--c-border) bg-white p-3 text-sm focus-visible:outline-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
             />
+            <button
+              type="button"
+              className="btn btn-subtle note-edit-action w-fit justify-self-end"
+              onClick={() => setEditingNote(false)}
+            >
+              Listo
+            </button>
           </div>
+        ) : (
+          <div
+            className={
+              note.trim()
+                ? 'flex flex-col items-start gap-1'
+                : 'flex items-start justify-between gap-3'
+            }
+          >
+            <p className="min-w-0 whitespace-pre-wrap break-words text-sm text-(--c-text-2)">
+              {note.trim() || 'Sin notas'}
+            </p>
+            <button
+              type="button"
+              className={`btn btn-subtle note-edit-action shrink-0 underline underline-offset-4 ${note.trim() ? 'self-end' : ''}`}
+              disabled={saving || !loaded}
+              onClick={() => setEditingNote(true)}
+            >
+              Editar nota
+            </button>
+          </div>
+        )}
+
+        {!loading && training.some((block) => block.series.length > 0) && (
+          <section aria-label="Resumen del entrenamiento" className="grid gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">Entrenamiento</h3>
+              <button
+                type="button"
+                className="btn btn-subtle note-edit-action"
+                disabled={!loaded || saving}
+                aria-haspopup="dialog"
+                onClick={() => setShowTraining(true)}
+              >
+                Editar entreno
+              </button>
+            </div>
+            {training
+              .filter((block) => block.series.length > 0)
+              .map((block, index) => (
+                <div key={block.id} className="rounded-xl bg-(--c-surface) p-2.5">
+                  <p className="mb-1 text-xs font-semibold">Bloque {index + 1}</p>
+                  <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-1.5">
+                    <div className="flex items-center gap-1 self-stretch text-sm font-bold">
+                      <span className="flex w-10 shrink-0 justify-center">
+                        {block.repetitions}×
+                      </span>
+                      <TrainingBrace />
+                    </div>
+                    <ul className="min-w-0 self-center">
+                      {block.series.map((series) => (
+                        <li key={series.id} className="py-0.5 text-xs leading-tight">
+                          <strong>
+                            {series.repetitions}×
+                            {series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
+                          </strong>{' '}
+                          {series.exercise}
+                          {series.material && (
+                            <span className="text-(--c-text-2)"> · {series.material}</span>
+                          )}
+                          {series.interval && (
+                            <span className="text-(--c-text-2)"> · Cada {series.interval}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+          </section>
         )}
         {error && (
           <p role="alert" className="text-sm text-[var(--c-error,#b91c1c)]">
@@ -194,6 +264,47 @@ export default function ClassNotesModal({
           </p>
         )}
       </div>
+      {showTraining && (
+        <Sheet
+          open
+          onClose={() => {
+            setShowTraining(false)
+            setEditingSeries(false)
+          }}
+          label="Entrenamiento"
+          keyboardAware
+          closeDisabled={saving}
+          footer={
+            editingSeries ? undefined : (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={!loaded || saving || !changed}
+                  onClick={() => void save()}
+                >
+                  {saving ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            )
+          }
+        >
+          <div className="grid gap-4 pb-4">
+            <h2 className="text-xl font-bold">Entrenamiento</h2>
+            <ClassTrainingEditor
+              blocks={training}
+              onChange={setTraining}
+              disabled={saving}
+              onEditingChange={setEditingSeries}
+            />
+            {error && (
+              <p role="alert" className="text-sm text-[var(--c-error,#b91c1c)]">
+                {error}
+              </p>
+            )}
+          </div>
+        </Sheet>
+      )}
       {attendanceOpen && (
         <AttendanceModal
           schoolId={target.schoolId}

@@ -101,6 +101,19 @@ export default function TrainingSeriesForm({
           />
         ))}
       </div>
+      <p role="status" aria-live="polite" className="text-xs leading-relaxed text-(--c-text-2)">
+        {[
+          draft.repetitions > 0 &&
+            (draft.distanceMeters
+              ? `${draft.repetitions} × ${draft.distanceMeters} m`
+              : `${draft.repetitions} ${draft.repetitions === 1 ? 'repetición' : 'repeticiones'}`),
+          draft.exercise.trim(),
+          draft.material?.trim() && `Con ${draft.material.trim()}`,
+          draft.interval?.trim() && `Intervalo ${draft.interval.trim()}`,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
       <h3 ref={heading} tabIndex={-1} className="text-lg font-bold outline-none">
         {STEPS[step]}
       </h3>
