@@ -1,6 +1,5 @@
 'use client'
 
-import CopyLinkButton from '@comps/coach/CopyLinkButton'
 import Icon from '@comps/Icon'
 import { TextField } from '@comps/Inputs/FormFields'
 import Avatar from '@comps/ui/avatar'
@@ -8,14 +7,12 @@ import Sheet from '@comps/ui/sheet'
 import { onAuthStateChanged, signInWithCustomToken } from 'firebase/auth'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FiCheck, FiCopy } from 'react-icons/fi'
 import ClassEvaluationList from '@/components/bookings/ClassEvaluationList'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { auth, googleLogin } from '@/firebase/index'
 import { loginUser } from '@/firebase/users'
 import { postAuthed } from '@/lib/client/authed-api'
-import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import {
   bookingSelectionKey,
   type CoachBookingSelection,
@@ -37,6 +34,7 @@ import { coachDisplayPhoto } from '@/lib/coach-photo'
 import { DAY_LABELS, formatWhatsappScheduleText } from '@/lib/coach-whatsapp-schedule'
 import { paymentMessage } from '@/lib/payments/messages'
 import CoachScheduleRows from './CoachScheduleRows'
+import ShareScheduleButton from './ShareScheduleButton'
 import VerifiedBadge from './VerifiedBadge'
 
 interface CurrentUser {
@@ -161,8 +159,6 @@ export default function CoachPublicProfile({
   const [otpCode, setOtpCode] = useState('')
   const [showBookingDetails, setShowBookingDetails] = useState(false)
   const [periodStart, setPeriodStart] = useState(() => todayStart())
-  const [whatsappCopied, setWhatsappCopied] = useState(false)
-  const [whatsappCopyFailed, setWhatsappCopyFailed] = useState(false)
   const [selectedSlots, setSelectedSlots] = useState<Record<string, CoachBookingSelection>>({})
   const [firebaseUser, setFirebaseUser] = useState(auth.currentUser)
   const currentPeriodStart = useMemo(() => todayStart(), [])
@@ -333,7 +329,6 @@ export default function CoachPublicProfile({
   const whatsappScheduleText = useMemo(() => {
     return formatWhatsappScheduleText(whatsappDayRows, periodStart)
   }, [whatsappDayRows, periodStart])
-  const canCopyWhatsappSchedule = whatsappScheduleText.length > 0
 
   useEffect(() => onAuthStateChanged(auth, setFirebaseUser), [])
 
@@ -503,20 +498,6 @@ export default function CoachPublicProfile({
     setSelectedSlots({})
   }
 
-  async function copyWhatsappSchedule() {
-    if (!whatsappScheduleText) return
-
-    setWhatsappCopyFailed(false)
-    try {
-      await copyTextToClipboard(whatsappScheduleText)
-      setWhatsappCopied(true)
-      setTimeout(() => setWhatsappCopied(false), 2000)
-    } catch {
-      setWhatsappCopyFailed(true)
-      setTimeout(() => setWhatsappCopyFailed(false), 3000)
-    }
-  }
-
   return (
     <div className={`flex flex-col gap-6 ${selectedCount > 0 ? 'pb-28' : ''}`}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -532,26 +513,7 @@ export default function CoachPublicProfile({
           </div>
         </div>
         <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center">
-          <button
-            type="button"
-            onClick={() => void copyWhatsappSchedule()}
-            disabled={!canCopyWhatsappSchedule}
-            aria-label="Copiar horarios para WhatsApp"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-[var(--c-border)] bg-white px-3.5 py-2 text-sm font-bold text-[var(--c-ocean)] transition-colors hover:border-[var(--c-aqua)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {whatsappCopied ? (
-              <>
-                <FiCheck aria-hidden="true" /> Copiado
-              </>
-            ) : whatsappCopyFailed ? (
-              'No se pudo copiar'
-            ) : (
-              <>
-                <FiCopy aria-hidden="true" /> Copiar para WhatsApp
-              </>
-            )}
-          </button>
-          <CopyLinkButton label="Compartir horarios" />
+          <ShareScheduleButton publicProfile scheduleText={whatsappScheduleText} />
         </div>
       </header>
 
