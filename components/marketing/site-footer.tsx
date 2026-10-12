@@ -17,6 +17,8 @@ const COLUMNS = [
     title: 'Explorar',
     links: [
       { label: 'Entrenadores', href: '/coaches' },
+      { label: 'Para escuelas de natación', href: '/software-para-escuelas-de-natacion' },
+      { label: 'Recursos gratuitos', href: '/recursos' },
       { label: 'Precios', href: '/precio' },
       { label: 'Preguntas frecuentes', href: '/#faq' },
       { label: 'Ingresar', href: '/login' },
