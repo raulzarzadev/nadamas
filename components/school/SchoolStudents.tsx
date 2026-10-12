@@ -1,13 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiClipboard, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
-import DateInput from '@/components/ui/date-input'
-import GenderSelector from '@/components/ui/gender-selector'
-import PhoneNumberInput from '@/components/ui/phone-number-input'
+import PersonFields from '@/components/profile/PersonFields'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import Sheet from '@/components/ui/sheet'
 import StudentListRow from '@/components/ui/student-list-row'
@@ -323,7 +321,6 @@ export function StudentForm({
   onClose: () => void
   onCreated: (student: SchoolStudent | null, invitation?: SchoolInvitation | null) => void
 }) {
-  const phoneId = useId()
   const terminology = useSchoolTerminology()
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const [form, setForm] = useState({
@@ -491,32 +488,23 @@ export function StudentForm({
               Invita solo con el correo para que la persona complete sus datos, o llena el
               formulario y guarda su registro.
             </p>
-            <Text
-              label="Nombre completo"
-              value={form.name}
-              onChange={(value) => setForm({ ...form, name: value })}
-              required
-            />
-            <div className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-              <label htmlFor={phoneId}>Teléfono (opcional)</label>
-              <PhoneNumberInput
-                id={phoneId}
-                value={form.guardianPhone}
-                onChange={(value) => setForm((current) => ({ ...current, guardianPhone: value }))}
-                disabled={saving}
-              />
-            </div>
-            <DateInput
-              label="Fecha de nacimiento"
-              value={form.birthDate}
-              onChange={(value) => setForm((current) => ({ ...current, birthDate: value }))}
-              required
-              disabled={saving}
-              max={new Date().toLocaleDateString('en-CA')}
-            />
-            <GenderSelector
-              value={form.gender}
-              onChange={(value) => setForm((current) => ({ ...current, gender: value }))}
+            <PersonFields
+              value={{
+                name: form.name,
+                phone: form.guardianPhone,
+                birthDate: form.birthDate,
+                gender: form.gender,
+              }}
+              onChange={(next) =>
+                setForm((current) => ({
+                  ...current,
+                  name: next.name,
+                  guardianPhone: next.phone,
+                  birthDate: next.birthDate,
+                  gender: next.gender,
+                }))
+              }
+              required={['name', 'birthDate']}
               disabled={saving}
             />
           </>

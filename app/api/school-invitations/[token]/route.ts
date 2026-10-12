@@ -101,7 +101,10 @@ export async function POST(request: Request, { params }: RouteProps) {
       student_not_found: 'El registro del alumno ya no está disponible.',
       student_already_linked: 'Este registro ya está ligado a otra cuenta.',
     } as const
-    return NextResponse.json({ error: messages[result.reason] }, { status: 400 })
+    return NextResponse.json(
+      { error: messages[result.reason], code: result.reason },
+      { status: result.reason === 'email_mismatch' ? 403 : 400 }
+    )
   }
 
   const school = await getSchoolById(result.schoolId)

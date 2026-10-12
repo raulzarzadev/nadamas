@@ -1,5 +1,5 @@
 'use client'
-import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
+import CalendarConnectionButton from '@comps/calendar/CalendarConnectionButton'
 import LinksCard from '@comps/coach/LinksCard'
 import MediaCard from '@comps/coach/MediaCard'
 import PersonalDataCard from '@comps/coach/PersonalDataCard'
@@ -156,7 +156,12 @@ export default function CoachProfilePage() {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      <h1 className="text-2xl font-extrabold sm:text-3xl">Mi perfil de coach</h1>
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-extrabold sm:text-3xl">Mi perfil de coach</h1>
+        <div className="ml-auto">
+          <CalendarConnectionButton calendarRole="coach" />
+        </div>
+      </header>
 
       <ScoreCard
         verification={pubVal.verification}
@@ -173,8 +178,6 @@ export default function CoachProfilePage() {
       <PublicLinkEditor />
 
       <ClassEvaluationList privateView />
-
-      <CalendarConnectionCard calendarRole="coach" />
 
       <PersonalDataCard
         uid={uid}

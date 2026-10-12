@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { FiEdit2, FiPlus } from 'react-icons/fi'
 import AthleteCredentialButton from '@/components/profile/AthleteCredentialButton'
-import DateInput from '@/components/ui/date-input'
-import GenderSelector from '@/components/ui/gender-selector'
+import PersonFields from '@/components/profile/PersonFields'
 import Sheet from '@/components/ui/sheet'
 import { type AdditionalProfile, validProfileBirthDate } from '@/lib/additional-profile'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
@@ -177,27 +176,11 @@ export default function AdditionalProfiles() {
                 : 'Agrega los datos de la persona que administrarás desde tu cuenta.'}
             </p>
           </div>
-          <label className="grid gap-1 text-sm font-semibold">
-            Nombre completo
-            <input
-              required
-              minLength={2}
-              maxLength={120}
-              value={form.name}
-              onChange={(event) => setForm({ ...form, name: event.target.value })}
-              className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-            />
-          </label>
-          <DateInput
-            label={editingProfile ? 'Fecha de nacimiento (opcional)' : 'Fecha de nacimiento'}
-            required={!editingProfile}
-            value={form.birthDate}
-            onChange={(birthDate) => setForm({ ...form, birthDate })}
-            max={new Date().toLocaleDateString('en-CA')}
-          />
-          <GenderSelector
-            value={form.gender}
-            onChange={(gender) => setForm({ ...form, gender })}
+          <PersonFields
+            value={form}
+            onChange={setForm}
+            fields={['name', 'birthDate', 'gender']}
+            required={editingProfile ? ['name'] : ['name', 'birthDate']}
             disabled={saving}
           />
           {formError && (

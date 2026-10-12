@@ -4,11 +4,13 @@ import Link from 'next/link'
 import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiPlus, FiUsers } from 'react-icons/fi'
+import PersonFields from '@/components/profile/PersonFields'
 import Sheet from '@/components/ui/sheet'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
-import { getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { AuthedApiError, getAuthed, postAuthed } from '@/lib/client/authed-api'
+import type { SchoolGender } from '@/lib/school'
 import { type SchoolTerminologyConfig, schoolTerminologyLabels } from '@/lib/school'
 import { GENERIC_USER_ERROR } from '@/lib/user-facing-error'
 
@@ -42,9 +44,11 @@ export default function SchoolInvitationPage() {
   const pathname = usePathname()
   const router = useRouter()
   const { setActiveRole } = useRole()
-  const { refreshUser, user } = useUser() as {
+  const { refreshUser, user, logout } = useUser() as {
     refreshUser: () => Promise<unknown>
+    logout: () => void
     user: {
+      email?: string
       name?: string
       nickname?: string
       displayName?: string
@@ -64,6 +68,14 @@ export default function SchoolInvitationPage() {
   const [additionalError, setAdditionalError] = useState('')
   const [additionalForm, setAdditionalForm] = useState<AdditionalProfileForm>(EMPTY_ADDITIONAL_FORM)
   const [error, setError] = useState<string | null>(null)
+  const [accountMismatch, setAccountMismatch] = useState(false)
+  const wrongAccount =
+    accountMismatch ||
+    Boolean(
+      invitation &&
+        user?.email &&
+        user.email.trim().toLowerCase() !== invitation.email.trim().toLowerCase()
+    )
   const terminology = schoolTerminologyLabels(invitation?.terminology)
   const accountName =
     [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
@@ -77,7 +89,7 @@ export default function SchoolInvitationPage() {
     relationship: '',
     bio: '',
     birthDate: '',
-    gender: 'varonil',
+    gender: 'varonil' as SchoolGender,
   })
   useEffect(() => {
     getAuthed('/api/additional-profiles')
@@ -106,7 +118,7 @@ export default function SchoolInvitationPage() {
   }, [pathname, router, setActiveRole, token])
 
   async function accept() {
-    if (!invitation || saving) return
+    if (!invitation || saving || wrongAccount) return
     setSaving(true)
     setError(null)
     try {
@@ -118,15 +130,17 @@ export default function SchoolInvitationPage() {
         setActiveRole('coach', { navigate: false })
       }
       setAccepted(true)
-    } catch {
-      setError(GENERIC_USER_ERROR)
+    } catch (error) {
+      if (error instanceof AuthedApiError && error.code === 'email_mismatch')
+        setAccountMismatch(true)
+      else setError(GENERIC_USER_ERROR)
     } finally {
       setSaving(false)
     }
   }
 
   async function addSelectedProfilesToSchool() {
-    if (!invitation || saving) return
+    if (!invitation || saving || wrongAccount) return
     if (selectedParticipantIds.length === 0) {
       setError('Selecciona al menos un perfil para agregar a la escuela.')
       return
@@ -138,8 +152,10 @@ export default function SchoolInvitationPage() {
         participantIds: selectedParticipantIds,
       })
       setAccepted(true)
-    } catch {
-      setError(GENERIC_USER_ERROR)
+    } catch (error) {
+      if (error instanceof AuthedApiError && error.code === 'email_mismatch')
+        setAccountMismatch(true)
+      else setError(GENERIC_USER_ERROR)
     } finally {
       setSaving(false)
     }
@@ -206,6 +222,30 @@ export default function SchoolInvitationPage() {
           {invitation.role === 'student'
             ? 'Ver mis próximas clases'
             : `Ir al modo ${terminology.coachSingular}`}
+        </button>
+      </section>
+    )
+  }
+
+  if (wrongAccount) {
+    return (
+      <section className="mx-auto grid max-w-xl gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-6 shadow-[var(--shadow-sm)]">
+        <h1 className="text-2xl font-extrabold text-(--c-ocean)">
+          Esta invitación es para otra cuenta
+        </h1>
+        <p role="alert" className="text-sm text-(--c-text-2)">
+          La invitación de {invitation.schoolName} se envió a{' '}
+          <strong className="break-all">{invitation.email}</strong>.
+          {user?.email && (
+            <>
+              {' '}
+              Estás usando <strong className="break-all">{user.email}</strong>.
+            </>
+          )}{' '}
+          Inicia sesión con el correo invitado para aceptarla.
+        </p>
+        <button type="button" onClick={() => logout()} className="btn btn-primary min-h-11">
+          Cambiar de cuenta
         </button>
       </section>
     )
@@ -307,48 +347,13 @@ export default function SchoolInvitationPage() {
                 Agrega los datos de la persona que administrarás desde tu cuenta.
               </p>
             </div>
-            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-              Nombre completo
-              <input
-                required
-                minLength={2}
-                maxLength={120}
-                value={additionalForm.name}
-                onChange={(event) =>
-                  setAdditionalForm({ ...additionalForm, name: event.target.value })
-                }
-                className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-              Fecha de nacimiento
-              <input
-                required
-                type="date"
-                value={additionalForm.birthDate}
-                onChange={(event) =>
-                  setAdditionalForm({ ...additionalForm, birthDate: event.target.value })
-                }
-                className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-              />
-            </label>
-            <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-              Rama / género
-              <select
-                value={additionalForm.gender}
-                onChange={(event) =>
-                  setAdditionalForm({
-                    ...additionalForm,
-                    gender: event.target.value as AdditionalProfile['gender'],
-                  })
-                }
-                className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal focus:outline-2 focus:outline-(--c-aqua-strong)"
-              >
-                <option value="varonil">Varonil</option>
-                <option value="femenil">Femenil</option>
-                <option value="otro">Otro</option>
-              </select>
-            </label>
+            <PersonFields
+              value={additionalForm}
+              onChange={setAdditionalForm}
+              fields={['name', 'birthDate', 'gender']}
+              required={['name', 'birthDate']}
+              disabled={additionalSaving}
+            />
             {additionalError && (
               <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
                 {additionalError}
@@ -393,68 +398,28 @@ export default function SchoolInvitationPage() {
         <h1 className="mt-1 text-3xl font-extrabold">{invitation.schoolName}</h1>
         <p className="mt-2 text-white/75">Invitación para {terminology.coachSingular}.</p>
       </div>
-      <div className="flex flex-col gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-7">
-        <Field
-          label="Nombre completo"
-          value={profile.name}
-          onChange={(value) => setProfile({ ...profile, name: value })}
-          required
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          void accept()
+        }}
+        className="flex flex-col gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-7"
+      >
+        <PersonFields
+          value={profile}
+          onChange={setProfile}
+          fields={['name', 'phone', 'bio']}
+          disabled={saving}
         />
-        <Field
-          label="Teléfono"
-          value={profile.phone}
-          onChange={(value) => setProfile({ ...profile, phone: value })}
-          type="tel"
-        />
-        <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-          Presentación
-          <textarea
-            value={profile.bio}
-            onChange={(event) => setProfile({ ...profile, bio: event.target.value })}
-            rows={3}
-            className="rounded-[var(--r-sm)] border border-(--c-border) px-3 py-2 font-normal"
-          />
-        </label>
         {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
         <button
-          type="button"
+          type="submit"
           disabled={saving || invitation.status !== 'pending'}
-          onClick={() => void accept()}
           className="btn btn-primary min-h-12"
         >
           {saving ? 'Confirmando…' : 'Aceptar invitación'}
         </button>
-      </div>
+      </form>
     </section>
-  )
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  required = false,
-  type = 'text',
-  placeholder,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  required?: boolean
-  type?: string
-  placeholder?: string
-}) {
-  return (
-    <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
-      {label}
-      <input
-        required={required}
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-        className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
-      />
-    </label>
   )
 }
