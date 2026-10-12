@@ -44,7 +44,6 @@ import {
   offeringsWithoutHours,
   offeringWithHours,
   resolveOfferingSchedules,
-  startOfWeek,
 } from '@/lib/coach-offerings'
 import {
   DAY_LABELS,
@@ -463,7 +462,7 @@ export default function CoachAgenda({
   })
 
   const weekDates = useMemo(() => {
-    const start = startOfWeek(new Date(`${selectedDate}T12:00:00`))
+    const start = new Date(`${selectedDate}T12:00:00`)
     return Array.from({ length: 7 }, (_, index) => addDays(start, index))
   }, [selectedDate])
 
@@ -2313,6 +2312,7 @@ export default function CoachAgenda({
             )
           }
           selectedDate={selectedDate}
+          showAllDays
           days={weekDates}
           today={dateKey(new Date())}
           dayStatuses={dayStatuses}
