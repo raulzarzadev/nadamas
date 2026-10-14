@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useId, useState } from 'react'
-import { FiUser, FiUsers } from 'react-icons/fi'
+import { FiEdit2, FiUser, FiUsers } from 'react-icons/fi'
 import SchoolStudentClassAssignment from '@/components/school/SchoolStudentClassAssignment'
 import CoachBadge from '@/components/ui/coach-badge'
 import DateInput from '@/components/ui/date-input'
@@ -448,7 +448,12 @@ export default function StudentProfileModal({
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-xl font-bold">Perfil de {profile?.name || name}</h2>
           {profile && (
-            <button type="button" className="btn btn-subtle shrink-0 text-xs" onClick={editProfile}>
+            <button
+              type="button"
+              className="btn btn-outline min-h-11 shrink-0 gap-2 border-(--c-ocean) px-4 text-sm font-semibold text-(--c-ocean) hover:bg-(--c-surface)"
+              onClick={editProfile}
+            >
+              <FiEdit2 aria-hidden="true" className="h-4 w-4" />
               Editar
             </button>
           )}

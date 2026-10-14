@@ -62,10 +62,13 @@ export async function GET(request: Request, { params }: RouteProps) {
       students = students.filter((student) => visibleIds.has(student.id))
     }
     if (query.get('includeAgendaStudents') === 'true' && (isDirector || isTeacher)) {
-      const coachId = query.get('coachId')?.trim() || access.caller.uid
+      const coachId = query.get('coachId')?.trim() || (isDirector ? undefined : access.caller.uid)
       if (!isDirector && coachId !== access.caller.uid)
         return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
-      const bookings = await adminDb.collection('bookings').where('coachId', '==', coachId).get()
+      const bookings = await adminDb
+        .collection('bookings')
+        .where(coachId ? 'coachId' : 'schoolId', '==', coachId || schoolId)
+        .get()
       const seen = new Set(students.map((student) => student.id))
       const agendaStudents: Array<{
         id: string

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { FiClipboard, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
+import StudentProfileModal from '@/components/coach/StudentProfileModal'
 import PersonFields from '@/components/profile/PersonFields'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import Sheet from '@/components/ui/sheet'
@@ -42,7 +43,7 @@ export default function SchoolStudents() {
   useEffect(() => {
     if (!selectedId) return
     let active = true
-    const studentsPath = `/api/schools/${selectedId}/students`
+    const studentsPath = `/api/schools/${selectedId}/students?includeAgendaStudents=true`
     const invitationsPath = `/api/schools/${selectedId}/invitations`
     const cachedStudents = getCachedAuthedData<{ students?: SchoolStudent[] }>(studentsPath)
     const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
@@ -143,7 +144,9 @@ export default function SchoolStudents() {
           key={`access-requests:${selected.school.id}`}
           schoolId={selected.school.id}
           onApproved={async () => {
-            const response = await getAuthed(`/api/schools/${activeSchool.school.id}/students`)
+            const response = await getAuthed(
+              `/api/schools/${activeSchool.school.id}/students?includeAgendaStudents=true`
+            )
             const payload = await response.json()
             setStudents(payload.students || [])
           }}
@@ -195,8 +198,16 @@ export default function SchoolStudents() {
                   <button
                     type="button"
                     onClick={() => setHistoryStudent(student)}
-                    aria-label={`Abrir historial y clases de ${student.name}`}
-                    title={`Historial y clases de ${student.name}`}
+                    aria-label={
+                      isDirector
+                        ? `Abrir perfil de ${student.name}`
+                        : `Abrir historial y clases de ${student.name}`
+                    }
+                    title={
+                      isDirector
+                        ? `Perfil de ${student.name}`
+                        : `Historial y clases de ${student.name}`
+                    }
                     className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) transition hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
                   >
                     <FiClipboard aria-hidden="true" />
@@ -266,7 +277,27 @@ export default function SchoolStudents() {
           </div>
         </div>
       )}
-      {historyStudent && (
+      {historyStudent && isDirector && (
+        <StudentProfileModal
+          key={`${selected.school.id}-${historyStudent.id}`}
+          studentId={historyStudent.id}
+          schoolId={selected.school.id}
+          name={historyStudent.name}
+          onUpdated={() => {
+            void getAuthed(
+              `/api/schools/${activeSchool.school.id}/students?includeAgendaStudents=true`
+            )
+              .then((response) => response.json())
+              .then((payload) => setStudents(payload.students || []))
+              .catch(() => setMessage('No se pudo actualizar la lista de alumnos.'))
+          }}
+          onClose={() => {
+            setHistoryStudent(null)
+            setLabelRevision((current) => current + 1)
+          }}
+        />
+      )}
+      {historyStudent && !isDirector && (
         <SchoolStudentHistory
           key={`${selected.school.id}-${historyStudent.id}`}
           schoolId={selected.school.id}
