@@ -253,6 +253,7 @@ export default function AdminOverviewDashboard() {
                   label={`Buscar ${TABS.find((item) => item.id === tab)?.label.toLowerCase()}`}
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
+                  onClear={() => setQuery('')}
                   placeholder={
                     tab === 'people'
                       ? 'Nombre, correo o escuela'

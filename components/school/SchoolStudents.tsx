@@ -7,12 +7,14 @@ import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
 import StudentProfileModal from '@/components/coach/StudentProfileModal'
 import PersonFields from '@/components/profile/PersonFields'
+import ExistingEntityMatches from '@/components/ui/existing-entity-matches'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import Sheet from '@/components/ui/sheet'
 import StudentListRow from '@/components/ui/student-list-row'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { deleteAuthed, getAuthed, getCachedAuthedData, postAuthed } from '@/lib/client/authed-api'
+import { entityNameMatches, normalizeEntitySearch } from '@/lib/entity-matching'
 import {
   capitalizeSchoolTerm,
   type SchoolGender,
@@ -320,7 +322,9 @@ export default function SchoolStudents() {
           onCreated={(student, invitation) => {
             if (student) {
               setStudents((current) =>
-                [...current, student].sort((a, b) => a.name.localeCompare(b.name))
+                [...current.filter((item) => item.id !== student.id), student].sort((a, b) =>
+                  a.name.localeCompare(b.name)
+                )
               )
             }
             if (invitation) setInvitations((current) => [invitation, ...current])
@@ -375,6 +379,47 @@ export function StudentForm({
       .catch(() => setError('No se pudieron cargar tus Adicionales.'))
   }, [canInvite])
 
+  const [existingStudents, setExistingStudents] = useState<
+    Array<{
+      id?: string
+      athleteId?: string
+      name: string
+      email?: string | null
+      phone?: string
+      studentEmail?: string
+      guardianPhone?: string
+    }>
+  >([])
+  const [matchesLoading, setMatchesLoading] = useState(canInvite)
+  const [matchesFailed, setMatchesFailed] = useState(false)
+  useEffect(() => {
+    if (!canInvite) return
+    let active = true
+    setMatchesLoading(true)
+    setMatchesFailed(false)
+    getAuthed(schoolId ? `/api/schools/${schoolId}/students` : '/api/coach/students')
+      .then((response) => response.json())
+      .then((payload) => {
+        if (active) setExistingStudents(payload.students || [])
+      })
+      .catch(() => {
+        if (active) setMatchesFailed(true)
+      })
+      .finally(() => {
+        if (active) setMatchesLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [schoolId, canInvite])
+  const matchingStudents = existingStudents.filter((student) =>
+    entityNameMatches(student.name, form.name)
+  )
+  const exactMatch = matchingStudents.some(
+    (student) => normalizeEntitySearch(student.name) === normalizeEntitySearch(form.name)
+  )
+  const cannotCreate = canInvite && (matchesLoading || matchesFailed || exactMatch)
+
   const validEmail = /^\S+@\S+\.\S+$/.test(form.studentEmail.trim())
 
   async function save(sendInvitation: boolean) {
@@ -382,6 +427,7 @@ export function StudentForm({
       setError('Escribe un correo válido para enviar la invitación.')
       return
     }
+    if (cannotCreate) return
     setSaving(true)
     setError(null)
     try {
@@ -508,7 +554,7 @@ export function StudentForm({
             {canInvite && (
               <button
                 type="button"
-                disabled={saving || !validEmail}
+                disabled={saving || !validEmail || cannotCreate}
                 onClick={() => void sendInvitationOnly()}
                 className="btn btn-outline min-h-11"
               >
@@ -540,10 +586,44 @@ export function StudentForm({
             />
           </>
         )}
+        {canInvite && (
+          <ExistingEntityMatches
+            items={matchingStudents}
+            getKey={(student) => student.id || student.athleteId || ''}
+            title="Atletas que ya existen"
+            loading={matchesLoading}
+            loadingMessage="Buscando atletas existentes…"
+            error={
+              matchesFailed
+                ? 'No pudimos comprobar los atletas existentes. Cierra el formulario e inténtalo de nuevo.'
+                : undefined
+            }
+            exactMatchMessage={
+              exactMatch ? 'Ya existe un atleta con este nombre. Usa su registro.' : undefined
+            }
+            disabled={saving}
+            renderItem={(student, action) => (
+              <StudentListRow
+                student={{ ...student, email: student.studentEmail || student.email }}
+                action={action}
+              />
+            )}
+            onSelect={(student) => {
+              if (schoolId) onCreated(student as SchoolStudent)
+              else if (student.athleteId)
+                onPersonalCreated?.({
+                  athleteId: student.athleteId,
+                  name: student.name,
+                  email: student.email || null,
+                  phone: student.phone,
+                })
+            }}
+          />
+        )}
         {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
         <button
           type="submit"
-          disabled={saving || (!canInvite && !additionalProfileId)}
+          disabled={saving || cannotCreate || (!canInvite && !additionalProfileId)}
           className="btn btn-primary min-h-11"
         >
           {saving ? 'Guardando…' : `Guardar ${participantSingular}`}

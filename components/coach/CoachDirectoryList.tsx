@@ -126,6 +126,7 @@ export default function CoachDirectoryList({
           hideLabel
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          onClear={() => setQuery('')}
           placeholder="Técnica, triatlón, tu ciudad…"
           className="rounded-full px-6 text-base"
         />

@@ -8,6 +8,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
   useId,
+  useRef,
 } from 'react'
 
 const labelClassName = 'text-sm font-semibold text-[var(--c-ocean)]'
@@ -57,11 +58,54 @@ export function TextField({
 }
 
 type SearchFieldProps = Omit<TextFieldProps, 'type'> & {
-  hideLabel?: boolean
+  onClear?: () => void
 }
 
-export function SearchField({ hideLabel = true, ...props }: SearchFieldProps) {
-  return <TextField type="search" hideLabel={hideLabel} {...props} />
+export function SearchField({
+  hideLabel = true,
+  id,
+  label,
+  helperText,
+  className = '',
+  onClear,
+  ...props
+}: SearchFieldProps) {
+  const generatedId = useId()
+  const fieldId = id ?? generatedId
+  const inputRef = useRef<HTMLInputElement>(null)
+  const canClear = Boolean(
+    onClear && String(props.value ?? '').length && !props.disabled && !props.readOnly
+  )
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <label htmlFor={fieldId} className={hideLabel ? 'sr-only' : labelClassName}>
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          {...props}
+          ref={inputRef}
+          id={fieldId}
+          type="search"
+          className={`${controlClassName} ${className} ${onClear ? 'pr-14 [&::-webkit-search-cancel-button]:appearance-none' : ''}`}
+        />
+        {canClear && (
+          <button
+            type="button"
+            aria-label={`Borrar ${label.toLowerCase()}`}
+            onClick={() => {
+              onClear?.()
+              inputRef.current?.focus()
+            }}
+            className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-xl text-(--c-text-2) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
+      </div>
+      {helperText && <span className={helperClassName}>{helperText}</span>}
+    </div>
+  )
 }
 
 interface TextAreaFieldProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {

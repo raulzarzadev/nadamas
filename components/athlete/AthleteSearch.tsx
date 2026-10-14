@@ -84,6 +84,7 @@ export default function AthleteSearch({
             placeholder="Nombre de la escuela…"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            onClear={() => setQuery('')}
           />
           {loading ? (
             <p role="status" className="text-sm">

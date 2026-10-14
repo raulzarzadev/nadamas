@@ -11,6 +11,7 @@ import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AttendanceCandidate } from '@/lib/attendance'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAvailableSlot } from '@/lib/coach-agenda'
+import { entityNameMatches, normalizeEntitySearch } from '@/lib/entity-matching'
 import { UNASSIGNED_SCHOOL_COACH_ID } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import StudentLabels from './StudentLabels'
@@ -289,25 +290,28 @@ export default function AgendaAddStudentModal({
   }, [schoolId, coachId, allowCreate, attendanceRevision])
 
   const takenIds = new Set(takenAthleteIds)
-  const takenNamesNormalized = new Set(takenNames.map((name) => name.trim().toLowerCase()))
+  const takenNamesNormalized = new Set(takenNames.map((name) => normalizeEntitySearch(name)))
   const trimmedQuery = query.trim()
-  const normalizedQuery = trimmedQuery.toLowerCase()
+  const normalizedQuery = normalizeEntitySearch(trimmedQuery)
   const matches =
     students
       ?.filter((student) => {
         if (!normalizedQuery) return true
-        return [student.name, student.email || '', student.phone || '']
-          .join(' ')
-          .toLowerCase()
-          .includes(normalizedQuery)
+        return (
+          entityNameMatches(student.name, trimmedQuery) ||
+          [student.email || '', student.phone || '']
+            .join(' ')
+            .toLowerCase()
+            .includes(normalizedQuery)
+        )
       })
       .slice(0, 5) || []
   // Only offer "create" when the typed name doesn't match an existing student,
   // someone already in the class, or a pending new name.
   const hasExactMatch =
-    students?.some((student) => student.name.trim().toLowerCase() === normalizedQuery) ||
+    students?.some((student) => normalizeEntitySearch(student.name) === normalizedQuery) ||
     takenNamesNormalized.has(normalizedQuery) ||
-    createNames.some((name) => name.toLowerCase() === normalizedQuery)
+    createNames.some((name) => normalizeEntitySearch(name) === normalizedQuery)
   const canCreate =
     allowCreate &&
     students !== undefined &&
@@ -526,7 +530,7 @@ export default function AgendaAddStudentModal({
                     const student = students?.find(
                       (item) =>
                         item.athleteId === (candidate.athleteId || candidate.studentId) ||
-                        item.name.trim().toLowerCase() === candidate.name.trim().toLowerCase()
+                        normalizeEntitySearch(item.name) === normalizeEntitySearch(candidate.name)
                     )
                     return (
                       <li

@@ -57,6 +57,7 @@ export default function UserList() {
         label="Buscar usuarios"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
+        onClear={() => setQuery('')}
         placeholder="Buscar por nombre o correo"
         className="h-12"
       />
