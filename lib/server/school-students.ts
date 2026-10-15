@@ -112,6 +112,7 @@ export async function listSchoolStudents(
 
 export async function createSchoolStudent(args: {
   schoolId: string
+  createdBy?: string
   guardianId?: string
   guardianEmail: string
   name: string
@@ -147,6 +148,7 @@ export async function createSchoolStudent(args: {
   const student: SchoolStudent = {
     id: ref.id,
     schoolId: args.schoolId,
+    ...(args.createdBy ? { createdBy: args.createdBy } : {}),
     name: args.name.trim().slice(0, 120),
     birthDate: args.birthDate,
     gender: args.gender,

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { schoolMembershipHasRole } from '@/lib/school'
 import { sendSchoolInvitationEmail } from '@/lib/server/emails'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { createSchoolInvitation, listSchoolInvitations } from '@/lib/server/school-invitations'
@@ -24,12 +25,18 @@ export async function GET(request: Request, { params }: RouteProps) {
 
 export async function POST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
   if (access.response) return access.response
 
   const body = (await request.json().catch(() => ({}))) as { email?: unknown; role?: unknown }
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   const role = body.role === 'teacher' || body.role === 'student' ? body.role : null
+  if (
+    role === 'teacher' &&
+    !access.globalAdmin &&
+    !schoolMembershipHasRole(access.membership, 'director')
+  )
+    return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     return NextResponse.json({ error: 'Escribe un correo válido.' }, { status: 400 })
   }

@@ -22,6 +22,7 @@ import {
 } from '@comps/hooks/useKeyboardSafeArea'
 import type { ReactNode } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FiX } from 'react-icons/fi'
 import { trackEvent } from '@/lib/analytics/client'
 import { analyticsModal } from '@/lib/analytics/privacy'
@@ -72,6 +73,8 @@ export default function Sheet({
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 }) {
   const keyboardViewport = useKeyboardSafeArea()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const [closing, setClosing] = useState(false)
   const closingRef = useRef(false)
   const openRef = useRef(open)
@@ -99,7 +102,7 @@ export default function Sheet({
   }, [closeDisabled, onClose])
 
   useEffect(() => {
-    if (!open) return
+    if (!open || !mounted) return
     const previousFocus = document.activeElement as HTMLElement | null
     const releaseScroll = lockBodyScroll()
     dialogRef.current?.focus({ preventScroll: true })
@@ -107,7 +110,7 @@ export default function Sheet({
       releaseScroll()
       if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true })
     }
-  }, [open])
+  }, [open, mounted])
 
   useEffect(() => {
     if (!open) return
@@ -140,7 +143,7 @@ export default function Sheet({
     return () => trackEvent('modal_closed', { modal: analyticsName })
   }, [open, analyticsName])
 
-  if (!open) return null
+  if (!open || !mounted) return null
   const desktopWidth = {
     sm: 'sm:max-w-sm',
     md: 'sm:max-w-md',
@@ -153,7 +156,7 @@ export default function Sheet({
     : '[animation:sheet-slide-up_0.3s_var(--ease-expo)] motion-reduce:[animation:none]'
   const viewportStyle = modalViewportStyle(keyboardViewport)
 
-  return (
+  return createPortal(
     <div
       ref={dialogRef}
       role="dialog"
@@ -282,6 +285,7 @@ export default function Sheet({
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

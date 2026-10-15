@@ -250,6 +250,7 @@ async function handlePOST(request: Request) {
       ? {
           id: booking.athleteId,
           schoolId,
+          createdBy: verification.caller.uid,
           name: athleteName,
           birthDate: '',
           gender: 'otro',

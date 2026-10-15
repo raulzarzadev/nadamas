@@ -436,6 +436,139 @@ export default function StudentProfileModal({
         }}
       />
     )
+  if (profile && editing)
+    return (
+      <Sheet
+        open
+        onClose={() => {
+          setEditing(false)
+          setError('')
+        }}
+        label="Editar datos del atleta"
+        keyboardAware
+        closeDisabled={saving || verifying}
+        footer={
+          <button
+            type="submit"
+            form={editId}
+            className="btn btn-primary min-h-11 w-full"
+            disabled={saving || verifying || (draft.name || '').trim().length < 2}
+          >
+            {saving ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        }
+      >
+        <h2 className="mb-4 text-xl font-bold">Editar datos del atleta</h2>
+        {error && (
+          <p role="alert" className="mb-3 text-sm">
+            {error}
+          </p>
+        )}
+        <form
+          id={editId}
+          className="grid min-w-0 gap-3"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void saveProfile()
+          }}
+        >
+          {editFields.map(([key, label]) => {
+            const change = (value: string) => setDraft((current) => ({ ...current, [key]: value }))
+            if (key === 'birthDate')
+              return (
+                <DateInput
+                  key={key}
+                  label={label}
+                  name={key}
+                  value={draft[key] || ''}
+                  disabled={saving}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={change}
+                />
+              )
+            if (key === 'gender')
+              return (
+                <GenderSelector
+                  key={key}
+                  value={(draft[key] || 'otro') as SchoolGender}
+                  disabled={saving}
+                  onChange={change}
+                />
+              )
+            return (
+              <div key={key} className="grid min-w-0 gap-1 text-sm font-semibold">
+                <label htmlFor={`${editId}-${key}`}>{label}</label>
+                {key.toLowerCase().includes('phone') ? (
+                  <PhoneNumberInput
+                    id={`${editId}-${key}`}
+                    value={draft[key] || ''}
+                    disabled={saving}
+                    onChange={change}
+                  />
+                ) : key.toLowerCase().includes('email') ? (
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <EmailInput
+                      id={`${editId}-${key}`}
+                      className="flex-1 basis-48"
+                      value={draft[key] || ''}
+                      maxLength={160}
+                      aria-describedby={
+                        verifying || verificationMessage ? `${editId}-${key}-helper` : undefined
+                      }
+                      disabled={saving || verifying}
+                      onChange={(value) => {
+                        change(value)
+                        setVerificationMessage('')
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline min-h-11 shrink-0"
+                      disabled={saving || verifying || !/^\S+@\S+\.\S+$/.test(draft[key] || '')}
+                      onClick={() => void verifyEmail(draft[key] || '')}
+                    >
+                      Verificar
+                    </button>
+                    {(verifying || verificationMessage) && (
+                      <p
+                        id={`${editId}-${key}-helper`}
+                        role="status"
+                        className="w-full text-xs font-normal text-(--c-text-2)"
+                      >
+                        {verifying ? 'Verificando…' : verificationMessage}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    id={`${editId}-${key}`}
+                    className="h-11 min-w-0 w-full max-w-full box-border rounded-xl border border-(--c-border) bg-white px-3 text-sm font-normal text-(--c-ocean) outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-border) disabled:opacity-50"
+                    value={draft[key] || ''}
+                    required={key === 'name'}
+                    minLength={key === 'name' ? 2 : undefined}
+                    maxLength={240}
+                    type={key.toLowerCase().includes('email') ? 'email' : 'text'}
+                    disabled={saving}
+                    onChange={(event) => change(event.target.value)}
+                  />
+                )}
+              </div>
+            )
+          })}
+          <button
+            type="button"
+            className="btn btn-subtle w-fit justify-self-end"
+            disabled={saving}
+            onClick={() => {
+              setEditing(false)
+              setError('')
+            }}
+          >
+            Cancelar edición
+          </button>
+        </form>
+      </Sheet>
+    )
   return (
     <Sheet
       open
@@ -476,139 +609,7 @@ export default function StudentProfileModal({
             {error}
           </p>
         )}
-        {profile && editing && (
-          <Sheet
-            open
-            onClose={() => {
-              setEditing(false)
-              setError('')
-            }}
-            label="Editar datos del atleta"
-            keyboardAware
-            closeDisabled={saving || verifying}
-            footer={
-              <button
-                type="submit"
-                form={editId}
-                className="btn btn-primary min-h-11 w-full"
-                disabled={saving || verifying || (draft.name || '').trim().length < 2}
-              >
-                {saving ? 'Guardando…' : 'Guardar cambios'}
-              </button>
-            }
-          >
-            <h2 className="mb-4 text-xl font-bold">Editar datos del atleta</h2>
-            {error && (
-              <p role="alert" className="mb-3 text-sm">
-                {error}
-              </p>
-            )}
-            <form
-              id={editId}
-              className="grid min-w-0 gap-3"
-              onSubmit={(event) => {
-                event.preventDefault()
-                void saveProfile()
-              }}
-            >
-              {editFields.map(([key, label]) => {
-                const change = (value: string) =>
-                  setDraft((current) => ({ ...current, [key]: value }))
-                if (key === 'birthDate')
-                  return (
-                    <DateInput
-                      key={key}
-                      label={label}
-                      name={key}
-                      value={draft[key] || ''}
-                      disabled={saving}
-                      max={new Date().toISOString().slice(0, 10)}
-                      onChange={change}
-                    />
-                  )
-                if (key === 'gender')
-                  return (
-                    <GenderSelector
-                      key={key}
-                      value={(draft[key] || 'otro') as SchoolGender}
-                      disabled={saving}
-                      onChange={change}
-                    />
-                  )
-                return (
-                  <div key={key} className="grid min-w-0 gap-1 text-sm font-semibold">
-                    <label htmlFor={`${editId}-${key}`}>{label}</label>
-                    {key.toLowerCase().includes('phone') ? (
-                      <PhoneNumberInput
-                        id={`${editId}-${key}`}
-                        value={draft[key] || ''}
-                        disabled={saving}
-                        onChange={change}
-                      />
-                    ) : key.toLowerCase().includes('email') ? (
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <EmailInput
-                          id={`${editId}-${key}`}
-                          className="flex-1 basis-48"
-                          value={draft[key] || ''}
-                          maxLength={160}
-                          aria-describedby={
-                            verifying || verificationMessage ? `${editId}-${key}-helper` : undefined
-                          }
-                          disabled={saving || verifying}
-                          onChange={(value) => {
-                            change(value)
-                            setVerificationMessage('')
-                          }}
-                        />
-                        <button
-                          type="button"
-                          className="btn btn-outline min-h-11 shrink-0"
-                          disabled={saving || verifying || !/^\S+@\S+\.\S+$/.test(draft[key] || '')}
-                          onClick={() => void verifyEmail(draft[key] || '')}
-                        >
-                          Verificar
-                        </button>
-                        {(verifying || verificationMessage) && (
-                          <p
-                            id={`${editId}-${key}-helper`}
-                            role="status"
-                            className="w-full text-xs font-normal text-(--c-text-2)"
-                          >
-                            {verifying ? 'Verificando…' : verificationMessage}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <input
-                        id={`${editId}-${key}`}
-                        className="h-11 min-w-0 w-full max-w-full box-border rounded-xl border border-(--c-border) bg-white px-3 text-sm font-normal text-(--c-ocean) outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-border) disabled:opacity-50"
-                        value={draft[key] || ''}
-                        required={key === 'name'}
-                        minLength={key === 'name' ? 2 : undefined}
-                        maxLength={240}
-                        type={key.toLowerCase().includes('email') ? 'email' : 'text'}
-                        disabled={saving}
-                        onChange={(event) => change(event.target.value)}
-                      />
-                    )}
-                  </div>
-                )
-              })}
-              <button
-                type="button"
-                className="btn btn-subtle w-fit justify-self-end"
-                disabled={saving}
-                onClick={() => {
-                  setEditing(false)
-                  setError('')
-                }}
-              >
-                Cancelar edición
-              </button>
-            </form>
-          </Sheet>
-        )}
+
         {profile && (
           <dl className="grid gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-4 text-sm">
             {[

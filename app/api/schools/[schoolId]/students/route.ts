@@ -42,7 +42,10 @@ export async function GET(request: Request, { params }: RouteProps) {
       const teacherId =
         !isDirector || query.get('coachOnly') === 'true' ? access.caller.uid : undefined
       const summaries = await getSchoolStudentSummaries(schoolId, students, teacherId)
-      if (teacherId) students = students.filter((student) => summaries[student.id]?.related)
+      if (teacherId)
+        students = students.filter(
+          (student) => student.createdBy === teacherId || summaries[student.id]?.related
+        )
       return NextResponse.json(
         {
           students,
@@ -59,7 +62,9 @@ export async function GET(request: Request, { params }: RouteProps) {
         getSchoolById(schoolId),
       ])
       const visibleIds = coachVisibleSchoolStudentIds(classes, school?.timezone || 'UTC')
-      students = students.filter((student) => visibleIds.has(student.id))
+      students = students.filter(
+        (student) => student.createdBy === access.caller.uid || visibleIds.has(student.id)
+      )
     }
     if (query.get('includeAgendaStudents') === 'true' && (isDirector || isTeacher)) {
       const coachId = query.get('coachId')?.trim() || (isDirector ? undefined : access.caller.uid)
@@ -107,7 +112,7 @@ export async function GET(request: Request, { params }: RouteProps) {
 
 export async function POST(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
-  const access = await requireSchoolAccess(request, schoolId, ['director', 'student'])
+  const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
@@ -128,15 +133,16 @@ export async function POST(request: Request, { params }: RouteProps) {
     return NextResponse.json({ error: 'Completa los datos del alumno.' }, { status: 400 })
   }
   const isDirector = access.globalAdmin || schoolMembershipHasRole(access.membership, 'director')
+  const isStaff = isDirector || schoolMembershipHasRole(access.membership, 'teacher')
   const additionalId = typeof body.additionalProfileId === 'string' ? body.additionalProfileId : ''
   const additional = additionalId
     ? await getAdditionalProfile(access.caller.uid, additionalId)
     : null
-  if (!isDirector && !additional)
+  if (!isStaff && !additional)
     return NextResponse.json({ error: 'Selecciona uno de tus Adicionales.' }, { status: 400 })
   if (!validProfileBirthDate(birthDate))
     return NextResponse.json({ error: 'Revisa la fecha de nacimiento.' }, { status: 400 })
-  if (!isDirector && sendInvitation)
+  if (!isStaff && sendInvitation)
     return NextResponse.json(
       { error: 'Solo la escuela puede enviar invitaciones.' },
       { status: 403 }
@@ -152,9 +158,10 @@ export async function POST(request: Request, { params }: RouteProps) {
   }
   const student = await createSchoolStudent({
     schoolId,
-    guardianId: !isDirector ? access.caller.uid : undefined,
+    createdBy: access.caller.uid,
+    guardianId: !isStaff ? access.caller.uid : undefined,
     additionalProfileId: additional?.id,
-    guardianEmail: !isDirector ? access.caller.email || '' : '',
+    guardianEmail: !isStaff ? access.caller.email || '' : '',
     name: additional?.name || name,
     birthDate: additional?.birthDate || birthDate,
     gender: additional?.gender || (gender as SchoolGender),

@@ -128,14 +128,14 @@ export default function SchoolStudents() {
             onChange={selectSchool}
           />
           <div className="flex flex-wrap gap-2">
-            {(isDirector || isStudentAccount) && (
+            {(canAssignClasses || isStudentAccount) && (
               <button
                 type="button"
                 onClick={() => setShowStudent(true)}
                 className="btn btn-primary min-h-11 gap-2"
               >
                 <FiPlus aria-hidden="true" />{' '}
-                {isDirector ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
+                {canAssignClasses ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
               </button>
             )}
           </div>
@@ -317,7 +317,7 @@ export default function SchoolStudents() {
       {showStudent && (
         <StudentForm
           schoolId={selected.school.id}
-          canInvite={isDirector}
+          canInvite={canAssignClasses}
           onClose={() => setShowStudent(false)}
           onCreated={(student, invitation) => {
             if (student) {

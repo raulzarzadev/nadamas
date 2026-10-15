@@ -289,6 +289,7 @@ export interface SchoolInvitationStudentData {
 export interface SchoolStudent {
   id: string
   schoolId: string
+  createdBy?: string
   name: string
   birthDate: string
   gender: SchoolGender

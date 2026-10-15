@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
+import type { Booking } from '@/lib/coach-booking'
 import { studentProgressId } from '@/lib/coach-student-progress'
+import { type SchoolStudent, schoolMembershipHasRole } from '@/lib/school'
+import { studentSchoolBookings } from '@/lib/school-student-history'
 import { createProfileInvitation } from '@/lib/server/athlete-profile-invitations'
 import { sendAthleteProfileInvitationEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
@@ -36,16 +39,19 @@ export async function POST(request: Request) {
           { error: 'Este registro no puede vincularse a una cuenta personal.' },
           { status: 400 }
         )
-      if (
-        !access.globalAdmin &&
-        !access.membership?.roles?.includes('director') &&
-        access.membership?.role !== 'director'
-      ) {
-        const classes = await adminDb
-          .collection('schoolClassOccurrences')
-          .where('schoolId', '==', schoolId)
-          .get()
+      if (!access.globalAdmin && !schoolMembershipHasRole(access.membership, 'director')) {
+        const [classes, bookings] = await Promise.all([
+          adminDb.collection('schoolClassOccurrences').where('schoolId', '==', schoolId).get(),
+          adminDb.collection('bookings').where('coachId', '==', coachId).get(),
+        ])
+        const hasAgendaStudent = studentSchoolBookings(
+          bookings.docs.map((doc) => doc.data() as Booking),
+          { ...data, id: studentId } as SchoolStudent,
+          coachId
+        ).some((booking) => booking.status !== 'cancelled')
         if (
+          data.createdBy !== coachId &&
+          !hasAgendaStudent &&
           !classes.docs.some(
             (doc) =>
               doc.data().teacherIds?.includes(coachId) && doc.data().studentIds?.includes(studentId)

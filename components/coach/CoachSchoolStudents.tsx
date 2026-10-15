@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { FiSearch, FiUser } from 'react-icons/fi'
+import { FiPlus, FiSearch, FiUser } from 'react-icons/fi'
+import { StudentForm } from '@/components/school/SchoolStudents'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ClassStudentRow from '@/components/ui/class-student-row'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
@@ -49,6 +50,7 @@ export default function CoachSchoolStudents({ schoolId }: { schoolId?: string } 
   const [labelRevision, setLabelRevision] = useState(0)
   const [query, setQuery] = useState('')
   const [profileStudent, setProfileStudent] = useState<SchoolStudent | null>(null)
+  const [adding, setAdding] = useState(false)
   const [loading, setLoading] = useState(!cached)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -105,6 +107,13 @@ export default function CoachSchoolStudents({ schoolId }: { schoolId?: string } 
   return (
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3">
+        <button
+          type="button"
+          className="btn btn-primary min-h-11 gap-2"
+          onClick={() => setAdding(true)}
+        >
+          <FiPlus aria-hidden="true" /> Agregar {participantSingular}
+        </button>
         {!loading && students.length > 0 && (
           <label className="relative min-w-0 flex-1">
             <FiSearch
@@ -195,6 +204,24 @@ export default function CoachSchoolStudents({ schoolId }: { schoolId?: string } 
               : 'Aquí aparecen atletas con clases próximas contigo y a quienes ya les diste clase.'}
           </p>
         </div>
+      )}
+      {adding && (
+        <StudentForm
+          schoolId={selected.school.id}
+          canInvite
+          onClose={() => setAdding(false)}
+          onCreated={(student) => {
+            if (student) {
+              setStudents((current) =>
+                [...current.filter((item) => item.id !== student.id), student].sort((a, b) =>
+                  a.name.localeCompare(b.name)
+                )
+              )
+              setLabelRevision((current) => current + 1)
+            }
+            setAdding(false)
+          }}
+        />
       )}
       {profileStudent && (
         <StudentProfileModal
