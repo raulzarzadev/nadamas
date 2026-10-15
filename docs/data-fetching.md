@@ -4,14 +4,14 @@ Las pantallas autenticadas deben reutilizar `lib/client/authed-api.ts`. Usar `ge
 
 ## Caché compartida
 
-`getAuthed(path)` comparte peticiones simultáneas a la misma URL, incluso entre componentes. Cada consumidor recibe un `Response` independiente y puede llamar a `response.json()`.
+`getAuthed(path)` comparte peticiones simultáneas a la misma URL, incluso entre componentes. Cada consumidor recibe un `Response` independiente y puede llamar a `response.json()`. Las respuestas vigentes y peticiones compartidas no vuelven a solicitar el token; se obtiene cuando hace falta una petición de red.
 
 | Recurso | Vigencia en memoria |
 | --- | --- |
 | `/api/schools` | 60 segundos |
 | `/api/admin/overview` | 15 segundos; acceso exclusivo de administrador |
-| `/api/schools/:id/students`, `classes`, `teachers`, `agenda` y sus subrutas | 15 segundos |
-| `/api/coach/student-tags`, `/api/coach/students` | 15 segundos |
+| `/api/schools/:id/students`, `classes`, `teachers`, `agenda`, `locations`, `invitations`, `class-requests`, `access-requests` y sus subrutas | 15 segundos |
+| `/api/coach/student-tags`, `/api/coach/students`, `/api/coach/agenda` | 15 segundos |
 | Otras rutas | Solo comparte peticiones pendientes |
 
 La clave incluye el usuario autenticado y la URL exacta, incluidos sus parámetros y su orden. Construir URLs de forma consistente para compartir lecturas. La caché tiene un límite de 128 entradas, vive solo en memoria y se limpia al cambiar de usuario. Las peticiones fallidas no se guardan. No sustituye los controles de acceso del servidor ni reduce el costo de la primera lectura a Firestore.

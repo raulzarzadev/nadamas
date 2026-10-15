@@ -105,7 +105,16 @@ test('bounded cache evicts oldest entry and zero TTL only deduplicates pending r
 })
 test('auth API cache isolates users and invalidates only changed school labels', async () => {
   let authListener
-  const auth = { currentUser: { uid: 'first', getIdToken: async () => 'token' } }
+  let tokenCalls = 0
+  const auth = {
+    currentUser: {
+      uid: 'first',
+      getIdToken: async () => {
+        tokenCalls++
+        return 'token'
+      },
+    },
+  }
   const calls = []
   const api = load(
     '../../lib/client/authed-api.ts',
@@ -135,6 +144,9 @@ test('auth API cache isolates users and invalidates only changed school labels',
   await Promise.all([api.getAuthed(a), api.getAuthed(a)])
   await api.getAuthed(b)
   assert.equal(calls.length, 2)
+  assert.equal(tokenCalls, 2)
+  await api.getAuthed(a)
+  assert.equal(tokenCalls, 2)
   await api.postAuthed('/api/coach/student-tags?schoolId=a&studentId=s', { name: 'Tag' })
   await api.getAuthed(b)
   await api.getAuthed(a)
@@ -143,12 +155,32 @@ test('auth API cache isolates users and invalidates only changed school labels',
   authListener(auth.currentUser)
   await api.getAuthed(b)
   assert.equal(calls.length, 5)
+  const paths = [
+    'locations',
+    'invitations',
+    'class-requests',
+    'access-requests',
+    'teachers',
+    'students',
+    'agenda?month=2026-10',
+  ].map((resource) => `/api/schools/a/${resource}`)
+  paths.push('/api/coach/agenda?month=2026-10&schoolId=a')
+  for (const path of paths) {
+    const before = calls.length
+    await Promise.all([api.getAuthed(path), api.getAuthed(path)])
+    await api.getAuthed(path)
+    assert.equal(calls.length, before + 1, path)
+    assert.deepEqual(api.getCachedAuthedData(path), { ok: true })
+  }
+  await api.postAuthed('/api/schools/a/students', { name: 'Ana' })
+  for (const path of paths) assert.equal(api.getCachedAuthedData(path), undefined, path)
+  const beforeOverview = calls.length
   await api.getAuthed('/api/admin/overview')
   await api.getAuthed('/api/admin/overview')
-  assert.equal(calls.length, 6)
+  assert.equal(calls.length, beforeOverview + 1)
   await api.patchAuthed('/api/admin/users/first', { disabled: false })
   await api.getAuthed('/api/admin/overview')
-  assert.equal(calls.length, 8)
+  assert.equal(calls.length, beforeOverview + 3)
 })
 const history = load('../../lib/school-student-history.ts')
 const { schoolStudentSummaries } = load('../../lib/school-student-summary.ts', {

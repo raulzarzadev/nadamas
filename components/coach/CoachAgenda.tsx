@@ -30,6 +30,7 @@ import {
   AuthedApiError,
   deleteAuthed,
   getAuthed,
+  getCachedAuthedData,
   patchAuthed,
   postAuthed,
 } from '@/lib/client/authed-api'
@@ -222,11 +223,32 @@ export default function CoachAgenda({
   const coachFallback =
     schoolId && terminology.schoolId ? capitalizeSchoolTerm(terminology.coachSingular) : 'Coach'
 
-  const [fullAgenda, setAgenda] = useState<CoachAgendaPayload | undefined>(undefined)
   const localSchoolFilter = manageSchoolSchedule && aggregateSchool && !combinedSources
   const requestCoachId = localSchoolFilter ? undefined : coachId
   const requestCoachQuery = requestCoachId ? `&coachId=${encodeURIComponent(requestCoachId)}` : ''
   const requestContextQuery = `${requestCoachQuery}${schoolQuery}`
+  const [selectedDate, setSelectedDate] = useState(() =>
+    initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : dateKey(new Date())
+  )
+  const agendaPath = useCallback(
+    (month: string) =>
+      (aggregateSchool || manageSchoolSchedule) && schoolId
+        ? `/api/schools/${encodeURIComponent(schoolId as string)}/agenda?month=${month}${requestCoachQuery}${readOnly ? '&view=public' : ''}`
+        : `/api/coach/agenda?month=${month}${requestContextQuery}`,
+    [
+      aggregateSchool,
+      manageSchoolSchedule,
+      schoolId,
+      requestCoachQuery,
+      readOnly,
+      requestContextQuery,
+    ]
+  )
+  const [fullAgenda, setAgenda] = useState<CoachAgendaPayload | undefined>(() =>
+    combinedSources
+      ? undefined
+      : getCachedAuthedData<CoachAgendaPayload>(agendaPath(selectedDate.slice(0, 7)))
+  )
   const agenda = useMemo(() => {
     if (!fullAgenda || !localSchoolFilter || !coachId) return fullAgenda
     return {
@@ -236,11 +258,11 @@ export default function CoachAgenda({
       blocks: fullAgenda.blocks.filter((block) => block.coachId === coachId),
     }
   }, [fullAgenda, localSchoolFilter, coachId])
-  const [scheduleHoursByDate, setScheduleHoursByDate] = useState<Record<string, string[]>>({})
-  const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
-  const [selectedDate, setSelectedDate] = useState(() =>
-    initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : dateKey(new Date())
+  const [scheduleHoursByDate, setScheduleHoursByDate] = useState<Record<string, string[]>>(() =>
+    fullAgenda ? replaceMonthHours({}, selectedDate.slice(0, 7), fullAgenda.availableSlots) : {}
   )
+  const [loadedCoachId, setLoadedCoachId] = useState<string | undefined>(coachId)
+
   const focusRef = useRef<HTMLDivElement>(null)
   const focusAppliedKeyRef = useRef<string | null>(null)
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
@@ -419,10 +441,7 @@ export default function CoachAgenda({
           setLoadedCoachId(requestCoachId)
           return
         }
-        const endpoint =
-          (aggregateSchool || manageSchoolSchedule) && schoolId
-            ? `/api/schools/${encodeURIComponent(schoolId as string)}/agenda?month=${month}${requestCoachQuery}${readOnly ? '&view=public' : ''}`
-            : `/api/coach/agenda?month=${month}${requestContextQuery}`
+        const endpoint = agendaPath(month)
         const response = await getAuthed(endpoint)
         const nextAgenda = (await response.json()) as CoachAgendaPayload
         if (requestId !== agendaRequestRef.current) return
@@ -442,16 +461,7 @@ export default function CoachAgenda({
         setLoadedCoachId(undefined)
       }
     },
-    [
-      aggregateSchool,
-      manageSchoolSchedule,
-      requestCoachQuery,
-      requestContextQuery,
-      schoolId,
-      requestCoachId,
-      readOnly,
-      agendaSources,
-    ]
+    [agendaPath, requestCoachId, agendaSources]
   )
 
   useEffect(() => {

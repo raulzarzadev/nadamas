@@ -148,7 +148,7 @@ export function getCachedAuthedData<T>(path: string): T | undefined {
 }
 
 export async function getAuthed(path: string) {
-  const token = await getAuthToken()
+  if (!auth.currentUser) await getAuthToken()
   const userId = auth.currentUser?.uid
   if (cacheUser !== userId) {
     requestCache.invalidate()
@@ -160,13 +160,24 @@ export async function getAuthed(path: string) {
       ? 15_000
       : pathname === '/api/schools'
         ? 60_000
-        : /^\/api\/schools\/[^/]+\/(students|classes|teachers|agenda)(?:\/|$)/.test(pathname) ||
+        : /^\/api\/schools\/[^/]+\/(students|classes|teachers|agenda|locations|invitations|class-requests|access-requests)(?:\/|$)/.test(
+              pathname
+            ) ||
+            pathname === '/api/coach/agenda' ||
             pathname === '/api/coach/student-tags' ||
             pathname === '/api/coach/students' ||
             pathname === '/api/payments'
           ? 15_000
           : 0
-  return requestCache.get(`${userId}|${path}`, () => requestAuthed(path, undefined, token), ttl)
+  return requestCache.get(
+    `${userId}|${path}`,
+    async () => {
+      const token = await getAuthToken()
+      if (auth.currentUser?.uid !== userId) throw new Error('auth_session_changed')
+      return requestAuthed(path, undefined, token)
+    },
+    ttl
+  )
 }
 
 export function postAuthed(path: string, body?: unknown) {

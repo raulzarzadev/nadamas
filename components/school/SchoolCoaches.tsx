@@ -10,7 +10,7 @@ import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLab
 import CoachBadge from '@/components/ui/coach-badge'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
-import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
+import { getAuthed, getCachedAuthedData, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { capitalizeSchoolTerm, type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
@@ -34,37 +34,58 @@ export default function SchoolCoaches() {
   const [filteredIds, setFilteredIds] = useState<string[] | null>(null)
   const [scheduleTeacher, setScheduleTeacher] = useState<Teacher | null>(null)
   const [teacherProfile, setTeacherProfile] = useState<Teacher | null>(null)
-  const [teachers, setTeachers] = useState<Teacher[]>([])
+  const cachedTeachers = selectedId
+    ? getCachedAuthedData<{ teachers?: Teacher[] }>(`/api/schools/${selectedId}/teachers`)
+    : undefined
+  const [teachers, setTeachers] = useState<Teacher[]>(cachedTeachers?.teachers || [])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [showInvite, setShowInvite] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedTeachers)
   const [message, setMessage] = useState<string | null>(null)
   const [savingPermission, setSavingPermission] = useState<string | null>(null)
 
   useEffect(() => {
     if (!selectedId) return
-    setLoading(true)
-    async function load() {
-      const teacherResponse = await getAuthed(`/api/schools/${selectedId}/teachers`)
-      const teacherPayload = (await teacherResponse.json()) as { teachers?: Teacher[] }
-      let invitePayload: { invitations?: SchoolInvitation[] } | null = null
-      if (schoolMembershipHasRole(selected?.membership, 'director')) {
-        const invitationResponse = await getAuthed(`/api/schools/${selectedId}/invitations`)
-        invitePayload = (await invitationResponse.json()) as { invitations?: SchoolInvitation[] }
-      }
-      return { teacherPayload, invitePayload }
-    }
-    load()
-      .then(({ teacherPayload, invitePayload }) => {
-        setTeachers(teacherPayload.teachers || [])
-        setInvitations(invitePayload?.invitations?.filter((item) => item.role === 'teacher') || [])
+    let active = true
+    const teachersPath = `/api/schools/${selectedId}/teachers`
+    const invitationsPath = `/api/schools/${selectedId}/invitations`
+    const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
+    const cached = getCachedAuthedData<{ teachers?: Teacher[] }>(teachersPath)
+    const cachedInvites = isDirector
+      ? getCachedAuthedData<{ invitations?: SchoolInvitation[] }>(invitationsPath)
+      : undefined
+    setTeachers(cached?.teachers || [])
+    setInvitations(cachedInvites?.invitations?.filter((item) => item.role === 'teacher') || [])
+    setLoading(!cached)
+    setMessage(null)
+    getAuthed(teachersPath)
+      .then((response) => response.json() as Promise<{ teachers?: Teacher[] }>)
+      .then((payload) => {
+        if (active) setTeachers(payload.teachers || [])
       })
-      .catch(() =>
-        setMessage(
-          `No se pudieron cargar ${terminology.schoolId ? terminology.coachPlural : 'los coaches'}.`
-        )
-      )
-      .finally(() => setLoading(false))
+      .catch(() => {
+        if (active)
+          setMessage(
+            `No se pudieron cargar ${terminology.schoolId ? terminology.coachPlural : 'los coaches'}.`
+          )
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    if (isDirector) {
+      getAuthed(invitationsPath)
+        .then((response) => response.json() as Promise<{ invitations?: SchoolInvitation[] }>)
+        .then((payload) => {
+          if (active)
+            setInvitations(payload.invitations?.filter((item) => item.role === 'teacher') || [])
+        })
+        .catch(() => {
+          if (active) setMessage('No se pudieron cargar las invitaciones.')
+        })
+    }
+    return () => {
+      active = false
+    }
   }, [selectedId, selected?.membership, terminology.coachPlural, terminology.schoolId])
 
   if (schoolStatus === 'loading') return <ProfileLoadingSkeleton />

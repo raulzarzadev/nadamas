@@ -15,7 +15,7 @@ import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
-import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
+import { getAuthed, getCachedAuthedData, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { useSchoolAgendaUpdates } from '@/lib/client/use-school-agenda-updates'
 import { paymentMessage } from '@/lib/payments/messages'
 import {
@@ -109,7 +109,27 @@ export default function SchoolClasses() {
       setRequestDetails(null)
       setChangeRequest(null)
       setShowArchivedRequests(false)
-      setLoading(true)
+      const cachedClasses = getCachedAuthedData<{ classes?: SchoolClassOccurrence[] }>(
+        `/api/schools/${selectedId}/classes`
+      )
+      const cachedStudents = getCachedAuthedData<{ students?: SchoolStudent[] }>(
+        `/api/schools/${selectedId}/students?includeAgendaStudents=true`
+      )
+      const cachedTeachers = getCachedAuthedData<{ teachers?: Teacher[] }>(
+        `/api/schools/${selectedId}/teachers`
+      )
+      const cachedLocations = getCachedAuthedData<{ locations?: SchoolLocation[] }>(
+        `/api/schools/${selectedId}/locations`
+      )
+      const cachedRequests = getCachedAuthedData<{ requests?: SchoolClassRequest[] }>(
+        `/api/schools/${selectedId}/class-requests`
+      )
+      setClasses(cachedClasses?.classes || [])
+      setStudents(cachedStudents?.students || [])
+      setTeachers(cachedTeachers?.teachers || [])
+      setLocations(cachedLocations?.locations || [])
+      setRequests(cachedRequests?.requests || [])
+      setLoading(!cachedClasses || !cachedStudents || !cachedTeachers || !cachedLocations)
     }
     setBookingMode(selected?.school.bookingMode || 'request')
     const isDirector = schoolMembershipHasRole(selected?.membership, 'director')
@@ -117,25 +137,24 @@ export default function SchoolClasses() {
     const directorId = isDirector ? selected?.membership.userId : undefined
     if (resetSelection) setScheduleCoachId('')
     const load = async () => {
-      const [classResponse, studentResponse, teacherResponse, locationResponse] = await Promise.all(
-        [
+      const [classResponse, studentResponse, teacherResponse, locationResponse, requestPayload] =
+        await Promise.all([
           getAuthed(`/api/schools/${selectedId}/classes`),
-          getAuthed(`/api/schools/${selectedId}/students`),
+          getAuthed(`/api/schools/${selectedId}/students?includeAgendaStudents=true`),
           getAuthed(`/api/schools/${selectedId}/teachers`),
           getAuthed(`/api/schools/${selectedId}/locations`),
-        ]
-      )
+          isDirector || isStudentAccount
+            ? getAuthed(`/api/schools/${selectedId}/class-requests`).then(
+                (response) => response.json() as Promise<{ requests?: SchoolClassRequest[] }>
+              )
+            : Promise.resolve({ requests: [] as SchoolClassRequest[] }),
+        ])
       const [classPayload, studentPayload, teacherPayload, locationPayload] = await Promise.all([
         classResponse.json() as Promise<{ classes?: SchoolClassOccurrence[] }>,
         studentResponse.json() as Promise<{ students?: SchoolStudent[] }>,
         teacherResponse.json() as Promise<{ teachers?: Teacher[] }>,
         locationResponse.json() as Promise<{ locations?: SchoolLocation[] }>,
       ])
-      let requestPayload: { requests?: SchoolClassRequest[] } = {}
-      if (isDirector || isStudentAccount) {
-        const requestResponse = await getAuthed(`/api/schools/${selectedId}/class-requests`)
-        requestPayload = (await requestResponse.json()) as { requests?: SchoolClassRequest[] }
-      }
       return { classPayload, studentPayload, teacherPayload, locationPayload, requestPayload }
     }
     load()

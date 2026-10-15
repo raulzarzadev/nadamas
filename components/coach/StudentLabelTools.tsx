@@ -3,7 +3,7 @@
 import { useEffect, useId, useState } from 'react'
 import LabelFilterBar from '@/components/ui/label-filter-bar'
 import Sheet from '@/components/ui/sheet'
-import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { deleteAuthed, getAuthed, getCachedAuthedData, postAuthed } from '@/lib/client/authed-api'
 import StudentLabelColorSelector from './StudentLabelColorSelector'
 
 type Student = { id: string; name: string }
@@ -27,8 +27,12 @@ export default function StudentLabelTools({
   onData?: (data: LabelList) => void
 }) {
   const nameInputId = useId()
-  const [labels, setLabels] = useState<Label[]>([])
-  const [assignments, setAssignments] = useState<Record<string, string[]>>({})
+  const endpoint = `/api/coach/student-tags?entity=${entity}&schoolId=${encodeURIComponent(schoolId)}&view=list`
+  const cached = getCachedAuthedData<LabelList>(endpoint)
+  const [labels, setLabels] = useState<Label[]>(cached?.labels || [])
+  const [assignments, setAssignments] = useState<Record<string, string[]>>(
+    cached?.assignments || {}
+  )
   const [filter, setFilter] = useState('')
   const [open, setOpen] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -39,15 +43,19 @@ export default function StudentLabelTools({
   const [managedName, setManagedName] = useState('')
   const [color, setColor] = useState('blue')
   const [busy, setBusy] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cached)
   const [error, setError] = useState('')
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision reloads assignments after mutations.
   useEffect(() => {
     let active = true
-    setLoading(true)
-    getAuthed(
-      `/api/coach/student-tags?entity=${entity}&schoolId=${encodeURIComponent(schoolId)}&view=list`
-    )
+    const saved = getCachedAuthedData<LabelList>(endpoint)
+    setLoading(!saved)
+    if (saved) {
+      setLabels(saved.labels)
+      setAssignments(saved.assignments)
+      onData?.(saved)
+    }
+    getAuthed(endpoint)
       .then((response) => response.json() as Promise<LabelList>)
       .then((payload) => {
         if (active) {
@@ -66,7 +74,7 @@ export default function StudentLabelTools({
     return () => {
       active = false
     }
-  }, [schoolId, entity, revision, onData])
+  }, [endpoint, revision, onData])
   useEffect(() => {
     onFilter(
       filter ? Object.keys(assignments).filter((id) => assignments[id].includes(filter)) : null
