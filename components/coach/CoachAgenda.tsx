@@ -621,9 +621,10 @@ export default function CoachAgenda({
     return () => setScheduleText('')
   }, [setScheduleText, whatsappScheduleText])
 
-  const dayBookings = activeBookings.filter((booking) => booking.date === selectedDate)
-  const daySlots = (agenda?.availableSlots || []).filter((slot) => slot.date === selectedDate)
-  const dayBlocks = (agenda?.blocks || []).filter((block) => block.date === selectedDate)
+  const detailDate = horizontalClass?.date || selectedDate
+  const dayBookings = activeBookings.filter((booking) => booking.date === detailDate)
+  const daySlots = (agenda?.availableSlots || []).filter((slot) => slot.date === detailDate)
+  const dayBlocks = (agenda?.blocks || []).filter((block) => block.date === detailDate)
   const bookingMatchesFocus = useCallback(
     (booking: Booking) => {
       if (!focusClassId && !focusTime) return false
@@ -643,6 +644,7 @@ export default function CoachAgenda({
   // scroll the row into view and focus it.
   useEffect(() => {
     const focusKey = `${selectedDate}|${focusClassId || ''}|${focusTime || ''}`
+    if (horizontalClass) return
     if (focusAppliedKeyRef.current === focusKey || !agenda || (!focusClassId && !focusTime)) return
     if (!dayBookings.some(bookingMatchesFocus)) return
     focusAppliedKeyRef.current = focusKey
@@ -651,7 +653,15 @@ export default function CoachAgenda({
       focusRef.current?.focus({ preventScroll: true })
     })
     return () => cancelAnimationFrame(frame)
-  }, [agenda, dayBookings, bookingMatchesFocus, selectedDate, focusClassId, focusTime])
+  }, [
+    agenda,
+    dayBookings,
+    bookingMatchesFocus,
+    selectedDate,
+    focusClassId,
+    focusTime,
+    horizontalClass,
+  ])
   const bookingClassMembers = bookingToEdit
     ? dayBookings.filter(
         (booking) =>
@@ -1753,7 +1763,7 @@ export default function CoachAgenda({
 
         {!allDayBlock && displayRows.length === 0 && (
           <p className="px-4 py-8 text-center text-sm text-[var(--c-text-2)] sm:px-5">
-            {selectedDate < dateKey(new Date())
+            {detailDate < dateKey(new Date())
               ? 'No hay clases registradas para este día.'
               : schoolId
                 ? 'No hay horarios asignados para este día.'
@@ -2348,7 +2358,6 @@ export default function CoachAgenda({
             const slot = horizontalSlots.get(key)
             if (slot && !multiSelect) {
               setNotice(null)
-              setSelectedDate(slot.date)
               setHorizontalClass(slot)
               return
             }
@@ -2733,7 +2742,7 @@ export default function CoachAgenda({
           )}
         </div>
         <p className="mb-3 text-sm text-(--c-text-2)">
-          {new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-MX', {
+          {new Date(`${detailDate}T12:00:00`).toLocaleDateString('es-MX', {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
