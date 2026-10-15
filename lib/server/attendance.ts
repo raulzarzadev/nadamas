@@ -49,10 +49,11 @@ export type AttendanceClass = SchoolClassOccurrence & {
   sourceCoachId?: string
 }
 
-async function availableAttendanceClasses(
+export async function availableAttendanceClasses(
   schoolId: string,
   date: string,
-  teacherId?: string
+  teacherId?: string,
+  endDate = date
 ): Promise<AttendanceClass[]> {
   const memberships = await adminDb
     .collection('schoolMemberships')
@@ -95,23 +96,23 @@ async function availableAttendanceClasses(
           typeof buildAvailableSlots
         >[0]['blocks'],
         startDate: day,
-        endDate: day,
+        endDate: new Date(`${endDate}T12:00:00`),
       })
       return slots
         .filter((slot) => slot.status === 'available')
         .map((slot) => {
           const maxPeople = offerings.find((item) => item.id === slot.offeringId)?.maxPeople
           const digest = createHash('sha256')
-            .update(`${schoolId}|${coachId}|${date}|${slot.startTime}|${slot.endTime}`)
+            .update(`${schoolId}|${coachId}|${slot.date}|${slot.startTime}|${slot.endTime}`)
             .digest('hex')
             .slice(0, 32)
           return {
-            id: `attendance:${date}:${digest}`,
+            id: `attendance:${slot.date}:${digest}`,
             seriesId: '',
             schoolId,
             title: '',
             type: slot.groupType === 'grupal' ? ('group' as const) : ('individual' as const),
-            date,
+            date: slot.date,
             startTime: slot.startTime,
             endTime: slot.endTime,
             timezone: schoolSnapshot.data()?.timezone || 'America/Mexico_City',

@@ -2,7 +2,7 @@ import { fromZonedTime } from 'date-fns-tz'
 import { NextResponse } from 'next/server'
 import { reportServerError } from '@/lib/analytics/server'
 import type { Booking } from '@/lib/coach-booking'
-import { localPaymentDate, paymentAvailable, paymentWeek } from '@/lib/payments/engine'
+import { addDays, localPaymentDate, paymentAvailable, paymentWeek } from '@/lib/payments/engine'
 import type { PaymentAccount } from '@/lib/payments/model'
 import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
 import {
@@ -10,6 +10,7 @@ import {
   type SchoolAttendanceReport,
 } from '@/lib/school-attendance-report'
 import { studentSchoolBookings } from '@/lib/school-student-history'
+import { availableAttendanceClasses } from '@/lib/server/attendance'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { accountRef } from '@/lib/server/payments/store'
 import { requireSchoolAccess } from '@/lib/server/school-access'
@@ -93,6 +94,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ scho
       group.attended = group.attendedStudentIds.length
     }
     classes.push(...bookingGroups.values())
+    const startDate = addDays(today, -2)
+    const available = await availableAttendanceClasses(
+      schoolId,
+      startDate,
+      director ? undefined : access.caller.uid,
+      today
+    )
+    const emptyClasses = available.filter(
+      (slot) =>
+        !classes.some(
+          (item) =>
+            item.date === slot.date &&
+            item.startTime === slot.startTime &&
+            item.endTime === slot.endTime &&
+            (item.bookingCoachId
+              ? item.bookingCoachId === slot.sourceCoachId
+              : visibleClasses.some(
+                  (actual) =>
+                    actual.id === item.id &&
+                    [...actual.teacherIds].sort().join('|') ===
+                      [...slot.teacherIds].sort().join('|')
+                ))
+        )
+    )
+    classes.push(...attendanceReportClasses(emptyClasses, [], timezone))
     classes.sort((a, b) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`))
     const accounts = students.length
       ? await adminDb.getAll(
@@ -101,7 +127,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ scho
       : []
     const payload: SchoolAttendanceReport = {
       today,
-      classes,
+      classes: classes.filter((item) => item.date >= startDate && item.date <= today),
       students: students
         .map((student, index) => {
           const attended = classes.filter((item) => item.attendedStudentIds.includes(student.id))

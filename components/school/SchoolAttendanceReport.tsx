@@ -100,8 +100,8 @@ function ReportSheet({ schoolId, onClose }: { schoolId: string; onClose: () => v
           ) : view === 'classes' ? (
             <>
               <p className="text-sm text-(--c-text-2)">
-                Horarios finalizados, del más reciente al más antiguo. Asistencias / personas
-                inscritas.
+                Horarios finalizados de los últimos 3 días, del más reciente al más antiguo.
+                Asistencias / personas inscritas.
               </p>
               {data?.classes.length ? (
                 <ul className="divide-y divide-(--c-border)">
@@ -136,7 +136,7 @@ function ReportSheet({ schoolId, onClose }: { schoolId: string; onClose: () => v
                   ))}
                 </ul>
               ) : (
-                <p>Aún no hay horarios finalizados.</p>
+                <p>No hay horarios finalizados en los últimos 3 días.</p>
               )}
             </>
           ) : (
