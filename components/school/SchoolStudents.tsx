@@ -23,6 +23,7 @@ import {
   schoolMembershipHasRole,
 } from '@/lib/school'
 import SchoolAccessRequests from './SchoolAccessRequests'
+import SchoolAttendanceReport from './SchoolAttendanceReport'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
 import SchoolStudentHistory from './SchoolStudentHistory'
@@ -128,6 +129,7 @@ export default function SchoolStudents() {
             onChange={selectSchool}
           />
           <div className="flex flex-wrap gap-2">
+            {canAssignClasses && <SchoolAttendanceReport schoolId={activeSchool.school.id} />}
             {(canAssignClasses || isStudentAccount) && (
               <button
                 type="button"

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { FiPlus, FiSearch, FiUser } from 'react-icons/fi'
+import SchoolAttendanceReport from '@/components/school/SchoolAttendanceReport'
 import { StudentForm } from '@/components/school/SchoolStudents'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ClassStudentRow from '@/components/ui/class-student-row'
@@ -107,6 +108,7 @@ export default function CoachSchoolStudents({ schoolId }: { schoolId?: string } 
   return (
     <section>
       <div className="flex flex-wrap items-end justify-between gap-3">
+        {selected && <SchoolAttendanceReport schoolId={selected.school.id} />}
         <button
           type="button"
           className="btn btn-primary min-h-11 gap-2"
