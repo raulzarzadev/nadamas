@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiClipboard, FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
 import StudentProfileModal from '@/components/coach/StudentProfileModal'
@@ -27,6 +27,7 @@ import SchoolAttendanceReport from './SchoolAttendanceReport'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
 import SchoolStudentHistory from './SchoolStudentHistory'
+import SchoolStudentsTable from './SchoolStudentsTable'
 import { useSchoolSelection } from './useSchoolSelection'
 
 export default function SchoolStudents() {
@@ -175,51 +176,31 @@ export default function SchoolStudents() {
       {loading ? (
         <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
       ) : students.length ? (
-        <div className="overflow-hidden rounded-[var(--r-md)] border border-(--c-border) bg-white shadow-[var(--shadow-sm)]">
-          {students
-            .filter((student) => !labelFilter || labelFilter.includes(student.id))
-            .map((student) => (
-              <StudentListRow
-                key={student.id}
-                student={{ ...student, email: student.studentEmail || student.guardianEmail }}
-                labels={
-                  canAssignClasses && labelData.assignments[student.id]?.length ? (
-                    <StudentLabels
-                      studentId={student.id}
-                      schoolId={activeSchool.school.id}
-                      readOnly
-                      compact
-                      tiny
-                      horizontal
-                      data={{
-                        labels: labelData.labels,
-                        selected: labelData.assignments[student.id] || [],
-                      }}
-                    />
-                  ) : undefined
-                }
-                action={
-                  <button
-                    type="button"
-                    onClick={() => setHistoryStudent(student)}
-                    aria-label={
-                      isDirector
-                        ? `Abrir perfil de ${student.name}`
-                        : `Abrir historial y clases de ${student.name}`
-                    }
-                    title={
-                      isDirector
-                        ? `Perfil de ${student.name}`
-                        : `Historial y clases de ${student.name}`
-                    }
-                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--r-sm)] border border-(--c-ocean) text-lg text-(--c-ocean) transition hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-                  >
-                    <FiClipboard aria-hidden="true" />
-                  </button>
-                }
+        <SchoolStudentsTable
+          key={activeSchool.school.id}
+          students={students}
+          schoolId={activeSchool.school.id}
+          timezone={activeSchool.school.timezone || 'America/Mexico_City'}
+          canReadPayments={isDirector || isStudentAccount}
+          labelFilter={labelFilter}
+          onOpen={setHistoryStudent}
+          labels={(student) =>
+            canAssignClasses && labelData.assignments[student.id]?.length ? (
+              <StudentLabels
+                studentId={student.id}
+                schoolId={activeSchool.school.id}
+                readOnly
+                compact
+                tiny
+                horizontal
+                data={{
+                  labels: labelData.labels,
+                  selected: labelData.assignments[student.id] || [],
+                }}
               />
-            ))}
-        </div>
+            ) : null
+          }
+        />
       ) : (
         <div className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-[var(--r-md)] border border-dashed border-(--c-ocean-mid) bg-white p-8 text-center">
           <FiUsers className="text-3xl text-(--c-ocean-mid)" aria-hidden="true" />
