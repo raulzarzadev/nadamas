@@ -285,6 +285,7 @@ export default function SchoolStudents() {
           studentId={historyStudent.id}
           schoolId={selected.school.id}
           name={historyStudent.name}
+          initialProfile={historyStudent}
           onUpdated={() => {
             void getAuthed(
               `/api/schools/${activeSchool.school.id}/students?includeAgendaStudents=true`

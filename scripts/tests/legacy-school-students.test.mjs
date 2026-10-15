@@ -11,6 +11,7 @@ test('legacy agenda students are restored once with their original id and school
     get: async () => ({ exists: saved.has(id), id, data: () => saved.get(id) }),
   })
   const bookings = [
+    { schoolId: 'school', source: 'coach', athleteId: 'agenda_justi', athleteName: 'Justi' },
     {
       schoolId: 'school',
       source: 'coach',
@@ -60,4 +61,8 @@ test('legacy agenda students are restored once with their original id and school
   assert.equal(writes, 1)
   assert.equal(await restore('other', 'manual:adri'), null)
   assert.equal(writes, 1)
+  assert.equal((await restore('school', 'agenda_justi')).name, 'Justi')
+  assert.equal(writes, 2)
+  assert.equal((await restore('school', 'agenda_justi')).id, 'agenda_justi')
+  assert.equal(writes, 2)
 })

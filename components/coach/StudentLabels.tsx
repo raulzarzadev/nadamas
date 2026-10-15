@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { FiPlus, FiTag } from 'react-icons/fi'
 import LabelChip from '@/components/ui/label-chip'
 import Sheet from '@/components/ui/sheet'
-import { getAuthed, postAuthed } from '@/lib/client/authed-api'
+import { getAuthed, getCachedAuthedData, postAuthed } from '@/lib/client/authed-api'
 import { studentLabelColor } from '@/lib/student-label-colors'
 import StudentLabelColorSelector from './StudentLabelColorSelector'
 
@@ -29,15 +29,24 @@ export default function StudentLabels({
   tiny?: boolean
   data?: { labels: Label[]; selected: string[] }
 }) {
-  const [storedLabels, setLabels] = useState<Label[]>([])
-  const [storedSelected, setSelected] = useState<string[]>([])
+  const endpoint = `/api/coach/student-tags?entity=${entity}&studentId=${encodeURIComponent(studentId)}${schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''}`
+  const cached = getCachedAuthedData<{ labels: Label[]; selected: string[] }>(endpoint)
+  const cachedList = getCachedAuthedData<{
+    labels: Label[]
+    assignments: Record<string, string[]>
+  }>(
+    `/api/coach/student-tags?entity=${entity}&schoolId=${encodeURIComponent(schoolId || '')}&view=list`
+  )
+  const [storedLabels, setLabels] = useState<Label[]>(cached?.labels || cachedList?.labels || [])
+  const [storedSelected, setSelected] = useState<string[]>(
+    cached?.selected || cachedList?.assignments[studentId] || []
+  )
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [color, setColor] = useState('blue')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cached && !cachedList && !data)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const endpoint = `/api/coach/student-tags?entity=${entity}&studentId=${encodeURIComponent(studentId)}${schoolId ? `&schoolId=${encodeURIComponent(schoolId)}` : ''}`
   useEffect(() => {
     if (data) return
     let active = true

@@ -10,6 +10,12 @@ test('coordinators see agenda students across school coaches, with school isolat
     {
       schoolId: 'school',
       coachId: 'teacher-a',
+      athleteId: 'registered',
+      athleteName: 'Registrado',
+    },
+    {
+      schoolId: 'school',
+      coachId: 'teacher-a',
       source: 'coach',
       athleteId: 'manual:a',
       athleteName: 'Ana',
@@ -45,7 +51,11 @@ test('coordinators see agenda students across school coaches, with school isolat
     '@/lib/server/school-access': {
       requireSchoolAccess: async () => ({ caller: { uid: 'teacher-a' }, membership: {} }),
     },
-    '@/lib/server/school-students': { listSchoolStudents: async () => [] },
+    '@/lib/server/school-students': {
+      listSchoolStudents: async () => [
+        { id: 'registered', schoolId: 'school', name: 'Registrado' },
+      ],
+    },
     '@/lib/server/school-classes': { listSchoolClasses: async () => [] },
     '@/lib/server/schools': { getSchoolById: async () => ({ timezone: 'UTC' }) },
     '@/lib/school-coach-students': { coachVisibleSchoolStudentIds: () => new Set() },
@@ -81,13 +91,13 @@ test('coordinators see agenda students across school coaches, with school isolat
     )
   assert.deepEqual(
     (await (await load('')).json()).students.map((s) => s.id),
-    ['manual:a', 'manual:b']
+    ['manual:a', 'manual:b', 'registered']
   )
   assert.deepEqual(filters.pop(), ['schoolId', 'school'])
   director = false
   assert.deepEqual(
     (await (await load('')).json()).students.map((s) => s.id),
-    ['manual:a']
+    ['manual:a', 'registered']
   )
   assert.equal((await load('&coachId=teacher-b')).status, 403)
 })

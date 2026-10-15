@@ -191,6 +191,7 @@ export default function CoachAgenda({
     studentId: string
     schoolId?: string
     name: string
+    initialProfile?: import('./StudentProfileModal').StudentProfile
   } | null>(null)
   const [labelRevision, setLabelRevision] = useState(0)
   const adminMode = Boolean(coachId)
@@ -3178,6 +3179,16 @@ export default function CoachAgenda({
               studentId: studentAction.student.studentId,
               name: studentAction.student.studentName,
               schoolId: schoolIdForBooking(studentAction.booking) || undefined,
+              initialProfile: {
+                id: studentAction.student.studentId,
+                name: studentAction.student.studentName,
+                ...(studentAction.booking.athleteId === studentAction.student.studentId
+                  ? {
+                      studentEmail: studentAction.booking.athleteEmail || '',
+                      phone: studentAction.booking.athletePhone || '',
+                    }
+                  : {}),
+              },
             })
           }
           busy={busy}

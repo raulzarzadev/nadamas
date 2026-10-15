@@ -177,7 +177,7 @@ export async function getOrRestoreSchoolAgendaStudent(schoolId: string, studentI
     const student = { ...snapshot.data(), id: snapshot.id } as SchoolStudent
     return student.schoolId === schoolId ? student : null
   }
-  if (!/^manual[:_]/.test(studentId)) return null
+  if (!/^(manual[:_]|agenda_)/.test(studentId)) return null
   const bookings = await adminDb.collection('bookings').where('schoolId', '==', schoolId).get()
   const booking = bookings.docs
     .map((doc) => doc.data())

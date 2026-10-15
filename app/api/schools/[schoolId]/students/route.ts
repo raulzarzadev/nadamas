@@ -37,6 +37,7 @@ export async function GET(request: Request, { params }: RouteProps) {
       undefined,
       isDirector || isTeacher ? undefined : access.caller.uid
     )
+    const schoolRoster = students
     const query = new URL(request.url).searchParams
     if (query.get('includeSummary') === 'true' && (isDirector || isTeacher)) {
       const teacherId =
@@ -74,6 +75,19 @@ export async function GET(request: Request, { params }: RouteProps) {
         .collection('bookings')
         .where(coachId ? 'coachId' : 'schoolId', '==', coachId || schoolId)
         .get()
+      const agendaIds = new Set(
+        bookings.docs
+          .map((doc) => doc.data() as Booking)
+          .filter((booking) => booking.schoolId === schoolId)
+          .map((booking) => booking.athleteId)
+      )
+      students = schoolRoster.filter(
+        (student) =>
+          students.some((visible) => visible.id === student.id) ||
+          agendaIds.has(student.id) ||
+          Boolean(student.studentUserId && agendaIds.has(student.studentUserId)) ||
+          Boolean(student.additionalProfileId && agendaIds.has(student.additionalProfileId))
+      )
       const seen = new Set(students.map((student) => student.id))
       const agendaStudents: Array<{
         id: string
@@ -88,7 +102,7 @@ export async function GET(request: Request, { params }: RouteProps) {
         if (
           booking.schoolId !== schoolId ||
           booking.source !== 'coach' ||
-          !/^manual[:_]/.test(booking.athleteId) ||
+          !/^(manual[:_]|agenda_)/.test(booking.athleteId) ||
           seen.has(booking.athleteId)
         )
           continue

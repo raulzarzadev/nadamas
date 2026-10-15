@@ -14,6 +14,7 @@ import { useUser } from '@/context/UserContext'
 import {
   deleteAuthed,
   getAuthed,
+  getCachedAuthedData,
   patchAuthed,
   postAuthed,
   putAuthed,
@@ -23,7 +24,7 @@ import type { SchoolGender } from '@/lib/school'
 import type { SchoolStudentHistory } from '@/lib/school-student-history'
 import StudentLabels from './StudentLabels'
 
-type Profile = {
+export type StudentProfile = {
   id?: string
   athleteId?: string
   name: string
@@ -41,21 +42,39 @@ type Profile = {
   totalClasses?: number
   classes?: Booking[]
 }
+type Profile = StudentProfile
 
 export default function StudentProfileModal({
   studentId,
   schoolId,
   name,
+  initialProfile,
   onClose,
   onUpdated,
 }: {
   studentId: string
   schoolId?: string
   name: string
+  initialProfile?: StudentProfile
   onClose: () => void
   onUpdated?: () => void
 }) {
   const { user } = useUser()
+  const endpoint = schoolId
+    ? `/api/schools/${encodeURIComponent(schoolId)}/students?includeAgendaStudents=true`
+    : `/api/coach/students?historyAthlete=${encodeURIComponent(studentId)}`
+  const cachedProfile = [
+    endpoint,
+    ...(schoolId
+      ? [
+          `/api/schools/${schoolId}/students?includeSummary=true&coachOnly=true`,
+          `/api/schools/${schoolId}/students`,
+        ]
+      : ['/api/coach/students']),
+  ]
+    .flatMap((path) => getCachedAuthedData<{ students?: Profile[] }>(path)?.students || [])
+    .find((student) => student.id === studentId || student.athleteId === studentId)
+  const availableProfile = cachedProfile || initialProfile
   const editId = useId()
   const [cancelTarget, setCancelTarget] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
@@ -67,19 +86,21 @@ export default function StudentProfileModal({
   const [verifying, setVerifying] = useState(false)
   const [verificationMessage, setVerificationMessage] = useState('')
   const [draft, setDraft] = useState<Record<string, string>>({})
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<Profile | null>(availableProfile || null)
+  const [loading, setLoading] = useState(!availableProfile)
   const [error, setError] = useState('')
-  const [history, setHistory] = useState<SchoolStudentHistory | null>(null)
+  const historyEndpoint = schoolId
+    ? `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(profile?.id || studentId)}/history`
+    : ''
+  const [history, setHistory] = useState<SchoolStudentHistory | null>(
+    () => getCachedAuthedData<SchoolStudentHistory>(historyEndpoint) || null
+  )
   const [historyError, setHistoryError] = useState('')
   const [panel, setPanel] = useState<'classes' | 'scheduled' | 'comments' | null>(null)
   // biome-ignore lint/correctness/useExhaustiveDependencies: reload refreshes the profile after assigning classes.
   useEffect(() => {
     let active = true
-    setLoading(true)
-    const endpoint = schoolId
-      ? `/api/schools/${encodeURIComponent(schoolId)}/students?includeAgendaStudents=true`
-      : `/api/coach/students?historyAthlete=${encodeURIComponent(studentId)}`
+    setLoading(!profile)
     getAuthed(endpoint)
       .then((response) => response.json())
       .then((payload: { students?: Profile[] }) => {
@@ -99,13 +120,12 @@ export default function StudentProfileModal({
     return () => {
       active = false
     }
-  }, [studentId, schoolId, reload])
+  }, [endpoint, reload])
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reload refreshes history after class mutations.
   useEffect(() => {
-    if (!schoolId || !profile) return
+    if (!schoolId) return
     let active = true
-    getAuthed(
-      `/api/schools/${encodeURIComponent(schoolId)}/students/${encodeURIComponent(profile.id || studentId)}/history`
-    )
+    getAuthed(historyEndpoint)
       .then((response) => response.json())
       .then((payload: SchoolStudentHistory) => {
         if (active) setHistory(payload)
@@ -116,7 +136,7 @@ export default function StudentProfileModal({
     return () => {
       active = false
     }
-  }, [schoolId, profile, studentId])
+  }, [schoolId, historyEndpoint, reload])
   const editFields = schoolId
     ? [
         ['name', 'Nombre'],

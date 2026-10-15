@@ -229,6 +229,7 @@ export default function CoachSchoolStudents({ schoolId }: { schoolId?: string } 
           studentId={profileStudent.id}
           schoolId={selected.school.id}
           name={profileStudent.name}
+          initialProfile={profileStudent}
           onClose={() => {
             setProfileStudent(null)
             setLabelRevision((current) => current + 1)
