@@ -3,6 +3,7 @@ import { type SchoolStudent, schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { getSchoolStudentHistory } from '@/lib/server/school-student-history'
+import { getOrRestoreSchoolAgendaStudent } from '@/lib/server/school-students'
 import { getSchoolById } from '@/lib/server/schools'
 
 export const runtime = 'nodejs'
@@ -15,6 +16,12 @@ export async function GET(
   const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
   if (access.response) return access.response
   try {
+    if (
+      access.globalAdmin ||
+      schoolMembershipHasRole(access.membership, 'director') ||
+      schoolMembershipHasRole(access.membership, 'teacher')
+    )
+      await getOrRestoreSchoolAgendaStudent(schoolId, studentId)
     const directSnapshot = await adminDb.collection('schoolStudents').doc(studentId).get()
     const linkedSnapshots = directSnapshot.exists
       ? []

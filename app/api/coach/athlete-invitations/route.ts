@@ -8,6 +8,7 @@ import { sendAthleteProfileInvitationEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { requirePersonalCoach } from '@/lib/server/personal-class-access'
 import { requireSchoolAccess } from '@/lib/server/school-access'
+import { getOrRestoreSchoolAgendaStudent } from '@/lib/server/school-students'
 
 export const runtime = 'nodejs'
 export async function POST(request: Request) {
@@ -32,8 +33,7 @@ export async function POST(request: Request) {
       const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
       if (access.response) return access.response
       coachId = access.caller.uid
-      const student = await adminDb.collection('schoolStudents').doc(studentId).get()
-      const data = student.data()
+      const data = await getOrRestoreSchoolAgendaStudent(schoolId, studentId)
       if (!data || data.schoolId !== schoolId || data.additionalProfileId)
         return NextResponse.json(
           { error: 'Este registro no puede vincularse a una cuenta personal.' },
@@ -65,7 +65,10 @@ export async function POST(request: Request) {
         birthDate: data.birthDate || '',
         gender: data.gender || 'otro',
       }
-      await student.ref.update({ studentEmail: email, updatedAt: Date.now() })
+      await adminDb
+        .collection('schoolStudents')
+        .doc(studentId)
+        .update({ studentEmail: email, updatedAt: Date.now() })
     } else {
       const access = await requirePersonalCoach(request)
       if (access.response) return access.response

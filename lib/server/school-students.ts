@@ -168,3 +168,48 @@ export async function createSchoolStudent(args: {
   await ref.set(student)
   return student
 }
+
+/** Restore legacy agenda participants without changing their IDs or existing history. */
+export async function getOrRestoreSchoolAgendaStudent(schoolId: string, studentId: string) {
+  const ref = adminDb.collection('schoolStudents').doc(studentId)
+  const snapshot = await ref.get()
+  if (snapshot.exists) {
+    const student = { ...snapshot.data(), id: snapshot.id } as SchoolStudent
+    return student.schoolId === schoolId ? student : null
+  }
+  if (!/^manual[:_]/.test(studentId)) return null
+  const bookings = await adminDb.collection('bookings').where('schoolId', '==', schoolId).get()
+  const booking = bookings.docs
+    .map((doc) => doc.data())
+    .filter((item) => item.athleteId === studentId && item.source === 'coach')
+    .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))[0]
+  if (!booking) return null
+  const now = Date.now()
+  const restored: SchoolStudent = {
+    id: studentId,
+    schoolId,
+    name: booking.athleteName || 'Atleta',
+    birthDate: '',
+    gender: 'otro',
+    guardianIds: [],
+    managerIds: [],
+    guardianName: '',
+    guardianRelationship: '',
+    guardianPhone: booking.athletePhone || '',
+    phone: booking.athletePhone || '',
+    guardianEmail: '',
+    studentEmail: booking.athleteEmail || '',
+    status: 'active',
+    createdAt: booking.createdAt || now,
+    updatedAt: now,
+  }
+  return adminDb.runTransaction(async (tx) => {
+    const current = await tx.get(ref)
+    if (current.exists) {
+      const student = { ...current.data(), id: current.id } as SchoolStudent
+      return student.schoolId === schoolId ? student : null
+    }
+    tx.set(ref, restored)
+    return restored
+  })
+}

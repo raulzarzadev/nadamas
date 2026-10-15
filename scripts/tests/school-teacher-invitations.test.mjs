@@ -30,6 +30,13 @@ test('school teacher invitations accept own agenda students and reject unrelated
   const route = load('app/api/coach/athlete-invitations/route.ts', {
     'next/server': { NextResponse: { json: (body, options) => Response.json(body, options) } },
     '@/lib/coach-student-progress': {},
+    '@/lib/server/school-students': {
+      getOrRestoreSchoolAgendaStudent: async () => ({
+        id: 'student',
+        schoolId: 'school',
+        name: 'Ana',
+      }),
+    },
     '@/lib/school': { schoolMembershipHasRole: () => false },
     '@/lib/school-student-history': load('lib/school-student-history.ts', {}),
     '@/lib/server/athlete-profile-invitations': {
@@ -49,6 +56,9 @@ test('school teacher invitations accept own agenda students and reject unrelated
       adminDb: {
         collection: (name) => ({
           doc: () => ({
+            update: async () => {
+              updates++
+            },
             get: async () => ({
               data: () => ({ schoolId: 'school', name: 'Ana' }),
               ref: {

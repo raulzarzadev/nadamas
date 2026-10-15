@@ -1,11 +1,14 @@
 import { createHash } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import type { Booking } from '@/lib/coach-booking'
 import { studentProgressId } from '@/lib/coach-student-progress'
 import { schoolMembershipHasRole } from '@/lib/school'
+import { studentSchoolBookings } from '@/lib/school-student-history'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { requirePersonalCoach } from '@/lib/server/personal-class-access'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { schoolLabelList } from '@/lib/server/school-labels'
+import { getOrRestoreSchoolAgendaStudent } from '@/lib/server/school-students'
 import { STUDENT_LABEL_COLORS, studentLabelColor } from '@/lib/student-label-colors'
 
 export const runtime = 'nodejs'
@@ -38,14 +41,25 @@ async function authorize(request: Request) {
     }
     const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher'])
     if (access.response) return null
-    const student = await adminDb.collection('schoolStudents').doc(studentId).get()
-    if (!student.exists || student.data()?.schoolId !== schoolId) return null
+    const student = await getOrRestoreSchoolAgendaStudent(schoolId, studentId)
+    if (!student) return null
     if (!access.globalAdmin && !schoolMembershipHasRole(access.membership, 'director')) {
       const classes = await adminDb
         .collection('schoolClassOccurrences')
         .where('schoolId', '==', schoolId)
         .get()
+      const bookings = await adminDb
+        .collection('bookings')
+        .where('coachId', '==', access.caller.uid)
+        .get()
+      const hasAgendaStudent = studentSchoolBookings(
+        bookings.docs.map((doc) => doc.data() as Booking),
+        student,
+        access.caller.uid
+      ).some((booking) => booking.status !== 'cancelled')
       if (
+        student.createdBy !== access.caller.uid &&
+        !hasAgendaStudent &&
         !classes.docs.some(
           (doc) =>
             doc.data().teacherIds?.includes(access.caller.uid) &&

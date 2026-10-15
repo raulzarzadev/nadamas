@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
+import { getOrRestoreSchoolAgendaStudent } from '@/lib/server/school-students'
 
 export const runtime = 'nodejs'
 async function updateStudent(
@@ -45,6 +46,7 @@ async function updateStudent(
       return NextResponse.json({ error: 'Revisa los datos del alumno.' }, { status: 400 })
     }
     const ref = adminDb.collection('schoolStudents').doc(studentId)
+    await getOrRestoreSchoolAgendaStudent(schoolId, studentId)
     const snapshot = await ref.get()
     if (!snapshot.exists || snapshot.data()?.schoolId !== schoolId)
       return NextResponse.json({ error: 'No encontramos al alumno.' }, { status: 404 })

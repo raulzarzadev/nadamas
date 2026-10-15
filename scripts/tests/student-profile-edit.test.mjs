@@ -17,6 +17,7 @@ test('school profile edits validate fields, isolate schools, and update only lin
       requireSchoolAccess: async () =>
         allowed ? {} : { response: Response.json({}, { status: 403 }) },
     },
+    '@/lib/server/school-students': { getOrRestoreSchoolAgendaStudent: async () => null },
     '@/lib/server/school-agenda-updates': { withSchoolAgendaUpdate: (handler) => handler },
     '@/lib/server/firebase-admin': {
       adminDb: {
