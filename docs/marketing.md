@@ -54,6 +54,37 @@ Programadas a las 9:00 am, también compartidas en Historia de Facebook. Sin pro
 | 2026-10-24 | `perfiles-adicionales.png` | 👨‍👩‍👧 Para familias: inscribe a tus hijos, pareja o amigos… |
 | 2026-10-25 | `entrenos-y-notas.png` | 📋 Para profes y escuelas: planea tus entrenos clase por clase… |
 
+### Instagram personal @zasaraxd (2026-10-16)
+
+Material en `output/instagram/` (historias 1080×1920, QR y reel de modos). La cuenta es pública.
+
+| Tipo | Contenido | Estado |
+|---|---|---|
+| Post (carrusel) | Los 3 modos | Publicado |
+| Post (carrusel) | 6 funciones (pagos, planes, credencial, pase de lista, adicionales, entrenos) | Publicado |
+| Reel | `output/reel-nadamas-v2/nadamas-reel-16s.mp4` (reservar y pagar) | Publicado |
+| Reel | `output/instagram/reel-modos.mp4` (3 modos + cierre con QR) | Publicado |
+| Historias | `historia-nadamas-app.png`, `historia-canal-whatsapp.png` | Pendiente: Instagram web no permite historias; subir desde el celular |
+
+### Facebook personal (Raul Zarza, 2026-10-16)
+
+| Tipo | Contenido | Estado |
+|---|---|---|
+| Post | Los 3 modos | Publicado |
+| Historia | `historia-nadamas-app.png` | Publicada |
+| Historia | `historia-canal-whatsapp.png` | Publicada |
+| Reel | `nadamas-reel-16s.mp4` | Enviado; Facebook lo estaba procesando |
+
+### Tech Zarza (Meta Business Suite, FB + IG techzarza)
+
+Caso de éxito: muestra nadamas como app hecha por Tech Zarza e invita a cotizar. También compartida en Historia de Facebook. Sin promoción pagada. No incluye el canal de WhatsApp.
+
+| Fecha | Contenido | Texto (inicio) |
+|---|---|---|
+| 2026-10-17 12:00 | Carrusel de los 3 modos (`modo-alumno`, `modo-entrenador`, `modo-coordinador`) | 💻 Para escuelas y negocios: creamos nadamas.app… |
+
+Todos los textos incluyen `nadamas.app` y el canal de WhatsApp: `https://whatsapp.com/channel/0029VbDiYPACMY0GMM3Zbe2y`.
+
 ## Estilo de los textos
 
 - Empieza con emoji + "Para <audiencia>:".
