@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root {
+  --ocean: #0a2540; --blue: #0077b6; --aqua: #00b4d8; --aqua-l: #90e0ef;
+  --bg: #f4fafd; --card: #ffffff; --ink-2: #4a5a6c; --tint: #e2f3fa; --yellow: #f2c230; --ok: #1f8a4c; --ok-bg: #e3f4ea;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1350px; }
+body {
+  background: var(--bg); color: var(--ocean);
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  padding: 60px 72px 0; display: flex; flex-direction: column; gap: 36px; overflow: hidden; position: relative; justify-content: space-between; padding-bottom: 80px;
+}
+h1, h2, h3, .num, .id { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.top img { height: 64px; }
+.badge { font-size: 22px; font-weight: 700; color: var(--blue); background: var(--tint); padding: 10px 22px; border-radius: 999px; }
+h1 { font-size: 84px; line-height: 1; font-weight: 800; letter-spacing: -2px; }
+h1 span { color: var(--blue); }
+.lead { font-size: 28px; color: var(--ink-2); margin-top: 14px; }
+
+.main { display: grid; grid-template-columns: 400px 1fr; gap: 36px; align-items: center; }
+.card {
+  background: var(--ocean); color: #fff; border-radius: 32px; padding: 30px; display: grid; gap: 18px; justify-items: center;
+  box-shadow: 0 18px 40px rgba(10,37,64,.18); transform: rotate(-2deg);
+}
+.card .who { display: flex; align-items: center; gap: 14px; justify-self: stretch; }
+.avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--aqua); display: grid; place-items: center; font-weight: 800; font-size: 26px; color: var(--ocean); }
+.card .name { font-size: 26px; font-weight: 700; }
+.card .sub { font-size: 18px; color: var(--aqua-l); }
+.qr { background: #fff; border-radius: 18px; padding: 16px; }
+.qr svg { display: block; width: 240px; height: 240px; }
+.id { font-size: 46px; font-weight: 800; letter-spacing: 6px; }
+.idlabel { font-size: 18px; color: var(--aqua-l); margin-top: -14px; }
+
+.steps { display: grid; gap: 16px; }
+.step { display: grid; grid-template-columns: 70px 1fr; gap: 20px; align-items: center; background: var(--card); border-radius: 24px; padding: 20px 24px; box-shadow: 0 2px 0 #d6eaf0; }
+.num { width: 70px; height: 70px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 36px; font-weight: 800; }
+.step:nth-child(2) .num { background: var(--aqua); }
+.step:nth-child(3) .num { background: var(--ok); }
+h2 { font-size: 32px; font-weight: 700; line-height: 1.1; }
+.step p { font-size: 22px; color: var(--ink-2); margin-top: 4px; line-height: 1.3; }
+.ui { font-weight: 700; color: var(--blue); }
+
+.tips { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.tip { border-radius: 24px; padding: 24px 26px; font-size: 24px; line-height: 1.3; }
+.tip b { display: block; font-family: "Bricolage Grotesque", sans-serif; font-size: 30px; margin-bottom: 6px; }
+.tip.ok { background: var(--ok-bg); color: #155c34; }
+.tip.blue { background: var(--tint); }
+.tip.blue b { color: var(--blue); }
+
+.rope { position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 44px, var(--yellow) 44px 60px, var(--blue) 60px 104px, #fff 104px 112px); }
+</style>
+</head>
+<body>
+  <div class="top">
+    <img src="file:///Users/zarza/Documents/projects/nadamas/public/logo-nadamas.svg" alt="Nadamas">
+    <span class="badge">Pase de lista</span>
+  </div>
+
+  <div>
+    <h1>Llega, muestra<br><span>tu credencial</span></h1>
+    <p class="lead">Tu asistencia queda registrada en segundos.</p>
+  </div>
+
+  <div class="main">
+    <div class="card">
+      <div class="who"><span class="avatar">SM</span><div><div class="name">Sofía Martínez</div><div class="sub">Credencial digital</div></div></div>
+      <div class="qr"><svg id="qr" viewBox="0 0 25 25" shape-rendering="crispEdges"></svg></div>
+      <div class="id">048 213</div>
+      <div class="idlabel">ID de seis dígitos</div>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="num">1</span><div><h2>Abre tu credencial</h2><p>En <span class="ui">Mi perfil</span> toca <span class="ui">Credencial digital</span>.</p></div></div>
+      <div class="step"><span class="num">2</span><div><h2>Muéstrala al llegar</h2><p>Tu profe escanea el QR o escribe tu ID.</p></div></div>
+      <div class="step"><span class="num">3</span><div><h2>¡Listo, a nadar!</h2><p>Tu asistencia aparece en tu historial.</p></div></div>
+    </div>
+  </div>
+
+  <div class="tips">
+    <div class="tip blue"><b>¿Inscribes a tus hijos?</b>Cada perfil adicional tiene su propia credencial.</div>
+    <div class="tip ok"><b>¿Compartiste tu QR?</b>Toca <b style="display:inline;font-size:inherit">Renovar QR</b>. Tu ID y tus asistencias se conservan.</div>
+  </div>
+
+  <div class="rope"></div>
+<script>
+// QR decorativo: patrones de esquina reales + módulos pseudoaleatorios fijos
+const svg = document.getElementById('qr'), N = 25, cells = []
+let seed = 7
+const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280)
+const finder = (x, y) => { for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) {
+  const edge = i === 0 || i === 6 || j === 0 || j === 6, core = i >= 2 && i <= 4 && j >= 2 && j <= 4
+  if (edge || core) cells.push([x + i, y + j]) } }
+const inFinder = (x, y) => (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9)
+finder(0, 0); finder(N - 7, 0); finder(0, N - 7)
+for (let x = 0; x < N; x++) for (let y = 0; y < N; y++) if (!inFinder(x, y) && rnd() > 0.52) cells.push([x, y])
+svg.innerHTML = cells.map(([x, y]) => `<rect x="${x}" y="${y}" width="1" height="1" fill="#0a2540"/>`).join('')
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root {
+  --ocean: #0a2540; --blue: #0077b6; --aqua: #00b4d8; --aqua-l: #90e0ef;
+  --bg: #f4fafd; --card: #ffffff; --ink-2: #4a5a6c; --tint: #e2f3fa; --line: #d6eaf0;
+  --yellow: #f2c230; --ok: #1f8a4c; --ok-bg: #e3f4ea;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1350px; }
+body {
+  background: var(--bg); color: var(--ocean);
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  padding: 60px 72px 80px; display: flex; flex-direction: column; justify-content: space-between;
+  overflow: hidden; position: relative;
+}
+h1, h2, h3, .num { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.top img { height: 64px; }
+.badge { font-size: 22px; font-weight: 700; color: var(--blue); background: var(--tint); padding: 10px 22px; border-radius: 999px; }
+h1 { font-size: 80px; line-height: 1; font-weight: 800; letter-spacing: -2px; }
+h1 span { color: var(--blue); }
+.lead { font-size: 28px; color: var(--ink-2); margin-top: 14px; }
+
+.main { display: grid; grid-template-columns: 420px 1fr; gap: 34px; align-items: center; }
+
+/* maqueta del selector real de la app */
+.mock { background: var(--card); border-radius: 30px; padding: 28px; display: grid; gap: 12px; box-shadow: 0 18px 40px rgba(10,37,64,.12); }
+.mock .q { font-family: "Bricolage Grotesque", sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+.mock .group { font-size: 18px; font-weight: 700; color: var(--ink-2); margin-top: 6px; }
+.row { display: flex; align-items: center; gap: 14px; border: 2px solid var(--line); border-radius: 18px; padding: 14px 16px; font-size: 23px; font-weight: 700; }
+.row.sub { margin-left: 20px; }
+.row.on { border-color: var(--blue); background: var(--tint); }
+.box { width: 30px; height: 30px; border-radius: 8px; border: 2px solid var(--line); flex: none; display: grid; place-items: center; }
+.on .box { background: var(--blue); border-color: var(--blue); }
+.box svg { width: 20px; height: 20px; stroke: #fff; stroke-width: 3.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.av { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 17px; color: var(--ocean); flex: none; }
+.row .me { font-weight: 400; color: var(--ink-2); }
+.add { margin-top: 4px; border: 2px dashed var(--aqua); border-radius: 18px; padding: 13px 16px; font-size: 21px; font-weight: 700; color: var(--blue); text-align: center; }
+
+.steps { display: grid; gap: 16px; }
+.step { display: grid; grid-template-columns: 66px 1fr; gap: 18px; align-items: center; background: var(--card); border-radius: 24px; padding: 20px 22px; box-shadow: 0 2px 0 var(--line); }
+.num { width: 66px; height: 66px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 34px; font-weight: 800; }
+.step:nth-child(2) .num { background: var(--aqua); }
+.step:nth-child(3) .num { background: var(--ok); }
+h2 { font-size: 30px; font-weight: 700; line-height: 1.1; }
+.step p { font-size: 21px; color: var(--ink-2); margin-top: 4px; line-height: 1.3; }
+.ui { font-weight: 700; color: var(--blue); }
+
+.tips { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.tip { border-radius: 24px; padding: 24px 26px; font-size: 23px; line-height: 1.3; }
+.tip b { display: block; font-family: "Bricolage Grotesque", sans-serif; font-size: 28px; margin-bottom: 6px; }
+.tip.ok { background: var(--ok-bg); color: #155c34; }
+.tip.blue { background: var(--ocean); color: #fff; }
+.tip.blue b { color: var(--aqua-l); }
+
+.rope { position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 44px, var(--yellow) 44px 60px, var(--blue) 60px 104px, #fff 104px 112px); }
+</style>
+</head>
+<body>
+  <div class="top">
+    <img src="file:///Users/zarza/Documents/projects/nadamas/public/logo-nadamas.svg" alt="Nadamas">
+    <span class="badge">Perfiles adicionales</span>
+  </div>
+
+  <div>
+    <h1>Inscribe a tu familia<br><span>desde tu cuenta</span></h1>
+    <p class="lead">Hijos, pareja o amigos: tú los gestionas, sin que necesiten su propia cuenta.</p>
+  </div>
+
+  <div class="main">
+    <div class="mock">
+      <div class="q">¿A quién vas a inscribir?</div>
+      <div class="row"><span class="box"></span><span class="av" style="background:#90e0ef">L</span><span>Laura <span class="me">(yo)</span></span></div>
+      <div class="group">Adicionales</div>
+      <div class="row sub on"><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg></span><span class="av" style="background:#f2c230">S</span><span>Sofía</span></div>
+      <div class="row sub on"><span class="box"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg></span><span class="av" style="background:#9fe0b8">M</span><span>Mateo</span></div>
+      <div class="add">+ Agregar Adicional</div>
+    </div>
+    <div class="steps">
+      <div class="step"><span class="num">1</span><div><h2>Agrégalos una vez</h2><p>En <span class="ui">Mi perfil</span> toca <span class="ui">Agregar Adicional</span>. Solo nombre y fecha de nacimiento.</p></div></div>
+      <div class="step"><span class="num">2</span><div><h2>Elige a quién inscribes</h2><p>Al reservar una clase marca a uno o a varios a la vez.</p></div></div>
+      <div class="step"><span class="num">3</span><div><h2>Cada quien lo suyo</h2><p>Su propia credencial, saldo de clases y asistencias.</p></div></div>
+    </div>
+  </div>
+
+  <div class="tips">
+    <div class="tip blue"><b>¿Te invitó una escuela?</b>Al aceptar la invitación eliges quiénes de tu familia entran.</div>
+    <div class="tip ok"><b>Pagos por persona</b>En Planes y pagos eliges para quién compras cada paquete o plan.</div>
+  </div>
+
+  <div class="rope"></div>
+</body>
+</html>
