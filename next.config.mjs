@@ -39,6 +39,20 @@ const nextConfig = {
         : []),
     ],
   },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: '/__/auth/:path*',
+          destination: 'https://nadamas-b1ecf.firebaseapp.com/__/auth/:path*',
+        },
+        {
+          source: '/__/firebase/init.json',
+          destination: 'https://nadamas-b1ecf.firebaseapp.com/__/firebase/init.json',
+        },
+      ],
+    }
+  },
   async redirects() {
     return [
       {
@@ -59,6 +73,14 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/__/auth/:path*',
+        headers: [
+          ...securityHeaders,
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Cache-Control', value: 'no-store' },
+        ],
+      },
+      {
         source: '/embed/:path*',
         headers: [
           ...securityHeaders,
@@ -70,7 +92,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/:path((?!embed(?:/|$)).*)',
+        source: '/:path((?!embed(?:/|$)|__/auth(?:/|$)).*)',
         headers: [...securityHeaders, frameDenyHeader],
       },
       {

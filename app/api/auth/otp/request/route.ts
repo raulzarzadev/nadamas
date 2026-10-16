@@ -1,5 +1,6 @@
 import { randomBytes, randomInt } from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { authLinkOrigin } from '@/lib/firebase-auth-domain'
 import { type BookingInput, validateSelections } from '@/lib/server/bookings'
 import { sendOtpEmail } from '@/lib/server/emails'
 import { adminDb } from '@/lib/server/firebase-admin'
@@ -9,8 +10,12 @@ export const runtime = 'nodejs'
 
 const MAX_PENDING_SELECTIONS = 10
 
-function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL || 'https://nadamas.app'
+function siteUrl(request: Request) {
+  return authLinkOrigin(
+    request.url,
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://nadamas.app',
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAINS
+  )
 }
 
 type PendingBooking = {
@@ -68,7 +73,7 @@ export async function POST(request: Request) {
       ...(isEmulator ? { devCode: code, devLinkToken: linkToken } : {}),
     })
 
-  const link = `${siteUrl()}/auth/link?email=${encodeURIComponent(email)}&token=${linkToken}`
+  const link = `${siteUrl(request)}/auth/link?email=${encodeURIComponent(email)}&token=${linkToken}`
   const redirectTo = body.redirectTo
   const invitationPath =
     typeof redirectTo === 'string' &&

@@ -9,12 +9,22 @@ import {
 } from 'firebase/auth'
 import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
 import { connectStorageEmulator, getStorage } from 'firebase/storage'
+import { firebaseAuthDomain } from '@/lib/firebase-auth-domain'
 import { getUser } from './users'
 
 const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 const USER_PROFILE_TIMEOUT_MS = 5000
 
-export const app = initializeApp(JSON.parse(firebaseConfig))
+const config = JSON.parse(firebaseConfig)
+if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR !== '1') {
+  config.authDomain = firebaseAuthDomain(
+    config.authDomain,
+    typeof window === 'undefined' ? undefined : window.location.hostname,
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAINS
+  )
+}
+
+export const app = initializeApp(config)
 export const auth = getAuth(app)
 
 export const db = getFirestore(app)

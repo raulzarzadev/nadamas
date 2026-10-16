@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { FiArrowRight, FiMenu, FiX } from 'react-icons/fi'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { APP_ORIGIN } from '@/lib/app-routing'
 
 const ROLE_LINKS = [
   { href: '/#atletas', label: 'Atletas', detail: 'Clases y progreso' },
@@ -125,7 +126,7 @@ export default function SiteNav() {
                 Precios
               </Link>
               <Link
-                href="/login"
+                href={`${APP_ORIGIN}/login`}
                 className="ml-2 inline-flex min-h-11 items-center rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white transition-colors hover:bg-[#164263] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
               >
                 Ingresar
@@ -189,7 +190,7 @@ export default function SiteNav() {
           </Link>
           <div className="mt-2 border-t border-(--c-border) pt-3">
             <Link
-              href="/login"
+              href={`${APP_ORIGIN}/login`}
               onClick={() => setOpen(false)}
               className="flex min-h-11 items-center justify-center rounded-[var(--r-sm)] bg-(--c-ocean) px-4 font-bold text-white transition-colors hover:bg-[#164263] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
             >

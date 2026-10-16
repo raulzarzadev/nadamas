@@ -1,18 +1,34 @@
 # Dominios de nadamas
 
-- `nadamas.app`: landing, recursos y perfiles públicos.
-- `app.nadamas.app`: aplicación general; `/` redirige a `/dashboard`.
+- `nadamas.app`: landing, recursos y perfiles públicos. Las rutas de producto antiguas siguen disponibles para conservar las instalaciones y sesiones existentes.
+- `app.nadamas.app`: aplicación general; `/` redirige a `/dashboard`. El botón Ingresar de la landing lleva directamente a este dominio.
 - `<escuela>.nadamas.app`: conserva la página y el acceso de cada escuela.
 
-Las rutas de producto del dominio principal redirigen a `app.nadamas.app`, conservando ruta y parámetros. `app` y `www` no se pueden asignar como slug. Los entornos locales y de preview conservan sus rutas relativas.
+No redirigir automáticamente las rutas de producto del dominio principal a otro origen. Las PWA instaladas conservan su identidad, manifiesto y sesión en el dominio de instalación. Mantener el `id`, `scope` y `start_url` existentes.
+
+`app` y `www` no se pueden asignar como slug. Firebase Auth conserva la sesión por origen; no se comparte automáticamente entre escuelas, dominio principal y app.
+
+## Google en Safari y apps instaladas
+
+Se usa el proxy de autenticación recomendado por Firebase:
+https://firebase.google.com/docs/auth/web/redirect-best-practices#option_3_proxy_auth_requests_to_firebaseappcom
+
+- `/__/auth/*` se reenvía de forma transparente al proyecto Firebase, conservando ruta, parámetros y método. El middleware escolar nunca reescribe estas rutas.
+- `/__/firebase/init.json` también se reenvía al proyecto.
+- Los helpers permiten únicamente iframes del mismo origen (`SAMEORIGIN`) y se sirven con `Cache-Control: no-store`. Las demás pantallas conservan sus políticas actuales.
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAINS` contiene los dominios con callback Google ya registrado. En esos dominios el cliente usa su propio hostname como `authDomain`.
+- Los entornos locales, emuladores, previews y dominios no configurados mantienen el `authDomain` original.
+- Los enlaces OTP solicitados en un dominio configurado regresan a ese mismo origen.
 
 ## Configuración de producción
 
-1. Agregar `app.nadamas.app` al mismo proyecto de Vercel y configurar el DNS indicado por Vercel. Mantener el dominio principal y los dominios escolares existentes.
-2. Agregar `app.nadamas.app` a los dominios autorizados de Firebase Authentication y verificar Google y correo OTP en ese origen.
-3. Mantener `NEXT_PUBLIC_SITE_URL=https://nadamas.app` para enlaces públicos; las rutas de producto antiguas redirigen al nuevo origen.
-4. Verificar landing, login, enlaces de invitación y un subdominio escolar después del despliegue.
+1. Mantener `app.nadamas.app`, el dominio principal y los dominios escolares en el mismo proyecto Vercel, con DNS y certificado válidos.
+2. Autorizar cada dominio en Firebase Authentication.
+3. Registrar `https://<dominio>/__/auth/handler` en los URI de redireccionamiento del cliente Google OAuth existente. Conservar todos los callbacks previos.
+4. Solo después, agregar el dominio a `NEXT_PUBLIC_FIREBASE_AUTH_DOMAINS` en Vercel y desplegar. Actualmente están configurados `nadamas.app`, `app.nadamas.app` y `nanda.nadamas.app`.
+5. Para una nueva escuela, repetir los pasos 2–4 antes de activar su autenticación en el mismo origen. La lista es explícita para no activar callbacks que Google todavía no acepta.
+6. Mantener `NEXT_PUBLIC_SITE_URL=https://nadamas.app` para enlaces públicos.
 
-Firebase Auth mantiene la sesión por origen: los usuarios pueden necesitar iniciar sesión otra vez al entrar al subdominio nuevo. No se comparte automáticamente la sesión entre escuelas y app.
+## Validación
 
-Estos cambios de código no configuran DNS, Vercel ni Firebase.
+Verificar la landing y su botón Ingresar, el arranque antiguo `/dashboard?source=pwa`, Google (incluido el retorno), OTP, las invitaciones, el manifiesto y el acceso escolar. La prueba final de una instalación existente en iPhone debe hacerse desde su icono original, sin desinstalarla.
