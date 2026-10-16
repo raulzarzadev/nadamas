@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root {
+  --ocean: #0a2540; --blue: #0077b6; --aqua: #00b4d8; --aqua-l: #90e0ef;
+  --bg: #f4fafd; --card: #ffffff; --ink-2: #4a5a6c; --ok: #1f8a4c; --ok-bg: #e3f4ea; --yellow: #f2c230;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1350px; }
+body {
+  background: var(--bg); color: var(--ocean);
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  padding: 64px 72px 0; display: flex; flex-direction: column; gap: 40px; overflow: hidden; position: relative;
+}
+h1, h2, .num { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.top img { height: 64px; }
+.badge { font-size: 22px; font-weight: 700; color: var(--blue); background: #e2f3fa; padding: 10px 22px; border-radius: 999px; }
+h1 { font-size: 92px; line-height: .98; font-weight: 800; letter-spacing: -2px; }
+h1 span { color: var(--blue); }
+.lead { font-size: 30px; color: var(--ink-2); margin-top: 16px; }
+.steps { display: grid; gap: 18px; }
+.step { display: grid; grid-template-columns: 92px 1fr; gap: 26px; align-items: center; background: var(--card); border-radius: 28px; padding: 24px 30px; box-shadow: 0 2px 0 #d6eaf0; }
+.num { width: 92px; height: 92px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 46px; font-weight: 800; }
+.step:nth-child(2) .num { background: #0090c8; }
+.step:nth-child(3) .num { background: var(--aqua); }
+.step:nth-child(4) .num { background: var(--ok); }
+h2 { font-size: 40px; font-weight: 700; line-height: 1.1; }
+.step p { font-size: 26px; color: var(--ink-2); margin-top: 6px; line-height: 1.3; }
+.tips { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.tip { border-radius: 24px; padding: 26px 28px; font-size: 26px; line-height: 1.3; }
+.tip b { display: block; font-family: "Bricolage Grotesque", sans-serif; font-size: 32px; margin-bottom: 6px; }
+.tip.ok { background: var(--ok-bg); color: #155c34; }
+.tip.blue { background: var(--ocean); color: #fff; }
+.tip.blue b { color: var(--aqua-l); }
+.rope { position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 44px, var(--yellow) 44px 60px, var(--blue) 60px 104px, #fff 104px 112px); }
+</style>
+</head>
+<body>
+  <div class="top">
+    <img src="file:///Users/zarza/Documents/projects/nadamas/public/logo-nadamas.svg" alt="Nadamas">
+    <span class="badge">Planes y pagos</span>
+  </div>
+
+  <div>
+    <h1>Paga tus clases<br><span>en 4 pasos</span></h1>
+    <p class="lead">Todo desde la app, en la sección <b>Planes y pagos</b>.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step"><span class="num">1</span><div><h2>Elige tu paquete o plan</h2><p>Un número de clases o un plan por mes.</p></div></div>
+    <div class="step"><span class="num">2</span><div><h2>Paga</h2><p>Transferencia (sube foto del comprobante) o en efectivo.</p></div></div>
+    <div class="step"><span class="num">3</span><div><h2>Tu escuela confirma</h2><p>Te llega un aviso cuando tu pago queda listo.</p></div></div>
+    <div class="step"><span class="num">4</span><div><h2>¡Reserva y a nadar!</h2><p>Tus clases aparecen en tu saldo.</p></div></div>
+  </div>
+
+  <div class="tips">
+    <div class="tip ok"><b>Solo se descuenta si nadas</b>La clase se descuenta cuando la tomas, no al reservar.</div>
+    <div class="tip blue"><b>¿No puedes ir?</b>Cancela con 24 h de anticipación y la clase regresa a tu saldo.</div>
+  </div>
+
+  <div class="rope"></div>
+</body>
+</html>

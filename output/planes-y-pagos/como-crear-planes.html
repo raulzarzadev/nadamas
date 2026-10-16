@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root {
+  --ocean: #0a2540; --blue: #0077b6; --aqua: #00b4d8; --aqua-l: #90e0ef;
+  --bg: #f4fafd; --card: #ffffff; --ink-2: #4a5a6c; --tint: #e2f3fa; --yellow: #f2c230;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1350px; }
+body {
+  background: var(--bg); color: var(--ocean);
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  padding: 60px 72px 0; display: flex; flex-direction: column; gap: 34px; overflow: hidden; position: relative;
+}
+h1, h2, h3, .num, .price { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.top img { height: 64px; }
+.badge { font-size: 22px; font-weight: 700; color: var(--blue); background: var(--tint); padding: 10px 22px; border-radius: 999px; }
+h1 { font-size: 80px; line-height: 1; font-weight: 800; letter-spacing: -2px; }
+h1 span { color: var(--blue); }
+.lead { font-size: 28px; color: var(--ink-2); margin-top: 14px; }
+
+.types { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.type { background: var(--card); border-radius: 28px; padding: 28px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 2px 0 #d6eaf0; }
+.type.period { background: var(--ocean); color: #fff; box-shadow: none; }
+.kicker { font-size: 20px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--blue); }
+.period .kicker { color: var(--aqua-l); }
+h2 { font-size: 40px; font-weight: 800; line-height: 1.05; }
+.type p { font-size: 24px; line-height: 1.3; color: var(--ink-2); }
+.period p { color: #c9dbe8; }
+.example { border-radius: 18px; padding: 18px 20px; background: var(--tint); display: grid; gap: 10px; }
+.period .example { background: #13385a; }
+.example .name { font-size: 22px; font-weight: 700; }
+.price { font-size: 44px; font-weight: 800; line-height: 1; }
+.dots { display: flex; gap: 7px; }
+.dots i { width: 26px; height: 26px; border-radius: 50%; background: var(--blue); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chips span { font-size: 20px; font-weight: 700; padding: 5px 14px; border-radius: 999px; background: var(--aqua); color: var(--ocean); }
+.ideal { font-size: 22px !important; font-weight: 700; color: var(--ocean) !important; }
+.period .ideal { color: #fff !important; }
+
+.how h3 { font-size: 34px; font-weight: 800; margin-bottom: 16px; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.step { background: var(--card); border-radius: 24px; padding: 22px; display: grid; gap: 10px; align-content: start; box-shadow: 0 2px 0 #d6eaf0; }
+.num { width: 56px; height: 56px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 30px; font-weight: 800; }
+.step b { font-size: 26px; line-height: 1.15; }
+.step .txt { font-size: 21px; color: var(--ink-2); line-height: 1.3; }
+.ui { font-weight: 700; color: var(--blue); font-size: inherit; }
+.after { display: flex; align-items: center; gap: 18px; background: var(--tint); border-radius: 24px; padding: 22px 28px; font-size: 25px; line-height: 1.3; }
+.after b { font-family: "Bricolage Grotesque", sans-serif; font-size: 28px; color: var(--blue); white-space: nowrap; }
+
+.rope { position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 44px, var(--yellow) 44px 60px, var(--blue) 60px 104px, #fff 104px 112px); }
+</style>
+</head>
+<body>
+  <div class="top">
+    <img src="file:///Users/zarza/Documents/projects/nadamas/public/logo-nadamas.svg" alt="Nadamas">
+    <span class="badge">Para profes y escuelas</span>
+  </div>
+
+  <div>
+    <h1>Cobra tus clases<br><span>a tu manera</span></h1>
+    <p class="lead">Crea tus planes en Nadamas y tus alumnos pagan desde la app.</p>
+  </div>
+
+  <div class="types">
+    <div class="type">
+      <span class="kicker">Por clase</span>
+      <h2>Paquete de clases</h2>
+      <p>El alumno compra un número de clases y se descuentan cuando asiste.</p>
+      <div class="example">
+        <span class="name">Ej. Paquete 8 clases</span>
+        <span class="price">$1,200</span>
+        <div class="dots"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <p class="ideal">Ideal para clases sueltas o alumnos sin horario fijo.</p>
+    </div>
+    <div class="type period">
+      <span class="kicker">Por periodo</span>
+      <h2>Plan mensual</h2>
+      <p>El alumno paga meses y tú pones cuántas clases puede tomar.</p>
+      <div class="example">
+        <span class="name">Ej. Plan mensual</span>
+        <span class="price">$950</span>
+        <div class="chips"><span>3 por semana</span><span>1 por día</span></div>
+      </div>
+      <p class="ideal">Ideal para alumnos con horario fijo cada semana.</p>
+    </div>
+  </div>
+
+  <div class="how">
+    <h3>Créalo en 3 pasos</h3>
+    <div class="steps">
+      <div class="step"><span class="num">1</span><b>Abre <span class="ui">Pagos y planes</span></b><span class="txt">Ve a la pestaña Planes y toca <span class="ui">+ Crear</span>.</span></div>
+      <div class="step"><span class="num">2</span><b>Elige la modalidad</b><span class="txt">Paquete de clases o plan por periodo.</span></div>
+      <div class="step"><span class="num">3</span><b>Pon nombre y precio</b><span class="txt">Agrega clases, meses o límites y guarda.</span></div>
+    </div>
+  </div>
+
+  <div class="after"><b>¿Y después?</b><span>Tus alumnos lo compran en la app, tú confirmas el pago y Nadamas lleva su saldo de clases.</span></div>
+
+  <div class="rope"></div>
+</body>
+</html>

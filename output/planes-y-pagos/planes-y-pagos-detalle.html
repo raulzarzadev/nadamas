@@ -1,0 +1,339 @@
+<title>Planes y pagos Nadamas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: una columna estrecha que se lee como un carril de alberca, con cuerdas de carril como separadores */
+:root {
+  --bg: #f6fafc;
+  --surface: #ffffff;
+  --tint: #e8f6fa;
+  --ink: #0a2540;
+  --ink-2: #4a5a6c;
+  --line: #d6eaf0;
+  --accent: #0077b6;
+  --aqua: #00b4d8;
+  --ok: #1f8a4c;
+  --ok-bg: #e6f5ec;
+  --warn: #b25e09;
+  --warn-bg: #fdf1e2;
+  --bad: #c0362c;
+  --bad-bg: #fbe9e7;
+  --info-bg: #e6f0fb;
+  --rope-a: #0077b6;
+  --rope-b: #f2c230;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #071a2c; --surface: #0c2338; --tint: #0f2c45; --ink: #e6f3f8; --ink-2: #9fb6c7;
+    --line: #1c3c56; --accent: #4cc3ea; --aqua: #5fd6ef;
+    --ok: #6fd39a; --ok-bg: #12301f; --warn: #f0b066; --warn-bg: #352512;
+    --bad: #f08a80; --bad-bg: #3a1b18; --info-bg: #11304b;
+    --rope-a: #2f9fd6; --rope-b: #d9b03a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #071a2c; --surface: #0c2338; --tint: #0f2c45; --ink: #e6f3f8; --ink-2: #9fb6c7;
+  --line: #1c3c56; --accent: #4cc3ea; --aqua: #5fd6ef;
+  --ok: #6fd39a; --ok-bg: #12301f; --warn: #f0b066; --warn-bg: #352512;
+  --bad: #f08a80; --bad-bg: #3a1b18; --info-bg: #11304b;
+  --rope-a: #2f9fd6; --rope-b: #d9b03a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body);
+  font-size: 1rem; line-height: 1.55;
+}
+.wrap {
+  max-width: 920px; margin: 0 auto;
+  padding-block: 40px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px;
+}
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.12; }
+h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: 1.5rem; font-weight: 800; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow {
+  font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+}
+.muted { color: var(--ink-2); }
+.section { display: grid; gap: 18px; }
+.section > header { display: grid; gap: 6px; max-width: 62ch; }
+
+/* cuerda de carril */
+.rope {
+  height: 8px; border-radius: 4px;
+  background: repeating-linear-gradient(90deg, var(--rope-a) 0 22px, var(--rope-b) 22px 30px, var(--rope-a) 30px 52px, var(--surface) 52px 56px);
+  opacity: .85;
+}
+
+/* hero */
+.hero { display: grid; gap: 14px; }
+.hero p.lead { font-size: 1.15rem; max-width: 58ch; color: var(--ink-2); }
+.roles { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.role {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: .9rem;
+}
+.role b { font-family: var(--display); font-weight: 600; }
+.dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .8rem; color: #fff; }
+.dot.r { background: var(--accent); }
+.dot.a { background: var(--ok); }
+.dot.s { background: var(--ink-2); }
+
+/* productos */
+.products { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.product {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+  display: grid; gap: 14px; align-content: start; min-width: 0;
+}
+.product .tag { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.product .example {
+  background: var(--tint); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px;
+  font-size: .92rem;
+}
+.product .example .price { font-family: var(--display); font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.tokens { display: flex; gap: 5px; flex-wrap: wrap; }
+.tok { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--accent); }
+.tok.full { background: var(--accent); }
+.limits { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-size: .78rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); white-space: nowrap;
+}
+.product ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .94rem; }
+
+/* flujo de compra */
+.flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: step; }
+.flow li {
+  counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 14px; position: relative;
+  padding-bottom: 22px;
+}
+.flow li:last-child { padding-bottom: 0; }
+.flow li::before {
+  content: counter(step); width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; font-family: var(--display); font-weight: 800; font-size: 1.1rem;
+  background: var(--surface); border: 2px solid var(--accent); color: var(--accent); z-index: 1;
+}
+.flow li::after {
+  content: ""; position: absolute; left: 21px; top: 44px; bottom: 0; width: 2px;
+  background: repeating-linear-gradient(var(--line) 0 6px, transparent 6px 10px);
+}
+.flow li:last-child::after { display: none; }
+.flow .body { display: grid; gap: 4px; padding-top: 8px; min-width: 0; }
+.who { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.who.r { color: var(--accent); } .who.a { color: var(--ok); } .who.s { color: var(--ink-2); }
+.split { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.pill { font-size: .8rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.pill.ok { background: var(--ok-bg); color: var(--ok); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.info { background: var(--info-bg); color: var(--accent); }
+
+/* diagrama de estados */
+.diagram { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 640px; height: auto; }
+.diagram text { font-family: var(--body); fill: var(--ink); }
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.legend div { display: grid; gap: 4px; font-size: .92rem; min-width: 0; }
+
+/* prioridad */
+.priority { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.prio { border-radius: 12px; padding: 16px; display: grid; gap: 6px; align-content: start; background: var(--tint); }
+.prio .n { font-family: var(--display); font-weight: 800; font-size: 2rem; line-height: 1; color: var(--accent); }
+.prio.last { background: var(--surface); border: 1px dashed var(--line); }
+.prio.last .n { color: var(--ink-2); }
+
+/* herramientas */
+.tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 24px; }
+.tool { display: grid; gap: 4px; padding-top: 12px; border-top: 2px solid var(--line); min-width: 0; }
+.tool p { font-size: .94rem; color: var(--ink-2); }
+
+footer.note { font-size: .85rem; color: var(--ink-2); max-width: 70ch; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .rope { background-size: 56px 8px; animation: drift 6s linear infinite; }
+  @keyframes drift { to { background-position: 56px 0; } }
+}
+</style>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow">Nadamas · Cómo funciona</span>
+    <h1>Planes y pagos</h1>
+    <p class="lead">Cada escuela o coach vende paquetes de clases o planes mensuales. El alumno paga, el responsable confirma y el saldo se descuenta solo cuando el alumno usa sus clases.</p>
+    <div class="roles" aria-label="Quién participa">
+      <span class="role"><span class="dot r" aria-hidden="true">R</span><b>Responsable</b>&nbsp;escuela o coach</span>
+      <span class="role"><span class="dot a" aria-hidden="true">A</span><b>Alumno</b>&nbsp;o su tutor</span>
+      <span class="role"><span class="dot s" aria-hidden="true">N</span><b>Nadamas</b>&nbsp;cuenta y registra</span>
+    </div>
+  </section>
+
+  <div class="rope" aria-hidden="true"></div>
+
+  <section class="section" aria-labelledby="s-tipos">
+    <header>
+      <span class="eyebrow">Qué se vende</span>
+      <h2 id="s-tipos">Dos formas de cobrar</h2>
+      <p class="muted">El responsable puede activar una, la otra o ambas desde la configuración de pagos. Precios en MXN.</p>
+    </header>
+    <div class="products">
+      <article class="product">
+        <span class="tag">Paquete de clases</span>
+        <h3>Compra un número fijo de clases</h3>
+        <div class="example">
+          <span class="muted">Ejemplo · Paquete 8 clases</span>
+          <span class="price">$1,200</span>
+          <div class="tokens" aria-label="8 clases, 3 usadas">
+            <span class="tok full"></span><span class="tok full"></span><span class="tok full"></span>
+            <span class="tok"></span><span class="tok"></span><span class="tok"></span><span class="tok"></span><span class="tok"></span>
+          </div>
+          <span class="muted">3 usadas · 5 disponibles</span>
+        </div>
+        <ul>
+          <li>Cada clase reservada aparta una del saldo.</li>
+          <li>Vigencia opcional en días; sin vigencia, no caduca.</li>
+        </ul>
+      </article>
+      <article class="product">
+        <span class="tag">Plan por periodo</span>
+        <h3>Paga meses con un tope de asistencia</h3>
+        <div class="example">
+          <span class="muted">Ejemplo · Plan mensual</span>
+          <span class="price">$950<span class="muted" style="font-size:.9rem;font-weight:400"> / 1 mes</span></span>
+          <div class="limits">
+            <span class="chip">1 por día</span><span class="chip">3 por semana</span><span class="chip">12 en el periodo</span>
+          </div>
+        </div>
+        <ul>
+          <li>De 1 a 24 meses, contados desde el día de la aprobación.</li>
+          <li>Requiere al menos un límite: por día, por semana o por periodo.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <div class="rope" aria-hidden="true"></div>
+
+  <section class="section" aria-labelledby="s-compra">
+    <header>
+      <span class="eyebrow">De la compra al saldo</span>
+      <h2 id="s-compra">Cómo se activa un pago</h2>
+    </header>
+    <ol class="flow">
+      <li><div class="body">
+        <span class="who r">Responsable</span>
+        <h3>Publica sus paquetes y planes</h3>
+        <p class="muted">Define nombre, precio y límites. Agrega sus datos bancarios (banco, titular, cuenta, CLABE de 18 dígitos, referencia).</p>
+      </div></li>
+      <li><div class="body">
+        <span class="who a">Alumno</span>
+        <h3>Elige un plan y cómo pagar</h3>
+        <div class="split"><span class="pill info">Transferencia + comprobante</span><span class="pill info">Efectivo</span></div>
+        <p class="muted">El comprobante puede ser PNG, JPG o PDF de hasta 2 MB. Las imágenes grandes se optimizan automáticamente.</p>
+      </div></li>
+      <li><div class="body">
+        <span class="who s">Nadamas</span>
+        <h3>Crea el pago como pendiente y avisa</h3>
+        <p class="muted">El responsable recibe una notificación. Un mismo envío nunca genera dos pagos.</p>
+        <div class="split"><span class="pill warn">Pendiente</span></div>
+      </div></li>
+      <li><div class="body">
+        <span class="who r">Responsable</span>
+        <h3>Revisa y decide</h3>
+        <div class="split"><span class="pill ok">Aprobado</span><span class="pill bad">Rechazado</span></div>
+        <p class="muted">El alumno recibe “Pago confirmado” o “Pago rechazado”.</p>
+      </div></li>
+      <li><div class="body">
+        <span class="who s">Nadamas</span>
+        <h3>Activa el saldo desde hoy</h3>
+        <p class="muted">Al aprobar, el paquete o plan queda vigente a partir de la fecha de aprobación, en la zona horaria de la escuela.</p>
+      </div></li>
+    </ol>
+  </section>
+
+  <div class="rope" aria-hidden="true"></div>
+
+  <section class="section" aria-labelledby="s-clase">
+    <header>
+      <span class="eyebrow">Vida de una clase</span>
+      <h2 id="s-clase">Reservar no es gastar</h2>
+      <p class="muted">Al reservar, la clase solo se aparta. Se descuenta cuando la clase termina o cuando se cancela tarde.</p>
+    </header>
+    <div class="diagram" role="img" aria-label="Diagrama: una clase reservada pasa a consumida si termina o se cancela tarde, y a devuelta si se cancela a tiempo o la cancela el organizador.">
+      <svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" style="fill: var(--ink-2)"/>
+          </marker>
+        </defs>
+        <!-- reservado -->
+        <rect x="20" y="95" width="170" height="70" rx="14" style="fill: var(--info-bg); stroke: var(--accent)" stroke-width="2"/>
+        <text x="105" y="126" text-anchor="middle" font-weight="700" font-size="17">Reservada</text>
+        <text x="105" y="148" text-anchor="middle" font-size="13" style="fill: var(--ink-2)">clase apartada</text>
+        <!-- consumida -->
+        <rect x="560" y="20" width="180" height="70" rx="14" style="fill: var(--ok-bg); stroke: var(--ok)" stroke-width="2"/>
+        <text x="650" y="51" text-anchor="middle" font-weight="700" font-size="17">Consumida</text>
+        <text x="650" y="73" text-anchor="middle" font-size="13" style="fill: var(--ink-2)">se descuenta del saldo</text>
+        <!-- devuelta -->
+        <rect x="560" y="170" width="180" height="70" rx="14" style="fill: var(--tint); stroke: var(--aqua)" stroke-width="2"/>
+        <text x="650" y="201" text-anchor="middle" font-weight="700" font-size="17">Devuelta</text>
+        <text x="650" y="223" text-anchor="middle" font-size="13" style="fill: var(--ink-2)">vuelve al saldo</text>
+        <!-- flechas a consumida -->
+        <path d="M190 115 C 330 40, 420 45, 556 50" fill="none" style="stroke: var(--ink-2)" stroke-width="1.6" marker-end="url(#ar)"/>
+        <text x="370" y="44" text-anchor="middle" font-size="13">La clase termina (automático)</text>
+        <path d="M190 130 C 330 95, 430 80, 556 70" fill="none" style="stroke: var(--warn)" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+        <text x="380" y="104" text-anchor="middle" font-size="13" style="fill: var(--warn)">Cancela tarde (menos de 24 h)</text>
+        <!-- flechas a devuelta -->
+        <path d="M190 145 C 330 180, 430 195, 556 195" fill="none" style="stroke: var(--ink-2)" stroke-width="1.6" marker-end="url(#ar)"/>
+        <text x="380" y="168" text-anchor="middle" font-size="13">Cancela a tiempo</text>
+        <path d="M190 158 C 320 240, 440 230, 556 220" fill="none" style="stroke: var(--ink-2)" stroke-width="1.6" marker-end="url(#ar)"/>
+        <text x="370" y="250" text-anchor="middle" font-size="13">El organizador cancela la clase</text>
+      </svg>
+    </div>
+    <div class="legend">
+      <div><span class="pill warn" style="justify-self:start">Ventana de cancelación</span><span class="muted">24 horas por defecto. El responsable la ajusta de 0 a 720 horas.</span></div>
+      <div><span class="pill ok" style="justify-self:start">Asistencia</span><span class="muted">Si el responsable desmarca una asistencia, la clase vuelve a quedar reservada.</span></div>
+      <div><span class="pill info" style="justify-self:start">Cancelación del organizador</span><span class="muted">Siempre devuelve la clase, aunque ya se hubiera descontado.</span></div>
+    </div>
+  </section>
+
+  <div class="rope" aria-hidden="true"></div>
+
+  <section class="section" aria-labelledby="s-orden">
+    <header>
+      <span class="eyebrow">Qué saldo se usa</span>
+      <h2 id="s-orden">Orden al reservar</h2>
+      <p class="muted">Si el alumno tiene varios paquetes o planes, Nadamas decide por él en este orden.</p>
+    </header>
+    <div class="priority">
+      <div class="prio"><span class="n">1</span><h3>Plan vigente</h3><p class="muted">Si quedan lugares en sus límites del día, la semana y el periodo.</p></div>
+      <div class="prio"><span class="n">2</span><h3>Paquete de clases</h3><p class="muted">Si el plan no alcanza. Primero el que vence antes.</p></div>
+      <div class="prio last"><span class="n">3</span><h3>Sin saldo</h3><p class="muted">Se reserva como excepción si la configuración lo permite. Si no, la reserva se bloquea y se invita a ir a Pagos.</p></div>
+    </div>
+  </section>
+
+  <div class="rope" aria-hidden="true"></div>
+
+  <section class="section" aria-labelledby="s-tools">
+    <header>
+      <span class="eyebrow">Para el responsable</span>
+      <h2 id="s-tools">Control a la mano</h2>
+    </header>
+    <div class="tools">
+      <div class="tool"><h3>Ajustar saldo</h3><p>Suma o resta clases a un alumno. Siempre pide un motivo.</p></div>
+      <div class="tool"><h3>Devolver clase</h3><p>Regresa una clase ya consumida al saldo, con motivo.</p></div>
+      <div class="tool"><h3>Agendar sin saldo</h3><p>Autoriza una excepción puntual al reservar, con motivo obligatorio.</p></div>
+      <div class="tool"><h3>Historial</h3><p>Cada pago, reserva, consumo y ajuste queda registrado con quién lo hizo.</p></div>
+    </div>
+  </section>
+
+  <footer class="note">Todos los cambios de saldo se guardan en una sola operación junto con la reserva o la asistencia, así que nunca queda un cobro a medias.</footer>
+</main>
