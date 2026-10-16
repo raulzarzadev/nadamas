@@ -7,7 +7,7 @@ import AuthGate from '../auth-gate'
 export const metadata = { robots: { index: false, follow: false } }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  if (await getTenantSchool()) redirect('https://nadamas.app/admin/home')
+  if (await getTenantSchool()) redirect('https://app.nadamas.app/admin/home')
   return (
     <AuthGate>
       <RoleGuard need="admin">

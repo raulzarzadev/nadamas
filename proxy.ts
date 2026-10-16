@@ -1,20 +1,28 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { APP_ORIGIN, isProductPath } from '@/lib/app-routing'
 import { tenantSlugFromHost } from '@/lib/tenant-host'
 
 export function proxy(request: NextRequest) {
   const slug = tenantSlugFromHost(request.headers.get('host'))
   const pathname = request.nextUrl.pathname
-  const isAppRoute =
-    pathname === '/login' ||
-    pathname === '/logout' ||
-    pathname === '/profile' ||
-    pathname === '/notifications' ||
-    pathname === '/dashboard' ||
-    pathname === '/interfaces' ||
-    pathname.startsWith('/auth/') ||
-    pathname.startsWith('/athlete/') ||
-    pathname.startsWith('/coach/') ||
-    pathname.startsWith('/admin/')
+  const isAppRoute = isProductPath(pathname)
+  const hostname = (request.headers.get('host') || '')
+    .split(':')[0]
+    .toLowerCase()
+    .replace(/\.$/, '')
+
+  if (hostname === 'nadamas.app' && isAppRoute) {
+    const url = new URL(APP_ORIGIN)
+    url.pathname = pathname
+    url.search = request.nextUrl.search
+    return NextResponse.redirect(url)
+  }
+
+  if ((hostname === 'app.nadamas.app' || hostname === 'app.localhost') && pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
 
   if (
     !slug ||

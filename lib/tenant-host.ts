@@ -6,12 +6,16 @@ export function tenantSlugFromHost(hostHeader: string | null) {
 
   if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     const subdomain = hostname.slice(0, -(ROOT_DOMAIN.length + 1))
-    return subdomain && !subdomain.includes('.') && subdomain !== 'www' ? subdomain : null
+    return subdomain && !subdomain.includes('.') && !['www', 'app'].includes(subdomain)
+      ? subdomain
+      : null
   }
 
   if (hostname.endsWith('.localhost')) {
     const subdomain = hostname.slice(0, -'.localhost'.length)
-    return subdomain && !subdomain.includes('.') ? subdomain : null
+    return subdomain && !subdomain.includes('.') && !['www', 'app'].includes(subdomain)
+      ? subdomain
+      : null
   }
 
   return null

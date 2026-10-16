@@ -4,6 +4,7 @@ export type SlugKind = 'coach' | 'athlete'
 // are off-limits. Keep in sync with app/(marketing) segments + app/(app) firsts.
 export const RESERVED_SLUGS = new Set([
   'api',
+  'app',
   'admin',
   'atleta',
   'athlete',
