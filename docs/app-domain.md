@@ -25,7 +25,7 @@ https://firebase.google.com/docs/auth/web/redirect-best-practices#option_3_proxy
 1. Mantener `app.nadamas.app`, el dominio principal y los dominios escolares en el mismo proyecto Vercel, con DNS y certificado válidos.
 2. Autorizar cada dominio en Firebase Authentication.
 3. Registrar `https://<dominio>/__/auth/handler` en los URI de redireccionamiento del cliente Google OAuth existente. Conservar todos los callbacks previos.
-4. Solo después, agregar el dominio a `NEXT_PUBLIC_FIREBASE_AUTH_DOMAINS` en Vercel y desplegar. Actualmente están configurados `nadamas.app`, `app.nadamas.app` y `nanda.nadamas.app`.
+4. Solo después, agregar el dominio a `NEXT_PUBLIC_FIREBASE_AUTH_DOMAINS` en Vercel y desplegar. La lista de producción cubre el dominio principal, `app` y las cinco escuelas actuales; consultar su valor vigente en Vercel.
 5. Para una nueva escuela, repetir los pasos 2–4 antes de activar su autenticación en el mismo origen. La lista es explícita para no activar callbacks que Google todavía no acepta.
 6. Mantener `NEXT_PUBLIC_SITE_URL=https://nadamas.app` para enlaces públicos.
 
