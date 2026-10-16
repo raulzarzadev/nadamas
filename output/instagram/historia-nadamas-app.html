@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root { --ocean: #0a2540; --blue: #0077b6; --aqua: #00b4d8; --aqua-l: #90e0ef; --yellow: #f2c230; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; }
+body {
+  background: radial-gradient(120% 70% at 80% 0%, #0f4d7a 0%, var(--ocean) 60%);
+  color: #fff; font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  padding: 230px 90px 260px; display: flex; flex-direction: column; justify-content: space-between;
+  overflow: hidden; position: relative;
+}
+h1, .url, .chip b { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+.logo { display: inline-flex; background: #fff; border-radius: 28px; padding: 20px 30px; }
+.logo img { height: 84px; display: block; }
+.kicker { font-size: 34px; color: var(--aqua-l); margin-top: 40px; }
+h1 { font-size: 118px; line-height: .98; font-weight: 800; letter-spacing: -3px; margin-top: 18px; }
+h1 span { color: var(--aqua); }
+.chips { display: grid; gap: 22px; }
+.chip { display: flex; align-items: center; gap: 26px; background: rgba(255,255,255,.08); border: 2px solid rgba(144,224,239,.25); border-radius: 30px; padding: 28px 32px; font-size: 32px; color: #d4e6f1; }
+.chip .e { font-size: 58px; }
+.chip b { display: block; font-size: 42px; color: #fff; }
+.cta { display: flex; align-items: center; gap: 36px; background: #fff; color: var(--ocean); border-radius: 36px; padding: 30px; }
+.cta svg { width: 240px; height: 240px; flex: none; }
+.cta p { font-size: 32px; color: #4a5a6c; }
+.url { font-size: 68px; font-weight: 800; color: var(--blue); line-height: 1; margin-bottom: 10px; }
+.rope { position: absolute; left: 0; right: 0; bottom: 0; height: 30px;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 60px, var(--yellow) 60px 82px, var(--blue) 82px 142px, #fff 142px 152px); }
+</style>
+</head>
+<body>
+  <div>
+    <div class="logo"><img src="file:///Users/zarza/Documents/projects/nadamas/public/logo-nadamas.svg" alt=""></div>
+    <p class="kicker">Lo que estoy construyendo 🏊</p>
+    <h1>Tu escuela de natación <span>en una app</span></h1>
+  </div>
+
+  <div class="chips">
+    <div class="chip"><span class="e">🧒</span><div><b>Alumnos</b>Reservan, pagan y llegan con su credencial</div></div>
+    <div class="chip"><span class="e">🏊‍♂️</span><div><b>Entrenadores</b>Agenda, pase de lista y entrenos</div></div>
+    <div class="chip"><span class="e">🏫</span><div><b>Escuelas</b>Profes, horarios y pagos en un lugar</div></div>
+  </div>
+
+  <div class="cta">
+    <div id="qr"></div>
+    <div><div class="url">nadamas.app</div><p>Escanea o búscalo en tu navegador 👉</p></div>
+  </div>
+
+  <div class="rope"></div>
+<script>
+fetch('qr-nadamas-app.svg').then(r=>r.text()).then(t=>{document.getElementById('qr').innerHTML=t})
+</script>
+</body>
+</html>

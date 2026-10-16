@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root { --ocean: #0a2540; --blue: #0077b6; --aqua: #00b4d8; --aqua-l: #90e0ef; --yellow: #f2c230; --wa: #25d366; }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1920px; }
+body {
+  background: radial-gradient(120% 70% at 20% 0%, #0f4d7a 0%, var(--ocean) 60%);
+  color: #fff; font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  padding: 230px 90px 260px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center;
+  overflow: hidden; position: relative;
+}
+h1, .link b { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+.badge { display: inline-flex; align-items: center; gap: 16px; background: var(--wa); color: #06331a; font-size: 34px; font-weight: 700; padding: 16px 32px; border-radius: 999px; }
+.badge svg { width: 40px; height: 40px; fill: #06331a; }
+h1 { font-size: 112px; line-height: 1; font-weight: 800; letter-spacing: -3px; margin-top: 40px; }
+h1 span { color: var(--aqua); }
+.lead { font-size: 36px; color: #c9dbe8; margin-top: 28px; line-height: 1.35; }
+.qrcard { background: #fff; border-radius: 44px; padding: 40px; display: grid; gap: 22px; justify-items: center; box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+.qrcard svg { width: 560px; height: 560px; display: block; }
+.qrcard p { font-size: 32px; color: #4a5a6c; font-weight: 700; }
+.link { display: grid; gap: 10px; }
+.link b { font-size: 46px; color: #fff; }
+.link span { font-size: 30px; color: var(--aqua-l); word-break: break-all; }
+.rope { position: absolute; left: 0; right: 0; bottom: 0; height: 30px;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 60px, var(--yellow) 60px 82px, var(--blue) 82px 142px, #fff 142px 152px); }
+</style>
+</head>
+<body>
+  <div>
+    <span class="badge"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.5-3.9-4.7-4.1-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 1.9 1.1 1 2 1.3 2.3 1.4.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.1.1.7-.2 1.2Z"/></svg>Canal de WhatsApp</span>
+    <h1>Sigue a <span>Nadamas</span><br>en WhatsApp</h1>
+    <p class="lead">Novedades, tips y guías rápidas para alumnos,<br>entrenadores y escuelas de natación 🏊</p>
+  </div>
+
+  <div class="qrcard">
+    <div id="qr"></div>
+    <p>Escanéalo con la cámara 📷</p>
+  </div>
+
+  <div class="link"><b>Canal: Nadamas App</b><span>whatsapp.com/channel/0029VbDiYPACMY0GMM3Zbe2y</span></div>
+
+  <div class="rope"></div>
+<script>
+fetch('qr-canal-whatsapp.svg').then(r=>r.text()).then(t=>{document.getElementById('qr').innerHTML=t})
+</script>
+</body>
+</html>
