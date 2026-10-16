@@ -82,6 +82,8 @@ Known gotcha: `firebase/athletes/main.ts` instantiates the collection as `'athel
 
 ### Other
 
+- Domain/PWA compatibility: follow [docs/app-domain.md](docs/app-domain.md). Keep legacy product routes on `nadamas.app` for existing installations; do not force them to `app.nadamas.app`. Preserve the existing manifest identity and bypass school rewrites for `/__/auth/*`. Configure Firebase authorized domains, Google OAuth callbacks, and `NEXT_PUBLIC_FIREBASE_AUTH_DOMAINS` together. See [the 2026-10-16 incident](docs/incidents/2026-10-16-app-domain-and-ios-auth.md) for evidence and remaining iPhone verification.
+
 - Reuse `components/ui/coach-badge.tsx` whenever a UI needs to display an assigned coach/teacher; pass `unassigned` for unassigned states so the badge renders outlined without an avatar.
 - `next.config.mjs`: `next/image` `remotePatterns` (firebasestorage, lh3.googleusercontent, images.unsplash, img.icons8); security headers (CSP-adjacent: X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, HSTS); long-lived cache headers for static assets. **No `next-pwa`** — PWA manifest is the static `public/manifest.json`.
 - App-wide constants in `CONSTANTS/` (`ROUTES.js` drives nav, `SWIMMING_TESTS.js`, `AWARDS.js`, `STATUS_EVENT.js`).

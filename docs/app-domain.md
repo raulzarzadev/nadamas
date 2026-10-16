@@ -1,5 +1,7 @@
 # Dominios de nadamas
 
+Historial de decisiones, fallo en iPhone y corrección: [incidente del 16 de octubre de 2026](incidents/2026-10-16-app-domain-and-ios-auth.md).
+
 - `nadamas.app`: landing, recursos y perfiles públicos. Las rutas de producto antiguas siguen disponibles para conservar las instalaciones y sesiones existentes.
 - `app.nadamas.app`: aplicación general; `/` redirige a `/dashboard`. El botón Ingresar de la landing lleva directamente a este dominio.
 - `<escuela>.nadamas.app`: conserva la página y el acceso de cada escuela.
