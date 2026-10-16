@@ -72,6 +72,9 @@ service cloud.firestore {
       // Specific matches do not override a wildcard allow: exclude their
       // collections here, including server-only financial/authentication data.
       return ![
+        'marketingPreferences',
+        'marketingSuppressions',
+        'marketingCampaigns',
         'users',
         'coaches',
         'events',
