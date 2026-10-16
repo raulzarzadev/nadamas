@@ -10,7 +10,7 @@ import {
   unsubscribeToken,
 } from '@/lib/server/marketing/store'
 export const runtime = 'nodejs'
-export const maxDuration = 300
+export const maxDuration = 60
 export async function GET(request: Request) {
   if (!(await marketingCaller(request, true)))
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
