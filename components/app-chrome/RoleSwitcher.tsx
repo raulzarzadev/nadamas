@@ -3,8 +3,9 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FaPersonSwimming } from 'react-icons/fa6'
-import { FiGrid, FiShare2, FiShield } from 'react-icons/fi'
+import { FiCreditCard, FiGrid, FiShare2, FiShield } from 'react-icons/fi'
 import { GiWhistle } from 'react-icons/gi'
+import { AthleteCredentialDialog } from '@/components/profile/AthleteCredentialButton'
 import ProfileShareDialog from '@/components/profile/ProfileShareDialog'
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -85,6 +86,7 @@ export default function RoleSwitcher({
   const avatarText = displayedRole === 'athlete' ? 'TÚ' : initialsFrom(user)
   const userEmail = user?.email
   const [open, setOpen] = useState(false)
+  const [credentialOpen, setCredentialOpen] = useState(false)
   const [athleteSlug, setAthleteSlug] = useState<string | null>()
   const [coachSlug, setCoachSlug] = useState<string | null>()
   const [shareTarget, setShareTarget] = useState<{ title: string; publicUrl: string } | null>(null)
@@ -226,18 +228,30 @@ export default function RoleSwitcher({
             {secondaryLinks.map((link) => {
               const active = pathname.startsWith(link.href)
               return (
-                <div role="none" key={link.href}>
+                <div role="none" key={link.href} className="flex items-center">
                   <Link
                     role="menuitem"
                     href={link.href}
                     aria-current={active ? 'page' : undefined}
                     onClick={() => setOpen(false)}
-                    className={`block w-full rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
+                    className={`block min-w-0 flex-1 rounded-[var(--r-sm)] px-3 py-2 text-left text-sm hover:bg-[var(--c-surface)] cursor-pointer ${
                       active ? 'font-semibold text-[var(--c-ocean-mid)]' : ''
                     }`}
                   >
                     {link.label}
                   </Link>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setOpen(false)
+                      setCredentialOpen(true)
+                    }}
+                    className="flex min-h-11 items-center gap-1.5 rounded-[var(--r-sm)] px-3 py-2 text-sm hover:bg-[var(--c-surface)] cursor-pointer"
+                  >
+                    <FiCreditCard aria-hidden="true" />
+                    Credencial
+                  </button>
                 </div>
               )
             })}
@@ -431,6 +445,14 @@ export default function RoleSwitcher({
           </div>
         )}
       </div>
+      {credentialOpen && (
+        <AthleteCredentialDialog
+          onClose={() => {
+            setCredentialOpen(false)
+            focusTrigger()
+          }}
+        />
+      )}
       {shareTarget && (
         <ProfileShareDialog
           title={shareTarget.title}
