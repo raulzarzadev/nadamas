@@ -87,7 +87,13 @@ export type PaymentMovement = {
   createdAt: number
   quantity?: number
 }
-export type PaymentStudent = { id: string; name: string; ownerId: string; isSelf?: boolean }
+export type PaymentStudent = {
+  id: string
+  name: string
+  ownerId: string
+  isSelf?: boolean
+  profileId?: string
+}
 export type PaymentSnapshot = {
   scope: PaymentScope
   manager: boolean

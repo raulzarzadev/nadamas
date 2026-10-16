@@ -56,6 +56,7 @@ export async function paymentAccess(request: Request) {
       .map((student) => ({
         id: student.id,
         name: student.name,
+        profileId: student.additionalProfileId || student.studentUserId,
         isSelf: student.studentUserId === caller.uid && !student.additionalProfileId,
         ownerId:
           [...(student.managerIds || []), ...(student.guardianIds || [])].includes(caller.uid) ||

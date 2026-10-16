@@ -3,6 +3,7 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useCallback, useEffect, useState } from 'react'
 import { FiCreditCard, FiRefreshCw } from 'react-icons/fi'
+import CredentialSummary from '@/components/profile/CredentialSummary'
 import Avatar from '@/components/ui/avatar'
 import Sheet from '@/components/ui/sheet'
 import { type AthleteCredential, credentialQrValue } from '@/lib/athlete-identity'
@@ -110,6 +111,7 @@ export function AthleteCredentialDialog({
                 Presenta este QR o tu ID para pasar lista.
               </p>
             </div>
+            <CredentialSummary credential={credential} />
           </div>
         )}
         {error && (

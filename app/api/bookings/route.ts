@@ -94,6 +94,10 @@ export async function GET(request: Request) {
             schoolClassTitle: item.title,
             schoolClassStudentCount: relevantStudentIds.length,
             schoolClassStudentIds: relevantStudentIds,
+            schoolClassProfileIds: students
+              .filter((student) => relevantStudentIds.includes(student.id))
+              .map((student) => student.additionalProfileId || student.studentUserId || '')
+              .filter(Boolean),
             coachId,
             coachName: coachNames[coachId] || 'Entrenador',
             athleteId: caller.uid,
