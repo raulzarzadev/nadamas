@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root {
+  --ocean: #0a2540; --blue: #0077b6; --aqua: #00b4d8; --aqua-l: #90e0ef;
+  --bg: #f4fafd; --card: #ffffff; --ink-2: #4a5a6c; --tint: #e2f3fa; --line: #d6eaf0;
+  --yellow: #f2c230; --ok: #1f8a4c; --ok-bg: #e3f4ea;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1080px; height: 1350px; }
+body {
+  background: var(--bg); color: var(--ocean);
+  font-family: "Atkinson Hyperlegible", system-ui, sans-serif;
+  padding: 60px 72px 80px; display: flex; flex-direction: column; justify-content: space-between;
+  overflow: hidden; position: relative;
+}
+h1, h2, h3, .num { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.top img { height: 64px; }
+.badge { font-size: 22px; font-weight: 700; color: var(--blue); background: var(--tint); padding: 10px 22px; border-radius: 999px; }
+h1 { font-size: 80px; line-height: 1; font-weight: 800; letter-spacing: -2px; }
+h1 span { color: var(--blue); }
+.lead { font-size: 28px; color: var(--ink-2); margin-top: 14px; }
+
+/* tarjeta de la escuela */
+.school { background: var(--ocean); color: #fff; border-radius: 30px; padding: 28px 30px; display: grid; gap: 20px; }
+.school .head { display: flex; align-items: center; gap: 18px; }
+.logo { width: 68px; height: 68px; border-radius: 18px; background: var(--aqua); display: grid; place-items: center; font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 30px; color: var(--ocean); flex: none; }
+.school .name { font-family: "Bricolage Grotesque", sans-serif; font-size: 32px; font-weight: 800; line-height: 1.1; }
+.school .url { font-size: 21px; color: var(--aqua-l); }
+.mode { margin-left: auto; font-size: 18px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; background: #13385a; color: var(--aqua-l); padding: 8px 16px; border-radius: 999px; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.tab { background: #13385a; border-radius: 20px; padding: 18px 16px; display: grid; gap: 8px; align-content: start; }
+.tab svg { width: 36px; height: 36px; fill: none; stroke: var(--aqua); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tab b { font-family: "Bricolage Grotesque", sans-serif; font-size: 25px; }
+.tab span { font-size: 18px; color: #c9dbe8; line-height: 1.3; }
+
+.steps-title { font-size: 34px; font-weight: 800; margin-bottom: 16px; }
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.step { display: grid; grid-template-columns: 58px 1fr; gap: 16px; align-items: center; background: var(--card); border-radius: 22px; padding: 18px 20px; box-shadow: 0 2px 0 var(--line); }
+.num { width: 58px; height: 58px; border-radius: 50%; background: var(--blue); color: #fff; display: grid; place-items: center; font-size: 30px; font-weight: 800; }
+.step:nth-child(2) .num { background: #0090c8; }
+.step:nth-child(3) .num { background: var(--aqua); }
+.step:nth-child(4) .num { background: var(--ok); }
+h2 { font-size: 26px; font-weight: 700; line-height: 1.1; }
+.step p { font-size: 19px; color: var(--ink-2); margin-top: 4px; line-height: 1.3; }
+.ui { font-weight: 700; color: var(--blue); }
+
+.tips { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.tip { border-radius: 24px; padding: 22px 26px; font-size: 22px; line-height: 1.3; }
+.tip b { display: block; font-family: "Bricolage Grotesque", sans-serif; font-size: 27px; margin-bottom: 6px; }
+.tip.ok { background: var(--ok-bg); color: #155c34; }
+.tip.blue { background: var(--tint); }
+.tip.blue b { color: var(--blue); }
+
+.rope { position: absolute; left: 0; right: 0; bottom: 0; height: 22px;
+  background: repeating-linear-gradient(90deg, var(--blue) 0 44px, var(--yellow) 44px 60px, var(--blue) 60px 104px, #fff 104px 112px); }
+</style>
+</head>
+<body>
+  <div class="top">
+    <img src="file:///Users/zarza/Documents/projects/nadamas/public/logo-nadamas.svg" alt="Nadamas">
+    <span class="badge">Para escuelas</span>
+  </div>
+
+  <div>
+    <h1>Toda tu escuela<br><span>en un solo lugar</span></h1>
+    <p class="lead">El modo coordinador organiza profes, alumnos, horarios y pagos.</p>
+  </div>
+
+  <div class="school">
+    <div class="head">
+      <span class="logo">EN</span>
+      <div><div class="name">Escuela de Natación Delfines</div><div class="url">delfines.nadamas.app</div></div>
+      <span class="mode">Modo coordinador</span>
+    </div>
+    <div class="tabs">
+      <div class="tab"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.2 3.2 0 0 1 0 6.3M21 20c0-2.6-1.6-4.9-4-5.7"/></svg><b>Alumnos</b><span>Invítalos y aprueba solicitudes.</span></div>
+      <div class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/><path d="m9.5 17 2.5 2 2.5-2"/></svg><b>Profes</b><span>Invita a tu equipo.</span></div>
+      <div class="tab"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><b>Horarios</b><span>Crea clases y asigna profe.</span></div>
+      <div class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10.5h18M7 15h4"/></svg><b>Pagos y planes</b><span>Cobra y revisa saldos.</span></div>
+    </div>
+  </div>
+
+  <div>
+    <h3 class="steps-title">Arranca en 4 pasos</h3>
+    <div class="steps">
+      <div class="step"><span class="num">1</span><div><h2>Crea tu escuela</h2><p>Nombre, logo y tu enlace <span class="ui">.nadamas.app</span>.</p></div></div>
+      <div class="step"><span class="num">2</span><div><h2>Invita a tus profes</h2><p>Desde <span class="ui">Profes</span>, cada uno con su agenda.</p></div></div>
+      <div class="step"><span class="num">3</span><div><h2>Suma a tus alumnos</h2><p>Invítalos o aprueba a quien pida unirse.</p></div></div>
+      <div class="step"><span class="num">4</span><div><h2>Arma los horarios</h2><p>Crea clases y asigna un profe a cada una.</p></div></div>
+    </div>
+  </div>
+
+  <div class="tips">
+    <div class="tip blue"><b>Tú decides cómo reservan</b>Que reserven directo o que esperen tu confirmación.</div>
+    <div class="tip ok"><b>Asistencia al día</b>Revisa los pases de lista por clase y por alumno.</div>
+  </div>
+
+  <div class="rope"></div>
+</body>
+</html>
