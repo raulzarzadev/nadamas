@@ -230,7 +230,7 @@ export default function MarketingDashboard() {
               <p className="mt-6 text-sm underline">Dejar de recibir correos</p>
             </section>
           )}
-          <div className="sticky bottom-0 z-10 flex flex-wrap gap-3 border-t border-[var(--c-border)] bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="sticky bottom-(--app-tabbar-h,0px) z-10 flex flex-wrap gap-3 border-t border-[var(--c-border)] bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
             {review ? (
               <>
                 <button

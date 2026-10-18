@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiPlus, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiPlus, FiSearch, FiTrash2, FiUsers } from 'react-icons/fi'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
 import StudentProfileModal from '@/components/coach/StudentProfileModal'
@@ -35,6 +35,12 @@ export default function SchoolStudents() {
   const terminology = useSchoolTerminology()
   const [labelData, setLabelData] = useState<LabelList>({ labels: [], assignments: {} })
   const [labelFilter, setLabelFilter] = useState<string[] | null>(null)
+  const [studentQuery, setStudentQuery] = useState('')
+  // Opened from the bell / Notificaciones ("Solicitudes pendientes" → ?access=1).
+  const [showAccess, setShowAccess] = useState(false)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('access')) setShowAccess(true)
+  }, [])
   const [labelRevision, setLabelRevision] = useState(0)
   const [students, setStudents] = useState<SchoolStudent[]>([])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
@@ -122,40 +128,52 @@ export default function SchoolStudents() {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">{capitalizeSchoolTerm(participantPlural)}</h1>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex flex-col gap-2 sm:items-end">
-          <SchoolSelector
-            schools={schools}
-            selectedId={selected.school.id}
-            onChange={selectSchool}
+      <SchoolSelector schools={schools} selectedId={selected.school.id} onChange={selectSchool} />
+      <div className="grid gap-2">
+        <label className="relative min-w-0">
+          <span className="sr-only">Buscar por nombre o correo</span>
+          <FiSearch
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--c-text-2)"
           />
-          <div className="flex flex-wrap gap-2">
-            {canAssignClasses && <SchoolAttendanceReport schoolId={activeSchool.school.id} />}
-            {(canAssignClasses || isStudentAccount) && (
-              <button
-                type="button"
-                onClick={() => setShowStudent(true)}
-                className="btn btn-primary min-h-11 gap-2"
-              >
-                <FiPlus aria-hidden="true" />{' '}
-                {canAssignClasses ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
-              </button>
+          <input
+            type="search"
+            value={studentQuery}
+            onChange={(event) => setStudentQuery(event.target.value)}
+            placeholder={`Buscar ${participantSingular}`}
+            className="min-h-11 w-full rounded-full border border-(--c-border) bg-white pr-3 pl-10 text-sm"
+          />
+        </label>
+        {(canAssignClasses || isStudentAccount) && (
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            {canAssignClasses && (
+              <SchoolAttendanceReport schoolId={activeSchool.school.id} subtle />
             )}
+            <button
+              type="button"
+              onClick={() => setShowStudent(true)}
+              className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3 text-xs font-semibold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+            >
+              <FiPlus aria-hidden="true" />{' '}
+              {canAssignClasses ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
+            </button>
           </div>
-        </div>
+        )}
       </div>
-      {isDirector && (
-        <SchoolAccessRequests
-          key={`access-requests:${selected.school.id}`}
-          schoolId={selected.school.id}
-          onApproved={async () => {
-            const response = await getAuthed(
-              `/api/schools/${activeSchool.school.id}/students?includeAgendaStudents=true`
-            )
-            const payload = await response.json()
-            setStudents(payload.students || [])
-          }}
-        />
+      {isDirector && showAccess && (
+        <Sheet open onClose={() => setShowAccess(false)} label="Solicitudes de acceso" size="lg">
+          <SchoolAccessRequests
+            key={`access-requests:${selected.school.id}`}
+            schoolId={selected.school.id}
+            onApproved={async () => {
+              const response = await getAuthed(
+                `/api/schools/${activeSchool.school.id}/students?includeAgendaStudents=true`
+              )
+              const payload = await response.json()
+              setStudents(payload.students || [])
+            }}
+          />
+        </Sheet>
       )}
       {message && (
         <p className="rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
@@ -183,6 +201,7 @@ export default function SchoolStudents() {
           timezone={activeSchool.school.timezone || 'America/Mexico_City'}
           canReadPayments={isDirector || isStudentAccount}
           labelFilter={labelFilter}
+          query={studentQuery}
           onOpen={setHistoryStudent}
           labels={(student) =>
             canAssignClasses && labelData.assignments[student.id]?.length ? (
@@ -353,6 +372,8 @@ export function StudentForm({
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // School students only: send the email invitation when saving.
+  const [invite, setInvite] = useState(false)
   const [profiles, setProfiles] = useState<AdditionalProfile[]>([])
   const [additionalProfileId, setAdditionalProfileId] = useState('')
   useEffect(() => {
@@ -405,6 +426,10 @@ export function StudentForm({
   const cannotCreate = canInvite && (matchesLoading || matchesFailed || exactMatch)
 
   const validEmail = /^\S+@\S+\.\S+$/.test(form.studentEmail.trim())
+  const canSendInvite = canInvite && Boolean(schoolId)
+  const sendingInvite = canSendInvite && invite && validEmail
+  // Only an email: invite the person to fill in their own data.
+  const inviteOnly = sendingInvite && !form.name.trim()
 
   async function save(sendInvitation: boolean) {
     if (sendInvitation && !/^\S+@\S+\.\S+$/.test(form.studentEmail.trim())) {
@@ -445,7 +470,8 @@ export function StudentForm({
   }
   async function submit(event: React.FormEvent) {
     event.preventDefault()
-    await save(false)
+    if (sendingInvite) await sendInvitationOnly()
+    else await save(false)
   }
 
   async function sendInvitationOnly() {
@@ -529,26 +555,6 @@ export function StudentForm({
         )}
         {canInvite && (
           <>
-            <Text
-              label="Correo de contacto (opcional)"
-              value={form.studentEmail}
-              onChange={(value) => setForm({ ...form, studentEmail: value })}
-              type="email"
-            />
-            {canInvite && (
-              <button
-                type="button"
-                disabled={saving || !validEmail || cannotCreate}
-                onClick={() => void sendInvitationOnly()}
-                className="btn btn-outline min-h-11"
-              >
-                {saving ? 'Enviando…' : 'Enviar invitación'}
-              </button>
-            )}
-            <p className="-mt-1 text-xs text-(--c-text-2)">
-              Invita solo con el correo para que la persona complete sus datos, o llena el
-              formulario y guarda su registro.
-            </p>
             <PersonFields
               value={{
                 name: form.name,
@@ -565,9 +571,36 @@ export function StudentForm({
                   gender: next.gender,
                 }))
               }
-              required={['name', 'birthDate']}
+              required={inviteOnly ? [] : ['name', 'birthDate']}
               disabled={saving}
             />
+            <Text
+              label="Correo (opcional)"
+              value={form.studentEmail}
+              onChange={(value) => setForm({ ...form, studentEmail: value })}
+              type="email"
+            />
+            {canSendInvite && (
+              <label
+                className={`flex min-h-11 items-start gap-3 text-sm ${validEmail ? 'cursor-pointer' : 'opacity-60'}`}
+              >
+                <input
+                  type="checkbox"
+                  className="checkbox checkbox-sm mt-0.5"
+                  checked={invite && validEmail}
+                  disabled={!validEmail || saving}
+                  onChange={(event) => setInvite(event.target.checked)}
+                />
+                <span className="grid gap-0.5">
+                  <span className="font-semibold">Enviar invitación al guardar</span>
+                  <span className="text-xs text-(--c-text-2)">
+                    {validEmail
+                      ? 'Le llegará un correo para unirse a la escuela. Si solo escribes el correo, la persona completa sus datos.'
+                      : 'Escribe un correo válido para poder invitar.'}
+                  </span>
+                </span>
+              </label>
+            )}
           </>
         )}
         {canInvite && (
@@ -610,7 +643,13 @@ export function StudentForm({
           disabled={saving || cannotCreate || (!canInvite && !additionalProfileId)}
           className="btn btn-primary min-h-11"
         >
-          {saving ? 'Guardando…' : `Guardar ${participantSingular}`}
+          {saving
+            ? 'Guardando…'
+            : inviteOnly
+              ? 'Enviar invitación'
+              : sendingInvite
+                ? 'Guardar y enviar invitación'
+                : `Guardar ${participantSingular}`}
         </button>
       </form>
     </Sheet>

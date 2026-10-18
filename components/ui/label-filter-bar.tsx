@@ -22,15 +22,15 @@ export default function LabelFilterBar({
 }) {
   const selected = labels.find((label) => label.id === value)
   const iconClass =
-    'inline-flex size-8 shrink-0 items-center justify-center rounded-xl bg-(--c-surface) p-0 text-(--c-ocean) hover:bg-(--c-border) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50'
+    'inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-(--c-surface) p-0 text-(--c-ocean) hover:bg-(--c-border) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50'
   return (
-    <section className="flex flex-wrap items-center gap-2" aria-label="Filtrar por etiqueta">
+    <section className="flex flex-wrap items-center gap-1.5" aria-label="Filtrar por etiqueta">
       <button
         type="button"
         aria-pressed={!value}
         disabled={disabled}
         onClick={() => onChange('')}
-        className={`inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-xl border px-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 ${!value ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean)'}`}
+        className={`inline-flex h-7 shrink-0 items-center justify-center gap-1 rounded-full border px-2.5 text-[11px] font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 ${!value ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean)'}`}
       >
         Todos <span className="text-[10px] tabular-nums opacity-75">({total})</span>
       </button>
@@ -54,7 +54,7 @@ export default function LabelFilterBar({
           title="Editar etiqueta"
           className={iconClass}
         >
-          <FiEdit2 aria-hidden="true" className="size-4 shrink-0" />
+          <FiEdit2 aria-hidden="true" className="size-3.5 shrink-0" />
         </button>
       )}
       {onCreate && (
@@ -66,7 +66,7 @@ export default function LabelFilterBar({
           title="Crear etiqueta"
           className={iconClass}
         >
-          <FiPlus aria-hidden="true" className="size-4 shrink-0" />
+          <FiPlus aria-hidden="true" className="size-3.5 shrink-0" />
         </button>
       )}
     </section>

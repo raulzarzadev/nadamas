@@ -53,6 +53,7 @@ export default function CollectionsSummary({
             busy={busy}
             onReview={onReview}
             onUpload={() => {}}
+            allowUpload={false}
             onDownload={onDownload}
           />
         ) : (

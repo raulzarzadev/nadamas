@@ -28,7 +28,7 @@ export default function LabelChip({
       disabled={onClick ? disabled : undefined}
       aria-pressed={onClick ? selected : undefined}
       title={label.name}
-      className={`inline-flex shrink-0 items-center rounded-full font-semibold ${size === 'filter' ? 'h-8 gap-1 rounded-xl px-3 text-xs' : size === 'tiny' ? 'h-4 gap-0.5 px-1 text-[9px] leading-none' : 'h-6 gap-1 px-1.5 text-[10px] leading-tight'} ${onClick ? 'transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50' : ''}`}
+      className={`inline-flex shrink-0 items-center rounded-full font-semibold ${size === 'filter' ? 'h-7 gap-1 px-2.5 text-[11px]' : size === 'tiny' ? 'h-4 gap-0.5 px-1 text-[9px] leading-none' : 'h-6 gap-1 px-1.5 text-[10px] leading-tight'} ${onClick ? 'transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50' : ''}`}
       style={{
         backgroundColor: color.color,
         color: color.text,

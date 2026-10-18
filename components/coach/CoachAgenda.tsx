@@ -2394,7 +2394,10 @@ export default function CoachAgenda({
         </ScheduleViews>
       )}
       {batchSlots.length > 0 && (
-        <div className="sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3 shadow-lg">
+        <div
+          data-action-bar
+          className="sticky bottom-[calc(0.75rem+var(--app-tabbar-h,0px))] z-10 flex flex-wrap items-center gap-2 rounded-2xl border border-(--c-border) bg-white p-3 shadow-lg"
+        >
           <p className="basis-full text-xs text-(--c-text-2)" aria-live="polite">
             {[
               selectedIndividualCount > 0 &&

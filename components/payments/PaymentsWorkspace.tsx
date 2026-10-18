@@ -31,7 +31,8 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
   const [guestSchool, setGuestSchool] = useState<{ id: string; name: string } | null>(null)
   // 'mine' = "Mis planes" across every coach/school; 'search' = search + popular plans;
   // 'scope' = one picked coach/school.
-  // Coach: 'mine' = plans they offer (create/edit); 'students' = balances, payments, history.
+  // Coach/Coordinador: 'mine' = plans offered (create/edit); 'students' = payments to
+  // verify, latest payments and students' plans.
   const [settingsSlot, setSettingsSlot] = useState<HTMLSpanElement | null>(null)
   const [coachView, setCoachView] = useState<'mine' | 'students'>(
     params.get('tab') === 'orders' ? 'students' : 'mine'
@@ -138,15 +139,15 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     scopeEndpoint && mode === 'athlete' ? `${scopeEndpoint}&view=student` : scopeEndpoint
   return (
     <div className="grid gap-4">
-      {mode === 'coach' && (
+      {(mode === 'coach' || mode === 'school') && (
         <div className="grid gap-3">
           <h1 className="sr-only">Planes y pagos</h1>
           <div className="flex items-center gap-2">
             <nav aria-label="Vista de planes" className="flex min-w-0 flex-wrap gap-2">
               {(
                 [
-                  ['mine', 'Mis planes'],
-                  ['students', 'Mis cobros'],
+                  ['mine', mode === 'school' ? 'Planes' : 'Mis planes'],
+                  ['students', mode === 'school' ? 'Cobros' : 'Mis cobros'],
                 ] as const
               ).map(([value, label]) => (
                 <button
@@ -245,11 +246,11 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
         <PopularPlansList schoolId={tenant?.id} onOpen={openScope} />
       ) : endpoint ? (
         <PaymentsPanel
-          hideTitle={mode !== 'school'}
-          plansOnly={mode === 'athlete' || (mode === 'coach' && coachView === 'mine')}
-          settingsSlot={mode === 'coach' ? settingsSlot : undefined}
-          hidePlans={mode === 'coach' && coachView === 'students'}
-          collections={mode === 'coach' && coachView === 'students'}
+          hideTitle
+          plansOnly={mode === 'athlete' || coachView === 'mine'}
+          settingsSlot={mode !== 'athlete' ? settingsSlot : undefined}
+          hidePlans={mode !== 'athlete' && coachView === 'students'}
+          collections={mode !== 'athlete' && coachView === 'students'}
           onPurchased={mode === 'athlete' ? () => setView('mine') : undefined}
           emptyPlansText={
             mode === 'athlete'

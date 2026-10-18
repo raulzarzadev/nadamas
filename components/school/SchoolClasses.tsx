@@ -4,7 +4,6 @@ import Sheet from '@comps/ui/sheet'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { FiCheck, FiMapPin, FiMessageSquare, FiPlus, FiX } from 'react-icons/fi'
-import { LuHourglass } from 'react-icons/lu'
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import PaymentBookingOptions from '@/components/payments/PaymentBookingOptions'
 import ClassCard from '@/components/ui/class-card'
@@ -31,6 +30,7 @@ import {
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
 import { useSchoolSelection } from './useSchoolSelection'
+import CoachScopeBar from '@/components/coach/CoachScopeBar'
 
 interface Teacher {
   status?: string
@@ -83,7 +83,8 @@ export default function SchoolClasses() {
   const [requests, setRequests] = useState<SchoolClassRequest[]>([])
   const [resolvingRequestId, setResolvingRequestId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
-  const [showRequests, setShowRequests] = useState(false)
+  // Opened from the bell / Notificaciones ("Solicitudes pendientes" → ?requests=1).
+  const [showRequests, setShowRequests] = useState(() => searchParams.get('requests') !== null)
   const [showArchivedRequests, setShowArchivedRequests] = useState(false)
   const [archivedRequestLimit, setArchivedRequestLimit] = useState(10)
   const [archivingRequestId, setArchivingRequestId] = useState<string | null>(null)
@@ -420,33 +421,19 @@ export default function SchoolClasses() {
             onChange={selectSchool}
           />
           {isDirector && (
-            <div className="flex w-full min-w-0 flex-1 items-end gap-2">
-              <fieldset className="grid min-w-0 flex-1 gap-2">
-                <legend className="mb-2 text-sm font-bold text-(--c-ocean)">
-                  Administrar horarios de {coachSingular}
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {[{ id: '', name: 'Todos' }, ...scheduleCoachOptions].map((coach) => (
-                    <button
-                      key={coach.id}
-                      type="button"
-                      disabled={loading}
-                      aria-pressed={scheduleCoachId === coach.id}
-                      onClick={() => setScheduleCoachId(coach.id)}
-                      className={`min-h-8 rounded-full border px-2.5 py-1 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${scheduleCoachId === coach.id ? 'border-(--c-ocean) bg-(--c-ocean) text-white [&>span]:text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'} [&>span]:border-0 [&>span]:bg-transparent [&>span]:p-0 [&>span]:text-xs`}
-                    >
-                      {coach.id ? (
-                        <CoachBadge
-                          name={coach.name}
-                          unassigned={coach.id === UNASSIGNED_SCHOOL_COACH_ID}
-                        />
-                      ) : (
-                        'Todos'
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
+            <div className="flex w-full min-w-0 flex-1">
+              <CoachScopeBar
+                options={[
+                  { id: '', label: 'Todos los horarios' },
+                  ...scheduleCoachOptions.map((coach) => ({ id: coach.id, label: coach.name })),
+                ]}
+                value={scheduleCoachId}
+                defaultValue=""
+                onChange={setScheduleCoachId}
+                disabled={loading}
+                sheetTitle={`Horarios de ${coachSingular}`}
+                sheetDescription={`Elige de qué ${coachSingular} ver y administrar los horarios.`}
+              />
             </div>
           )}
         </div>
@@ -831,24 +818,6 @@ export default function SchoolClasses() {
           schoolId={selected.school.id}
           coachId={isDirector && scheduleCoachId ? scheduleCoachId : undefined}
           aggregateSchool
-          toolbarActions={
-            requests.length > 0 || visibleClasses.length > 0 || archivedClasses.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowArchivedRequests(false)
-                  setShowRequests(true)
-                }}
-                aria-haspopup="dialog"
-                className="btn btn-outline h-8 min-h-8 gap-1 border px-2 text-xs"
-              >
-                <LuHourglass aria-hidden="true" /> Mis solicitudes
-                <span className="rounded-full bg-(--c-surface) px-1.5 py-0.5 text-xs text-(--c-ocean)">
-                  {activeRequests.length + visibleClasses.length}
-                </span>
-              </button>
-            ) : undefined
-          }
           readOnly={!isDirector}
           manageSchoolSchedule={isDirector}
           allowSchoolScheduleEdit={isDirector}

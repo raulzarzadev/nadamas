@@ -43,7 +43,8 @@ export default function FloatingAssistant() {
             ? { left: position.x, top: position.y }
             : {
                 right: 'max(1rem, env(safe-area-inset-right))',
-                bottom: 'calc(1rem + max(env(safe-area-inset-bottom), var(--app-tabbar-h, 0px)))',
+                bottom:
+                  'calc(1rem + max(env(safe-area-inset-bottom), var(--app-tabbar-h, 0px)) + var(--app-actionbar-h, 0px))',
               }
         }
         onPointerDown={(event) => {

@@ -11,13 +11,25 @@ import type {
   SchoolAttendanceReport as Report,
 } from '@/lib/school-attendance-report'
 
-export default function SchoolAttendanceReport({ schoolId }: { schoolId: string }) {
+export default function SchoolAttendanceReport({
+  schoolId,
+  subtle = false,
+}: {
+  schoolId: string
+  // Small outline pill for toolbars (Alumnos); default is the regular button.
+  subtle?: boolean
+}) {
   const [open, setOpen] = useState(false)
   return (
     <>
       <button
         type="button"
-        className="btn btn-outline min-h-11 gap-2"
+        title="Pases de lista"
+        className={
+          subtle
+            ? 'inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3 text-xs font-semibold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)'
+            : 'btn btn-outline min-h-11 gap-2'
+        }
         onClick={() => setOpen(true)}
       >
         <FiClipboard aria-hidden="true" />

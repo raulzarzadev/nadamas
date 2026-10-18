@@ -1,7 +1,9 @@
 'use client'
 
 import NotificationItem from '@comps/notifications/NotificationItem'
+import PendingSchoolRequests from '@comps/notifications/PendingSchoolRequests'
 import PushNotificationsControl from '@comps/notifications/PushNotificationsControl'
+import usePendingSchoolRequests from '@comps/notifications/usePendingSchoolRequests'
 import useProfileInvitations from '@comps/notifications/useProfileInvitations'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
@@ -32,6 +34,7 @@ export default function NotificationsBell() {
   const [schoolInvitations, setSchoolInvitations] = useState<SchoolInvitationPreview[]>([])
   const [open, setOpen] = useState(false)
   const profileInvitations = useProfileInvitations(uid, open)
+  const pendingRequests = usePendingSchoolRequests(uid)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -78,7 +81,10 @@ export default function NotificationsBell() {
   if (!uid) return null
 
   const unreadCount = items.reduce((count, item) => count + (item.readAt ? 0 : 1), 0)
-  const pendingInvitationCount = schoolInvitations.length + profileInvitations.length
+  const pendingInvitationCount =
+    schoolInvitations.length +
+    profileInvitations.length +
+    pendingRequests.reduce((sum, item) => sum + item.count, 0)
 
   const toggle = () => {
     setOpen((wasOpen) => {
@@ -119,9 +125,23 @@ export default function NotificationsBell() {
         <div className="fixed left-3 right-3 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-md)] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[min(20rem,calc(100vw-1.5rem))]">
           <div className="flex items-center justify-between px-3 py-2.5">
             <p className="text-sm font-bold text-[var(--c-ocean)]">Notificaciones</p>
-            <PushNotificationsControl compact />
+            <div className="flex items-center gap-1">
+              <Link
+                href="/notifications"
+                onClick={() => setOpen(false)}
+                className="rounded-full px-2 py-1 text-xs font-bold text-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]"
+              >
+                Ver todas
+              </Link>
+              <PushNotificationsControl compact />
+            </div>
           </div>
           <div className="max-h-[60vh] overflow-y-auto border-t border-[var(--c-border)]">
+            <PendingSchoolRequests
+              items={pendingRequests}
+              showSchool={new Set(pendingRequests.map((item) => item.schoolId)).size > 1}
+              onNavigate={() => setOpen(false)}
+            />
             {schoolInvitations.length > 0 && (
               <div className="border-b border-[var(--c-border)]">
                 <p className="px-3 pb-1 pt-3 text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
@@ -145,7 +165,9 @@ export default function NotificationsBell() {
                 ))}
               </div>
             )}
-            {preview.length === 0 && schoolInvitations.length === 0 ? (
+            {preview.length === 0 &&
+            schoolInvitations.length === 0 &&
+            pendingRequests.length === 0 ? (
               <p className="px-3 py-8 text-center text-sm text-[var(--c-text-2)]">
                 No tienes notificaciones.
               </p>
@@ -159,13 +181,6 @@ export default function NotificationsBell() {
               ))
             )}
           </div>
-          <Link
-            href="/notifications"
-            onClick={() => setOpen(false)}
-            className="block border-t border-[var(--c-border)] px-3 py-2.5 text-center text-sm font-bold text-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]"
-          >
-            Ver todas
-          </Link>
         </div>
       )}
     </div>

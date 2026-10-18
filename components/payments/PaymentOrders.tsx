@@ -70,6 +70,7 @@ export default function PaymentOrders({
   onReview,
   onUpload,
   onDownload,
+  allowUpload = true,
 }: {
   orders: PaymentOrder[]
   canAccess: (order: PaymentOrder) => boolean
@@ -78,6 +79,8 @@ export default function PaymentOrders({
   onReview: (order: PaymentOrder, status: 'approved' | 'rejected') => void
   onUpload: (order: PaymentOrder, file: File) => void
   onDownload: (order: PaymentOrder) => void
+  // false where only the payer's receipt is reviewed (e.g. "Mis cobros").
+  allowUpload?: boolean
 }) {
   if (!orders.length)
     return <p className="py-4 text-sm text-(--c-text-2)">Todavía no hay pagos registrados.</p>
@@ -117,26 +120,29 @@ export default function PaymentOrders({
                 <FiDownload aria-hidden="true" /> Comprobante
               </button>
             )}
-            {order.status === 'pending' && order.method === 'transfer' && canAccess(order) && (
-              <label
-                className={`btn btn-ghost relative min-h-11 gap-1 text-xs ${busy ? 'pointer-events-none opacity-50' : ''}`}
-              >
-                <FiUpload aria-hidden="true" />
-                {order.receiptPath ? 'Cambiar comprobante' : 'Subir comprobante'}
-                <input
-                  disabled={busy}
-                  aria-label={`Subir comprobante de ${order.product.name}`}
-                  type="file"
-                  accept="image/png,image/jpeg,application/pdf"
-                  className="absolute inset-0 cursor-pointer opacity-0"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0]
-                    if (file) onUpload(order, file)
-                    event.target.value = ''
-                  }}
-                />
-              </label>
-            )}
+            {allowUpload &&
+              order.status === 'pending' &&
+              order.method === 'transfer' &&
+              canAccess(order) && (
+                <label
+                  className={`btn btn-ghost relative min-h-11 gap-1 text-xs ${busy ? 'pointer-events-none opacity-50' : ''}`}
+                >
+                  <FiUpload aria-hidden="true" />
+                  {order.receiptPath ? 'Cambiar comprobante' : 'Subir comprobante'}
+                  <input
+                    disabled={busy}
+                    aria-label={`Subir comprobante de ${order.product.name}`}
+                    type="file"
+                    accept="image/png,image/jpeg,application/pdf"
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (file) onUpload(order, file)
+                      event.target.value = ''
+                    }}
+                  />
+                </label>
+              )}
             {manager && order.status === 'pending' && (
               <>
                 <button

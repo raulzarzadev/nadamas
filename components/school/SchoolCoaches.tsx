@@ -3,14 +3,15 @@
 import Sheet from '@comps/ui/sheet'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiClipboard, FiClock, FiEdit2, FiPhone, FiSend, FiShield } from 'react-icons/fi'
+import { FiClock, FiEdit2, FiPhone, FiSearch, FiSend, FiShield } from 'react-icons/fi'
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
-import CoachBadge from '@/components/ui/coach-badge'
+import ClassStudentRow from '@/components/ui/class-student-row'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, getCachedAuthedData, patchAuthed, postAuthed } from '@/lib/client/authed-api'
+import { normalizeEntitySearch } from '@/lib/entity-matching'
 import { capitalizeSchoolTerm, type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
@@ -40,6 +41,7 @@ export default function SchoolCoaches() {
   const [teachers, setTeachers] = useState<Teacher[]>(cachedTeachers?.teachers || [])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
   const [showInvite, setShowInvite] = useState(false)
+  const [teacherQuery, setTeacherQuery] = useState('')
   const [loading, setLoading] = useState(!cachedTeachers)
   const [message, setMessage] = useState<string | null>(null)
   const [savingPermission, setSavingPermission] = useState<string | null>(null)
@@ -121,23 +123,33 @@ export default function SchoolCoaches() {
   return (
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">{CoachPlural}</h1>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex flex-col gap-2 sm:items-end">
-          <SchoolSelector
-            schools={schools}
-            selectedId={selected.school.id}
-            onChange={selectSchool}
+      <SchoolSelector schools={schools} selectedId={selected.school.id} onChange={selectSchool} />
+      <div className="grid gap-2">
+        <label className="relative min-w-0">
+          <span className="sr-only">Buscar {coachSingular}</span>
+          <FiSearch
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--c-text-2)"
           />
-          {isDirector && (
+          <input
+            type="search"
+            value={teacherQuery}
+            onChange={(event) => setTeacherQuery(event.target.value)}
+            placeholder={`Buscar ${coachSingular}`}
+            className="min-h-11 w-full rounded-full border border-(--c-border) bg-white pr-3 pl-10 text-sm"
+          />
+        </label>
+        {isDirector && (
+          <div className="flex justify-end">
             <button
               type="button"
               onClick={() => setShowInvite(true)}
-              className="btn btn-primary min-h-11 gap-2"
+              className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3 text-xs font-semibold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
             >
               <FiSend aria-hidden="true" /> Invitar {coachSingular}
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       {message && (
         <p className="rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
@@ -162,51 +174,45 @@ export default function SchoolCoaches() {
           )}
           {teachers
             .filter(
-              (teacher) => !isDirector || filteredIds === null || filteredIds.includes(teacher.id)
+              (teacher) =>
+                (!isDirector || filteredIds === null || filteredIds.includes(teacher.id)) &&
+                normalizeEntitySearch(teacher.name).includes(normalizeEntitySearch(teacherQuery))
             )
             .map((teacher) => (
-              <article
-                key={teacher.id}
-                className="flex flex-wrap items-center gap-2 rounded-xl border border-(--c-border) bg-white px-3 py-2"
-              >
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                  <CoachBadge name={teacher.name} />
-                  {isDirector && (
-                    <StudentLabels
-                      key={`${teacher.id}:${labelRevision}`}
-                      studentId={teacher.id}
-                      schoolId={schoolId}
-                      entity="teachers"
-                      data={{
-                        labels: labelData?.labels || [],
-                        selected: labelData?.assignments[teacher.id] || [],
-                      }}
-                      readOnly
-                    />
-                  )}
-                </div>
-                <span className="text-xs text-(--c-text-2)">
-                  {teacher.availability.length} horarios
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setScheduleTeacher(teacher)}
-                  aria-label={`Ver horarios de ${teacher.name}`}
-                  title="Ver horarios"
-                  className="grid size-8 place-items-center rounded-full border border-(--c-border) text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-                >
-                  <FiClock aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTeacherProfile(teacher)}
-                  aria-label={`Abrir ficha de ${teacher.name}`}
-                  title="Abrir ficha"
-                  className="grid size-8 place-items-center rounded-full border border-(--c-border) text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-                >
-                  <FiClipboard aria-hidden="true" />
-                </button>
-              </article>
+              <div key={teacher.id} className="rounded-xl border border-(--c-border)">
+                <ClassStudentRow
+                  name={teacher.name}
+                  labels={
+                    isDirector && (
+                      <StudentLabels
+                        key={`${teacher.id}:${labelRevision}`}
+                        studentId={teacher.id}
+                        schoolId={schoolId}
+                        entity="teachers"
+                        data={{
+                          labels: labelData?.labels || [],
+                          selected: labelData?.assignments[teacher.id] || [],
+                        }}
+                        readOnly
+                        compact
+                      />
+                    )
+                  }
+                  actions={
+                    <button
+                      type="button"
+                      onClick={() => setScheduleTeacher(teacher)}
+                      aria-label={`Ver horarios de ${teacher.name}`}
+                      title="Ver horarios"
+                      className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-(--c-border) bg-white px-2.5 text-xs font-semibold text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                    >
+                      <FiClock aria-hidden="true" /> {teacher.availability.length}
+                    </button>
+                  }
+                  onEdit={() => setTeacherProfile(teacher)}
+                  editLabel={`Abrir ficha de ${teacher.name}`}
+                />
+              </div>
             ))}
           {isDirector &&
             filteredIds !== null &&

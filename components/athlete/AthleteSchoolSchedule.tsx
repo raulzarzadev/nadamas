@@ -2,7 +2,7 @@
 
 import Sheet from '@comps/ui/sheet'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FiUser, FiUsers, FiX } from 'react-icons/fi'
+import { FiChevronRight, FiUser, FiUsers, FiX } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import PaymentsPanel from '@/components/payments/PaymentsPanel'
 import AdditionalProfileCreateModal from '@/components/profile/AdditionalProfileCreateModal'
@@ -1230,30 +1230,36 @@ export default function AthleteSchoolSchedule({
         )}
       </ScheduleViews>
       {chosenSlots.length > 0 && (
-        <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-(--c-border) bg-white p-3 shadow-lg">
+        <div
+          data-action-bar
+          className="sticky bottom-[calc(0.75rem+var(--app-tabbar-h,0px))] z-10 flex items-center gap-2 rounded-2xl border border-(--c-border) bg-white px-3 py-2 shadow-lg"
+        >
           <button
             type="button"
             aria-haspopup="dialog"
+            aria-label={`Ver ${chosenSlots.length} ${chosenSlots.length === 1 ? 'horario seleccionado' : 'horarios seleccionados'}`}
             onClick={() => setShowSelectedSlots(true)}
-            className="min-h-11 text-left text-sm font-bold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+            className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-1 truncate text-left text-sm font-bold text-(--c-aqua-strong) underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
           >
-            {chosenSlots.length}{' '}
-            {chosenSlots.length === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
+            Ver {chosenSlots.length} {chosenSlots.length === 1 ? 'horario' : 'horarios'}
+            <FiChevronRight aria-hidden="true" className="shrink-0" />
           </button>
-          <div className="flex gap-2">
+          <div className="flex shrink-0 items-center gap-1.5">
             <button
               type="button"
-              className="btn btn-outline min-h-11"
+              aria-label="Limpiar selección"
+              title="Limpiar selección"
+              className="grid size-10 place-items-center rounded-full border border-(--c-border) text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
               onClick={() => {
                 setChosenSlots([])
                 completedBookings.current.clear()
               }}
             >
-              Limpiar
+              <FiX aria-hidden="true" />
             </button>
             <button
               type="button"
-              className="btn btn-primary min-h-11"
+              className="btn btn-primary min-h-10"
               onClick={() => {
                 setError('')
                 setSelectedSlot(chosenSlots[0])

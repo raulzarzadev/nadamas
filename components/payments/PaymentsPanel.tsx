@@ -554,27 +554,30 @@ export default function PaymentsPanel({
                   <FiEdit2 aria-hidden="true" />
                 </button>
               )}
-              <button
-                type="button"
-                disabled={
-                  !student ||
-                  !product.active ||
-                  (!data.manager &&
-                    !(product.mode === 'classes'
-                      ? data.settings.classesEnabled
-                      : data.settings.periodsEnabled)) ||
-                  busy ||
-                  (!data.manager && student.ownerId !== viewerId)
-                }
-                onClick={() => {
-                  operationId.current = crypto.randomUUID()
-                  setPurchase(product)
-                  setFile(null)
-                }}
-                className="btn btn-outline min-h-11 text-xs"
-              >
-                {data.manager ? 'Registrar pago' : 'Adquirir'}
-              </button>
+              {/* In the plans-only catalog a manager has no student picked, so registering a payment doesn't apply. */}
+              {!(data.manager && plansOnly) && (
+                <button
+                  type="button"
+                  disabled={
+                    !student ||
+                    !product.active ||
+                    (!data.manager &&
+                      !(product.mode === 'classes'
+                        ? data.settings.classesEnabled
+                        : data.settings.periodsEnabled)) ||
+                    busy ||
+                    (!data.manager && student.ownerId !== viewerId)
+                  }
+                  onClick={() => {
+                    operationId.current = crypto.randomUUID()
+                    setPurchase(product)
+                    setFile(null)
+                  }}
+                  className="btn btn-outline min-h-11 text-xs"
+                >
+                  {data.manager ? 'Registrar pago' : 'Adquirir'}
+                </button>
+              )}
             </article>
           ))}
         </section>

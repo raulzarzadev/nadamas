@@ -26,7 +26,7 @@ export default function AppChrome({
           indicator inset); bottom-fixed UI offsets itself by it. */}
       <div
         data-theme="nadamas"
-        className="min-h-screen bg-[var(--c-bg)] text-[var(--c-ocean)] max-sm:has-[[data-app-tabbar]]:[--app-tabbar-h:calc(4rem+env(safe-area-inset-bottom))]"
+        className="min-h-screen bg-[var(--c-bg)] text-[var(--c-ocean)] max-sm:has-[[data-app-tabbar]]:[--app-tabbar-h:calc(4rem+env(safe-area-inset-bottom))] has-[[data-action-bar]]:[--app-actionbar-h:4.5rem]"
       >
         <ScrollToTop />
         {!classDetails && <AppNav mode={mode} />}

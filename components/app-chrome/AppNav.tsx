@@ -54,7 +54,6 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const terminology = useSchoolTerminology()
   const role = modeProp ?? activeRole
   const pathname = usePathname()
-  const schoolPathname = role === 'school' ? pathname : ''
   const { selected: selectedSchool, status: schoolSelectionStatus } = useSchoolSelection({
     includePersonal: role === 'coach' || role === 'athlete',
     athleteMode: role === 'athlete',
@@ -113,7 +112,8 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
       (schoolSelectionStatus === 'ready' && selectedSchool !== null))
 
   useEffect(() => {
-    if (!tenant && role === 'school' && !schoolPathname.startsWith('/school/')) return
+    // Loaded on every page (incl. shared ones like /notifications): Coordinador needs the
+    // school's name and director access, and the role menu uses it in every mode.
 
     let active = true
     const storedSchoolId = window.localStorage.getItem('nadamas.schoolId')
@@ -165,7 +165,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
       active = false
       window.removeEventListener('nadamas:school-access-updated', refreshSchoolAccess)
     }
-  }, [role, schoolPathname, tenant])
+  }, [tenant])
 
   // Athlete search lives inside Horarios, so its pages keep that tab active.
   const isActiveNav = (href: string) =>
@@ -188,6 +188,17 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
       <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="relative flex items-center gap-2 sm:gap-4">
+            {/* Coordinador: the school's name centered in the navbar. */}
+            {!tenant && role === 'school' && schoolAccess && (
+              <p className="pointer-events-none absolute inset-x-0 mx-auto grid w-fit max-w-[40%] text-center leading-tight sm:max-w-[50%]">
+                <span className="text-[9px] font-semibold tracking-wide text-(--c-text-2) uppercase">
+                  Escuela
+                </span>
+                <span className="truncate text-sm font-bold text-(--c-ocean)">
+                  {schoolAccess.school.name}
+                </span>
+              </p>
+            )}
             <Link
               href="/"
               className={tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'}
@@ -231,15 +242,6 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
               />
             </div>
           </div>
-
-          {!tenant && role === 'school' && schoolAccess && (
-            <div className="flex items-center justify-between gap-3">
-              <p className="min-w-0 truncate text-left text-sm font-bold text-[var(--c-ocean)]">
-                <span className="font-normal text-[var(--c-text-2)]">Escuela · </span>
-                {schoolAccess.school.name}
-              </p>
-            </div>
-          )}
 
           {canShowWorkspaceNavigation && (
             <nav

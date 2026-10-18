@@ -14,11 +14,17 @@ export default function CoachScopeBar({
   value,
   defaultValue,
   onChange,
+  sheetTitle = 'Espacio de trabajo',
+  sheetDescription = 'Tus clases particulares o las escuelas donde eres entrenador.',
+  disabled = false,
 }: {
   options: ScopeOption[]
   value: string
   defaultValue: string
   onChange: (id: string) => void
+  sheetTitle?: string
+  sheetDescription?: string
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const selected = options.find((option) => option.id === value) || options[0]
@@ -33,9 +39,10 @@ export default function CoachScopeBar({
         <button
           type="button"
           aria-haspopup="dialog"
-          aria-label={`${selected?.label}. Cambiar espacio de trabajo`}
+          aria-label={`${selected?.label}. Cambiar ${sheetTitle.toLocaleLowerCase('es')}`}
+          disabled={disabled}
           onClick={() => setOpen(true)}
-          className={`flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-full border border-(--c-border) bg-white px-4 text-left text-sm shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-colors hover:border-(--c-aqua-strong) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${clearable ? 'pr-14' : ''}`}
+          className={`flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-full border border-(--c-border) bg-white px-4 text-left text-sm shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-colors hover:border-(--c-aqua-strong) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${clearable ? 'pr-14' : ''}`}
         >
           <FiSearch aria-hidden="true" className="size-5 shrink-0 text-(--c-ocean)" />
           <span className="truncate font-semibold text-(--c-ocean)">{selected?.label}</span>
@@ -52,12 +59,10 @@ export default function CoachScopeBar({
           </button>
         )}
       </div>
-      <Sheet open={open} onClose={() => setOpen(false)} label="Espacio de trabajo">
+      <Sheet open={open} onClose={() => setOpen(false)} label={sheetTitle}>
         <div className="grid min-w-0 grid-cols-1 gap-3">
-          <h2 className="text-xl font-bold text-(--c-ocean)">Espacio de trabajo</h2>
-          <p className="text-sm text-(--c-text-2)">
-            Tus clases particulares o las escuelas donde eres entrenador.
-          </p>
+          <h2 className="text-xl font-bold text-(--c-ocean)">{sheetTitle}</h2>
+          <p className="text-sm text-(--c-text-2)">{sheetDescription}</p>
           <ul className="grid min-w-0 grid-cols-1 gap-2">
             {options.map((option) => {
               const active = option.id === selected?.id
