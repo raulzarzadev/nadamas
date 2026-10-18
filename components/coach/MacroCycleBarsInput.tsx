@@ -161,46 +161,28 @@ export default function MacroCycleBarsInput({
                   }
                 />
               )}
-              {!expanded[cycle.id] && (
-                <CycleDateLabels
-                  min={macro.startDate}
-                  max={macro.endDate}
-                  startDate={cycle.startDate}
-                  endDate={cycle.endDate}
-                  title={cycle.title}
-                  disabled={disabled}
-                  onEdit={
-                    readOnly
-                      ? undefined
-                      : () => {
-                          setName(cycle.title)
-                          setEditingName(cycle)
-                        }
-                  }
-                />
-              )}
+              <CycleDateLabels
+                min={macro.startDate}
+                max={macro.endDate}
+                startDate={cycle.startDate}
+                endDate={cycle.endDate}
+                title={cycle.title}
+                disabled={disabled}
+                onEdit={
+                  readOnly
+                    ? undefined
+                    : () => {
+                        setName(cycle.title)
+                        setEditingName(cycle)
+                      }
+                }
+              />
               <div id={`${detailsPrefix}-${cycle.id}`} hidden={!expanded[cycle.id]}>
                 {expanded[cycle.id] && (
                   <div className="mt-0.5 grid gap-2">
                     <div
                       aria-hidden="true"
                       className={`h-6 w-full rounded-full ${cycle.type === 'micro' ? 'bg-[#258575]/50' : 'bg-[#79b9cf]'}`}
-                    />
-                    <CycleDateLabels
-                      min={cycle.startDate}
-                      max={cycle.endDate}
-                      startDate={cycle.startDate}
-                      endDate={cycle.endDate}
-                      title={cycle.title}
-                      disabled={disabled}
-                      onEdit={
-                        readOnly
-                          ? undefined
-                          : () => {
-                              setName(cycle.title)
-                              setEditingName(cycle)
-                            }
-                      }
                     />
                     {cycle.type === 'meso' && (
                       <MacroCycleBarsInput
