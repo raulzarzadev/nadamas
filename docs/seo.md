@@ -36,6 +36,18 @@ El usuario confirmó con una captura que `nadamas.app` ya está agregado a Searc
 4. En PostHog, revisar visitas a la página comercial y a los recursos, después acceso a `/login` y uso de la app por usuarios identificados. Configurar el embudo según eventos disponibles; una visita a login no equivale a un registro nuevo.
 5. Compartir cada recurso con un resumen útil en canales propios y comunidades que permitan hacerlo.
 
+## Verificación y envío a buscadores (2026-10-18)
+
+- Producción sirve `/robots.txt`, `/sitemap.xml` y `/llms.txt` con estado 200. Las 11 páginas del sitemap responden 200, declaran canonical del dominio principal y permiten indexación.
+- Google Search Console: propiedad de dominio `nadamas.app` existente; sitemap enviado el 12 de octubre, leído el 17 de octubre, estado **Correcto**, 11 páginas descubiertas. No es necesario enviarlo de nuevo sin cambios.
+- Bing Webmaster Tools: dominio añadido y verificado en la cuenta existente mediante `public/BingSiteAuth.xml`; debe permanecer publicado para conservar la verificación.
+- Sitemap enviado a Bing el 18 de octubre de 2026: aparece registrado con estado **Processing**, sin errores ni advertencias reportados al enviarlo.
+- IndexNow: archivo de verificación público en `public/` con nombre hexadecimal de 32 caracteres. No es una credencial de acceso a la aplicación.
+- Después de publicar cambios de contenido, ejecutar `node scripts/submit-indexnow.mjs` para enviar las URLs públicas del sitemap, o pasar URLs canónicas específicas como argumentos. El script comprueba primero la clave publicada y rechaza URLs ajenas al sitemap, parámetros y otros dominios.
+- Un envío aceptado por IndexNow indica recepción; no garantiza rastreo, indexación ni citas de IA. Google utiliza su sitemap y Search Console; no se envían peticiones a su Indexing API para páginas comerciales.
+- Primer envío a IndexNow: 11 URLs recibidas el 18 de octubre de 2026, HTTP 202 (validación de clave pendiente). Los dos archivos de verificación se publicaron en Vercel mediante un despliegue aislado basado en `e52cca8`, sin incluir cambios locales de agenda.
+- `llms.txt` se publica en el propio sitio; no hay un registro universal de SEO/GEO al que deba enviarse. Mantener sus datos sincronizados con el contenido visible y no incluir información privada.
+
 ## Cadencia propuesta
 
 Dos recursos mensuales durante tres meses. Próximos temas: organizar grupos por nivel, coordinar horarios y elegir software para una escuela de natación. Antes de escribir, revisar consultas de Search Console y preguntas reales de escuelas. Evitar páginas que repitan la misma intención.
