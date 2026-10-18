@@ -2,9 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { FiSearch } from 'react-icons/fi'
+import PaymentStatusBadge from '@/components/payments/PaymentStatusBadge'
 import ClassStudentRow from '@/components/ui/class-student-row'
 import LabelFilterBar from '@/components/ui/label-filter-bar'
+import { useUser } from '@/context/UserContext'
+import { PaymentCRUD } from '@/firebase/payments/main'
 import { getAuthed } from '@/lib/client/authed-api'
+import { localPaymentDate } from '@/lib/payments/engine'
+import type { PaymentSnapshot } from '@/lib/payments/model'
+import { studentPaymentStatus } from '@/lib/payments/student-status'
 import type { SchoolStudent } from '@/lib/school'
 import AddStudentModal from './AddStudentModal'
 import StudentLabels from './StudentLabels'
@@ -38,6 +44,29 @@ export default function CoachAllStudents({
   const [profile, setProfile] = useState<Row | null>(null)
   const [revision, setRevision] = useState(0)
   const [adding, setAdding] = useState(false)
+  // Coach's personal payments (school payments belong to Coordinador mode).
+  const { user } = useUser() as { user: { uid?: string; id?: string } | null | undefined }
+  const coachId = user?.uid || user?.id || ''
+  const [payments, setPayments] = useState<PaymentSnapshot | null>(null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: revision reloads after edits.
+  useEffect(() => {
+    if (!coachId) return
+    let active = true
+    PaymentCRUD.get(`/api/payments?coachId=${encodeURIComponent(coachId)}`)
+      .then((snapshot) => {
+        if (active && snapshot?.accounts) setPayments(snapshot)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [coachId, revision])
+  const paymentToday = payments ? localPaymentDate(Date.now(), payments.settings.timezone) : ''
+  const paymentStatus = (row: Row) => {
+    if (!payments || !row.contexts.some((context) => !context.schoolId)) return null
+    const id = row.identities.find((identity) => payments.accounts[identity]?.grants?.length)
+    return studentPaymentStatus(id ? payments.accounts[id] : undefined, paymentToday)
+  }
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision reloads labels and profiles after edits.
   useEffect(() => {
     let active = true
@@ -221,6 +250,10 @@ export default function CoachAllStudents({
                     </span>
                   </>
                 }
+                actions={(() => {
+                  const status = paymentStatus(row)
+                  return status && <PaymentStatusBadge status={status} />
+                })()}
                 onEdit={() => setProfile(row)}
                 editLabel={`Ver perfil de ${row.name}`}
               />
