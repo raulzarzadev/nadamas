@@ -72,6 +72,7 @@ service cloud.firestore {
       // Specific matches do not override a wildcard allow: exclude their
       // collections here, including server-only financial/authentication data.
       return ![
+        'trainingPlans',
         'marketingPreferences',
         'marketingSuppressions',
         'marketingCampaigns',
@@ -172,6 +173,20 @@ service cloud.firestore {
         resource.data.get('actorId', '') == request.auth.uid
       );
       allow write: if false;
+    }
+
+    match /trainingPlans/{id} {
+      allow read, delete: if isOwner(resource);
+      allow create: if isOwner(request.resource)
+        && request.resource.data.keys().hasOnly(['userId', 'createdAt', 'cycles'])
+        && request.resource.data.cycles is list
+        && request.resource.data.cycles.size() > 0
+        && request.resource.data.cycles.size() <= 100;
+      allow update: if isOwner(resource) && isOwner(request.resource)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cycles', 'updatedAt'])
+        && request.resource.data.cycles is list
+        && request.resource.data.cycles.size() > 0
+        && request.resource.data.cycles.size() <= 100;
     }
 
     // Owner-scoped domain collections (athletes, atheltes [sic], teams,

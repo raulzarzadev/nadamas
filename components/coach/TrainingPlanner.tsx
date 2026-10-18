@@ -1,0 +1,688 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import {
+  FiActivity,
+  FiCheck,
+  FiChevronRight,
+  FiEdit2,
+  FiInfo,
+  FiPlus,
+  FiTrash2,
+} from 'react-icons/fi'
+import DateInput from '@/components/ui/date-input'
+import Sheet from '@/components/ui/sheet'
+import { useUser } from '@/context/UserContext'
+import { TrainingPlanCRUD } from '@/firebase/training-plans/main'
+import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
+import {
+  CHILD_CYCLE,
+  CYCLE_LABELS,
+  type CycleType,
+  type TrainingCycle,
+  validateTrainingCycle,
+} from '@/lib/training-planner'
+import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import MacroCycleBarsInput from './MacroCycleBarsInput'
+import MacroCyclePeriodInput from './MacroCyclePeriodInput'
+import TrainingCycleTimeline from './TrainingCycleTimeline'
+import TrainingPlanOverview from './TrainingPlanOverview'
+
+const actionClass =
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-4 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
+const primaryClass = `${actionClass} border-transparent bg-(--c-ocean)! text-white! hover:opacity-90`
+const fieldClass =
+  'box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 py-2 font-normal text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)'
+const dateLabel = (value: string) =>
+  value
+    ? new Date(`${value}T12:00:00`).toLocaleDateString('es-MX', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : 'Sin fecha'
+const contentLabel = (type: CycleType) =>
+  type === 'micro' ? 'Sesiones y trabajo de la semana' : 'Contenido y enfoque'
+type CycleField = 'title' | 'dates' | 'goal' | 'content'
+const FIELD_LABELS: Record<CycleField, string> = {
+  title: 'nombre',
+  dates: 'fechas',
+  goal: 'objetivo',
+  content: 'contenido',
+}
+const isoDate = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
+export default function TrainingPlanner() {
+  const { user } = useUser()
+  const uid = user?.uid || user?.id
+  const [plans, setPlans] = useState<TrainingPlan[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [revision, setRevision] = useState(0)
+  const [planId, setPlanId] = useState<string | null>(null)
+  const [cycleId, setCycleId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<TrainingCycle | null>(null)
+  const [childDrafts, setChildDrafts] = useState<TrainingCycle[] | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [infoOpen, setInfoOpen] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editField, setEditField] = useState<CycleField | null>(null)
+
+  // Retry deliberately reloads the same owner-scoped collection.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: revision triggers an explicit retry.
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setPlans([])
+    setPlanId(null)
+    setCycleId(null)
+    setLoadError(false)
+    if (!uid)
+      return () => {
+        active = false
+      }
+    TrainingPlanCRUD.list(uid)
+      .then((items) => {
+        if (active) setPlans(items.sort((a, b) => b.createdAt - a.createdAt))
+      })
+      .catch((cause) => {
+        reportInternalError('TRAINING_PLANS_LOAD', cause)
+        if (active) setLoadError(true)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [uid, revision])
+
+  const plan = plans.find((item) => item.id === planId)
+  const cycle =
+    plan?.cycles.find((item) => item.id === cycleId) ||
+    plan?.cycles.find((item) => item.type === 'macro')
+  const parent = plan?.cycles.find((item) => item.id === cycle?.parentId)
+  const children = plan?.cycles.filter((item) => item.parentId === cycle?.id) || []
+  const hasChildren = Boolean(cycle && plan?.cycles.some((item) => item.parentId === cycle.id))
+  const nextType = cycle && cycle.type !== 'micro' ? CHILD_CYCLE[cycle.type] : null
+  const draftParent = plan?.cycles.find((item) => item.id === draft?.parentId)
+  const draftHeading = !draft
+    ? 'Ciclo'
+    : editField
+      ? `Editar ${FIELD_LABELS[editField]}`
+      : CYCLE_LABELS[draft.type]
+
+  async function createMacro() {
+    if (busy || !uid) return
+    const now = new Date()
+    const end = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate())
+    const macro: TrainingCycle = {
+      id: crypto.randomUUID(),
+      parentId: null,
+      type: 'macro',
+      title: `Temporada ${plans.length + 1}`,
+      startDate: isoDate(now),
+      endDate: isoDate(end),
+      goal: '',
+      content: '',
+    }
+    setBusy(true)
+    setError('')
+    try {
+      const result = await TrainingPlanCRUD.create([macro])
+      if (!result?.ok) throw new Error('TRAINING_CREATE_FAILED')
+      const created: TrainingPlan = {
+        id: result.res.id,
+        userId: uid,
+        createdAt: Date.now(),
+        cycles: [macro],
+      }
+      setPlans((items) => [created, ...items])
+      setPlanId(created.id)
+      setCycleId(macro.id)
+      setEditing(true)
+    } catch (cause) {
+      reportInternalError('TRAINING_PLAN_CREATE', cause)
+      setError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function openFieldEdit(field: CycleField) {
+    if (!cycle) return
+    setError('')
+    setEditField(field)
+    setChildDrafts(null)
+    setDraft({ ...cycle })
+  }
+
+  const editButton = (field: CycleField) =>
+    editing && (
+      <button
+        type="button"
+        aria-label={`Editar ${FIELD_LABELS[field]}`}
+        onClick={() => openFieldEdit(field)}
+        className="grid size-8 shrink-0 place-items-center rounded-full text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+      >
+        <FiEdit2 aria-hidden="true" className="size-3.5" />
+      </button>
+    )
+
+  function openCreate(type: CycleType) {
+    const today = isoDate(new Date())
+    setEditField(null)
+    setChildDrafts(type === 'macro' ? [] : null)
+    setError('')
+    setDraft({
+      id: crypto.randomUUID(),
+      parentId: type === 'macro' ? null : cycle?.id || null,
+      type,
+      title: '',
+      startDate: type === 'macro' ? today : cycle?.startDate || '',
+      endDate: type === 'macro' ? '' : cycle?.endDate || '',
+      goal: '',
+      content: '',
+    })
+  }
+
+  async function save() {
+    if (!draft || busy || !uid) return
+    const existing = plan?.cycles.some((item) => item.id === draft.id)
+    const savedDraft = { ...draft, title: draft.title.trim() }
+    const cycles =
+      draft.type === 'macro' && childDrafts !== null
+        ? [savedDraft, ...childDrafts]
+        : existing && plan
+          ? plan.cycles.map((item) => (item.id === draft.id ? savedDraft : item))
+          : [...(draft.type === 'macro' ? [] : plan?.cycles || []), savedDraft]
+    const validation = cycles.map((cycle) => validateTrainingCycle(cycle, cycles)).find(Boolean)
+    if (validation) {
+      setError(validation)
+      return
+    }
+    if (cycles.length > 100) {
+      setError('Este macrociclo ya tiene 100 ciclos. Crea otro macrociclo para continuar.')
+      return
+    }
+    setBusy(true)
+    setError('')
+    try {
+      const result =
+        draft.type === 'macro' && !existing
+          ? await TrainingPlanCRUD.create(cycles)
+          : plan
+            ? await TrainingPlanCRUD.update(plan.id, cycles)
+            : undefined
+      if (!result?.ok) throw new Error('TRAINING_SAVE_FAILED')
+      if (draft.type === 'macro' && !existing) {
+        const created: TrainingPlan = {
+          id: result.res.id,
+          userId: uid,
+          createdAt: Date.now(),
+          cycles,
+        }
+        setPlans((items) => [created, ...items])
+        setPlanId(created.id)
+      } else {
+        setPlans((items) =>
+          items.map((item) => (item.id === plan?.id ? { ...item, cycles } : item))
+        )
+      }
+      setCycleId(draft.id)
+      setDraft(null)
+    } catch (cause) {
+      reportInternalError('TRAINING_PLAN_SAVE', cause)
+      setError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    if (!plan || !cycle || busy || hasChildren) return
+    setBusy(true)
+    setError('')
+    try {
+      const remaining = plan.cycles.filter((item) => item.id !== cycle.id)
+      const result = remaining.length
+        ? await TrainingPlanCRUD.update(plan.id, remaining)
+        : await TrainingPlanCRUD.delete(plan.id)
+      if (!result?.ok) throw new Error('TRAINING_DELETE_FAILED')
+      setPlans((items) =>
+        remaining.length
+          ? items.map((item) => (item.id === plan.id ? { ...item, cycles: remaining } : item))
+          : items.filter((item) => item.id !== plan.id)
+      )
+      if (!remaining.length) setPlanId(null)
+      setCycleId(cycle.parentId)
+      setDeleting(false)
+    } catch (cause) {
+      reportInternalError('TRAINING_PLAN_DELETE', cause)
+      setError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="mx-auto max-w-4xl px-3 sm:px-0" aria-labelledby="training-title">
+      <div
+        inert={Boolean(draft) || deleting || infoOpen}
+        aria-hidden={Boolean(draft) || deleting || infoOpen || undefined}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 py-4">
+          <div>
+            <div className="flex items-center gap-1">
+              <h1 id="training-title" className="text-2xl font-extrabold">
+                Entreno
+              </h1>
+              <button
+                type="button"
+                aria-label="Información sobre los ciclos"
+                onClick={() => setInfoOpen(true)}
+                className="grid min-h-11 min-w-11 place-items-center rounded-full text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                <FiInfo aria-hidden="true" className="size-3.5" />
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-(--c-text-2)">Planifica de la temporada a la semana.</p>
+          </div>
+          <button
+            type="button"
+            className={primaryClass}
+            disabled={loading || loadError || busy}
+            onClick={() => void createMacro()}
+          >
+            <FiPlus aria-hidden="true" /> Nuevo macrociclo
+          </button>
+        </div>
+        {error && !draft && !deleting && (
+          <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">
+            {error}
+          </p>
+        )}
+        {loading ? (
+          <p role="status" className="py-10 text-center">
+            Cargando planificación…
+          </p>
+        ) : loadError ? (
+          <div role="alert" className="space-y-3 py-8">
+            <p>{GENERIC_USER_ERROR}</p>
+            <button
+              type="button"
+              className={actionClass}
+              onClick={() => setRevision((value) => value + 1)}
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : !plans.length ? (
+          <div className="rounded-2xl border border-dashed border-(--c-border) bg-(--c-surface) px-5 py-10 text-center">
+            <FiActivity className="mx-auto mb-4 size-8" aria-hidden="true" />
+            <h2 className="text-lg font-bold">Tu temporada empieza aquí</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-(--c-text-2)">
+              Crea un macrociclo con su objetivo y fechas. Después organiza sus bloques y semanas de
+              entrenamiento.
+            </p>
+            <button
+              type="button"
+              className={`${primaryClass} mt-5`}
+              disabled={busy}
+              onClick={() => void createMacro()}
+            >
+              Crear mi primer macrociclo
+            </button>
+          </div>
+        ) : (
+          <>
+            <nav aria-label="Macrociclos" className="mb-5 flex flex-wrap gap-2">
+              {plans.map((item) => {
+                const root = item.cycles.find((node) => node.type === 'macro')
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={planId === item.id}
+                    className={planId === item.id ? primaryClass : actionClass}
+                    onClick={() => {
+                      setPlanId(item.id)
+                      setCycleId(root?.id || null)
+                    }}
+                  >
+                    {root?.title || 'Macrociclo'}
+                  </button>
+                )
+              })}
+            </nav>
+            {!cycle ? (
+              <p className="py-8 text-(--c-text-2)">
+                Selecciona un macrociclo para ver su planificación.
+              </p>
+            ) : (
+              <>
+                {cycle.parentId && (
+                  <nav
+                    aria-label="Ciclos de entrenamiento"
+                    className="flex min-w-0 flex-wrap items-center gap-1 text-sm"
+                  >
+                    {plan?.cycles
+                      .filter(
+                        (item) =>
+                          item.id !== cycle.id && (item.type === 'macro' || item.id === parent?.id)
+                      )
+                      .map((item) => (
+                        <button
+                          type="button"
+                          key={item.id}
+                          className="flex min-h-11 items-center gap-1 rounded-lg px-2 font-semibold focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                          onClick={() => setCycleId(item.id)}
+                        >
+                          {item.title}
+                          <FiChevronRight aria-hidden="true" />
+                        </button>
+                      ))}
+                  </nav>
+                )}
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1">
+                      <h2 className="min-w-0 break-words text-xl font-bold">{cycle.title}</h2>
+                      {editButton('title')}
+                    </div>
+                    <p className="mt-1 flex items-center gap-1 text-sm text-(--c-text-2)">
+                      {dateLabel(cycle.startDate)} — {dateLabel(cycle.endDate)}
+                      {editButton('dates')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-pressed={editing}
+                    className={editing ? primaryClass : actionClass}
+                    onClick={() => {
+                      setError('')
+                      setEditing(!editing)
+                    }}
+                  >
+                    {editing ? <FiCheck aria-hidden="true" /> : <FiEdit2 aria-hidden="true" />}
+                    {editing ? 'Listo' : 'Editar'}
+                  </button>
+                </div>
+                <article className="rounded-2xl border border-(--c-border) bg-white p-5">
+                  {cycle.type === 'macro' && plan && (
+                    <TrainingPlanOverview
+                      key={plan.id}
+                      plan={plan}
+                      readOnly={!editing}
+                      onSaved={(cycles) =>
+                        setPlans((items) =>
+                          items.map((item) => (item.id === plan.id ? { ...item, cycles } : item))
+                        )
+                      }
+                    />
+                  )}
+                  <div className="mt-5 flex items-center gap-1">
+                    <h3 className="text-sm font-bold">Objetivo</h3>
+                    {editButton('goal')}
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+                    {cycle.goal || 'Sin objetivo definido todavía.'}
+                  </p>
+                  <div className="mt-5 flex items-center gap-1">
+                    <h3 className="text-sm font-bold">{contentLabel(cycle.type)}</h3>
+                    {editButton('content')}
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap break-words text-sm text-(--c-text-2)">
+                    {cycle.content || 'Añade el trabajo que quieres desarrollar en este ciclo.'}
+                  </p>
+                  {editing && (
+                    <>
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className={actionClass}
+                          disabled={hasChildren}
+                          aria-describedby={hasChildren ? 'cycle-delete-help' : undefined}
+                          onClick={() => {
+                            setError('')
+                            setDeleting(true)
+                          }}
+                        >
+                          <FiTrash2 aria-hidden="true" />
+                          Eliminar
+                        </button>
+                      </div>
+                      {hasChildren && (
+                        <p id="cycle-delete-help" className="mt-2 text-xs text-(--c-text-2)">
+                          Para eliminar este ciclo, elimina primero los ciclos que contiene.
+                        </p>
+                      )}
+                    </>
+                  )}
+                </article>
+                {nextType && (
+                  <section className="mt-6" aria-labelledby="child-cycles-title">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                      <h2 id="child-cycles-title" className="text-lg font-bold">
+                        {nextType === 'meso' ? 'Mesociclos' : 'Microciclos'}
+                      </h2>
+                      {editing && (
+                        <button
+                          type="button"
+                          className={actionClass}
+                          onClick={() => openCreate(nextType)}
+                        >
+                          <FiPlus aria-hidden="true" />
+                          {nextType === 'meso' ? 'Nuevo mesociclo' : 'Nuevo microciclo'}
+                        </button>
+                      )}
+                    </div>
+                    {!children.length ? (
+                      <p className="rounded-xl border border-dashed border-(--c-border) p-5 text-sm text-(--c-text-2)">
+                        Todavía no hay {nextType === 'meso' ? 'mesociclos' : 'microciclos'}. Añade
+                        el primer bloque de esta planificación.
+                      </p>
+                    ) : (
+                      <ul className="divide-y divide-(--c-border) rounded-xl border border-(--c-border) bg-white">
+                        {children.map((child) => (
+                          <li key={child.id}>
+                            <button
+                              type="button"
+                              className="flex min-h-20 w-full items-center justify-between gap-3 p-4 text-left hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                              onClick={() => setCycleId(child.id)}
+                            >
+                              <span className="min-w-0">
+                                <span className="block break-words font-bold">{child.title}</span>
+                                <span className="mt-1 block text-xs text-(--c-text-2)">
+                                  {dateLabel(child.startDate)} — {dateLabel(child.endDate)}
+                                </span>
+                              </span>
+                              <FiChevronRight aria-hidden="true" className="shrink-0" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+      <Sheet
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        label="Información sobre los ciclos"
+        size="sm"
+      >
+        <h2 className="text-lg font-bold">Planificación del entrenamiento</h2>
+        <p className="mt-3 text-sm text-(--c-text-2)">
+          Macrociclo: temporada · Mesociclo: bloque de trabajo · Microciclo: semana o periodo corto.
+          Tu planificación es privada.
+        </p>
+      </Sheet>
+      <Sheet
+        open={Boolean(draft)}
+        onClose={() => setDraft(null)}
+        label={draftHeading}
+        keyboardAware
+        closeDisabled={busy}
+        footer={
+          <button
+            type="submit"
+            form="training-cycle-form"
+            className={`${primaryClass} w-full`}
+            disabled={busy}
+          >
+            {busy ? 'Guardando…' : 'Guardar ciclo'}
+          </button>
+        }
+      >
+        {draft && (
+          <form
+            id="training-cycle-form"
+            className="grid min-w-0 grid-cols-1 gap-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void save()
+            }}
+          >
+            <h2 className="text-xl font-bold">{draftHeading}</h2>
+            {(editField ? editField === 'title' : draft.type !== 'macro') && (
+              <label className="grid min-w-0 gap-1 text-sm font-semibold">
+                Nombre
+                <input
+                  required
+                  maxLength={100}
+                  className={fieldClass}
+                  value={draft.title}
+                  onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+                  placeholder={
+                    draft.type === 'meso'
+                      ? 'Ej. Base aeróbica'
+                      : 'Ej. Semana 1 · Técnica y resistencia'
+                  }
+                />
+              </label>
+            )}
+            {draftParent && (!editField || editField === 'dates') && (
+              <TrainingCycleTimeline
+                parent={draftParent}
+                current={draft}
+                siblings={plan?.cycles || []}
+                disabled={busy}
+                onChange={(range) => setDraft({ ...draft, ...range })}
+              />
+            )}
+            {draft.type === 'macro' && !editField && (
+              <div className="grid min-w-0 gap-1">
+                <MacroCyclePeriodInput
+                  initialEditOpen={
+                    !plans.some((item) => item.cycles.some((cycle) => cycle.id === draft.id))
+                  }
+                  title={draft.title}
+                  onTitleChange={(title) =>
+                    setDraft((current) => (current ? { ...current, title } : current))
+                  }
+                  value={draft}
+                  onChange={(range) =>
+                    setDraft((current) => (current ? { ...current, ...range } : current))
+                  }
+                  disabled={busy}
+                />
+                <MacroCycleBarsInput
+                  macro={draft}
+                  cycles={childDrafts || []}
+                  onChange={setChildDrafts}
+                  disabled={busy}
+                />
+              </div>
+            )}
+            {(editField ? editField === 'dates' : draft.type !== 'macro') && (
+              <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+                {(['startDate', 'endDate'] as const).map((field) => (
+                  <DateInput
+                    key={field}
+                    label={
+                      field === 'startDate'
+                        ? 'Fecha de inicio (opcional)'
+                        : 'Fecha final (opcional)'
+                    }
+                    name={field}
+                    disabled={busy}
+                    min={draftParent?.startDate || undefined}
+                    max={draftParent?.endDate || undefined}
+                    value={draft[field]}
+                    onChange={(value) => setDraft({ ...draft, [field]: value })}
+                  />
+                ))}
+              </div>
+            )}
+            {editField === 'goal' && (
+              <label className="grid min-w-0 gap-1 text-sm font-semibold">
+                Objetivo
+                <textarea
+                  className={`${fieldClass} min-h-28`}
+                  maxLength={2000}
+                  value={draft.goal}
+                  onChange={(event) => setDraft({ ...draft, goal: event.target.value })}
+                  placeholder="Ej. Mejorar la resistencia aeróbica"
+                />
+              </label>
+            )}
+            {(editField ? editField === 'content' : draft.type === 'micro') && (
+              <label className="grid min-w-0 gap-1 text-sm font-semibold">
+                <span>
+                  {contentLabel(draft.type)}{' '}
+                  <span className="text-[10px] font-normal text-(--c-text-2)">(opcional)</span>
+                </span>
+                <textarea
+                  className={`${fieldClass} min-h-36`}
+                  maxLength={10000}
+                  value={draft.content}
+                  onChange={(event) => setDraft({ ...draft, content: event.target.value })}
+                  placeholder="Lunes: calentamiento, técnica, serie principal y vuelta a la calma. Incluye distancias, intensidad y descansos."
+                />
+              </label>
+            )}
+            {error && (
+              <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
+                {error}
+              </p>
+            )}
+          </form>
+        )}
+      </Sheet>
+      <Sheet
+        open={deleting}
+        onClose={() => setDeleting(false)}
+        label="Eliminar ciclo"
+        closeDisabled={busy}
+        footer={
+          <button
+            type="button"
+            className={`${primaryClass} w-full`}
+            disabled={busy}
+            onClick={() => void remove()}
+          >
+            {busy ? 'Eliminando…' : 'Eliminar ciclo'}
+          </button>
+        }
+      >
+        <h2 className="text-xl font-bold">¿Eliminar {cycle?.title}?</h2>
+        <p className="mt-3 text-sm">
+          Se eliminará este ciclo de tu planificación. Esta acción no se puede deshacer.
+        </p>
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-(--c-error,#b91c1c)">
+            {error}
+          </p>
+        )}
+      </Sheet>
+    </section>
+  )
+}

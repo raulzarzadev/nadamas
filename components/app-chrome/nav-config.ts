@@ -4,7 +4,17 @@ export interface NavLink {
   href: string
   label: string
   mobileLabel: string
-  icon: 'home' | 'search' | 'chart' | 'calendar' | 'users' | 'badge' | 'user' | 'bell' | 'payments'
+  icon:
+    | 'home'
+    | 'search'
+    | 'chart'
+    | 'calendar'
+    | 'users'
+    | 'badge'
+    | 'user'
+    | 'bell'
+    | 'payments'
+    | 'training'
 }
 
 // Primary nav = the role-specific destinations shown as the sub-navbar directly
@@ -29,6 +39,7 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
       icon: 'payments',
     },
     { href: '/coach/agenda', label: 'Mis horarios', mobileLabel: 'Horarios', icon: 'calendar' },
+    { href: '/coach/training', label: 'Entreno', mobileLabel: 'Entreno', icon: 'training' },
     { href: '/coach/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
     {
       href: '/coach/coach-profile',

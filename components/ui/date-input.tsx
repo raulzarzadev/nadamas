@@ -37,6 +37,7 @@ export default function DateInput({
   disabled = false,
   minYear = 1900,
   max,
+  min,
   name,
 }: {
   value: string
@@ -46,6 +47,7 @@ export default function DateInput({
   disabled?: boolean
   minYear?: number
   max?: string
+  min?: string
   name?: string
 }) {
   const id = useId()
@@ -54,18 +56,32 @@ export default function DateInput({
   const parts = draft.source === value ? draft.parts : parse(value)
   const [active, setActive] = useState<Part | null>(null)
   const [invalid, setInvalid] = useState(false)
+  const lowerYear = Math.max(minYear, min ? parse(min).year : minYear)
   const maxYear = max ? parse(max).year : new Date().getFullYear() + 10
   const [decade, setDecade] = useState(
-    Math.floor((parts.year || Math.min(2000, maxYear)) / 10) * 10
+    Math.floor((parts.year || Math.max(lowerYear, Math.min(2000, maxYear))) / 10) * 10
   )
   const days = parts.month ? new Date(parts.year || 2000, parts.month, 0).getDate() : 31
+  const now = new Date()
+  const todayParts = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }
+  const today = format(todayParts)
+  const todayAllowed =
+    todayParts.year >= lowerYear && (!min || today >= min) && (!max || today <= max)
   const buttonClass =
     'min-h-11 rounded-xl border border-(--c-border) px-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:cursor-not-allowed disabled:opacity-40'
   const choose = (part: Part, number: number) => {
     const next = { ...parts, [part]: number }
     if (next.month && next.day)
       next.day = Math.min(next.day, new Date(next.year || 2000, next.month, 0).getDate())
-    const nextValue = format(next)
+    let nextValue = format(next)
+    if (nextValue && min && nextValue < min) {
+      Object.assign(next, parse(min))
+      nextValue = min
+    }
+    if (nextValue && max && nextValue > max) {
+      Object.assign(next, parse(max))
+      nextValue = max
+    }
     setDraft({ source: nextValue, parts: next })
     onChange(nextValue)
     setInvalid(false)
@@ -74,30 +90,24 @@ export default function DateInput({
   }
   const allowed = (part: Part, number: number) => {
     const candidate = { ...parts, [part]: number }
-    if (part === 'year') {
-      if (number < minYear || number > maxYear) return false
-      if (max && number === maxYear && candidate.month) {
-        const upper = parse(max)
-        return (
-          candidate.month < upper.month ||
-          (candidate.month === upper.month && (!candidate.day || candidate.day <= upper.day))
-        )
-      }
-      return true
-    }
-    if (!max || candidate.year !== maxYear) return true
-    const upper = parse(max)
-    if (part === 'month') return number <= upper.month
-    return (
-      !candidate.month ||
-      candidate.month < upper.month ||
-      (candidate.month === upper.month && number <= upper.day)
-    )
+    if (part === 'year') return number >= lowerYear && number <= maxYear
+    const firstYear = candidate.year || lowerYear
+    const lastYear = candidate.year || maxYear
+    const firstMonth = candidate.month || 1
+    const lastMonth = candidate.month || 12
+    const first = format({ year: firstYear, month: firstMonth, day: part === 'day' ? number : 1 })
+    const last = format({
+      year: lastYear,
+      month: lastMonth,
+      day: part === 'day' ? number : new Date(lastYear, lastMonth, 0).getDate(),
+    })
+    return (!max || first <= max) && (!min || last >= min)
   }
   return (
     <fieldset
+      aria-label={label}
       disabled={disabled}
-      className="grid min-w-0 gap-2"
+      className="grid min-w-0 gap-1"
       onKeyDown={(event) => {
         if (event.key === 'Escape') {
           event.stopPropagation()
@@ -106,7 +116,36 @@ export default function DateInput({
         }
       }}
     >
-      <legend className="mb-2 text-sm font-semibold text-(--c-ocean)">{label}</legend>
+      <legend className="mb-0 w-full text-sm font-semibold text-(--c-ocean)">
+        <span className="flex items-center justify-between gap-2">
+          <span>
+            {label.endsWith(' (opcional)') ? (
+              <>
+                {label.slice(0, -11)}{' '}
+                <span className="text-[10px] font-normal text-(--c-text-2)">(opcional)</span>
+              </>
+            ) : (
+              label
+            )}
+          </span>
+          <button
+            type="button"
+            disabled={disabled || !todayAllowed}
+            className="group relative inline-flex cursor-pointer items-center justify-center rounded-full py-0.5 before:absolute before:left-1/2 before:top-1/2 before:h-11 before:w-11 before:-translate-x-1/2 before:-translate-y-1/2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={() => {
+              setDraft({ source: today, parts: todayParts })
+              onChange(today)
+              setInvalid(false)
+              setActive(null)
+              firstButton.current?.focus()
+            }}
+          >
+            <span className="rounded-full border border-(--c-aqua-strong)/40 px-2 py-0.5 text-[10px] font-semibold leading-none text-(--c-aqua-strong) group-hover:bg-(--c-surface)">
+              Hoy
+            </span>
+          </button>
+        </span>
+      </legend>
       <input
         className="sr-only"
         tabIndex={-1}
@@ -133,7 +172,9 @@ export default function DateInput({
             aria-invalid={invalid}
             onClick={() => {
               if (part === 'year')
-                setDecade(Math.floor((parts.year || Math.min(2000, maxYear)) / 10) * 10)
+                setDecade(
+                  Math.floor((parts.year || Math.max(lowerYear, Math.min(2000, maxYear))) / 10) * 10
+                )
               setActive(active === part ? null : part)
             }}
             className={`${buttonClass} flex items-center justify-between gap-1 ${active === part ? 'border-(--c-ocean) bg-(--c-surface)' : 'bg-white'} ${parts[part] ? 'text-(--c-ocean)' : 'text-(--c-text-2)'}`}
@@ -157,14 +198,14 @@ export default function DateInput({
               <button
                 type="button"
                 aria-label="Años anteriores"
-                disabled={decade <= minYear}
+                disabled={decade <= lowerYear}
                 onClick={() => setDecade(decade - 10)}
                 className={buttonClass}
               >
                 <FiChevronLeft aria-hidden="true" />
               </button>
               <span className="text-sm font-bold">
-                {Math.max(decade, minYear)}–{Math.min(decade + 9, maxYear)}
+                {Math.max(decade, lowerYear)}–{Math.min(decade + 9, maxYear)}
               </span>
               <button
                 type="button"

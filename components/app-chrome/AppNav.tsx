@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
+  FiActivity,
   FiBarChart2,
   FiBell,
   FiCalendar,
@@ -33,6 +34,7 @@ import { PRIMARY_NAV_BY_ROLE } from './nav-config'
 import RoleSwitcher from './RoleSwitcher'
 
 const NAV_ICONS = {
+  training: FiActivity,
   home: FiHome,
   search: FiSearch,
   chart: FiBarChart2,

@@ -114,6 +114,11 @@ export class FirebaseCRUD {
     return docs
   }
 
+  async getMany(filters: Parameters<typeof query>[1][]) {
+    const snapshot = await getDocs(query(collection(db, this.collectionName), ...filters))
+    return snapshot.docs.map((document) => FirebaseCRUD.normalizeDoc(document))
+  }
+
   async listen(itemId: string, cb: CallableFunction) {
     const q = doc(db, this.collectionName, itemId)
     onSnapshot(q, (doc) => {
