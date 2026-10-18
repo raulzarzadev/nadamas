@@ -11,7 +11,20 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/'],
       },
       {
-        userAgent: ['OAI-SearchBot', 'ChatGPT-User', 'Claude-SearchBot', 'Claude-User'],
+        // AI search and answer engines: explicit allow so nadamas.app can be cited.
+        userAgent: [
+          'OAI-SearchBot',
+          'ChatGPT-User',
+          'GPTBot',
+          'Claude-SearchBot',
+          'Claude-User',
+          'ClaudeBot',
+          'PerplexityBot',
+          'Perplexity-User',
+          'Google-Extended',
+          'Applebot-Extended',
+          'Bingbot',
+        ],
         allow: '/',
         disallow: ['/api/'],
       },

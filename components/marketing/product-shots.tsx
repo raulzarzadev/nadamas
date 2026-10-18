@@ -36,10 +36,7 @@ const SHOTS: Shot[] = [
 
 function Phone({ shot, offset }: { shot: Shot; offset: number }) {
   return (
-    <figure
-      className="reveal shrink-0"
-      style={{ width: 'min(248px, 70vw)', marginTop: offset }}
-    >
+    <figure className="reveal shrink-0" style={{ width: 'min(248px, 70vw)', marginTop: offset }}>
       <div
         className="rounded-[40px] p-2.5"
         style={{
@@ -56,13 +53,7 @@ function Phone({ shot, offset }: { shot: Shot; offset: number }) {
             className="absolute left-1/2 top-2.5 z-10 h-5 w-20 -translate-x-1/2 rounded-full"
             style={{ background: 'var(--c-ocean)' }}
           />
-          <Image
-            src={shot.img}
-            alt={shot.title}
-            fill
-            sizes="248px"
-            className="object-cover"
-          />
+          <Image src={shot.img} alt={shot.title} fill sizes="248px" className="object-cover" />
           <div
             aria-hidden
             className="absolute inset-0"

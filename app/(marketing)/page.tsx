@@ -1,27 +1,31 @@
-import CoachesTeaser from '@comps/marketing/coaches-teaser'
+import Comparison from '@comps/marketing/comparison'
 import Faq, { FAQ_ITEMS } from '@comps/marketing/faq'
-import Features from '@comps/marketing/features'
-import FinalCta from '@comps/marketing/final-cta'
+import Features, { FEATURES } from '@comps/marketing/features'
 import Hero from '@comps/marketing/hero'
 import HowItWorks from '@comps/marketing/how-it-works'
+import PoolMoments from '@comps/marketing/pool-moments'
+import PricingTeaser from '@comps/marketing/pricing-teaser'
+import Summary, { SUMMARY_TEXT } from '@comps/marketing/summary'
 import type { Metadata } from 'next'
+import { NADAMAS_PRICING } from '@/lib/pricing'
 
-const title = 'nadamas.app | Clases, agenda y progreso de natación'
-const description =
-  'Una app de natación para atletas, entrenadores y coordinadores de escuelas. Consulta horarios, reserva clases, gestiona alumnos y sigue su progreso.'
+const title = 'nadamas.app | App para nadadores, entrenadores y escuelas de natación'
+const description = `App en español para organizar clases de natación: agenda, reservas, pagos, asistencia y progreso de alumnos. Para nadadores, entrenadores y escuelas. Desde $${NADAMAS_PRICING.launchMonthly} ${NADAMAS_PRICING.currency} al mes.`
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://nadamas.app'),
   title: { absolute: title },
   description,
   keywords: [
-    'clases de natación',
-    'entrenadores de natación',
-    'agenda para entrenadores',
-    'escuelas de natación',
-    'clases grupales de natación',
-    'progreso de atletas',
+    'app para escuelas de natación',
+    'software para escuelas de natación',
+    'app para entrenadores de natación',
+    'agenda de clases de natación',
+    'control de asistencia natación',
+    'cobro de clases de natación',
+    'seguimiento de progreso natación',
     'reservar clase de natación',
+    'clases de natación',
   ],
   openGraph: {
     title,
@@ -64,6 +68,9 @@ const jsonLd = {
         width: 512,
         height: 512,
       },
+      email: 'hola@nadamas.app',
+      areaServed: { '@type': 'Country', name: 'México' },
+      knowsAbout: ['natación', 'escuelas de natación', 'entrenamiento de natación'],
     },
     {
       '@type': 'SoftwareApplication',
@@ -71,9 +78,39 @@ const jsonLd = {
       name: 'nadamas.app',
       url: 'https://nadamas.app/',
       applicationCategory: 'SportsApplication',
-      operatingSystem: 'Web',
+      applicationSubCategory: 'Gestión de escuelas de natación',
+      operatingSystem: 'Web, iOS, Android',
       inLanguage: 'es-MX',
-      description,
+      description: SUMMARY_TEXT,
+      image: 'https://nadamas.app/og-nadamas.png',
+      video: {
+        '@type': 'VideoObject',
+        name: 'Entrenamientos de natación con nadamas.app',
+        description: 'Nadadores entrenando en alberca al amanecer, al atardecer y de día.',
+        thumbnailUrl: 'https://nadamas.app/images/landing/hero-poster.webp',
+        contentUrl: 'https://nadamas.app/videos/landing-hero.mp4',
+        uploadDate: '2026-10-18',
+        duration: 'PT15S',
+      },
+      screenshot: [
+        'https://nadamas.app/recursos/modo-entrenador.png',
+        'https://nadamas.app/recursos/modo-coordinador.png',
+        'https://nadamas.app/recursos/modo-alumno.png',
+      ],
+      featureList: FEATURES.map(({ title, body }) => `${title}: ${body}`),
+      audience: [
+        { '@type': 'Audience', audienceType: 'Entrenadores de natación' },
+        { '@type': 'Audience', audienceType: 'Escuelas y clubes de natación' },
+        { '@type': 'Audience', audienceType: 'Atletas y familias' },
+      ],
+      offers: {
+        '@type': 'Offer',
+        price: String(NADAMAS_PRICING.launchMonthly),
+        priceCurrency: NADAMAS_PRICING.currency,
+        url: 'https://nadamas.app/precio',
+        category: 'subscription',
+        availability: 'https://schema.org/InStock',
+      },
       publisher: { '@id': 'https://nadamas.app/#org' },
     },
     {
@@ -85,6 +122,7 @@ const jsonLd = {
       inLanguage: 'es-MX',
       isPartOf: { '@id': 'https://nadamas.app/#website' },
       about: { '@id': 'https://nadamas.app/#app' },
+      speakable: { '@type': 'SpeakableSpecification', cssSelector: ['#que-es p', '#faq summary'] },
       mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
         '@type': 'Question',
         name: q,
@@ -103,11 +141,13 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Hero />
-      <HowItWorks />
+      <Summary />
       <Features />
-      <CoachesTeaser />
+      <HowItWorks />
+      <PoolMoments />
+      <Comparison />
+      <PricingTeaser />
       <Faq />
-      <FinalCta />
     </>
   )
 }

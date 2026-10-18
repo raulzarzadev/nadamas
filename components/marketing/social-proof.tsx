@@ -22,8 +22,8 @@ export default function SocialProof() {
           className="max-w-[34ch] text-pretty text-2xl font-medium leading-snug sm:text-[1.7rem]"
           style={{ color: 'var(--c-ocean)' }}
         >
-          Construido con coaches y nadadores reales, para que reservar tu próxima
-          clase sea lo más simple del día.
+          Construido con coaches y nadadores reales, para que reservar tu próxima clase sea lo más
+          simple del día.
         </p>
 
         <div className="flex items-center gap-4">
@@ -51,15 +51,8 @@ export default function SocialProof() {
         style={{ background: 'var(--c-border)' }}
       >
         {METRICS.map((m) => (
-          <div
-            key={m.value}
-            className="px-7 py-7"
-            style={{ background: 'var(--c-surface)' }}
-          >
-            <p
-              className="text-lg font-bold tracking-tight"
-              style={{ color: 'var(--c-ocean)' }}
-            >
+          <div key={m.value} className="px-7 py-7" style={{ background: 'var(--c-surface)' }}>
+            <p className="text-lg font-bold tracking-tight" style={{ color: 'var(--c-ocean)' }}>
               {m.value}
             </p>
             <p className="mt-1.5 text-sm leading-relaxed" style={{ color: 'var(--c-text-2)' }}>

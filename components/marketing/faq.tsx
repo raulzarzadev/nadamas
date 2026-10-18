@@ -1,23 +1,45 @@
+import { NADAMAS_PRICING } from '@/lib/pricing'
+
 export const FAQ_ITEMS = [
   {
+    q: '¿Qué es nadamas.app?',
+    a: 'Es una app web en español para organizar clases de natación: agenda, reservas, pagos, asistencia y progreso de alumnos. La usan atletas, entrenadores independientes y coordinadores de escuelas.',
+  },
+  {
+    q: '¿Cuánto cuesta nadamas.app?',
+    a: `El precio de lanzamiento es de $${NADAMAS_PRICING.launchMonthly} ${NADAMAS_PRICING.currency} al mes (antes $${NADAMAS_PRICING.regularMonthly}) e incluye todas las funciones. Para una escuela con app y enlace personalizados, escribe a hola@nadamas.app.`,
+  },
+  {
+    q: '¿Necesito descargar algo?',
+    a: 'No. nadamas.app funciona desde el navegador del celular o la computadora, y puedes agregarla a la pantalla de inicio para abrirla como una app.',
+  },
+  {
     q: '¿Puedo usar nadamas sin pertenecer a una escuela?',
-    a: 'Sí. Puedes explorar clases como atleta o activar el modo entrenador para gestionar tus propios horarios y alumnos. El modo coordinador es para coordinar una escuela.',
+    a: 'Sí. Puedes explorar clases como atleta o activar el modo entrenador para gestionar tus propios horarios y alumnos. El modo coordinador es para administrar una escuela.',
   },
   {
     q: '¿Hay clases particulares y grupales?',
-    a: 'Sí. La disponibilidad depende de lo que publique cada entrenador o escuela. Puedes elegir el horario y ver a quién vas a inscribir antes de reservar.',
+    a: 'Sí. Cada entrenador o escuela publica horarios particulares o grupales con su cupo. El atleta elige el horario y ve a quién va a inscribir antes de reservar.',
   },
   {
-    q: '¿Quién puede agregar atletas a una clase grupal?',
-    a: 'El entrenador o el coordinador de la escuela pueden añadir alumnos a una clase grupal desde su agenda.',
+    q: '¿Cómo se manejan los pagos?',
+    a: 'El entrenador o la escuela crea planes o paquetes de clases. El atleta sube su comprobante de pago y la app lleva el saldo y el estado de pago de cada alumno.',
+  },
+  {
+    q: '¿Cómo se registra la asistencia?',
+    a: 'Desde la agenda, el entrenador pasa lista al terminar la clase. La escuela puede consultar reportes de asistencia por clase o por alumno.',
+  },
+  {
+    q: '¿Un papá o una mamá puede manejar las clases de varios hijos?',
+    a: 'Sí. Con los perfiles adicionales, una sola cuenta administra las reservas, pagos y progreso de varios atletas.',
   },
   {
     q: '¿Qué puede organizar un coordinador?',
-    a: 'Puede crear una escuela, invitar entrenadores, gestionar alumnos, asignar horarios y administrar las clases y sus participantes.',
+    a: 'Puede crear una escuela, invitar entrenadores, gestionar alumnos, asignar horarios, revisar pagos y asistencia, y compartir la página pública de la escuela.',
   },
   {
-    q: '¿Cómo comparto mi perfil o mi escuela?',
-    a: 'Desde el modo correspondiente puedes abrir el diálogo de compartir y copiar el enlace público o mostrar su código QR.',
+    q: '¿Mis datos y los de mis alumnos son privados?',
+    a: 'Sí. Reservas, pagos, historiales y progreso solo los ven el atleta, su entrenador y su escuela. Lo único público son los perfiles de entrenadores y escuelas que decidan compartirse.',
   },
 ] as const
 
@@ -28,7 +50,7 @@ export default function Faq() {
         <div>
           <p className="text-sm font-bold uppercase text-[#a94732]">Preguntas frecuentes</p>
           <h2 className="mt-3 max-w-[16ch] text-3xl font-extrabold sm:text-4xl">
-            Antes de entrar al agua.
+            Preguntas sobre nadamas.app
           </h2>
         </div>
         <div>

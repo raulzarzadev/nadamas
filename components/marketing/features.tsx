@@ -1,35 +1,54 @@
-import { FiBarChart2, FiCalendar, FiClock, FiShare2, FiUserPlus, FiUsers } from 'react-icons/fi'
+import {
+  FiBarChart2,
+  FiCalendar,
+  FiCheckSquare,
+  FiCreditCard,
+  FiGlobe,
+  FiInbox,
+  FiUsers,
+} from 'react-icons/fi'
+import { MdOutlineBadge } from 'react-icons/md'
 
-const FEATURES = [
+export const FEATURES = [
   {
     icon: FiCalendar,
-    title: 'Agenda a la vista',
-    body: 'Entrenadores, atletas y escuelas consultan sus clases desde el calendario que corresponde a su modo.',
+    title: 'Agenda de clases',
+    body: 'Publica horarios particulares o grupales, bloquea descansos y mira cupos libres de un vistazo.',
   },
   {
-    icon: FiClock,
-    title: 'Horarios disponibles',
-    body: 'Publica horarios y consulta espacios libres antes de reservar una clase.',
+    icon: FiInbox,
+    title: 'Reservas y solicitudes',
+    body: 'Los atletas reservan o solicitan su lugar; tú confirmas o los agregas directo a la clase.',
   },
   {
-    icon: FiUsers,
-    title: 'Clases grupales y particulares',
-    body: 'Organiza sesiones individuales o grupos, con los participantes visibles en cada clase.',
+    icon: FiCreditCard,
+    title: 'Pagos, planes y saldos',
+    body: 'Crea paquetes de clases, recibe comprobantes y consulta quién está al corriente.',
   },
   {
-    icon: FiUserPlus,
-    title: 'Alumnos en un solo lugar',
-    body: 'Añade alumnos, inscríbelos a clases y mantén actualizados los grupos.',
+    icon: FiCheckSquare,
+    title: 'Pase de lista',
+    body: 'Registra asistencia en segundos y consulta reportes por clase o por alumno.',
   },
   {
     icon: FiBarChart2,
-    title: 'Seguimiento de progreso',
-    body: 'Guarda notas y evaluaciones por alumno para continuar el trabajo entre sesiones.',
+    title: 'Entrenos y progreso',
+    body: 'Guarda el entreno de cada clase, notas y evaluaciones para dar continuidad.',
   },
   {
-    icon: FiShare2,
-    title: 'Perfiles compartibles',
-    body: 'Comparte perfiles públicos y escuelas con un enlace o un código QR.',
+    icon: FiUsers,
+    title: 'Perfiles familiares',
+    body: 'Una sola cuenta puede manejar las clases de varios hijos o atletas.',
+  },
+  {
+    icon: MdOutlineBadge,
+    title: 'Credencial digital',
+    body: 'Cada alumno tiene una credencial con QR, sus planes activos y su próxima clase.',
+  },
+  {
+    icon: FiGlobe,
+    title: 'Tu escuela, tu enlace',
+    body: 'Escuelas con página propia, logo y colores, más perfiles públicos para compartir.',
   },
 ] as const
 
@@ -37,36 +56,28 @@ export default function Features() {
   return (
     <section id="funciones" className="scroll-mt-20 px-5 py-20 sm:px-8 lg:py-24">
       <div className="mx-auto max-w-[1180px]">
-        <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
-          <div>
-            <p className="text-sm font-bold uppercase text-[#a94732]">En la app</p>
-            <h2 className="mt-3 max-w-[18ch] text-3xl font-extrabold sm:text-4xl">
-              Lo que ya puedes organizar.
-            </h2>
-          </div>
-          <p className="max-w-[54ch] text-base leading-relaxed text-(--c-text-2) sm:text-lg lg:pt-7">
-            Cada modo muestra las herramientas que necesita. Las clases, las personas y el
-            seguimiento se conectan alrededor de la misma agenda.
-          </p>
-        </div>
+        <p className="text-sm font-bold uppercase text-[#a94732]">Funciones</p>
+        <h2 className="mt-3 max-w-[18ch] text-3xl font-extrabold sm:text-4xl">
+          Todo lo que pasa fuera del agua, en orden.
+        </h2>
 
-        <div className="mt-10 grid border-t border-(--c-border) sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           {FEATURES.map((feature) => {
             const Icon = feature.icon
             return (
-              <article
+              <li
                 key={feature.title}
-                className="border-b border-(--c-border) py-7 sm:pr-8 lg:py-8"
+                title={feature.body}
+                className="flex flex-col gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 sm:p-6"
               >
-                <Icon aria-hidden="true" className="size-6 text-(--c-aqua-strong)" />
-                <h3 className="mt-5 text-lg font-bold">{feature.title}</h3>
-                <p className="mt-2 max-w-[34ch] leading-relaxed text-(--c-text-2)">
-                  {feature.body}
-                </p>
-              </article>
+                <span className="grid size-11 place-items-center rounded-[var(--r-sm)] bg-(--c-surface)">
+                  <Icon aria-hidden="true" className="size-5 text-(--c-aqua-strong)" />
+                </span>
+                <h3 className="text-base font-bold leading-snug sm:text-lg">{feature.title}</h3>
+              </li>
             )
           })}
-        </div>
+        </ul>
       </div>
     </section>
   )
