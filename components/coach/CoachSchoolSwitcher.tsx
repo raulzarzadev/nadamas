@@ -2,17 +2,19 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useMemo } from 'react'
-import SchoolWorkspaceTabs from '@/components/school/SchoolWorkspaceTabs'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { schoolMembershipHasRole } from '@/lib/school'
+import CoachScopeBar from './CoachScopeBar'
 
 export default function CoachSchoolSwitcher() {
   const tenant = useTenantSchool()
   const pathname = usePathname()
   return tenant ||
     pathname.startsWith('/coach/agenda') ||
-    pathname.startsWith('/coach/students') ? null : (
+    pathname.startsWith('/coach/students') ||
+    // Coach Planes is always the personal space (school payments live in Coordinador mode).
+    pathname.startsWith('/coach/payments') ? null : (
     <GlobalCoachSchoolSwitcher />
   )
 }
@@ -38,11 +40,16 @@ function GlobalCoachSchoolSwitcher() {
   if (status !== 'ready' || !coachSchools.length) return null
 
   return (
-    <SchoolWorkspaceTabs
-      schools={coachSchools.map(({ school }) => ({ id: school.id, name: school.name }))}
-      selectedId={activeSchoolId}
-      description="Escuelas en las que formas parte como entrenador"
-      onChange={(id) => (id ? selectSchool(id) : selectPersonal())}
-    />
+    <div className="flex">
+      <CoachScopeBar
+        options={[
+          { id: 'personal', label: 'Mis clases particulares' },
+          ...coachSchools.map(({ school }) => ({ id: school.id, label: school.name })),
+        ]}
+        value={activeSchoolId || 'personal'}
+        defaultValue="personal"
+        onChange={(id) => (id === 'personal' ? selectPersonal() : selectSchool(id))}
+      />
+    </div>
   )
 }

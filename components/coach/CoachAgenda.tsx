@@ -1448,6 +1448,22 @@ export default function CoachAgenda({
     if (!horizontalSlots.has(key)) horizontalSlots.set(key, slot)
   }
 
+  // No slots in the next 7 days (or, on another week, in the week shown) → swap
+  // "Editar horario" and the day list for an "add hours" prompt.
+  const todayKey = dateKey(new Date())
+  const shownWeek = weekDates.map((day) => dateKey(day))
+  const onCurrentWeek = shownWeek.includes(todayKey)
+  const weekStart = onCurrentWeek ? todayKey : shownWeek[0]
+  const weekEnd = onCurrentWeek
+    ? dateKey(new Date(Date.now() + 6 * 24 * 60 * 60 * 1000))
+    : shownWeek[shownWeek.length - 1]
+  const noSlotsThisWeek = ![...horizontalSlots.values()].some(
+    (slot) => slot.date >= weekStart && slot.date <= weekEnd
+  )
+  const showAddHoursPrompt = Boolean(
+    agenda && !error && !readOnlyAgenda && onScheduleEditorOpen && noSlotsThisWeek
+  )
+
   function enrolledCountForSlot(slot: CoachAvailableSlot) {
     const students = new Set<string>()
     for (const booking of agenda?.bookings || []) {
@@ -2295,7 +2311,7 @@ export default function CoachAgenda({
           title={
             <>
               {toolbarActions}
-              {!readOnlyAgenda && onScheduleEditorOpen && (
+              {!readOnlyAgenda && onScheduleEditorOpen && !showAddHoursPrompt && (
                 <button
                   type="button"
                   onClick={onScheduleEditorOpen}
@@ -2306,12 +2322,8 @@ export default function CoachAgenda({
               )}{' '}
             </>
           }
-          afterDateNavigation={
-            agenda &&
-            !error &&
-            !readOnlyAgenda &&
-            onScheduleEditorOpen &&
-            horizontalSlots.size === 0 && (
+          emptyState={
+            showAddHoursPrompt && (
               <section
                 className="flex flex-col items-center gap-4 bg-white px-4 py-8 text-center sm:rounded-2xl"
                 aria-label="Agregar próximos horarios"
@@ -2319,15 +2331,13 @@ export default function CoachAgenda({
                 <span className="grid h-12 w-12 place-items-center rounded-full bg-(--c-surface) text-2xl text-(--c-ocean)">
                   <FiCalendar aria-hidden="true" />
                 </span>
-                <h2 className="text-lg font-bold">
-                  No tienes horarios disponibles en los próximos días.
-                </h2>
+                <h2 className="text-lg font-bold">No tienes horarios esta semana.</h2>
                 <button
                   type="button"
                   onClick={onScheduleEditorOpen}
-                  className="btn btn-primary min-h-12 px-6 font-bold focus-visible:outline-2 focus-visible:outline-offset-4"
+                  className="btn btn-primary min-h-12 gap-2 px-6 font-bold focus-visible:outline-2 focus-visible:outline-offset-4"
                 >
-                  Agregar horarios
+                  <FiPlus aria-hidden="true" /> Agregar horario ahora
                 </button>
               </section>
             )

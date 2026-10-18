@@ -8,6 +8,7 @@ import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { capitalizeSchoolTerm, schoolMembershipHasRole } from '@/lib/school'
 import CoachAllStudents from './CoachAllStudents'
 import CoachSchoolStudents from './CoachSchoolStudents'
+import CoachScopeBar from './CoachScopeBar'
 
 export default function CoachStudentsWorkspace() {
   const { schools, status } = useSchoolSelection({ includePersonal: true })
@@ -37,26 +38,21 @@ export default function CoachStudentsWorkspace() {
     <div className="flex flex-col gap-4">
       <h1 className="text-3xl font-extrabold">{capitalizeSchoolTerm(participantPlural)}</h1>
       {!tenant && (
-        <nav aria-label="Filtrar alumnos por origen" className="flex gap-2 overflow-x-auto pb-1">
-          {[
-            { id: 'all', label: 'Todos' },
-            { id: 'personal', label: 'Solo míos' },
-            ...coachSchools.map(({ school }) => ({
-              id: `school:${school.id}`,
-              label: school.name,
-            })),
-          ].map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              aria-pressed={activeView === option.id}
-              onClick={() => setView(option.id)}
-              className={`min-h-11 shrink-0 rounded-full border px-5 py-2 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${activeView === option.id ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </nav>
+        <div className="flex">
+          <CoachScopeBar
+            options={[
+              { id: 'all', label: `Todos mis ${participantPlural}` },
+              { id: 'personal', label: 'Mis clases particulares' },
+              ...coachSchools.map(({ school }) => ({
+                id: `school:${school.id}`,
+                label: school.name,
+              })),
+            ]}
+            value={activeView}
+            defaultValue="all"
+            onChange={setView}
+          />
+        </div>
       )}
       {!tenant && (activeView === 'all' || activeView === 'personal') && (
         <CoachAllStudents

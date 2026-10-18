@@ -15,7 +15,7 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     {
       href: '/athlete/payments',
       label: 'Pagos y planes',
-      mobileLabel: 'Pagos',
+      mobileLabel: 'Planes',
       icon: 'payments',
     },
     { href: '/athlete/schedule', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
@@ -25,7 +25,7 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     {
       href: '/coach/payments',
       label: 'Pagos y planes',
-      mobileLabel: 'Pagos',
+      mobileLabel: 'Planes',
       icon: 'payments',
     },
     { href: '/coach/agenda', label: 'Mis horarios', mobileLabel: 'Horarios', icon: 'calendar' },

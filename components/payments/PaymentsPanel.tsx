@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FiDollarSign, FiEdit2, FiPlus, FiSettings } from 'react-icons/fi'
 import { TbClockCheck } from 'react-icons/tb'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
@@ -18,10 +19,12 @@ import type {
   PaymentSettings,
   PaymentSnapshot,
 } from '@/lib/payments/model'
+import CollectionsSummary from './CollectionsSummary'
 import PaymentOrders, { receiptData } from './PaymentOrders'
 import PaymentProductForm, { money } from './PaymentProductForm'
 import { paymentInputClass, paymentTextareaClass } from './payment-field'
 import ReceiptPreview from './ReceiptPreview'
+import StudentPlansSummary from './StudentPlansSummary'
 
 export default function PaymentsPanel({
   endpoint,
@@ -30,6 +33,9 @@ export default function PaymentsPanel({
   hideTitle = false,
   emptyPlansText = 'Todavía no hay paquetes o planes disponibles.',
   plansOnly = false,
+  hidePlans = false,
+  settingsSlot,
+  collections = false,
   onPurchased,
 }: {
   endpoint: string
@@ -39,6 +45,13 @@ export default function PaymentsPanel({
   // Athlete Pagos > Buscar: show only the Planes catalog (balances and payments live in
   // "Mis planes"); onPurchased lets the host switch there after buying.
   plansOnly?: boolean
+  // Coach "Alumnos" view: balances, payments and history without the Planes tab.
+  hidePlans?: boolean
+  // When set, the manager's settings button renders (icon-only) into this header slot.
+  settingsSlot?: HTMLElement | null
+  // Coach "Mis cobros": payments to verify, latest payments with this month's total, and
+  // students' current/finished plans (replaces the tabs).
+  collections?: boolean
   onPurchased?: () => void
   initialTab?: 'account' | 'plans' | 'orders' | 'history'
 }) {
@@ -62,7 +75,7 @@ export default function PaymentsPanel({
   const [quantity, setQuantity] = useState('1')
   const [reason, setReason] = useState('')
   const [tab, setTab] = useState<'account' | 'plans' | 'orders' | 'history'>(
-    plansOnly ? 'plans' : initialTab
+    plansOnly ? 'plans' : hidePlans && initialTab === 'plans' ? 'account' : initialTab
   )
   const reload = useCallback(async () => {
     const next = await PaymentCRUD.get(endpoint)
@@ -140,6 +153,11 @@ export default function PaymentsPanel({
       setTimeout(() => URL.revokeObjectURL(url), 1000)
     })
   }
+  const review = (order: PaymentOrder, status: 'approved' | 'rejected') =>
+    void perform(async () => {
+      await PaymentCRUD.update(endpoint, { action: 'review', orderId: order.id, status })
+      setNotice(status === 'approved' ? 'Pago confirmado y saldo actualizado.' : 'Pago rechazado.')
+    })
   if (!data)
     return error ? (
       <div role="alert" className="grid gap-3 p-3">
@@ -178,9 +196,23 @@ export default function PaymentsPanel({
   const input = paymentInputClass
   return (
     <div className="grid w-full min-w-0 grid-cols-1 gap-4">
+      {data.manager &&
+        settingsSlot &&
+        createPortal(
+          <button
+            type="button"
+            aria-label="Configuración de pagos"
+            title="Configuración"
+            className="grid size-10 cursor-pointer place-items-center rounded-full border border-(--c-border) bg-white text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+            onClick={() => setSettings({ ...data.settings })}
+          >
+            <FiSettings aria-hidden="true" className="size-5" />
+          </button>,
+          settingsSlot
+        )}
       <div
         className={
-          hideTitle && !data.manager
+          hideTitle && (!data.manager || settingsSlot)
             ? 'hidden'
             : 'flex min-w-0 flex-wrap items-center justify-between gap-3'
         }
@@ -206,7 +238,15 @@ export default function PaymentsPanel({
           {notice}
         </p>
       )}
-      {data.manager && tab === 'account' && (
+      {collections && data.manager && (
+        <CollectionsSummary
+          orders={data.orders}
+          busy={busy}
+          onReview={review}
+          onDownload={(order) => void download(order)}
+        />
+      )}
+      {data.manager && !collections && tab === 'account' && (
         <div className="grid min-w-0 gap-2">
           <label
             className="grid min-w-0 grid-cols-1 gap-1 text-sm"
@@ -275,7 +315,11 @@ export default function PaymentsPanel({
           </p>
         )
       )}
-      <div className={plansOnly ? 'hidden' : 'flex flex-wrap items-center justify-between gap-2'}>
+      <div
+        className={
+          plansOnly || collections ? 'hidden' : 'flex flex-wrap items-center justify-between gap-2'
+        }
+      >
         <nav aria-label="Secciones de pagos" className="flex flex-wrap gap-2">
           {(
             [
@@ -288,7 +332,10 @@ export default function PaymentsPanel({
               ['history', 'Movimientos'],
             ] as const
           )
-            .filter(([value]) => data.manager || value !== 'history')
+            .filter(
+              ([value]) =>
+                (data.manager || value !== 'history') && !(hidePlans && value === 'plans')
+            )
             .map(([value, label]) => (
               <button
                 type="button"
@@ -324,7 +371,7 @@ export default function PaymentsPanel({
           </button>
         )}
       </div>
-      {tab === 'account' && (
+      {!collections && tab === 'account' && (
         <>
           {!data.settings.classesEnabled && !data.settings.periodsEnabled && (
             <p className="rounded-xl bg-(--c-surface) p-3 text-sm">
@@ -431,17 +478,39 @@ export default function PaymentsPanel({
         <section className="grid gap-3">
           <div className="flex items-center justify-between">
             <h2 className="font-bold">Planes</h2>
-            {data.manager && (
+            {data.manager && products.length > 0 && (
               <button
                 type="button"
                 onClick={() => setProductForm(null)}
-                className="btn btn-ghost min-h-11 gap-1 text-xs"
+                className="btn btn-primary min-h-11 gap-1.5 rounded-full px-4 text-sm"
               >
-                <FiPlus aria-hidden="true" /> Crear
+                <FiPlus aria-hidden="true" className="size-4" /> Crear plan
               </button>
             )}
           </div>
-          {!products.length && <p className="text-sm text-(--c-text-2)">{emptyPlansText}</p>}
+          {!products.length &&
+            (data.manager ? (
+              <div className="grid justify-items-center gap-3 rounded-2xl border border-dashed border-(--c-border) bg-(--c-surface) px-4 py-8 text-center">
+                <span className="grid size-12 place-items-center rounded-full bg-white text-(--c-ocean) shadow-[var(--shadow-sm)]">
+                  <FiDollarSign aria-hidden="true" className="size-6" />
+                </span>
+                <div className="grid gap-1">
+                  <p className="font-bold text-(--c-ocean)">Aún no tienes planes</p>
+                  <p className="text-sm text-(--c-text-2)">
+                    Crea paquetes de clases o membresías para que tus alumnos los adquieran.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setProductForm(null)}
+                  className="btn btn-primary min-h-12 gap-2 rounded-full px-6 text-base"
+                >
+                  <FiPlus aria-hidden="true" className="size-5" /> Crea tu primer plan
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm text-(--c-text-2)">{emptyPlansText}</p>
+            ))}
           {products.map((product) => (
             <article
               key={product.id}
@@ -510,7 +579,7 @@ export default function PaymentsPanel({
           ))}
         </section>
       )}
-      {tab === 'orders' && (
+      {!collections && tab === 'orders' && (
         <PaymentOrders
           orders={orders}
           canAccess={(order) =>
@@ -519,14 +588,7 @@ export default function PaymentsPanel({
           }
           manager={data.manager}
           busy={busy}
-          onReview={(order, status) =>
-            void perform(async () => {
-              await PaymentCRUD.update(endpoint, { action: 'review', orderId: order.id, status })
-              setNotice(
-                status === 'approved' ? 'Pago confirmado y saldo actualizado.' : 'Pago rechazado.'
-              )
-            })
-          }
+          onReview={review}
           onUpload={(order, receipt) =>
             void perform(async () => {
               await upload(order, receipt)
@@ -536,7 +598,7 @@ export default function PaymentsPanel({
           onDownload={(order) => void download(order)}
         />
       )}
-      {tab === 'history' && (
+      {!collections && tab === 'history' && (
         <section className="grid gap-2">
           <h2 className="font-bold">Movimientos recientes</h2>
           {data.manager &&
@@ -576,6 +638,9 @@ export default function PaymentsPanel({
               </div>
             ))}
         </section>
+      )}
+      {collections && data.manager && (
+        <StudentPlansSummary students={data.students} accounts={data.accounts} today={today} />
       )}
       <Sheet
         open={productForm !== false}

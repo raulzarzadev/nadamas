@@ -31,6 +31,11 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
   const [guestSchool, setGuestSchool] = useState<{ id: string; name: string } | null>(null)
   // 'mine' = "Mis planes" across every coach/school; 'search' = search + popular plans;
   // 'scope' = one picked coach/school.
+  // Coach: 'mine' = plans they offer (create/edit); 'students' = balances, payments, history.
+  const [settingsSlot, setSettingsSlot] = useState<HTMLSpanElement | null>(null)
+  const [coachView, setCoachView] = useState<'mine' | 'students'>(
+    params.get('tab') === 'orders' ? 'students' : 'mine'
+  )
   const [view, setView] = useState<'mine' | 'search' | 'scope'>(
     // Payment links (?tab=orders) land on "Mis planes", where payments now live.
     params.get('tab') !== 'orders' && (params.get('coachId') || params.get('schoolId'))
@@ -67,7 +72,8 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     return <ProfileLoadingSkeleton />
   if (status === 'error')
     return <p role="alert">No pudimos cargar tu espacio. Inténtalo de nuevo.</p>
-  if (mode === 'coach' && (tenant || !isPersonal || params.get('schoolId')))
+  // A coach's Planes is always their personal space; a selected school doesn't apply here.
+  if (mode === 'coach' && (tenant || params.get('schoolId')))
     return (
       <p role="status" className="text-sm">
         Los pagos de la escuela solo están disponibles en Modo Coordinador.
@@ -78,7 +84,7 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
       ? scopeChoice.startsWith('school:')
         ? scopeChoice.slice(7)
         : null
-      : params.get('coachId')
+      : params.get('coachId') || mode === 'coach'
         ? null
         : params.get('schoolId') || (!isPersonal ? selectedId : null)
   const scopeCoach =
@@ -132,11 +138,37 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     scopeEndpoint && mode === 'athlete' ? `${scopeEndpoint}&view=student` : scopeEndpoint
   return (
     <div className="grid gap-4">
+      {mode === 'coach' && (
+        <div className="grid gap-3">
+          <h1 className="text-2xl font-extrabold text-(--c-ocean)">Planes y pagos</h1>
+          <div className="flex items-center gap-2">
+            <nav aria-label="Vista de planes" className="flex min-w-0 flex-wrap gap-2">
+              {(
+                [
+                  ['mine', 'Mis planes'],
+                  ['students', 'Mis cobros'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={coachView === value}
+                  onClick={() => setCoachView(value)}
+                  className={`min-h-10 cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${coachView === value ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+            <span ref={setSettingsSlot} className="ml-auto flex shrink-0" />
+          </div>
+        </div>
+      )}
       {mode === 'athlete' && (
         <div className="grid gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-extrabold text-(--c-ocean)">Planes y pagos</h1>
-            <nav aria-label="Vista de planes" className="flex shrink-0 gap-2">
+          <h1 className="text-2xl font-extrabold text-(--c-ocean)">Planes y pagos</h1>
+          <div>
+            <nav aria-label="Vista de planes" className="flex flex-wrap gap-2">
               {(
                 [
                   ['mine', 'Mis planes'],
@@ -213,8 +245,11 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
         <PopularPlansList schoolId={tenant?.id} onOpen={openScope} />
       ) : endpoint ? (
         <PaymentsPanel
-          hideTitle={mode === 'athlete'}
-          plansOnly={mode === 'athlete'}
+          hideTitle={mode !== 'school'}
+          plansOnly={mode === 'athlete' || (mode === 'coach' && coachView === 'mine')}
+          settingsSlot={mode === 'coach' ? settingsSlot : undefined}
+          hidePlans={mode === 'coach' && coachView === 'students'}
+          collections={mode === 'coach' && coachView === 'students'}
           onPurchased={mode === 'athlete' ? () => setView('mine') : undefined}
           emptyPlansText={
             mode === 'athlete'
@@ -223,7 +258,7 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
                 : 'Este entrenador no tiene planes de pago vigentes.'
               : undefined
           }
-          key={`${endpoint}:${params.get('tab') === 'orders' ? 'orders' : 'account'}`}
+          key={`${endpoint}:${coachView}:${params.get('tab') === 'orders' ? 'orders' : 'account'}`}
           endpoint={endpoint}
           initialTab={params.get('tab') === 'orders' ? 'orders' : 'account'}
         />

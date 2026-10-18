@@ -75,9 +75,11 @@ export default function ShareScheduleButton({
         type="button"
         onClick={() => setOpen(true)}
         disabled={!publicProfile && !uid}
-        className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full bg-[var(--c-aqua)] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+        aria-label="Compartir agenda"
+        title="Compartir agenda"
+        className="inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-3 py-2.5 text-sm sm:px-4 font-bold text-white transition-colors hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <FiShare2 aria-hidden="true" /> Compartir
+        <FiShare2 aria-hidden="true" /> <span className="hidden sm:inline">Compartir</span>
       </button>
 
       <Sheet open={open} onClose={closeModal} label="Compartir agenda" keyboardAware>

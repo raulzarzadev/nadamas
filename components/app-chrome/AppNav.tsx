@@ -17,7 +17,6 @@ import {
   FiUser,
   FiUsers,
 } from 'react-icons/fi'
-import PaymentBalanceButton from '@/components/payments/PaymentBalanceButton'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -56,11 +55,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const role = modeProp ?? activeRole
   const pathname = usePathname()
   const schoolPathname = role === 'school' ? pathname : ''
-  const {
-    selected: selectedSchool,
-    isPersonal: personalWorkspace,
-    status: schoolSelectionStatus,
-  } = useSchoolSelection({
+  const { selected: selectedSchool, status: schoolSelectionStatus } = useSchoolSelection({
     includePersonal: role === 'coach' || role === 'athlete',
     athleteMode: role === 'athlete',
   })
@@ -83,9 +78,8 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   const primary = PRIMARY_NAV_BY_ROLE[role]
     .filter(
       (item) =>
-        item.icon !== 'payments' ||
-        role !== 'coach' ||
-        (!tenant && personalWorkspace && schoolSelectionStatus === 'ready')
+        // Coach Planes is personal-only, so it's hidden just inside a school's site.
+        item.icon !== 'payments' || role !== 'coach' || !tenant
     )
     .map((item) => {
       if (
@@ -229,7 +223,6 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
               )}
             </Link>
             <div className="ml-auto flex items-center gap-2">
-              {role === 'athlete' && <PaymentBalanceButton />}
               <NotificationsBell />
               <RoleSwitcher
                 currentRole={role}
