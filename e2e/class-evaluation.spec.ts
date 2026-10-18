@@ -231,13 +231,14 @@ test('evalúa una clase desde el historial en móvil y conserva los datos al edi
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto(`/auth/link?email=${encodeURIComponent(email)}&token=${token}`)
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
-    await page.waitForURL('**/athlete/progress')
+    await page.waitForURL(/\/athlete\/(bookings|progress)$/)
+    await page.goto('/athlete/progress')
     // Progreso shows the class history expanded by default.
     await expect(page.getByRole('button', { name: /^Historial/ })).toHaveAttribute(
       'aria-expanded',
       'true'
     )
-    await page.getByRole('button', { name: 'Evaluar clase', exact: true }).click()
+    await page.getByRole('button', { name: 'Evaluar', exact: true }).click()
     await expect(page.getByRole('dialog', { name: 'Evaluar clase' })).toBeVisible()
     await page.getByRole('radio', { name: '5 estrellas', exact: true }).check()
     await page.getByRole('checkbox', { name: 'Técnica', exact: true }).check()
@@ -261,7 +262,7 @@ test('evalúa una clase desde el historial en móvil y conserva los datos al edi
     await page.unroute('**/api/bookings/*/evaluation')
     await page.getByRole('button', { name: 'Guardar evaluación' }).click()
     await expect(page.getByText('Evaluación guardada.', { exact: true })).toBeVisible()
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded' })
     // Progreso shows the class history expanded by default.
     await expect(page.getByRole('button', { name: /^Historial/ })).toHaveAttribute(
       'aria-expanded',

@@ -142,7 +142,7 @@ test('admin overview protects global data and explores schools, roles, profiles 
     paths.push(`otpLoginCodes/${encodeURIComponent(admin.email)}`)
     await page.goto(`/auth/link?email=${encodeURIComponent(admin.email)}&token=${linkToken}`)
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
-    await page.waitForURL(/\/(athlete\/progress|admin\/home|dashboard)$/)
+    await page.waitForURL(/\/(athlete\/(bookings|progress)|admin\/home|dashboard)$/)
     let overviewRequests = 0
     page.on('request', (req) => {
       if (new URL(req.url()).pathname === '/api/admin/overview') overviewRequests++
@@ -150,27 +150,27 @@ test('admin overview protects global data and explores schools, roles, profiles 
     await page.goto('/admin/home')
     await expect(page.getByRole('heading', { name: 'Panel de administración' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Actualizar', exact: true })).toBeEnabled()
-    await page.getByRole('textbox', { name: 'Buscar escuelas' }).fill(suffix)
+    await page.getByRole('searchbox', { name: 'Buscar escuelas' }).fill(suffix)
     await expect(
       page.getByRole('heading', { name: `Escuela ${suffix}`, exact: true })
     ).toBeVisible()
     const sections = page.getByRole('group', { name: 'Secciones del panel' })
     await sections.getByRole('button', { name: 'Personas', exact: true }).click()
-    await page.getByRole('textbox', { name: 'Buscar personas' }).fill(suffix)
+    await page.getByRole('searchbox', { name: 'Buscar personas' }).fill(suffix)
     await page
       .getByRole('group', { name: 'Filtrar personas por rol' })
       .getByRole('button', { name: 'Entrenador', exact: true })
       .click()
     await expect(page.getByRole('heading', { name: `Profe ${suffix}`, exact: true })).toBeVisible()
     await sections.getByRole('button', { name: 'Perfiles adicionales', exact: true }).click()
-    await page.getByRole('textbox', { name: 'Buscar perfiles adicionales' }).fill(suffix)
+    await page.getByRole('searchbox', { name: 'Buscar perfiles adicionales' }).fill(suffix)
     await expect(page.getByText('22 resultados', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Siguiente', exact: true }).click()
     await expect(
       page.getByRole('heading', { name: `Adicional ${suffix} 21`, exact: true })
     ).toBeVisible()
     await sections.getByRole('button', { name: 'Planes y pagos', exact: true }).click()
-    await page.getByRole('textbox', { name: 'Buscar planes y pagos' }).fill(suffix)
+    await page.getByRole('searchbox', { name: 'Buscar planes y pagos' }).fill(suffix)
     await expect(
       page.getByRole('heading', { name: `Paquete ${suffix}`, exact: true })
     ).toBeVisible()

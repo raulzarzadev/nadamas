@@ -16,7 +16,7 @@ test('pase de lista: credencial, incorporación, duplicados y modal móvil', asy
   const suffix = crypto.randomUUID()
   const schoolId = `attendance-${suffix}`
   const occurrenceId = `attendance-class-${suffix}`
-  const date = new Date().toISOString().slice(0, 10)
+  const date = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
   const created = new Set<string>()
   function encode(value: unknown): Record<string, unknown> {
     if (typeof value === 'string') return { stringValue: value }
@@ -201,11 +201,14 @@ test('pase de lista: credencial, incorporación, duplicados y modal móvil', asy
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
     await page.waitForURL(/\/athlete\/(bookings|progress)$/)
     await page.evaluate((id) => window.localStorage.setItem('nadamas.schoolId', id), schoolId)
-    await page.goto(`/school/classes?school=${schoolId}&date=${date}`)
-    await page.getByRole('button', { name: 'Pase de lista', exact: true }).first().click()
+    await page.goto('/school/students')
+    await page.getByRole('button', { name: 'Pases de lista', exact: true }).click()
+    await page
+      .getByRole('dialog', { name: 'Pases de lista', exact: true })
+      .getByRole('button', { name: /18:00.*19:00/ })
+      .click()
     const dialog = page.getByRole('dialog', { name: 'Pase de lista' })
     await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: /18:00.*19:00/ }).click()
     await expect(dialog.getByText('2 asistencias registradas', { exact: false })).toBeVisible()
     await dialog.getByRole('button', { name: 'ID del atleta', exact: true }).click()
     await dialog.getByLabel('ID de seis dígitos').fill(athleteCard.numericId)

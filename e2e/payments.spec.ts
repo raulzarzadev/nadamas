@@ -523,8 +523,9 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
   await page.waitForURL(/\/athlete\/(bookings|progress)$/)
   await page.evaluate((id) => localStorage.setItem('nadamas.schoolId', id), schoolId)
   await page.goto(`/school/payments?schoolId=${schoolId}`)
-  await expect(page.getByRole('heading', { name: 'Pagos', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Configuración', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Planes y pagos', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Cobros', exact: true }).click()
+  await page.getByRole('button', { name: 'Configuración de pagos', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Configuración de pagos' })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByLabel('Pago por clase', { exact: true })).toBeChecked()
@@ -556,14 +557,11 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
   await dialog.getByRole('button', { name: 'Guardar', exact: true }).click()
   await expect(dialog).not.toBeVisible()
   expect((await snapshot()).settings.transferDetails.clabe).toBe('012345678901234567')
-  await expect(page.getByLabel('Buscar alumno')).toBeVisible()
-  await page.getByLabel('Buscar alumno').fill('sin coincidencias')
-  await expect(page.getByText('No hay alumnos que coincidan con la búsqueda.')).toBeVisible()
-  await page.getByLabel('Buscar alumno').fill('')
+  await expect(page.getByRole('region', { name: 'Últimos pagos', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Planes', exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: 'Planes', exact: true }).click()
   await expect(page.getByLabel('Buscar alumno')).toHaveCount(0)
-  await page.getByRole('button', { name: 'Crear', exact: true }).click()
+  await page.getByRole('button', { name: 'Crear plan', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Crear paquete o plan' })).toBeVisible()
   await page
     .getByRole('dialog', { name: 'Crear paquete o plan' })
@@ -615,11 +613,13 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
     .getByRole('button', { name: 'Cerrar modal', exact: true })
     .click()
   await page.goto(`/athlete/payments?schoolId=${schoolId}`)
-  await expect(page.getByRole('heading', { name: 'Pagos', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Planes y pagos', exact: true })).toBeVisible()
   await expect(
     page.getByText('Todavía no tienes un perfil de alumno vinculado en este espacio.')
   ).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Configuración', exact: true })).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: 'Configuración de pagos', exact: true })
+  ).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Movimientos', exact: true })).toHaveCount(0)
   await page.evaluate((id) => localStorage.setItem('nadamas.coachSelection', id), schoolId)
   await page.goto(`/coach/payments?schoolId=${schoolId}`)
@@ -629,9 +629,9 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
   await expect(
     page
       .getByRole('navigation', { name: 'Navegación principal' })
-      .getByRole('link', { name: 'Pagos', exact: true })
+      .locator('a[href="/school/payments"]')
   ).toHaveCount(0)
-  // Student profiles use compact badges and switch between isolated balances.
+  // Student profiles use compact badges and purchases stay tied to the selected profile.
   await seed(`schoolStudents/${schoolId}_child`, {
     id: `${schoolId}_child`,
     schoolId,
@@ -729,17 +729,16 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
     profiles.getByRole('button', { name: 'Alumno pagos (yo)', exact: true })
   ).toBeVisible()
   await profiles.getByRole('button', { name: 'Perfil adicional', exact: true }).click()
-  await expect(page.getByText('0 clases disponibles', { exact: true })).toBeVisible()
+  // The selected profile applies to purchases; balances are verified through the API above.
+  await expect(page.getByRole('heading', { name: 'Planes', exact: true })).toBeVisible()
   await expect(
     profiles.getByRole('button', { name: 'Perfil adicional', exact: true })
   ).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByLabel('Alumno', { exact: true })).toHaveCount(0)
   await page.screenshot({ path: '/tmp/nadamas-payments-profile-badges.png', fullPage: true })
-  const buyClasses = page.getByRole('button', { name: 'Conseguir más clases', exact: true })
-  await expect(buyClasses).toBeInViewport({ ratio: 1 })
-  await buyClasses.click()
-  await expect(page.getByRole('heading', { name: 'Planes', exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Adquirir', exact: true }).first().click()
+  const acquire = page.getByRole('button', { name: 'Adquirir', exact: true }).first()
+  await expect(acquire).toBeInViewport({ ratio: 1 })
+  await acquire.click()
   const purchaseDialog = page.getByRole('dialog', { name: 'Adquirir clases' })
   await expect(
     purchaseDialog.getByRole('radio', { name: 'Transferencia', exact: true })
@@ -813,7 +812,5 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
   expect(optimizedReceipt.ok()).toBe(true)
   expect((await optimizedReceipt.body()).length).toBeLessThanOrEqual(2 * 1024 * 1024)
 
-  await expect(
-    page.getByText('Pago registrado. Espera la confirmación para activar tu saldo o plan.')
-  ).toBeVisible()
+  await expect(page.getByRole('button', { name: /Perfil adicional.*Pago pendiente/ })).toBeVisible()
 })

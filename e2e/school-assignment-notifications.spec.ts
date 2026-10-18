@@ -299,7 +299,7 @@ test('las asignaciones del director notifican al entrenador antes de responder',
       .split('BEGIN:VEVENT')
       .find((event) => event.includes('Clase grupal (2)'))
     expect(cancelledGroup).toContain(`UID:${uid}`)
-    expect(cancelledGroup).toContain('SUMMARY:Cancelada · Clase grupal (2)')
+    expect(cancelledGroup).toContain('SUMMARY:(CANCELADA) Clase grupal (2)')
     expect(cancelledGroup).toContain('STATUS:CANCELLED')
     expect(cancelledGroup).toContain('TRANSP:TRANSPARENT')
     expect(cancelledGroup).not.toContain('BEGIN:VALARM')
