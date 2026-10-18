@@ -268,22 +268,6 @@ button:not(:disabled),
   }
 }
 
-/* Keep the three class tools on one row, including narrow mobile sheets. */
-.class-detail-actions > .btn {
-  min-width: 0;
-  flex: 1 1 0;
-  gap: 0.25rem;
-  padding: 0.5rem 0.25rem;
-  font-size: clamp(0.625rem, 2.6vw, 0.75rem);
-  white-space: nowrap;
-}
-
-.class-detail-actions > .btn > svg {
-  flex-shrink: 0;
-  width: 0.875rem;
-  height: 0.875rem;
-}
-
 .btn.btn-subtle.note-edit-action {
   min-height: 1.5rem;
   padding: 0.125rem 0;

@@ -457,7 +457,7 @@ export default function AgendaAddStudentModal({
         </div>
 
         <div className="flex flex-col px-4 py-4 sm:px-0">
-          {!standalone && (
+          {!standalone && !attendance && (
             <PaymentBookingOptions
               value={payment}
               onChange={setPayment}
@@ -524,7 +524,9 @@ export default function AgendaAddStudentModal({
                 aria-label="Alumnos de la clase"
               >
                 {attendanceLoading ? (
-                  <li role="status">Cargando alumnos…</li>
+                  <li role="status" className="px-4 py-3 text-sm text-(--c-text-2)">
+                    Cargando alumnos…
+                  </li>
                 ) : roster.length ? (
                   roster.map((candidate) => {
                     const student = students?.find(
@@ -579,7 +581,7 @@ export default function AgendaAddStudentModal({
                     )
                   })
                 ) : (
-                  <li className="text-sm text-(--c-text-2)">
+                  <li className="px-4 py-3 text-sm text-(--c-text-2)">
                     Esta clase aún no tiene alumnos. Escribe un nombre para agregar o crear uno.
                   </li>
                 )}

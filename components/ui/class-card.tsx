@@ -15,6 +15,7 @@ export default function ClassCard({
   hideTimeColumn = false,
   showSeparator = true,
   compact = false,
+  flush = false,
   status,
   coachName,
   showCoachName = false,
@@ -26,6 +27,8 @@ export default function ClassCard({
   pending = false,
   addStudent,
   actions,
+  timeActions,
+  timeLabel,
   ref,
   focused = false,
   children,
@@ -36,6 +39,8 @@ export default function ClassCard({
   hideTimeColumn?: boolean
   showSeparator?: boolean
   compact?: boolean
+  /** No outer padding: the parent (e.g. a sheet) already provides it. */
+  flush?: boolean
   status?: HourStatus
   coachName?: string
   showCoachName?: boolean
@@ -53,6 +58,10 @@ export default function ClassCard({
     onClick?: () => void
   }
   actions?: ReactNode
+  /** Shortcuts rendered on the same row as the time; keeps the card stacked. */
+  timeActions?: ReactNode
+  /** Replaces the time text on the time row (e.g. a date heading). */
+  timeLabel?: ReactNode
   ref?: Ref<HTMLDivElement>
   focused?: boolean
   children?: ReactNode
@@ -60,18 +69,30 @@ export default function ClassCard({
   const cardStyle = status ? HOUR_STATUS_STYLE[status] : null
   const isBlockedCard = status === 'blocked'
   const isAvailableCard = status === 'available' || status === 'groupAvailable'
+  const timeText = timeLabel ?? (showTime ? time : <span className="sr-only">{time}</span>)
   return (
     <div
-      className={`flex flex-col gap-1 ${compact ? 'p-0' : 'px-3 py-2 sm:px-5 sm:py-1.5'} @min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:gap-3 ${
+      className={`flex flex-col gap-1 ${compact || flush ? 'p-0' : 'px-3 py-2 sm:px-5 sm:py-1.5'} ${timeActions ? '' : '@min-[640px]:flex-row @min-[640px]:items-center @min-[640px]:gap-3'} ${
         showSeparator ? 'sm:border-b sm:border-[var(--c-border)]' : ''
       }`}
     >
-      {!hideTimeColumn && (
-        <span className="w-fit text-sm font-extrabold text-[var(--c-ocean)] @min-[640px]:w-12 @min-[640px]:shrink-0 @min-[640px]:text-sm @min-[640px]:font-semibold @min-[640px]:text-[var(--c-text-2)]">
-          {showTime ? time : <span className="sr-only">{time}</span>}
-        </span>
+      {timeActions ? (
+        <div className="flex items-center justify-between gap-3">
+          {!hideTimeColumn && (
+            <span className="min-w-0 text-sm font-extrabold text-[var(--c-ocean)]">{timeText}</span>
+          )}
+          <div className="ml-auto">{timeActions}</div>
+        </div>
+      ) : (
+        !hideTimeColumn && (
+          <span className="w-fit text-sm font-extrabold text-[var(--c-ocean)] @min-[640px]:w-12 @min-[640px]:shrink-0 @min-[640px]:text-sm @min-[640px]:font-semibold @min-[640px]:text-[var(--c-text-2)]">
+            {timeText}
+          </span>
+        )
       )}
-      <div className="flex min-w-0 w-full @min-[640px]:w-auto @min-[640px]:flex-1">
+      <div
+        className={`flex min-w-0 w-full ${timeActions ? '' : '@min-[640px]:w-auto @min-[640px]:flex-1'}`}
+      >
         {status && cardStyle ? (
           <div
             ref={ref}

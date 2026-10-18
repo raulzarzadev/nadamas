@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { BatchNotice } from '@/components/coach/ClassBatchNotesSheet'
 import ClassCard from '@/components/ui/class-card'
 import Sheet from '@/components/ui/sheet'
 import StudentTag from '@/components/ui/student-tag'
@@ -82,6 +83,7 @@ export default function ScheduleStudentsModal({
         <p className="text-sm text-(--c-text-2)">
           {slotCount} {slotCount === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
         </p>
+        <BatchNotice count={slotCount} />
         {error && (
           <p role="alert" className="text-sm text-rose-600">
             {error}
