@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { FiCalendar, FiChevronRight, FiEdit3, FiSearch, FiUser, FiX } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
+import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ClassCard from '@/components/ui/class-card'
 import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
@@ -308,6 +309,7 @@ export default function AthleteBookingsOverview({
       : undefined
   const [coaches, setCoaches] = useState<Record<string, CoachInfo>>({})
   const tenant = useTenantSchool()
+  const { schools } = useSchoolSelection({ includePersonal: true, athleteMode: true })
   // Progreso filters by a coach/school picked in the search bar; inside a school, that school.
   const [filter, setFilter] = useState<{
     kind: 'coach' | 'school'
@@ -382,7 +384,7 @@ export default function AthleteBookingsOverview({
     void load()
   }, [load])
 
-  useSchoolAgendaUpdates(selectedSchoolId, () => {
+  useSchoolAgendaUpdates(selectedSchoolId || schools.map(({ school }) => school.id), () => {
     const uid = auth.currentUser?.uid
     if (uid) void dispatch(ensureAthleteBookings(uid, true)).catch(() => {})
   })

@@ -55,10 +55,26 @@ export async function GET(request: Request) {
       const students = await listSchoolStudents(schoolId, caller.uid)
       const studentIds = new Set(students.map((student) => student.id))
       if (!studentIds.size) return []
-      const [classes, requests] = await Promise.all([
+      const [classes, requests, legacySnapshot] = await Promise.all([
         listSchoolClasses({ schoolId, studentIds: [...studentIds] }),
         listClassRequests(schoolId, caller.uid),
+        adminDb.collection('bookings').where('schoolId', '==', schoolId).get(),
       ])
+      const participantIds = new Set([
+        ...studentIds,
+        ...students.flatMap((student) =>
+          [student.additionalProfileId, student.studentUserId].filter((id): id is string =>
+            Boolean(id)
+          )
+        ),
+      ])
+      const legacyBookings = legacySnapshot.docs
+        .filter((doc) => participantIds.has(doc.data().athleteId))
+        .map((doc) => ({
+          ...(doc.data() as Booking),
+          id: doc.id,
+          evaluation: evaluations.find((item) => item.id === doc.id),
+        }))
       const coachIds = [
         ...new Set(
           classes
@@ -159,12 +175,14 @@ export async function GET(request: Request) {
               classFull: false,
             }) as Booking
         )
-      return [...classBookings, ...pendingBookings]
+      return [...classBookings, ...pendingBookings, ...legacyBookings]
     })
   )
-  const bookings = [...individualBookings, ...schoolBookings.flat()].sort((a, b) =>
-    `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`)
-  )
+  const bookings = [
+    ...new Map(
+      [...individualBookings, ...schoolBookings.flat()].map((booking) => [booking.id, booking])
+    ).values(),
+  ].sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
 
   return NextResponse.json({ bookings })
 }

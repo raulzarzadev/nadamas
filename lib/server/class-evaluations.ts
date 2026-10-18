@@ -6,6 +6,7 @@ import {
 } from '@/lib/class-evaluation'
 import type { Booking } from '@/lib/coach-booking'
 import type { SchoolClassOccurrence } from '@/lib/school'
+import { bookingBelongsToAccount } from '@/lib/server/booking-ownership'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { listSchoolStudents } from '@/lib/server/school-students'
 
@@ -40,7 +41,7 @@ export async function saveClassEvaluation(id: string, uid: string, evaluation: C
             : occurrence.status,
       } as Booking
     }
-    if (!booking || booking.athleteId !== uid) return 404
+    if (!booking || !(await bookingBelongsToAccount(booking, uid))) return 404
     if (!canEvaluateBooking(booking)) return 409
     const { privateComment, ...publicFields } = evaluation
     transaction.set(adminDb.collection('classEvaluations').doc(id), {

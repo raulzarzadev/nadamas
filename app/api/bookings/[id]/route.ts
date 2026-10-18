@@ -3,6 +3,7 @@ import { hasClassEnded } from '@/lib/class-evaluation'
 import type { Booking } from '@/lib/coach-booking'
 import { formatSlotLabel } from '@/lib/coach-booking'
 import { publicNameFromUser } from '@/lib/public-name'
+import { bookingBelongsToAccount } from '@/lib/server/booking-ownership'
 import { sendBookingCancelledEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyBookingCancelled } from '@/lib/server/notifications'
@@ -32,19 +33,9 @@ async function handleDELETE(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Reserva no encontrada.' }, { status: 404 })
   }
 
-  const booking = bookingSnap.data() as {
-    athleteId: string
-    athleteName?: string
-    coachId: string
-    locationName: string
-    days: string[]
-    startTime: string
-    date: string
-    endTime: string
-    status: string
-  }
+  const booking = bookingSnap.data() as Booking
 
-  if (booking.athleteId !== caller.uid) {
+  if (!(await bookingBelongsToAccount(booking, caller.uid))) {
     return NextResponse.json({ error: 'No autorizado.' }, { status: 403 })
   }
 

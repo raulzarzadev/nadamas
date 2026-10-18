@@ -87,6 +87,8 @@ test('every discovered composite query has a local index and index definitions a
     'app/api/admin/users/[id]/route.ts',
     'app/api/notifications/read/route.ts',
     'lib/server/calendar-feeds.ts',
+    // profileInvitations uses one equality filter (tokenHash or email), no composite index.
+    'lib/server/athlete-profile-invitations.ts',
     'lib/server/class-evaluations.ts',
     'lib/server/payments/reads.ts',
     'lib/server/slugs.ts',
