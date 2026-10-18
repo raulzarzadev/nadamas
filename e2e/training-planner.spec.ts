@@ -211,7 +211,10 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
     .click()
   const reorder = page.getByRole('button', { name: 'Reordenar mesociclo 2', exact: true })
   await reorder.press('Space')
+  await expect(reorder).toHaveAttribute('aria-pressed', 'true')
   await reorder.press('ArrowUp')
+  // dnd-kit resolves the drop target after the keyboard move animation.
+  await page.waitForTimeout(300)
   await reorder.press('Space')
   await expect(page.getByRole('button', { name: /^Editar nombre de / }).first()).toHaveAttribute(
     'aria-label',

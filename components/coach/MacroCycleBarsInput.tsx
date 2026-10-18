@@ -70,7 +70,7 @@ export default function MacroCycleBarsInput({
           {(cycle, _index, handle) => (
             <div
               key={cycle.id}
-              className={`relative grid min-w-0 gap-0 ${expanded[cycle.id] ? 'rounded-xl bg-(--c-surface)' : ''}`}
+              className={`relative grid min-w-0 gap-0 ${expanded[cycle.id] ? `rounded-xl ${cycle.type === 'micro' ? 'bg-[#258575]/10' : 'bg-(--c-surface)'}` : ''}`}
             >
               <div className="flex min-w-0 items-center">
                 {readOnly ? (
@@ -156,25 +156,27 @@ export default function MacroCycleBarsInput({
                   }
                 />
               )}
-              <CycleDateLabels
-                min={macro.startDate}
-                max={macro.endDate}
-                startDate={cycle.startDate}
-                endDate={cycle.endDate}
-                title={cycle.title}
-                disabled={disabled}
-                onEdit={
-                  readOnly
-                    ? undefined
-                    : () => {
-                        setName(cycle.title)
-                        setEditingName(cycle)
-                      }
-                }
-              />
+              {!expanded[cycle.id] && (
+                <CycleDateLabels
+                  min={macro.startDate}
+                  max={macro.endDate}
+                  startDate={cycle.startDate}
+                  endDate={cycle.endDate}
+                  title={cycle.title}
+                  disabled={disabled}
+                  onEdit={
+                    readOnly
+                      ? undefined
+                      : () => {
+                          setName(cycle.title)
+                          setEditingName(cycle)
+                        }
+                  }
+                />
+              )}
               <div id={`${detailsPrefix}-${cycle.id}`} hidden={!expanded[cycle.id]}>
                 {expanded[cycle.id] && (
-                  <div className="mt-3 grid gap-2">
+                  <div className="mt-0.5 grid gap-2">
                     <div
                       aria-hidden="true"
                       className={`h-6 w-full rounded-full ${cycle.type === 'micro' ? 'bg-[#258575]/50' : 'bg-[#79b9cf]'}`}
