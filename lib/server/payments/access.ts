@@ -8,7 +8,11 @@ import { adminDb } from '../firebase-admin'
 import { getSchoolCaller, requireSchoolAccess } from '../school-access'
 import { listSchoolStudents } from '../school-students'
 
-export async function paymentAccess(request: Request) {
+export async function paymentAccess(
+  request: Request,
+  // Reads only: let a non-member see a public school's plan catalog (no accounts/orders).
+  { allowPublicGuest = false }: { allowPublicGuest?: boolean } = {}
+) {
   const params = new URL(request.url).searchParams
   const schoolId = params.get('schoolId') || ''
   const coachId = params.get('coachId') || ''
@@ -35,7 +39,21 @@ export async function paymentAccess(request: Request) {
   let students: PaymentStudent[] = []
   if (schoolId) {
     const access = await requireSchoolAccess(request, schoolId, ['director', 'teacher', 'student'])
-    if (access.response) return { response: access.response }
+    if (access.response) {
+      if (allowPublicGuest && studentView) {
+        const school = (await adminDb.collection('schools').doc(schoolId).get()).data()
+        if (school?.isPublic)
+          return {
+            caller,
+            scope,
+            key: scopeKey(scope),
+            manager: false,
+            guest: true,
+            students: [] as PaymentStudent[],
+          }
+      }
+      return { response: access.response }
+    }
     manager =
       !studentView && (access.globalAdmin || schoolMembershipHasRole(access.membership, 'director'))
     if (!studentView && !manager && schoolMembershipHasRole(access.membership, 'teacher'))

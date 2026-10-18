@@ -97,6 +97,8 @@ export type PaymentStudent = {
 export type PaymentSnapshot = {
   scope: PaymentScope
   manager: boolean
+  // Non-member viewing a public school's catalog: plans only, can't buy yet.
+  guest?: boolean
   settings: PaymentSettings
   products: PaymentProduct[]
   students: PaymentStudent[]

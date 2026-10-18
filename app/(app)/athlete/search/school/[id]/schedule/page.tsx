@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import AthleteSchoolSchedule from '@/components/athlete/AthleteSchoolSchedule'
+import ScheduleHeader from '@/components/athlete/ScheduleHeader'
 import { getSchoolById } from '@/lib/server/schools'
 
 export default async function SchoolSchedulePage({ params }: { params: Promise<{ id: string }> }) {
@@ -9,7 +10,7 @@ export default async function SchoolSchedulePage({ params }: { params: Promise<{
   if (!school?.isPublic) notFound()
   return (
     <div className="grid gap-4">
-      <h1 className="text-2xl font-extrabold">Horarios de {school.name}</h1>
+      <ScheduleHeader name={school.name} searchTab="schools" />
       <AthleteSchoolSchedule
         schoolId={school.id}
         schoolName={school.name}

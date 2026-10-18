@@ -34,9 +34,9 @@ const invalid = () =>
   NextResponse.json({ error: 'Revisa los datos e inténtalo de nuevo.' }, { status: 400 })
 export async function GET(request: Request) {
   try {
-    const access = await paymentAccess(request)
+    const access = await paymentAccess(request, { allowPublicGuest: true })
     if (access.response) return access.response
-    await settleOverduePayments(access.key)
+    if (!('guest' in access)) await settleOverduePayments(access.key)
     const [settings, products, orders, entries, accounts, reservations] = await Promise.all([
       paymentSettings(access.key),
       adminDb.collection('paymentProducts').where('scope', '==', access.key).get(),
@@ -67,6 +67,7 @@ export async function GET(request: Request) {
       {
         scope: access.scope,
         manager: access.manager,
+        guest: 'guest' in access,
         settings,
         students: access.students,
         products: products.docs

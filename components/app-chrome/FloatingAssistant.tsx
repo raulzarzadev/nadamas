@@ -9,9 +9,11 @@ const SIZE = 52
 const MARGIN = 12
 
 function clampPosition(position: Position): Position {
+  // Keep the bubble above the mobile bottom tab bar when it is visible.
+  const tabbar = document.querySelector('[data-app-tabbar]')?.getBoundingClientRect().height || 0
   return {
     x: Math.max(MARGIN, Math.min(position.x, window.innerWidth - SIZE - MARGIN)),
-    y: Math.max(MARGIN, Math.min(position.y, window.innerHeight - SIZE - MARGIN)),
+    y: Math.max(MARGIN, Math.min(position.y, window.innerHeight - tabbar - SIZE - MARGIN)),
   }
 }
 
@@ -41,7 +43,7 @@ export default function FloatingAssistant() {
             ? { left: position.x, top: position.y }
             : {
                 right: 'max(1rem, env(safe-area-inset-right))',
-                bottom: 'calc(1rem + env(safe-area-inset-bottom))',
+                bottom: 'calc(1rem + max(env(safe-area-inset-bottom), var(--app-tabbar-h, 0px)))',
               }
         }
         onPointerDown={(event) => {

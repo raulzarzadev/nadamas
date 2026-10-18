@@ -15,23 +15,17 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     {
       href: '/athlete/payments',
       label: 'Pagos y planes',
-      mobileLabel: 'Pagos y planes',
+      mobileLabel: 'Pagos',
       icon: 'payments',
     },
     { href: '/athlete/schedule', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
-    {
-      href: '/athlete/search',
-      label: 'Buscar',
-      mobileLabel: 'Buscar',
-      icon: 'search',
-    },
     { href: '/athlete/progress', label: 'Progreso', mobileLabel: 'Progreso', icon: 'chart' },
   ],
   coach: [
     {
       href: '/coach/payments',
       label: 'Pagos y planes',
-      mobileLabel: 'Pagos y planes',
+      mobileLabel: 'Pagos',
       icon: 'payments',
     },
     { href: '/coach/agenda', label: 'Mis horarios', mobileLabel: 'Horarios', icon: 'calendar' },
@@ -47,7 +41,7 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     {
       href: '/school/payments',
       label: 'Pagos y planes',
-      mobileLabel: 'Pagos y planes',
+      mobileLabel: 'Pagos',
       icon: 'payments',
     },
     { href: '/school/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },

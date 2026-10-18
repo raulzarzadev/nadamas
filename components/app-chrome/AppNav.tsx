@@ -66,15 +66,14 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
   })
   const { user } = useUser()
   const uid = user?.uid || user?.id
-  const selectedSchoolId = selectedSchool?.school.id || null
   const dispatch = useAppDispatch()
   const bookingState = useAppSelector((state) => state.athleteBookings)
   const upcomingCount =
     bookingState.uid === uid && bookingState.loaded
       ? bookingState.bookings.filter(
           (booking) =>
-            (!selectedSchoolId || booking.schoolId === selectedSchoolId) &&
-            !isPastAthleteBooking(booking)
+            // Athletes no longer pick a school in the header: count all, or the tenant's.
+            (!tenant || booking.schoolId === tenant.id) && !isPastAthleteBooking(booking)
         ).length
       : null
   useEffect(() => {
@@ -174,125 +173,188 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
     }
   }, [role, schoolPathname, tenant])
 
+  // Athlete search lives inside Horarios, so its pages keep that tab active.
+  const isActiveNav = (href: string) =>
+    pathname.startsWith(href) ||
+    (href === '/athlete/schedule' && pathname.startsWith('/athlete/search'))
+  const tabs = [
+    ...primary.map((item) => ({
+      href: item.href,
+      label: item.mobileLabel,
+      icon: NAV_ICONS[item.icon],
+      count: role === 'athlete' && item.href === '/athlete/schedule' ? upcomingCount : null,
+    })),
+    ...(role === 'school'
+      ? [{ href: '/school/settings', label: 'Ajustes', icon: FiSettings, count: null }]
+      : []),
+  ]
+
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="relative flex items-center gap-2 sm:gap-4">
-          <Link
-            href="/"
-            className={tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'}
-          >
-            {tenant ? (
-              <span className="flex min-w-0 items-center gap-2">
-                {tenant.logoUrl ? (
-                  <Image
-                    src={tenant.logoUrl}
-                    alt={tenant.name}
-                    width={40}
-                    height={40}
-                    className="size-10 shrink-0 rounded-lg object-contain"
-                  />
-                ) : (
-                  <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-(--c-surface) text-lg font-extrabold">
-                    {tenant.name[0]}
-                  </span>
-                )}
-                <span className="max-w-32 truncate text-sm font-extrabold sm:max-w-64">
-                  {tenant.name}
-                </span>
-              </span>
-            ) : (
-              <Image
-                src="/logo-nadamas.webp"
-                fill
-                sizes="112px"
-                priority
-                style={{ objectFit: 'contain', objectPosition: 'left' }}
-                alt="Nadamas logo"
-              />
-            )}
-          </Link>
-          <div className="ml-auto flex items-center gap-2">
-            {role === 'athlete' && <PaymentBalanceButton />}
-            <NotificationsBell />
-            <RoleSwitcher
-              currentRole={role}
-              school={schoolAccess?.school}
-              canAccessDirectorMode={hasDirectorAccess}
-            />
-          </div>
-        </div>
-
-        {!tenant && role === 'school' && schoolAccess && (
-          <div className="flex items-center justify-between gap-3">
-            <p className="min-w-0 truncate text-left text-sm font-bold text-[var(--c-ocean)]">
-              <span className="font-normal text-[var(--c-text-2)]">Escuela · </span>
-              {schoolAccess.school.name}
-            </p>
-          </div>
-        )}
-
-        {canShowWorkspaceNavigation && (
-          <nav
-            aria-label="Navegación principal"
-            className="grid gap-1.5 sm:gap-2"
-            style={{
-              gridTemplateColumns: `${primary.map((item) => (item.icon === 'payments' ? '3rem' : 'minmax(0,1fr)')).join(' ')}${role === 'school' ? ' 2.5rem' : ''}`,
-            }}
-          >
-            {primary.map((l) => {
-              const active = pathname.startsWith(l.href)
-              const Icon = NAV_ICONS[l.icon]
-              const count =
-                role === 'athlete' && l.href === '/athlete/schedule' ? upcomingCount : null
-              const label = count === null ? l.label : `${l.label} (${count})`
-              return (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  aria-label={label}
-                  title={label}
-                  aria-current={active ? 'page' : undefined}
-                  className={`@container flex min-w-0 min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border ${l.icon === 'payments' ? 'size-12 p-0' : 'px-1.5 py-3 sm:px-4'} text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:text-sm ${
-                    active
-                      ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
-                      : 'border-[var(--c-border)] bg-white text-[var(--c-text-2)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]'
-                  }`}
-                >
-                  <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
-                  {count !== null && (
-                    <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-current/10 px-1 text-[10px] @min-[9rem]:hidden">
-                      {count}
+    <>
+      <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
+          <div className="relative flex items-center gap-2 sm:gap-4">
+            <Link
+              href="/"
+              className={tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'}
+            >
+              {tenant ? (
+                <span className="flex min-w-0 items-center gap-2">
+                  {tenant.logoUrl ? (
+                    <Image
+                      src={tenant.logoUrl}
+                      alt={tenant.name}
+                      width={40}
+                      height={40}
+                      className="size-10 shrink-0 rounded-lg object-contain"
+                    />
+                  ) : (
+                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-(--c-surface) text-lg font-extrabold">
+                      {tenant.name[0]}
                     </span>
                   )}
-                  {l.icon !== 'payments' && (
-                    <span className="hidden whitespace-nowrap @min-[9rem]:inline">{label}</span>
-                  )}
+                  <span className="max-w-32 truncate text-sm font-extrabold sm:max-w-64">
+                    {tenant.name}
+                  </span>
+                </span>
+              ) : (
+                <Image
+                  src="/logo-nadamas.webp"
+                  fill
+                  sizes="112px"
+                  priority
+                  style={{ objectFit: 'contain', objectPosition: 'left' }}
+                  alt="Nadamas logo"
+                />
+              )}
+            </Link>
+            <div className="ml-auto flex items-center gap-2">
+              {role === 'athlete' && <PaymentBalanceButton />}
+              <NotificationsBell />
+              <RoleSwitcher
+                currentRole={role}
+                school={schoolAccess?.school}
+                canAccessDirectorMode={hasDirectorAccess}
+              />
+            </div>
+          </div>
+
+          {!tenant && role === 'school' && schoolAccess && (
+            <div className="flex items-center justify-between gap-3">
+              <p className="min-w-0 truncate text-left text-sm font-bold text-[var(--c-ocean)]">
+                <span className="font-normal text-[var(--c-text-2)]">Escuela · </span>
+                {schoolAccess.school.name}
+              </p>
+            </div>
+          )}
+
+          {canShowWorkspaceNavigation && (
+            <nav
+              aria-label="Navegación principal"
+              className="hidden gap-2 sm:grid"
+              style={{
+                gridTemplateColumns: `${primary.map((item) => (item.icon === 'payments' ? '3rem' : 'minmax(0,1fr)')).join(' ')}${role === 'school' ? ' 2.5rem' : ''}`,
+              }}
+            >
+              {primary.map((l) => {
+                const active = isActiveNav(l.href)
+                const Icon = NAV_ICONS[l.icon]
+                const count =
+                  role === 'athlete' && l.href === '/athlete/schedule' ? upcomingCount : null
+                const label = count === null ? l.label : `${l.label} (${count})`
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    aria-label={label}
+                    title={label}
+                    aria-current={active ? 'page' : undefined}
+                    className={`@container flex min-w-0 min-h-12 cursor-pointer items-center justify-center gap-1 rounded-[var(--r-sm)] border ${l.icon === 'payments' ? 'size-12 p-0' : 'px-1.5 py-3 sm:px-4'} text-center text-xs font-semibold shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-[background-color,border-color,box-shadow,color,transform] hover:-translate-y-0.5 hover:shadow-[var(--shadow-sm)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] active:translate-y-0 sm:gap-2 sm:text-sm ${
+                      active
+                        ? 'border-[var(--c-ocean)] bg-[var(--c-ocean)] text-white'
+                        : 'border-[var(--c-border)] bg-white text-[var(--c-text-2)] hover:border-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)]'
+                    }`}
+                  >
+                    <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
+                    {count !== null && (
+                      <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-current/10 px-1 text-[10px] @min-[9rem]:hidden">
+                        {count}
+                      </span>
+                    )}
+                    {l.icon !== 'payments' && (
+                      <span className="hidden whitespace-nowrap @min-[9rem]:inline">{label}</span>
+                    )}
+                  </Link>
+                )
+              })}
+              {role === 'school' && (
+                <Link
+                  href="/school/settings"
+                  aria-label="Configuración de escuela"
+                  aria-current={pathname.startsWith('/school/settings') ? 'page' : undefined}
+                  className={`flex min-h-12 items-center justify-center rounded-[var(--r-sm)] border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${pathname.startsWith('/school/settings') ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'}`}
+                >
+                  <FiSettings aria-hidden="true" className="size-5" />
                 </Link>
+              )}
+            </nav>
+          )}
+
+          {canShowWorkspaceNavigation && role === 'coach' && <CoachSchoolSwitcher />}
+          {canShowWorkspaceNavigation &&
+            role === 'athlete' &&
+            !publicAthleteSchedule &&
+            !pathname.startsWith('/athlete/search') &&
+            pathname !== '/athlete/payments' &&
+            pathname !== '/athlete/progress' &&
+            (!tenant || selectedSchool !== null) && <AthleteSchoolSwitcher />}
+        </div>
+      </header>
+
+      {/* Small screens: primary nav becomes an app-style bottom tab bar. Rendered
+        outside the header because its backdrop-blur would contain `fixed`. */}
+      {canShowWorkspaceNavigation && (
+        <nav
+          aria-label="Navegación principal"
+          data-app-tabbar
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-(--c-border) bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_20px_rgba(10,37,64,0.06)] backdrop-blur sm:hidden"
+        >
+          <ul
+            className="grid h-16"
+            style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+          >
+            {tabs.map(({ href, label, icon: Icon, count }) => {
+              const active = isActiveNav(href)
+              return (
+                <li key={href} className="min-w-0">
+                  <Link
+                    href={href}
+                    aria-label={count === null ? label : `${label} (${count})`}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex h-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 px-1 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${
+                      active ? 'text-(--c-ocean)' : 'text-(--c-text-2) hover:text-(--c-ocean)'
+                    }`}
+                  >
+                    <span
+                      className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+                        active ? 'bg-(--c-ocean) text-white' : ''
+                      }`}
+                    >
+                      <Icon aria-hidden="true" className="size-5" />
+                      {count !== null && count > 0 && (
+                        <span className="absolute -top-1 -right-1 inline-flex min-w-4 items-center justify-center rounded-full bg-(--c-aqua-strong) px-1 text-[10px] leading-4 text-white">
+                          {count}
+                        </span>
+                      )}
+                    </span>
+                    <span className="max-w-full truncate">{label}</span>
+                  </Link>
+                </li>
               )
             })}
-            {role === 'school' && (
-              <Link
-                href="/school/settings"
-                aria-label="Configuración de escuela"
-                aria-current={pathname.startsWith('/school/settings') ? 'page' : undefined}
-                className={`flex min-h-12 items-center justify-center rounded-[var(--r-sm)] border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${pathname.startsWith('/school/settings') ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'}`}
-              >
-                <FiSettings aria-hidden="true" className="size-5" />
-              </Link>
-            )}
-          </nav>
-        )}
-
-        {canShowWorkspaceNavigation && role === 'coach' && <CoachSchoolSwitcher />}
-        {canShowWorkspaceNavigation &&
-          role === 'athlete' &&
-          !publicAthleteSchedule &&
-          !pathname.startsWith('/athlete/search') &&
-          pathname !== '/athlete/payments' &&
-          (!tenant || selectedSchool !== null) && <AthleteSchoolSwitcher />}
-        {publicAthleteSchedule && <div id="athlete-coach-filters" className="min-w-0" />}
-      </div>
-    </header>
+          </ul>
+        </nav>
+      )}
+    </>
   )
 }

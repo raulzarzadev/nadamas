@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import AthleteSchoolSchedule from '@/components/athlete/AthleteSchoolSchedule'
+import ScheduleHeader from '@/components/athlete/ScheduleHeader'
 import { getPublicCoachDetail } from '@/lib/server/public-coach'
 import { resolveSlug } from '@/lib/server/slugs'
 import { getTenantSchool } from '@/lib/server/tenant-school'
@@ -20,7 +21,7 @@ export default async function CoachSchedulePage({
   if (!detail) notFound()
   return (
     <div className="grid gap-4">
-      <h1 className="text-2xl font-extrabold">Horarios de {detail.name}</h1>
+      <ScheduleHeader name={detail.name} searchTab="coaches" schoolId={tenant?.id} />
       <AthleteSchoolSchedule
         schoolId={schoolId}
         coachId={target.uid}

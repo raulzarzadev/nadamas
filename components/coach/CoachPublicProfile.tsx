@@ -612,7 +612,7 @@ export default function CoachPublicProfile({
       {/* Single selection summary (across all offerings). */}
       <ClassEvaluationList coachId={coach.id} />
       {selectedCount > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--c-border)] bg-white/95 px-4 py-3 shadow-[0_-10px_30px_rgba(10,37,64,0.12)] backdrop-blur">
+        <div className="fixed inset-x-0 bottom-(--app-tabbar-h,0px) z-30 border-t border-[var(--c-border)] bg-white/95 px-4 py-3 shadow-[0_-10px_30px_rgba(10,37,64,0.12)] backdrop-blur">
           <div className="mx-auto flex w-full max-w-md items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-extrabold text-[var(--c-ocean)]">

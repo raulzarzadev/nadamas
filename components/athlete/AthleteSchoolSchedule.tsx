@@ -2,7 +2,6 @@
 
 import Sheet from '@comps/ui/sheet'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { FiUser, FiUsers, FiX } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import PaymentsPanel from '@/components/payments/PaymentsPanel'
@@ -108,8 +107,6 @@ const groupReservationsByClass = (reservations: SchoolReservation[]) => {
 export default function AthleteSchoolSchedule({
   schoolId,
   schoolName,
-  title = 'Horarios',
-  description = '',
   bookingMode,
   schools = EMPTY_SCHOOLS,
   toolbarActions,
@@ -118,8 +115,6 @@ export default function AthleteSchoolSchedule({
 }: {
   schoolId: string | null
   schoolName?: string
-  title?: string
-  description?: string
   bookingMode: SchoolBookingMode
   schools?: PublicSchoolOption[]
   toolbarActions?: ReactNode
@@ -186,10 +181,8 @@ export default function AthleteSchoolSchedule({
   const detailIsPast = Boolean(reservationToCancel && hasClassEnded(reservationToCancel))
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
-  const [filterModal, setFilterModal] = useState<'schools' | 'coaches' | null>(null)
-  const [coachFilter, setCoachFilter] = useState(coachId || 'all')
-  const [schoolFilter, setSchoolFilter] = useState(initialSchoolId || 'all')
-  const [coachFiltersTarget, setCoachFiltersTarget] = useState<HTMLElement | null>(null)
+  const coachFilter = coachId || 'all'
+  const schoolFilter = initialSchoolId || 'all'
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
     () => new Set(HOUR_STATUSES)
   )
@@ -265,10 +258,6 @@ export default function AthleteSchoolSchedule({
     }
   }, [paymentScopeKey, paymentLoadKey])
   const month = selectedDate.slice(0, 7)
-
-  useEffect(() => {
-    setCoachFiltersTarget(document.getElementById('athlete-coach-filters'))
-  }, [])
 
   const load = useCallback(async () => {
     setError('')
@@ -512,19 +501,6 @@ export default function AthleteSchoolSchedule({
     selectedStatuses.has(slotStatus(slot))
   )
   const visibleSlots = visibleCalendarSlots.filter((slot) => selectableSlots.includes(slot))
-  const coachIdsWithSlots = new Set(
-    selectableSlots
-      .filter(
-        (slot) =>
-          slotIsFuture(slot) &&
-          (schoolFilter === 'all' ? !slot.schoolId : slot.schoolId === schoolFilter)
-      )
-      .map((slot) => slot.coachId)
-  )
-  const coaches = Object.entries(coachNames)
-    .filter(([id]) => coachIdsWithSlots.has(id))
-    .sort((a, b) => a[1].localeCompare(b[1]))
-  const selectedSchoolName = schools.find((school) => school.id === schoolFilter)?.name
   const selectedBookingMode: SchoolBookingMode = schoolId
     ? bookingMode
     : selectedSlot?.schoolId
@@ -1067,77 +1043,6 @@ export default function AthleteSchoolSchedule({
 
   return (
     <section className="flex flex-col gap-4">
-      {!schoolId &&
-        !coachId &&
-        coachFiltersTarget &&
-        createPortal(
-          <div className="grid min-w-0 grid-cols-2 gap-2">
-            <button
-              type="button"
-              className="min-h-11 min-w-0 rounded-xl border border-(--c-border) bg-white px-2 py-2 text-xs font-semibold text-(--c-ocean) sm:text-sm"
-              onClick={() => setFilterModal('schools')}
-              aria-haspopup="dialog"
-              title={selectedSchoolName || 'Mis escuelas'}
-            >
-              <span className="block truncate">{selectedSchoolName || 'Mis escuelas'}</span>
-            </button>
-            <button
-              type="button"
-              className="min-h-11 min-w-0 rounded-xl border border-(--c-border) bg-white px-2 py-2 text-xs font-semibold text-(--c-ocean) sm:text-sm"
-              onClick={() => setFilterModal('coaches')}
-              aria-haspopup="dialog"
-              title={
-                coachFilter === 'all' ? 'Mis entrenadores' : coachNames[coachFilter] || 'Entrenador'
-              }
-            >
-              <span className="block truncate">
-                {coachFilter === 'all'
-                  ? 'Mis entrenadores'
-                  : coachNames[coachFilter] || 'Entrenador'}
-              </span>
-            </button>
-          </div>,
-          coachFiltersTarget
-        )}
-      <Sheet
-        open={filterModal !== null}
-        onClose={() => setFilterModal(null)}
-        label={filterModal === 'schools' ? 'Filtrar escuelas' : 'Filtrar entrenadores'}
-      >
-        <div className="grid gap-3">
-          <h2 className="text-xl font-bold text-(--c-ocean)">
-            {filterModal === 'schools' ? 'Escuelas' : 'Entrenadores'}
-          </h2>
-          {filterModal === 'coaches' && description && (
-            <p className="text-sm text-(--c-text-2)">
-              {selectedSchoolName ? `Entrenadores de ${selectedSchoolName}` : title}
-            </p>
-          )}
-          {(filterModal === 'schools'
-            ? [['all', 'Mis escuelas'], ...schools.map((school) => [school.id, school.name])]
-            : [['all', 'Mis entrenadores'], ...coaches]
-          ).map(([id, name]) => {
-            const selected = (filterModal === 'schools' ? schoolFilter : coachFilter) === id
-            return (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={selected}
-                className={`min-h-11 rounded-xl border px-4 py-3 text-left text-sm font-semibold ${selected ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean)'}`}
-                onClick={() => {
-                  if (filterModal === 'schools') {
-                    setSchoolFilter(id)
-                    setCoachFilter('all')
-                  } else setCoachFilter(id)
-                  setFilterModal(null)
-                }}
-              >
-                {name}
-              </button>
-            )
-          })}
-        </div>
-      </Sheet>
       {error && (
         <p role="alert" className="text-sm text-rose-600">
           {error}

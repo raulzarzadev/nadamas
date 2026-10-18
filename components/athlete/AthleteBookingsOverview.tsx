@@ -7,11 +7,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { FiCalendar, FiChevronRight, FiEdit3, FiSearch, FiUser, FiX } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
-import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ClassCard from '@/components/ui/class-card'
 import StatusBadge from '@/components/ui/status-badge'
 import StudentBadge from '@/components/ui/student-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { auth } from '@/firebase/index'
 import { isPastAthleteBooking as isPastBooking } from '@/lib/athlete-upcoming-count'
 import { type ClassEvaluation, canEvaluateBooking } from '@/lib/class-evaluation'
@@ -26,6 +26,7 @@ import {
   useAppSelector,
 } from '@/lib/store/athlete-bookings'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import AthleteSearchBar from './AthleteSearchBar'
 
 interface CoachInfo {
   name: string
@@ -251,26 +252,21 @@ function PastBookings({
   coaches: Record<string, CoachInfo>
   onEvaluate: (booking: Booking) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
 
   return (
-    <section className="flex flex-col gap-3 border-t border-[var(--c-border)] pt-5">
+    <section className="flex flex-col gap-2">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="flex min-h-12 items-center justify-between gap-3 rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-4 text-left transition hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+        className="flex min-h-11 cursor-pointer items-center gap-1 self-start text-xs font-semibold text-(--c-text-2) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
       >
-        <span>
-          <span className="block font-bold text-[var(--c-ocean)]">Clases pasadas</span>
-          <span className="mt-0.5 block text-xs text-[var(--c-text-2)]">
-            {bookings.length} {bookings.length === 1 ? 'clase' : 'clases'}, incluidas las canceladas
-          </span>
-        </span>
         <FiChevronRight
           aria-hidden="true"
           className={`shrink-0 transition-transform ${open ? 'rotate-90' : ''}`}
         />
+        Historial ({bookings.length}) · incluye canceladas
       </button>
       {open && (
         <ul className="flex flex-col gap-1.5">
@@ -311,10 +307,14 @@ export default function AthleteBookingsOverview({
       ? bookingState.bookings
       : undefined
   const [coaches, setCoaches] = useState<Record<string, CoachInfo>>({})
-  const { selectedId: selectedSchoolId } = useSchoolSelection({
-    includePersonal: true,
-    athleteMode: true,
-  })
+  const tenant = useTenantSchool()
+  // Progreso filters by a coach/school picked in the search bar; inside a school, that school.
+  const [filter, setFilter] = useState<{
+    kind: 'coach' | 'school'
+    id: string
+    name: string
+  } | null>(null)
+  const selectedSchoolId = tenant?.id ?? (filter?.kind === 'school' ? filter.id : null)
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [toCancel, setToCancel] = useState<Booking | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -431,7 +431,13 @@ export default function AthleteBookingsOverview({
   }
 
   const selectedBookings =
-    bookings?.filter((booking) => !selectedSchoolId || booking.schoolId === selectedSchoolId) ?? []
+    bookings?.filter((booking) =>
+      selectedSchoolId
+        ? booking.schoolId === selectedSchoolId
+        : filter?.kind === 'coach'
+          ? booking.coachId === filter.id
+          : true
+    ) ?? []
   const upcomingBookings = selectedBookings.filter((booking) => !isPastBooking(booking))
   const pastBookings = selectedBookings.filter(isPastBooking)
   const pendingEvaluations = pastBookings.filter(
@@ -501,6 +507,17 @@ export default function AthleteBookingsOverview({
         </div>
       </header>
 
+      {!showUpcoming && (
+        <AthleteSearchBar
+          schoolId={tenant?.id}
+          actionLabel="Ver progreso"
+          value={filter?.name}
+          onClear={() => setFilter(null)}
+          onSelectCoach={(coach) => setFilter({ kind: 'coach', ...coach })}
+          onSelectSchool={(school) => setFilter({ kind: 'school', ...school })}
+        />
+      )}
+
       {!showUpcoming && studentComments.length > 0 && (
         <section className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white p-4">
           <h2 className="font-bold text-[var(--c-ocean)]">Comentarios sobre ti</h2>
@@ -524,7 +541,7 @@ export default function AthleteBookingsOverview({
             Reintentar
           </button>
         </div>
-      ) : bookings.length === 0 ? (
+      ) : showUpcoming && bookings.length === 0 ? (
         <div className="rounded-[var(--r-md)] border border-dashed border-[var(--c-border)] bg-[var(--c-surface)] p-9 text-center">
           <FiSearch aria-hidden="true" className="mx-auto mb-3 text-3xl text-[var(--c-aqua)]" />
           <p className="mx-auto mb-4 max-w-xs text-sm leading-relaxed text-[var(--c-text-2)]">
@@ -560,10 +577,35 @@ export default function AthleteBookingsOverview({
                 No tienes clases próximas.
               </div>
             ))}
-          {!showUpcoming && pastBookings.length === 0 && (
-            <p className="py-6 text-center text-sm text-(--c-text-2)">
-              Todavía no tienes clases en tu historial.
-            </p>
+          {!showUpcoming && (
+            <section aria-labelledby="progress-upcoming-title" className="grid gap-2">
+              <h2 id="progress-upcoming-title" className="font-bold text-(--c-ocean)">
+                Próximas clases
+              </h2>
+              {upcomingBookings.length > 0 ? (
+                <ul className="flex flex-col gap-2">
+                  {upcomingGroups.map((group) => (
+                    <BookingGroupRow
+                      compact
+                      key={group[0].id}
+                      bookings={group}
+                      coach={coaches[group[0].coachId]}
+                      onCancel={setToCancel}
+                    />
+                  ))}
+                </ul>
+              ) : (
+                <div className="grid justify-items-center gap-3 rounded-xl border border-dashed border-(--c-border) bg-(--c-surface) p-5 text-center">
+                  <p className="text-sm text-(--c-text-2)">No hay próximas clases.</p>
+                  <Link
+                    href="/athlete/schedule?search=coaches"
+                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                  >
+                    <FiSearch aria-hidden="true" /> Buscar una clase
+                  </Link>
+                </div>
+              )}
+            </section>
           )}
           {!showUpcoming && pastBookings.length > 0 && (
             <PastBookings

@@ -8,7 +8,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
   await requireTenantSchool()
   return (
     <Providers>
-      <div className="marketing min-h-screen">
+      <div className="marketing min-h-screen max-sm:has-[[data-app-tabbar]]:pb-[calc(4rem+env(safe-area-inset-bottom))]">
         <MarketingNav />
         <main>{children}</main>
         <SiteFooter />

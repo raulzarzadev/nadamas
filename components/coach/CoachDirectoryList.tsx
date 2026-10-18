@@ -4,9 +4,10 @@ import VerifiedBadge from '@comps/coach/VerifiedBadge'
 import { SearchField } from '@comps/Inputs/FormFields'
 import Avatar from '@comps/ui/avatar'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { FiChevronRight } from 'react-icons/fi'
 import COACH_SKILLS from '@/CONSTANTS/COACH_SKILLS'
+import RegisteredBadge from '@/components/athlete/RegisteredBadge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
 import { getAuthed } from '@/lib/client/authed-api'
@@ -57,6 +58,13 @@ export default function CoachDirectoryList({
   viewAllHref,
   schoolId,
   availableOnly = false,
+  onSelectCoach,
+  actionLabel = 'Ver horarios',
+  query: externalQuery,
+  compact = false,
+  heading,
+  onMatchCount,
+  mineIds,
 }: {
   schoolId?: string | null
   availableOnly?: boolean
@@ -66,6 +74,19 @@ export default function CoachDirectoryList({
   showSearch?: boolean
   /** When set, renders a "Ver todos los coaches" button below the list. */
   viewAllHref?: string
+  /** When set, the row action calls this instead of navigating. */
+  onSelectCoach?: (coach: { id: string; name: string }) => void
+  actionLabel?: string
+  /** Search text controlled by the parent (hide the built-in field with showSearch={false}). */
+  query?: string
+  /** Dense rows for sheets: the whole row is the action, smaller avatar, no pill button. */
+  compact?: boolean
+  /** Rendered above the rows; with compact, the whole list (and heading) hides when nothing matches. */
+  heading?: ReactNode
+  /** Reports how many coaches match once loaded (lets the parent show a shared empty state). */
+  onMatchCount?: (count: number) => void
+  /** Coaches the athlete already trains with: listed first with a "Registrado" badge. */
+  mineIds?: Set<string>
 }) {
   const [coaches, setCoaches] = useState<DirectoryCoach[] | undefined>(undefined)
   const [query, setQuery] = useState('')
@@ -105,18 +126,27 @@ export default function CoachDirectoryList({
     [availableOnly, coaches]
   )
 
+  const activeQuery = externalQuery ?? query
   const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase()
-    if (!normalized) return availableCoaches
-    return availableCoaches.filter((coach) =>
-      [coach.name, skillTag(coach), locationLabel(coach)]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalized)
-    )
-  }, [availableCoaches, query])
+    const normalized = activeQuery.trim().toLowerCase()
+    const matches = normalized
+      ? availableCoaches.filter((coach) =>
+          [coach.name, skillTag(coach), locationLabel(coach)]
+            .join(' ')
+            .toLowerCase()
+            .includes(normalized)
+        )
+      : availableCoaches
+    if (!mineIds?.size) return matches
+    return [...matches].sort((a, b) => Number(mineIds.has(b.id)) - Number(mineIds.has(a.id)))
+  }, [availableCoaches, activeQuery, mineIds])
 
   const visible = limit ? filtered.slice(0, limit) : filtered
+  const matchCount = coaches === undefined ? undefined : filtered.length
+  useEffect(() => {
+    if (matchCount !== undefined) onMatchCount?.(matchCount)
+  }, [matchCount, onMatchCount])
+  if (compact && matchCount === 0) return null
 
   return (
     <div className="flex flex-col gap-4">
@@ -132,6 +162,7 @@ export default function CoachDirectoryList({
         />
       )}
 
+      {heading}
       {coaches === undefined ? (
         <p className="py-8 text-center text-sm text-[var(--c-text-2)]">Cargando {coachPlural}…</p>
       ) : filtered.length === 0 ? (
@@ -141,7 +172,7 @@ export default function CoachDirectoryList({
             : `No encontramos ${coachPlural} con esa búsqueda.`}
         </p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className={`flex flex-col ${compact ? 'gap-2' : 'gap-3'}`}>
           {visible.map((coach) => {
             const tag = skillTag(coach)
             const availability = offeringsAvailabilitySummary(resolveOfferings(coach))
@@ -153,6 +184,58 @@ export default function CoachDirectoryList({
                   : coach.slug
                     ? `/${coach.slug}`
                     : `${coachHrefBase}/${coach.id}`
+            if (compact) {
+              const details = [tag, availability].filter(Boolean).join(' · ')
+              const rowClass =
+                'flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-(--c-border) bg-white px-3 py-2 text-left transition-colors hover:border-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)'
+              const row = (
+                <>
+                  <Avatar
+                    name={coach.name}
+                    src={coachDisplayPhoto(coach, coach.avatarUrl)}
+                    size={40}
+                  />
+                  <span className="grid min-w-0 flex-1">
+                    <span className="flex min-w-0 items-center gap-1 text-sm font-bold text-(--c-ocean)">
+                      <span className="truncate">{coach.name}</span>
+                      {coach.verification?.status === 'verified' && (
+                        <VerifiedBadge verified className="shrink-0 scale-75" />
+                      )}
+                    </span>
+                    {details && (
+                      <span className="truncate text-xs text-(--c-text-2)">{details}</span>
+                    )}
+                  </span>
+                  {mineIds?.has(coach.id) && <RegisteredBadge />}
+                  <FiChevronRight aria-hidden="true" className="shrink-0 text-(--c-text-2)" />
+                </>
+              )
+              return (
+                <li key={coach.id} className="min-w-0">
+                  {onSelectCoach ? (
+                    <button
+                      type="button"
+                      aria-label={`${actionLabel}: ${coach.name}`}
+                      onClick={() => onSelectCoach({ id: coach.id, name: coach.name })}
+                      className={rowClass}
+                    >
+                      {row}
+                    </button>
+                  ) : (
+                    <Link
+                      href={coachHref}
+                      aria-label={`${actionLabel}: ${coach.name}`}
+                      onClick={() => {
+                        if (!schoolId) cacheCoachProfile(coach)
+                      }}
+                      className={rowClass}
+                    >
+                      {row}
+                    </Link>
+                  )}
+                </li>
+              )
+            }
             return (
               <li
                 key={coach.id}
@@ -177,15 +260,25 @@ export default function CoachDirectoryList({
                     </p>
                   )}
                 </div>
-                <Link
-                  href={coachHref}
-                  onClick={() => {
-                    if (!schoolId) cacheCoachProfile(coach)
-                  }}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--c-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
-                >
-                  Ver horarios <FiChevronRight aria-hidden="true" size={14} />
-                </Link>
+                {onSelectCoach ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectCoach({ id: coach.id, name: coach.name })}
+                    className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-full border border-[var(--c-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+                  >
+                    {actionLabel} <FiChevronRight aria-hidden="true" size={14} />
+                  </button>
+                ) : (
+                  <Link
+                    href={coachHref}
+                    onClick={() => {
+                      if (!schoolId) cacheCoachProfile(coach)
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--c-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--c-ocean)] transition-colors hover:bg-[var(--c-surface)]"
+                  >
+                    {actionLabel} <FiChevronRight aria-hidden="true" size={14} />
+                  </Link>
+                )}
               </li>
             )
           })}

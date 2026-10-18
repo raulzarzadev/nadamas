@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import AthleteBookingsOverview from '@/components/athlete/AthleteBookingsOverview'
 import AthleteSchoolSchedule from '@/components/athlete/AthleteSchoolSchedule'
+import AthleteSearchBar from '@/components/athlete/AthleteSearchBar'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import type { SchoolBookingMode } from '@/lib/school'
 
@@ -34,6 +35,16 @@ export default function FindCoachPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <AthleteSearchBar
+        schoolId={tenant?.id}
+        initialTab={
+          searchParams.get('search') === 'schools'
+            ? 'schools'
+            : searchParams.get('search') === 'coaches'
+              ? 'coaches'
+              : undefined
+        }
+      />
       {!loading &&
         (tenant ? (
           <AthleteSchoolSchedule
@@ -41,8 +52,6 @@ export default function FindCoachPage() {
             key={tenant.id}
             schoolId={tenant.id}
             schoolName={tenant.name}
-            title="Horarios"
-            description={`Consulta horarios disponibles de los entrenadores de ${tenant.name}.`}
             bookingMode={tenant.bookingMode || 'request'}
           />
         ) : (
@@ -51,8 +60,6 @@ export default function FindCoachPage() {
             key={`public-directory-${initialSchoolId || 'all'}`}
             initialSchoolId={initialSchoolId}
             schoolId={null}
-            title="Coaches independientes"
-            description="Consulta horarios disponibles de coaches que ofrecen clases por cuenta propia."
             bookingMode="direct"
             schools={schools}
           />

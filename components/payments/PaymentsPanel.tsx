@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import { FiDollarSign, FiEdit2, FiPlus, FiSettings } from 'react-icons/fi'
 import { TbClockCheck } from 'react-icons/tb'
@@ -8,6 +9,7 @@ import { useUser } from '@/context/UserContext'
 import { PaymentCRUD } from '@/firebase/payments/main'
 import { getAuthed, getCachedAuthedData, postAuthed } from '@/lib/client/authed-api'
 import { localPaymentDate, paymentAvailable } from '@/lib/payments/engine'
+import { formatPlanDate, productTerms } from '@/lib/payments/format'
 import { paymentMessage } from '@/lib/payments/messages'
 import type {
   PaymentOrder,
@@ -21,23 +23,23 @@ import PaymentProductForm, { money } from './PaymentProductForm'
 import { paymentInputClass, paymentTextareaClass } from './payment-field'
 import ReceiptPreview from './ReceiptPreview'
 
-function formatPlanDate(value: string) {
-  return new Intl.DateTimeFormat('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(`${value}T12:00:00`))
-}
-
 export default function PaymentsPanel({
   endpoint,
   initialStudentId,
   initialTab = 'account',
   hideTitle = false,
+  emptyPlansText = 'Todavía no hay paquetes o planes disponibles.',
+  plansOnly = false,
+  onPurchased,
 }: {
   endpoint: string
   initialStudentId?: string
   hideTitle?: boolean
+  emptyPlansText?: string
+  // Athlete Pagos > Buscar: show only the Planes catalog (balances and payments live in
+  // "Mis planes"); onPurchased lets the host switch there after buying.
+  plansOnly?: boolean
+  onPurchased?: () => void
   initialTab?: 'account' | 'plans' | 'orders' | 'history'
 }) {
   const { user } = useUser()
@@ -59,7 +61,9 @@ export default function PaymentsPanel({
   const [refund, setRefund] = useState<PaymentReservation | null>(null)
   const [quantity, setQuantity] = useState('1')
   const [reason, setReason] = useState('')
-  const [tab, setTab] = useState<'account' | 'plans' | 'orders' | 'history'>(initialTab)
+  const [tab, setTab] = useState<'account' | 'plans' | 'orders' | 'history'>(
+    plansOnly ? 'plans' : initialTab
+  )
   const reload = useCallback(async () => {
     const next = await PaymentCRUD.get(endpoint)
     setData(next)
@@ -253,10 +257,25 @@ export default function PaymentsPanel({
           </div>
         </section>
       )}
-      {!data.manager && !data.students.length && (
-        <p className="text-sm">Todavía no tienes un perfil de alumno vinculado en este espacio.</p>
+      {data.guest ? (
+        <p className="rounded-xl bg-(--c-surface) p-3 text-sm">
+          Para adquirir un plan necesitas inscribirte en esta escuela.{' '}
+          <Link
+            href={`/athlete/search/school/${encodeURIComponent(data.scope.id)}`}
+            className="font-semibold text-(--c-ocean) underline"
+          >
+            Ver escuela
+          </Link>
+        </p>
+      ) : (
+        !data.manager &&
+        !data.students.length && (
+          <p className="text-sm">
+            Todavía no tienes un perfil de alumno vinculado en este espacio.
+          </p>
+        )
       )}
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className={plansOnly ? 'hidden' : 'flex flex-wrap items-center justify-between gap-2'}>
         <nav aria-label="Secciones de pagos" className="flex flex-wrap gap-2">
           {(
             [
@@ -422,11 +441,7 @@ export default function PaymentsPanel({
               </button>
             )}
           </div>
-          {!products.length && (
-            <p className="text-sm text-(--c-text-2)">
-              Todavía no hay paquetes o planes disponibles.
-            </p>
-          )}
+          {!products.length && <p className="text-sm text-(--c-text-2)">{emptyPlansText}</p>}
           {products.map((product) => (
             <article
               key={product.id}
@@ -438,10 +453,7 @@ export default function PaymentsPanel({
                   {!product.active ? ' · Inactivo' : ''}
                 </strong>
                 <p className="text-sm">
-                  {money(product.priceCents)} ·{' '}
-                  {product.mode === 'classes'
-                    ? `${product.classes} clases${product.expiryDays ? ` · ${product.expiryDays} días` : ' · Sin caducidad'}`
-                    : `${product.months} ${product.months === 1 ? 'mes' : 'meses'} desde activación`}
+                  {money(product.priceCents)} · {productTerms(product)}
                 </p>
                 {product.mode === 'period' && (
                   <p className="text-xs text-(--c-text-2)">
@@ -791,6 +803,7 @@ export default function PaymentsPanel({
                   }
                 }
                 setPurchase(null)
+                if (onPurchased) return onPurchased()
                 setTab('orders')
                 setNotice('Pago registrado. Espera la confirmación para activar tu saldo o plan.')
               })
