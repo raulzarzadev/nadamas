@@ -9,6 +9,7 @@ import {
   FiInfo,
   FiPlus,
   FiTrash2,
+  FiX,
 } from 'react-icons/fi'
 import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
@@ -68,6 +69,7 @@ export default function TrainingPlanner() {
   const [error, setError] = useState('')
   const [deleting, setDeleting] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
+  const [barsDraft, setBarsDraft] = useState<TrainingCycle[] | null>(null)
   const [editing, setEditing] = useState(false)
   const [editField, setEditField] = useState<CycleField | null>(null)
 
@@ -106,9 +108,16 @@ export default function TrainingPlanner() {
     plan?.cycles.find((item) => item.type === 'macro')
   const parent = plan?.cycles.find((item) => item.id === cycle?.parentId)
   const children = plan?.cycles.filter((item) => item.parentId === cycle?.id) || []
-  const hasChildren = Boolean(cycle && plan?.cycles.some((item) => item.parentId === cycle.id))
+  const planCycles = barsDraft || plan?.cycles || []
+  const removedIds = new Set(cycle ? [cycle.id] : [])
+  for (const item of planCycles)
+    if (item.parentId && removedIds.has(item.parentId)) removedIds.add(item.id)
+  const nestedCount = removedIds.size - (cycle ? 1 : 0)
   const nextType = cycle && cycle.type !== 'micro' ? CHILD_CYCLE[cycle.type] : null
   const draftParent = plan?.cycles.find((item) => item.id === draft?.parentId)
+  const barsDirty = Boolean(
+    barsDraft && plan && JSON.stringify(barsDraft) !== JSON.stringify(plan.cycles)
+  )
   const draftHeading = !draft
     ? 'Ciclo'
     : editField
@@ -143,6 +152,7 @@ export default function TrainingPlanner() {
       setPlans((items) => [created, ...items])
       setPlanId(created.id)
       setCycleId(macro.id)
+      setBarsDraft([macro])
       setEditing(true)
     } catch (cause) {
       reportInternalError('TRAINING_PLAN_CREATE', cause)
@@ -197,8 +207,8 @@ export default function TrainingPlanner() {
       draft.type === 'macro' && childDrafts !== null
         ? [savedDraft, ...childDrafts]
         : existing && plan
-          ? plan.cycles.map((item) => (item.id === draft.id ? savedDraft : item))
-          : [...(draft.type === 'macro' ? [] : plan?.cycles || []), savedDraft]
+          ? planCycles.map((item) => (item.id === draft.id ? savedDraft : item))
+          : [...(draft.type === 'macro' ? [] : planCycles), savedDraft]
     const validation = cycles.map((cycle) => validateTrainingCycle(cycle, cycles)).find(Boolean)
     if (validation) {
       setError(validation)
@@ -231,6 +241,7 @@ export default function TrainingPlanner() {
         setPlans((items) =>
           items.map((item) => (item.id === plan?.id ? { ...item, cycles } : item))
         )
+        if (barsDraft) setBarsDraft(cycles)
       }
       setCycleId(draft.id)
       setDraft(null)
@@ -242,12 +253,49 @@ export default function TrainingPlanner() {
     }
   }
 
-  async function remove() {
-    if (!plan || !cycle || busy || hasChildren) return
+  function startEditing() {
+    setError('')
+    setBarsDraft(plan?.cycles || null)
+    setEditing(true)
+  }
+
+  function stopEditing() {
+    setError('')
+    setBarsDraft(null)
+    setEditing(false)
+  }
+
+  async function finishEditing() {
+    if (!plan || !barsDraft || !barsDirty) return stopEditing()
+    if (busy) return
+    const validation = barsDraft.map((item) => validateTrainingCycle(item, barsDraft)).find(Boolean)
+    if (validation || barsDraft.length > 100) {
+      setError(validation || 'Este macrociclo ya tiene 100 ciclos.')
+      return
+    }
     setBusy(true)
     setError('')
     try {
-      const remaining = plan.cycles.filter((item) => item.id !== cycle.id)
+      const result = await TrainingPlanCRUD.update(plan.id, barsDraft)
+      if (!result?.ok) throw new Error('TRAINING_BARS_SAVE_FAILED')
+      setPlans((items) =>
+        items.map((item) => (item.id === plan.id ? { ...item, cycles: barsDraft } : item))
+      )
+      stopEditing()
+    } catch (cause) {
+      reportInternalError('TRAINING_BARS_SAVE', cause)
+      setError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    if (!plan || !cycle || busy) return
+    setBusy(true)
+    setError('')
+    try {
+      const remaining = planCycles.filter((item) => !removedIds.has(item.id))
       const result = remaining.length
         ? await TrainingPlanCRUD.update(plan.id, remaining)
         : await TrainingPlanCRUD.delete(plan.id)
@@ -257,7 +305,10 @@ export default function TrainingPlanner() {
           ? items.map((item) => (item.id === plan.id ? { ...item, cycles: remaining } : item))
           : items.filter((item) => item.id !== plan.id)
       )
-      if (!remaining.length) setPlanId(null)
+      if (!remaining.length) {
+        setPlanId(null)
+        stopEditing()
+      } else if (barsDraft) setBarsDraft(remaining)
       setCycleId(cycle.parentId)
       setDeleting(false)
     } catch (cause) {
@@ -350,6 +401,7 @@ export default function TrainingPlanner() {
                     className={planId === item.id ? primaryClass : actionClass}
                     onClick={() => {
                       setPlanId(item.id)
+                      stopEditing()
                       setCycleId(root?.id || null)
                     }}
                   >
@@ -387,7 +439,7 @@ export default function TrainingPlanner() {
                       ))}
                   </nav>
                 )}
-                <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1">
                       <h2 className="min-w-0 break-words text-xl font-bold">{cycle.title}</h2>
@@ -398,30 +450,54 @@ export default function TrainingPlanner() {
                       {editButton('dates')}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    aria-pressed={editing}
-                    className={editing ? primaryClass : actionClass}
-                    onClick={() => {
-                      setError('')
-                      setEditing(!editing)
-                    }}
-                  >
-                    {editing ? <FiCheck aria-hidden="true" /> : <FiEdit2 aria-hidden="true" />}
-                    {editing ? 'Listo' : 'Editar'}
-                  </button>
+                  {editing ? (
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        className={actionClass}
+                        disabled={busy}
+                        onClick={stopEditing}
+                      >
+                        <FiX aria-hidden="true" />
+                        Descartar
+                      </button>
+                      <button
+                        type="button"
+                        className={actionClass}
+                        disabled={busy}
+                        onClick={() => {
+                          setError('')
+                          setDeleting(true)
+                        }}
+                      >
+                        <FiTrash2 aria-hidden="true" />
+                        Eliminar
+                      </button>
+                      <button
+                        type="button"
+                        className={primaryClass}
+                        disabled={busy}
+                        onClick={() => void finishEditing()}
+                      >
+                        <FiCheck aria-hidden="true" />
+                        {busy ? 'Guardando…' : 'Listo'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className={actionClass} onClick={startEditing}>
+                      <FiEdit2 aria-hidden="true" />
+                      Editar
+                    </button>
+                  )}
                 </div>
                 <article className="rounded-2xl border border-(--c-border) bg-white p-5">
                   {cycle.type === 'macro' && plan && (
                     <TrainingPlanOverview
                       key={plan.id}
-                      plan={plan}
+                      cycles={editing ? planCycles : plan.cycles}
+                      onChange={setBarsDraft}
+                      disabled={busy}
                       readOnly={!editing}
-                      onSaved={(cycles) =>
-                        setPlans((items) =>
-                          items.map((item) => (item.id === plan.id ? { ...item, cycles } : item))
-                        )
-                      }
                     />
                   )}
                   <div className="mt-5 flex items-center gap-1">
@@ -438,30 +514,6 @@ export default function TrainingPlanner() {
                   <p className="mt-1 whitespace-pre-wrap break-words text-sm text-(--c-text-2)">
                     {cycle.content || 'Añade el trabajo que quieres desarrollar en este ciclo.'}
                   </p>
-                  {editing && (
-                    <>
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className={actionClass}
-                          disabled={hasChildren}
-                          aria-describedby={hasChildren ? 'cycle-delete-help' : undefined}
-                          onClick={() => {
-                            setError('')
-                            setDeleting(true)
-                          }}
-                        >
-                          <FiTrash2 aria-hidden="true" />
-                          Eliminar
-                        </button>
-                      </div>
-                      {hasChildren && (
-                        <p id="cycle-delete-help" className="mt-2 text-xs text-(--c-text-2)">
-                          Para eliminar este ciclo, elimina primero los ciclos que contiene.
-                        </p>
-                      )}
-                    </>
-                  )}
                 </article>
                 {nextType && (
                   <section className="mt-6" aria-labelledby="child-cycles-title">
@@ -675,7 +727,15 @@ export default function TrainingPlanner() {
       >
         <h2 className="text-xl font-bold">¿Eliminar {cycle?.title}?</h2>
         <p className="mt-3 text-sm">
-          Se eliminará este ciclo de tu planificación. Esta acción no se puede deshacer.
+          {cycle?.type === 'macro'
+            ? 'Se eliminará toda la temporada'
+            : 'Se eliminará este ciclo de tu planificación'}
+          {nestedCount > 0
+            ? nestedCount === 1
+              ? ', incluido 1 ciclo que contiene'
+              : `, incluidos ${nestedCount} ciclos que contiene`
+            : ''}
+          . Esta acción no se puede deshacer.
         </p>
         {error && (
           <p role="alert" className="mt-3 text-sm text-(--c-error,#b91c1c)">

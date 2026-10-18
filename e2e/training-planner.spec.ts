@@ -170,7 +170,7 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
   )
   await page.screenshot({ path: '/tmp/nadamas-training-readonly.png', fullPage: true })
   await page.getByRole('button', { name: 'Editar', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Eliminar', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Eliminar', exact: true })).toBeEnabled()
   await page.getByRole('button', { name: 'Editar nombre de Base aeróbica', exact: true }).click()
   await page
     .getByRole('dialog', { name: 'Editar ciclo', exact: true })
@@ -180,14 +180,23 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
     .getByRole('dialog', { name: 'Editar ciclo', exact: true })
     .getByRole('button', { name: 'Listo', exact: true })
     .click()
-  await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Guardar cambios', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Editar', exact: true })).toBeVisible()
   await page.reload()
   await page.getByRole('button', { name: 'Temporada de invierno', exact: true }).click()
   await page.getByRole('button', { name: 'Editar', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Editar nombre de Base técnica', exact: true })
   ).toBeVisible()
+  await page.getByRole('button', { name: '+ Agregar mesociclo', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Editar nombre de Mesociclo 2', exact: true })
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Descartar', exact: true }).click()
+  await expect(
+    page.getByRole('region', { name: 'Barras de mesociclos' }).getByText('Mesociclo 2')
+  ).toHaveCount(0)
+  await page.getByRole('button', { name: 'Editar', exact: true }).click()
 
   await expect(page.getByRole('region', { name: 'Barras de mesociclos' })).toBeVisible()
   await page.getByRole('button', { name: '+ Agregar mesociclo', exact: true }).click()
@@ -234,13 +243,14 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
   await microDetails.click()
   await expect(microDetails).toHaveAttribute('aria-expanded', 'true')
 
-  await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Guardar cambios', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Editar', exact: true })).toBeVisible()
   await expect(
     page
       .getByRole('region', { name: 'Mesociclos', exact: true })
       .getByRole('button', { name: /Bloque final/ })
   ).toBeVisible()
+  await page.getByRole('button', { name: 'Editar', exact: true }).click()
   await page.getByRole('button', { name: 'Editar nombre de Bloque final', exact: true }).click()
   await page.getByRole('button', { name: 'Eliminar mesociclo Bloque final', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Eliminar mesociclo', exact: true })).toBeVisible()
@@ -256,8 +266,8 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
     .getByRole('dialog', { name: 'Eliminar mesociclo', exact: true })
     .getByRole('button', { name: 'Eliminar mesociclo', exact: true })
     .click()
-  await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'Guardar cambios', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Editar', exact: true })).toBeVisible()
   await expect(
     page
       .getByRole('region', { name: 'Mesociclos', exact: true })
@@ -271,6 +281,7 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
   await expect(
     page.getByText('Lunes: 200 m suaves + 4 × 50 m técnica', { exact: true })
   ).toBeVisible()
+  await page.getByRole('button', { name: 'Editar', exact: true }).click()
   await page.getByRole('button', { name: 'Editar nombre', exact: true }).click()
   await page.getByLabel('Nombre', { exact: true }).fill('Semana técnica')
   await page.getByRole('button', { name: 'Guardar ciclo', exact: true }).click()
@@ -289,4 +300,19 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
   await expect(page.getByRole('button', { name: 'Temporada 2', exact: true })).toBeVisible({
     timeout: 30000,
   })
+  await page.getByRole('button', { name: 'Temporada de invierno', exact: true }).click()
+  await page.getByRole('button', { name: 'Editar', exact: true }).click()
+  await page.getByRole('button', { name: 'Eliminar', exact: true }).click()
+  await expect(page.getByText(/Se eliminará toda la temporada, incluido 1 ciclo/)).toBeVisible()
+  await page.getByRole('button', { name: 'Eliminar ciclo', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Temporada de invierno', exact: true })
+  ).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Temporada 2', exact: true })).toBeVisible({
+    timeout: 30000,
+  })
+  await expect(
+    page.getByRole('button', { name: 'Temporada de invierno', exact: true })
+  ).toHaveCount(0)
 })
