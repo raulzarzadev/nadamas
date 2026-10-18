@@ -140,7 +140,7 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     <div className="grid gap-4">
       {mode === 'coach' && (
         <div className="grid gap-3">
-          <h1 className="text-2xl font-extrabold text-(--c-ocean)">Planes y pagos</h1>
+          <h1 className="sr-only">Planes y pagos</h1>
           <div className="flex items-center gap-2">
             <nav aria-label="Vista de planes" className="flex min-w-0 flex-wrap gap-2">
               {(
@@ -166,7 +166,7 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
       )}
       {mode === 'athlete' && (
         <div className="grid gap-3">
-          <h1 className="text-2xl font-extrabold text-(--c-ocean)">Planes y pagos</h1>
+          <h1 className="sr-only">Planes y pagos</h1>
           <div>
             <nav aria-label="Vista de planes" className="flex flex-wrap gap-2">
               {(

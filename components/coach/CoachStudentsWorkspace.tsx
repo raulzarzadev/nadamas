@@ -36,7 +36,7 @@ export default function CoachStudentsWorkspace() {
   const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-3xl font-extrabold">{capitalizeSchoolTerm(participantPlural)}</h1>
+      <h1 className="sr-only">{capitalizeSchoolTerm(participantPlural)}</h1>
       {!tenant && (
         <div className="flex">
           <CoachScopeBar
