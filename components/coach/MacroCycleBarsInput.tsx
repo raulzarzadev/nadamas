@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { FiChevronDown, FiChevronRight, FiEdit2 } from 'react-icons/fi'
+import { FiEdit2, FiMinus, FiPlus } from 'react-icons/fi'
 import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
 import SortableList from '@/components/ui/sortable-list'
@@ -15,14 +15,21 @@ export default function MacroCycleBarsInput({
   onChange,
   disabled,
   readOnly = false,
+  expanded: sharedExpanded,
+  onExpandedChange,
 }: {
   macro: TrainingCycle
   cycles: TrainingCycle[]
   onChange: (cycles: TrainingCycle[]) => void
   disabled: boolean
   readOnly?: boolean
+  /** Shared open state so nested levels follow the top-level expand-all toggle. */
+  expanded?: Record<string, boolean>
+  onExpandedChange?: (expanded: Record<string, boolean>) => void
 }) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [ownExpanded, setOwnExpanded] = useState<Record<string, boolean>>({})
+  const expanded = sharedExpanded ?? ownExpanded
+  const setExpanded = onExpandedChange ?? setOwnExpanded
   const detailsPrefix = useId()
   const [editingName, setEditingName] = useState<TrainingCycle | null>(null)
   const [name, setName] = useState('')
@@ -120,15 +127,13 @@ export default function MacroCycleBarsInput({
                 aria-label={`Detalles de ${cycle.title}`}
                 aria-expanded={Boolean(expanded[cycle.id])}
                 aria-controls={`${detailsPrefix}-${cycle.id}`}
-                onClick={() =>
-                  setExpanded((current) => ({ ...current, [cycle.id]: !current[cycle.id] }))
-                }
+                onClick={() => setExpanded({ ...expanded, [cycle.id]: !expanded[cycle.id] })}
                 className="absolute right-0 top-0 grid size-6 place-items-center rounded-full text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
               >
                 {expanded[cycle.id] ? (
-                  <FiChevronDown aria-hidden="true" />
+                  <FiMinus aria-hidden="true" />
                 ) : (
-                  <FiChevronRight aria-hidden="true" />
+                  <FiPlus aria-hidden="true" />
                 )}
               </button>
               {readOnly ? (
@@ -204,6 +209,8 @@ export default function MacroCycleBarsInput({
                         onChange={onChange}
                         disabled={disabled}
                         readOnly={readOnly}
+                        expanded={expanded}
+                        onExpandedChange={setExpanded}
                       />
                     )}
                   </div>

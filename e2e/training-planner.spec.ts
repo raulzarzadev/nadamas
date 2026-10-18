@@ -168,6 +168,15 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
   await expect(page.getByRole('button', { name: '+ Agregar mesociclo', exact: true })).toHaveCount(
     0
   )
+  await page.getByRole('button', { name: 'Expandir todo', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Detalles de Base aeróbica', exact: true })
+  ).toHaveAttribute('aria-expanded', 'true')
+  await page.screenshot({ path: '/tmp/nadamas-training-expanded.png', fullPage: true })
+  await page.getByRole('button', { name: 'Contraer todo', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Detalles de Base aeróbica', exact: true })
+  ).toHaveAttribute('aria-expanded', 'false')
   await page.screenshot({ path: '/tmp/nadamas-training-readonly.png', fullPage: true })
   await page.getByRole('button', { name: 'Editar', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Eliminar', exact: true })).toBeEnabled()
