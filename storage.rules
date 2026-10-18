@@ -8,9 +8,9 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    match /{allPaths=**} {
-      allow read: if !allPaths.matches('paymentReceipts/.*');
-      allow write: if !allPaths.matches('paymentReceipts/.*')
+    match /{folder}/{allPaths=**} {
+      allow read: if folder != 'paymentReceipts';
+      allow write: if folder != 'paymentReceipts'
                    && request.auth != null
                    && request.resource.size < 10 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
