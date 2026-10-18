@@ -9,6 +9,8 @@ export interface ClassTrainingSeries {
 
 export interface ClassTrainingBlock {
   id: string
+  // Optional coach label; the UI falls back to "Bloque N".
+  title?: string
   repetitions: number
   series: ClassTrainingSeries[]
 }
@@ -42,10 +44,12 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
       block.repetitions < 1 ||
       block.repetitions > 99 ||
       !Array.isArray(block.series) ||
-      !block.series.length ||
-      block.series.length > 30
+      block.series.length > 30 ||
+      (block.title !== undefined && (typeof block.title !== 'string' || block.title.length > 60))
     )
       return null
+    // Blocks are created empty in the editor; drop the ones left without series.
+    if (!block.series.length) continue
     const series: ClassTrainingSeries[] = []
     const seriesIds = new Set<string>()
     for (const [index, raw] of block.series.entries()) {
@@ -64,8 +68,8 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
           (!Number.isInteger(item.distanceMeters) ||
             item.distanceMeters < 1 ||
             item.distanceMeters > 100000)) ||
+        // Technique is optional (a series can be just "4 × 100 m").
         typeof item.exercise !== 'string' ||
-        !item.exercise.trim() ||
         item.exercise.length > 200 ||
         (item.material !== undefined &&
           (typeof item.material !== 'string' || item.material.length > 120)) ||
@@ -84,7 +88,13 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
       })
     }
     ids.add(block.id)
-    blocks.push({ id: block.id, repetitions: block.repetitions, series })
+    const title = typeof block.title === 'string' ? block.title.trim() : ''
+    blocks.push({
+      id: block.id,
+      ...(title ? { title } : {}),
+      repetitions: block.repetitions,
+      series,
+    })
   }
   return blocks
 }

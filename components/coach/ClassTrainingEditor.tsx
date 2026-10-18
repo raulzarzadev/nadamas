@@ -25,19 +25,20 @@ export default function ClassTrainingEditor({
   const [editing, setEditing] = useState<{ blockId: string; series?: ClassTrainingSeries } | null>(
     null
   )
-  const [editingRepeat, setEditingRepeat] = useState<{ id: string; value: string } | null>(null)
-  const [addingBlock, setAddingBlock] = useState(false)
-  const [repetitions, setRepetitions] = useState(1)
+  // Block settings sheet: title, repetitions and delete.
+  const [blockForm, setBlockForm] = useState<{
+    id: string
+    title: string
+    repetitions: number
+  } | null>(null)
   useEffect(() => {
-    onEditingChange?.(Boolean(editing) || addingBlock)
+    onEditingChange?.(Boolean(editing) || Boolean(blockForm))
     return () => onEditingChange?.(false)
-  }, [editing, addingBlock, onEditingChange])
+  }, [editing, blockForm, onEditingChange])
   return (
     <section aria-label="Entrenamiento" className="grid gap-2">
       {blocks.length === 0 && (
-        <p className="text-sm text-(--c-text-2)">
-          Agrega un bloque con sus series y el número de veces que se repite.
-        </p>
+        <p className="text-sm text-(--c-text-2)">Agrega un bloque y después sus series.</p>
       )}
       <SortableList
         items={blocks}
@@ -55,14 +56,22 @@ export default function ClassTrainingEditor({
             <legend className="px-1 text-sm font-bold">
               <span className="inline-flex items-center gap-1">
                 {blockHandle}
-                Bloque {index + 1}
+                <span className="font-normal text-(--c-text-2)">{index + 1} ·</span>
+                {block.title || 'Bloque'}
                 <button
                   type="button"
-                  aria-label={`Eliminar bloque ${index + 1}`}
-                  onClick={() => onChange(blocks.filter((item) => item.id !== block.id))}
+                  aria-label={`Editar ${block.title || `bloque ${index + 1}`}`}
+                  title="Editar bloque"
+                  onClick={() =>
+                    setBlockForm({
+                      id: block.id,
+                      title: block.title || '',
+                      repetitions: block.repetitions,
+                    })
+                  }
                   className="grid size-6 place-items-center rounded-full text-(--c-text-2) hover:bg-white focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
                 >
-                  <FiTrash2 aria-hidden="true" />
+                  <FiEdit2 aria-hidden="true" className="size-3.5" />
                 </button>
               </span>
             </legend>
@@ -70,51 +79,7 @@ export default function ClassTrainingEditor({
             <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-1.5 gap-y-1">
               <div className="flex items-center gap-1 self-stretch text-sm font-bold">
                 <div className="relative flex w-10 shrink-0 items-center justify-center">
-                  {editingRepeat?.id === block.id ? (
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min={1}
-                      max={99}
-                      aria-label={`Repeticiones del bloque ${index + 1}`}
-                      value={editingRepeat.value}
-                      ref={(element) => element?.focus()}
-                      onChange={(event) =>
-                        setEditingRepeat({ id: block.id, value: event.target.value })
-                      }
-                      onBlur={() => {
-                        const value = Number(editingRepeat.value)
-                        if (Number.isInteger(value) && value >= 1 && value <= 99)
-                          update(block.id, { repetitions: value })
-                        setEditingRepeat(null)
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault()
-                          event.currentTarget.blur()
-                        }
-                        if (event.key === 'Escape') {
-                          event.stopPropagation()
-                          setEditingRepeat(null)
-                        }
-                      }}
-                      className="h-7 w-10 rounded border border-(--c-border) bg-white text-center text-xs focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-                    />
-                  ) : (
-                    <>
-                      <span>{block.repetitions}×</span>
-                      <button
-                        type="button"
-                        aria-label={`Editar repeticiones del bloque ${index + 1}`}
-                        onClick={() =>
-                          setEditingRepeat({ id: block.id, value: String(block.repetitions) })
-                        }
-                        className="absolute top-full left-1/2 grid size-6 -translate-x-1/2 place-items-center rounded text-(--c-text-2) hover:bg-white focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-                      >
-                        <FiEdit2 aria-hidden="true" className="size-3" />
-                      </button>
-                    </>
-                  )}
+                  <span>{block.repetitions}×</span>
                 </div>
                 <TrainingBrace />
               </div>
@@ -189,10 +154,10 @@ export default function ClassTrainingEditor({
       <button
         type="button"
         disabled={disabled || blocks.length >= 20}
-        onClick={() => {
-          setRepetitions(1)
-          setAddingBlock(true)
-        }}
+        // Adds an empty 1× block right away; repetitions and series are edited in place.
+        onClick={() =>
+          onChange([...blocks, { id: crypto.randomUUID(), repetitions: 1, series: [] }])
+        }
         className="btn btn-subtle w-fit justify-self-end"
       >
         <FiPlus aria-hidden="true" />
@@ -234,66 +199,98 @@ export default function ClassTrainingEditor({
           </Sheet>,
           document.body
         )}
-      {addingBlock &&
+      {blockForm &&
         createPortal(
           <Sheet
             open
             keyboardAware
             fullBleedMobile
-            label="Agregar bloque"
-            onClose={() => setAddingBlock(false)}
+            label="Editar bloque"
+            onClose={() => setBlockForm(null)}
             footer={
-              <div className="flex justify-end gap-2 px-4 sm:px-0">
+              <div className="flex items-center gap-2 px-4 sm:px-0">
                 <button
                   type="button"
-                  className="btn border btn-outline min-h-11"
-                  onClick={() => setAddingBlock(false)}
+                  className="btn btn-ghost min-h-11 gap-1.5 text-rose-700"
+                  onClick={() => {
+                    onChange(blocks.filter((item) => item.id !== blockForm.id))
+                    setBlockForm(null)
+                  }}
                 >
-                  Cancelar
+                  <FiTrash2 aria-hidden="true" /> Eliminar bloque
                 </button>
                 <button
                   type="button"
-                  className="btn border btn-primary min-h-11"
-                  disabled={!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 99}
+                  className="btn border btn-primary ml-auto min-h-11"
+                  disabled={
+                    !Number.isInteger(blockForm.repetitions) ||
+                    blockForm.repetitions < 1 ||
+                    blockForm.repetitions > 99
+                  }
                   onClick={() => {
-                    const blockId = crypto.randomUUID()
-                    onChange([...blocks, { id: blockId, repetitions, series: [] }])
-                    setAddingBlock(false)
-                    setEditing({ blockId })
+                    const title = blockForm.title.trim()
+                    onChange(
+                      blocks.map((item) =>
+                        item.id === blockForm.id
+                          ? {
+                              id: item.id,
+                              ...(title ? { title } : {}),
+                              repetitions: blockForm.repetitions,
+                              series: item.series,
+                            }
+                          : item
+                      )
+                    )
+                    setBlockForm(null)
                   }}
                 >
-                  Agregar bloque
+                  Guardar
                 </button>
               </div>
             }
           >
             <div className="grid gap-4 px-4 pb-4 sm:px-0">
-              <h2 className="text-xl font-bold">Agregar bloque</h2>
+              <h2 className="text-xl font-bold">Editar bloque</h2>
               <label className="grid gap-2 text-sm font-semibold">
-                ¿Cuántas veces se repite el bloque?
+                Título
+                <input
+                  type="text"
+                  maxLength={60}
+                  placeholder={`Bloque ${blocks.findIndex((item) => item.id === blockForm.id) + 1}`}
+                  value={blockForm.title}
+                  onChange={(event) => setBlockForm({ ...blockForm, title: event.target.value })}
+                  className="min-h-12 w-full rounded-xl border border-(--c-border) bg-white px-3 text-base focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-semibold">
+                ¿Cuántas veces se repite?
                 <input
                   type="number"
                   inputMode="numeric"
                   min={1}
                   max={99}
-                  value={repetitions || ''}
-                  onChange={(event) => setRepetitions(Number(event.target.value))}
+                  value={blockForm.repetitions || ''}
+                  onChange={(event) =>
+                    setBlockForm({ ...blockForm, repetitions: Number(event.target.value) })
+                  }
                   className="min-h-12 w-full rounded-xl border border-(--c-border) bg-white px-3 text-base focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
                 />
               </label>
-              <fieldset
-                aria-label="Sugerencias de repeticiones del bloque"
-                className="grid grid-cols-5 gap-2"
-              >
-                {[1, 2, 3, 4, 5].map((value) => (
+              <fieldset aria-label="Sumar repeticiones" className="grid grid-cols-4 gap-2">
+                {[1, 2, 4, 8].map((step) => (
                   <button
-                    key={value}
+                    key={step}
                     type="button"
-                    aria-pressed={repetitions === value}
-                    onClick={() => setRepetitions(value)}
-                    className={`btn border min-h-11 px-2 ${repetitions === value ? 'btn-primary' : 'btn-outline'}`}
+                    aria-label={`Sumar ${step}`}
+                    onClick={() =>
+                      setBlockForm({
+                        ...blockForm,
+                        repetitions: Math.min(99, (blockForm.repetitions || 0) + step),
+                      })
+                    }
+                    className="btn btn-outline border min-h-11 px-2"
                   >
-                    {value}
+                    +{step}
                   </button>
                 ))}
               </fieldset>

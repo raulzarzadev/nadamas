@@ -279,7 +279,10 @@ export default function ClassNotesModal({
               .filter((block) => block.series.length > 0)
               .map((block, index) => (
                 <div key={block.id} className="rounded-xl bg-(--c-surface) p-2.5">
-                  <p className="mb-1 text-xs font-semibold">Bloque {index + 1}</p>
+                  <p className="mb-1 text-xs font-semibold">
+                    <span className="font-normal text-(--c-text-2)">{index + 1} · </span>
+                    {block.title || 'Bloque'}
+                  </p>
                   <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-1.5">
                     <div className="flex items-center gap-1 self-stretch text-sm font-bold">
                       <span className="flex w-10 shrink-0 justify-center">
