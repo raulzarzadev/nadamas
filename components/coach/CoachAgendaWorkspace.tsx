@@ -14,7 +14,8 @@ const PERSONAL_VIEW = 'personal'
 
 export default function CoachAgendaWorkspace() {
   const tenant = useTenantSchool()
-  const { schools, status } = useSchoolSelection({ includePersonal: true })
+  const { schools, status, selectedId, isPersonal, selectSchool, selectPersonal } =
+    useSchoolSelection({ includePersonal: true })
   const coachSchools = useMemo(() => {
     const seen = new Set<string>()
     return schools.filter(({ school, membership }) => {
@@ -29,8 +30,10 @@ export default function CoachAgendaWorkspace() {
       return true
     })
   }, [schools, tenant])
-  const [view, setView] = useState(PERSONAL_VIEW)
-  const activeView = tenant ? `school:${tenant.id}` : view
+  const [view, setView] = useState<string | null>(null)
+  const activeView = tenant
+    ? `school:${tenant.id}`
+    : view || (!isPersonal && selectedId ? `school:${selectedId}` : PERSONAL_VIEW)
   const [scheduleEditorOpen, setScheduleEditorOpen] = useState(false)
   const [editorTarget, setEditorTarget] = useState<string>(PERSONAL_VIEW)
   const agendaSources = useMemo(
@@ -100,6 +103,8 @@ export default function CoachAgendaWorkspace() {
               defaultValue={PERSONAL_VIEW}
               onChange={(id) => {
                 setView(id)
+                if (id === PERSONAL_VIEW) selectPersonal()
+                else if (id.startsWith('school:')) selectSchool(id.slice('school:'.length))
                 setScheduleEditorOpen(false)
               }}
             />

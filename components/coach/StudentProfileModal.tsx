@@ -310,7 +310,13 @@ export default function StudentProfileModal({
         : 'Comentarios'
   if (panel)
     return (
-      <Sheet open onClose={() => setPanel(null)} label={panelTitle} closeDisabled={cancelling}>
+      <Sheet
+        key={panelTitle}
+        open
+        onClose={() => setPanel(null)}
+        label={panelTitle}
+        closeDisabled={cancelling}
+      >
         <div className="grid gap-3 pb-4">
           <h2 className="text-xl font-bold">
             {panelTitle} ({panel !== 'comments' ? panelClasses.length : comments.length})
@@ -593,6 +599,7 @@ export default function StudentProfileModal({
     <Sheet
       open
       onClose={onClose}
+      key="profile"
       label={`Perfil de ${profile?.name || name}`}
       keyboardAware
       closeDisabled={saving || verifying}

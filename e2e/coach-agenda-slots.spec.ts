@@ -102,6 +102,31 @@ test.describe('horarios de la agenda del coach', () => {
     expect(updated).not.toHaveProperty('endTime')
   })
 
+  test('quitar una hora recurrente conserva otros días y horas', () => {
+    const offering = scheduledOffering('offering-1', 'schedule-1')
+    offering.schedules = [
+      {
+        id: 'recurring',
+        startTime: '17:30',
+        endTime: '18:30',
+        availabilityMode: 'always',
+        days: ['Lun', 'Mar'],
+      },
+      {
+        id: 'other-hour',
+        startTime: '18:30',
+        endTime: '19:30',
+        availabilityMode: 'always',
+        days: ['Lun'],
+      },
+    ]
+    const [updated] = offeringsWithoutHours([offering], [{ date: DATE, time: '17:30' }])
+    expect(resolveOfferingSchedules(updated)).toEqual([
+      { ...offering.schedules[0], days: ['Mar'] },
+      offering.schedules[1],
+    ])
+  })
+
   test('un horario eliminado individualmente no vuelve a mostrarse', () => {
     const slots = buildAvailableSlots({
       coachId: 'coach-1',

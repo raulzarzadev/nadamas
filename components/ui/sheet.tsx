@@ -113,6 +113,20 @@ export default function Sheet({
   }, [open, mounted])
 
   useEffect(() => {
+    if (!open || !mounted) return
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return
+      const dialogs = document.querySelectorAll('[role="dialog"][aria-modal="true"]')
+      if (dialogs[dialogs.length - 1] !== dialogRef.current) return
+      // A disabled or removed submit button can leave focus on the body.
+      event.preventDefault()
+      requestClose()
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [open, mounted, requestClose])
+
+  useEffect(() => {
     if (!open) return
     closingRef.current = false
     setClosing(false)

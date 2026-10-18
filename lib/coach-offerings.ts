@@ -435,14 +435,14 @@ export function offeringWithoutHours(
     .map((schedule) => {
       if (scheduleIsOpen(schedule)) return schedule
       const mode = schedule.availabilityMode ?? 'always'
-      if (mode === 'always') return schedule
-      if (mode === 'next_week') {
+      if (mode === 'always' || mode === 'next_week') {
         const removedDays = new Set(
           pairs
             .filter((pair) => pair.time === schedule.startTime)
             .map((pair) => WEEKDAY_LABELS[new Date(`${pair.date}T12:00:00`).getDay()])
         )
-        return { ...schedule, days: schedule.days.filter((day) => !removedDays.has(day)) }
+        const days = schedule.days.length ? schedule.days : WEEKDAY_LABELS
+        return { ...schedule, days: days.filter((day) => !removedDays.has(day)) }
       }
       const availableDates = (schedule.availableDates || []).filter(
         (date) => !remove.has(`${date}|${schedule.startTime}`)

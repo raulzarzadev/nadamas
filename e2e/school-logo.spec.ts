@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 test('recorta y sube el logo al crear y editar una escuela', async ({ page, request }) => {
   test.setTimeout(60000)
   await page.setViewportSize({ width: 320, height: 568 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   let available = false
   try {
     available = (await fetch('http://127.0.0.1:8080')).ok
@@ -51,6 +52,17 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
       )
       await page.mouse.up()
     }
+    await expect(page.getByRole('button', { name: 'Usar imagen', exact: true })).toBeVisible()
+    // The first frame must be painted when the sheet mounts, before any drag.
+    await expect
+      .poll(() =>
+        page
+          .locator('canvas')
+          .evaluate((canvas: HTMLCanvasElement) =>
+            Array.from(canvas.getContext('2d')?.getImageData(300, 200, 1, 1).data || [])
+          )
+      )
+      .toEqual([255, 0, 0, 255])
     await dragImage(-1)
     await expect
       .poll(() =>
@@ -90,7 +102,7 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     }, school.logoUrl)
     expect(dimensions).toEqual([512, 512])
     await page.goto(`/school/classes?schoolId=${schoolId}`)
-    await page.getByRole('button', { name: 'Agregar o quitar horas', exact: true }).click()
+    await page.getByRole('button', { name: /^(Editar horario|Agregar horario ahora)$/ }).click()
     const nextWeek = page
       .getByRole('dialog', { name: 'Editar horas' })
       .getByRole('button', { name: 'Semana siguiente', exact: true })
@@ -109,7 +121,7 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     await nextWeek.click()
     await page.getByRole('button', { name: 'Cancelar', exact: true }).click()
     await page.goto('/school/students')
-    await page.getByRole('button', { name: 'Agregar alumno', exact: true }).click()
+    await page.getByRole('button', { name: 'Agregar atleta', exact: true }).click()
     const studentPanel = page.getByRole('dialog').locator(':scope > div').first()
     const studentBounds = await studentPanel.boundingBox()
     expect(studentBounds).not.toBeNull()
@@ -117,14 +129,14 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
       expect(studentBounds.y).toBeGreaterThanOrEqual(0)
       expect(studentBounds.y + studentBounds.height).toBeLessThanOrEqual(568)
     }
-    await page.getByRole('button', { name: 'Guardar alumno', exact: true }).scrollIntoViewIfNeeded()
-    await expect(page.getByRole('button', { name: 'Guardar alumno', exact: true })).toBeInViewport()
+    await page.getByRole('button', { name: 'Guardar atleta', exact: true }).scrollIntoViewIfNeeded()
+    await expect(page.getByRole('button', { name: 'Guardar atleta', exact: true })).toBeInViewport()
     await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
 
-    await expect(page.getByRole('heading', { name: 'Reservas de alumnos' })).toHaveCount(0)
-    await page.getByRole('link', { name: 'Configuración de escuela', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Configuración de reservas' })).toHaveCount(0)
+    await page.getByRole('link', { name: 'Ajustes', exact: true }).click()
     await expect(page).toHaveURL(/\/school\/settings$/, { timeout: 30000 })
-    await expect(page.getByRole('heading', { name: 'Reservas de alumnos' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Configuración de reservas' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Sincronizar calendario' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Instalaciones' })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)

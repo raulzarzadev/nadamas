@@ -29,7 +29,7 @@ export default function SchoolLogoInput({
     x: number
     y: number
   } | null>(null)
-  const canvas = useRef<HTMLCanvasElement>(null)
+  const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null)
   const [source, setSource] = useState<File | null>(null)
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null)
   const [zoom, setZoom] = useState(1)
@@ -84,7 +84,7 @@ export default function SchoolLogoInput({
     }
   }, [source])
   useEffect(() => {
-    const target = canvas.current
+    const target = canvas
     if (!target || !bitmap) return
     const ctx = target.getContext('2d')
     if (!ctx) return
@@ -122,10 +122,10 @@ export default function SchoolLogoInput({
       ctx.lineTo(540, 60 + offset)
       ctx.stroke()
     }
-  }, [bitmap, zoom, x, y])
+  }, [canvas, bitmap, zoom, x, y])
 
   async function apply() {
-    if (!source || !canvas.current || !bitmap) return
+    if (!source || !canvas || !bitmap) return
     setProcessing(true)
     const target = document.createElement('canvas')
     target.width = 512
@@ -241,7 +241,7 @@ export default function SchoolLogoInput({
             Arrastra la imagen para encuadrarla. También puedes usar las flechas del teclado.
           </p>
           <canvas
-            ref={canvas}
+            ref={setCanvas}
             width={800}
             height={400}
             tabIndex={0}
