@@ -61,3 +61,17 @@ test('invalid or reversed dates do not generate sessions', () => {
     assert.equal(buildDailySessions(invalid, id), invalid)
   }
 })
+
+test('extending a microcycle backwards fills earlier dates chronologically and retains existing training', () => {
+  const built = buildDailySessions(cycle, id)
+  built.objectives[0] = 'Existing description'
+  built.objectiveWorkouts[0] = [{ id: 'preserved', blocks: [] }]
+  const extended = buildDailySessions({ ...built, startDate: '2028-02-01' }, id)
+  assert.equal(extended.objectiveDates[0], '2028-02-01')
+  assert.equal(extended.objectiveDates.length, 35)
+  const originalIndex = extended.objectiveDates.indexOf('2028-02-28')
+  assert.equal(extended.objectiveIds[originalIndex], built.objectiveIds[0])
+  assert.equal(extended.objectives[originalIndex], 'Existing description')
+  assert.deepEqual(extended.objectiveWorkouts[originalIndex], [{ id: 'preserved', blocks: [] }])
+  assert.deepEqual(buildDailySessions(extended, id), extended)
+})

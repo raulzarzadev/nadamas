@@ -1,7 +1,6 @@
 'use client'
 
 import { useId, useRef, useState } from 'react'
-import { FiChevronDown, FiChevronRight, FiEdit2 } from 'react-icons/fi'
 import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
 import SortableList from '@/components/ui/sortable-list'
@@ -13,6 +12,7 @@ import {
 } from '@/lib/training-planner'
 import CycleDateLabels from './CycleDateLabels'
 import CycleDetails from './CycleDetails'
+import PlanningRow from './PlanningRow'
 
 export default function MacroCycleBarsInput({
   macro,
@@ -112,65 +112,37 @@ export default function MacroCycleBarsInput({
               className={`relative grid min-w-0 gap-0 rounded-xl pb-1 ${cycle.type === 'micro' ? 'bg-[#258575]/10' : 'bg-(--c-surface)'}`}
             >
               <div
-                className={`sticky flex min-h-6 min-w-0 items-center rounded-t-xl pr-6 [container-type:inline-size] ${cycle.type === 'meso' ? 'z-[24] bg-[#eaf7fb]' : 'z-20 bg-[#d5eeeb]'}`}
+                className={`sticky min-h-6 min-w-0 rounded-t-xl ${cycle.type === 'meso' ? 'z-[24] bg-[#eaf7fb]' : 'z-20 bg-[#d5eeeb]'}`}
                 style={{
                   top:
                     cycle.type === 'meso'
-                      ? 'var(--app-header-h, 0px)'
-                      : 'calc(var(--app-header-h, 0px) + 24px)',
+                      ? 'calc(var(--app-header-h, 0px) + 24px)'
+                      : 'calc(var(--app-header-h, 0px) + 48px)',
                 }}
               >
-                {readOnly ? (
-                  <span
-                    style={{
-                      left: `${expanded[cycle.id] && cycle.type !== 'micro' ? 0 : barOffset(cycle)}%`,
-                      maxWidth: 'calc(100% - 24px)',
-                      transform: `translateX(min(0px, calc(100cqw - ${expanded[cycle.id] && cycle.type !== 'micro' ? 0 : barOffset(cycle)}cqw - 100% - 24px)))`,
-                    }}
-                    className="absolute truncate text-xs leading-tight font-semibold text-(--c-ocean)"
-                  >
-                    {cycle.title}
-                  </span>
-                ) : (
-                  handle
-                )}
-                {!readOnly && (
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    aria-label={`Editar nombre de ${cycle.title}`}
-                    style={{
-                      left: `max(24px, ${expanded[cycle.id] && cycle.type !== 'micro' ? 0 : barOffset(cycle)}%)`,
-                      maxWidth: 'calc(100% - 48px)',
-                      transform: `translateX(min(0px, calc(100cqw - max(24px, ${expanded[cycle.id] && cycle.type !== 'micro' ? 0 : barOffset(cycle)}cqw) - 100% - 24px)))`,
-                    }}
-                    onClick={() => {
-                      setName(cycle.title)
-                      setEditingName(cycle)
-                    }}
-                    className="absolute inline-flex w-max max-w-full items-center gap-1.5 rounded p-0 text-xs leading-tight font-semibold text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                  >
-                    <span className="truncate">{cycle.title}</span>
-                    <FiEdit2
-                      aria-hidden="true"
-                      className="size-3 shrink-0 text-(--c-aqua-strong)"
-                    />
-                  </button>
-                )}
-                <button
-                  type="button"
-                  aria-label={`Detalles de ${cycle.title}`}
-                  aria-expanded={Boolean(expanded[cycle.id])}
-                  aria-controls={`${detailsPrefix}-${cycle.id}`}
-                  onClick={() => setExpanded({ ...expanded, [cycle.id]: !expanded[cycle.id] })}
-                  className="absolute right-0 top-0 grid size-6 place-items-center rounded-full text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                >
-                  {expanded[cycle.id] ? (
-                    <FiChevronDown aria-hidden="true" />
-                  ) : (
-                    <FiChevronRight aria-hidden="true" />
-                  )}
-                </button>
+                <PlanningRow
+                  title={cycle.title}
+                  count={
+                    cycle.type === 'meso'
+                      ? cycles.filter((item) => item.parentId === cycle.id).length
+                      : (cycle.objectives?.length ??
+                        cycle.goal.split('\n').filter((text) => text.trim()).length)
+                  }
+                  countLabel={cycle.type === 'meso' ? 'MICRO-ciclos' : 'sesiones'}
+                  expanded={Boolean(expanded[cycle.id])}
+                  handle={readOnly ? undefined : handle}
+                  id={`${detailsPrefix}-${cycle.id}`}
+                  disabled={disabled}
+                  onToggle={() => setExpanded({ ...expanded, [cycle.id]: !expanded[cycle.id] })}
+                  onEdit={
+                    readOnly
+                      ? undefined
+                      : () => {
+                          setName(cycle.title)
+                          setEditingName(cycle)
+                        }
+                  }
+                />
               </div>
               {readOnly ? (
                 <div aria-hidden="true" className="relative h-8 w-full min-w-0">

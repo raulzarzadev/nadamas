@@ -1,0 +1,64 @@
+'use client'
+
+import type { ReactNode } from 'react'
+import { FiChevronRight, FiEdit2 } from 'react-icons/fi'
+
+/** Shared hierarchy header: drag handle, title, adjacent count and chevron. */
+export default function PlanningRow({
+  title,
+  count,
+  countLabel,
+  expanded,
+  onToggle,
+  handle,
+  onEdit,
+  disabled = false,
+  controls,
+  id,
+}: {
+  title: string
+  count: number
+  countLabel: string
+  expanded: boolean
+  onToggle: () => void
+  handle?: ReactNode
+  onEdit?: () => void
+  disabled?: boolean
+  controls?: ReactNode
+  id?: string
+}) {
+  return (
+    <div className="flex min-h-6 min-w-0 items-center gap-1 px-1 text-(--c-ocean)">
+      {handle}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={id}
+        onClick={onToggle}
+        aria-label={`${title}, ${count} ${countLabel}`}
+        className="inline-flex min-h-6 min-w-0 items-center gap-2 rounded text-left text-xs leading-tight font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--c-aqua-strong) focus-visible:ring-inset"
+      >
+        <span className="min-w-0 truncate">{title}</span>
+        <span aria-hidden="true" className="shrink-0 text-[10px] font-normal text-(--c-text-2)">
+          ({count})
+        </span>
+        <FiChevronRight
+          aria-hidden="true"
+          className={`size-4 shrink-0 ${expanded ? 'rotate-90' : ''}`}
+        />
+      </button>
+      {onEdit && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onEdit}
+          aria-label={`Editar nombre de ${title}`}
+          className="grid size-6 shrink-0 place-items-center rounded text-(--c-aqua-strong) outline-none hover:bg-white/50 focus-visible:ring-2 focus-visible:ring-inset disabled:opacity-40"
+        >
+          <FiEdit2 aria-hidden="true" className="size-3" />
+        </button>
+      )}
+      {controls && <div className="ml-auto shrink-0">{controls}</div>}
+    </div>
+  )
+}

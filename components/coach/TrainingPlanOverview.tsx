@@ -5,6 +5,7 @@ import { FiChevronDown, FiChevronRight } from 'react-icons/fi'
 import type { TrainingCycle } from '@/lib/training-planner'
 import MacroCycleBarsInput from './MacroCycleBarsInput'
 import MacroCyclePeriodInput from './MacroCyclePeriodInput'
+import PlanningRow from './PlanningRow'
 
 export default function TrainingPlanOverview({
   cycles,
@@ -19,6 +20,7 @@ export default function TrainingPlanOverview({
   readOnly?: boolean
   macros?: TrainingCycle[]
 }) {
+  const [macroExpanded, setMacroExpanded] = useState(true)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const macro = cycles.find((cycle) => cycle.type === 'macro')
   if (!macro) return null
@@ -28,46 +30,63 @@ export default function TrainingPlanOverview({
     onChange(cycles.map((cycle) => (cycle.id === macro.id ? { ...cycle, ...changes } : cycle)))
   return (
     <div className="grid min-w-0 gap-1">
-      {expandableIds.length > 0 && (
-        <div className="-mt-2 flex justify-end">
-          <button
-            type="button"
-            aria-pressed={allExpanded}
-            onClick={() =>
-              setExpanded(
-                allExpanded ? {} : Object.fromEntries(expandableIds.map((id) => [id, true]))
-              )
-            }
-            className="inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-[10px] font-semibold text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-          >
-            {allExpanded ? (
-              <FiChevronDown aria-hidden="true" />
-            ) : (
-              <FiChevronRight aria-hidden="true" />
-            )}
-            {allExpanded ? 'Contraer todo' : 'Expandir todo'}
-          </button>
+      <div
+        className="sticky z-[26] rounded-t-xl bg-[#d8eef5]"
+        style={{ top: 'var(--app-header-h, 0px)' }}
+      >
+        <PlanningRow
+          title={macro.title}
+          count={cycles.filter((cycle) => cycle.parentId === macro.id).length}
+          countLabel="MESO-ciclos"
+          expanded={macroExpanded}
+          onToggle={() => setMacroExpanded(!macroExpanded)}
+          controls={
+            expandableIds.length > 0 ? (
+              <button
+                type="button"
+                aria-pressed={allExpanded}
+                onClick={() => {
+                  setMacroExpanded(true)
+                  setExpanded(
+                    allExpanded ? {} : Object.fromEntries(expandableIds.map((id) => [id, true]))
+                  )
+                }}
+                className="inline-flex min-h-6 items-center gap-1 rounded-full px-2 text-[10px] font-semibold text-(--c-aqua-strong) focus-visible:outline-2"
+              >
+                {allExpanded ? (
+                  <FiChevronDown aria-hidden="true" />
+                ) : (
+                  <FiChevronRight aria-hidden="true" />
+                )}
+                {allExpanded ? 'Contraer todo' : 'Expandir todo'}
+              </button>
+            ) : undefined
+          }
+        />
+      </div>
+      {macroExpanded && (
+        <div className="ml-2 grid min-w-0 gap-1 border-l border-(--c-aqua-strong)/20 pl-2">
+          <MacroCyclePeriodInput
+            hideTitle
+            snapRanges={macros.filter((cycle) => cycle.id !== macro.id)}
+            value={macro}
+            title={macro.title}
+            onTitleChange={(title) => updateMacro({ title })}
+            onChange={updateMacro}
+            disabled={disabled}
+            readOnly={readOnly}
+          />
+          <MacroCycleBarsInput
+            macro={macro}
+            cycles={cycles}
+            onChange={onChange}
+            disabled={disabled}
+            readOnly={readOnly}
+            expanded={expanded}
+            onExpandedChange={setExpanded}
+          />
         </div>
       )}
-      <MacroCyclePeriodInput
-        hideTitle
-        snapRanges={macros.filter((cycle) => cycle.id !== macro.id)}
-        value={macro}
-        title={macro.title}
-        onTitleChange={(title) => updateMacro({ title })}
-        onChange={updateMacro}
-        disabled={disabled}
-        readOnly={readOnly}
-      />
-      <MacroCycleBarsInput
-        macro={macro}
-        cycles={cycles}
-        onChange={onChange}
-        disabled={disabled}
-        readOnly={readOnly}
-        expanded={expanded}
-        onExpandedChange={setExpanded}
-      />
     </div>
   )
 }

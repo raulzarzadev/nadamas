@@ -69,6 +69,17 @@ export function buildDailySessions(cycle: TrainingCycle, newId: () => string): T
     next.objectiveDates.push(date)
     next.objectiveWorkouts.push([])
   }
-  next.goal = next.objectives.join('\n')
-  return next
+  const order = next.objectiveDates
+    .map((_, index) => index)
+    .sort((a, b) => next.objectiveDates[a].localeCompare(next.objectiveDates[b]))
+  const sorted = {
+    ...next,
+    objectives: order.map((index) => next.objectives[index]),
+    objectiveIds: order.map((index) => next.objectiveIds[index]),
+    objectiveTitles: order.map((index) => next.objectiveTitles[index]),
+    objectiveDates: order.map((index) => next.objectiveDates[index]),
+    objectiveWorkouts: order.map((index) => next.objectiveWorkouts[index]),
+  }
+  sorted.goal = sorted.objectives.join('\n')
+  return sorted
 }
