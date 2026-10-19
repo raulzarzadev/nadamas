@@ -35,33 +35,54 @@ export default function ObjectiveWorkouts({
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [initialBlockId, setInitialBlockId] = useState<string | undefined>()
   const panelId = useId()
   const selected = workouts.find((workout) => workout.id === selectedId) ?? workouts[0]
   const selectedIndex = workouts.findIndex((workout) => workout.id === selected?.id)
   const isEditing = !readOnly && editingId === selected?.id
   return (
-    <section aria-label="Entrenos del objetivo" className="grid min-w-0 gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold">Entrenos</h3>
-        {!readOnly && (
-          <button
-            type="button"
-            disabled={disabled}
-            className={actionClass}
-            onClick={() => {
-              const workout = { id: crypto.randomUUID(), blocks: [] }
-              onChange([...workouts, workout])
-              setSelectedId(workout.id)
-              setEditingId(workout.id)
-            }}
-          >
-            + Agregar entreno
-          </button>
-        )}
-      </div>
-      {!workouts.length && <p className="text-xs text-(--c-text-2)">Aún no hay entrenos.</p>}
+    <section aria-label="Entrenos de la sesión" className="grid min-w-0 gap-4 px-2 py-2">
+      {!workouts.length && (
+        <div className="flex justify-center">
+          {!readOnly && (
+            <button
+              type="button"
+              disabled={disabled}
+              className="inline-flex min-h-9 cursor-pointer items-center justify-center rounded-full bg-black px-4 text-xs font-semibold text-white hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() => {
+                const workout = { id: crypto.randomUUID(), blocks: [] }
+                onChange([...workouts, workout])
+                setSelectedId(workout.id)
+                setEditingId(workout.id)
+              }}
+            >
+              + Agregar entreno
+            </button>
+          )}
+        </div>
+      )}
+      {!workouts.length && (
+        <p className="text-center text-xs text-(--c-text-2)">
+          No hay entrenos. Crea un entreno para este día.
+        </p>
+      )}
       {workouts.length > 0 && (
         <fieldset aria-label="Seleccionar entreno" className="flex min-w-0 flex-wrap gap-2">
+          {!readOnly && (
+            <button
+              type="button"
+              disabled={disabled}
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-dashed border-(--c-aqua-strong) bg-white px-3 text-xs font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-40"
+              onClick={() => {
+                const workout = { id: crypto.randomUUID(), blocks: [] }
+                onChange([...workouts, workout])
+                setSelectedId(workout.id)
+                setEditingId(workout.id)
+              }}
+            >
+              + Entreno
+            </button>
+          )}
           {workouts.map((workout, index) => (
             <button
               key={workout.id}
@@ -102,7 +123,7 @@ export default function ObjectiveWorkouts({
                     )
                   )
                 }
-                className="box-border min-h-11 w-full min-w-0 max-w-full flex-[1_1_10rem] rounded-xl border border-(--c-border) bg-white px-3 text-base font-normal text-(--c-ocean) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+                className="box-border min-h-8 w-full min-w-0 max-w-full flex-[1_1_10rem] rounded-lg border border-(--c-border) bg-white px-3 text-base font-normal text-(--c-ocean) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
               />
             ) : (
               <h4 className="min-w-0 flex-1 wrap-anywhere text-sm font-semibold">
@@ -110,12 +131,12 @@ export default function ObjectiveWorkouts({
               </h4>
             )}
             {!readOnly && (
-              <div className="flex shrink-0 flex-wrap justify-end gap-2">
+              <div className="flex shrink-0 flex-wrap justify-end gap-1">
                 {isEditing && (
                   <button
                     type="button"
                     disabled={disabled}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-3 text-xs font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
+                    className="inline-flex min-h-7 items-center justify-center gap-1 rounded-full px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
                     onClick={() => {
                       const next = workouts.filter((workout) => workout.id !== selected.id)
                       onChange(next)
@@ -130,7 +151,7 @@ export default function ObjectiveWorkouts({
                 <button
                   type="button"
                   disabled={disabled}
-                  className={`${actionClass} inline-flex items-center justify-center gap-2 ${isEditing ? 'border-(--c-ocean)! bg-(--c-ocean)! text-white! hover:bg-(--c-ocean)!' : ''}`}
+                  className={`inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) focus-visible:outline-2 disabled:opacity-50 ${isEditing ? 'border-(--c-ocean)! bg-(--c-ocean)! text-white! hover:bg-(--c-ocean)!' : ''}`}
                   onClick={() => setEditingId(isEditing ? null : selected.id)}
                 >
                   {isEditing && <FiCheck aria-hidden="true" />}
@@ -143,7 +164,7 @@ export default function ObjectiveWorkouts({
             <textarea
               aria-label="Observaciones del entreno"
               placeholder="Observaciones"
-              rows={2}
+              rows={1}
               maxLength={2000}
               disabled={disabled}
               value={selected.observations ?? ''}
@@ -156,7 +177,7 @@ export default function ObjectiveWorkouts({
                   )
                 )
               }
-              className="box-border min-h-20 w-full min-w-0 max-w-full resize-y rounded-xl border border-(--c-border) bg-white px-3 py-2 text-base font-normal text-(--c-ocean) placeholder:text-(--c-text-2) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+              className="box-border min-h-9 max-h-64 w-full min-w-0 max-w-full resize-none overflow-y-auto rounded-lg [field-sizing:content] border border-(--c-border) bg-white px-3 py-2 text-base font-normal text-(--c-ocean) placeholder:text-(--c-text-2) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
             />
           ) : selected.observations?.trim() ? (
             <p className="whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">
@@ -164,7 +185,22 @@ export default function ObjectiveWorkouts({
             </p>
           ) : null}
           <ClassTrainingEditor
-            key={selected.id}
+            key={`${selected.id}-${initialBlockId ?? ''}`}
+            initialBlockId={initialBlockId}
+            onCreateFirstBlock={
+              readOnly
+                ? undefined
+                : () => {
+                    const block = { id: crypto.randomUUID(), repetitions: 1, series: [] }
+                    onChange(
+                      workouts.map((workout) =>
+                        workout.id === selected.id ? { ...workout, blocks: [block] } : workout
+                      )
+                    )
+                    setInitialBlockId(block.id)
+                    setEditingId(selected.id)
+                  }
+            }
             blocks={selected.blocks}
             disabled={disabled}
             readOnly={!isEditing}

@@ -30,6 +30,7 @@ pnpm test:e2e     # playwright test
 - Optional analytics env: `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (US cloud default). Empty key = PostHog no-ops, no errors.
 - OTP/email env: `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, optional `BREVO_SENDER_NAME`, `OTP_SECRET`, and `FIREBASE_SERVICE_ACCOUNT` (JSON string for server-side Firebase Admin on Vercel).
 - Formatting + linting standard: use **Biome** only. Do not add ESLint or Prettier back unless the user explicitly asks.
+- Textareas: when creating or editing them, use `field-sizing: content` (Tailwind `[field-sizing:content]`) so they grow with the text; keep a compact minimum height. Inside sheets, text inputs and textareas must use `box-border w-full min-w-0 max-w-full` and an inset focus ring (`outline-none focus:ring-2 focus:ring-inset`) so borders and focus are not clipped by the scroll container.
 - Error standard: never expose raw technical errors, provider messages, stack traces, or `error.message` in UI **or browser-visible client logs**. Show a calm Spanish message such as `Ups, algo salió mal. Inténtalo de nuevo más tarde.` and emit only a short traceable code client-side (use `lib/user-facing-error.ts` when possible). Send full diagnostics only to private observability.
 
 ## Conventions (from README)

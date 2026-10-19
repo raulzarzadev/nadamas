@@ -16,6 +16,8 @@ export interface TrainingCycle {
   startDate: string
   endDate: string
   goal: string
+  objectiveDates?: string[]
+  objectiveIds?: string[]
   objectiveTitles?: string[]
   objectives?: string[]
   objectiveWorkouts?: (string | ObjectiveWorkout)[][]

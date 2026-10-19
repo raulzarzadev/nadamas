@@ -143,7 +143,7 @@ export default function TrainingSeriesForm({
     onSave(draft)
   }
   const inputClass =
-    'min-h-12 w-full rounded-xl border border-(--c-border) bg-white px-3 text-base focus-visible:outline-2 focus-visible:outline-(--c-ocean)'
+    'box-border min-h-12 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 text-base outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset'
   return (
     <section aria-label="Formulario de serie" className="grid gap-4">
       <h2 className="text-xl font-bold">Serie {seriesNumber}</h2>

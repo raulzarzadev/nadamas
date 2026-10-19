@@ -16,12 +16,16 @@ export default function ClassTrainingEditor({
   disabled = false,
   readOnly = false,
   onEditingChange,
+  onCreateFirstBlock,
+  initialBlockId,
 }: {
   blocks: ClassTrainingBlock[]
   onChange: (blocks: ClassTrainingBlock[]) => void
   disabled?: boolean
   readOnly?: boolean
   onEditingChange?: (editing: boolean) => void
+  onCreateFirstBlock?: () => void
+  initialBlockId?: string
 }) {
   const update = (key: string, change: Partial<ClassTrainingBlock>) =>
     onChange(blocks.map((block) => (block.id === key ? { ...block, ...change } : block)))
@@ -39,7 +43,17 @@ export default function ClassTrainingEditor({
     title: string
     observations: string
     repetitions: number
-  } | null>(null)
+  } | null>(() => {
+    const block = blocks.find((item) => item.id === initialBlockId)
+    return block
+      ? {
+          id: block.id,
+          title: block.title ?? '',
+          observations: block.observations ?? '',
+          repetitions: block.repetitions,
+        }
+      : null
+  })
   useEffect(() => {
     onEditingChange?.(Boolean(editing) || Boolean(blockForm) || Boolean(pauseForm))
     return () => onEditingChange?.(false)
@@ -47,7 +61,22 @@ export default function ClassTrainingEditor({
   if (readOnly)
     return (
       <section aria-label="Entrenamiento" className="grid min-w-0 gap-2">
-        {!blocks.length && <p className="text-sm text-(--c-text-2)">Aún no hay bloques.</p>}
+        {!blocks.length && (
+          <div className="grid justify-items-center gap-3 py-2">
+            <p className="text-sm text-(--c-text-2)">No hay bloques.</p>
+            {onCreateFirstBlock && (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={onCreateFirstBlock}
+                className="inline-flex min-h-9 items-center gap-2 rounded-full bg-black px-4 text-xs font-semibold text-white hover:bg-black/80 focus-visible:outline-2 disabled:opacity-40"
+              >
+                <FiPlus aria-hidden="true" />
+                Crear bloque
+              </button>
+            )}
+          </div>
+        )}
         {blocks.map((block, index) => (
           <fieldset
             key={block.id}
@@ -102,7 +131,7 @@ export default function ClassTrainingEditor({
   return (
     <section aria-label="Entrenamiento" className="grid gap-2">
       {blocks.length === 0 && (
-        <p className="text-sm text-(--c-text-2)">Agrega un bloque y después sus series.</p>
+        <p className="text-center text-sm text-(--c-text-2)">No hay bloques.</p>
       )}
       <SortableList
         items={blocks}
@@ -246,10 +275,14 @@ export default function ClassTrainingEditor({
         onClick={() =>
           onChange([...blocks, { id: crypto.randomUUID(), repetitions: 1, series: [] }])
         }
-        className="btn btn-subtle w-fit justify-self-end"
+        className={
+          blocks.length === 0
+            ? 'inline-flex min-h-9 w-fit items-center justify-center gap-2 justify-self-center rounded-full bg-black px-4 text-xs font-semibold text-white hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40'
+            : 'btn btn-subtle w-fit justify-self-end'
+        }
       >
         <FiPlus aria-hidden="true" />
-        Agregar bloque
+        {blocks.length === 0 ? 'Agregar primer bloque' : 'Agregar bloque'}
       </button>
       {editing &&
         createPortal(
@@ -406,20 +439,20 @@ export default function ClassTrainingEditor({
                   placeholder={`Bloque ${blocks.findIndex((item) => item.id === blockForm.id) + 1}`}
                   value={blockForm.title}
                   onChange={(event) => setBlockForm({ ...blockForm, title: event.target.value })}
-                  className="min-h-12 w-full rounded-xl border border-(--c-border) bg-white px-3 text-base focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                  className="box-border min-h-12 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 text-base outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
                 />
               </label>
               <label className="grid min-w-0 gap-2 text-sm font-semibold">
-                Observaciones
+                Observaciones (opcional)
                 <textarea
-                  rows={3}
+                  rows={1}
                   maxLength={2000}
                   placeholder="Observaciones del bloque"
                   value={blockForm.observations}
                   onChange={(event) =>
                     setBlockForm({ ...blockForm, observations: event.target.value })
                   }
-                  className="box-border min-h-24 w-full min-w-0 max-w-full resize-y rounded-xl border border-(--c-border) bg-white p-3 text-base font-normal outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
+                  className="[field-sizing:content] box-border min-h-11 w-full min-w-0 max-w-full resize-none rounded-xl border border-(--c-border) bg-white p-3 text-base font-normal outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
                 />
               </label>
               <label className="grid gap-2 text-sm font-semibold">
@@ -433,7 +466,7 @@ export default function ClassTrainingEditor({
                   onChange={(event) =>
                     setBlockForm({ ...blockForm, repetitions: Number(event.target.value) })
                   }
-                  className="min-h-12 w-full rounded-xl border border-(--c-border) bg-white px-3 text-base focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                  className="box-border min-h-12 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 text-base outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
                 />
               </label>
               <fieldset aria-label="Sumar repeticiones" className="grid grid-cols-4 gap-2">

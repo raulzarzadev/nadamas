@@ -101,10 +101,10 @@ export default function MacroCycleBarsInput({
             <div
               key={cycle.id}
               data-cycle-row={cycle.id}
-              className={`relative grid min-w-0 gap-0 ${expanded[cycle.id] ? `rounded-xl ${cycle.type === 'micro' ? 'bg-[#258575]/10' : 'bg-(--c-surface)'}` : ''}`}
+              className={`relative grid min-w-0 gap-0 rounded-xl pb-1 ${cycle.type === 'micro' ? 'bg-[#258575]/10' : 'bg-(--c-surface)'}`}
             >
               <div
-                className={`sticky flex min-h-6 min-w-0 items-center pr-6 [container-type:inline-size] ${cycle.type === 'meso' ? 'z-[24] bg-[#eaf7fb]' : 'z-20 bg-[#d5eeeb]'}`}
+                className={`sticky flex min-h-6 min-w-0 items-center rounded-t-xl pr-6 [container-type:inline-size] ${cycle.type === 'meso' ? 'z-[24] bg-[#eaf7fb]' : 'z-20 bg-[#d5eeeb]'}`}
                 style={{
                   top:
                     cycle.type === 'meso'
@@ -375,7 +375,7 @@ export default function MacroCycleBarsInput({
             maxLength={100}
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="min-h-11 min-w-0 rounded-xl border border-(--c-border) bg-white px-3 font-normal focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+            className="min-h-11 min-w-0 rounded-xl border border-(--c-border) bg-white px-3 font-normal outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
           />
         </label>
         {editingName && (

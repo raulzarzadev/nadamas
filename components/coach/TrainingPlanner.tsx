@@ -33,7 +33,7 @@ const actionClass =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-4 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
 const primaryClass = `${actionClass} border-transparent bg-(--c-ocean)! text-white! hover:opacity-90`
 const fieldClass =
-  'box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 py-2 font-normal text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)'
+  'box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 py-2 font-normal text-(--c-ocean) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset'
 const dateLabel = (value: string) =>
   value
     ? new Date(`${value}T12:00:00`).toLocaleDateString('es-MX', {
@@ -525,7 +525,7 @@ export default function TrainingPlanner() {
                       <textarea
                         aria-label="Objetivos, comentarios e instrucciones de la temporada"
                         placeholder="Agrega objetivos, comentarios, instrucciones extra, etc."
-                        rows={3}
+                        rows={1}
                         maxLength={10000}
                         disabled={busy}
                         value={
@@ -538,7 +538,7 @@ export default function TrainingPlanner() {
                             )
                           )
                         }
-                        className="col-span-2 box-border min-h-24 w-full min-w-0 resize-y rounded-xl border border-(--c-border) bg-white p-3 text-base leading-relaxed outline-none placeholder:text-(--c-text-2) focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+                        className="[field-sizing:content] col-span-2 box-border min-h-11 w-full min-w-0 resize-none rounded-xl border border-(--c-border) bg-white p-3 text-base leading-relaxed outline-none placeholder:text-(--c-text-2) focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
                       />
                     ) : cycle.content.trim() ? (
                       <p className="col-span-2 whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed text-(--c-text-2)">
@@ -744,7 +744,7 @@ export default function TrainingPlanner() {
               <label className="grid min-w-0 gap-1 text-sm font-semibold">
                 Objetivo
                 <textarea
-                  className={`${fieldClass} min-h-28`}
+                  className={`${fieldClass} [field-sizing:content] min-h-28`}
                   maxLength={2000}
                   value={draft.goal}
                   onChange={(event) => setDraft({ ...draft, goal: event.target.value })}
@@ -759,7 +759,7 @@ export default function TrainingPlanner() {
                   <span className="text-[10px] font-normal text-(--c-text-2)">(opcional)</span>
                 </span>
                 <textarea
-                  className={`${fieldClass} min-h-36`}
+                  className={`${fieldClass} [field-sizing:content] min-h-11`}
                   maxLength={10000}
                   value={draft.content}
                   onChange={(event) => setDraft({ ...draft, content: event.target.value })}
