@@ -202,6 +202,11 @@ export default function CycleDetails({
                                       <PlanningRow
                                         title={title}
                                         count={workouts(selected).length}
+                                        indicatorLabel={
+                                          workouts(selected).length
+                                            ? `${workouts(selected).length} entrenos para este día`
+                                            : undefined
+                                        }
                                         countLabel="entrenos"
                                         expanded={expanded}
                                         handle={readOnly ? undefined : handle}

@@ -579,6 +579,9 @@ export default function TrainingPlanner() {
                       )}
                       cycles={editing ? planCycles : plan.cycles}
                       onChange={setBarsDraft}
+                      onEdit={startEditing}
+                      onSave={() => void finishEditing()}
+                      onDiscard={stopEditing}
                       disabled={busy}
                       readOnly={!editing}
                     />

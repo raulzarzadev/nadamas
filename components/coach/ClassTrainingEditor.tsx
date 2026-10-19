@@ -17,7 +17,6 @@ export default function ClassTrainingEditor({
   readOnly = false,
   onEditingChange,
   onCreateFirstBlock,
-  initialBlockId,
 }: {
   blocks: ClassTrainingBlock[]
   onChange: (blocks: ClassTrainingBlock[]) => void
@@ -25,7 +24,6 @@ export default function ClassTrainingEditor({
   readOnly?: boolean
   onEditingChange?: (editing: boolean) => void
   onCreateFirstBlock?: () => void
-  initialBlockId?: string
 }) {
   const update = (key: string, change: Partial<ClassTrainingBlock>) =>
     onChange(blocks.map((block) => (block.id === key ? { ...block, ...change } : block)))
@@ -43,17 +41,7 @@ export default function ClassTrainingEditor({
     title: string
     observations: string
     repetitions: number
-  } | null>(() => {
-    const block = blocks.find((item) => item.id === initialBlockId)
-    return block
-      ? {
-          id: block.id,
-          title: block.title ?? '',
-          observations: block.observations ?? '',
-          repetitions: block.repetitions,
-        }
-      : null
-  })
+  } | null>(null)
   useEffect(() => {
     onEditingChange?.(Boolean(editing) || Boolean(blockForm) || Boolean(pauseForm))
     return () => onEditingChange?.(false)

@@ -15,6 +15,7 @@ export default function PlanningRow({
   disabled = false,
   controls,
   id,
+  indicatorLabel,
 }: {
   title: string
   count: number
@@ -26,6 +27,7 @@ export default function PlanningRow({
   disabled?: boolean
   controls?: ReactNode
   id?: string
+  indicatorLabel?: string
 }) {
   return (
     <div className="flex min-h-6 min-w-0 items-center gap-1 px-1 text-(--c-ocean)">
@@ -40,9 +42,20 @@ export default function PlanningRow({
           className="inline-flex min-h-6 min-w-0 items-center gap-2 rounded text-left text-xs leading-tight font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--c-aqua-strong) focus-visible:ring-inset"
         >
           <span className="min-w-0 truncate">{title}</span>
-          <span aria-hidden="true" className="shrink-0 text-[10px] font-normal text-(--c-text-2)">
+          <span
+            aria-hidden="true"
+            className={`shrink-0 text-[10px] ${indicatorLabel ? 'rounded-full bg-[#258575]/10 px-1.5 py-0.5 font-semibold text-[#176454]' : 'font-normal text-(--c-text-2)'}`}
+          >
             ({count})
           </span>
+          {indicatorLabel && (
+            <span
+              role="img"
+              aria-label={indicatorLabel}
+              title={indicatorLabel}
+              className="size-1.5 shrink-0 rounded-full bg-[#258575]"
+            />
+          )}
           <FiChevronRight
             aria-hidden="true"
             className={`size-4 shrink-0 ${expanded ? 'rotate-90' : ''}`}
