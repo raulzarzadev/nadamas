@@ -16,6 +16,7 @@ export default function PlanningRow({
   controls,
   id,
   indicatorLabel,
+  leading,
 }: {
   title: string
   count: number
@@ -28,9 +29,11 @@ export default function PlanningRow({
   controls?: ReactNode
   id?: string
   indicatorLabel?: string
+  leading?: ReactNode
 }) {
   return (
     <div className="flex min-h-6 min-w-0 items-center gap-1 px-1 text-(--c-ocean)">
+      {leading}
       {handle}
       {onToggle ? (
         <button

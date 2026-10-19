@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LuWandSparkles } from 'react-icons/lu'
 import SortableList from '@/components/ui/sortable-list'
+import { localCalendarDate } from '@/lib/today-training'
 import type { TrainingCycle } from '@/lib/training-planner'
 import { buildDailySessions, sessionCalendarGroup } from '@/lib/training-session-builder'
 import { groupTrainingSessions, reorderTrainingSessions } from '@/lib/training-session-groups'
@@ -23,6 +24,16 @@ export default function CycleDetails({
   disabled: boolean
   readOnly?: boolean
 }) {
+  const [today, setToday] = useState(() => localCalendarDate(new Date()))
+  useEffect(() => {
+    const refresh = () => setToday(localCalendarDate(new Date()))
+    const timer = setInterval(refresh, 60000)
+    window.addEventListener('focus', refresh)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [])
   const objectives = value.objectives ?? [
     ...new Set(
       value.goal
@@ -200,6 +211,13 @@ export default function CycleDetails({
                                       className={`${expanded ? 'sticky z-10 bg-[#bce0da]' : 'relative bg-[#eaf7fb]'} rounded-t-xl`}
                                     >
                                       <PlanningRow
+                                        leading={
+                                          value.objectiveDates?.[selected] === today ? (
+                                            <span className="pointer-events-none absolute top-1/2 right-[calc(100%+4px)] z-20 -translate-y-1/2 rounded-full bg-[#176454] px-2 py-1 text-[10px] leading-none font-bold text-white ring-2 ring-(--c-surface)">
+                                              Hoy
+                                            </span>
+                                          ) : undefined
+                                        }
                                         title={title}
                                         count={workouts(selected).length}
                                         indicatorLabel={
