@@ -36,8 +36,8 @@ export function nextMesocycleRange(macro: TrainingCycle, cycles: TrainingCycle[]
     .map((cycle) => day(cycle.endDate))
     .filter(Number.isFinite)
   const start = Math.max(first, ...ends.map((end) => end + 1))
-  if (start > last) return null
-  const end = Math.min(last, start + Math.max(1, Math.floor((last - first + 1) / 3)) - 1)
+  if (start >= last) return null
+  const end = Math.min(last, start + Math.max(2, Math.floor((last - first + 1) / 3)) - 1)
   const format = (value: number) => new Date(value * 86400000).toISOString().slice(0, 10)
   return { startDate: format(start), endDate: format(end) }
 }
@@ -56,8 +56,8 @@ export function validateTrainingCycle(
     (cycle.endDate && !validDate(cycle.endDate))
   )
     return 'Elige fechas válidas.'
-  if (cycle.startDate && cycle.endDate && cycle.endDate < cycle.startDate)
-    return 'La fecha final debe ser igual o posterior al inicio.'
+  if (cycle.startDate && cycle.endDate && cycle.endDate <= cycle.startDate)
+    return 'La fecha final debe ser al menos el día siguiente al inicio.'
   const outside = (child: TrainingCycle, parent: TrainingCycle) =>
     [child.startDate, child.endDate].some(
       (date) =>

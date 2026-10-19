@@ -85,8 +85,12 @@ export default function TimelineRangeInput({
     start >= lower &&
     end <= upper
   const clamp = (value: number) => Math.max(lower, Math.min(upper, value))
-  const emit = (start: number, end: number) =>
-    onChange({ startDate: date(start), endDate: date(end) })
+  const emit = (start: number, end: number) => {
+    if (upper <= lower) return
+    const rangeStart = Math.max(lower, Math.min(start, upper - 1))
+    const rangeEnd = Math.max(rangeStart + 1, Math.min(end, upper))
+    onChange({ startDate: date(rangeStart), endDate: date(rangeEnd) })
+  }
   const pointerDay = (clientX: number) => {
     const rect = track.current?.getBoundingClientRect()
     if (!rect?.width) return lower
@@ -135,7 +139,7 @@ export default function TimelineRangeInput({
           Math.abs(delta) <= tolerance &&
           nextStart >= lower &&
           nextEnd <= upper &&
-          nextStart <= nextEnd &&
+          nextStart < nextEnd &&
           (bestDelta === null || Math.abs(delta) < Math.abs(bestDelta))
         ) {
           bestDelta = delta
@@ -159,6 +163,7 @@ export default function TimelineRangeInput({
     onActivate?.()
     const mode = (event.target as HTMLElement).closest<HTMLElement>('[data-range-action]')?.dataset
       .rangeAction as DragMode | undefined
+    if (selected && !mode) return
     const anchor = pointerDay(event.clientX)
     drag.current = {
       mode: selected && mode ? mode : 'draw',
@@ -169,7 +174,6 @@ export default function TimelineRangeInput({
     }
     event.currentTarget.setPointerCapture(event.pointerId)
     if (!mode || !selected) emit(anchor, anchor)
-    else emitPointer(start, end, mode === 'draw' ? 'move' : mode)
   }
   function move(event: PointerEvent<HTMLFieldSetElement>) {
     const state = drag.current
@@ -181,8 +185,18 @@ export default function TimelineRangeInput({
         Math.max(state.anchor, current),
         current < state.anchor ? 'start' : 'end'
       )
-    else if (state.mode === 'start') emitPointer(Math.min(current, state.end), state.end, 'start')
-    else if (state.mode === 'end') emitPointer(state.start, Math.max(current, state.start), 'end')
+    else if (state.mode === 'start')
+      emitPointer(
+        Math.min(clamp(state.start + current - state.anchor), state.end - 1),
+        state.end,
+        'start'
+      )
+    else if (state.mode === 'end')
+      emitPointer(
+        state.start,
+        Math.max(clamp(state.end + current - state.anchor), state.start + 1),
+        'end'
+      )
     else {
       const delta = Math.max(
         lower - state.start,
@@ -201,18 +215,18 @@ export default function TimelineRangeInput({
         event.key === 'Home'
           ? lower
           : event.key === 'End'
-            ? end
-            : Math.min(end, clamp(start + delta)),
+            ? end - 1
+            : Math.min(end - 1, clamp(start + delta)),
         end
       )
     else if (mode === 'end')
       emit(
         start,
         event.key === 'Home'
-          ? start
+          ? start + 1
           : event.key === 'End'
             ? upper
-            : Math.max(start, clamp(end + delta))
+            : Math.max(start + 1, clamp(end + delta))
       )
     else {
       const shift =
@@ -247,7 +261,7 @@ export default function TimelineRangeInput({
             ref={track}
             aria-label="Línea de tiempo editable"
             aria-describedby={`${id}-help`}
-            className={`relative m-0 ${compact ? (barLabel || thick ? 'h-8' : 'h-5') : 'h-12'} w-full min-w-0 touch-none select-none border-0 p-0 ${disabled ? 'opacity-50' : 'cursor-crosshair'}`}
+            className={`relative m-0 ${compact ? (barLabel || thick ? 'h-8' : 'h-5') : 'h-12'} w-full min-w-0 touch-none select-none border-0 p-0 ${disabled ? 'opacity-50' : selected ? 'cursor-default' : 'cursor-crosshair'}`}
             onPointerDown={begin}
             onPointerMove={move}
             onPointerUp={() => {
@@ -322,16 +336,16 @@ export default function TimelineRangeInput({
                     data-range-action={mode}
                     aria-label={mode === 'start' ? 'Inicio del periodo' : 'Final del periodo'}
                     aria-disabled={disabled}
-                    aria-valuemin={mode === 'start' ? lower : start}
-                    aria-valuemax={mode === 'start' ? end : upper}
+                    aria-valuemin={mode === 'start' ? lower : start + 1}
+                    aria-valuemax={mode === 'start' ? end - 1 : upper}
                     aria-valuenow={mode === 'start' ? start : end}
                     aria-valuetext={dateLabel(mode === 'start' ? start : end)}
                     onKeyDown={(event) => keyboard(event, mode)}
-                    className={`absolute top-1/2 grid h-11 w-6 -translate-y-1/2 cursor-ew-resize place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-(--c-ocean) ${mode === 'start' ? 'left-0' : 'right-0'}`}
+                    className={`absolute top-1/2 grid h-11 w-[min(24px,50%)] -translate-y-1/2 cursor-ew-resize place-items-center rounded-full before:absolute before:inset-y-0 before:w-6 focus-visible:outline-2 focus-visible:outline-(--c-ocean) ${mode === 'start' ? 'left-0 before:right-full' : 'right-0 before:left-full'}`}
                   >
                     <span
                       aria-hidden="true"
-                      className={`h-6 w-2 rounded-full border-2 ${tone === 'green' ? 'border-[#258575]' : 'border-(--c-aqua-strong)'} bg-white`}
+                      className={`pointer-events-none h-6 w-2 rounded-full border-2 ${tone === 'green' ? 'border-[#258575]' : 'border-(--c-aqua-strong)'} bg-white`}
                     />
                   </span>
                 ))}

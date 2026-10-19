@@ -11,6 +11,10 @@ new Function(
   }).outputText
 )(loaded.exports)
 const { snapTimelineRange } = loaded.exports
+test('snapping cannot collapse a cycle to a single date', () => {
+  assert.equal(snapTimelineRange(19, 20, 'start', [{ start: 1, end: 19 }], 1, 40, 2), null)
+  assert.equal(snapTimelineRange(19, 20, 'end', [{ start: 20, end: 30 }], 1, 40, 2), null)
+})
 test('start snaps to the day after previous finish; end snaps before next start', () => {
   assert.deepEqual(snapTimelineRange(22, 30, 'start', [{ start: 1, end: 22 }], 1, 40, 2), {
     start: 23,

@@ -13,6 +13,7 @@ export default function CoachSchoolSwitcher() {
   return tenant ||
     pathname.startsWith('/coach/agenda') ||
     pathname.startsWith('/coach/students') ||
+    pathname.startsWith('/coach/training') ||
     // Coach Planes is always the personal space (school payments live in Coordinador mode).
     pathname.startsWith('/coach/payments') ? null : (
     <GlobalCoachSchoolSwitcher />

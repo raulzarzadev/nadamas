@@ -42,7 +42,9 @@ test('training hierarchy accepts macro → meso → micro and inclusive dates', 
   assert.equal(validateTrainingCycle(macro, []), null)
   assert.equal(validateTrainingCycle(meso, [macro]), null)
   assert.equal(validateTrainingCycle(micro, [macro, meso]), null)
-  assert.equal(validateTrainingCycle({ ...micro, endDate: micro.startDate }, [macro, meso]), null)
+  assert.equal(validateTrainingCycle({ ...micro, endDate: '2026-10-02' }, [macro, meso]), null)
+  for (const cycle of [macro, meso, micro])
+    assert.ok(validateTrainingCycle({ ...cycle, endDate: cycle.startDate }, [macro, meso]))
 })
 test('training dates reject impossible dates, backwards periods and children outside their parent', () => {
   for (const value of ['2026-02-30', '2026-13-01', 'bad'])

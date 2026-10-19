@@ -35,7 +35,8 @@ export default function CycleDateLabels({
     endFull = format(endDate, true)
   const startShort = format(startDate, false),
     endShort = format(endDate, false)
-  const range = `${startShort} - ${endShort}`
+  const sameDate = startDate === endDate
+  const range = sameDate ? startFull : `${startShort} — ${endShort}`
   useEffect(() => {
     const update = () => {
       if (!container.current || !measure.current) return
@@ -61,10 +62,10 @@ export default function CycleDateLabels({
     Math.max(start, Math.min(1, (Date.parse(endDate) - Date.parse(min) + 86400000) / duration)) || 0
   const available = (end - start) * sizes.width
   const showYear = available >= sizes.full && sizes.full > 0
-  const separate = available >= sizes.short && sizes.short > 0
+  const separate = !sameDate && available >= sizes.short && sizes.short > 0
   const rangeLeft = Math.max(
     0,
-    Math.min(sizes.width - sizes.range, end * sizes.width - sizes.range)
+    Math.min(sizes.width - sizes.range, ((start + end) / 2) * sizes.width - sizes.range / 2)
   )
   const buttonClass =
     'absolute top-0 cursor-pointer whitespace-nowrap rounded p-0 text-xs font-semibold text-(--c-aqua-strong) hover:underline focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'

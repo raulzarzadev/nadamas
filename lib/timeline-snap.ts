@@ -23,7 +23,7 @@ export function snapTimelineRange(
         Math.abs(delta) > tolerance ||
         nextStart < lower ||
         nextEnd > upper ||
-        nextStart > nextEnd
+        nextStart >= nextEnd
       )
         continue
       const overlap = (first: number, last: number, range: { start: number; end: number }) =>
