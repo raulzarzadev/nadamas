@@ -63,10 +63,11 @@ export default function TodayTrainingSummary({
           )}
         </div>
         <div className="grid min-w-0 justify-items-center gap-1 text-center">
-          <h2 className="text-base font-bold">
-            {activeDate === today ? 'Para hoy' : 'Entreno seleccionado'}
-          </h2>
-          <time dateTime={activeDate} className="text-xs text-(--c-text-2)">
+          <time
+            dateTime={activeDate}
+            aria-current="date"
+            className="rounded-full bg-(--c-ocean) px-4 py-2 text-xs font-semibold text-white"
+          >
             {shortDate(activeDate)}
           </time>
           {!loading && !loadError && !sessions.length && (
@@ -123,7 +124,6 @@ export default function TodayTrainingSummary({
               <p className="wrap-anywhere text-[11px] text-(--c-text-2)">
                 {session.macro.title} · {session.meso.title} · {session.micro.title}
               </p>
-              <h2 className="wrap-anywhere text-base font-bold">{session.title}</h2>
               {session.description.trim() && (
                 <p className="whitespace-pre-wrap wrap-anywhere text-sm text-(--c-text-2)">
                   {session.description}

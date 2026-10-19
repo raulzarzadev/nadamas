@@ -361,7 +361,7 @@ export default function TrainingPlanner() {
             })}
           </nav>
         )}
-        <h1 id="training-title" className="pt-4 text-2xl font-extrabold">
+        <h1 id="training-title" className="pt-4 text-center text-2xl font-extrabold">
           Entreno de hoy
         </h1>
         <TodayTrainingSummary plans={plans} loading={loading} loadError={loadError} />
