@@ -104,7 +104,7 @@ export default function MacroCycleBarsInput({
               className={`relative grid min-w-0 gap-0 ${expanded[cycle.id] ? `rounded-xl ${cycle.type === 'micro' ? 'bg-[#258575]/10' : 'bg-(--c-surface)'}` : ''}`}
             >
               <div
-                className={`sticky flex min-h-6 min-w-0 items-center pr-6 [container-type:inline-size] ${cycle.type === 'meso' ? 'z-20 bg-[#eaf7fb]' : 'z-10 bg-[#d5eeeb]'}`}
+                className={`sticky flex min-h-6 min-w-0 items-center pr-6 [container-type:inline-size] ${cycle.type === 'meso' ? 'z-[24] bg-[#eaf7fb]' : 'z-20 bg-[#d5eeeb]'}`}
                 style={{
                   top:
                     cycle.type === 'meso'

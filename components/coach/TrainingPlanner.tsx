@@ -351,7 +351,7 @@ export default function TrainingPlanner() {
             <FiPlus aria-hidden="true" /> Nuevo MACRO-ciclo
           </button>
         </div>
-        {error && !draft && !deleting && (
+        {error && !plan && !draft && !deleting && (
           <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">
             {error}
           </p>
@@ -546,6 +546,11 @@ export default function TrainingPlanner() {
                       </p>
                     ) : null)}
                 </div>
+                {error && !draft && !deleting && (
+                  <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">
+                    {error}
+                  </p>
+                )}
                 <article className="rounded-2xl border border-(--c-border) bg-white px-2 py-5 sm:p-5">
                   {cycle.type === 'macro' && plan && (
                     <TrainingPlanOverview
