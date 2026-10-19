@@ -8,6 +8,12 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## Commands
 
+### Production deployments
+
+- Deploy the web app through pushes to `main`; Vercel's GitHub integration is the normal production deployment path. Do not run manual CLI deployments unless the user explicitly requests a recovery deployment.
+- When recovering a deployment, first restore production, then verify the GitHub connection and confirm a real push creates a successful production deployment with source `git`.
+- `pnpm deploy:pro` publishes Firebase rules/indexes and pushes `main`; its completion confirms the push, not the completion of the Vercel build. Verify Vercel reaches `READY` for the pushed commit before reporting production as deployed.
+
 ```bash
 pnpm dev          # next dev
 pnpm build        # next build
