@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import DurationInput from '@/components/ui/duration-input'
 import SwimEquipmentIcon, { type SwimEquipment } from '@/components/ui/swim-equipment-icon'
 import type { ClassTrainingSeries } from '@/lib/class-training'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
@@ -414,36 +415,7 @@ export default function TrainingSeriesForm({
         </div>
       )}
       {step === 4 && (
-        <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="grid gap-2 text-sm font-semibold">
-              Minutos
-              <input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={999}
-                placeholder="0"
-                value={intervalMinutes}
-                onChange={(event) => setInterval(event.target.value, intervalSeconds)}
-                className={inputClass}
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-semibold">
-              Segundos
-              <input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={59}
-                placeholder="00"
-                value={intervalSeconds}
-                onChange={(event) => setInterval(intervalMinutes, event.target.value)}
-                className={inputClass}
-              />
-            </label>
-          </div>
-        </div>
+        <DurationInput minutes={intervalMinutes} seconds={intervalSeconds} onChange={setInterval} />
       )}
       <div className="flex flex-wrap gap-2 pt-2">
         <button type="button" onClick={onCancel} className="btn border btn-ghost min-h-11">

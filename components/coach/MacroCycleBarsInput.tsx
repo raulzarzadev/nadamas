@@ -8,6 +8,7 @@ import SortableList from '@/components/ui/sortable-list'
 import TimelineRangeInput from '@/components/ui/timeline-range-input'
 import { nextMesocycleRange, type TrainingCycle } from '@/lib/training-planner'
 import CycleDateLabels from './CycleDateLabels'
+import CycleDetails from './CycleDetails'
 
 export default function MacroCycleBarsInput({
   macro,
@@ -83,10 +84,12 @@ export default function MacroCycleBarsInput({
                 {readOnly ? (
                   <span
                     style={{
-                      marginLeft: expanded[cycle.id] ? 0 : `${barOffset(cycle)}%`,
-                      maxWidth: expanded[cycle.id]
-                        ? 'calc(100% - 24px)'
-                        : `calc(100% - ${barOffset(cycle)}% - 24px)`,
+                      marginLeft:
+                        expanded[cycle.id] && cycle.type !== 'micro' ? 0 : `${barOffset(cycle)}%`,
+                      maxWidth:
+                        expanded[cycle.id] && cycle.type !== 'micro'
+                          ? 'calc(100% - 24px)'
+                          : `calc(100% - ${barOffset(cycle)}% - 24px)`,
                     }}
                     className="truncate text-xs leading-tight font-semibold text-(--c-ocean)"
                   >
@@ -101,12 +104,14 @@ export default function MacroCycleBarsInput({
                     disabled={disabled}
                     aria-label={`Editar nombre de ${cycle.title}`}
                     style={{
-                      marginLeft: expanded[cycle.id]
-                        ? 0
-                        : `max(0px, calc(${barOffset(cycle)}% - 24px))`,
-                      maxWidth: expanded[cycle.id]
-                        ? 'calc(100% - 48px)'
-                        : `calc(100% - max(24px, ${barOffset(cycle)}%) - 24px)`,
+                      marginLeft:
+                        expanded[cycle.id] && cycle.type !== 'micro'
+                          ? 0
+                          : `max(0px, calc(${barOffset(cycle)}% - 24px))`,
+                      maxWidth:
+                        expanded[cycle.id] && cycle.type !== 'micro'
+                          ? 'calc(100% - 48px)'
+                          : `calc(100% - max(24px, ${barOffset(cycle)}%) - 24px)`,
                     }}
                     onClick={() => {
                       setName(cycle.title)
@@ -180,10 +185,23 @@ export default function MacroCycleBarsInput({
               <div id={`${detailsPrefix}-${cycle.id}`} hidden={!expanded[cycle.id]}>
                 {expanded[cycle.id] && (
                   <div className="mt-0.5 grid gap-2">
-                    <div
-                      aria-hidden="true"
-                      className={`h-6 w-full rounded-full ${cycle.type === 'micro' ? 'bg-[#258575]/50' : 'bg-[#79b9cf]'}`}
-                    />
+                    {cycle.type === 'meso' && (
+                      <div aria-hidden="true" className="h-6 w-full rounded-full bg-[#79b9cf]" />
+                    )}
+                    {cycle.type === 'micro' && (
+                      <CycleDetails
+                        value={cycle}
+                        disabled={disabled}
+                        readOnly={readOnly}
+                        onChange={(details) =>
+                          onChange(
+                            cycles.map((item) =>
+                              item.id === cycle.id ? { ...item, ...details } : item
+                            )
+                          )
+                        }
+                      />
+                    )}
                     {cycle.type === 'meso' && (
                       <MacroCycleBarsInput
                         macro={cycle}

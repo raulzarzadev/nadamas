@@ -1,4 +1,5 @@
 export interface ClassTrainingSeries {
+  kind?: 'pause'
   id: string
   repetitions: number
   distanceMeters: number | null
@@ -11,6 +12,7 @@ export interface ClassTrainingBlock {
   id: string
   // Optional coach label; the UI falls back to "Bloque N".
   title?: string
+  observations?: string
   repetitions: number
   series: ClassTrainingSeries[]
 }
@@ -45,7 +47,9 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
       block.repetitions > 99 ||
       !Array.isArray(block.series) ||
       block.series.length > 30 ||
-      (block.title !== undefined && (typeof block.title !== 'string' || block.title.length > 60))
+      (block.title !== undefined && (typeof block.title !== 'string' || block.title.length > 60)) ||
+      (block.observations !== undefined &&
+        (typeof block.observations !== 'string' || block.observations.length > 2000))
     )
       return null
     // Blocks are created empty in the editor; drop the ones left without series.
@@ -58,6 +62,9 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
       if (
         !item ||
         typeof item !== 'object' ||
+        (item.kind !== undefined && item.kind !== 'pause') ||
+        (item.kind === 'pause' &&
+          (!/^\d{1,3}:[0-5]\d$/.test(item.interval) || !item.interval.replace(/[:0]/g, ''))) ||
         typeof item.id !== 'string' ||
         !/^[\w-]{1,80}$/.test(item.id) ||
         seriesIds.has(item.id) ||
@@ -80,6 +87,7 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
       seriesIds.add(item.id)
       series.push({
         id: item.id,
+        ...(item.kind === 'pause' ? { kind: 'pause' as const } : {}),
         repetitions: item.repetitions,
         distanceMeters: item.distanceMeters,
         exercise: item.exercise.trim(),
@@ -92,6 +100,7 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
     blocks.push({
       id: block.id,
       ...(title ? { title } : {}),
+      ...(block.observations?.trim() ? { observations: block.observations.trim() } : {}),
       repetitions: block.repetitions,
       series,
     })

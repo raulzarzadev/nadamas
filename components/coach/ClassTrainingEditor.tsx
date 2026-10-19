@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
 import TrainingSeriesForm from '@/components/coach/TrainingSeriesForm'
+import DurationInput from '@/components/ui/duration-input'
 import Sheet from '@/components/ui/sheet'
 import SortableList from '@/components/ui/sortable-list'
 import TrainingBrace from '@/components/ui/training-brace'
@@ -13,11 +14,13 @@ export default function ClassTrainingEditor({
   blocks,
   onChange,
   disabled = false,
+  readOnly = false,
   onEditingChange,
 }: {
   blocks: ClassTrainingBlock[]
   onChange: (blocks: ClassTrainingBlock[]) => void
   disabled?: boolean
+  readOnly?: boolean
   onEditingChange?: (editing: boolean) => void
 }) {
   const update = (key: string, change: Partial<ClassTrainingBlock>) =>
@@ -25,16 +28,77 @@ export default function ClassTrainingEditor({
   const [editing, setEditing] = useState<{ blockId: string; series?: ClassTrainingSeries } | null>(
     null
   )
+  const [pauseForm, setPauseForm] = useState<{
+    blockId: string
+    seriesId?: string
+    time: string
+  } | null>(null)
   // Block settings sheet: title, repetitions and delete.
   const [blockForm, setBlockForm] = useState<{
     id: string
     title: string
+    observations: string
     repetitions: number
   } | null>(null)
   useEffect(() => {
-    onEditingChange?.(Boolean(editing) || Boolean(blockForm))
+    onEditingChange?.(Boolean(editing) || Boolean(blockForm) || Boolean(pauseForm))
     return () => onEditingChange?.(false)
-  }, [editing, blockForm, onEditingChange])
+  }, [editing, blockForm, pauseForm, onEditingChange])
+  if (readOnly)
+    return (
+      <section aria-label="Entrenamiento" className="grid min-w-0 gap-2">
+        {!blocks.length && <p className="text-sm text-(--c-text-2)">Aún no hay bloques.</p>}
+        {blocks.map((block, index) => (
+          <fieldset
+            key={block.id}
+            className="min-w-0 rounded-2xl border border-(--c-border) bg-(--c-surface) p-2"
+          >
+            <legend className="px-1 text-sm font-bold">
+              <span className="mr-1 font-normal text-(--c-text-2)">{index + 1} ·</span>
+              {block.title || 'Bloque'}
+            </legend>
+            {block.observations?.trim() && (
+              <p className="mb-2 whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">
+                {block.observations}
+              </p>
+            )}
+            <div className="grid min-h-20 grid-cols-[auto_minmax(0,1fr)] gap-x-1.5 gap-y-1">
+              <div className="flex items-center gap-1 self-stretch text-sm font-bold">
+                <div className="relative flex w-10 shrink-0 items-center justify-center">
+                  <span>{block.repetitions}×</span>
+                </div>
+                <TrainingBrace />
+              </div>
+              <ul className="grid min-w-0 content-center gap-1">
+                {block.series.map((series) => (
+                  <li
+                    key={series.id}
+                    className="min-w-0 wrap-anywhere py-0.5 text-xs leading-tight"
+                  >
+                    <strong className="mr-1 inline-block" hidden={series.kind === 'pause'}>
+                      {series.repetitions}×
+                      {series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
+                    </strong>
+                    <span>{series.exercise}</span>
+                    {series.material && (
+                      <span className="ml-1 text-[11px] text-(--c-text-2)">
+                        · {series.material}
+                      </span>
+                    )}
+                    {series.interval && (
+                      <span className="ml-1 text-[11px] text-(--c-text-2)">
+                        · {series.kind === 'pause' ? '' : 'Cada '}
+                        {series.interval}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </fieldset>
+        ))}
+      </section>
+    )
   return (
     <section aria-label="Entrenamiento" className="grid gap-2">
       {blocks.length === 0 && (
@@ -66,6 +130,7 @@ export default function ClassTrainingEditor({
                     setBlockForm({
                       id: block.id,
                       title: block.title || '',
+                      observations: block.observations || '',
                       repetitions: block.repetitions,
                     })
                   }
@@ -76,6 +141,11 @@ export default function ClassTrainingEditor({
               </span>
             </legend>
 
+            {block.observations?.trim() && (
+              <p className="mb-2 whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">
+                {block.observations}
+              </p>
+            )}
             <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-1.5 gap-y-1">
               <div className="flex items-center gap-1 self-stretch text-sm font-bold">
                 <div className="relative flex w-10 shrink-0 items-center justify-center">
@@ -99,10 +169,18 @@ export default function ClassTrainingEditor({
                       <button
                         type="button"
                         aria-label={`Editar serie ${seriesIndex + 1}`}
-                        onClick={() => setEditing({ blockId: block.id, series })}
+                        onClick={() =>
+                          series.kind === 'pause'
+                            ? setPauseForm({
+                                blockId: block.id,
+                                seriesId: series.id,
+                                time: series.interval,
+                              })
+                            : setEditing({ blockId: block.id, series })
+                        }
                         className="min-h-6 min-w-0 flex-1 rounded-lg py-0.5 text-left text-xs leading-tight focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
                       >
-                        <strong className="mr-1 inline-block">
+                        <strong className="mr-1 inline-block" hidden={series.kind === 'pause'}>
                           {series.repetitions}×
                           {series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
                         </strong>
@@ -114,7 +192,8 @@ export default function ClassTrainingEditor({
                         )}
                         {series.interval && (
                           <span className="ml-1 text-[11px] text-(--c-text-2)">
-                            · Cada {series.interval}
+                            · {series.kind === 'pause' ? '' : 'Cada '}
+                            {series.interval}
                           </span>
                         )}
                       </button>
@@ -135,7 +214,7 @@ export default function ClassTrainingEditor({
                     </div>
                   )}
                 </SortableList>
-                <div className="flex justify-start">
+                <div className="flex flex-wrap justify-start gap-2">
                   <button
                     type="button"
                     disabled={block.series.length >= 30}
@@ -144,6 +223,15 @@ export default function ClassTrainingEditor({
                   >
                     <FiPlus aria-hidden="true" />
                     Agregar serie
+                  </button>
+                  <button
+                    type="button"
+                    disabled={disabled || block.series.length >= 30}
+                    onClick={() => setPauseForm({ blockId: block.id, time: '' })}
+                    className="btn btn-subtle w-fit"
+                  >
+                    <FiPlus aria-hidden="true" />
+                    Agregar pausa
                   </button>
                 </div>
               </div>
@@ -199,6 +287,64 @@ export default function ClassTrainingEditor({
           </Sheet>,
           document.body
         )}
+      {pauseForm &&
+        createPortal(
+          <Sheet
+            open
+            keyboardAware
+            label={pauseForm.seriesId ? 'Editar pausa' : 'Agregar pausa'}
+            onClose={() => setPauseForm(null)}
+            footer={
+              <button
+                type="button"
+                className="btn btn-primary min-h-11 w-full"
+                disabled={
+                  disabled ||
+                  !/^\d{0,3}:[0-5]?\d?$/.test(pauseForm.time) ||
+                  !pauseForm.time.replace(/[:0]/g, '')
+                }
+                onClick={() => {
+                  if (
+                    !/^\d{0,3}:[0-5]?\d?$/.test(pauseForm.time) ||
+                    !pauseForm.time.replace(/[:0]/g, '')
+                  )
+                    return
+                  const block = blocks.find((item) => item.id === pauseForm.blockId)
+                  if (!block) return
+                  const pause: ClassTrainingSeries = {
+                    id: pauseForm.seriesId || crypto.randomUUID(),
+                    kind: 'pause',
+                    repetitions: 1,
+                    distanceMeters: null,
+                    exercise: 'Pausa',
+                    interval: `${Number(pauseForm.time.split(':')[0] || 0)}:${String(Number(pauseForm.time.split(':')[1] || 0)).padStart(2, '0')}`,
+                  }
+                  update(block.id, {
+                    series: pauseForm.seriesId
+                      ? block.series.map((item) => (item.id === pause.id ? pause : item))
+                      : [...block.series, pause],
+                  })
+                  setPauseForm(null)
+                }}
+              >
+                Guardar
+              </button>
+            }
+          >
+            <div className="grid min-w-0 gap-3 pb-4">
+              <h2 className="text-lg font-bold">Tiempo de pausa</h2>
+              <DurationInput
+                minutes={pauseForm.time.split(':')[0] || ''}
+                seconds={pauseForm.time.split(':')[1] || ''}
+                disabled={disabled}
+                onChange={(minutes, seconds) =>
+                  setPauseForm({ ...pauseForm, time: `${minutes}:${seconds}` })
+                }
+              />
+            </div>
+          </Sheet>,
+          document.body
+        )}
       {blockForm &&
         createPortal(
           <Sheet
@@ -229,19 +375,20 @@ export default function ClassTrainingEditor({
                   }
                   onClick={() => {
                     const title = blockForm.title.trim()
+                    setBlockForm(null)
                     onChange(
                       blocks.map((item) =>
                         item.id === blockForm.id
                           ? {
                               id: item.id,
                               ...(title ? { title } : {}),
+                              observations: blockForm.observations.trim(),
                               repetitions: blockForm.repetitions,
                               series: item.series,
                             }
                           : item
                       )
                     )
-                    setBlockForm(null)
                   }}
                 >
                   Guardar
@@ -260,6 +407,19 @@ export default function ClassTrainingEditor({
                   value={blockForm.title}
                   onChange={(event) => setBlockForm({ ...blockForm, title: event.target.value })}
                   className="min-h-12 w-full rounded-xl border border-(--c-border) bg-white px-3 text-base focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                />
+              </label>
+              <label className="grid min-w-0 gap-2 text-sm font-semibold">
+                Observaciones
+                <textarea
+                  rows={3}
+                  maxLength={2000}
+                  placeholder="Observaciones del bloque"
+                  value={blockForm.observations}
+                  onChange={(event) =>
+                    setBlockForm({ ...blockForm, observations: event.target.value })
+                  }
+                  className="box-border min-h-24 w-full min-w-0 max-w-full resize-y rounded-xl border border-(--c-border) bg-white p-3 text-base font-normal outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
                 />
               </label>
               <label className="grid gap-2 text-sm font-semibold">

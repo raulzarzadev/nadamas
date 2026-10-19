@@ -1,3 +1,12 @@
+import type { ClassTrainingBlock } from './class-training'
+
+export interface ObjectiveWorkout {
+  id: string
+  observations?: string
+  title?: string
+  blocks: ClassTrainingBlock[]
+}
+
 export type CycleType = 'macro' | 'meso' | 'micro'
 export interface TrainingCycle {
   id: string
@@ -7,6 +16,8 @@ export interface TrainingCycle {
   startDate: string
   endDate: string
   goal: string
+  objectives?: string[]
+  objectiveWorkouts?: (string | ObjectiveWorkout)[][]
   content: string
 }
 export const CYCLE_LABELS = { macro: 'Macrociclo', meso: 'Mesociclo', micro: 'Microciclo' }
