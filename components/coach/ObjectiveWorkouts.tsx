@@ -1,10 +1,11 @@
 'use client'
 
 import { useId, useState } from 'react'
-import { FiCheck, FiEdit2, FiTrash2 } from 'react-icons/fi'
+import { FiCheck, FiEdit2, FiRepeat, FiTrash2 } from 'react-icons/fi'
 import { normalizeClassTraining } from '@/lib/class-training'
 import type { ObjectiveWorkout } from '@/lib/training-planner'
 import ClassTrainingEditor from './ClassTrainingEditor'
+import WorkoutTransferSheet from './WorkoutTransferSheet'
 
 const actionClass =
   'min-h-7 rounded-full border border-(--c-border) px-2.5 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
@@ -35,14 +36,27 @@ export default function ObjectiveWorkouts({
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [transferOpen, setTransferOpen] = useState(false)
   const panelId = useId()
   const selected = workouts.find((workout) => workout.id === selectedId) ?? workouts[0]
   const selectedIndex = workouts.findIndex((workout) => workout.id === selected?.id)
   const isEditing = !readOnly && editingId === selected?.id
+  const transferAction =
+    !readOnly || selected ? (
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setTransferOpen(true)}
+        className={`${actionClass} inline-flex items-center gap-1`}
+      >
+        <FiRepeat aria-hidden="true" />
+        Exportar / importar
+      </button>
+    ) : null
   return (
     <section aria-label="Entrenos de la sesión" className="grid min-w-0 gap-4 px-2 py-2">
       {!workouts.length && (
-        <div className="flex justify-center">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           {!readOnly && (
             <button
               type="button"
@@ -58,6 +72,7 @@ export default function ObjectiveWorkouts({
               + Agregar entreno
             </button>
           )}
+          {transferAction}
         </div>
       )}
       {!workouts.length && (
@@ -96,6 +111,7 @@ export default function ObjectiveWorkouts({
               {workout.title?.trim() || `Entreno ${index + 1}`}
             </button>
           ))}
+          <span className="ml-auto inline-flex items-center">{transferAction}</span>
         </fieldset>
       )}
       {selected && (
@@ -208,6 +224,21 @@ export default function ObjectiveWorkouts({
             }
           />
         </section>
+      )}
+      {transferOpen && (
+        <WorkoutTransferSheet
+          workout={selected}
+          allowImport={!readOnly}
+          disabled={disabled}
+          onClose={() => setTransferOpen(false)}
+          onImport={(workout) => {
+            if (disabled || readOnly) return
+            onChange([...workouts, workout])
+            setSelectedId(workout.id)
+            setEditingId(null)
+            setTransferOpen(false)
+          }}
+        />
       )}
     </section>
   )
