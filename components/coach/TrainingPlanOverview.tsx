@@ -11,11 +11,13 @@ export default function TrainingPlanOverview({
   onChange,
   disabled,
   readOnly = false,
+  macros = [],
 }: {
   cycles: TrainingCycle[]
   onChange: (cycles: TrainingCycle[]) => void
   disabled: boolean
   readOnly?: boolean
+  macros?: TrainingCycle[]
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const macro = cycles.find((cycle) => cycle.type === 'macro')
@@ -49,6 +51,7 @@ export default function TrainingPlanOverview({
       )}
       <MacroCyclePeriodInput
         hideTitle
+        snapRanges={macros.filter((cycle) => cycle.id !== macro.id)}
         value={macro}
         title={macro.title}
         onTitleChange={(title) => updateMacro({ title })}

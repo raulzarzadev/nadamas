@@ -80,3 +80,26 @@ export function validateTrainingCycle(
   }
   return null
 }
+
+/** Earlier starts extend ancestors instead of rejecting historical planning. */
+export function updateCycleWithEarlierStart(
+  cycles: TrainingCycle[],
+  updated: TrainingCycle
+): TrainingCycle[] {
+  const next = cycles.some((cycle) => cycle.id === updated.id)
+    ? cycles.map((cycle) => (cycle.id === updated.id ? updated : cycle))
+    : [...cycles, updated]
+  if (!updated.startDate) return next
+  const visited = new Set([updated.id])
+  let parentId = updated.parentId
+  while (parentId && !visited.has(parentId)) {
+    visited.add(parentId)
+    const index = next.findIndex((cycle) => cycle.id === parentId)
+    if (index < 0) break
+    const parent = next[index]
+    if (parent.startDate && parent.startDate > updated.startDate)
+      next[index] = { ...parent, startDate: updated.startDate }
+    parentId = parent.parentId
+  }
+  return next
+}

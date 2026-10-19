@@ -6,7 +6,11 @@ import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
 import SortableList from '@/components/ui/sortable-list'
 import TimelineRangeInput from '@/components/ui/timeline-range-input'
-import { nextMesocycleRange, type TrainingCycle } from '@/lib/training-planner'
+import {
+  nextMesocycleRange,
+  type TrainingCycle,
+  updateCycleWithEarlierStart,
+} from '@/lib/training-planner'
 import CycleDateLabels from './CycleDateLabels'
 import CycleDetails from './CycleDetails'
 
@@ -62,6 +66,10 @@ export default function MacroCycleBarsInput({
       width: `${Math.max(0, Math.min(100 - barOffset(cycle), width)) || 0}%`,
     }
   }
+  const macroCycle = cycles.find((cycle) => cycle.type === 'macro')
+  const changesMacroStart = Boolean(
+    editingName?.startDate && macroCycle?.startDate && editingName.startDate < macroCycle.startDate
+  )
   const buttonClass =
     'min-h-11 rounded-full border border-(--c-border) px-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
   return (
@@ -177,52 +185,43 @@ export default function MacroCycleBarsInput({
                   compact
                   thick
                   tone={cycle.type === 'micro' ? 'green' : 'blue'}
-                  onSnap={
-                    cycle.type === 'meso'
-                      ? (snapped) => {
-                          const root = rootRef.current
-                          if (!snapped || !root) {
-                            setSnapGuide(null)
-                            return
-                          }
-                          const target = mesos.find(
-                            (item) =>
-                              item.id !== cycle.id &&
-                              (item.startDate === snapped || item.endDate === snapped)
-                          )
-                          const trackFor = (id: string) =>
-                            Array.from(root.querySelectorAll<HTMLElement>('[data-cycle-row]'))
-                              .find((row) => row.dataset.cycleRow === id)
-                              ?.querySelector<HTMLElement>(
-                                'fieldset[aria-label="Línea de tiempo editable"]'
-                              )
-                          const sourceRect = trackFor(cycle.id)?.getBoundingClientRect()
-                          const targetRect = target && trackFor(target.id)?.getBoundingClientRect()
-                          if (!sourceRect || !targetRect) {
-                            setSnapGuide(null)
-                            return
-                          }
-                          const bounds = root.getBoundingClientRect()
-                          const first = sourceRect.top + sourceRect.height / 2
-                          const last = targetRect.top + targetRect.height / 2
-                          const fraction =
-                            (Date.parse(snapped) - Date.parse(macro.startDate)) /
-                            (Date.parse(macro.endDate) - Date.parse(macro.startDate) + 86400000)
-                          setSnapGuide({
-                            left: sourceRect.left - bounds.left + fraction * sourceRect.width,
-                            top: Math.min(first, last) - bounds.top,
-                            height: Math.max(1, Math.abs(last - first)),
-                          })
-                        }
-                      : undefined
-                  }
-                  snapDates={
-                    cycle.type === 'meso'
-                      ? mesos
-                          .filter((item) => item.id !== cycle.id)
-                          .flatMap((item) => [item.startDate, item.endDate])
-                      : []
-                  }
+                  onSnap={(snapped) => {
+                    const root = rootRef.current
+                    if (!snapped || !root) {
+                      setSnapGuide(null)
+                      return
+                    }
+                    const target = mesos.find(
+                      (item) =>
+                        item.id !== cycle.id &&
+                        (item.startDate === snapped ||
+                          Date.parse(item.endDate) + 86400000 === Date.parse(snapped))
+                    )
+                    const trackFor = (id: string) =>
+                      Array.from(root.querySelectorAll<HTMLElement>('[data-cycle-row]'))
+                        .find((row) => row.dataset.cycleRow === id)
+                        ?.querySelector<HTMLElement>(
+                          'fieldset[aria-label="Línea de tiempo editable"]'
+                        )
+                    const sourceRect = trackFor(cycle.id)?.getBoundingClientRect()
+                    const targetRect = target && trackFor(target.id)?.getBoundingClientRect()
+                    if (!sourceRect || !targetRect) {
+                      setSnapGuide(null)
+                      return
+                    }
+                    const bounds = root.getBoundingClientRect()
+                    const first = sourceRect.top + sourceRect.height / 2
+                    const last = targetRect.top + targetRect.height / 2
+                    const fraction =
+                      (Date.parse(snapped) - Date.parse(macro.startDate)) /
+                      (Date.parse(macro.endDate) - Date.parse(macro.startDate) + 86400000)
+                    setSnapGuide({
+                      left: sourceRect.left - bounds.left + fraction * sourceRect.width,
+                      top: Math.min(first, last) - bounds.top,
+                      height: Math.max(1, Math.abs(last - first)),
+                    })
+                  }}
+                  snapRanges={mesos.filter((item) => item.id !== cycle.id)}
                   min={macro.startDate}
                   max={macro.endDate}
                   value={cycle}
@@ -353,11 +352,7 @@ export default function MacroCycleBarsInput({
               onClick={() => {
                 if (!editingName) return
                 const updated = { ...editingName, title: name.trim() }
-                onChange(
-                  cycles.some((cycle) => cycle.id === updated.id)
-                    ? cycles.map((cycle) => (cycle.id === updated.id ? updated : cycle))
-                    : [...cycles, updated]
-                )
+                onChange(updateCycleWithEarlierStart(cycles, updated))
                 setEditingName(null)
               }}
             >
@@ -388,14 +383,20 @@ export default function MacroCycleBarsInput({
                 }
                 value={editingName[field]}
                 disabled={disabled}
-                min={
-                  field === 'endDate' ? editingName.startDate || macro.startDate : macro.startDate
-                }
+                min={field === 'endDate' ? editingName.startDate || macro.startDate : undefined}
                 max={field === 'startDate' ? editingName.endDate || macro.endDate : macro.endDate}
                 onChange={(date) => setEditingName({ ...editingName, [field]: date })}
               />
             ))}
           </div>
+        )}
+        {changesMacroStart && (
+          <p
+            role="status"
+            className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900"
+          >
+            Esto modificará la fecha de inicio del MACRO-ciclo.
+          </p>
         )}
       </Sheet>
       <Sheet

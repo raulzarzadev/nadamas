@@ -3,6 +3,7 @@
 import type { KeyboardEvent, PointerEvent } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { FiEdit2 } from 'react-icons/fi'
+import { snapTimelineRange } from '@/lib/timeline-snap'
 
 export interface TimelineRange {
   startDate: string
@@ -34,6 +35,7 @@ export default function TimelineRangeInput({
   thick = false,
   tone = 'blue',
   snapDates = [],
+  snapRanges,
   onSnap,
 }: {
   min: string
@@ -49,6 +51,7 @@ export default function TimelineRangeInput({
   thick?: boolean
   tone?: 'blue' | 'green'
   snapDates?: string[]
+  snapRanges?: TimelineRange[]
   onSnap?: (date: string | null) => void
 }) {
   const [snappedDay, setSnappedDay] = useState<number | null>(null)
@@ -93,6 +96,27 @@ export default function TimelineRangeInput({
     const width = track.current?.getBoundingClientRect().width ?? 0
     // Eight screen pixels feels consistent across different season lengths.
     const tolerance = width > 0 ? Math.min(3, (8 / width) * total) : 0
+    if (snapRanges) {
+      const neighbors = snapRanges
+        .map((range) => ({ start: day(range.startDate), end: day(range.endDate) }))
+        .filter(
+          (range) =>
+            Number.isFinite(range.start) && Number.isFinite(range.end) && range.start <= range.end
+        )
+      const snapped = snapTimelineRange(
+        rangeStart,
+        rangeEnd,
+        mode === 'draw' ? 'move' : mode,
+        neighbors,
+        lower,
+        upper,
+        tolerance
+      )
+      setSnappedDay(snapped?.boundary ?? null)
+      onSnap?.(snapped ? date(snapped.boundary) : null)
+      emit(snapped?.start ?? rangeStart, snapped?.end ?? rangeEnd)
+      return
+    }
     const targets = snapDates
       .map(day)
       .filter((target) => Number.isFinite(target) && target >= lower && target <= upper)
@@ -145,6 +169,7 @@ export default function TimelineRangeInput({
     }
     event.currentTarget.setPointerCapture(event.pointerId)
     if (!mode || !selected) emit(anchor, anchor)
+    else emitPointer(start, end, mode === 'draw' ? 'move' : mode)
   }
   function move(event: PointerEvent<HTMLFieldSetElement>) {
     const state = drag.current

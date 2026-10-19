@@ -5,6 +5,7 @@ import { FiChevronDown, FiChevronRight, FiEdit2 } from 'react-icons/fi'
 import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
 import type { TimelineRange } from '@/components/ui/timeline-range-input'
+import { snapCalendarEdge } from '@/lib/timeline-snap'
 
 export default function MacroCyclePeriodInput({
   value,
@@ -15,6 +16,7 @@ export default function MacroCyclePeriodInput({
   initialEditOpen = false,
   hideTitle = false,
   readOnly = false,
+  snapRanges = [],
 }: {
   value: TimelineRange
   onChange: (value: TimelineRange) => void
@@ -24,6 +26,7 @@ export default function MacroCyclePeriodInput({
   initialEditOpen?: boolean
   hideTitle?: boolean
   readOnly?: boolean
+  snapRanges?: TimelineRange[]
 }) {
   const [expanded, setExpanded] = useState(false)
   const detailsId = useId()
@@ -149,7 +152,9 @@ export default function MacroCyclePeriodInput({
               disabled={disabled}
               min={field === 'endDate' ? period.startDate || undefined : undefined}
               max={field === 'startDate' ? period.endDate || undefined : undefined}
-              onChange={(date) => setPeriod({ ...period, [field]: date })}
+              onChange={(date) =>
+                setPeriod(snapCalendarEdge({ ...period, [field]: date }, field, snapRanges))
+              }
             />
           ))}
         </div>

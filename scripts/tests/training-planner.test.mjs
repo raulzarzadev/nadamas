@@ -177,3 +177,19 @@ test('new mesocycles continue after the latest end and stay inside the macro', (
   })
   assert.equal(nextMesocycleRange(parent, [{ ...meso, endDate: '2026-10-30' }]), null)
 })
+
+test('historical child starts extend ancestor starts without mutating input or changing end dates', () => {
+  const cycles = [macro, meso, micro]
+  const updated = { ...micro, startDate: '2026-09-15' }
+  const next = module.exports.updateCycleWithEarlierStart(cycles, updated)
+  assert.equal(next[0].startDate, '2026-09-15')
+  assert.equal(next[1].startDate, '2026-09-15')
+  assert.equal(next[0].endDate, macro.endDate)
+  assert.equal(cycles[0].startDate, '2026-10-01')
+  assert.equal(next.map((cycle) => validateTrainingCycle(cycle, next)).find(Boolean), undefined)
+  const later = module.exports.updateCycleWithEarlierStart(cycles, {
+    ...micro,
+    startDate: '2026-10-02',
+  })
+  assert.equal(later[0].startDate, macro.startDate)
+})

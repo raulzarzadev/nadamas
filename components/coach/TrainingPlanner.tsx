@@ -16,6 +16,7 @@ import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
 import { TrainingPlanCRUD } from '@/firebase/training-plans/main'
 import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
+import { snapCalendarEdge } from '@/lib/timeline-snap'
 import {
   CHILD_CYCLE,
   CYCLE_LABELS,
@@ -26,6 +27,7 @@ import {
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import MacroCycleBarsInput from './MacroCycleBarsInput'
 import MacroCyclePeriodInput from './MacroCyclePeriodInput'
+import TodayTrainingSummary from './TodayTrainingSummary'
 import TrainingCycleTimeline from './TrainingCycleTimeline'
 import TrainingPlanOverview from './TrainingPlanOverview'
 
@@ -325,12 +327,48 @@ export default function TrainingPlanner() {
         inert={Boolean(draft) || deleting || infoOpen}
         aria-hidden={Boolean(draft) || deleting || infoOpen || undefined}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 py-4">
+        {!loading && !loadError && plans.length > 0 && (
+          <nav aria-label="MACRO-ciclos" className="flex flex-wrap items-center gap-1.5 pt-4 pb-2">
+            <button
+              type="button"
+              className="inline-flex min-h-7 items-center gap-1 rounded-full border border-dashed border-(--c-aqua-strong) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) focus-visible:outline-2 disabled:opacity-50"
+              disabled={busy}
+              onClick={() => void createMacro()}
+            >
+              <FiPlus aria-hidden="true" /> MACRO-ciclo
+            </button>
+            {plans.map((item) => {
+              const root = item.cycles.find((node) => node.type === 'macro')
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={planId === item.id}
+                  className={
+                    planId === item.id
+                      ? primaryClass
+                      : 'inline-flex min-h-7 items-center justify-center rounded-full border border-(--c-border) bg-white px-2.5 text-[11px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)'
+                  }
+                  onClick={() => {
+                    setPlanId(item.id)
+                    stopEditing()
+                    setCycleId(root?.id || null)
+                  }}
+                >
+                  {root?.title || 'MACRO-ciclo'}
+                </button>
+              )
+            })}
+          </nav>
+        )}
+        <h1 id="training-title" className="pt-4 text-2xl font-extrabold">
+          Entreno de hoy
+        </h1>
+        <TodayTrainingSummary plans={plans} loading={loading} loadError={loadError} />
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--c-border) py-4">
           <div>
             <div className="flex items-center gap-1">
-              <h1 id="training-title" className="text-2xl font-extrabold">
-                Entreno
-              </h1>
+              <h2 className="text-xl font-extrabold">Planeación</h2>
               <button
                 type="button"
                 aria-label="Información sobre los ciclos"
@@ -340,16 +378,17 @@ export default function TrainingPlanner() {
                 <FiInfo aria-hidden="true" className="size-3.5" />
               </button>
             </div>
-            <p className="mt-1 text-sm text-(--c-text-2)">Planifica de la temporada a la semana.</p>
           </div>
-          <button
-            type="button"
-            className={primaryClass}
-            disabled={loading || loadError || busy}
-            onClick={() => void createMacro()}
-          >
-            <FiPlus aria-hidden="true" /> Nuevo MACRO-ciclo
-          </button>
+          {!plans.length && (
+            <button
+              type="button"
+              className={primaryClass}
+              disabled={loading || loadError || busy}
+              onClick={() => void createMacro()}
+            >
+              <FiPlus aria-hidden="true" /> Nuevo MACRO-ciclo
+            </button>
+          )}
         </div>
         {error && !plan && !draft && !deleting && (
           <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">
@@ -390,26 +429,6 @@ export default function TrainingPlanner() {
           </div>
         ) : (
           <>
-            <nav aria-label="MACRO-ciclos" className="mb-5 flex flex-wrap gap-2">
-              {plans.map((item) => {
-                const root = item.cycles.find((node) => node.type === 'macro')
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-pressed={planId === item.id}
-                    className={planId === item.id ? primaryClass : actionClass}
-                    onClick={() => {
-                      setPlanId(item.id)
-                      stopEditing()
-                      setCycleId(root?.id || null)
-                    }}
-                  >
-                    {root?.title || 'MACRO-ciclo'}
-                  </button>
-                )
-              })}
-            </nav>
             {!cycle ? (
               <p className="py-8 text-(--c-text-2)">
                 Selecciona un MACRO-ciclo para ver su planificación.
@@ -555,6 +574,9 @@ export default function TrainingPlanner() {
                   {cycle.type === 'macro' && plan && (
                     <TrainingPlanOverview
                       key={plan.id}
+                      macros={plans.flatMap((item) =>
+                        item.cycles.filter((node) => node.type === 'macro')
+                      )}
                       cycles={editing ? planCycles : plan.cycles}
                       onChange={setBarsDraft}
                       disabled={busy}
@@ -735,7 +757,22 @@ export default function TrainingPlanner() {
                     min={draftParent?.startDate || undefined}
                     max={draftParent?.endDate || undefined}
                     value={draft[field]}
-                    onChange={(value) => setDraft({ ...draft, [field]: value })}
+                    onChange={(value) =>
+                      setDraft({
+                        ...draft,
+                        ...(draft.type === 'macro'
+                          ? snapCalendarEdge(
+                              { ...draft, [field]: value },
+                              field,
+                              plans.flatMap((item) =>
+                                item.cycles.filter(
+                                  (node) => node.type === 'macro' && node.id !== draft.id
+                                )
+                              )
+                            )
+                          : { [field]: value }),
+                      })
+                    }
                   />
                 ))}
               </div>
