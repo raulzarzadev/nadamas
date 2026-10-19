@@ -4,7 +4,7 @@ import AthleteSchoolSwitcher from '@comps/school/AthleteSchoolSwitcher'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   FiActivity,
   FiBarChart2,
@@ -51,6 +51,21 @@ const NAV_ICONS = {
 // logged-in users so the chrome is identical everywhere. When no `role` is
 // passed it follows the active role from RoleContext.
 export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
+  const headerRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const header = headerRef.current
+    const parent = header?.parentElement
+    if (!header || !parent) return
+    const measure = () =>
+      parent.style.setProperty('--app-header-h', `${header.getBoundingClientRect().height}px`)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(header)
+    return () => {
+      observer.disconnect()
+      parent.style.removeProperty('--app-header-h')
+    }
+  }, [])
   const tenant = useTenantSchool()
   const { activeRole, roles } = useRole()
   const terminology = useSchoolTerminology()
@@ -187,7 +202,10 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur"
+      >
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="relative flex items-center gap-2 sm:gap-4">
             {/* Coordinador: the school's name centered in the navbar. */}

@@ -1,7 +1,7 @@
 'use client'
 
-import { useId, useState } from 'react'
-import { FiEdit2, FiMinus, FiPlus } from 'react-icons/fi'
+import { useId, useRef, useState } from 'react'
+import { FiChevronDown, FiChevronRight, FiEdit2 } from 'react-icons/fi'
 import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
 import SortableList from '@/components/ui/sortable-list'
@@ -28,6 +28,10 @@ export default function MacroCycleBarsInput({
   expanded?: Record<string, boolean>
   onExpandedChange?: (expanded: Record<string, boolean>) => void
 }) {
+  const rootRef = useRef<HTMLElement>(null)
+  const [snapGuide, setSnapGuide] = useState<{ left: number; top: number; height: number } | null>(
+    null
+  )
   const [ownExpanded, setOwnExpanded] = useState<Record<string, boolean>>({})
   const expanded = sharedExpanded ?? ownExpanded
   const setExpanded = onExpandedChange ?? setOwnExpanded
@@ -35,8 +39,8 @@ export default function MacroCycleBarsInput({
   const [editingName, setEditingName] = useState<TrainingCycle | null>(null)
   const [name, setName] = useState('')
   const [removing, setRemoving] = useState<TrainingCycle | null>(null)
-  const childLabel = macro.type === 'macro' ? 'mesociclo' : 'microciclo'
-  const childTitle = macro.type === 'macro' ? 'Mesociclo' : 'Microciclo'
+  const childLabel = macro.type === 'macro' ? 'MESO-ciclo' : 'MICRO-ciclo'
+  const childTitle = macro.type === 'macro' ? 'MESO-ciclo' : 'MICRO-ciclo'
   const mesos = cycles.filter((cycle) => cycle.parentId === macro.id)
   const nextRange = nextMesocycleRange(macro, mesos)
   const barOffset = (cycle: TrainingCycle) =>
@@ -61,7 +65,25 @@ export default function MacroCycleBarsInput({
   const buttonClass =
     'min-h-11 rounded-full border border-(--c-border) px-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
   return (
-    <section aria-label={`Barras de ${childLabel}s`} className="grid min-w-0 gap-3">
+    <section
+      ref={rootRef}
+      aria-label={`Barras de ${childLabel}s`}
+      className="relative grid min-w-0 gap-3"
+    >
+      {snapGuide && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute z-[25] w-px"
+          style={{
+            left: snapGuide.left,
+            top: snapGuide.top,
+            height: snapGuide.height,
+            backgroundImage:
+              'repeating-linear-gradient(to bottom, var(--c-ocean) 0 3px, transparent 3px 6px)',
+            opacity: 0.7,
+          }}
+        />
+      )}
       {mesos.length > 0 && macro.startDate && macro.endDate && (
         <SortableList
           items={mesos}
@@ -78,20 +100,26 @@ export default function MacroCycleBarsInput({
           {(cycle, _index, handle) => (
             <div
               key={cycle.id}
+              data-cycle-row={cycle.id}
               className={`relative grid min-w-0 gap-0 ${expanded[cycle.id] ? `rounded-xl ${cycle.type === 'micro' ? 'bg-[#258575]/10' : 'bg-(--c-surface)'}` : ''}`}
             >
-              <div className="flex min-w-0 items-center">
+              <div
+                className={`sticky flex min-h-6 min-w-0 items-center pr-6 [container-type:inline-size] ${cycle.type === 'meso' ? 'z-20 bg-[#eaf7fb]' : 'z-10 bg-[#d5eeeb]'}`}
+                style={{
+                  top:
+                    cycle.type === 'meso'
+                      ? 'var(--app-header-h, 0px)'
+                      : 'calc(var(--app-header-h, 0px) + 24px)',
+                }}
+              >
                 {readOnly ? (
                   <span
                     style={{
-                      marginLeft:
-                        expanded[cycle.id] && cycle.type !== 'micro' ? 0 : `${barOffset(cycle)}%`,
-                      maxWidth:
-                        expanded[cycle.id] && cycle.type !== 'micro'
-                          ? 'calc(100% - 24px)'
-                          : `calc(100% - ${barOffset(cycle)}% - 24px)`,
+                      left: `${expanded[cycle.id] && cycle.type !== 'micro' ? 0 : barOffset(cycle)}%`,
+                      maxWidth: 'calc(100% - 24px)',
+                      transform: `translateX(min(0px, calc(100cqw - ${expanded[cycle.id] && cycle.type !== 'micro' ? 0 : barOffset(cycle)}cqw - 100% - 24px)))`,
                     }}
-                    className="truncate text-xs leading-tight font-semibold text-(--c-ocean)"
+                    className="absolute truncate text-xs leading-tight font-semibold text-(--c-ocean)"
                   >
                     {cycle.title}
                   </span>
@@ -104,20 +132,15 @@ export default function MacroCycleBarsInput({
                     disabled={disabled}
                     aria-label={`Editar nombre de ${cycle.title}`}
                     style={{
-                      marginLeft:
-                        expanded[cycle.id] && cycle.type !== 'micro'
-                          ? 0
-                          : `max(0px, calc(${barOffset(cycle)}% - 24px))`,
-                      maxWidth:
-                        expanded[cycle.id] && cycle.type !== 'micro'
-                          ? 'calc(100% - 48px)'
-                          : `calc(100% - max(24px, ${barOffset(cycle)}%) - 24px)`,
+                      left: `max(24px, ${expanded[cycle.id] && cycle.type !== 'micro' ? 0 : barOffset(cycle)}%)`,
+                      maxWidth: 'calc(100% - 48px)',
+                      transform: `translateX(min(0px, calc(100cqw - max(24px, ${expanded[cycle.id] && cycle.type !== 'micro' ? 0 : barOffset(cycle)}cqw) - 100% - 24px)))`,
                     }}
                     onClick={() => {
                       setName(cycle.title)
                       setEditingName(cycle)
                     }}
-                    className="inline-flex w-fit max-w-full items-center gap-1.5 rounded p-0 text-xs leading-tight font-semibold text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                    className="absolute inline-flex w-max max-w-full items-center gap-1.5 rounded p-0 text-xs leading-tight font-semibold text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
                   >
                     <span className="truncate">{cycle.title}</span>
                     <FiEdit2
@@ -126,21 +149,21 @@ export default function MacroCycleBarsInput({
                     />
                   </button>
                 )}
+                <button
+                  type="button"
+                  aria-label={`Detalles de ${cycle.title}`}
+                  aria-expanded={Boolean(expanded[cycle.id])}
+                  aria-controls={`${detailsPrefix}-${cycle.id}`}
+                  onClick={() => setExpanded({ ...expanded, [cycle.id]: !expanded[cycle.id] })}
+                  className="absolute right-0 top-0 grid size-6 place-items-center rounded-full text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                >
+                  {expanded[cycle.id] ? (
+                    <FiChevronDown aria-hidden="true" />
+                  ) : (
+                    <FiChevronRight aria-hidden="true" />
+                  )}
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label={`Detalles de ${cycle.title}`}
-                aria-expanded={Boolean(expanded[cycle.id])}
-                aria-controls={`${detailsPrefix}-${cycle.id}`}
-                onClick={() => setExpanded({ ...expanded, [cycle.id]: !expanded[cycle.id] })}
-                className="absolute right-0 top-0 grid size-6 place-items-center rounded-full text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-              >
-                {expanded[cycle.id] ? (
-                  <FiMinus aria-hidden="true" />
-                ) : (
-                  <FiPlus aria-hidden="true" />
-                )}
-              </button>
               {readOnly ? (
                 <div aria-hidden="true" className="relative h-8 w-full min-w-0">
                   <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-(--c-border)" />
@@ -154,6 +177,52 @@ export default function MacroCycleBarsInput({
                   compact
                   thick
                   tone={cycle.type === 'micro' ? 'green' : 'blue'}
+                  onSnap={
+                    cycle.type === 'meso'
+                      ? (snapped) => {
+                          const root = rootRef.current
+                          if (!snapped || !root) {
+                            setSnapGuide(null)
+                            return
+                          }
+                          const target = mesos.find(
+                            (item) =>
+                              item.id !== cycle.id &&
+                              (item.startDate === snapped || item.endDate === snapped)
+                          )
+                          const trackFor = (id: string) =>
+                            Array.from(root.querySelectorAll<HTMLElement>('[data-cycle-row]'))
+                              .find((row) => row.dataset.cycleRow === id)
+                              ?.querySelector<HTMLElement>(
+                                'fieldset[aria-label="Línea de tiempo editable"]'
+                              )
+                          const sourceRect = trackFor(cycle.id)?.getBoundingClientRect()
+                          const targetRect = target && trackFor(target.id)?.getBoundingClientRect()
+                          if (!sourceRect || !targetRect) {
+                            setSnapGuide(null)
+                            return
+                          }
+                          const bounds = root.getBoundingClientRect()
+                          const first = sourceRect.top + sourceRect.height / 2
+                          const last = targetRect.top + targetRect.height / 2
+                          const fraction =
+                            (Date.parse(snapped) - Date.parse(macro.startDate)) /
+                            (Date.parse(macro.endDate) - Date.parse(macro.startDate) + 86400000)
+                          setSnapGuide({
+                            left: sourceRect.left - bounds.left + fraction * sourceRect.width,
+                            top: Math.min(first, last) - bounds.top,
+                            height: Math.max(1, Math.abs(last - first)),
+                          })
+                        }
+                      : undefined
+                  }
+                  snapDates={
+                    cycle.type === 'meso'
+                      ? mesos
+                          .filter((item) => item.id !== cycle.id)
+                          .flatMap((item) => [item.startDate, item.endDate])
+                      : []
+                  }
                   min={macro.startDate}
                   max={macro.endDate}
                   value={cycle}
@@ -184,7 +253,7 @@ export default function MacroCycleBarsInput({
               />
               <div id={`${detailsPrefix}-${cycle.id}`} hidden={!expanded[cycle.id]}>
                 {expanded[cycle.id] && (
-                  <div className="mt-0.5 grid gap-2">
+                  <div className="mt-0.5 ml-2 grid min-w-0 gap-2 border-l border-(--c-aqua-strong)/20 pl-2">
                     {cycle.type === 'meso' && (
                       <div aria-hidden="true" className="h-6 w-full rounded-full bg-[#79b9cf]" />
                     )}
@@ -265,23 +334,36 @@ export default function MacroCycleBarsInput({
         size="sm"
         keyboardAware
         footer={
-          <button
-            type="button"
-            disabled={disabled || !name.trim()}
-            className={`${buttonClass} w-full bg-(--c-ocean) text-white`}
-            onClick={() => {
-              if (!editingName) return
-              const updated = { ...editingName, title: name.trim() }
-              onChange(
-                cycles.some((cycle) => cycle.id === updated.id)
-                  ? cycles.map((cycle) => (cycle.id === updated.id ? updated : cycle))
-                  : [...cycles, updated]
-              )
-              setEditingName(null)
-            }}
-          >
-            Listo
-          </button>
+          <div className="flex items-center gap-2">
+            {cycles.some((cycle) => cycle.id === editingName?.id) && (
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label={`Eliminar ${childLabel} ${editingName?.title || ''}`}
+                onClick={() => setRemoving(editingName)}
+                className="shrink-0 min-h-11 rounded-full px-3 text-xs font-semibold text-(--c-error,#b91c1c) hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-(--c-error,#b91c1c)"
+              >
+                Eliminar {childLabel}
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={disabled || !name.trim()}
+              className={`${buttonClass} flex-1 bg-(--c-ocean) text-white`}
+              onClick={() => {
+                if (!editingName) return
+                const updated = { ...editingName, title: name.trim() }
+                onChange(
+                  cycles.some((cycle) => cycle.id === updated.id)
+                    ? cycles.map((cycle) => (cycle.id === updated.id ? updated : cycle))
+                    : [...cycles, updated]
+                )
+                setEditingName(null)
+              }}
+            >
+              Listo
+            </button>
+          </div>
         }
       >
         <h2 className="mb-4 text-lg font-bold">Editar ciclo</h2>
@@ -315,17 +397,6 @@ export default function MacroCycleBarsInput({
             ))}
           </div>
         )}
-        {cycles.some((cycle) => cycle.id === editingName?.id) && (
-          <button
-            type="button"
-            disabled={disabled}
-            aria-label={`Eliminar ${childLabel} ${editingName?.title || ''}`}
-            onClick={() => setRemoving(editingName)}
-            className="mb-2 min-h-11 rounded-full px-3 text-xs font-semibold text-(--c-error,#b91c1c) hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-(--c-error,#b91c1c)"
-          >
-            Eliminar {childLabel}
-          </button>
-        )}
       </Sheet>
       <Sheet
         open={Boolean(removing)}
@@ -356,8 +427,8 @@ export default function MacroCycleBarsInput({
         </h2>
         <p className="mt-3 text-sm text-(--c-text-2)">
           Se quitará este {childLabel}
-          {cycles.some((cycle) => cycle.parentId === removing?.id) ? ' y sus microciclos' : ''}. El
-          cambio se aplicará al guardar el macrociclo.
+          {cycles.some((cycle) => cycle.parentId === removing?.id) ? ' y sus MICRO-ciclos' : ''}. El
+          cambio se aplicará al guardar el MACRO-ciclo.
         </p>
       </Sheet>
     </section>

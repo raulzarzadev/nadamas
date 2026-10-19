@@ -55,7 +55,7 @@ export default function MacroCyclePeriodInput({
         <button
           type="button"
           disabled={disabled}
-          aria-label="Editar nombre del macrociclo"
+          aria-label="Editar nombre del MACRO-ciclo"
           className="inline-flex min-w-0 items-center gap-1.5 rounded p-0 text-left text-xs font-semibold leading-tight focus-visible:outline-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
           onClick={openEditor}
         >
@@ -64,7 +64,7 @@ export default function MacroCyclePeriodInput({
         </button>
         <button
           type="button"
-          aria-label={`Detalles de ${title || 'macrociclo'}`}
+          aria-label={`Detalles de ${title || 'MACRO-ciclo'}`}
           aria-expanded={expanded}
           aria-controls={detailsId}
           onClick={() => setExpanded(!expanded)}
@@ -85,7 +85,7 @@ export default function MacroCyclePeriodInput({
             <button
               type="button"
               disabled={disabled}
-              aria-label="Editar fecha de inicio del macrociclo"
+              aria-label="Editar fecha de inicio del MACRO-ciclo"
               onClick={openEditor}
               className="cursor-pointer rounded p-0 text-left hover:underline focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
             >
@@ -94,7 +94,7 @@ export default function MacroCyclePeriodInput({
             <button
               type="button"
               disabled={disabled}
-              aria-label="Editar fecha final del macrociclo"
+              aria-label="Editar fecha final del MACRO-ciclo"
               onClick={openEditor}
               className="cursor-pointer rounded p-0 text-right hover:underline focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
             >

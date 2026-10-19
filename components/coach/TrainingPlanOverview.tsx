@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FiMinus, FiPlus } from 'react-icons/fi'
+import { FiChevronDown, FiChevronRight } from 'react-icons/fi'
 import type { TrainingCycle } from '@/lib/training-planner'
 import MacroCycleBarsInput from './MacroCycleBarsInput'
 import MacroCyclePeriodInput from './MacroCyclePeriodInput'
@@ -38,7 +38,11 @@ export default function TrainingPlanOverview({
             }
             className="inline-flex min-h-8 items-center gap-1 rounded-full px-2 text-[10px] font-semibold text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
           >
-            {allExpanded ? <FiMinus aria-hidden="true" /> : <FiPlus aria-hidden="true" />}
+            {allExpanded ? (
+              <FiChevronDown aria-hidden="true" />
+            ) : (
+              <FiChevronRight aria-hidden="true" />
+            )}
             {allExpanded ? 'Contraer todo' : 'Expandir todo'}
           </button>
         </div>

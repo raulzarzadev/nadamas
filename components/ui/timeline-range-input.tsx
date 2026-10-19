@@ -1,7 +1,7 @@
 'use client'
 
 import type { KeyboardEvent, PointerEvent } from 'react'
-import { useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { FiEdit2 } from 'react-icons/fi'
 
 export interface TimelineRange {
@@ -33,6 +33,8 @@ export default function TimelineRangeInput({
   onEditLabel,
   thick = false,
   tone = 'blue',
+  snapDates = [],
+  onSnap,
 }: {
   min: string
   max: string
@@ -46,7 +48,17 @@ export default function TimelineRangeInput({
   onEditLabel?: () => void
   thick?: boolean
   tone?: 'blue' | 'green'
+  snapDates?: string[]
+  onSnap?: (date: string | null) => void
 }) {
+  const [snappedDay, setSnappedDay] = useState<number | null>(null)
+  const guideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(
+    () => () => {
+      if (guideTimer.current) clearTimeout(guideTimer.current)
+    },
+    []
+  )
   const id = useId()
   const track = useRef<HTMLFieldSetElement>(null)
   const drag = useRef<{
@@ -77,8 +89,49 @@ export default function TimelineRangeInput({
     if (!rect?.width) return lower
     return clamp(lower + Math.floor(((clientX - rect.left) / rect.width) * total))
   }
+  const emitPointer = (rangeStart: number, rangeEnd: number, mode: DragMode) => {
+    const width = track.current?.getBoundingClientRect().width ?? 0
+    // Eight screen pixels feels consistent across different season lengths.
+    const tolerance = width > 0 ? Math.min(3, (8 / width) * total) : 0
+    const targets = snapDates
+      .map(day)
+      .filter((target) => Number.isFinite(target) && target >= lower && target <= upper)
+    let bestDelta: number | null = null
+    let bestTarget: number | null = null
+    for (const edge of mode === 'start'
+      ? [rangeStart]
+      : mode === 'end'
+        ? [rangeEnd]
+        : [rangeStart, rangeEnd]) {
+      for (const target of targets) {
+        const delta = target - edge
+        const nextStart = mode === 'end' ? rangeStart : rangeStart + delta
+        const nextEnd = mode === 'start' ? rangeEnd : rangeEnd + delta
+        if (
+          Math.abs(delta) <= tolerance &&
+          nextStart >= lower &&
+          nextEnd <= upper &&
+          nextStart <= nextEnd &&
+          (bestDelta === null || Math.abs(delta) < Math.abs(bestDelta))
+        ) {
+          bestDelta = delta
+          bestTarget = target
+        }
+      }
+    }
+    setSnappedDay(bestTarget)
+    onSnap?.(bestTarget === null ? null : date(bestTarget))
+    const delta = bestDelta ?? 0
+    emit(
+      mode === 'end' ? rangeStart : rangeStart + delta,
+      mode === 'start' ? rangeEnd : rangeEnd + delta
+    )
+  }
   function begin(event: PointerEvent<HTMLFieldSetElement>) {
     if (disabled || !valid || event.button !== 0) return
+    if (guideTimer.current) clearTimeout(guideTimer.current)
+    setSnappedDay(null)
+    onSnap?.(null)
     onActivate?.()
     const mode = (event.target as HTMLElement).closest<HTMLElement>('[data-range-action]')?.dataset
       .rangeAction as DragMode | undefined
@@ -98,15 +151,19 @@ export default function TimelineRangeInput({
     if (!state) return
     const current = pointerDay(event.clientX)
     if (state.mode === 'draw')
-      emit(Math.min(state.anchor, current), Math.max(state.anchor, current))
-    else if (state.mode === 'start') emit(Math.min(current, state.end), state.end)
-    else if (state.mode === 'end') emit(state.start, Math.max(current, state.start))
+      emitPointer(
+        Math.min(state.anchor, current),
+        Math.max(state.anchor, current),
+        current < state.anchor ? 'start' : 'end'
+      )
+    else if (state.mode === 'start') emitPointer(Math.min(current, state.end), state.end, 'start')
+    else if (state.mode === 'end') emitPointer(state.start, Math.max(current, state.start), 'end')
     else {
       const delta = Math.max(
         lower - state.start,
         Math.min(upper - state.end, current - state.anchor)
       )
-      emit(state.start + delta, state.end + delta)
+      emitPointer(state.start + delta, state.end + delta, 'move')
     }
   }
   function keyboard(event: KeyboardEvent<HTMLElement>, mode: Exclude<DragMode, 'draw'>) {
@@ -170,8 +227,14 @@ export default function TimelineRangeInput({
             onPointerMove={move}
             onPointerUp={() => {
               drag.current = null
+              guideTimer.current = setTimeout(() => {
+                setSnappedDay(null)
+                onSnap?.(null)
+              }, 900)
             }}
             onPointerCancel={() => {
+              setSnappedDay(null)
+              onSnap?.(null)
               const original = drag.current?.original
               drag.current = null
               if (original) onChange(original)
@@ -181,6 +244,17 @@ export default function TimelineRangeInput({
               aria-hidden="true"
               className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-(--c-border)"
             />
+            {snappedDay !== null && !onSnap && (
+              <div
+                className="pointer-events-none absolute -inset-y-2 z-[25] w-px"
+                style={{
+                  left: `${((snappedDay - lower) / total) * 100}%`,
+                  backgroundImage:
+                    'repeating-linear-gradient(to bottom, var(--c-ocean) 0 3px, transparent 3px 6px)',
+                  opacity: 0.7,
+                }}
+              ></div>
+            )}
             {selected && (
               <div
                 className="absolute top-0 h-full min-w-0"

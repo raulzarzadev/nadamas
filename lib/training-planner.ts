@@ -16,11 +16,12 @@ export interface TrainingCycle {
   startDate: string
   endDate: string
   goal: string
+  objectiveTitles?: string[]
   objectives?: string[]
   objectiveWorkouts?: (string | ObjectiveWorkout)[][]
   content: string
 }
-export const CYCLE_LABELS = { macro: 'Macrociclo', meso: 'Mesociclo', micro: 'Microciclo' }
+export const CYCLE_LABELS = { macro: 'MACRO-ciclo', meso: 'MESO-ciclo', micro: 'MICRO-ciclo' }
 export const CHILD_CYCLE = { macro: 'meso', meso: 'micro' } as const
 
 export function nextMesocycleRange(macro: TrainingCycle, cycles: TrainingCycle[]) {
@@ -62,7 +63,7 @@ export function validateTrainingCycle(
         ((parent.startDate && date < parent.startDate) || (parent.endDate && date > parent.endDate))
     )
   if (cycle.type === 'macro') {
-    if (cycle.parentId !== null) return 'El macrociclo debe ser el ciclo principal.'
+    if (cycle.parentId !== null) return 'El MACRO-ciclo debe ser el ciclo principal.'
   } else {
     const parent = cycles.find((item) => item.id === cycle.parentId)
     if (!parent || parent.type === 'micro' || CHILD_CYCLE[parent.type] !== cycle.type) {

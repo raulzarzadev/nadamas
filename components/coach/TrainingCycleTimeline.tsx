@@ -33,7 +33,7 @@ export default function TrainingCycleTimeline({
       <button
         type="button"
         disabled={disabled}
-        aria-label={`Eliminar mesociclo ${cycle.title}`}
+        aria-label={`Eliminar MESO-ciclo ${cycle.title}`}
         onClick={() => onRemove(cycle)}
         className="grid size-11 shrink-0 place-items-center rounded-full text-lg text-(--c-text-2) hover:bg-white hover:text-(--c-error,#b91c1c) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
       >
@@ -81,7 +81,7 @@ export default function TrainingCycleTimeline({
       {others.length > 0 && (
         <div className="grid gap-3">
           <p className="text-[10px] font-semibold">
-            Otros {current.type === 'meso' ? 'mesociclos' : 'microciclos'}
+            Otros {current.type === 'meso' ? 'MESO-ciclos' : 'MICRO-ciclos'}
           </p>
           {others.map((cycle) => {
             const range = position(cycle)
