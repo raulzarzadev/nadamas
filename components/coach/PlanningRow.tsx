@@ -20,7 +20,7 @@ export default function PlanningRow({
   count: number
   countLabel: string
   expanded: boolean
-  onToggle: () => void
+  onToggle?: () => void
   handle?: ReactNode
   onEdit?: () => void
   disabled?: boolean
@@ -30,23 +30,30 @@ export default function PlanningRow({
   return (
     <div className="flex min-h-6 min-w-0 items-center gap-1 px-1 text-(--c-ocean)">
       {handle}
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={id}
-        onClick={onToggle}
-        aria-label={`${title}, ${count} ${countLabel}`}
-        className="inline-flex min-h-6 min-w-0 items-center gap-2 rounded text-left text-xs leading-tight font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--c-aqua-strong) focus-visible:ring-inset"
-      >
-        <span className="min-w-0 truncate">{title}</span>
-        <span aria-hidden="true" className="shrink-0 text-[10px] font-normal text-(--c-text-2)">
-          ({count})
+      {onToggle ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={id}
+          onClick={onToggle}
+          aria-label={`${title}, ${count} ${countLabel}`}
+          className="inline-flex min-h-6 min-w-0 items-center gap-2 rounded text-left text-xs leading-tight font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--c-aqua-strong) focus-visible:ring-inset"
+        >
+          <span className="min-w-0 truncate">{title}</span>
+          <span aria-hidden="true" className="shrink-0 text-[10px] font-normal text-(--c-text-2)">
+            ({count})
+          </span>
+          <FiChevronRight
+            aria-hidden="true"
+            className={`size-4 shrink-0 ${expanded ? 'rotate-90' : ''}`}
+          />
+        </button>
+      ) : (
+        <span className="inline-flex min-h-6 min-w-0 items-center gap-2 text-xs leading-tight font-semibold">
+          <span className="min-w-0 truncate">{title}</span>
+          <span className="shrink-0 text-[10px] font-normal text-(--c-text-2)">({count})</span>
         </span>
-        <FiChevronRight
-          aria-hidden="true"
-          className={`size-4 shrink-0 ${expanded ? 'rotate-90' : ''}`}
-        />
-      </button>
+      )}
       {onEdit && (
         <button
           type="button"

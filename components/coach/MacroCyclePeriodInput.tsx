@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { type ReactNode, useId, useState } from 'react'
 import { FiChevronDown, FiChevronRight, FiEdit2 } from 'react-icons/fi'
 import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
@@ -17,6 +17,7 @@ export default function MacroCyclePeriodInput({
   hideTitle = false,
   readOnly = false,
   snapRanges = [],
+  summary,
 }: {
   value: TimelineRange
   onChange: (value: TimelineRange) => void
@@ -27,6 +28,7 @@ export default function MacroCyclePeriodInput({
   hideTitle?: boolean
   readOnly?: boolean
   snapRanges?: TimelineRange[]
+  summary?: ReactNode | ((onEditDates: () => void) => ReactNode)
 }) {
   const [expanded, setExpanded] = useState(false)
   const detailsId = useId()
@@ -76,36 +78,40 @@ export default function MacroCyclePeriodInput({
           {expanded ? <FiChevronDown aria-hidden="true" /> : <FiChevronRight aria-hidden="true" />}
         </button>
       </div>
-      <div aria-hidden="true" className="h-8 w-full rounded-full bg-[#79b9cf]" />
-      <div className="flex justify-between gap-3 text-xs font-semibold text-(--c-aqua-strong)">
-        {readOnly ? (
-          <>
-            <span>{dateLabel(value.startDate)}</span>
-            <span>{dateLabel(value.endDate)}</span>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              disabled={disabled}
-              aria-label="Editar fecha de inicio del MACRO-ciclo"
-              onClick={openEditor}
-              className="cursor-pointer rounded p-0 text-left hover:underline focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-            >
-              {dateLabel(value.startDate)}
-            </button>
-            <button
-              type="button"
-              disabled={disabled}
-              aria-label="Editar fecha final del MACRO-ciclo"
-              onClick={openEditor}
-              className="cursor-pointer rounded p-0 text-right hover:underline focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-            >
-              {dateLabel(value.endDate)}
-            </button>
-          </>
-        )}
-      </div>
+      {typeof summary === 'function'
+        ? summary(openEditor)
+        : (summary ?? <div aria-hidden="true" className="h-8 w-full rounded-full bg-[#79b9cf]" />)}
+      {!summary && (
+        <div className="flex justify-between gap-3 text-xs font-semibold text-(--c-aqua-strong)">
+          {readOnly ? (
+            <>
+              <span>{dateLabel(value.startDate)}</span>
+              <span>{dateLabel(value.endDate)}</span>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label="Editar fecha de inicio del MACRO-ciclo"
+                onClick={openEditor}
+                className="cursor-pointer rounded p-0 text-left hover:underline focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                {dateLabel(value.startDate)}
+              </button>
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label="Editar fecha final del MACRO-ciclo"
+                onClick={openEditor}
+                className="cursor-pointer rounded p-0 text-right hover:underline focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                {dateLabel(value.endDate)}
+              </button>
+            </>
+          )}
+        </div>
+      )}
       <div id={detailsId} hidden={!expanded} className="mt-3 border-t border-(--c-border)" />
       <Sheet
         open={editingName}
