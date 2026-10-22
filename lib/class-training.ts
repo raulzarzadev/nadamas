@@ -107,3 +107,37 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
   }
   return blocks
 }
+
+export function seriesDurationSeconds(series: ClassTrainingSeries): number | null {
+  const match = series.interval.trim().match(/^(\d+):([0-5]\d)$/)
+  if (!match) return null
+  const seconds = Number(match[1]) * 60 + Number(match[2])
+  if (!seconds) return null
+  return seconds * (series.kind === 'pause' ? 1 : series.repetitions)
+}
+
+export function blockDuration(block: ClassTrainingBlock) {
+  const durations = block.series.map(seriesDurationSeconds)
+  return {
+    seconds:
+      durations.reduce<number>((total, duration) => total + (duration ?? 0), 0) * block.repetitions,
+    complete: durations.length > 0 && durations.every((duration) => duration !== null),
+  }
+}
+
+export function formatTrainingDuration(seconds: number) {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remainder = String(seconds % 60).padStart(2, '0')
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${remainder}`
+    : `${minutes}:${remainder}`
+}
+
+export function workoutDuration(blocks: ClassTrainingBlock[]) {
+  const durations = blocks.map(blockDuration)
+  return {
+    seconds: durations.reduce((sum, duration) => sum + duration.seconds, 0),
+    complete: durations.length > 0 && durations.every((duration) => duration.complete),
+  }
+}

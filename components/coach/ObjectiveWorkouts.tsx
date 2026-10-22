@@ -2,7 +2,11 @@
 
 import { useId, useState } from 'react'
 import { FiCheck, FiEdit2, FiRepeat, FiTrash2 } from 'react-icons/fi'
-import { normalizeClassTraining } from '@/lib/class-training'
+import {
+  formatTrainingDuration,
+  normalizeClassTraining,
+  workoutDuration,
+} from '@/lib/class-training'
 import type { ObjectiveWorkout } from '@/lib/training-planner'
 import ClassTrainingEditor from './ClassTrainingEditor'
 import WorkoutTransferSheet from './WorkoutTransferSheet'
@@ -21,6 +25,16 @@ export function normalizeObjectiveWorkout(
       normalizeClassTraining([{ id: `legacy-block-${index}`, repetitions: 1, series: [value] }]) ??
       [],
   }
+}
+
+function WorkoutTime({ workout }: { workout: ObjectiveWorkout }) {
+  const duration = workoutDuration(workout.blocks)
+  return duration.seconds ? (
+    <em className="ml-1 text-[10px] font-normal opacity-75">
+      · {!duration.complete && 'Tiempo definido '}
+      {formatTrainingDuration(duration.seconds)}
+    </em>
+  ) : null
 }
 
 export default function ObjectiveWorkouts({
@@ -113,6 +127,7 @@ export default function ObjectiveWorkouts({
               className={`${actionClass} max-w-full wrap-anywhere text-left ${selected?.id === workout.id ? 'border-(--c-ocean)! bg-(--c-ocean)! text-white! hover:bg-(--c-ocean)!' : 'bg-white'}`}
             >
               {workout.title?.trim() || `Entreno ${index + 1}`}
+              <WorkoutTime workout={workout} />
             </button>
           ))}
           <span className="ml-auto inline-flex items-center">{transferAction}</span>

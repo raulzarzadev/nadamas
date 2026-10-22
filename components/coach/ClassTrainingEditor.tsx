@@ -5,10 +5,35 @@ import { createPortal } from 'react-dom'
 import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
 import TrainingSeriesForm from '@/components/coach/TrainingSeriesForm'
 import DurationInput from '@/components/ui/duration-input'
+import NumberStepper from '@/components/ui/number-stepper'
 import Sheet from '@/components/ui/sheet'
 import SortableList from '@/components/ui/sortable-list'
 import TrainingBrace from '@/components/ui/training-brace'
-import type { ClassTrainingBlock, ClassTrainingSeries } from '@/lib/class-training'
+import {
+  blockDuration,
+  type ClassTrainingBlock,
+  type ClassTrainingSeries,
+  formatTrainingDuration,
+  seriesDurationSeconds,
+} from '@/lib/class-training'
+
+function SeriesTotal({ series }: { series: ClassTrainingSeries }) {
+  const seconds = seriesDurationSeconds(series)
+  return seconds ? (
+    <em className="ml-1 text-[10px] font-normal text-(--c-text-2)">
+      · {formatTrainingDuration(seconds)}
+    </em>
+  ) : null
+}
+function BlockTotal({ block }: { block: ClassTrainingBlock }) {
+  const duration = blockDuration(block)
+  return duration.seconds ? (
+    <em className="ml-2 text-[10px] font-normal text-(--c-text-2)">
+      {!duration.complete && 'Tiempo definido '}
+      {formatTrainingDuration(duration.seconds)}
+    </em>
+  ) : null
+}
 
 export default function ClassTrainingEditor({
   blocks,
@@ -73,6 +98,7 @@ export default function ClassTrainingEditor({
             <legend className="px-1 text-sm font-bold">
               <span className="mr-1 font-normal text-(--c-text-2)">{index + 1} ·</span>
               {block.title || 'Bloque'}
+              <BlockTotal block={block} />
             </legend>
             {block.observations?.trim() && (
               <p className="mb-2 whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">
@@ -108,6 +134,7 @@ export default function ClassTrainingEditor({
                         {series.interval}
                       </span>
                     )}
+                    <SeriesTotal series={series} />
                   </li>
                 ))}
               </ul>
@@ -156,6 +183,7 @@ export default function ClassTrainingEditor({
                   <FiEdit2 aria-hidden="true" className="size-3.5" />
                 </button>
               </span>
+              <BlockTotal block={block} />
             </legend>
 
             {block.observations?.trim() && (
@@ -213,6 +241,7 @@ export default function ClassTrainingEditor({
                             {series.interval}
                           </span>
                         )}
+                        <SeriesTotal series={series} />
                       </button>
                       <div className="shrink-0">
                         <button
@@ -443,38 +472,17 @@ export default function ClassTrainingEditor({
                   className="[field-sizing:content] box-border min-h-11 w-full min-w-0 max-w-full resize-none rounded-xl border border-(--c-border) bg-white p-3 text-base font-normal outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
                 />
               </label>
-              <label className="grid gap-2 text-sm font-semibold">
-                ¿Cuántas veces se repite?
-                <input
-                  type="number"
-                  inputMode="numeric"
+              <div className="grid min-w-0 gap-2">
+                <p className="text-sm font-semibold">¿Cuántas veces se repite?</p>
+                <NumberStepper
+                  label="¿Cuántas veces se repite?"
                   min={1}
                   max={99}
-                  value={blockForm.repetitions || ''}
-                  onChange={(event) =>
-                    setBlockForm({ ...blockForm, repetitions: Number(event.target.value) })
-                  }
-                  className="box-border min-h-12 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 text-base outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
+                  value={blockForm.repetitions}
+                  disabled={disabled}
+                  onValueChange={(repetitions) => setBlockForm({ ...blockForm, repetitions })}
                 />
-              </label>
-              <fieldset aria-label="Sumar repeticiones" className="grid grid-cols-4 gap-2">
-                {[1, 2, 4, 8].map((step) => (
-                  <button
-                    key={step}
-                    type="button"
-                    aria-label={`Sumar ${step}`}
-                    onClick={() =>
-                      setBlockForm({
-                        ...blockForm,
-                        repetitions: Math.min(99, (blockForm.repetitions || 0) + step),
-                      })
-                    }
-                    className="btn btn-outline border min-h-11 px-2"
-                  >
-                    +{step}
-                  </button>
-                ))}
-              </fieldset>
+              </div>
             </div>
           </Sheet>,
           document.body
