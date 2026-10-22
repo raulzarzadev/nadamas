@@ -601,6 +601,20 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
     }
   }
   await page.setViewportSize({ width: 390, height: 844 })
+  await productDialog.getByRole('radio', { name: 'Plan por clases', exact: true }).check()
+  await productDialog.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await expect(productDialog.getByLabel('Número de clases', { exact: true })).toBeVisible()
+  await expect(productDialog.getByLabel('Cantidad de caducidad', { exact: true })).toHaveCount(0)
+  await productDialog.getByRole('checkbox', { name: 'Definir caducidad' }).check()
+  await expect(productDialog.getByLabel('Cantidad de caducidad', { exact: true })).toBeInViewport({
+    ratio: 1,
+  })
+  await productDialog.getByRole('button', { name: 'Aumentar cantidad de caducidad' }).click()
+  await expect(productDialog.getByLabel('Cantidad de caducidad', { exact: true })).toHaveValue('2')
+  await productDialog.getByRole('checkbox', { name: 'Definir caducidad' }).uncheck()
+  await expect(productDialog.getByLabel('Cantidad de caducidad', { exact: true })).toHaveCount(0)
+  await productDialog.getByRole('button', { name: 'Atrás', exact: true }).click()
+  await productDialog.getByRole('radio', { name: 'Plan por tiempo', exact: true }).check()
   await productDialog.getByRole('button', { name: 'Continuar', exact: true }).click()
   await expect(productDialog.getByLabel('Cantidad', { exact: true })).toBeVisible()
   await expect(productDialog.getByLabel('Nombre', { exact: true })).toHaveCount(0)

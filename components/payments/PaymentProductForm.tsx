@@ -46,11 +46,16 @@ export default function PaymentProductForm({
       active: true,
     }
   )
+  const expiryEnabled = form.expiryCount != null || form.expiryDays != null
   const dailyEnabled = form.perDay != null
   const weeklyEnabled = form.perWeek != null
   const monthlyEnabled = form.perMonth != null
   useEffect(() => {
-    if (!(dailyEnabled || weeklyEnabled || monthlyEnabled) || !newlyEnabledLimit.current) return
+    if (
+      !(dailyEnabled || weeklyEnabled || monthlyEnabled || expiryEnabled) ||
+      !newlyEnabledLimit.current
+    )
+      return
     const key = newlyEnabledLimit.current
     newlyEnabledLimit.current = null
     const frame = requestAnimationFrame(() => {
@@ -59,13 +64,10 @@ export default function PaymentProductForm({
         ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     })
     return () => cancelAnimationFrame(frame)
-  }, [dailyEnabled, weeklyEnabled, monthlyEnabled, id])
-  const termsStep = form.mode === 'period' ? 1 : 2
-  const dataStep = form.mode === 'period' ? 2 : 1
-  const steps =
-    form.mode === 'period'
-      ? ['Tipo', 'Vigencia', 'Datos', 'Revisión']
-      : ['Tipo', 'Datos', 'Vigencia', 'Revisión']
+  }, [dailyEnabled, weeklyEnabled, monthlyEnabled, expiryEnabled, id])
+  const termsStep = 1
+  const dataStep = 2
+  const steps = ['Tipo', 'Vigencia', 'Datos', 'Revisión']
   const numeric = (
     key: 'classes' | 'months' | 'expiryDays' | 'perDay' | 'perWeek' | 'perMonth' | 'perPeriod',
     label: string,
@@ -165,8 +167,8 @@ export default function PaymentProductForm({
         {
           [
             'Elige el tipo de plan',
-            form.mode === 'period' ? 'Vigencia y límites' : 'Nombre y precio',
-            form.mode === 'period' ? 'Nombre y precio' : 'Vigencia y límites',
+            'Vigencia y límites',
+            'Nombre y precio',
             'Revisa antes de guardar',
           ][step]
         }
@@ -233,10 +235,108 @@ export default function PaymentProductForm({
         )}
         {step === termsStep &&
           (form.mode === 'classes' ? (
-            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-              {numeric('classes', 'Número de clases')}
-              {numeric('expiryDays', 'Caducidad en días (opcional)', true)}
-              <p className="text-xs text-(--c-text-2) sm:col-span-2">
+            <div className="grid min-w-0 grid-cols-1 gap-3">
+              <div className="grid min-w-0 justify-items-start gap-2">
+                <label htmlFor={`${id}-classes`} className="text-sm">
+                  Número de clases
+                </label>
+                <NumberStepper
+                  id={`${id}-classes`}
+                  label="Número de clases"
+                  value={form.classes}
+                  min={1}
+                  max={10000}
+                  required
+                  disabled={busy}
+                  onValueChange={(classes) => {
+                    setCompletedStep(step)
+                    setForm({ ...form, classes })
+                  }}
+                />
+              </div>
+              <div className="grid min-w-0 justify-items-start gap-2">
+                <label className="flex min-h-11 items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-sm shrink-0 border-2 border-slate-500 bg-white checked:border-primary checked:bg-primary checked:text-white"
+                    checked={expiryEnabled}
+                    onChange={(event) => {
+                      newlyEnabledLimit.current = event.target.checked ? 'expiryDays' : null
+                      setForm({
+                        ...form,
+                        expiryDays: null,
+                        expiryCount: event.target.checked ? 1 : null,
+                        expiryUnit: form.expiryUnit ?? 'week',
+                      })
+                    }}
+                  />
+                  Definir caducidad
+                </label>
+                {expiryEnabled && (
+                  <div className="grid w-full min-w-0 grid-cols-1 items-center gap-3 min-[480px]:flex">
+                    <NumberStepper
+                      id={`${id}-expiryDays`}
+                      label="Cantidad de caducidad"
+                      value={form.expiryCount ?? form.expiryDays ?? 1}
+                      min={1}
+                      max={10000}
+                      required
+                      disabled={busy}
+                      onValueChange={(expiryCount) => {
+                        setCompletedStep(step)
+                        setForm({
+                          ...form,
+                          expiryDays:
+                            form.expiryCount == null && form.expiryDays != null
+                              ? expiryCount
+                              : null,
+                          expiryCount:
+                            form.expiryCount == null && form.expiryDays != null
+                              ? null
+                              : expiryCount,
+                        })
+                      }}
+                    />
+                    <fieldset className="grid w-full min-w-0 flex-1 grid-cols-3 gap-1">
+                      <legend className="sr-only">Unidad de caducidad</legend>
+                      {(
+                        [
+                          ['week', 'Semana'],
+                          ['month', 'Mes'],
+                          ['year', 'Año'],
+                        ] as const
+                      ).map(([unit, label]) => (
+                        <label key={unit} className="relative min-w-0 cursor-pointer">
+                          <input
+                            type="radio"
+                            name={`${id}-expiry-unit`}
+                            value={unit}
+                            checked={form.expiryCount != null && form.expiryUnit === unit}
+                            onChange={() =>
+                              setForm({
+                                ...form,
+                                expiryDays: null,
+                                expiryUnit: unit,
+                                expiryCount: form.expiryCount ?? 1,
+                              })
+                            }
+                            className="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                          />
+                          <span className="flex min-h-11 items-center justify-center rounded-lg border border-(--c-border) px-2 text-sm peer-checked:border-primary peer-checked:bg-base-200 peer-checked:font-semibold peer-focus-visible:ring-2 peer-focus-visible:ring-inset peer-focus-visible:ring-primary">
+                            {label}
+                          </span>
+                        </label>
+                      ))}
+                      {form.expiryCount == null && form.expiryDays != null && (
+                        <p className="col-span-3 text-xs text-(--c-text-2)">
+                          Caducidad actual en días. Elige una unidad para cambiarla.
+                        </p>
+                      )}
+                    </fieldset>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-(--c-text-2)">
                 Sin caducidad por defecto. Si la defines, comienza al confirmar el pago.
               </p>
             </div>

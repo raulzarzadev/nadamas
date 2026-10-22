@@ -224,3 +224,13 @@ test('zero session limits stay enabled and prevent plan reservations', () => {
     )
   }
 })
+
+test('class package expiry supports weeks, calendar months and years and keeps legacy days', () => {
+  assert.equal(grant(product({ expiryUnit: 'week', expiryCount: 2 })).endsBefore, '2026-02-14')
+  assert.equal(grant(product({ expiryUnit: 'month', expiryCount: 1 })).endsBefore, '2026-02-28')
+  assert.equal(grant(product({ expiryUnit: 'year', expiryCount: 1 })).endsBefore, '2027-01-31')
+  assert.equal(grant(product({ expiryDays: 10 })).endsBefore, '2026-02-10')
+  assert.equal(grant(product()).endsBefore, null)
+  assert.throws(() => product({ expiryCount: 1, expiryUnit: 'day' }))
+  assert.throws(() => product({ expiryCount: 0, expiryUnit: 'week' }))
+})

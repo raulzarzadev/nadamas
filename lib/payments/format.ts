@@ -15,9 +15,17 @@ export function productDuration(product: PaymentProduct) {
   return `${count} ${labels[unit][count === 1 ? 0 : 1]}`
 }
 
+export function productExpiry(product: PaymentProduct) {
+  if (product.expiryCount != null) {
+    const labels = { week: ['semana', 'semanas'], month: ['mes', 'meses'], year: ['año', 'años'] }
+    return `${product.expiryCount} ${labels[product.expiryUnit ?? 'week'][product.expiryCount === 1 ? 0 : 1]}`
+  }
+  return product.expiryDays ? `${product.expiryDays} días` : 'Sin caducidad'
+}
+
 // "8 clases · 30 días" / "1 mes desde activación"
 export function productTerms(product: PaymentProduct) {
   return product.mode === 'classes'
-    ? `${product.classes} clases${product.expiryDays ? ` · ${product.expiryDays} días` : ' · Sin caducidad'}`
+    ? `${product.classes} clases · ${productExpiry(product)}`
     : `${productDuration(product)} desde activación`
 }

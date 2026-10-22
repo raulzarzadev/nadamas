@@ -35,6 +35,8 @@ export type PaymentProduct = {
   durationCount?: number
   perMonth?: number | null
   months: number
+  expiryUnit?: 'week' | 'month' | 'year'
+  expiryCount?: number | null
   expiryDays: number | null
   perDay: number | null
   perWeek: number | null

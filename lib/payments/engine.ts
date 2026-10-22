@@ -68,6 +68,12 @@ export function validateProduct(input: unknown, id: string): PaymentProduct {
       throw new PaymentRuleError('payment_invalid')
   if (value.expiryDays != null && !positive(value.expiryDays, 10000))
     throw new PaymentRuleError('payment_invalid')
+  if (
+    value.expiryCount != null &&
+    (!positive(value.expiryCount, 10000) ||
+      !['week', 'month', 'year'].includes(value.expiryUnit || ''))
+  )
+    throw new PaymentRuleError('payment_invalid')
   if (value.mode === 'classes' && !positive(value.classes, 10000))
     throw new PaymentRuleError('payment_invalid')
   const unit = value.durationUnit ?? 'month'
@@ -94,7 +100,11 @@ export function validateProduct(input: unknown, id: string): PaymentProduct {
     ...(value.mode === 'period'
       ? { durationUnit: unit, durationCount: Number(count), perMonth: value.perMonth ?? null }
       : {}),
-    expiryDays: value.mode === 'classes' ? value.expiryDays || null : null,
+    expiryDays:
+      value.mode === 'classes' && value.expiryCount == null ? value.expiryDays || null : null,
+    ...(value.mode === 'classes' && value.expiryCount != null
+      ? { expiryCount: value.expiryCount, expiryUnit: value.expiryUnit }
+      : {}),
     perDay: value.mode === 'period' ? (value.perDay ?? null) : null,
     perWeek: value.mode === 'period' ? (value.perWeek ?? null) : null,
     perPeriod: value.mode === 'period' ? (value.perPeriod ?? null) : null,
@@ -122,9 +132,13 @@ export function activateGrant(
                 ? (product.durationCount || 1) * 12
                 : (product.durationCount ?? product.months)
             )
-        : product.expiryDays
-          ? addDays(startsOn, product.expiryDays)
-          : null,
+        : product.expiryCount != null
+          ? product.expiryUnit === 'week'
+            ? addDays(startsOn, product.expiryCount * 7)
+            : addMonths(startsOn, product.expiryCount * (product.expiryUnit === 'year' ? 12 : 1))
+          : product.expiryDays
+            ? addDays(startsOn, product.expiryDays)
+            : null,
     used: 0,
     reserved: 0,
     buckets: {},

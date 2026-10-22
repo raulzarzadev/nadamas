@@ -5,7 +5,7 @@ import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { PaymentCRUD } from '@/firebase/payments/main'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { localPaymentDate } from '@/lib/payments/engine'
-import { formatPlanDate, productDuration, productTerms } from '@/lib/payments/format'
+import { formatPlanDate, productDuration, productExpiry, productTerms } from '@/lib/payments/format'
 import { paymentMessage } from '@/lib/payments/messages'
 import type {
   PaymentGrant,
@@ -145,9 +145,7 @@ function PlanStats({ product, grant }: { product: PaymentProduct; grant?: Paymen
       ? `Hasta ${formatPlanDate(grant.endsBefore)}`
       : 'Sin vencimiento'
     : product.mode === 'classes'
-      ? product.expiryDays
-        ? `${product.expiryDays} días`
-        : 'Sin caducidad'
+      ? productExpiry(product)
       : 'Desde activación'
   return (
     <div className="grid gap-2">
