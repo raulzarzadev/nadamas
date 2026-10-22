@@ -63,6 +63,7 @@ export default function TrainingPlanner() {
   const author = useTrainingPlanAuthor()
   const uid = user?.uid || user?.id
   const [plans, setPlans] = useState<TrainingPlan[]>([])
+  const [subscribed, setSubscribed] = useState<TrainingPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [revision, setRevision] = useState(0)
@@ -85,6 +86,7 @@ export default function TrainingPlanner() {
     let active = true
     setLoading(true)
     setPlans([])
+    setSubscribed([])
     setPlanId(null)
     setCycleId(null)
     setLoadError(false)
@@ -92,9 +94,11 @@ export default function TrainingPlanner() {
       return () => {
         active = false
       }
-    TrainingPlanCRUD.list(uid)
-      .then((items) => {
-        if (active) setPlans(items.sort((a, b) => b.createdAt - a.createdAt))
+    Promise.all([TrainingPlanCRUD.list(uid), TrainingPlanCRUD.listSubscribed(uid)])
+      .then(([own, followed]) => {
+        if (!active) return
+        setPlans(own.sort((a, b) => b.createdAt - a.createdAt))
+        setSubscribed(followed.sort((a, b) => b.createdAt - a.createdAt))
       })
       .catch((cause) => {
         reportInternalError('TRAINING_PLANS_LOAD', cause)
@@ -108,7 +112,9 @@ export default function TrainingPlanner() {
     }
   }, [uid, revision])
 
-  const plan = plans.find((item) => item.id === planId)
+  const plan =
+    plans.find((item) => item.id === planId) || subscribed.find((item) => item.id === planId)
+  const owned = plan?.userId === uid
   const cycle =
     plan?.cycles.find((item) => item.id === cycleId) ||
     plan?.cycles.find((item) => item.type === 'macro')
@@ -331,7 +337,7 @@ export default function TrainingPlanner() {
         inert={Boolean(draft) || deleting || infoOpen || creatingMacro}
         aria-hidden={Boolean(draft) || deleting || infoOpen || creatingMacro || undefined}
       >
-        {!loading && !loadError && plans.length > 0 && (
+        {!loading && !loadError && plans.length + subscribed.length > 0 && (
           <nav aria-label="MACRO-ciclos" className="flex flex-wrap items-center gap-1.5 pt-4 pb-2">
             <button
               type="button"
@@ -341,11 +347,13 @@ export default function TrainingPlanner() {
             >
               <FiPlus aria-hidden="true" /> MACRO-ciclo
             </button>
-            {plans.map((item) => {
+            {[...plans, ...subscribed].map((item) => {
               const root = item.cycles.find((node) => node.type === 'macro')
+              const followed = item.userId !== uid
               return (
                 <button
                   key={item.id}
+                  aria-label={followed ? `Suscrito: ${root?.title || 'MACRO-ciclo'}` : undefined}
                   type="button"
                   aria-pressed={planId === item.id}
                   className={
@@ -359,18 +367,31 @@ export default function TrainingPlanner() {
                     setCycleId(root?.id || null)
                   }}
                 >
-                  {root?.title || 'MACRO-ciclo'}
+                  {followed ? (
+                    <span className="flex flex-col items-center leading-tight">
+                      <span>{root?.title || 'MACRO-ciclo'}</span>
+                      <span className="text-[9px] font-normal opacity-80">
+                        {item.summary?.authorName || 'Entrenador'}
+                      </span>
+                    </span>
+                  ) : (
+                    root?.title || 'MACRO-ciclo'
+                  )}
                 </button>
               )
             })}
           </nav>
         )}
-        {plans.length > 0 && (
+        {plans.length + subscribed.length > 0 && (
           <>
             <h1 id="training-title" className="pt-4 text-center text-2xl font-extrabold">
               Entreno de hoy
             </h1>
-            <TodayTrainingSummary plans={plans} loading={loading} loadError={loadError} />
+            <TodayTrainingSummary
+              plans={plan && !owned ? [plan] : plans}
+              loading={loading}
+              loadError={loadError}
+            />
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--c-border) py-4">
               <div>
                 <div className="flex items-center gap-1">
@@ -408,7 +429,7 @@ export default function TrainingPlanner() {
               Reintentar
             </button>
           </div>
-        ) : !plans.length ? (
+        ) : !plans.length && !subscribed.length ? (
           <div className="rounded-2xl border border-dashed border-(--c-border) bg-(--c-surface) px-5 py-10 text-center">
             <FiActivity className="mx-auto mb-4 size-8" aria-hidden="true" />
             <h2 className="text-lg font-bold">Tu temporada empieza aquí</h2>
@@ -523,7 +544,7 @@ export default function TrainingPlanner() {
                         {busy ? 'Guardando…' : 'Guardar'}
                       </button>
                     </div>
-                  ) : (
+                  ) : owned ? (
                     <button
                       type="button"
                       className={
@@ -534,7 +555,7 @@ export default function TrainingPlanner() {
                       <FiEdit2 aria-hidden="true" />
                       Editar
                     </button>
-                  )}
+                  ) : null}
                 </div>
                 <div className="mb-3 grid min-w-0 grid-cols-2 gap-1">
                   <p className="col-span-2 flex items-center gap-1 text-sm text-(--c-text-2)">
@@ -582,14 +603,14 @@ export default function TrainingPlanner() {
                   {cycle.type === 'macro' && plan && (
                     <TrainingPlanOverview
                       key={plan.id}
-                      macros={plans.flatMap((item) =>
+                      macros={(owned ? plans : [plan]).flatMap((item) =>
                         item.cycles.filter((node) => node.type === 'macro')
                       )}
                       cycles={editing ? planCycles : plan.cycles}
                       onChange={setBarsDraft}
-                      onRequestEdit={startEditing}
+                      onRequestEdit={owned ? startEditing : undefined}
                       disabled={busy}
-                      readOnly={!editing}
+                      readOnly={!owned || !editing}
                     />
                   )}
                   {cycle.type !== 'macro' && (
