@@ -472,7 +472,7 @@ export default function TrainingPlanner() {
                               )
                             )
                           }
-                          className="box-border h-7 w-full min-w-0 rounded-lg border border-transparent bg-transparent px-1.5 text-xs font-semibold text-(--c-ocean) outline-none hover:border-(--c-border) focus:border-(--c-aqua-strong) focus:bg-white focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+                          className="box-border h-7 w-full min-w-0 rounded-lg border border-(--c-border) bg-white px-2 text-xs font-semibold text-(--c-ocean) outline-none hover:border-(--c-border) focus:border-(--c-aqua-strong) focus:bg-white focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
                         />
                       ) : (
                         <h2 className="min-w-0 truncate text-sm font-semibold" title={cycle.title}>
@@ -557,7 +557,7 @@ export default function TrainingPlanner() {
                             )
                           )
                         }
-                        className="[field-sizing:content] col-span-2 box-border min-h-11 w-full min-w-0 resize-none rounded-xl border border-(--c-border) bg-white p-3 text-base leading-relaxed outline-none placeholder:text-(--c-text-2) focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+                        className="[field-sizing:content] col-span-2 box-border min-h-8 w-full min-w-0 max-w-full resize-none rounded-lg border border-(--c-border) bg-white px-2 py-1.5 text-xs leading-relaxed outline-none placeholder:text-(--c-text-2) focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
                       />
                     ) : cycle.content.trim() ? (
                       <p className="col-span-2 whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed text-(--c-text-2)">
@@ -570,7 +570,13 @@ export default function TrainingPlanner() {
                     {error}
                   </p>
                 )}
-                <article className="rounded-2xl border border-(--c-border) bg-white px-2 py-5 sm:p-5">
+                <article
+                  className={
+                    cycle.type === 'macro'
+                      ? 'min-w-0'
+                      : 'rounded-2xl border border-(--c-border) bg-white px-2 py-5 sm:p-5'
+                  }
+                >
                   {cycle.type === 'macro' && plan && (
                     <TrainingPlanOverview
                       key={plan.id}

@@ -224,7 +224,7 @@ export default function MacroCycleBarsInput({
               />
               <div id={`${detailsPrefix}-${cycle.id}`} hidden={!expanded[cycle.id]}>
                 {expanded[cycle.id] && (
-                  <div className="mt-0.5 ml-2 grid min-w-0 gap-2 border-l border-(--c-aqua-strong)/20 pl-2">
+                  <div className="mt-0.5 ml-1 grid min-w-0 gap-2 border-l border-(--c-aqua-strong)/20 pl-1">
                     {cycle.type === 'micro' && (
                       <CycleDetails
                         value={cycle}

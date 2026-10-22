@@ -117,7 +117,7 @@ export default function CycleDetails({
                 />
               </div>
               {!collapsedMonths[month.id] && (
-                <div className="ml-2 border-l border-(--c-aqua-strong)/20 pl-2">
+                <div className="ml-1 border-l border-(--c-aqua-strong)/20 pl-1">
                   <SortableList
                     items={month.weeks}
                     disabled={disabled || readOnly}
@@ -151,7 +151,7 @@ export default function CycleDetails({
                           />
                         </div>
                         {!collapsedWeeks[week.id] && (
-                          <div className="ml-2 border-l border-(--c-aqua-strong)/20 pl-2">
+                          <div className="ml-1 border-l border-(--c-aqua-strong)/20 pl-1">
                             <SortableList
                               items={week.items}
                               disabled={disabled || readOnly}

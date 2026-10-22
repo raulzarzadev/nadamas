@@ -36,7 +36,7 @@ export default function TrainingPlanOverview({
   const updateMacro = (changes: Partial<TrainingCycle>) =>
     onChange(cycles.map((cycle) => (cycle.id === macro.id ? { ...cycle, ...changes } : cycle)))
   return (
-    <div className="grid min-w-0 gap-1 rounded-xl bg-[#d8eef5] pb-1">
+    <div className="grid min-w-0 gap-1 rounded-xl bg-[#d8eef5] p-1">
       <div
         className="sticky z-[26] rounded-t-xl bg-[#d8eef5]"
         style={{ top: 'calc(var(--app-header-h, 0px) + var(--training-toolbar-h, 0px))' }}
@@ -136,7 +136,7 @@ export default function TrainingPlanOverview({
             disabled={disabled}
             readOnly={readOnly}
           />
-          <div className="ml-2 min-w-0 border-l border-(--c-aqua-strong)/20 pl-2">
+          <div className="min-w-0">
             <MacroCycleBarsInput
               macro={macro}
               cycles={cycles}
