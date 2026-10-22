@@ -2914,11 +2914,20 @@ export default function CoachAgenda({
         onClose={() => setBatchAction(null)}
         closeDisabled={busy}
         label="Configurar horarios seleccionados"
+        showFooterClose={false}
         footer={
-          <div className="grid gap-2 pt-3">
+          <div className="flex items-center justify-between gap-3 pt-3">
             <button
               type="button"
-              className="btn btn-primary"
+              disabled={busy}
+              onClick={() => setBatchAction(null)}
+              className="min-h-11 px-3 text-sm font-medium text-(--c-text-2)"
+            >
+              Cerrar
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm min-h-10 px-5"
               disabled={
                 busy ||
                 !Object.values(batchChanged).some(Boolean) ||
@@ -2927,18 +2936,6 @@ export default function CoachAgenda({
               onClick={() => void applyBatchSettings()}
             >
               {busy ? 'Guardando…' : 'Aplicar'}
-            </button>
-            <button
-              type="button"
-              disabled={busy || !batchSlots.length}
-              onClick={() => {
-                setBatchError('')
-                setConfirmBatchDelete(true)
-              }}
-              className="flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-rose-700 hover:bg-rose-50"
-            >
-              <FiTrash2 aria-hidden="true" />
-              {batchSlots.length === 1 ? 'Eliminar clase' : 'Eliminar clases'}
             </button>
           </div>
         }
@@ -3032,6 +3029,20 @@ export default function CoachAgenda({
             </fieldset>
           )}
           {batchError && <p role="alert">{batchError}</p>}
+          <div className="grid gap-2 pt-3">
+            <button
+              type="button"
+              disabled={busy || !batchSlots.length}
+              onClick={() => {
+                setBatchError('')
+                setConfirmBatchDelete(true)
+              }}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-rose-700 hover:bg-rose-50"
+            >
+              <FiTrash2 aria-hidden="true" />
+              {batchSlots.length === 1 ? 'Eliminar clase' : 'Eliminar clases'}
+            </button>
+          </div>
         </div>
       </Sheet>
       <Sheet

@@ -286,6 +286,18 @@ export default function Sheet({
             />
           </button>
         </div>
+        <div className="hidden shrink-0 justify-end sm:flex">
+          <button
+            type="button"
+            aria-label="Cerrar modal"
+            title="Cerrar"
+            disabled={closeDisabled}
+            onClick={requestClose}
+            className="-mt-2 -mr-2 grid min-h-11 min-w-11 place-items-center rounded-full text-(--c-text-2) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
+          >
+            <FiX aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </div>
         <div className="min-h-0 min-w-0 max-w-full overflow-x-hidden overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {children}
         </div>
