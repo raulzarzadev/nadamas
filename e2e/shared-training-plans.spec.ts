@@ -143,3 +143,170 @@ test('entrenos: hacer público un macrociclo se conserva al recargar', async ({
   await page.getByRole('button', { name: 'Compartir', exact: true }).click()
   await expect(page.getByText('Enlace copiado')).toBeVisible()
 })
+
+type FsValue = Record<string, unknown>
+function toFs(value: unknown): FsValue {
+  if (value === null) return { nullValue: null }
+  if (typeof value === 'string') return { stringValue: value }
+  if (typeof value === 'number') return { integerValue: String(value) }
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(toFs) } }
+  return {
+    mapValue: {
+      fields: Object.fromEntries(Object.entries(value as object).map(([k, v]) => [k, toFs(v)])),
+    },
+  }
+}
+
+const localDate = (offsetDays: number) => {
+  const date = new Date()
+  date.setDate(date.getDate() + offsetDays)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+async function uidOf(email: string) {
+  const response = await fetch(authLookup, {
+    method: 'POST',
+    headers: { authorization: 'Bearer owner', 'content-type': 'application/json' },
+    body: JSON.stringify({ email: [email] }),
+  })
+  return ((await response.json()).users[0] as { localId: string }).localId
+}
+
+async function planIdOf(authorUid: string) {
+  const plans = (
+    await (
+      await fetch(`${root}/trainingPlans?pageSize=1000`, {
+        headers: { authorization: 'Bearer owner' },
+      })
+    ).json()
+  ).documents as Array<{ name: string; fields: { userId: { stringValue: string } } }>
+  return plans
+    .find((doc) => doc.fields.userId?.stringValue === authorUid)
+    ?.name.split('/')
+    .pop() as string
+}
+
+// Replaces the plan's cycles with macro > meso > micro that has a workout scheduled today.
+async function seedScheduledPlan(planId: string, title: string) {
+  const start = localDate(-7)
+  const end = localDate(28)
+  const base = { goal: '', content: '', startDate: start, endDate: end }
+  const cycles = [
+    {
+      ...base,
+      id: 'macro-e2e',
+      parentId: null,
+      type: 'macro',
+      title,
+      goal: 'Construir base aeróbica',
+      sessionWeekdays: [0, 1, 2, 3, 4, 5, 6],
+    },
+    {
+      ...base,
+      id: 'meso-e2e',
+      parentId: 'macro-e2e',
+      type: 'meso',
+      title: 'Bloque de volumen',
+      goal: 'Volumen controlado',
+    },
+    {
+      ...base,
+      id: 'micro-e2e',
+      parentId: 'meso-e2e',
+      type: 'micro',
+      title: 'Semana 1',
+      objectiveDates: [localDate(0)],
+      objectiveTitles: ['Sesión base'],
+      objectives: ['Nado continuo'],
+      objectiveWorkouts: { '0': ['4x100 libre'] },
+    },
+  ]
+  const summary = {
+    title,
+    goal: 'Construir base aeróbica',
+    content: '',
+    startDate: start,
+    endDate: end,
+    sessionWeekdays: [0, 1, 2, 3, 4, 5, 6],
+    authorName: 'Autor Base',
+    authorPhoto: '',
+    authorRole: 'athlete',
+  }
+  const response = await fetch(
+    `${root}/trainingPlans/${planId}?updateMask.fieldPaths=cycles&updateMask.fieldPaths=summary`,
+    {
+      method: 'PATCH',
+      headers: { authorization: 'Bearer owner', 'content-type': 'application/json' },
+      body: JSON.stringify({ fields: { cycles: toFs(cycles), summary: toFs(summary) } }),
+    }
+  )
+  expect(response.ok).toBe(true)
+}
+
+test('entrenos: otro atleta encuentra un entreno público, se suscribe y ve el entreno de hoy', async ({
+  page,
+  browser,
+  request,
+}) => {
+  test.setTimeout(120000)
+  page.setDefaultTimeout(30000)
+  const suffix = crypto.randomUUID()
+  const title = `Base aeróbica ${suffix}`
+  const authorEmail = `author-${suffix}@test.com`
+
+  const authorContext = await browser.newContext()
+  const authorPage = await authorContext.newPage()
+  authorPage.setDefaultTimeout(30000)
+  await loginAs(authorPage, request, authorEmail)
+  await authorPage.goto('/athlete/training')
+  await createMacro(authorPage, `Temporal ${suffix}`)
+  await authorPage.reload()
+  await expect(authorPage.getByRole('button', { name: `Temporal ${suffix}` })).toBeVisible()
+  const planId = await planIdOf(await uidOf(authorEmail))
+  expect(planId).toBeTruthy()
+  await seedScheduledPlan(planId, title)
+  await authorPage.reload()
+  await authorPage.getByRole('button', { name: title, exact: true }).click()
+  await authorPage.getByRole('switch', { name: 'Público' }).click()
+  await expect(authorPage.getByRole('switch', { name: 'Público' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  )
+
+  // Athlete B finds the public plan through search (listPublic as a non-owner).
+  await loginAs(page, request, `follower-${suffix}@test.com`)
+  await page.goto('/athlete/search')
+  await page.getByRole('group').getByText('Escuelas', { exact: true }).click()
+  await page.getByRole('group').getByText('Profes', { exact: true }).click()
+  await expect(page.getByRole('checkbox', { name: 'Entrenos', exact: true })).toBeChecked()
+  await page.getByRole('searchbox').fill(title.toUpperCase().replace('Ó', 'O'))
+  await page.getByRole('link', { name: new RegExp(title) }).click()
+  await page.waitForURL(`**/athlete/training/plans/${planId}`)
+  await expect(page.getByRole('heading', { name: title })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Entreno de ejemplo' })).toBeVisible()
+  await page.getByRole('button', { name: 'Suscribirme', exact: true }).click()
+  await expect(page.getByText('Suscrito', { exact: true })).toBeVisible()
+
+  // Subscribing is idempotent: the reloaded preview counts exactly one subscriber.
+  await page.reload()
+  await expect(page.getByText('Suscrito', { exact: true })).toBeVisible()
+  await expect(page.getByText('1 suscriptor', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Suscribirme', exact: true })).toHaveCount(0)
+
+  await page.getByRole('link', { name: 'Ver entreno de hoy' }).click()
+  await page.waitForURL(`**/athlete/training?plan=${planId}`)
+  await expect(
+    page.getByRole('button', { name: `Suscrito: ${title}`, exact: true })
+  ).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('heading', { name: 'Entreno de hoy' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Editar', exact: true })).toHaveCount(0)
+
+  // The author sees owner controls, never Suscribirme.
+  await authorPage.goto(`/athlete/training/plans/${planId}`)
+  await expect(authorPage.getByRole('switch', { name: 'Público' })).toBeVisible()
+  await expect(authorPage.getByRole('button', { name: 'Suscribirme', exact: true })).toHaveCount(0)
+  await authorContext.close()
+
+  await page.getByRole('button', { name: 'Dejar de seguir', exact: true }).click()
+  await expect(page.getByRole('button', { name: `Suscrito: ${title}`, exact: true })).toHaveCount(0)
+})

@@ -1,5 +1,6 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
   FiActivity,
@@ -16,6 +17,7 @@ import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
 import { TrainingPlanCRUD } from '@/firebase/training-plans/main'
+import { TrainingPlanSharing } from '@/firebase/training-plans/sharing'
 import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
 import { snapCalendarEdge } from '@/lib/timeline-snap'
 import {
@@ -63,6 +65,7 @@ export default function TrainingPlanner() {
   const { user } = useUser()
   const author = useTrainingPlanAuthor()
   const uid = user?.uid || user?.id
+  const requestedPlanId = useSearchParams().get('plan')
   const [plans, setPlans] = useState<TrainingPlan[]>([])
   const [subscribed, setSubscribed] = useState<TrainingPlan[]>([])
   const [loading, setLoading] = useState(true)
@@ -100,6 +103,12 @@ export default function TrainingPlanner() {
         if (!active) return
         setPlans(own.sort((a, b) => b.createdAt - a.createdAt))
         setSubscribed(followed.sort((a, b) => b.createdAt - a.createdAt))
+        // `?plan=` (from a plan preview) preselects that plan's chip.
+        const requested = [...own, ...followed].find((item) => item.id === requestedPlanId)
+        if (requested) {
+          setPlanId(requested.id)
+          setCycleId(requested.cycles.find((node) => node.type === 'macro')?.id || null)
+        }
       })
       .catch((cause) => {
         reportInternalError('TRAINING_PLANS_LOAD', cause)
@@ -111,7 +120,7 @@ export default function TrainingPlanner() {
     return () => {
       active = false
     }
-  }, [uid, revision])
+  }, [uid, revision, requestedPlanId])
 
   const plan =
     plans.find((item) => item.id === planId) || subscribed.find((item) => item.id === planId)
@@ -166,6 +175,23 @@ export default function TrainingPlanner() {
       setEditing(true)
     } catch (cause) {
       reportInternalError('TRAINING_PLAN_CREATE', cause)
+      setError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function unfollow(id: string) {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    try {
+      await TrainingPlanSharing.unsubscribe(id)
+      setSubscribed((items) => items.filter((item) => item.id !== id))
+      setPlanId(null)
+      setCycleId(null)
+    } catch (cause) {
+      reportInternalError('TRAINING_PLAN_UNSUBSCRIBE', cause)
       setError(GENERIC_USER_ERROR)
     } finally {
       setBusy(false)
@@ -597,6 +623,16 @@ export default function TrainingPlanner() {
                       setPlans((items) => items.map((item) => (item.id === next.id ? next : item)))
                     }
                   />
+                )}
+                {!owned && plan && cycle.type === 'macro' && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void unfollow(plan.id)}
+                    className="mb-3 inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-border) bg-white px-4 text-xs font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
+                  >
+                    Dejar de seguir
+                  </button>
                 )}
                 {error && !draft && !deleting && (
                   <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">

@@ -15,6 +15,9 @@ export default async function SearchPage({
     )
   const tenant = await getTenantSchool()
   return (
-    <AthleteSearch schoolId={tenant?.id} initialTab={'school' in query ? 'schools' : undefined} />
+    <AthleteSearch
+      schoolId={tenant?.id}
+      initialTab={'school' in query ? 'schools' : 'plans' in query ? 'plans' : undefined}
+    />
   )
 }

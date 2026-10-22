@@ -26,6 +26,7 @@ type StoredPlan = {
 
 export type PlanPreview = {
   id: string
+  ownerId: string
   summary: TrainingPlanSummary
   subscriberCount: number
   visibility: TrainingPlanVisibility
@@ -74,6 +75,7 @@ export async function getPlanPreview(
   const cycles = decodeTrainingCycles(plan.cycles || [])
   return {
     id: planId,
+    ownerId: plan.userId || '',
     summary:
       plan.summary || buildTrainingPlanSummary(cycles, { name: '', photo: '', role: 'coach' }),
     subscriberCount: Math.max(0, plan.subscriberCount || 0),

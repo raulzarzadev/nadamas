@@ -70,3 +70,16 @@ export function planWeeks(startDate: string, endDate: string): number {
   const days = dayNumber(endDate) - dayNumber(startDate) + 1
   return Number.isFinite(days) ? Math.max(1, Math.ceil(days / 7)) : 1
 }
+
+const shortDay = (value: string) =>
+  new Date(`${value}T12:00:00`).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+
+/** `6 ene – 30 mar · 12 semanas` */
+export function planRangeLabel(startDate: string, endDate: string): string {
+  const weeks = planWeeks(startDate, endDate)
+  return `${shortDay(startDate)} – ${shortDay(endDate)} · ${weeks === 1 ? '1 semana' : `${weeks} semanas`}`
+}
+
+export function subscriberCountLabel(count: number): string {
+  return count === 1 ? '1 suscriptor' : `${count} suscriptores`
+}

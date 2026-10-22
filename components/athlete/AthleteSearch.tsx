@@ -6,17 +6,27 @@ import { FiCheck, FiChevronRight } from 'react-icons/fi'
 import CoachDirectoryList from '@/components/coach/CoachDirectoryList'
 import { SearchField } from '@/components/Inputs/FormFields'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
+import TrainingPlanCard from '@/components/training/TrainingPlanCard'
 import { useUser } from '@/context/UserContext'
+import { CoachCRUD } from '@/firebase/coaches/main'
+import { TrainingPlanCRUD } from '@/firebase/training-plans/main'
+import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
 import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/store/athlete-bookings'
+import { localCalendarDate } from '@/lib/today-training'
+import { reportInternalError } from '@/lib/user-facing-error'
 import RegisteredBadge from './RegisteredBadge'
 
 type PublicSchool = { id: string; name: string; slug: string }
-type Kind = 'coaches' | 'schools'
+type Kind = 'coaches' | 'schools' | 'plans'
 
 const schoolRowClassName =
   'flex min-h-12 w-full min-w-0 cursor-pointer items-center gap-3 rounded-xl border border-(--c-border) bg-white px-3 py-2 text-left text-sm font-bold text-(--c-ocean) transition-colors hover:border-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)'
 
-const KIND_LABEL: Record<Kind, string> = { schools: 'Escuelas', coaches: 'Profes' }
+const KIND_LABEL: Record<Kind, string> = {
+  schools: 'Escuelas',
+  coaches: 'Profes',
+  plans: 'Entrenos',
+}
 
 export default function AthleteSearch({
   schoolId,
@@ -27,7 +37,7 @@ export default function AthleteSearch({
   actionLabel,
 }: {
   schoolId?: string
-  // Start with only this kind selected; both are selected when omitted.
+  // Start with only this kind selected; all are selected when omitted.
   initialTab?: Kind
   // false when embedded (e.g. the Horarios search sheet) so filter changes don't rewrite the URL.
   syncUrl?: boolean
@@ -37,9 +47,20 @@ export default function AthleteSearch({
   actionLabel?: string
 }) {
   const [kinds, setKinds] = useState<Record<Kind, boolean>>({
-    schools: initialTab !== 'coaches',
-    coaches: initialTab !== 'schools',
+    schools: !initialTab || initialTab === 'schools',
+    coaches: !initialTab || initialTab === 'coaches',
+    plans: !onSelectCoach && !onSelectSchool && (!initialTab || initialTab === 'plans'),
   })
+  // Embedded pickers (schedule sheet, payments) select a coach/school; plans don't apply there.
+  const kindOptions = (
+    onSelectCoach || onSelectSchool ? ['schools', 'coaches'] : ['schools', 'coaches', 'plans']
+  ) as Kind[]
+  const plansEnabled = kindOptions.includes('plans')
+  const [plans, setPlans] = useState<TrainingPlan[]>([])
+  const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set())
+  const [plansLoading, setPlansLoading] = useState(true)
+  const [plansError, setPlansError] = useState(false)
+  const [today] = useState(() => localCalendarDate(new Date()))
   const [schools, setSchools] = useState<PublicSchool[]>([])
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
@@ -92,40 +113,98 @@ export default function AthleteSearch({
       active = false
     }
   }, [])
+  useEffect(() => {
+    if (!plansEnabled) return
+    let active = true
+    TrainingPlanCRUD.listPublic()
+      .then(async (items) => {
+        if (!active) return
+        setPlans(items)
+        // Verification comes from the coach's own profile, never from the plan's client-set summary.
+        const authors = [...new Set(items.map((item) => item.userId))]
+        const profiles = await Promise.all(
+          authors.map((author) => CoachCRUD.getPublic(author).catch(() => null))
+        )
+        if (!active) return
+        setVerifiedAuthors(
+          new Set(
+            authors.filter((_, index) => profiles[index]?.verification?.status === 'verified')
+          )
+        )
+      })
+      .catch((cause) => {
+        reportInternalError('TRAINING_PLANS_SEARCH', cause)
+        if (active) setPlansError(true)
+      })
+      .finally(() => {
+        if (active) setPlansLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [plansEnabled])
   const toggle = (kind: Kind) => {
     const next = { ...kinds, [kind]: !kinds[kind] }
     // Keep at least one kind selected.
-    if (!next.schools && !next.coaches) return
+    if (!next.schools && !next.coaches && !next.plans) return
     setKinds(next)
     if (syncUrl)
       window.history.replaceState(
         null,
         '',
-        next.schools && !next.coaches ? '/athlete/search?school' : '/athlete/search'
+        next.schools && !next.coaches && !next.plans
+          ? '/athlete/search?school'
+          : next.plans && !next.coaches && !next.schools
+            ? '/athlete/search?plans'
+            : '/athlete/search'
       )
   }
   const normalize = (text: string) => text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  const planRank = (plan: TrainingPlan) => {
+    const start = plan.summary?.startDate ?? ''
+    const end = plan.summary?.endDate ?? ''
+    if (end && end < today) return 2
+    return start && start > today ? 1 : 0
+  }
+  const visiblePlans = plans
+    .filter((plan) => {
+      if (!plan.summary || plan.userId === uid) return false
+      const needle = normalize(query.trim())
+      return [plan.summary.title, plan.summary.goal, plan.summary.authorName].some((field) =>
+        normalize(field).includes(needle)
+      )
+    })
+    .sort(
+      (a, b) =>
+        planRank(a) - planRank(b) ||
+        (planRank(a) === 1
+          ? (a.summary?.startDate ?? '').localeCompare(b.summary?.startDate ?? '')
+          : 0)
+    )
   const visible = schools
     .filter((school) => normalize(school.name).includes(normalize(query.trim())))
     .sort((a, b) => Number(mySchoolIds.has(b.id)) - Number(mySchoolIds.has(a.id)))
-  const both = kinds.schools && kinds.coaches
+  const both = [kinds.schools, kinds.coaches, kinds.plans].filter(Boolean).length > 1
   // Sheet shows a short list: hide a section with no matches; one message if none match.
   const schoolsShown = kinds.schools && !loading && (error || visible.length > 0)
   const nothingMatches =
     !loading &&
     !error &&
     (!kinds.schools || visible.length === 0) &&
-    (!kinds.coaches || coachMatches === 0)
+    (!kinds.coaches || coachMatches === 0) &&
+    (!kinds.plans || (!plansLoading && !plansError && visiblePlans.length === 0))
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4">
       <SearchField
-        label="Buscar escuelas o profes"
+        label={kinds.plans ? 'Buscar escuelas, profes o entrenos' : 'Buscar escuelas o profes'}
         placeholder={
           both
-            ? 'Escuela, profe, técnica o ciudad…'
+            ? 'Escuela, profe, entreno, técnica o ciudad…'
             : kinds.schools
               ? 'Nombre de la escuela…'
-              : 'Técnica, triatlón, tu ciudad…'
+              : kinds.plans
+                ? 'Nombre, objetivo o entrenador…'
+                : 'Técnica, triatlón, tu ciudad…'
         }
         value={query}
         onChange={(event) => setQuery(event.target.value)}
@@ -134,7 +213,7 @@ export default function AthleteSearch({
       />
       <fieldset className="flex flex-wrap gap-2">
         <legend className="sr-only">Mostrar</legend>
-        {(['schools', 'coaches'] as const).map((kind) => (
+        {kindOptions.map((kind) => (
           <label
             key={kind}
             className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--c-aqua-strong) ${kinds[kind] ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:text-(--c-ocean)'}`}
@@ -207,6 +286,28 @@ export default function AthleteSearch({
             mineIds={myCoachIds}
             heading={both && <h3 className="text-xs font-semibold text-(--c-text-2)">Profes</h3>}
           />
+        </section>
+      )}
+      {kinds.plans && plansEnabled && (
+        <section aria-label="Entrenos" className="grid min-w-0 grid-cols-1 gap-3">
+          {both && <h3 className="text-xs font-semibold text-(--c-text-2)">Entrenos</h3>}
+          {plansError ? (
+            <p role="alert" className="text-sm">
+              No pudimos cargar los entrenos. Inténtalo de nuevo más tarde.
+            </p>
+          ) : (
+            <ul className="grid min-w-0 grid-cols-1 gap-2">
+              {visiblePlans.slice(0, both ? 5 : 20).map((plan) => (
+                <li key={plan.id}>
+                  <TrainingPlanCard
+                    plan={plan}
+                    today={today}
+                    verified={verifiedAuthors.has(plan.userId)}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
     </div>
