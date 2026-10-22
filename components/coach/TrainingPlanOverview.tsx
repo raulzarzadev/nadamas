@@ -13,6 +13,7 @@ export default function TrainingPlanOverview({
   onChange,
   disabled,
   readOnly = false,
+  onRequestEdit,
   macros = [],
   onEdit,
   onSave,
@@ -22,6 +23,7 @@ export default function TrainingPlanOverview({
   onChange: (cycles: TrainingCycle[]) => void
   disabled: boolean
   readOnly?: boolean
+  onRequestEdit?: () => void
   macros?: TrainingCycle[]
   onEdit?: () => void
   onSave?: () => void
@@ -143,6 +145,7 @@ export default function TrainingPlanOverview({
               onChange={onChange}
               disabled={disabled}
               readOnly={readOnly}
+              onRequestEdit={onRequestEdit}
               expanded={expanded}
               onExpandedChange={setExpanded}
             />

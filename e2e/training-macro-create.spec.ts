@@ -4,6 +4,7 @@ test('create macro wizard saves the goal and optional three-phase template only 
   page,
 }) => {
   test.setTimeout(60000)
+  page.setDefaultTimeout(10000)
   await page.setViewportSize({ width: 320, height: 640 })
   const goal = `Preparar competencia ${crypto.randomUUID()}`
   await page.goto('/login?intent=coach')
@@ -90,4 +91,60 @@ test('create macro wizard saves the goal and optional three-phase template only 
 
   await page.reload()
   await expect(page.getByText(goal, { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: goal, exact: true }).click()
+  await page.getByRole('button', { name: 'Expandir todo', exact: true }).click()
+  await page
+    .getByRole('button', { name: /, 0 entrenos$/ })
+    .first()
+    .click()
+  await expect(
+    page.getByText('No hay entreno para este día.', { exact: true }).first()
+  ).toBeVisible()
+  await page.getByRole('button', { name: '+ Agregar entreno', exact: true }).first().click()
+  await expect(page.getByRole('textbox', { name: 'Título del entreno', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Agregar serie', exact: true }).first()
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Editar', exact: true }).first()).toBeVisible()
+  const saved = await (
+    await fetch(`http://127.0.0.1:8080/v1/${stored.name}`, {
+      headers: { authorization: 'Bearer owner' },
+    })
+  ).json()
+  let blocks = 0
+  for (const cycle of saved.fields.cycles.arrayValue.values) {
+    for (const session of Object.values(
+      cycle.mapValue.fields.objectiveWorkouts?.mapValue.fields || {}
+    )) {
+      const value = session as {
+        arrayValue: {
+          values?: Array<{
+            mapValue: { fields: { blocks: { arrayValue: { values?: unknown[] } } } }
+          }>
+        }
+      }
+      for (const workout of value.arrayValue.values || [])
+        blocks += workout.mapValue.fields.blocks.arrayValue.values?.length || 0
+    }
+  }
+  expect(blocks).toBe(1)
+  await page.getByRole('button', { name: 'Editar', exact: true }).first().click()
+  await page.getByRole('button', { name: 'Agregar serie', exact: true }).first().click()
+  const series = page.getByRole('dialog', { name: 'Agregar serie', exact: true })
+  const repetitions = series.getByRole('spinbutton', {
+    name: '¿Cuántas repeticiones?',
+    exact: true,
+  })
+  await expect(repetitions).toBeFocused()
+  const plus = series.getByRole('button', { name: 'Aumentar ¿cuántas repeticiones?' })
+  const bounds = await plus.boundingBox()
+  if (!bounds) throw new Error('STEPPER_BUTTON_NOT_VISIBLE')
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2)
+  await page.mouse.down()
+  await expect.poll(async () => Number(await repetitions.inputValue())).toBeGreaterThanOrEqual(4)
+  await page.mouse.up()
+  const stopped = await repetitions.inputValue()
+  await page.waitForTimeout(250)
+  await expect(repetitions).toHaveValue(stopped)
 })

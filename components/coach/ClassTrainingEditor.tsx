@@ -102,7 +102,7 @@ export default function ClassTrainingEditor({
                         · {series.material}
                       </span>
                     )}
-                    {series.interval && (
+                    {series.interval && !/^0+:0+$/.test(series.interval.trim()) && (
                       <span className="ml-1 text-[11px] text-(--c-text-2)">
                         · {series.kind === 'pause' ? '' : 'Cada '}
                         {series.interval}
@@ -207,7 +207,7 @@ export default function ClassTrainingEditor({
                             · {series.material}
                           </span>
                         )}
-                        {series.interval && (
+                        {series.interval && !/^0+:0+$/.test(series.interval.trim()) && (
                           <span className="ml-1 text-[11px] text-(--c-text-2)">
                             · {series.kind === 'pause' ? '' : 'Cada '}
                             {series.interval}

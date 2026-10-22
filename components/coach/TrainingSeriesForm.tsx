@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import DurationInput from '@/components/ui/duration-input'
+import NumberStepper from '@/components/ui/number-stepper'
 import SwimEquipmentIcon, { type SwimEquipment } from '@/components/ui/swim-equipment-icon'
 import type { ClassTrainingSeries } from '@/lib/class-training'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
@@ -29,7 +30,6 @@ export default function TrainingSeriesForm({
   const [step, setStep] = useState(0)
   const techniqueInput = useRef<HTMLInputElement>(null)
   const materialInput = useRef<HTMLInputElement>(null)
-  const distanceInput = useRef<HTMLInputElement>(null)
   // Techniques/materials this coach typed with "Otro" before, shown as extra chips.
   const [customTechniques, setCustomTechniques] = useState<string[]>([])
   const [customMaterials, setCustomMaterials] = useState<string[]>([])
@@ -51,6 +51,13 @@ export default function TrainingSeriesForm({
   }, [])
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
+    if (step === 2 || step === 3) {
+      const frame = requestAnimationFrame(() => {
+        const input = step === 2 ? techniqueInput.current : materialInput.current
+        input?.focus()
+      })
+      return () => cancelAnimationFrame(frame)
+    }
     if (step >= 0) heading.current?.focus()
   }, [step])
   const [draft, setDraft] = useState<ClassTrainingSeries>(
@@ -80,7 +87,7 @@ export default function TrainingSeriesForm({
     setDraft({
       ...draft,
       interval:
-        minutes || seconds
+        Number(minutes) > 0 || Number(seconds) > 0
           ? `${Number(minutes || 0)}:${String(Number(seconds || 0)).padStart(2, '0')}`
           : '',
     })
@@ -107,8 +114,8 @@ export default function TrainingSeriesForm({
   const selectedStyle = styles.find((style) =>
     draft.exercise.toLocaleLowerCase().includes(style.toLocaleLowerCase())
   )
-  const selectedComplement = ['Brazada', 'Patada', 'Catch-up', 'Técnica', 'Velocidad'].find(
-    (part) => draft.exercise.toLocaleLowerCase().includes(part.toLocaleLowerCase())
+  const selectedComplement = ['Brazada', 'Patada', 'Técnica', 'Velocidad'].find((part) =>
+    draft.exercise.toLocaleLowerCase().includes(part.toLocaleLowerCase())
   )
   const chooseTechnique = (style: string, complement?: string) =>
     setDraft({
@@ -178,97 +185,37 @@ export default function TrainingSeriesForm({
         )}
       </h3>
       {step === 0 && (
-        <div className="grid gap-3">
-          <label className="grid gap-2 text-sm font-semibold">
-            <span className="sr-only">¿Cuántas repeticiones?</span>
-            <input
-              key="repetitions"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={999}
-              value={draft.repetitions || ''}
-              onChange={(event) => setDraft({ ...draft, repetitions: Number(event.target.value) })}
-              className={inputClass}
-            />
-          </label>
-          <fieldset aria-label="Sumar repeticiones" className="grid grid-cols-4 gap-1.5">
-            {[1, 2, 4, 8].map((step) => (
-              <button
-                key={step}
-                type="button"
-                aria-label={`Sumar ${step}`}
-                onClick={() =>
-                  setDraft({
-                    ...draft,
-                    repetitions: Math.min(999, (Number(draft.repetitions) || 0) + step),
-                  })
-                }
-                className="btn btn-outline border h-9 min-h-9 px-3 text-xs"
-              >
-                +{step}
-              </button>
-            ))}
-          </fieldset>
-        </div>
+        <NumberStepper
+          focusOnMount
+          label="¿Cuántas repeticiones?"
+          value={draft.repetitions}
+          min={1}
+          max={999}
+          required
+          onValueChange={(repetitions) => setDraft({ ...draft, repetitions })}
+        />
       )}
       {step === 1 && (
-        <div className="grid gap-2">
-          <label className="grid gap-2 text-sm font-semibold">
-            <span className="text-xs font-normal text-(--c-text-2)">Metros por repetición</span>
-            <input
-              ref={distanceInput}
-              key="distance"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={100000}
-              placeholder="50"
-              value={draft.distanceMeters ?? ''}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  distanceMeters: event.target.value ? Number(event.target.value) : null,
-                })
-              }
-              className={inputClass}
-            />
-          </label>
-          <fieldset
-            aria-label="Sugerencias de distancia"
-            className="series-distance-options grid grid-cols-3 gap-1 sm:grid-cols-6"
-          >
-            <button
-              type="button"
-              aria-pressed={draft.distanceMeters === null}
-              onClick={() => setDraft({ ...draft, distanceMeters: null })}
-              className={`btn border h-9 min-h-9 px-3 text-xs ${draft.distanceMeters === null ? 'btn-primary' : 'btn-outline'}`}
-            >
-              Sin
-            </button>
-            {[25, 50, 100, 200].map((distanceMeters) => (
-              <button
-                key={distanceMeters}
-                type="button"
-                aria-pressed={draft.distanceMeters === distanceMeters}
-                onClick={() => setDraft({ ...draft, distanceMeters })}
-                className={`btn border h-9 min-h-9 px-3 text-xs ${draft.distanceMeters === distanceMeters ? 'btn-primary' : 'btn-outline'}`}
-              >
-                {distanceMeters} m
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => distanceInput.current?.focus()}
-              className="btn btn-outline border h-9 min-h-9 px-3 text-xs"
-            >
-              Otro
-            </button>
-          </fieldset>
+        <div className="grid min-w-0 gap-2">
+          <p className="text-xs text-(--c-text-2)">Metros por repetición</p>
+          <NumberStepper
+            focusOnMount
+            label="Metros por repetición"
+            value={draft.distanceMeters ?? 0}
+            min={0}
+            max={100000}
+            step={25}
+            onValueChange={(distanceMeters) =>
+              setDraft({ ...draft, distanceMeters: distanceMeters > 0 ? distanceMeters : null })
+            }
+          />
+          <p className="text-xs text-(--c-text-2)">
+            De 25 en 25 metros. En 0, la serie queda sin distancia.
+          </p>
         </div>
       )}
       {step === 2 && (
-        <div className="grid gap-3">
+        <div className="-mt-3 grid gap-3">
           <label className="grid gap-2 text-sm font-semibold">
             <span className="sr-only">Técnica o ejercicio (opcional)</span>
             <input
@@ -281,7 +228,8 @@ export default function TrainingSeriesForm({
               className={inputClass}
             />
           </label>
-          <fieldset className="flex flex-wrap gap-1.5" aria-label="Sugerencias de técnica">
+          <fieldset className="flex flex-wrap gap-1.5">
+            <legend className="mb-1 text-xs font-semibold text-(--c-text-2)">Comunes</legend>
             {styles.map((style) => (
               <button
                 key={style}
@@ -320,11 +268,9 @@ export default function TrainingSeriesForm({
               Otro
             </button>
           </fieldset>
-          <p className="text-sm font-semibold">
-            Complemento <span className="font-normal text-(--c-text-2)">(opcional)</span>
-          </p>
-          <fieldset className="flex flex-wrap gap-1.5" aria-label="Complemento de técnica">
-            {['Brazada', 'Patada', 'Catch-up', 'Técnica', 'Velocidad'].map((complement) => (
+          <fieldset className="flex flex-wrap gap-1.5">
+            <legend className="mb-1 text-xs font-semibold text-(--c-text-2)">Complementos</legend>
+            {['Brazada', 'Patada', 'Técnica', 'Velocidad'].map((complement) => (
               <button
                 key={complement}
                 type="button"
@@ -415,7 +361,12 @@ export default function TrainingSeriesForm({
         </div>
       )}
       {step === 4 && (
-        <DurationInput minutes={intervalMinutes} seconds={intervalSeconds} onChange={setInterval} />
+        <DurationInput
+          focusOnMount
+          minutes={intervalMinutes}
+          seconds={intervalSeconds}
+          onChange={setInterval}
+        />
       )}
       <div className="flex flex-wrap gap-2 pt-2">
         <button type="button" onClick={onCancel} className="btn border btn-ghost min-h-11">

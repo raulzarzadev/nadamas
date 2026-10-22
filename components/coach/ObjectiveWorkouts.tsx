@@ -28,11 +28,13 @@ export default function ObjectiveWorkouts({
   onChange,
   disabled,
   readOnly = false,
+  onRequestEdit,
 }: {
   workouts: ObjectiveWorkout[]
   onChange: (workouts: ObjectiveWorkout[]) => void
   disabled: boolean
   readOnly?: boolean
+  onRequestEdit?: () => void
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -57,13 +59,17 @@ export default function ObjectiveWorkouts({
     <section aria-label="Entrenos de la sesión" className="grid min-w-0 gap-4 px-2 py-2">
       {!workouts.length && (
         <div className="flex flex-wrap items-center justify-center gap-2">
-          {!readOnly && (
+          {(!readOnly || onRequestEdit) && (
             <button
               type="button"
               disabled={disabled}
               className="inline-flex min-h-9 cursor-pointer items-center justify-center rounded-full bg-black px-4 text-xs font-semibold text-white hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:cursor-not-allowed disabled:opacity-40"
               onClick={() => {
-                const workout = { id: crypto.randomUUID(), blocks: [] }
+                if (readOnly) onRequestEdit?.()
+                const workout: ObjectiveWorkout = {
+                  id: crypto.randomUUID(),
+                  blocks: [{ id: crypto.randomUUID(), repetitions: 1, series: [] }],
+                }
                 onChange([...workouts, workout])
                 setSelectedId(workout.id)
                 setEditingId(workout.id)
@@ -76,9 +82,7 @@ export default function ObjectiveWorkouts({
         </div>
       )}
       {!workouts.length && (
-        <p className="text-center text-xs text-(--c-text-2)">
-          No hay entrenos. Crea un entreno para este día.
-        </p>
+        <p className="text-center text-xs text-(--c-text-2)">No hay entreno para este día.</p>
       )}
       {workouts.length > 0 && (
         <fieldset aria-label="Seleccionar entreno" className="flex min-w-0 flex-wrap gap-1.5">
@@ -139,7 +143,7 @@ export default function ObjectiveWorkouts({
                       )
                     )
                   }
-                  className="box-border min-h-8 w-full min-w-0 max-w-full flex-[1_1_10rem] rounded-lg border border-(--c-border) bg-white px-3 text-base font-normal text-(--c-ocean) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+                  className="box-border h-7 w-full min-w-0 max-w-full flex-[1_1_10rem] rounded-lg border border-(--c-border) bg-white px-2 text-xs font-semibold text-(--c-ocean) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
                 />
               )}
               {!readOnly && (
@@ -190,7 +194,7 @@ export default function ObjectiveWorkouts({
                   )
                 )
               }
-              className="box-border min-h-9 max-h-64 w-full min-w-0 max-w-full resize-none overflow-y-auto rounded-lg [field-sizing:content] border border-(--c-border) bg-white px-3 py-2 text-base font-normal text-(--c-ocean) placeholder:text-(--c-text-2) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+              className="box-border min-h-8 max-h-64 w-full min-w-0 max-w-full resize-none overflow-y-auto rounded-lg [field-sizing:content] border border-(--c-border) bg-white px-2 py-1.5 text-xs leading-relaxed font-normal text-(--c-ocean) placeholder:text-(--c-text-2) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
             />
           ) : selected.observations?.trim() ? (
             <p className="whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">

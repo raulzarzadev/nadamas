@@ -309,7 +309,7 @@ export default function ClassNotesModal({
                             {series.material && (
                               <span className="text-(--c-text-2)"> · {series.material}</span>
                             )}
-                            {series.interval && (
+                            {series.interval && !/^0+:0+$/.test(series.interval.trim()) && (
                               <span className="text-(--c-text-2)"> · Cada {series.interval}</span>
                             )}
                           </li>

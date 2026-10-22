@@ -20,6 +20,7 @@ export default function MacroCycleBarsInput({
   onChange,
   disabled,
   readOnly = false,
+  onRequestEdit,
   expanded: sharedExpanded,
   onExpandedChange,
 }: {
@@ -28,6 +29,7 @@ export default function MacroCycleBarsInput({
   onChange: (cycles: TrainingCycle[]) => void
   disabled: boolean
   readOnly?: boolean
+  onRequestEdit?: () => void
   /** Shared open state so nested levels follow the top-level expand-all toggle. */
   expanded?: Record<string, boolean>
   onExpandedChange?: (expanded: Record<string, boolean>) => void
@@ -230,6 +232,7 @@ export default function MacroCycleBarsInput({
                         value={cycle}
                         disabled={disabled}
                         readOnly={readOnly}
+                        onRequestEdit={onRequestEdit}
                         onChange={(details) =>
                           onChange(
                             cycles.map((item) =>
@@ -246,6 +249,7 @@ export default function MacroCycleBarsInput({
                         onChange={onChange}
                         disabled={disabled}
                         readOnly={readOnly}
+                        onRequestEdit={onRequestEdit}
                         expanded={expanded}
                         onExpandedChange={setExpanded}
                       />

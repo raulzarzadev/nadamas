@@ -16,11 +16,13 @@ export default function CycleDetails({
   onChange,
   disabled,
   readOnly = false,
+  onRequestEdit,
 }: {
   value: TrainingCycle
   onChange: (value: TrainingCycle) => void
   disabled: boolean
   readOnly?: boolean
+  onRequestEdit?: () => void
 }) {
   const [today, setToday] = useState(() => localCalendarDate(new Date()))
   useEffect(() => {
@@ -225,6 +227,7 @@ export default function CycleDetails({
                                           workouts={workouts(selected)}
                                           disabled={disabled}
                                           readOnly={readOnly}
+                                          onRequestEdit={onRequestEdit}
                                           onChange={(next) =>
                                             onChange({
                                               ...value,
