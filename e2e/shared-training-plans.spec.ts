@@ -375,8 +375,17 @@ test('entrenos: invitación privada', async ({ browser, request }) => {
 
 test('entrenos: enlace regenerado deja de funcionar', async ({ browser, request }) => {
   test.setTimeout(120000)
-  const author = await authorWithPlan(browser, request, `Regenerado ${crypto.randomUUID()}`)
+  const title = `Regenerado ${crypto.randomUUID()}`
+  const author = await authorWithPlan(browser, request, title)
   const oldUrl = await copiedInviteUrl(author.page)
+  // A plain Compartir after a reload reuses the token instead of revoking earlier links.
+  await author.page.reload()
+  await author.page.getByRole('button', { name: title, exact: true }).click()
+  expect(await copiedInviteUrl(author.page)).toBe(oldUrl)
+  const early = await freshAthlete(browser, request, 'early')
+  await early.page.goto(oldUrl)
+  await expect(early.page.getByRole('button', { name: 'Suscribirme', exact: true })).toBeVisible()
+  await early.context.close()
   await author.page.getByRole('button', { name: 'Generar nuevo enlace', exact: true }).click()
   await expect(author.page.getByText('Los enlaces anteriores dejarán de funcionar.')).toBeVisible()
   await author.page.getByRole('button', { name: 'Confirmar', exact: true }).click()

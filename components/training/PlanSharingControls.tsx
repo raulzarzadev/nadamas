@@ -70,7 +70,7 @@ export default function PlanSharingControls({ plan, onChange }: Props) {
     setStatus('')
     setConfirmingRegenerate(false)
     try {
-      setToken(await TrainingPlanSharing.createInvite(plan.id))
+      setToken(await TrainingPlanSharing.createInvite(plan.id, true))
       setStatus('Enlace nuevo listo. Pulsa Compartir para enviarlo.')
     } catch (cause) {
       reportInternalError('TRAINING_PLAN_INVITE', cause)

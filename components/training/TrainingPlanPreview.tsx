@@ -211,6 +211,7 @@ export default function TrainingPlanPreview({
 
       {ownerPlan ? (
         <PlanSharingControls
+          key={preview.id}
           plan={ownerPlan}
           onChange={(next) =>
             setPreview({

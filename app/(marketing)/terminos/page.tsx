@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Términos y condiciones',
-  description: 'Términos de uso de nadamas.app: marketplace para reservar coaches de natación.',
+  description:
+    'Términos de uso de nadamas.app: marketplace para reservar coaches de natación.',
   alternates: { canonical: 'https://nadamas.app/terminos' },
 }
 
@@ -13,8 +14,8 @@ export default function TerminosPage() {
         Términos y condiciones
       </h1>
       <p className="mt-3 text-sm" style={{ color: 'var(--c-text-2)' }}>
-        Última actualización: 16 de mayo de 2026. Producto en fase previa al lanzamiento; estos
-        términos se ampliarán antes de la apertura pública.
+        Última actualización: 16 de mayo de 2026. Producto en fase previa al
+        lanzamiento; estos términos se ampliarán antes de la apertura pública.
       </p>
 
       <div
@@ -26,8 +27,9 @@ export default function TerminosPage() {
             El servicio
           </h2>
           <p className="mt-2">
-            nadamas.app conecta a nadadores con coaches de natación. Facilitamos el descubrimiento,
-            la reserva y el pago de clases. La clase la presta el coach, no nadamas.app.
+            nadamas.app conecta a nadadores con coaches de natación. Facilitamos
+            el descubrimiento, la reserva y el pago de clases. La clase la
+            presta el coach, no nadamas.app.
           </p>
         </section>
         <section>
@@ -35,8 +37,9 @@ export default function TerminosPage() {
             Coaches
           </h2>
           <p className="mt-2">
-            Cada coach pasa una evaluación práctica y teórica antes de publicarse. El coach define
-            sus precios, horarios y política de cancelación, visibles antes de reservar.
+            Cada coach pasa una evaluación práctica y teórica antes de
+            publicarse. El coach define sus precios, horarios y política de
+            cancelación, visibles antes de reservar.
           </p>
         </section>
         <section>
@@ -44,8 +47,9 @@ export default function TerminosPage() {
             Reservas y cancelaciones
           </h2>
           <p className="mt-2">
-            Al reservar aceptas la política de cancelación del coach mostrada en ese momento. Las
-            devoluciones dentro de plazo se gestionan automáticamente.
+            Al reservar aceptas la política de cancelación del coach mostrada en
+            ese momento. Las devoluciones dentro de plazo se gestionan
+            automáticamente.
           </p>
         </section>
         <section>

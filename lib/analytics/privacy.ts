@@ -98,7 +98,11 @@ export function analyticsModal(label: string) {
   )
 }
 
-/** Auth and invitation pages can contain one-time credentials. */
+/** Auth, invitation and private-plan invite pages can contain one-time credentials. */
 export function privateReplayRoute(pathname: string) {
-  return /^\/(auth|login|logout)(?:\/|$)/.test(pathname) || /\/invitations(?:\/|$)/.test(pathname)
+  return (
+    /^\/(auth|login|logout)(?:\/|$)/.test(pathname) ||
+    /\/invitations(?:\/|$)/.test(pathname) ||
+    /^\/athlete\/training\/plans(?:\/|$)/.test(pathname)
+  )
 }

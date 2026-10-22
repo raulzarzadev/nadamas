@@ -618,6 +618,7 @@ export default function TrainingPlanner() {
                 </div>
                 {owned && plan && cycle.type === 'macro' && (
                   <PlanSharingControls
+                    key={plan.id}
                     plan={plan}
                     onChange={(next) =>
                       setPlans((items) => items.map((item) => (item.id === next.id ? next : item)))

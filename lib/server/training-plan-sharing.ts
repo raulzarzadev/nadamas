@@ -151,12 +151,27 @@ async function assertOwner(planId: string, ownerUid: string) {
   if (!plan || plan.userId !== ownerUid) throw new Error('FORBIDDEN')
 }
 
-export async function createInvite(planId: string, ownerUid: string): Promise<string> {
+/** Returns the current invite token; only `regenerate` (or a missing token) mints a new one. */
+export async function createInvite(
+  planId: string,
+  ownerUid: string,
+  regenerate = false
+): Promise<string> {
   await assertOwner(planId, ownerUid)
+  if (!regenerate) {
+    const existing = (await invites().doc(planId).get()).data()
+    // Server-only collection (rules deny clients); validation still compares hashes.
+    if (
+      typeof existing?.token === 'string' &&
+      existing.ownerId === ownerUid &&
+      existing.tokenHash === hash(existing.token)
+    )
+      return existing.token
+  }
   const token = randomBytes(32).toString('base64url')
   await invites()
     .doc(planId)
-    .set({ tokenHash: hash(token), ownerId: ownerUid, createdAt: Date.now() })
+    .set({ token, tokenHash: hash(token), ownerId: ownerUid, createdAt: Date.now() })
   return token
 }
 

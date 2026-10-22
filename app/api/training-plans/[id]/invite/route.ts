@@ -8,7 +8,8 @@ export async function POST(request: Request, { params }: Props) {
     const caller = await getSchoolCaller(request)
     if (!caller)
       return NextResponse.json({ error: 'Inicia sesión para continuar.' }, { status: 401 })
-    const token = await createInvite((await params).id, caller.uid)
+    const body = (await request.json().catch(() => null)) as { regenerate?: unknown } | null
+    const token = await createInvite((await params).id, caller.uid, body?.regenerate === true)
     return NextResponse.json({ token }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
     const forbidden = error instanceof Error && error.message === 'FORBIDDEN'

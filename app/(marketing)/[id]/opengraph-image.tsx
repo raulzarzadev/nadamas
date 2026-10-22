@@ -117,7 +117,9 @@ export default async function Image({ params }: { params: Promise<{ id: string }
         <div style={{ fontSize: 40, fontWeight: 600, opacity: 0.92, marginTop: 16 }}>
           {subtitle}
         </div>
-        <div style={{ fontSize: 30, fontWeight: 500, opacity: 0.8, marginTop: 28 }}>{summary}</div>
+        <div style={{ fontSize: 30, fontWeight: 500, opacity: 0.8, marginTop: 28 }}>
+          {summary}
+        </div>
       </div>
     </div>,
     size

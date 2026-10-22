@@ -1,15 +1,15 @@
 'use client'
 
-import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
-import Loading from '@comps/Loading'
-import Link from 'next/link'
 import { use, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { FiArrowLeft, FiShield, FiUser } from 'react-icons/fi'
-import AdminCoachOfferingEditor from '@/components/admin/AdminCoachOfferingEditor'
-import type { CoachPrivate, CoachPublic } from '@/firebase/coaches/coach.model'
 import type { AppUser } from '@/firebase/users/user.model'
+import type { CoachPrivate, CoachPublic } from '@/firebase/coaches/coach.model'
 import { deleteAuthed, getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import Loading from '@comps/Loading'
+import AdminCoachOfferingEditor from '@/components/admin/AdminCoachOfferingEditor'
+import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
 
 interface UserSummary {
   user: AppUser | null

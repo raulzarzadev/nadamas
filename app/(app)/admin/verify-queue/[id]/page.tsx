@@ -1,21 +1,30 @@
 'use client'
 
-import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
-import Loading from '@comps/Loading'
+import { use, useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { use, useEffect, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiExternalLink, FiX } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
-import type { CoachPrivate, CoachPublic } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
+import type {
+  CoachPrivate,
+  CoachPublic,
+} from '@/firebase/coaches/coach.model'
+import CoachPublicProfile from '@comps/coach/CoachPublicProfile'
+import Loading from '@comps/Loading'
 import { postAuthed } from '@/lib/client/authed-api'
 
-export default function VerifyCoachPage({ params }: { params: Promise<{ id: string }> }) {
+export default function VerifyCoachPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   const { id } = use(params)
   const { user } = useUser()
   const [coach, setCoach] = useState<CoachPublic | null | undefined>()
-  const [privateProfile, setPrivateProfile] = useState<CoachPrivate | null | undefined>()
+  const [privateProfile, setPrivateProfile] = useState<
+    CoachPrivate | null | undefined
+  >()
   const [busy, setBusy] = useState(false)
 
   useEffect(() => CoachCRUD.listenPublic(id, setCoach), [id])
@@ -89,7 +98,9 @@ export default function VerifyCoachPage({ params }: { params: Promise<{ id: stri
                   className="object-cover"
                 />
               </a>
-              <p className="break-all text-sm text-[var(--c-text-2)]">{document.name}</p>
+              <p className="break-all text-sm text-[var(--c-text-2)]">
+                {document.name}
+              </p>
               <a
                 href={document.url}
                 target="_blank"

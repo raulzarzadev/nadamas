@@ -17,8 +17,10 @@ export const TrainingPlanSharing = {
   async unsubscribe(id: string): Promise<void> {
     await deleteAuthed(`${base(id)}/subscription`)
   },
-  async createInvite(id: string): Promise<string> {
-    const { token } = (await (await postAuthed(`${base(id)}/invite`)).json()) as { token: string }
+  async createInvite(id: string, regenerate = false): Promise<string> {
+    const { token } = (await (
+      await postAuthed(`${base(id)}/invite`, regenerate ? { regenerate: true } : {})
+    ).json()) as { token: string }
     return token
   },
   async subscribers(id: string): Promise<PlanSubscriber[]> {
