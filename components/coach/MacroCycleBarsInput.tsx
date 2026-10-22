@@ -116,8 +116,8 @@ export default function MacroCycleBarsInput({
                 style={{
                   top:
                     cycle.type === 'meso'
-                      ? 'calc(var(--app-header-h, 0px) + 24px)'
-                      : 'calc(var(--app-header-h, 0px) + 48px)',
+                      ? 'calc(var(--app-header-h, 0px) + var(--training-toolbar-h, 0px) + 24px)'
+                      : 'calc(var(--app-header-h, 0px) + var(--training-toolbar-h, 0px) + 48px)',
                 }}
               >
                 <PlanningRow

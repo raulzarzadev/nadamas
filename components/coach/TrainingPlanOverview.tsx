@@ -39,7 +39,7 @@ export default function TrainingPlanOverview({
     <div className="grid min-w-0 gap-1 rounded-xl bg-[#d8eef5] pb-1">
       <div
         className="sticky z-[26] rounded-t-xl bg-[#d8eef5]"
-        style={{ top: 'var(--app-header-h, 0px)' }}
+        style={{ top: 'calc(var(--app-header-h, 0px) + var(--training-toolbar-h, 0px))' }}
       >
         <PlanningRow
           title={macro.title}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   FiActivity,
-  FiCheck,
+  FiSave,
   FiChevronRight,
   FiEdit2,
   FiInfo,
@@ -321,7 +321,10 @@ export default function TrainingPlanner() {
   }
 
   return (
-    <section className="mx-auto max-w-4xl px-1 sm:px-0" aria-label="Entrenamiento">
+    <section
+      className="mx-auto max-w-4xl px-1 [--training-toolbar-h:2.25rem] sm:px-0"
+      aria-label="Entrenamiento"
+    >
       <div
         inert={Boolean(draft) || deleting || infoOpen || creatingMacro}
         aria-hidden={Boolean(draft) || deleting || infoOpen || creatingMacro || undefined}
@@ -451,7 +454,7 @@ export default function TrainingPlanner() {
                       ))}
                   </nav>
                 )}
-                <div className="mb-3 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1">
+                <div className="sticky top-[var(--app-header-h,0px)] z-40 grid min-h-9 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 bg-(--c-bg) py-1">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1">
                       {editing ? (
@@ -469,10 +472,12 @@ export default function TrainingPlanner() {
                               )
                             )
                           }
-                          className="box-border min-h-11 w-full min-w-0 rounded-xl border border-(--c-border) bg-white px-3 text-base font-bold text-(--c-ocean) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+                          className="box-border h-7 w-full min-w-0 rounded-lg border border-transparent bg-transparent px-1.5 text-xs font-semibold text-(--c-ocean) outline-none hover:border-(--c-border) focus:border-(--c-aqua-strong) focus:bg-white focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
                         />
                       ) : (
-                        <h2 className="min-w-0 break-words text-xl font-bold">{cycle.title}</h2>
+                        <h2 className="min-w-0 truncate text-sm font-semibold" title={cycle.title}>
+                          {cycle.title}
+                        </h2>
                       )}
                     </div>
                   </div>
@@ -512,8 +517,8 @@ export default function TrainingPlanner() {
                         disabled={busy}
                         onClick={() => void finishEditing()}
                       >
-                        <FiCheck aria-hidden="true" />
-                        {busy ? 'Guardando…' : 'Listo'}
+                        <FiSave aria-hidden="true" />
+                        {busy ? 'Guardando…' : 'Guardar'}
                       </button>
                     </div>
                   ) : (
@@ -528,6 +533,8 @@ export default function TrainingPlanner() {
                       Editar
                     </button>
                   )}
+                </div>
+                <div className="mb-3 grid min-w-0 grid-cols-2 gap-1">
                   <p className="col-span-2 flex items-center gap-1 text-sm text-(--c-text-2)">
                     {dateLabel(cycle.startDate)} — {dateLabel(cycle.endDate)}
                     {editButton('dates')}
@@ -572,9 +579,6 @@ export default function TrainingPlanner() {
                       )}
                       cycles={editing ? planCycles : plan.cycles}
                       onChange={setBarsDraft}
-                      onEdit={startEditing}
-                      onSave={() => void finishEditing()}
-                      onDiscard={stopEditing}
                       disabled={busy}
                       readOnly={!editing}
                     />
