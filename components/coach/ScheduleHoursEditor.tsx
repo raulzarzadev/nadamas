@@ -89,8 +89,16 @@ export default function ScheduleHoursEditor({
     return next
   }
 
-  const coachSelectionRequired = coachOptions.length > 0 && !selectedCoachId
-  const canSubmit = dates.size > 0 && times.size > 0 && !busy && !coachSelectionRequired
+  const allCoaches = coachOptions.filter((coach) => coach.id !== UNASSIGNED_SCHOOL_COACH_ID)
+  const addForAll = mode === 'add' && coachOptions.length > 0 && !selectedCoachId
+  const coachSelectionRequired = coachOptions.length > 0 && !selectedCoachId && mode === 'remove'
+  const classesPerDay = times.size * (addForAll ? allCoaches.length : 1)
+  const canSubmit =
+    dates.size > 0 &&
+    times.size > 0 &&
+    !busy &&
+    !coachSelectionRequired &&
+    (!addForAll || allCoaches.length > 0)
   const isRemove = mode === 'remove'
   const removalCount = existingOccurrenceCount(existingTimesByDate, dates, times)
 
@@ -227,7 +235,9 @@ export default function ScheduleHoursEditor({
           <p className="-mt-2 text-xs text-[var(--c-text-2)]">
             {isRemove
               ? 'En un horario recurrente se quita ese día de la semana; en horarios por fecha solo se quitan las fechas elegidas. Las horas ocupadas se conservan.'
-              : 'Se agregan las horas seleccionadas. Si ya existe ese horario no se duplica.'}
+              : addForAll
+                ? `Se crea una clase por ${coachSingular} en cada hora seleccionada. Los horarios existentes no se duplican.`
+                : 'Se agregan las horas seleccionadas. Si ya existe ese horario no se duplica.'}
           </p>
 
           {/* Días */}
@@ -361,9 +371,22 @@ export default function ScheduleHoursEditor({
                 </span>
               ) : (
                 <>
-                  {dates.size} {dates.size === 1 ? 'día' : 'días'} · {times.size}{' '}
-                  {times.size === 1 ? 'clase' : 'clases'} por día ·{' '}
-                  <span className="text-[var(--c-ocean)]">{dates.size * times.size} en total</span>
+                  {dates.size} {dates.size === 1 ? 'día' : 'días'} ·{' '}
+                  {addForAll && (
+                    <>
+                      {allCoaches.length}{' '}
+                      {allCoaches.length === 1
+                        ? coachSingular
+                        : terminology.schoolId
+                          ? terminology.coachPlural
+                          : 'coaches'}{' '}
+                      ·{' '}
+                    </>
+                  )}
+                  {classesPerDay} {classesPerDay === 1 ? 'clase' : 'clases'} por día ·{' '}
+                  <span className="text-[var(--c-ocean)]">
+                    {dates.size * classesPerDay} en total
+                  </span>
                 </>
               )}
             </p>

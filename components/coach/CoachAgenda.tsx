@@ -1394,6 +1394,40 @@ export default function CoachAgenda({
     }
     setNotice(null)
     run(async () => {
+      if (mode === 'add' && manageSchoolSchedule && schoolId && !coachId) {
+        const targets = [
+          ...new Set(
+            scheduleCoachOptions
+              .filter((coach) => coach.id && coach.id !== UNASSIGNED_SCHOOL_COACH_ID)
+              .map((coach) => coach.id)
+          ),
+        ]
+        if (!targets.length) throw new Error('SCHEDULE_NO_COACHES')
+        const pairs = dates.flatMap((date) => times.map((time) => ({ date, time })))
+        for (const targetCoachId of targets) {
+          const response = await getAuthed(
+            `/api/schools/${encodeURIComponent(schoolId)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(targetCoachId)}`
+          )
+          const targetAgenda = (await response.json()) as CoachAgendaPayload
+          const targetOfferings = targetAgenda.offerings || []
+          const current = targetOfferings[0]
+          const base = current ?? createOffering()
+          const next = offeringWithHours(base, dates, times, base.durationMinutes ?? 60)
+          const targetEndpoint = scheduleEndpointFor(targetCoachId)
+          for (const block of targetAgenda.blocks || []) {
+            if (pairs.some((pair) => blockCoversClassAt(block, pair.date, pair.time))) {
+              await deleteAuthed(`${targetEndpoint}?id=${encodeURIComponent(block.id)}`)
+            }
+          }
+          await postAuthed(targetEndpoint, {
+            classOfferings: current
+              ? targetOfferings.map((item) => (item.id === next.id ? next : item))
+              : [...targetOfferings, next],
+          })
+        }
+        closeScheduleEditor()
+        return
+      }
       const latestEndpoint = schoolId
         ? `/api/schools/${encodeURIComponent(schoolId as string)}/agenda?month=${monthOfSelected}&coachId=${encodeURIComponent(coachId || selfUid)}`
         : `/api/coach/agenda?month=${monthOfSelected}${coachQuery}`
