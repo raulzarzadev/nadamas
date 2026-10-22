@@ -169,3 +169,58 @@ test('booking without balance requires opt-in and still uses available credits',
     null
   )
 })
+
+test('week and year durations expire on their actual boundaries', () => {
+  assert.equal(
+    grant(product({ mode: 'period', durationUnit: 'week', durationCount: 2, perWeek: 2 }))
+      .endsBefore,
+    '2026-02-14'
+  )
+  assert.equal(
+    grant(product({ mode: 'period', durationUnit: 'year', durationCount: 1, perMonth: 4 }))
+      .endsBefore,
+    '2027-01-31'
+  )
+  const leap = activateGrant(
+    'leap',
+    product({ mode: 'period', durationUnit: 'year', durationCount: 1, perDay: 1 }),
+    Date.parse('2024-02-29T18:00:00Z'),
+    config.timezone
+  )
+  assert.equal(leap.endsBefore, '2025-02-28')
+  for (const extra of [
+    { durationUnit: 'day', durationCount: 1 },
+    { durationUnit: 'week', durationCount: 105 },
+    { durationUnit: 'year', durationCount: 3 },
+    { durationUnit: 'month', durationCount: 0 },
+    { perMonth: -1 },
+  ]) {
+    assert.throws(() => product({ mode: 'period', months: 1, perDay: 1, ...extra }))
+  }
+})
+
+test('monthly limits count holds and consumption, reset in a new calendar month, and refund', () => {
+  const g = grant(product({ mode: 'period', durationUnit: 'year', durationCount: 1, perMonth: 2 }))
+  const account = { grants: [g] }
+  const settings = { ...config, periodsEnabled: true, classesEnabled: false }
+  changeGrantUsage(g, '2026-02-01', 1, 0)
+  changeGrantUsage(g, '2026-02-12', 0, 1)
+  assert.equal(planAvailable(account, '2026-02-20'), 0)
+  assert.throws(() => reserveGrant(account, '2026-02-20', settings, false))
+  assert.equal(planAvailable(account, '2026-03-01'), 2)
+  changeGrantUsage(g, '2026-02-01', -1, 0)
+  assert.equal(planAvailable(account, '2026-02-20'), 1)
+  assert.equal(reserveGrant(account, '2026-02-20', settings, false), g)
+})
+
+test('zero session limits stay enabled and prevent plan reservations', () => {
+  for (const key of ['perDay', 'perWeek', 'perMonth', 'perPeriod']) {
+    const p = product({ mode: 'period', months: 1, [key]: 0 })
+    assert.equal(p[key], 0)
+    const account = { grants: [grant(p)] }
+    assert.equal(planAvailable(account, '2026-02-02'), 0)
+    assert.throws(() =>
+      reserveGrant(account, '2026-02-02', { ...config, periodsEnabled: true }, false)
+    )
+  }
+})

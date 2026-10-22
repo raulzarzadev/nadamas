@@ -10,7 +10,7 @@ import { useUser } from '@/context/UserContext'
 import { PaymentCRUD } from '@/firebase/payments/main'
 import { getAuthed, getCachedAuthedData, postAuthed } from '@/lib/client/authed-api'
 import { localPaymentDate, paymentAvailable } from '@/lib/payments/engine'
-import { formatPlanDate, productTerms } from '@/lib/payments/format'
+import { formatPlanDate, productDuration, productTerms } from '@/lib/payments/format'
 import { paymentMessage } from '@/lib/payments/messages'
 import type {
   PaymentOrder,
@@ -66,6 +66,10 @@ export default function PaymentsPanel({
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [productForm, setProductForm] = useState<PaymentProduct | null | false>(false)
+  const [productStep, setProductStep] = useState(0)
+  useEffect(() => {
+    if (productForm === false) setProductStep(0)
+  }, [productForm])
   const [settings, setSettings] = useState<PaymentSettings | null>(null)
   const [purchase, setPurchase] = useState<PaymentProduct | null>(null)
   const [method, setMethod] = useState<'cash' | 'transfer'>('transfer')
@@ -417,8 +421,7 @@ export default function PaymentsPanel({
                     <h2 className="mb-2 text-xs font-semibold text-(--c-text-2)">Plan vigente</h2>
                     <strong className="block text-base">{grant.product.name}</strong>
                     <p className="mt-2 text-xs text-(--c-text-2)">
-                      Vigencia: {grant.product.months}{' '}
-                      {grant.product.months === 1 ? 'mes' : 'meses'}
+                      Vigencia: {productDuration(grant.product)}
                     </p>
                     <p className="text-xs text-(--c-text-2)">
                       Inicia el {formatPlanDate(grant.startsOn)}
@@ -434,9 +437,10 @@ export default function PaymentsPanel({
                     </p>
                     <p className="text-xs text-(--c-text-2)">
                       {[
-                        grant.product.perDay && `${grant.product.perDay} al día`,
-                        grant.product.perWeek && `${grant.product.perWeek} a la semana`,
-                        grant.product.perPeriod && `${grant.product.perPeriod} por periodo`,
+                        grant.product.perDay != null && `${grant.product.perDay} al día`,
+                        grant.product.perWeek != null && `${grant.product.perWeek} a la semana`,
+                        grant.product.perMonth != null && `${grant.product.perMonth} al mes`,
+                        grant.product.perPeriod != null && `${grant.product.perPeriod} por periodo`,
                       ]
                         .filter(Boolean)
                         .join(' · ')}
@@ -527,9 +531,10 @@ export default function PaymentsPanel({
                 {product.mode === 'period' && (
                   <p className="text-xs text-(--c-text-2)">
                     {[
-                      product.perDay && `${product.perDay}/día`,
-                      product.perWeek && `${product.perWeek}/semana`,
-                      product.perPeriod && `${product.perPeriod}/periodo`,
+                      product.perDay != null && `${product.perDay}/día`,
+                      product.perWeek != null && `${product.perWeek}/semana`,
+                      product.perMonth != null && `${product.perMonth}/mes`,
+                      product.perPeriod != null && `${product.perPeriod}/periodo`,
                     ]
                       .filter(Boolean)
                       .join(' · ')}
@@ -650,7 +655,26 @@ export default function PaymentsPanel({
         onClose={() => setProductForm(false)}
         label={productForm ? 'Editar paquete o plan' : 'Crear paquete o plan'}
         keyboardAware
-        footer={submitFooter('product', productForm ? 'Guardar cambios' : 'Crear')}
+        footer={
+          <div className="flex gap-2 pt-4">
+            {productStep > 0 && (
+              <button
+                type="button"
+                disabled={busy}
+                className="btn btn-outline min-h-11"
+                onClick={() => setProductStep(productStep - 1)}
+              >
+                Atrás
+              </button>
+            )}
+            <div className="min-w-0 flex-1">
+              {submitFooter(
+                'product',
+                productStep < 3 ? 'Continuar' : productForm ? 'Guardar cambios' : 'Crear'
+              )}
+            </div>
+          </div>
+        }
         closeDisabled={busy}
       >
         {productForm !== false && (
@@ -667,6 +691,9 @@ export default function PaymentsPanel({
               key={productForm?.id || 'new'}
               product={productForm || undefined}
               formId={`${id}-product`}
+              step={productStep}
+              onStepChange={setProductStep}
+              busy={busy}
               onSave={(product) =>
                 void perform(async () => {
                   await PaymentCRUD.update(endpoint, {

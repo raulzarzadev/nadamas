@@ -60,14 +60,26 @@ export function validateProduct(input: unknown, id: string): PaymentProduct {
     throw new PaymentRuleError('payment_invalid')
   const positive = (number: unknown, max: number) =>
     typeof number === 'number' && Number.isInteger(number) && number > 0 && number <= max
-  for (const limit of [value.perDay, value.perWeek, value.perPeriod, value.expiryDays])
-    if (limit !== null && limit !== undefined && !positive(limit, 10000))
+  for (const limit of [value.perDay, value.perWeek, value.perMonth, value.perPeriod])
+    if (
+      limit != null &&
+      (typeof limit !== 'number' || !Number.isInteger(limit) || limit < 0 || limit > 10000)
+    )
       throw new PaymentRuleError('payment_invalid')
+  if (value.expiryDays != null && !positive(value.expiryDays, 10000))
+    throw new PaymentRuleError('payment_invalid')
   if (value.mode === 'classes' && !positive(value.classes, 10000))
     throw new PaymentRuleError('payment_invalid')
+  const unit = value.durationUnit ?? 'month'
+  const count = value.durationCount ?? value.months
+  const maxDuration = unit === 'week' ? 104 : unit === 'year' ? 2 : 24
   if (
     value.mode === 'period' &&
-    (!positive(value.months, 24) || !(value.perDay || value.perWeek || value.perPeriod))
+    (!['week', 'month', 'year'].includes(unit) ||
+      !positive(count, maxDuration) ||
+      [value.perDay, value.perWeek, value.perMonth, value.perPeriod].every(
+        (limit) => limit == null
+      ))
   )
     throw new PaymentRuleError('payment_invalid')
   return {
@@ -77,11 +89,15 @@ export function validateProduct(input: unknown, id: string): PaymentProduct {
     priceCents: Number(value.priceCents),
     currency: 'MXN',
     classes: value.mode === 'classes' ? Number(value.classes) : 0,
-    months: value.mode === 'period' ? Number(value.months) : 0,
+    months:
+      value.mode === 'period' && unit !== 'week' ? Number(count) * (unit === 'year' ? 12 : 1) : 0,
+    ...(value.mode === 'period'
+      ? { durationUnit: unit, durationCount: Number(count), perMonth: value.perMonth ?? null }
+      : {}),
     expiryDays: value.mode === 'classes' ? value.expiryDays || null : null,
-    perDay: value.mode === 'period' ? value.perDay || null : null,
-    perWeek: value.mode === 'period' ? value.perWeek || null : null,
-    perPeriod: value.mode === 'period' ? value.perPeriod || null : null,
+    perDay: value.mode === 'period' ? (value.perDay ?? null) : null,
+    perWeek: value.mode === 'period' ? (value.perWeek ?? null) : null,
+    perPeriod: value.mode === 'period' ? (value.perPeriod ?? null) : null,
     active: value.active !== false,
   }
 }
@@ -98,7 +114,14 @@ export function activateGrant(
     startsOn,
     endsBefore:
       product.mode === 'period'
-        ? addMonths(startsOn, product.months)
+        ? product.durationUnit === 'week'
+          ? addDays(startsOn, (product.durationCount || 1) * 7)
+          : addMonths(
+              startsOn,
+              product.durationUnit === 'year'
+                ? (product.durationCount || 1) * 12
+                : (product.durationCount ?? product.months)
+            )
         : product.expiryDays
           ? addDays(startsOn, product.expiryDays)
           : null,
@@ -115,14 +138,15 @@ function grantAvailable(grant: PaymentGrant, date: string, mode: PaymentProduct[
   )
     return false
   if (mode === 'classes') return grant.used + grant.reserved < grant.product.classes
-  if (grant.product.perPeriod && grant.used + grant.reserved >= grant.product.perPeriod)
+  if (grant.product.perPeriod != null && grant.used + grant.reserved >= grant.product.perPeriod)
     return false
   return [
     [`d:${date}`, grant.product.perDay],
     [`w:${paymentWeek(date)}`, grant.product.perWeek],
+    [`m:${date.slice(0, 7)}`, grant.product.perMonth],
   ].every(([key, limit]) => {
     const bucket = grant.buckets[String(key)] || { used: 0, reserved: 0 }
-    return !limit || bucket.used + bucket.reserved < Number(limit)
+    return limit == null || bucket.used + bucket.reserved < Number(limit)
   })
 }
 export function reserveGrant(
@@ -152,7 +176,7 @@ export function changeGrantUsage(
   grant.reserved = Math.max(0, grant.reserved + reservedDelta)
   grant.used = Math.max(0, grant.used + usedDelta)
   if (grant.product.mode === 'period')
-    for (const key of [`d:${date}`, `w:${paymentWeek(date)}`]) {
+    for (const key of [`d:${date}`, `w:${paymentWeek(date)}`, `m:${date.slice(0, 7)}`]) {
       const current = grant.buckets[key] || { used: 0, reserved: 0 }
       grant.buckets[key] = {
         used: Math.max(0, current.used + usedDelta),
@@ -193,13 +217,16 @@ export function planAvailable(account: PaymentAccount, date: string) {
     .filter((grant) => grantAvailable(grant, date, 'period'))
     .reduce((total, grant) => {
       const remaining = [
-        grant.product.perPeriod ? grant.product.perPeriod - grant.used - grant.reserved : Infinity,
+        grant.product.perPeriod != null
+          ? grant.product.perPeriod - grant.used - grant.reserved
+          : Infinity,
         ...[
           [`d:${date}`, grant.product.perDay],
           [`w:${paymentWeek(date)}`, grant.product.perWeek],
+          [`m:${date.slice(0, 7)}`, grant.product.perMonth],
         ].map(([key, limit]) => {
           const bucket = grant.buckets[String(key)] || { used: 0, reserved: 0 }
-          return limit ? Number(limit) - bucket.used - bucket.reserved : Infinity
+          return limit != null ? Number(limit) - bucket.used - bucket.reserved : Infinity
         }),
       ]
       return total + Math.max(0, Math.min(...remaining))

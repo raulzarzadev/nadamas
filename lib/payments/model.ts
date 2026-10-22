@@ -31,6 +31,9 @@ export type PaymentProduct = {
   priceCents: number
   currency: 'MXN'
   classes: number
+  durationUnit?: 'week' | 'month' | 'year'
+  durationCount?: number
+  perMonth?: number | null
   months: number
   expiryDays: number | null
   perDay: number | null

@@ -565,23 +565,19 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
   await expect(page.getByRole('dialog', { name: 'Crear paquete o plan' })).toBeVisible()
   await page
     .getByRole('dialog', { name: 'Crear paquete o plan' })
-    .getByLabel('Nombre', { exact: true })
-    .fill('Mensual dos clases por semana')
-  await page
-    .getByRole('dialog', { name: 'Crear paquete o plan' })
-    .getByRole('radio', { name: 'Plan por periodo' })
+    .getByRole('radio', { name: 'Plan por tiempo' })
     .check()
   await expect(
     page
       .getByRole('dialog', { name: 'Crear paquete o plan' })
-      .getByRole('button', { name: 'Crear', exact: true })
+      .getByRole('button', { name: 'Continuar', exact: true })
   ).toBeInViewport({ ratio: 1 })
   const productDialog = page.getByRole('dialog', { name: 'Crear paquete o plan' })
   for (const width of [320, 390, 768]) {
     await page.setViewportSize({ width, height: 844 })
     for (const mode of ['classes', 'period']) {
       await productDialog
-        .getByRole('radio', { name: mode === 'classes' ? 'Paquete de clases' : 'Plan por periodo' })
+        .getByRole('radio', { name: mode === 'classes' ? 'Plan por clases' : 'Plan por tiempo' })
         .check()
       const bounds = await productDialog.evaluate((element) => {
         const form = element.querySelector('form')?.getBoundingClientRect()
@@ -605,6 +601,65 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
     }
   }
   await page.setViewportSize({ width: 390, height: 844 })
+  await productDialog.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await expect(productDialog.getByLabel('Cantidad', { exact: true })).toBeVisible()
+  await expect(productDialog.getByLabel('Nombre', { exact: true })).toHaveCount(0)
+  await productDialog.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await expect(productDialog.getByRole('alert')).toContainText('Define al menos un límite')
+  await productDialog.getByRole('checkbox', { name: 'Semanal', exact: true }).check()
+  await expect(productDialog.getByLabel('Clases por semana', { exact: true })).toBeInViewport({
+    ratio: 1,
+  })
+  await productDialog.getByRole('button', { name: 'Reducir clases por semana' }).click()
+  await expect(productDialog.getByLabel('Clases por semana', { exact: true })).toHaveValue('0')
+  await productDialog.getByLabel('Clases por semana', { exact: true }).fill('2')
+  await productDialog.getByLabel('Cantidad', { exact: true }).fill('')
+  await expect(productDialog.getByLabel('Cantidad', { exact: true })).toHaveValue('')
+  await productDialog.getByLabel('Cantidad', { exact: true }).fill('1')
+  await productDialog.getByRole('button', { name: 'Aumentar vigencia' }).click()
+  await expect(productDialog.getByLabel('Cantidad', { exact: true })).toHaveValue('2')
+  await productDialog.getByRole('radio', { name: 'Año', exact: true }).check()
+  await productDialog.getByRole('radio', { name: 'Mes', exact: true }).check()
+  await productDialog.getByRole('button', { name: 'Reducir vigencia' }).click()
+  await productDialog.getByRole('checkbox', { name: 'Diario', exact: true }).check()
+  await productDialog.getByRole('checkbox', { name: 'Mensual', exact: true }).check()
+  for (const width of [320, 390, 768]) {
+    await page.setViewportSize({ width, height: 559 })
+    expect(
+      await productDialog.evaluate((element) => {
+        const bounds = element.getBoundingClientRect()
+        return Array.from(
+          element.querySelectorAll('input[type=number], [data-number-stepper] button')
+        ).every((input) => {
+          const rect = input.getBoundingClientRect()
+          const container =
+            input.closest('[data-number-stepper]')?.getBoundingClientRect() ?? bounds
+          return (
+            rect.left >= bounds.left &&
+            rect.right <= bounds.right &&
+            rect.left >= container.left - 1 &&
+            rect.right <= container.right + 1
+          )
+        })
+      }),
+      `Duration and limit fields fit the modal at ${width}px`
+    ).toBe(true)
+  }
+  await page.setViewportSize({ width: 390, height: 844 })
+  await productDialog.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await productDialog.getByLabel('Nombre', { exact: true }).fill('Mensual dos clases por semana')
+  await productDialog.getByLabel('Precio (MXN)').fill('800')
+  await expect(productDialog.getByRole('region', { name: 'Resumen del plan' })).toContainText(
+    'Mensual dos clases por semana'
+  )
+  await productDialog.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await expect(productDialog.getByRole('button', { name: 'Crear', exact: true })).toBeInViewport({
+    ratio: 1,
+  })
+  await productDialog.getByRole('button', { name: '3. Datos', exact: true }).click()
+  await expect(productDialog.getByLabel('Nombre', { exact: true })).toHaveValue(
+    'Mensual dos clases por semana'
+  )
   await productDialog.getByLabel('Nombre', { exact: true }).focus()
   await expect(productDialog).toBeInViewport({ ratio: 1 })
   await page.screenshot({ path: '/tmp/nadamas-payments-plan-mobile.png', animations: 'disabled' })

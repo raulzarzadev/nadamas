@@ -5,7 +5,7 @@ import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { PaymentCRUD } from '@/firebase/payments/main'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { localPaymentDate } from '@/lib/payments/engine'
-import { formatPlanDate, productTerms } from '@/lib/payments/format'
+import { formatPlanDate, productDuration, productTerms } from '@/lib/payments/format'
 import { paymentMessage } from '@/lib/payments/messages'
 import type {
   PaymentGrant,
@@ -131,14 +131,15 @@ function Stat({ label, value }: { label: string; value: string }) {
 // Key numbers of the plan as tiles: price, what it includes, validity and usage.
 function PlanStats({ product, grant }: { product: PaymentProduct; grant?: PaymentGrant }) {
   const limits = [
-    product.perDay && `${product.perDay} al día`,
-    product.perWeek && `${product.perWeek} a la semana`,
-    product.perPeriod && `${product.perPeriod} por periodo`,
+    product.perDay != null && `${product.perDay} al día`,
+    product.perWeek != null && `${product.perWeek} a la semana`,
+    product.perMonth != null && `${product.perMonth} al mes`,
+    product.perPeriod != null && `${product.perPeriod} por periodo`,
   ].filter(Boolean)
   const includes =
     product.mode === 'classes'
       ? `${product.classes} ${product.classes === 1 ? 'clase' : 'clases'}`
-      : `${product.months} ${product.months === 1 ? 'mes' : 'meses'}`
+      : productDuration(product)
   const validity = grant
     ? grant.endsBefore
       ? `Hasta ${formatPlanDate(grant.endsBefore)}`
