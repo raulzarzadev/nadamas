@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 import { auth } from '@/firebase/index'
+import { isAllowedPostLoginPath } from '@/lib/post-login-path'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 
 type Status = 'idle' | 'verifying' | 'success' | 'error'
@@ -16,11 +17,7 @@ export default function ConfirmLink() {
   const linkEmail = (searchParams.get('email') || '').trim().toLowerCase()
   const token = (searchParams.get('token') || '').trim()
   const redirectTo = searchParams.get('redirectTo') || ''
-  const destination = /^\/athlete\/profile-invitations\/(?:[A-Za-z0-9_-]{43}|[a-f0-9]{64})$/.test(
-    redirectTo
-  )
-    ? redirectTo
-    : '/athlete/progress'
+  const destination = isAllowedPostLoginPath(redirectTo) ? redirectTo : '/athlete/progress'
 
   const [status, setStatus] = useState<Status>(linkEmail && token ? 'idle' : 'error')
   const [bookingCompleted, setBookingCompleted] = useState(false)

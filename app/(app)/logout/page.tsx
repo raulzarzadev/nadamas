@@ -1,6 +1,6 @@
 'use client'
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 import { useUser } from '@/context/UserContext'
 
 export default function LogoutPage() {

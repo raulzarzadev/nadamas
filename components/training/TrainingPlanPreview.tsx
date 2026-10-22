@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { FiCheckCircle, FiShare2 } from 'react-icons/fi'
 import TrainingSessionCard from '@/components/coach/TrainingSessionCard'
@@ -46,6 +47,7 @@ export default function TrainingPlanPreview({
   planId: string
   invite?: string
 }) {
+  const router = useRouter()
   const [preview, setPreview] = useState<PlanPreview | null>(null)
   const [verified, setVerified] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -112,6 +114,8 @@ export default function TrainingPlanPreview({
       else await TrainingPlanSharing.unsubscribe(planId)
       const next = await TrainingPlanSharing.preview(planId, invite)
       setPreview(next)
+      // The token served its purpose; keep it out of history and analytics.
+      if (action === 'subscribe' && invite) router.replace(`/athlete/training/plans/${planId}`)
     } catch (cause) {
       if (cause instanceof AuthedApiError && cause.status === 404) setError(NOT_AVAILABLE)
       else {
@@ -209,7 +213,11 @@ export default function TrainingPlanPreview({
         <PlanSharingControls
           plan={ownerPlan}
           onChange={(next) =>
-            setPreview({ ...preview, visibility: next.visibility ?? preview.visibility })
+            setPreview({
+              ...preview,
+              visibility: next.visibility ?? preview.visibility,
+              subscriberCount: next.subscriberCount ?? preview.subscriberCount,
+            })
           }
         />
       ) : (

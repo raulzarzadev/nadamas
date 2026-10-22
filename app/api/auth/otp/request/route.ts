@@ -1,6 +1,7 @@
 import { randomBytes, randomInt } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { authLinkOrigin } from '@/lib/firebase-auth-domain'
+import { isAllowedPostLoginPath } from '@/lib/post-login-path'
 import { type BookingInput, validateSelections } from '@/lib/server/bookings'
 import { sendOtpEmail } from '@/lib/server/emails'
 import { adminDb } from '@/lib/server/firebase-admin'
@@ -75,11 +76,7 @@ export async function POST(request: Request) {
 
   const link = `${siteUrl(request)}/auth/link?email=${encodeURIComponent(email)}&token=${linkToken}`
   const redirectTo = body.redirectTo
-  const invitationPath =
-    typeof redirectTo === 'string' &&
-    /^\/athlete\/profile-invitations\/(?:[A-Za-z0-9_-]{43}|[a-f0-9]{64})$/.test(redirectTo)
-      ? redirectTo
-      : null
+  const invitationPath = isAllowedPostLoginPath(redirectTo) ? redirectTo : null
   await sendOtpEmail(
     email,
     code,

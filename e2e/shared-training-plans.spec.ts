@@ -1,4 +1,4 @@
-import { type APIRequestContext, expect, type Page, test } from '@playwright/test'
+import { type APIRequestContext, type Browser, expect, type Page, test } from '@playwright/test'
 
 const root = 'http://127.0.0.1:8080/v1/projects/nadamas-b1ecf/databases/(default)/documents'
 const authLookup =
@@ -319,4 +319,163 @@ test('entrenos: otro atleta encuentra un entreno público, se suscribe y ve el e
 
   await page.getByRole('button', { name: 'Dejar de seguir', exact: true }).click()
   await expect(page.getByRole('button', { name: `Suscrito: ${title}`, exact: true })).toHaveCount(0)
+})
+
+const NOT_AVAILABLE = 'Este entreno no está disponible o el enlace ya no es válido.'
+
+// Athlete A creates a macro named `title`, leaves it private and returns A's page.
+async function authorWithPlan(browser: Browser, request: APIRequestContext, title: string) {
+  const context = await browser.newContext()
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  const page = await context.newPage()
+  page.setDefaultTimeout(30000)
+  const email = `author-${crypto.randomUUID()}@test.com`
+  await loginAs(page, request, email)
+  await page.goto('/athlete/training')
+  await createMacro(page, title)
+  await page.reload()
+  await page.getByRole('button', { name: title, exact: true }).click()
+  return { context, page, planId: await planIdOf(await uidOf(email)) }
+}
+
+async function copiedInviteUrl(page: Page) {
+  await page.getByRole('button', { name: 'Compartir', exact: true }).click()
+  await expect(page.getByText('Enlace copiado')).toBeVisible()
+  return page.evaluate(() => navigator.clipboard.readText())
+}
+
+async function freshAthlete(browser: Browser, request: APIRequestContext, prefix: string) {
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  page.setDefaultTimeout(30000)
+  await loginAs(page, request, `${prefix}-${crypto.randomUUID()}@test.com`)
+  return { context, page }
+}
+
+test('entrenos: invitación privada', async ({ browser, request }) => {
+  test.setTimeout(120000)
+  const title = `Privado ${crypto.randomUUID()}`
+  const author = await authorWithPlan(browser, request, title)
+  const url = await copiedInviteUrl(author.page)
+  expect(url).toContain(`/athlete/training/plans/${author.planId}?invite=`)
+
+  const guest = await freshAthlete(browser, request, 'guest')
+  await guest.page.goto(url.split('?')[0])
+  await expect(guest.page.getByText(NOT_AVAILABLE)).toBeVisible()
+  await expect(guest.page.getByRole('button', { name: 'Suscribirme', exact: true })).toHaveCount(0)
+
+  await guest.page.goto(url)
+  await guest.page.getByRole('button', { name: 'Suscribirme', exact: true }).click()
+  await expect(guest.page.getByText('Suscrito', { exact: true })).toBeVisible()
+  // The token is stripped from the address bar once subscribed.
+  await expect(guest.page).toHaveURL(`/athlete/training/plans/${author.planId}`)
+  await author.context.close()
+  await guest.context.close()
+})
+
+test('entrenos: enlace regenerado deja de funcionar', async ({ browser, request }) => {
+  test.setTimeout(120000)
+  const author = await authorWithPlan(browser, request, `Regenerado ${crypto.randomUUID()}`)
+  const oldUrl = await copiedInviteUrl(author.page)
+  await author.page.getByRole('button', { name: 'Generar nuevo enlace', exact: true }).click()
+  await expect(author.page.getByText('Los enlaces anteriores dejarán de funcionar.')).toBeVisible()
+  await author.page.getByRole('button', { name: 'Confirmar', exact: true }).click()
+  await expect(author.page.getByText(/Enlace nuevo listo/)).toBeVisible()
+  const newUrl = await copiedInviteUrl(author.page)
+  expect(newUrl).not.toBe(oldUrl)
+
+  const other = await freshAthlete(browser, request, 'late')
+  await other.page.goto(oldUrl)
+  await expect(other.page.getByText(NOT_AVAILABLE)).toBeVisible()
+  await expect(other.page.getByRole('button', { name: 'Suscribirme', exact: true })).toHaveCount(0)
+  await other.page.goto(newUrl)
+  await expect(other.page.getByRole('button', { name: 'Suscribirme', exact: true })).toBeVisible()
+  await author.context.close()
+  await other.context.close()
+})
+
+test('entrenos: quitar suscriptor', async ({ browser, request }) => {
+  test.setTimeout(120000)
+  const title = `Quitar ${crypto.randomUUID()}`
+  const author = await authorWithPlan(browser, request, title)
+  const url = await copiedInviteUrl(author.page)
+  const follower = await freshAthlete(browser, request, 'follower')
+  await follower.page.goto(url)
+  await follower.page.getByRole('button', { name: 'Suscribirme', exact: true }).click()
+  await expect(follower.page.getByText('Suscrito', { exact: true })).toBeVisible()
+  await follower.page.goto('/athlete/training')
+  await expect(
+    follower.page.getByRole('button', { name: `Suscrito: ${title}`, exact: true })
+  ).toBeVisible()
+
+  await author.page.reload()
+  await author.page.getByRole('button', { name: title, exact: true }).click()
+  await author.page.getByRole('button', { name: '1 suscriptor', exact: true }).click()
+  const sheet = author.page.getByRole('dialog', { name: 'Suscriptores' })
+  await sheet.getByRole('button', { name: /^Quitar/ }).click()
+  await expect(sheet.getByText('Aún no hay suscriptores.')).toBeVisible()
+
+  await follower.page.reload()
+  await expect(follower.page.getByRole('region', { name: 'Entrenamiento' })).toBeVisible()
+  await expect(
+    follower.page.getByRole('button', { name: `Suscrito: ${title}`, exact: true })
+  ).toHaveCount(0)
+  await expect(follower.page.getByRole('main').getByRole('alert')).toHaveCount(0)
+  await author.context.close()
+  await follower.context.close()
+})
+
+test('entrenos: entreno borrado no rompe la pestaña', async ({ browser, request }) => {
+  test.setTimeout(120000)
+  const title = `Borrado ${crypto.randomUUID()}`
+  const author = await authorWithPlan(browser, request, title)
+  await author.page.getByRole('switch', { name: 'Público' }).click()
+  await expect(author.page.getByRole('switch', { name: 'Público' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  )
+  const follower = await freshAthlete(browser, request, 'orphan')
+  await follower.page.goto(`/athlete/training/plans/${author.planId}`)
+  await follower.page.getByRole('button', { name: 'Suscribirme', exact: true }).click()
+  await expect(follower.page.getByText('Suscrito', { exact: true })).toBeVisible()
+  await follower.page.goto('/athlete/training')
+  await expect(
+    follower.page.getByRole('button', { name: `Suscrito: ${title}`, exact: true })
+  ).toBeVisible()
+
+  const removed = await fetch(`${root}/trainingPlans/${author.planId}`, {
+    method: 'DELETE',
+    headers: { authorization: 'Bearer owner' },
+  })
+  expect(removed.ok).toBe(true)
+
+  await follower.page.reload()
+  await expect(follower.page.getByRole('region', { name: 'Entrenamiento' })).toBeVisible()
+  await expect(
+    follower.page.getByRole('button', { name: `Suscrito: ${title}`, exact: true })
+  ).toHaveCount(0)
+  await expect(follower.page.getByRole('main').getByRole('alert')).toHaveCount(0)
+  await author.context.close()
+  await follower.context.close()
+})
+
+test('entrenos: abrir invitación sin sesión', async ({ browser, request }) => {
+  test.setTimeout(120000)
+  const author = await authorWithPlan(browser, request, `Sin sesión ${crypto.randomUUID()}`)
+  const url = await copiedInviteUrl(author.page)
+
+  const context = await browser.newContext()
+  const page = await context.newPage()
+  page.setDefaultTimeout(30000)
+  await page.goto(url)
+  await page.waitForURL(/\/login\?redirectTo=/)
+  expect(decodeURIComponent(page.url())).toContain('invite=')
+  await page.getByRole('button', { name: 'Aceptar política y continuar' }).click()
+  await page.getByLabel('Correo', { exact: true }).fill(`cold-${crypto.randomUUID()}@test.com`)
+  await page.getByRole('button', { name: 'Recibir código', exact: true }).click()
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await page.waitForURL(/\/athlete\/training\/plans\/.+invite=/)
+  await expect(page.getByRole('button', { name: 'Suscribirme', exact: true })).toBeVisible()
+  await author.context.close()
+  await context.close()
 })

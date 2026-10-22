@@ -14,9 +14,8 @@ export default function PrivacidadPage() {
         Privacidad
       </h1>
       <p className="mt-3 text-sm" style={{ color: 'var(--c-text-2)' }}>
-        Última actualización: 16 de mayo de 2026. nadamas.app está en fase
-        previa al lanzamiento; esta página resume nuestro enfoque y se ampliará
-        antes de la apertura pública.
+        Última actualización: 16 de mayo de 2026. nadamas.app está en fase previa al lanzamiento;
+        esta página resume nuestro enfoque y se ampliará antes de la apertura pública.
       </p>
 
       <div
@@ -28,9 +27,8 @@ export default function PrivacidadPage() {
             Qué datos tratamos
           </h2>
           <p className="mt-2">
-            Datos de cuenta (nombre, correo), datos de reservas y pagos
-            necesarios para prestar el servicio, y tu historial de
-            entrenamiento (distancias, tiempos, notas del coach).
+            Datos de cuenta (nombre, correo), datos de reservas y pagos necesarios para prestar el
+            servicio, y tu historial de entrenamiento (distancias, tiempos, notas del coach).
           </p>
         </section>
         <section>
@@ -38,9 +36,8 @@ export default function PrivacidadPage() {
             Tu historial es tuyo
           </h2>
           <p className="mt-2">
-            Tu historial y preferencias te pertenecen. Tú decides si los
-            compartes y con qué coach. Cambiar de entrenador no implica perder
-            tu progreso ni exponerlo sin tu consentimiento.
+            Tu historial y preferencias te pertenecen. Tú decides si los compartes y con qué coach.
+            Cambiar de entrenador no implica perder tu progreso ni exponerlo sin tu consentimiento.
           </p>
         </section>
         <section>
@@ -48,8 +45,8 @@ export default function PrivacidadPage() {
             Pagos
           </h2>
           <p className="mt-2">
-            Los pagos se procesan mediante proveedores de pago. No almacenamos
-            los datos completos de tu tarjeta en nuestros servidores.
+            Los pagos se procesan mediante proveedores de pago. No almacenamos los datos completos
+            de tu tarjeta en nuestros servidores.
           </p>
         </section>
         <section>
@@ -57,8 +54,7 @@ export default function PrivacidadPage() {
             Tus derechos
           </h2>
           <p className="mt-2">
-            Puedes solicitar acceso, rectificación o eliminación de tus datos
-            escribiendo a{' '}
+            Puedes solicitar acceso, rectificación o eliminación de tus datos escribiendo a{' '}
             <a
               href="mailto:hola@nadamas.app"
               className="font-semibold underline"
