@@ -130,6 +130,11 @@ test('create macro wizard saves the goal and optional three-phase template only 
       headers: { authorization: 'Bearer owner' },
     })
   ).json()
+  // create path writes visibility + summary; the workout save above went through update()
+  expect(saved.fields.visibility.stringValue).toBe('private')
+  expect(saved.fields.summary.mapValue.fields.title.stringValue).toBeTruthy()
+  expect(saved.fields.summary.mapValue.fields.authorRole.stringValue).toBe('coach')
+  expect(saved.fields.updatedAt).toBeTruthy()
   let blocks = 0
   for (const cycle of saved.fields.cycles.arrayValue.values) {
     for (const session of Object.values(

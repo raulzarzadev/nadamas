@@ -73,6 +73,8 @@ service cloud.firestore {
       // collections here, including server-only financial/authentication data.
       return ![
         'trainingPlans',
+        'trainingPlanSubscriptions',
+        'trainingPlanInvites',
         'marketingPreferences',
         'marketingSuppressions',
         'marketingCampaigns',
@@ -175,18 +177,42 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Plans are private by default. A public plan is readable by any signed-in
+    // user; subscribers (server-written subscription docs) can read it too.
+    // subscriberCount is server-only: it is not in the client-writable keys.
     match /trainingPlans/{id} {
-      allow read, delete: if isOwner(resource);
+      allow read: if isOwner(resource)
+        || (signedIn() && resource.data.get('visibility', 'private') == 'public')
+        || (signedIn() && exists(/databases/$(database)/documents/trainingPlanSubscriptions/$(id + '_' + request.auth.uid)));
+      allow delete: if isOwner(resource);
       allow create: if isOwner(request.resource)
-        && request.resource.data.keys().hasOnly(['userId', 'createdAt', 'cycles'])
+        && request.resource.data.keys().hasOnly(['userId', 'createdAt', 'cycles', 'visibility', 'summary'])
+        && (!('visibility' in request.resource.data) || request.resource.data.visibility in ['private', 'public'])
+        && (!('summary' in request.resource.data) || request.resource.data.summary is map)
         && request.resource.data.cycles is list
         && request.resource.data.cycles.size() > 0
         && request.resource.data.cycles.size() <= 100;
       allow update: if isOwner(resource) && isOwner(request.resource)
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cycles', 'updatedAt'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cycles', 'updatedAt', 'visibility', 'summary'])
+        && (!('visibility' in request.resource.data) || request.resource.data.visibility in ['private', 'public'])
+        && (!('summary' in request.resource.data) || request.resource.data.summary is map)
         && request.resource.data.cycles is list
         && request.resource.data.cycles.size() > 0
         && request.resource.data.cycles.size() <= 100;
+    }
+
+    // Subscription docs ({planId}_{uid}) are written only by server routes.
+    match /trainingPlanSubscriptions/{subId} {
+      allow read: if signedIn() && (
+        resource.data.uid == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid
+      );
+      allow write: if false;
+    }
+
+    // Invite tokens are server-only.
+    match /trainingPlanInvites/{planId} {
+      allow read, write: if false;
     }
 
     // Owner-scoped domain collections (athletes, atheltes [sic], teams,

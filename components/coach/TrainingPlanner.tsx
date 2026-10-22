@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react'
 import {
   FiActivity,
-  FiSave,
   FiChevronRight,
   FiEdit2,
   FiInfo,
   FiPlus,
+  FiSave,
   FiTrash2,
   FiX,
 } from 'react-icons/fi'
@@ -31,6 +31,7 @@ import MacroCyclePeriodInput from './MacroCyclePeriodInput'
 import TodayTrainingSummary from './TodayTrainingSummary'
 import TrainingCycleTimeline from './TrainingCycleTimeline'
 import TrainingPlanOverview from './TrainingPlanOverview'
+import { useTrainingPlanAuthor } from './use-training-plan-author'
 
 const actionClass =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-4 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
@@ -59,6 +60,7 @@ const isoDate = (date: Date) =>
 
 export default function TrainingPlanner() {
   const { user } = useUser()
+  const author = useTrainingPlanAuthor()
   const uid = user?.uid || user?.id
   const [plans, setPlans] = useState<TrainingPlan[]>([])
   const [loading, setLoading] = useState(true)
@@ -140,7 +142,7 @@ export default function TrainingPlanner() {
     setBusy(true)
     setError('')
     try {
-      const result = await TrainingPlanCRUD.create(cycles)
+      const result = await TrainingPlanCRUD.create(cycles, author)
       if (!result?.ok) throw new Error('TRAINING_CREATE_FAILED')
       const created: TrainingPlan = {
         id: result.res.id,
@@ -224,9 +226,9 @@ export default function TrainingPlanner() {
     try {
       const result =
         draft.type === 'macro' && !existing
-          ? await TrainingPlanCRUD.create(cycles)
+          ? await TrainingPlanCRUD.create(cycles, author)
           : plan
-            ? await TrainingPlanCRUD.update(plan.id, cycles)
+            ? await TrainingPlanCRUD.update(plan.id, cycles, author)
             : undefined
       if (!result?.ok) throw new Error('TRAINING_SAVE_FAILED')
       if (draft.type === 'macro' && !existing) {
@@ -277,7 +279,7 @@ export default function TrainingPlanner() {
     setBusy(true)
     setError('')
     try {
-      const result = await TrainingPlanCRUD.update(plan.id, barsDraft)
+      const result = await TrainingPlanCRUD.update(plan.id, barsDraft, author)
       if (!result?.ok) throw new Error('TRAINING_BARS_SAVE_FAILED')
       setPlans((items) =>
         items.map((item) => (item.id === plan.id ? { ...item, cycles: barsDraft } : item))
@@ -298,7 +300,7 @@ export default function TrainingPlanner() {
     try {
       const remaining = planCycles.filter((item) => !removedIds.has(item.id))
       const result = remaining.length
-        ? await TrainingPlanCRUD.update(plan.id, remaining)
+        ? await TrainingPlanCRUD.update(plan.id, remaining, author)
         : await TrainingPlanCRUD.delete(plan.id)
       if (!result?.ok) throw new Error('TRAINING_DELETE_FAILED')
       setPlans((items) =>
