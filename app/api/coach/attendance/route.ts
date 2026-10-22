@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { parseCredentialQr } from '@/lib/athlete-identity'
+import { effectiveAttendance } from '@/lib/attendance'
+import { hasClassEnded, hasClassStarted } from '@/lib/class-evaluation'
 import type { Booking } from '@/lib/coach-booking'
 import { schoolMembershipHasRole } from '@/lib/school'
 import { ensureAthleteIdentity, findAthleteIdentity } from '@/lib/server/athlete-identities'
@@ -98,7 +100,8 @@ export async function GET(request: Request) {
           inSchool: true,
           enrolled: true,
           pending: booking.status === 'pending',
-          attended: booking.attended === true,
+          attended: effectiveAttendance(booking, hasClassEnded(booking)),
+          noShow: booking.noShow === true,
         }
       })
     )
@@ -196,7 +199,12 @@ export async function POST(request: Request) {
         { status: 409 }
       )
     const attended = body.attended !== false
-    if (Boolean(booking.attended) === attended) return NextResponse.json({ alreadyRecorded: true })
+    if (
+      attended
+        ? booking.attended === true
+        : booking.noShow === true || (!booking.attended && !hasClassStarted(booking))
+    )
+      return NextResponse.json({ alreadyRecorded: true })
     const result = await updateBooking(
       new Request(new URL('/api/coach/agenda/bookings', request.url), {
         method: 'PATCH',

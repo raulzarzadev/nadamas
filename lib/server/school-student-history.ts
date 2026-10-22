@@ -37,6 +37,7 @@ interface SchoolStudentRecord {
   studentId: string
   coachId: string
   attended?: boolean
+  noShow?: boolean
   note?: string
   updatedAt?: number
 }
@@ -161,6 +162,7 @@ export async function getSchoolStudentHistory(
           endTime: item.endTime,
           status: item.status === 'cancelled' ? 'cancelled' : 'confirmed',
           attended: notes.get(`${item.id}|${student.id}`)?.attended,
+          noShow: notes.get(`${item.id}|${student.id}`)?.noShow,
         },
         timezone
       ),

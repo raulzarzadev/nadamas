@@ -20,7 +20,21 @@ export interface AttendanceCandidate {
   enrolled: boolean
   pending: boolean
   attended: boolean
+  /** Explicit no-show: the class stays charged. */
+  noShow?: boolean
 }
+/**
+ * Finished classes count as attended unless a no-show was recorded. Removing the
+ * athlete from the class (not a no-show) is how a coach returns the session.
+ */
+export function effectiveAttendance(
+  mark: { attended?: boolean; noShow?: boolean } | undefined,
+  ended: boolean
+) {
+  if (mark?.noShow === true) return false
+  return mark?.attended === true || ended
+}
+
 export type AttendanceFailure =
   | 'cancelled'
   | 'blocked'

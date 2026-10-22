@@ -11,6 +11,8 @@ import PhoneNumberInput from '@/components/ui/phone-number-input'
 import Sheet from '@/components/ui/sheet'
 import StatusBadge from '@/components/ui/status-badge'
 import { useUser } from '@/context/UserContext'
+import { effectiveAttendance } from '@/lib/attendance'
+import { hasClassEnded } from '@/lib/class-evaluation'
 import {
   deleteAuthed,
   getAuthed,
@@ -267,7 +269,9 @@ export default function StudentProfileModal({
             : item.status === 'cancelled'
               ? ('cancelled' as const)
               : ('confirmed' as const),
-        taken: item.status === 'completed' || item.attended === true,
+        taken:
+          item.status === 'completed' ||
+          (item.status === 'confirmed' && effectiveAttendance(item, hasClassEnded(item))),
         scheduled:
           item.status !== 'cancelled' &&
           item.status !== 'completed' &&

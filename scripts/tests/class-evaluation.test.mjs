@@ -26,7 +26,9 @@ test('ended classes are eligible for evaluation, future and cancelled classes ar
   assert.equal(rules.canEvaluateBooking(booking, now), true)
   assert.equal(rules.hasClassEnded(booking, Date.parse('2026-10-10T00:00:00Z')), false)
   assert.equal(rules.canEvaluateBooking({ ...booking, status: 'cancelled' }, now), false)
-  assert.equal(rules.canEvaluateBooking({ ...booking, attended: false }, now), false)
+  assert.equal(rules.canEvaluateBooking({ ...booking, noShow: true }, now), false)
+  // Legacy coach-created bookings stored attended:false before attendance defaulted.
+  assert.equal(rules.canEvaluateBooking({ ...booking, attended: false }, now), true)
 })
 
 const evaluation = { rating: 5, topics: ['technique'], publicComment: '', privateComment: '' }

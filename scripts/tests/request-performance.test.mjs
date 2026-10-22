@@ -219,7 +219,7 @@ test('summaries count confirmed attendance and future bookings without duplicati
   )
   assert.deepEqual(result.s, { taken: 2, scheduled: 1, related: true })
 })
-test('summaries exclude unrelated teachers and never infer attendance from a past date', () => {
+test('summaries exclude unrelated teachers and count finished classes unless a no-show was recorded', () => {
   const result = schoolStudentSummaries(
     [student],
     [occurrence('past', '2020-01-01')],
@@ -228,7 +228,16 @@ test('summaries exclude unrelated teachers and never infer attendance from a pas
     'UTC',
     'coach'
   )
-  assert.deepEqual(result.s, { taken: 0, scheduled: 0, related: true })
+  assert.deepEqual(result.s, { taken: 1, scheduled: 0, related: true })
+  const absent = schoolStudentSummaries(
+    [student],
+    [occurrence('past', '2020-01-01')],
+    [],
+    [{ sourceId: 'past', studentId: 's', coachId: 'coach', attended: false, noShow: true }],
+    'UTC',
+    'coach'
+  )
+  assert.deepEqual(absent.s, { taken: 0, scheduled: 0, related: true })
 })
 test('cancelled bookings do not establish coach relationship or count as scheduled', () => {
   const result = schoolStudentSummaries(

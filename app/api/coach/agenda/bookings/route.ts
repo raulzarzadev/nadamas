@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { hasClassStarted } from '@/lib/class-evaluation'
 import type { Booking } from '@/lib/coach-booking'
 import {
   DAY_TO_INDEX,
@@ -365,19 +366,23 @@ async function handlePATCH(request: Request) {
       return NextResponse.json({ error: 'Esta clase está cancelada.' }, { status: 409 })
     }
     const now = Date.now()
-    if (typeof body.attended === 'boolean')
+    if (typeof body.attended === 'boolean') {
+      // Once the class started, unchecking means a no-show: the session stays consumed.
+      // Before it starts, unchecking only reverts an early check-in.
+      const noShow = !body.attended && hasClassStarted(booking, now)
       await paymentTransaction(
         [
           bookingPaymentEvent(
             booking,
-            body.attended ? 'consume' : 'unconsume',
+            body.attended || noShow ? 'consume' : 'unconsume',
             verification.caller.uid
           ),
         ],
         (tx) => {
-          tx.set(bookingRef, { attended: body.attended, updatedAt: now }, { merge: true })
+          tx.set(bookingRef, { attended: body.attended, noShow, updatedAt: now }, { merge: true })
         }
       )
+    }
     if (typeof body.note === 'string')
       await adminDb
         .collection('agendaStudentRecords')

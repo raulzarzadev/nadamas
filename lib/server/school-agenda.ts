@@ -1,3 +1,5 @@
+import { effectiveAttendance } from '@/lib/attendance'
+import { hasClassEnded } from '@/lib/class-evaluation'
 import type { Booking } from '@/lib/coach-booking'
 import { WEEKDAY_LABELS } from '@/lib/coach-offerings'
 import {
@@ -54,6 +56,7 @@ export type AgendaStudentRecord = {
   sourceId: string
   studentId: string
   attended?: boolean
+  noShow?: boolean
   note?: string
   updatedAt?: number
 }
@@ -140,7 +143,8 @@ export function schoolClassAgendaBooking(args: {
               id,
               name: args.studentNames?.get(id) || 'Alumno',
               pending: pendingStudentIds.has(id),
-              attended: record?.attended === true,
+              attended: effectiveAttendance(record, hasClassEnded(occurrence)),
+              noShow: record?.noShow === true,
               note: record?.note || '',
             }
           }),

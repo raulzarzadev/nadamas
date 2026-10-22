@@ -22,14 +22,18 @@ export interface PublicClassEvaluation extends Omit<ClassEvaluation, 'privateCom
   updatedAt: number
 }
 export function canEvaluateBooking(
-  booking: Pick<Booking, 'date' | 'endTime' | 'status' | 'attended'>,
+  booking: Pick<Booking, 'date' | 'endTime' | 'status' | 'noShow'>,
   now = Date.now()
 ) {
-  return booking.status === 'confirmed' && booking.attended !== false && hasClassEnded(booking, now)
+  return booking.status === 'confirmed' && booking.noShow !== true && hasClassEnded(booking, now)
 }
 export function hasClassEnded(booking: Pick<Booking, 'date' | 'endTime'>, now = Date.now()) {
   const end = fromZonedTime(`${booking.date}T${booking.endTime}`, 'America/Mazatlan').getTime()
   return Number.isFinite(end) && end < now
+}
+export function hasClassStarted(booking: Pick<Booking, 'date' | 'startTime'>, now = Date.now()) {
+  const start = fromZonedTime(`${booking.date}T${booking.startTime}`, 'America/Mazatlan').getTime()
+  return Number.isFinite(start) && start <= now
 }
 export function parseClassEvaluation(value: unknown): ClassEvaluation | null {
   if (!value || typeof value !== 'object') return null

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { hasClassStarted } from '@/lib/class-evaluation'
 import { type SchoolClassOccurrence, schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
@@ -83,12 +84,16 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
             )
           )
         : []
+    // After the class starts, attended:false is a no-show and keeps the session charged.
+    const noShow = attended === false && hasClassStarted(occurrence)
     const billingAction =
       remove || status === 'cancelled'
         ? 'release'
-        : status === 'completed' || typeof attended === 'boolean'
+        : status === 'completed' || attended === true || noShow
           ? 'consume'
-          : null
+          : attended === false
+            ? 'unconsume'
+            : null
     const applyPayment = await preparePaymentEvents(
       transaction,
       billingAction
@@ -100,6 +105,7 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
               sourceId: doc.id,
               date: item.date,
               startTime: item.startTime,
+              endTime: item.endTime,
               actorId: access.caller.uid,
               action: billingAction,
               organizerCancelled: true,
@@ -157,7 +163,7 @@ async function mutate(request: Request, { params }: RouteProps, remove: boolean)
           studentId,
           schoolId,
           coachId: occurrence.teacherIds[0] || '',
-          ...(typeof attended === 'boolean' ? { attended } : {}),
+          ...(typeof attended === 'boolean' ? { attended, noShow } : {}),
           ...(typeof note === 'string' ? { note: note.trim() } : {}),
           updatedAt: now,
         },

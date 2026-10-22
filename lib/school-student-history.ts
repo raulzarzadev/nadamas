@@ -57,18 +57,15 @@ export function studentSchoolBookings(
 }
 
 export function schoolBookingHistoryStatus(
-  booking: Pick<Booking, 'date' | 'endTime' | 'status' | 'attended'>,
+  booking: Pick<Booking, 'date' | 'endTime' | 'status' | 'attended' | 'noShow'>,
   timezone: string,
   now = Date.now()
 ): SchoolHistoryClass['status'] {
   if (booking.status === 'cancelled') return 'cancelled'
   const end = fromZonedTime(`${booking.date}T${booking.endTime}`, timezone).getTime()
   if (!Number.isFinite(end) || end > now) return 'scheduled'
-  if (
-    booking.status === 'completed' ||
-    (booking.status === 'confirmed' && booking.attended === true)
-  )
-    return 'taken'
-  if (booking.attended === false) return 'absent'
+  if (booking.noShow === true && booking.attended !== true) return 'absent'
+  // Finished confirmed classes count as taken unless a no-show was recorded.
+  if (booking.status === 'completed' || booking.status === 'confirmed') return 'taken'
   return 'unconfirmed'
 }

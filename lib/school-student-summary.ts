@@ -7,6 +7,7 @@ type Record = {
   studentId: string
   coachId: string
   attended?: boolean
+  noShow?: boolean
   updatedAt?: number
 }
 
@@ -44,6 +45,7 @@ export function schoolStudentSummaries(
               endTime: occurrence.endTime,
               status: occurrence.status === 'cancelled' ? 'cancelled' : 'confirmed',
               attended: attendance.get(`${occurrence.id}|${student.id}`)?.attended,
+              noShow: attendance.get(`${occurrence.id}|${student.id}`)?.noShow,
             },
             timezone
           )

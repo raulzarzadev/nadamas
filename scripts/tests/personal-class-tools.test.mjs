@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { test } from 'node:test'
 import ts from 'typescript'
 
@@ -17,6 +18,13 @@ function load(file, dependencies) {
     module.exports
   )
   return module.exports
+}
+const require = createRequire(import.meta.url)
+const attendanceRules = {
+  '@/lib/attendance': load('../../lib/attendance.ts', {}),
+  '@/lib/class-evaluation': load('../../lib/class-evaluation.ts', {
+    'date-fns-tz': require('date-fns-tz'),
+  }),
 }
 const next = {
   'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
@@ -85,6 +93,7 @@ test('personal attendance isolates school bookings, resolves own roster and uses
   }
   const routes = load('../../app/api/coach/attendance/route.ts', {
     ...next,
+    ...attendanceRules,
     '@/lib/athlete-identity': { parseCredentialQr: () => null },
     '@/lib/school': { schoolMembershipHasRole: () => false },
     '@/lib/server/school-access': {
@@ -140,6 +149,7 @@ test('personal attendance isolates school bookings, resolves own roster and uses
   assert.equal((await post({ occurrenceId: id, studentId: 'own', attended: false })).status, 200)
   assert.deepEqual(writes.at(-1), { id: 'own', attended: false })
   rows[0].attended = false
+  rows[0].noShow = true
   assert.equal(
     (await (await post({ occurrenceId: id, studentId: 'own', attended: false })).json())
       .alreadyRecorded,

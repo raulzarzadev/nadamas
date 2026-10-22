@@ -9,6 +9,7 @@ import ScheduleTag from '@/components/ui/schedule-tag'
 import StudentListRow from '@/components/ui/student-list-row'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AttendanceCandidate } from '@/lib/attendance'
+import { hasClassStarted } from '@/lib/class-evaluation'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { CoachAvailableSlot } from '@/lib/coach-agenda'
 import { entityNameMatches, normalizeEntitySearch } from '@/lib/entity-matching'
@@ -178,7 +179,16 @@ export default function AgendaAddStudentModal({
       })
       setRoster((current) =>
         current.map((item) =>
-          item.studentId === candidate.studentId ? { ...item, attended } : item
+          item.studentId === candidate.studentId
+            ? {
+                ...item,
+                attended,
+                noShow:
+                  !attended &&
+                  Boolean(attendanceDate && attendanceStart) &&
+                  hasClassStarted({ date: attendanceDate || '', startTime: attendanceStart || '' }),
+              }
+            : item
         )
       )
       attendance?.onUpdated()
@@ -546,6 +556,11 @@ export default function AgendaAddStudentModal({
                           )}
                           action={
                             <div className="flex shrink-0 items-center gap-2">
+                              {candidate.noShow && !candidate.attended && (
+                                <span className="text-xs font-bold text-(--rose-tx)">
+                                  No asistió
+                                </span>
+                              )}
                               <input
                                 type="checkbox"
                                 checked={candidate.attended}

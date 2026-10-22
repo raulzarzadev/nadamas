@@ -5,6 +5,8 @@ import { BatchNotice } from '@/components/coach/ClassBatchNotesSheet'
 import ClassCard from '@/components/ui/class-card'
 import Sheet from '@/components/ui/sheet'
 import StudentTag from '@/components/ui/student-tag'
+import { effectiveAttendance } from '@/lib/attendance'
+import { hasClassEnded, hasClassStarted } from '@/lib/class-evaluation'
 import type { CoachAvailableSlot } from '@/lib/coach-agenda'
 import type { Booking } from '@/lib/coach-booking'
 import AgendaAddStudentModal, { type AddStudentPayload } from './AgendaAddStudentModal'
@@ -120,7 +122,7 @@ export default function ScheduleStudentsModal({
                     {
                       id: item.athleteId || item.id,
                       name: item.athleteName || 'Alumno',
-                      attended: item.attended || false,
+                      attended: effectiveAttendance(item, hasClassEnded(item)),
                       note: item.studentNote || '',
                       pending: item.status === 'pending',
                     },
@@ -159,6 +161,7 @@ export default function ScheduleStudentsModal({
                               note: student.note,
                               date: booking.date,
                               startTime: booking.startTime,
+                              started: hasClassStarted(booking),
                             })
                           }
                         />

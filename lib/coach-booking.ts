@@ -40,6 +40,7 @@ export interface Booking extends CoachBookingSelection {
     name: string
     pending: boolean
     attended?: boolean
+    noShow?: boolean
     note?: string
   }>
   studentNote?: string
@@ -58,6 +59,8 @@ export interface Booking extends CoachBookingSelection {
   classFull?: boolean
   /** Coach-confirmed attendance for this athlete and class. */
   attended?: boolean
+  /** Coach-recorded no-show; the session stays consumed. */
+  noShow?: boolean
   athletePhone?: string
   athleteEmail: string | null
   coachName: string | null

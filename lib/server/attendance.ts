@@ -8,6 +8,7 @@ import {
   type AttendanceRecord,
   attendanceEnrollmentPolicy,
 } from '@/lib/attendance'
+import { hasClassEnded, hasClassStarted } from '@/lib/class-evaluation'
 import { buildAvailableSlots } from '@/lib/coach-agenda'
 import { resolveOfferings } from '@/lib/coach-offerings'
 import {
@@ -182,7 +183,8 @@ function studentIdentity(student: SchoolStudent) {
 export async function attendanceCandidate(
   student: SchoolStudent,
   occurrence: SchoolClassOccurrence,
-  recorded: Set<string>
+  recorded: Set<string>,
+  noShows?: Set<string>
 ): Promise<AttendanceCandidate> {
   const identity = studentIdentity(student)
   const numericId = identity
@@ -199,6 +201,7 @@ export async function attendanceCandidate(
         ? (occurrence.pendingStudentIds as string[]).includes(student.id)
         : occurrence.status === 'pending',
     attended: recorded.has(student.id),
+    ...(noShows?.has(student.id) ? { noShow: true } : {}),
   }
 }
 
@@ -257,16 +260,23 @@ export async function listAttendanceRoster(schoolId: string, occurrence: SchoolC
     occurrence.id,
     ...('sourceOccurrenceIds' in occurrence ? (occurrence.sourceOccurrenceIds as string[]) : []),
   ])
+  const noShows = new Set<string>()
   for (const doc of legacyRecords.docs) {
     const record = doc.data()
-    if (sourceIds.has(record.sourceId) && record.attended === true) recorded.add(record.studentId)
+    if (!sourceIds.has(record.sourceId)) continue
+    if (record.noShow === true) noShows.add(record.studentId)
+    else if (record.attended === true) recorded.add(record.studentId)
   }
+  // Finished classes default to attended; only an explicit no-show clears it.
+  if (hasClassEnded(occurrence))
+    for (const id of occurrence.studentIds) if (!noShows.has(id)) recorded.add(id)
+  for (const id of noShows) recorded.delete(id)
   const roster = await Promise.all(
     students
       .filter((student) => occurrence.studentIds.includes(student.id))
-      .map((student) => attendanceCandidate(student, occurrence, recorded))
+      .map((student) => attendanceCandidate(student, occurrence, recorded, noShows))
   )
-  return { roster, records, students, recorded }
+  return { roster, records, students, recorded, noShows }
 }
 
 async function readBlocks(transaction: Transaction, schoolId: string) {
@@ -396,6 +406,8 @@ export async function recordAttendance(args: {
     ])
     if (args.attended === false) {
       if (!enrolled) return { code: 'missing_person' as const }
+      // After the class starts, unchecking records a no-show and keeps the session charged.
+      const noShow = hasClassStarted(targetOccurrence)
       const apply = await preparePaymentEvents(transaction, [
         {
           schoolStudentId: true,
@@ -406,12 +418,24 @@ export async function recordAttendance(args: {
           startTime: targetOccurrence.startTime,
           endTime: targetOccurrence.endTime,
           actorId: args.actorId,
-          action: 'unconsume',
+          action: noShow ? 'consume' : 'unconsume',
         },
       ])
       apply()
       transaction.delete(recordRef)
-      transaction.set(agendaRef, { attended: false, updatedAt: Date.now() }, { merge: true })
+      transaction.set(
+        agendaRef,
+        {
+          sourceId: target.id,
+          studentId,
+          schoolId: args.schoolId,
+          coachId: targetOccurrence.teacherIds[0] || '',
+          attended: false,
+          noShow,
+          updatedAt: Date.now(),
+        },
+        { merge: true }
+      )
       return { code: 'ok' as const, alreadyRecorded: false, studentId }
     }
     const blocked = blocks.docs.some((doc) => {
@@ -588,6 +612,7 @@ export async function recordAttendance(args: {
         schoolId: args.schoolId,
         coachId: targetOccurrence.teacherIds[0] || '',
         attended: true,
+        noShow: false,
         updatedAt: now,
         attendanceActorId: args.actorId,
         attendanceMethod: args.method,

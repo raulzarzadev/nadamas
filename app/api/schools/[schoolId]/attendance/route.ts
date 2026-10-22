@@ -76,7 +76,10 @@ export async function GET(request: Request, { params }: Props) {
     )
     if (!occurrence)
       return NextResponse.json({ error: 'Esta clase ya no está disponible.' }, { status: 404 })
-    const { roster, records, students, recorded } = await listAttendanceRoster(schoolId, occurrence)
+    const { roster, records, students, recorded, noShows } = await listAttendanceRoster(
+      schoolId,
+      occurrence
+    )
     const mode = query.get('mode')
     const value = (query.get('query') || '').trim()
     let candidates = roster
@@ -90,7 +93,7 @@ export async function GET(request: Request, { params }: Props) {
         students
           .filter((student) => student.name && normalized(student.name).includes(normalized(value)))
           .slice(0, 20)
-          .map((student) => attendanceCandidate(student, occurrence, recorded))
+          .map((student) => attendanceCandidate(student, occurrence, recorded, noShows))
       )
     } else if (mode === 'id' || mode === 'qr') {
       if ((mode === 'id' && !/^\d{6}$/.test(value)) || value.length > 100)
@@ -100,7 +103,7 @@ export async function GET(request: Request, { params }: Props) {
         mode === 'id' ? { numericId: value } : { qrValue: value }
       )
       candidates = person?.student
-        ? [await attendanceCandidate(person.student, occurrence, recorded)]
+        ? [await attendanceCandidate(person.student, occurrence, recorded, noShows)]
         : person?.profile
           ? [
               {

@@ -23,6 +23,7 @@ function load(path, dependencies) {
 }
 const identityHelpers = load('../../lib/athlete-identity.ts', {})
 const policy = load('../../lib/attendance.ts', {})
+const classTiming = load('../../lib/class-evaluation.ts', {})
 const offeringsHelpers = load('../../lib/coach-offerings.ts', {})
 const agendaHelpers = load('../../lib/coach-agenda.ts', {
   '@/lib/coach-offerings': offeringsHelpers,
@@ -135,6 +136,7 @@ function fixture(classes = [exampleClass()]) {
     'server-only': {},
     '@/lib/athlete-identity': identityHelpers,
     '@/lib/attendance': policy,
+    '@/lib/class-evaluation': classTiming,
     '@/lib/coach-agenda': agendaHelpers,
     '@/lib/coach-offerings': offeringsHelpers,
     '@/lib/school': { UNASSIGNED_SCHOOL_COACH_ID: '__unassigned__' },
@@ -585,4 +587,29 @@ test('API supports validated virtual hours and refuses forged virtual identifier
   assert.equal(saved.status, 200)
   assert.equal(saved.body.ok, true)
   assert.equal(f.writes(), 3)
+})
+
+test('finished classes default to attended; unchecking after start records a charged no-show', async () => {
+  const f = fixture()
+  const roster = await f.api.listAttendanceRoster('school', exampleClass())
+  assert.equal(roster.roster[0].attended, true)
+  assert.equal((await f.record({ attended: false })).code, 'ok')
+  const record = f.data.get('agendaStudentRecords/class-class-student')
+  assert.equal(record.attended, false)
+  assert.equal(record.noShow, true)
+  const absent = await f.api.listAttendanceRoster('school', exampleClass())
+  assert.equal(absent.roster[0].attended, false)
+  assert.equal(absent.roster[0].noShow, true)
+  assert.deepEqual(f.data.get('schoolClassOccurrences/class').studentIds, ['student'])
+  await f.record()
+  assert.equal(f.data.get('agendaStudentRecords/class-class-student').noShow, false)
+})
+
+test('unchecking before the class starts only reverts the check-in', async () => {
+  const f = fixture([exampleClass({ date: '2099-01-01' })])
+  const roster = await f.api.listAttendanceRoster('school', exampleClass({ date: '2099-01-01' }))
+  assert.equal(roster.roster[0].attended, false)
+  await f.record()
+  assert.equal((await f.record({ attended: false })).code, 'ok')
+  assert.equal(f.data.get('agendaStudentRecords/class-class-student').noShow, false)
 })

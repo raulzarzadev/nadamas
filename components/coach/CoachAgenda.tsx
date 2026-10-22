@@ -34,6 +34,8 @@ import StatusBadge from '@/components/ui/status-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
+import { effectiveAttendance } from '@/lib/attendance'
+import { hasClassEnded, hasClassStarted } from '@/lib/class-evaluation'
 import {
   AuthedApiError,
   deleteAuthed,
@@ -906,18 +908,20 @@ export default function CoachAgenda({
     if (!studentAction) return
     const { booking, student } = studentAction
     const targetSchoolId = schoolIdForBooking(booking)
+    // Only an explicit change is sent: finished classes already count as attended.
+    const attendanceChange = attended === student.attended ? {} : { attended }
     setBusy(true)
     setStudentActionError(null)
     try {
       if (booking.schoolClassId && targetSchoolId) {
         await patchAuthed(
           `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(booking.schoolClassId)}/students/${encodeURIComponent(student.studentId)}`,
-          { attended, note }
+          { ...attendanceChange, note }
         )
       } else {
         await patchAuthed('/api/coach/agenda/bookings', {
           id: booking.id,
-          attended,
+          ...attendanceChange,
           note,
           ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
           ...(manageSchoolSchedule ? { coachId: booking.coachId } : {}),
@@ -2033,6 +2037,7 @@ export default function CoachAgenda({
                               studentName: student.name,
                               studentId: student.id,
                               attended: student.attended === true,
+                              noShow: student.noShow === true,
                               note: student.note || '',
                               pending: student.pending,
                             }))
@@ -2042,7 +2047,8 @@ export default function CoachAgenda({
                               rowKey: booking.id,
                               studentName: booking.athleteName,
                               studentId: booking.athleteId,
-                              attended: booking.attended === true,
+                              attended: effectiveAttendance(booking, hasClassEnded(booking)),
+                              noShow: booking.noShow === true,
                               note: booking.studentNote || '',
                               pending: Boolean(
                                 booking.schoolRequestId || booking.status === 'pending'
@@ -2057,6 +2063,7 @@ export default function CoachAgenda({
                             studentName,
                             studentId,
                             attended,
+                            noShow,
                             note,
                             pending,
                           }) => (
@@ -2094,6 +2101,11 @@ export default function CoachAgenda({
                               </div>
                               <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
                                 {pending && <StatusBadge status="pending" />}
+                                {noShow && (
+                                  <span className="rounded-full border border-(--rose-bd) bg-(--rose-bg) px-2 py-0.5 text-xs font-bold text-(--rose-tx)">
+                                    No asistió
+                                  </span>
+                                )}
                                 {!hideBookingActions && !booking.schoolRequestId && (
                                   <button
                                     type="button"
@@ -2109,6 +2121,7 @@ export default function CoachAgenda({
                                           note,
                                           date: booking.date,
                                           startTime: booking.startTime,
+                                          started: hasClassStarted(booking),
                                         },
                                       })
                                       setStudentActionError(null)

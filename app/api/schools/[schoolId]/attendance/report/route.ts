@@ -53,6 +53,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ scho
             sourceId: string
             studentId: string
             attended?: boolean
+            noShow?: boolean
             updatedAt?: number
           }
       ),
@@ -87,7 +88,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ scho
       for (const student of students) {
         if (!studentSchoolBookings([booking], student).length) continue
         if (!group.studentIds.includes(student.id)) group.studentIds.push(student.id)
-        if (booking.attended === true && !group.attendedStudentIds.includes(student.id))
+        if (booking.noShow !== true && !group.attendedStudentIds.includes(student.id))
           group.attendedStudentIds.push(student.id)
       }
       group.enrolled = group.studentIds.length

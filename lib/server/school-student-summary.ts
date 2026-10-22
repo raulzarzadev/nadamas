@@ -28,6 +28,7 @@ export async function getSchoolStudentSummaries(
           studentId: string
           coachId: string
           attended?: boolean
+          noShow?: boolean
           updatedAt?: number
         }
     ),

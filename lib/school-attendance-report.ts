@@ -29,7 +29,13 @@ export interface SchoolAttendanceReport {
 
 export function attendanceReportClasses(
   classes: Array<SchoolClassOccurrence & { sourceOccurrenceIds?: string[] }>,
-  records: Array<{ sourceId: string; studentId: string; attended?: boolean; updatedAt?: number }>,
+  records: Array<{
+    sourceId: string
+    studentId: string
+    attended?: boolean
+    noShow?: boolean
+    updatedAt?: number
+  }>,
   timezone: string,
   now = Date.now()
 ): AttendanceReportClass[] {
@@ -47,8 +53,11 @@ export function attendanceReportClasses(
     .map((item) => {
       const sources = new Set([item.id, ...(item.sourceOccurrenceIds || [])])
       const studentIds = [...new Set(item.studentIds)]
-      const attendedStudentIds = studentIds.filter((id) =>
-        [...sources].some((source) => latest.get(`${source}|${id}`)?.attended === true)
+      // Finished classes count as attended unless a no-show was recorded.
+      const attendedStudentIds = studentIds.filter(
+        (id) =>
+          [...sources].some((source) => latest.get(`${source}|${id}`)?.attended === true) ||
+          ![...sources].some((source) => latest.get(`${source}|${id}`)?.noShow === true)
       )
       return {
         id: item.id,

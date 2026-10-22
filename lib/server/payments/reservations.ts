@@ -151,6 +151,10 @@ export async function preparePaymentEvents(tx: Transaction, events: PaymentEvent
         if (!grant) throw new PaymentRuleError('payment_invalid')
         changeGrantUsage(grant, hold.date, 1, -1)
         hold.state = 'reserved'
+        // Restore the deadline so settlement consumes it again once the class ends.
+        hold.endsAt =
+          paymentStartsAt(hold.date, event.endTime || hold.startTime, settings.timezone) +
+          (event.endTime ? 0 : 3600000)
         dirty.add(key)
         changed.set(hold.id, hold)
         entries.push(

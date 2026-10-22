@@ -11,6 +11,8 @@ export type AgendaStudentAction = {
   note: string
   date: string
   startTime: string
+  /** Attendance can be changed once the class has started. */
+  started?: boolean
 }
 
 export default function AgendaStudentActions({
@@ -43,6 +45,7 @@ export default function AgendaStudentActions({
   onProfile?: () => void
 }) {
   const [note, setNote] = useState(student.note)
+  const [attended, setAttended] = useState(student.attended)
   const [confirmRemove, setConfirmRemove] = useState(false)
 
   if (confirmRemove) {
@@ -78,6 +81,10 @@ export default function AgendaStudentActions({
           <p className="text-sm text-(--c-text-2)">
             ¿Quieres retirar a <strong>{student.studentName}</strong> de la clase del {student.date}{' '}
             a las {student.startTime}?
+          </p>
+          <p className="text-sm text-(--c-text-2)">
+            Si la clase se descontó de su plan, se le devolverá. Si no asistió sin avisar, mejor
+            marca la inasistencia: la clase queda descontada.
           </p>
           {error && (
             <p role="alert" className="text-sm text-[var(--c-error,#b91c1c)]">
@@ -124,6 +131,40 @@ export default function AgendaStudentActions({
 
         {error && <p className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">{error}</p>}
 
+        {student.started && (
+          <fieldset className="grid gap-2">
+            <legend className="mb-2 text-sm font-semibold text-(--c-ocean)">Asistencia</legend>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: true, label: 'Asistió' },
+                { value: false, label: 'No asistió' },
+              ].map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  aria-pressed={attended === option.value}
+                  onClick={() => setAttended(option.value)}
+                  disabled={busy}
+                  className={`min-h-11 rounded-full border px-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 ${
+                    attended === option.value
+                      ? option.value
+                        ? 'border-(--c-aqua-strong) bg-(--c-aqua) text-white'
+                        : 'border-(--rose-tx) bg-(--rose-tx) text-white'
+                      : 'border-(--c-border) bg-white text-(--c-ocean) hover:bg-(--c-surface)'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-(--c-text-2)">
+              {attended
+                ? 'Las clases pasadas cuentan como asistencia.'
+                : 'La clase queda descontada de su plan. Para devolverla, quítalo de la clase.'}
+            </p>
+          </fieldset>
+        )}
+
         <label className="flex flex-col gap-2 text-sm font-semibold text-[var(--c-ocean)]">
           Nota de esta clase
           <textarea
@@ -138,14 +179,15 @@ export default function AgendaStudentActions({
         </label>
         <button
           type="button"
-          onClick={() => onSave(student.attended, note)}
-          disabled={busy || note === student.note}
+          onClick={() => onSave(attended, note)}
+          disabled={busy || (note === student.note && attended === student.attended)}
           className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--c-aqua)] px-5 text-sm font-bold text-white hover:bg-[var(--c-aqua-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:opacity-100"
         >
-          <FiCheck aria-hidden="true" /> {busy ? 'Guardando…' : 'Guardar nota'}
+          <FiCheck aria-hidden="true" />{' '}
+          {busy ? 'Guardando…' : attended === student.attended ? 'Guardar nota' : 'Guardar'}
         </button>
 
-        {onProgress && student.attended && (
+        {onProgress && attended && (
           <button
             type="button"
             onClick={onProgress}
@@ -173,7 +215,8 @@ export default function AgendaStudentActions({
             disabled={busy}
             className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-slate-400 bg-white px-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500 disabled:opacity-50"
           >
-            <FiTrash2 aria-hidden="true" className="shrink-0" /> Cancelar clase
+            <FiTrash2 aria-hidden="true" className="shrink-0" />{' '}
+            {student.started ? 'Quitar de la clase' : 'Cancelar clase'}
           </button>
           <button
             type="button"

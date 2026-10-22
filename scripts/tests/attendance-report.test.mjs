@@ -43,16 +43,17 @@ test('only past non-cancelled hours are included, newest first', () => {
     ['class', 'old']
   )
   assert.equal(classes[0].enrolled, 2)
-  assert.equal(classes[0].attended, 0)
+  // Finished classes default to attended.
+  assert.equal(classes[0].attended, 2)
 })
-test('merged sources count each person once and respect attendance removal', () => {
+test('merged sources count each person once and respect a recorded no-show', () => {
   const [result] = attendanceReportClasses(
     [{ ...occurrence, sourceOccurrenceIds: ['class', 'legacy'] }],
     [
       { sourceId: 'class', studentId: 'ana', attended: true, updatedAt: 1 },
       { sourceId: 'legacy', studentId: 'ana', attended: true },
       { sourceId: 'class', studentId: 'luis', attended: true, updatedAt: 1 },
-      { sourceId: 'class', studentId: 'luis', attended: false, updatedAt: 2 },
+      { sourceId: 'class', studentId: 'luis', attended: false, noShow: true, updatedAt: 2 },
       { sourceId: 'class', studentId: 'outsider', attended: true },
     ],
     'America/Mazatlan',
