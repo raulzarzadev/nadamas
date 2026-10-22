@@ -55,6 +55,8 @@ export function buildDailySessions(cycle: TrainingCycle, newId: () => string): T
   }
   for (let time = start; time <= end; time += DAY) {
     const date = new Date(time).toISOString().slice(0, 10)
+    if (cycle.sessionWeekdays && !cycle.sessionWeekdays.includes(new Date(time).getUTCDay()))
+      continue
     if (existing.has(date)) continue
     next.objectives.push('')
     next.objectiveIds.push(newId())

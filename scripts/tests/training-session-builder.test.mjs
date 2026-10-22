@@ -75,3 +75,20 @@ test('extending a microcycle backwards fills earlier dates chronologically and r
   assert.deepEqual(extended.objectiveWorkouts[originalIndex], [{ id: 'preserved', blocks: [] }])
   assert.deepEqual(buildDailySessions(extended, id), extended)
 })
+
+test('build sessions on selected weekdays only and preserve the selection', () => {
+  const selected = {
+    ...cycle,
+    startDate: '2026-10-18',
+    endDate: '2026-10-31',
+    sessionWeekdays: [1, 3],
+  }
+  const result = buildDailySessions(selected, id)
+  assert.deepEqual(result.objectiveDates, ['2026-10-19', '2026-10-21', '2026-10-26', '2026-10-28'])
+  assert.deepEqual(result.sessionWeekdays, [1, 3])
+  assert.deepEqual(buildDailySessions(result, id), result)
+  assert.equal(
+    buildDailySessions({ ...selected, sessionWeekdays: [] }, id).objectiveDates.length,
+    0
+  )
+})

@@ -98,7 +98,7 @@ export default function StudentProfileModal({
     () => getCachedAuthedData<SchoolStudentHistory>(historyEndpoint) || null
   )
   const [historyError, setHistoryError] = useState('')
-  const [panel, setPanel] = useState<'classes' | 'scheduled' | 'comments' | null>(null)
+  const [panel, setPanel] = useState<'classes' | 'scheduled' | 'evaluations'>('scheduled')
   // biome-ignore lint/correctness/useExhaustiveDependencies: reload refreshes the profile after assigning classes.
   useEffect(() => {
     let active = true
@@ -285,167 +285,144 @@ export default function StudentProfileModal({
   const takenClasses = (classes || [])
     .filter((item) => item.taken)
     .sort((a, b) => `${b.date} ${b.startTime}`.localeCompare(`${a.date} ${a.startTime}`))
-  const comments = [
-    ...(history?.comments || []).map((item) => ({
-      id: item.id,
-      text: item.text,
-      context: `${item.authorName} · ${new Date(item.createdAt).toLocaleDateString('es-MX')}`,
-    })),
-    ...(classes || []).flatMap((item) => [
-      ...(item.note
-        ? [{ id: `${item.id}:note`, text: item.note, context: `${item.date} · ${item.startTime}` }]
-        : []),
-      ...item.comments.map((text) => ({
-        id: `${item.id}:${text}`,
-        text,
-        context: `${item.date} · ${item.startTime}`,
-      })),
-    ]),
-  ]
+  const comments = (history?.comments || []).map((item) => ({
+    id: item.id,
+    text: item.text,
+    context: `${item.authorName} · ${new Date(item.createdAt).toLocaleDateString('es-MX')}`,
+  }))
   const scheduledClasses = (classes || [])
     .filter((item) => item.scheduled)
     .sort((a, b) => `${a.date} ${a.startTime}`.localeCompare(`${b.date} ${b.startTime}`))
   const panelClasses = panel === 'scheduled' ? scheduledClasses : takenClasses
-  const panelTitle =
-    panel === 'scheduled'
-      ? 'Clases agendadas'
-      : panel === 'classes'
-        ? 'Clases tomadas'
-        : 'Comentarios'
-  if (panel)
-    return (
-      <Sheet
-        key={panelTitle}
-        open
-        onClose={() => setPanel(null)}
-        label={panelTitle}
-        closeDisabled={cancelling}
-      >
-        <div className="grid gap-3 pb-4">
-          <h2 className="text-xl font-bold">
-            {panelTitle} ({panel !== 'comments' ? panelClasses.length : comments.length})
-          </h2>
-          <p className="text-sm font-semibold">{profile?.name || name}</p>
-          {panel !== 'comments' ? (
-            <ul className="grid gap-2">
-              {panelClasses.map((item) => (
-                <li
-                  key={item.id}
-                  className="min-w-0 rounded-xl border border-(--c-border) bg-(--c-surface) px-3 py-2"
+  const profileTabs = [
+    ['scheduled', 'Horarios'],
+    ['classes', 'Seguimientos'],
+    ['evaluations', 'Evaluaciones'],
+  ] as const
+  const panelContent =
+    panel === 'evaluations' ? (
+      <div className="grid min-w-0 gap-2 pt-2">
+        {comments.map((comment) => (
+          <article key={comment.id} className="rounded-xl border border-(--c-border) p-3 text-sm">
+            <p className="text-xs text-(--c-text-2)">{comment.context}</p>
+            <p className="mt-1 whitespace-pre-wrap break-words">{comment.text}</p>
+          </article>
+        ))}
+        {!comments.length && (
+          <p className="py-3 text-sm text-(--c-text-2)">Todavía no hay evaluaciones.</p>
+        )}
+      </div>
+    ) : (
+      <div className="grid min-w-0 gap-2 pt-2">
+        <ul className="grid gap-2">
+          {panelClasses.map((item) => (
+            <li
+              key={item.id}
+              className="min-w-0 rounded-xl border border-(--c-border) bg-(--c-surface) px-3 py-2"
+            >
+              <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs font-semibold text-(--c-text-2)">
+                <span className="shrink-0 whitespace-nowrap">
+                  {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                  })}
+                </span>
+                <span className="shrink-0 tabular-nums" title={`${item.startTime}–${item.endTime}`}>
+                  {item.startTime}
+                </span>
+                <span className="min-w-0 flex-1 [&>span]:max-w-full">
+                  <CoachBadge
+                    name={item.coachName || 'Sin profe aún'}
+                    unassigned={!item.coachName}
+                  />
+                </span>
+                <span
+                  className="inline-flex shrink-0 items-center gap-1"
+                  role="img"
+                  aria-label={item.groupType === 'grupal' ? 'Grupal' : 'Particular'}
                 >
-                  <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-(--c-text-2)">
-                    <span className="shrink-0 whitespace-nowrap">
-                      {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
-                        weekday: 'short',
-                        day: 'numeric',
-                        month: 'short',
-                      })}
-                    </span>
-                    <span
-                      className="shrink-0 tabular-nums"
-                      title={`${item.startTime}–${item.endTime}`}
-                    >
-                      {item.startTime}
-                    </span>
-                    <span className="min-w-0 flex-1 [&>span]:max-w-full">
-                      <CoachBadge
-                        name={item.coachName || 'Sin profe aún'}
-                        unassigned={!item.coachName}
-                      />
-                    </span>
-                    <span
-                      className="inline-flex shrink-0 items-center gap-1"
-                      role="img"
-                      aria-label={item.groupType === 'grupal' ? 'Grupal' : 'Particular'}
-                    >
-                      {item.groupType === 'grupal' ? (
-                        <FiUsers aria-hidden="true" />
-                      ) : (
-                        <FiUser aria-hidden="true" />
-                      )}
-                      {item.groupType === 'grupal' ? 'Grupal' : null}
-                    </span>
-                    <StatusBadge
-                      status={item.badgeStatus}
-                      label={item.taken ? 'Tomada' : undefined}
-                    />
-                  </div>
-                  {panel === 'scheduled' && (
-                    <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
-                      {cancelTarget === item.id ? (
-                        <>
-                          <span className="text-xs text-(--c-text-2)">
-                            ¿Cancelar la clase para este alumno?
-                          </span>
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            disabled={cancelling}
-                            onClick={() => setCancelTarget(null)}
-                          >
-                            Volver
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-sm border-rose-200 bg-rose-50 text-rose-700"
-                            disabled={cancelling}
-                            onClick={() => void cancelClass(item.id)}
-                          >
-                            {cancelling ? 'Cancelando…' : 'Sí, cancelar'}
-                          </button>
-                          {cancelError && (
-                            <p role="alert" className="w-full text-xs text-rose-700">
-                              {cancelError}
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          className="text-xs font-semibold text-rose-700 underline underline-offset-2 disabled:opacity-50"
-                          disabled={cancelling}
-                          onClick={() => {
-                            setCancelTarget(item.id)
-                            setCancelError('')
-                          }}
-                        >
-                          Cancelar clase
-                        </button>
-                      )}
-                    </div>
+                  {item.groupType === 'grupal' ? (
+                    <FiUsers aria-hidden="true" />
+                  ) : (
+                    <FiUser aria-hidden="true" />
                   )}
-                  {item.note && (
-                    <p className="mt-2 whitespace-pre-wrap break-words text-sm">{item.note}</p>
+                  {item.groupType === 'grupal' ? 'Grupal' : null}
+                </span>
+                <StatusBadge status={item.badgeStatus} label={item.taken ? 'Tomada' : undefined} />
+              </div>
+              {panel === 'scheduled' && (
+                <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                  {cancelTarget === item.id ? (
+                    <>
+                      <span className="text-xs text-(--c-text-2)">
+                        ¿Cancelar la clase para este alumno?
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        disabled={cancelling}
+                        onClick={() => setCancelTarget(null)}
+                      >
+                        Volver
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm border-rose-200 bg-rose-50 text-rose-700"
+                        disabled={cancelling}
+                        onClick={() => void cancelClass(item.id)}
+                      >
+                        {cancelling ? 'Cancelando…' : 'Sí, cancelar'}
+                      </button>
+                      {cancelError && (
+                        <p role="alert" className="w-full text-xs text-rose-700">
+                          {cancelError}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-rose-700 underline underline-offset-2 disabled:opacity-50"
+                      disabled={cancelling}
+                      onClick={() => {
+                        setCancelTarget(item.id)
+                        setCancelError('')
+                      }}
+                    >
+                      Cancelar clase
+                    </button>
                   )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <ul className="grid gap-2">
-              {comments.map((item) => (
-                <li key={item.id} className="rounded-xl border border-(--c-border) p-3 text-sm">
-                  <p className="text-xs text-(--c-text-2)">{item.context}</p>
-                  <p className="mt-1 whitespace-pre-wrap break-words">{item.text}</p>
-                </li>
-              ))}
-            </ul>
-          )}
-          {(panel !== 'comments' ? panelClasses.length : comments.length) === 0 && (
-            <p className="text-sm text-(--c-text-2)">
-              {panel !== 'comments'
-                ? 'No hay clases registradas en esta lista.'
-                : 'Todavía no hay comentarios.'}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => setPanel(null)}
-            className="btn btn-outline min-h-11 border"
-          >
-            Volver al perfil
-          </button>
-        </div>
-      </Sheet>
+                </div>
+              )}
+              {item.note && (
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm">{item.note}</p>
+              )}
+              {panel === 'classes' &&
+                [...new Set(item.comments)].map((comment) => (
+                  <p
+                    key={`${item.id}-comment-${comment}`}
+                    className="mt-2 whitespace-pre-wrap break-words text-sm"
+                  >
+                    {comment}
+                  </p>
+                ))}
+              {panel === 'classes' &&
+                !item.note?.trim() &&
+                !item.comments.some((comment) => comment.trim()) && (
+                  <span className="mt-2 inline-flex rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-800">
+                    Pendiente
+                  </span>
+                )}
+            </li>
+          ))}
+        </ul>
+        {!panelClasses.length && (
+          <p className="py-3 text-sm text-(--c-text-2)">
+            {panel === 'scheduled' ? 'No hay clases agendadas.' : 'Todavía no hay clases tomadas.'}
+          </p>
+        )}
+      </div>
     )
   if (assignmentOpen && profile)
     return (
@@ -476,7 +453,7 @@ export default function StudentProfileModal({
         }}
         label="Editar datos del atleta"
         keyboardAware
-        closeDisabled={saving || verifying}
+        closeDisabled={saving || verifying || cancelling}
         footer={
           <button
             type="submit"
@@ -604,31 +581,35 @@ export default function StudentProfileModal({
       open
       onClose={onClose}
       key="profile"
+      size="2xl"
       label={`Perfil de ${profile?.name || name}`}
       keyboardAware
-      closeDisabled={saving || verifying}
+      closeDisabled={saving || verifying || cancelling}
     >
-      <div className="grid gap-4 pb-4">
+      <div className="grid min-w-0 gap-3 pb-4">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-xl font-bold">Perfil de {profile?.name || name}</h2>
+          <h2 className="min-w-0 text-base font-bold break-words">{profile?.name || name}</h2>
           {profile && (
             <button
               type="button"
-              className="btn btn-outline min-h-11 shrink-0 gap-2 border-(--c-ocean) px-4 text-sm font-semibold text-(--c-ocean) hover:bg-(--c-surface)"
+              className="inline-flex min-h-11 shrink-0 items-center gap-1 text-xs font-semibold text-(--c-aqua-strong)"
               onClick={editProfile}
             >
               <FiEdit2 aria-hidden="true" className="h-4 w-4" />
-              Editar
+              Editar perfil
             </button>
           )}
         </div>
         {profile && (
-          <StudentLabels
-            studentId={profile.id || studentId}
-            schoolId={schoolId}
-            compact
-            horizontal
-          />
+          <div className="min-w-0 [&>div]:justify-start">
+            <StudentLabels
+              studentId={profile.id || studentId}
+              schoolId={schoolId}
+              compact
+              horizontal
+              tiny
+            />
+          </div>
         )}
         {loading && (
           <p role="status" className="text-sm">
@@ -642,7 +623,7 @@ export default function StudentProfileModal({
         )}
 
         {profile && (
-          <dl className="grid gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-4 text-sm">
+          <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-(--c-text-2)">
             {[
               ['Correo', profile.studentEmail || profile.email],
               ['Teléfono', profile.phone],
@@ -656,21 +637,62 @@ export default function StudentProfileModal({
               value ? (
                 <div key={label}>
                   <dt className="text-xs text-(--c-text-2)">{label}</dt>
-                  <dd className="break-words font-semibold">{value}</dd>
+                  <dd className="break-words">{value}</dd>
                 </div>
               ) : null
             )}
           </dl>
         )}
         {profile && (
-          <section className="grid gap-2" aria-label="Historial del atleta">
-            <button
-              type="button"
-              className="btn btn-primary min-h-11"
-              onClick={() => setAssignmentOpen(true)}
-            >
-              + Asignar clases
-            </button>
+          <section className="grid min-w-0 gap-2" aria-label="Historial del atleta">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div role="tablist" aria-label="Información del alumno" className="flex gap-4">
+                {profileTabs.map(([tab, label], index) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={panel === tab}
+                    id={`${editId}-${tab}-tab`}
+                    aria-controls={`${editId}-${tab}-panel`}
+                    tabIndex={panel === tab ? 0 : -1}
+                    disabled={cancelling}
+                    onClick={() => {
+                      setPanel(tab)
+                      setCancelTarget(null)
+                    }}
+                    onKeyDown={(event) => {
+                      if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+                        event.preventDefault()
+                        const nextIndex =
+                          event.key === 'Home'
+                            ? 0
+                            : event.key === 'End'
+                              ? profileTabs.length - 1
+                              : (index +
+                                  (event.key === 'ArrowRight' ? 1 : -1) +
+                                  profileTabs.length) %
+                                profileTabs.length
+                        const next = profileTabs[nextIndex][0]
+                        setPanel(next)
+                        setCancelTarget(null)
+                        document.getElementById(`${editId}-${next}-tab`)?.focus()
+                      }
+                    }}
+                    className={`min-h-11 border-b-2 text-sm font-semibold ${panel === tab ? 'border-primary text-(--c-ocean)' : 'border-transparent text-(--c-text-2)'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center text-xs font-semibold text-(--c-aqua-strong)"
+                onClick={() => setAssignmentOpen(true)}
+              >
+                + Asignar clases
+              </button>
+            </div>
             {historyError && (
               <p role="alert" className="text-sm">
                 {historyError}
@@ -681,30 +703,15 @@ export default function StudentProfileModal({
                 Cargando historial…
               </p>
             )}
-            <button
-              type="button"
-              disabled={!classes}
-              onClick={() => setPanel('scheduled')}
-              className="btn btn-outline min-h-11 justify-between border"
-            >
-              Clases agendadas <strong>{scheduledClasses.length}</strong>
-            </button>
-            <button
-              type="button"
-              disabled={!classes}
-              onClick={() => setPanel('classes')}
-              className="btn btn-outline min-h-11 justify-between border"
-            >
-              Clases tomadas <strong>{takenClasses.length}</strong>
-            </button>
-            <button
-              type="button"
-              disabled={!classes}
-              onClick={() => setPanel('comments')}
-              className="btn btn-outline min-h-11 justify-between border"
-            >
-              Comentarios <strong>{comments.length}</strong>
-            </button>
+            {classes && (
+              <div
+                role="tabpanel"
+                id={`${editId}-${panel}-panel`}
+                aria-labelledby={`${editId}-${panel}-tab`}
+              >
+                {panelContent}
+              </div>
+            )}
           </section>
         )}
       </div>

@@ -83,7 +83,15 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
     await page.getByRole('button', { name: 'Guardar ciclo', exact: true }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
   }
-  await page.getByRole('button', { name: 'Crear mi primer macrociclo' }).click()
+  await page.getByRole('button', { name: /Crear mi primer (MACRO-ciclo|macrociclo)/i }).click()
+  const wizard = page.getByRole('dialog', { name: 'Crear MACRO-ciclo', exact: true })
+  await wizard.getByRole('checkbox', { name: 'Lun', exact: true }).check()
+  await wizard.getByRole('checkbox', { name: 'Mié', exact: true }).check()
+  await wizard.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await wizard.getByLabel('Título de la competencia', { exact: true }).fill('Temporada 1')
+  await wizard.getByRole('button', { name: 'Continuar', exact: true }).click()
+  await wizard.getByRole('button', { name: 'Crear MACRO-ciclo', exact: true }).click()
+  await expect(wizard).not.toBeVisible()
   await expect(page.getByRole('heading', { name: 'Temporada 1', exact: true })).toBeVisible()
   await page.reload()
   await expect(page.getByRole('button', { name: 'Temporada 1', exact: true })).toBeVisible({

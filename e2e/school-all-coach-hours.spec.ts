@@ -130,4 +130,77 @@ test('Todos creates each selected hour for each coach without duplicates or unas
     ).toHaveLength(2)
   await addHours()
   expect(slots(await agenda())).toHaveLength(6)
+  const pastDate = '2026-01-12'
+  for (const [index, status] of ['completed', 'completed', 'cancelled', 'pending'].entries()) {
+    await seed(`schoolClassOccurrences/follow-up-${index}-${suffix}`, {
+      id: `follow-up-${index}-${suffix}`,
+      schoolId,
+      teacherIds: [teacherIds[1]],
+      studentIds: ['student-one'],
+      title: `Clase seguimiento ${index}`,
+      date: pastDate,
+      startTime: `${String(8 + index).padStart(2, '0')}:00`,
+      endTime: `${String(9 + index).padStart(2, '0')}:00`,
+      timezone: 'America/Mazatlan',
+      status,
+      type: 'group',
+    })
+  }
+  await seed(`schoolClassNotes/comment-${suffix}`, {
+    schoolId,
+    coachId: teacherIds[1],
+    date: pastDate,
+    startTime: '08:00',
+    note: 'Buen avance en técnica de respiración.',
+  })
+  await seed(`schoolClassNotes/other-coach-${suffix}`, {
+    schoolId,
+    coachId: teacherIds[2],
+    date: pastDate,
+    startTime: '09:00',
+    note: 'Comentario privado de otro profe.',
+  })
+  const followUpsResponse = await request.get(
+    `/api/schools/${schoolId}/teachers/${teacherIds[1]}/follow-ups`,
+    { headers }
+  )
+  expect(followUpsResponse.ok()).toBe(true)
+  const followUps = (await followUpsResponse.json()).classes
+  expect(followUps).toHaveLength(2)
+  expect(followUps[0].comment).toBe('')
+  expect(followUps[1].comment).toBe('Buen avance en técnica de respiración.')
+  await page.goto(`/school/coaches?schoolId=${schoolId}`)
+  await page.getByRole('button', { name: 'Ver horarios de Profe 1', exact: true }).click()
+  const teacherProfile = page.getByRole('dialog', { name: 'Ficha de Profe 1', exact: true })
+  await expect(teacherProfile).toBeVisible()
+  await expect(
+    teacherProfile.getByRole('region', { name: 'Horarios de Profe 1', exact: true })
+  ).toBeVisible()
+  await expect(
+    teacherProfile.getByRole('button', { name: 'Ver horarios', exact: true })
+  ).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: 'Editar horas', exact: true })).toHaveCount(0)
+  await expect(teacherProfile.getByText('08:00', { exact: true }).first()).toBeVisible()
+  await expect(teacherProfile.getByLabel('Puede aprobar reservas de la escuela')).toHaveCount(0)
+  await teacherProfile.getByRole('button', { name: 'Editar perfil', exact: true }).click()
+  await expect(teacherProfile.getByLabel('Puede aprobar reservas de la escuela')).toBeVisible()
+  await teacherProfile.getByRole('button', { name: 'Listo', exact: true }).click()
+  await expect(teacherProfile.getByLabel('Puede aprobar reservas de la escuela')).toHaveCount(0)
+  await teacherProfile.getByRole('tab', { name: 'Seguimientos', exact: true }).click()
+  const followUpsPanel = teacherProfile.getByRole('tabpanel', { name: 'Seguimientos' })
+  await expect(followUpsPanel.getByText('Buen avance en técnica de respiración.')).toBeVisible()
+  await expect(followUpsPanel.getByText('Pendiente', { exact: true })).toHaveCount(1)
+  await expect(followUpsPanel.getByText('Comentario privado de otro profe.')).toHaveCount(0)
+  await teacherProfile.getByRole('tab', { name: 'Horarios', exact: true }).click()
+  await expect(teacherProfile.getByText('08:00', { exact: true }).first()).toBeVisible()
+  await teacherProfile
+    .getByRole('button', { name: new RegExp(`${selectedDate}.*08:00.*Profe 1`) })
+    .click()
+  const slotDetails = page.getByRole('dialog', { name: 'Horario seleccionado', exact: true })
+  await expect(
+    slotDetails.getByRole('button', { name: 'Seleccionar más horarios', exact: true })
+  ).toBeVisible()
+  await expect(slotDetails.getByRole('button', { name: 'Configurar', exact: true })).toBeVisible()
+  await expect(slotDetails.getByRole('button', { name: 'Entreno', exact: true })).toBeVisible()
+  await expect(slotDetails.getByRole('button', { name: 'Nota', exact: true })).toBeVisible()
 })

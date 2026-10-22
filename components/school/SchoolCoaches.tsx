@@ -15,6 +15,7 @@ import { normalizeEntitySearch } from '@/lib/entity-matching'
 import { capitalizeSchoolTerm, type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
+import TeacherFollowUps from './TeacherFollowUps'
 import { useSchoolSelection } from './useSchoolSelection'
 
 interface Teacher {
@@ -33,8 +34,9 @@ export default function SchoolCoaches() {
   const [labelData, setLabelData] = useState<LabelList | null>(null)
   const [labelRevision, setLabelRevision] = useState(0)
   const [filteredIds, setFilteredIds] = useState<string[] | null>(null)
-  const [scheduleTeacher, setScheduleTeacher] = useState<Teacher | null>(null)
   const [teacherProfile, setTeacherProfile] = useState<Teacher | null>(null)
+  const [profileTab, setProfileTab] = useState<'schedule' | 'follow-ups'>('schedule')
+  const [editingTeacherProfile, setEditingTeacherProfile] = useState(false)
   const cachedTeachers = selectedId
     ? getCachedAuthedData<{ teachers?: Teacher[] }>(`/api/schools/${selectedId}/teachers`)
     : undefined
@@ -201,7 +203,11 @@ export default function SchoolCoaches() {
                   actions={
                     <button
                       type="button"
-                      onClick={() => setScheduleTeacher(teacher)}
+                      onClick={() => {
+                        setEditingTeacherProfile(false)
+                        setProfileTab('schedule')
+                        setTeacherProfile(teacher)
+                      }}
                       aria-label={`Ver horarios de ${teacher.name}`}
                       title="Ver horarios"
                       className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-(--c-border) bg-white px-2.5 text-xs font-semibold text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
@@ -209,7 +215,11 @@ export default function SchoolCoaches() {
                       <FiClock aria-hidden="true" /> {teacher.availability.length}
                     </button>
                   }
-                  onEdit={() => setTeacherProfile(teacher)}
+                  onEdit={() => {
+                    setEditingTeacherProfile(false)
+                    setProfileTab('schedule')
+                    setTeacherProfile(teacher)
+                  }}
                   editLabel={`Abrir ficha de ${teacher.name}`}
                 />
               </div>
@@ -255,25 +265,6 @@ export default function SchoolCoaches() {
           </div>
         </div>
       )}
-      {scheduleTeacher && (
-        <Sheet
-          open
-          onClose={() => setScheduleTeacher(null)}
-          label={`Horarios de ${scheduleTeacher.name}`}
-          size="2xl"
-        >
-          <div className="grid min-w-0 gap-4 pb-4">
-            <h2 className="text-xl font-bold">Horarios de {scheduleTeacher.name}</h2>
-            <CoachAgenda
-              key={scheduleTeacher.id}
-              schoolId={schoolId}
-              coachId={scheduleTeacher.id}
-              aggregateSchool
-              readOnly
-            />
-          </div>
-        </Sheet>
-      )}
       {teacherProfile && (
         <Sheet
           open
@@ -282,55 +273,150 @@ export default function SchoolCoaches() {
             setLabelRevision((current) => current + 1)
           }}
           label={`Ficha de ${teacherProfile.name}`}
+          size="2xl"
         >
-          <div className="grid gap-4 pb-4">
-            <h2 className="text-xl font-bold">{teacherProfile.name}</h2>
-            {isDirector && (
-              <StudentLabels studentId={teacherProfile.id} schoolId={schoolId} entity="teachers" />
-            )}
-            <p className="flex items-center gap-2 text-sm">
-              <FiPhone aria-hidden="true" />
-              {teacherProfile.phone || 'Sin teléfono'}
-            </p>
-            {teacherProfile.bio && (
-              <p className="text-sm whitespace-pre-wrap">{teacherProfile.bio}</p>
-            )}
-            {!teacherProfile.profileComplete && (
-              <p className="text-sm text-(--c-text-2)">Perfil pendiente de completar</p>
-            )}
-            {isDirector && (
-              <label className="flex min-h-11 items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={
-                    teachers.find((teacher) => teacher.id === teacherProfile.id)
-                      ?.canManageSchoolBookings || false
-                  }
-                  disabled={savingPermission === teacherProfile.id}
-                  onChange={(event) =>
-                    void setBookingPermission(teacherProfile, event.currentTarget.checked)
-                  }
+          <div className="grid min-w-0 gap-3 pb-4">
+            <header className="grid min-w-0 gap-1.5">
+              <div className="flex min-w-0 items-center justify-between gap-2">
+                <h2 className="min-w-0 text-base font-bold break-words">{teacherProfile.name}</h2>
+                {teacherProfile.id === selected.membership.userId ? (
+                  <Link
+                    href="/profile"
+                    className="inline-flex min-h-11 shrink-0 items-center gap-1 text-xs font-semibold text-(--c-aqua-strong)"
+                  >
+                    <FiEdit2 aria-hidden="true" /> Editar perfil
+                  </Link>
+                ) : (
+                  isDirector && (
+                    <button
+                      type="button"
+                      aria-expanded={editingTeacherProfile}
+                      className="inline-flex min-h-11 shrink-0 items-center gap-1 text-xs font-semibold text-(--c-aqua-strong)"
+                      onClick={() => setEditingTeacherProfile((value) => !value)}
+                    >
+                      <FiEdit2 aria-hidden="true" />{' '}
+                      {editingTeacherProfile ? 'Listo' : 'Editar perfil'}
+                    </button>
+                  )
+                )}
+              </div>
+              {isDirector && (
+                <div className="min-w-0 [&>div]:justify-start">
+                  <StudentLabels
+                    studentId={teacherProfile.id}
+                    schoolId={schoolId}
+                    entity="teachers"
+                    readOnly={!editingTeacherProfile}
+                    horizontal
+                    tiny
+                  />
+                </div>
+              )}
+              <p className="flex items-center gap-1.5 text-xs text-(--c-text-2)">
+                <FiPhone aria-hidden="true" />
+                {teacherProfile.phone || 'Sin teléfono'}
+              </p>
+              {editingTeacherProfile && (
+                <div className="grid gap-2 pt-2">
+                  {teacherProfile.bio && (
+                    <p className="text-xs whitespace-pre-wrap text-(--c-text-2)">
+                      {teacherProfile.bio}
+                    </p>
+                  )}
+                  {!teacherProfile.profileComplete && (
+                    <p className="text-xs text-(--c-text-2)">Perfil pendiente de completar</p>
+                  )}
+                  <label className="flex min-h-11 items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={
+                        teachers.find((teacher) => teacher.id === teacherProfile.id)
+                          ?.canManageSchoolBookings || false
+                      }
+                      disabled={savingPermission === teacherProfile.id}
+                      onChange={(event) =>
+                        void setBookingPermission(teacherProfile, event.currentTarget.checked)
+                      }
+                    />
+                    Puede aprobar reservas de la escuela
+                  </label>
+                </div>
+              )}
+            </header>
+            <section aria-label={`Horarios de ${teacherProfile.name}`} className="min-w-0 pt-2">
+              <div role="tablist" aria-label="Información del entrenador" className="flex gap-4">
+                {(
+                  [
+                    ['schedule', 'Horarios'],
+                    ['follow-ups', 'Seguimientos'],
+                  ] as const
+                )
+                  .filter(
+                    ([tab]) =>
+                      tab === 'schedule' ||
+                      isDirector ||
+                      teacherProfile.id === selected.membership.userId
+                  )
+                  .map(([tab, label]) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      aria-selected={profileTab === tab}
+                      aria-controls={`teacher-${tab}-panel`}
+                      id={`teacher-${tab}-tab`}
+                      tabIndex={profileTab === tab ? 0 : -1}
+                      onClick={() => setProfileTab(tab)}
+                      onKeyDown={(event) => {
+                        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+                          event.preventDefault()
+                          const next =
+                            event.key === 'Home'
+                              ? 'schedule'
+                              : event.key === 'End'
+                                ? 'follow-ups'
+                                : tab === 'schedule'
+                                  ? 'follow-ups'
+                                  : 'schedule'
+                          const target = document.getElementById(`teacher-${next}-tab`)
+                          if (target) {
+                            setProfileTab(next)
+                            target.focus()
+                          }
+                        }
+                      }}
+                      className={`min-h-11 border-b-2 text-sm font-semibold ${profileTab === tab ? 'border-primary text-(--c-ocean)' : 'border-transparent text-(--c-text-2)'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+              </div>
+              <div
+                role="tabpanel"
+                id="teacher-schedule-panel"
+                aria-labelledby="teacher-schedule-tab"
+                hidden={profileTab !== 'schedule'}
+              >
+                <CoachAgenda
+                  key={`${schoolId}:${teacherProfile.id}`}
+                  schoolId={schoolId}
+                  coachId={teacherProfile.id}
+                  aggregateSchool
+                  readOnly={!isDirector}
+                  manageSchoolSchedule={isDirector}
+                  allowSchoolScheduleEdit={isDirector}
                 />
-                Puede aprobar reservas de la escuela
-              </label>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                setScheduleTeacher(teacherProfile)
-                setTeacherProfile(null)
-              }}
-              className="btn btn-outline min-h-11 border"
-            >
-              <FiClock aria-hidden="true" />
-              Ver horarios
-            </button>
-            {teacherProfile.id === selected.membership.userId && (
-              <Link href="/profile" className="btn btn-ghost min-h-11">
-                <FiEdit2 aria-hidden="true" />
-                Actualizar datos
-              </Link>
-            )}
+              </div>
+              {profileTab === 'follow-ups' && (
+                <div
+                  role="tabpanel"
+                  id="teacher-follow-ups-panel"
+                  aria-labelledby="teacher-follow-ups-tab"
+                >
+                  <TeacherFollowUps schoolId={schoolId} teacherId={teacherProfile.id} />
+                </div>
+              )}
+            </section>
           </div>
         </Sheet>
       )}

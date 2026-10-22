@@ -195,3 +195,52 @@ test('historical child starts extend ancestor starts without mutating input or c
   })
   assert.equal(later[0].startDate, macro.startDate)
 })
+
+test('macro template creates three phases, each with three valid, consecutive microcycles', () => {
+  let sequence = 0
+  const cycles = module.exports.createMacroTemplate(macro, () => `template-${++sequence}`)
+  assert.equal(cycles.length, 13)
+  const mesos = cycles.filter((cycle) => cycle.type === 'meso')
+  assert.deepEqual(
+    mesos.map((cycle) => cycle.title),
+    ['Adaptación', 'Carga', 'Recuperación']
+  )
+  for (const parent of [macro, ...mesos]) {
+    const children = cycles.filter((cycle) => cycle.parentId === parent.id)
+    assert.equal(children.length, 3)
+    assert.equal(children[0].startDate, parent.startDate)
+    assert.equal(children[2].endDate, parent.endDate)
+    for (const [index, child] of children.entries()) {
+      assert.equal(validateTrainingCycle(child, cycles), null)
+      if (index > 0)
+        assert.equal(
+          Date.parse(`${child.startDate}T00:00:00Z`) -
+            Date.parse(`${children[index - 1].endDate}T00:00:00Z`),
+          86400000
+        )
+    }
+  }
+  assert.throws(() => module.exports.createMacroTemplate({ ...macro, endDate: '2026-10-17' }))
+  assert.throws(() => module.exports.createMacroTemplate({ ...macro, startDate: '' }))
+})
+
+test('four-phase template adds Enfoque and four microcycles per phase', () => {
+  let id = 0
+  const cycles = module.exports.createMacroTemplate(macro, () => `four-${++id}`, 4)
+  const mesos = cycles.filter((cycle) => cycle.type === 'meso')
+  assert.equal(cycles.length, 21)
+  assert.deepEqual(
+    mesos.map((cycle) => cycle.title),
+    ['Adaptación', 'Carga', 'Recuperación', 'Enfoque']
+  )
+  for (const parent of [macro, ...mesos]) {
+    const children = cycles.filter((cycle) => cycle.parentId === parent.id)
+    assert.equal(children.length, 4)
+    assert.equal(children[0].startDate, parent.startDate)
+    assert.equal(children[3].endDate, parent.endDate)
+    for (const child of children) assert.equal(validateTrainingCycle(child, cycles), null)
+  }
+  assert.throws(() =>
+    module.exports.createMacroTemplate({ ...macro, endDate: '2026-10-31' }, () => 'unused', 4)
+  )
+})

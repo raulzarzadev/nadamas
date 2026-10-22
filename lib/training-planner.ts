@@ -16,6 +16,7 @@ export interface TrainingCycle {
   startDate: string
   endDate: string
   goal: string
+  sessionWeekdays?: number[]
   objectiveDates?: string[]
   objectiveIds?: string[]
   objectiveTitles?: string[]
@@ -102,4 +103,52 @@ export function updateCycleWithEarlierStart(
     parentId = parent.parentId
   }
   return next
+}
+
+/** Split an inclusive period into equal phases and microcycles. */
+export function createMacroTemplate(
+  macro: TrainingCycle,
+  makeId: () => string = () => crypto.randomUUID(),
+  count: 3 | 4 = 3
+): TrainingCycle[] {
+  const error = validateTrainingCycle(macro, [macro])
+  if (error || !macro.startDate || !macro.endDate) throw new Error('TRAINING_TEMPLATE_DATES')
+  const day = (value: string) => Date.parse(`${value}T00:00:00Z`) / 86400000
+  const first = day(macro.startDate)
+  const total = day(macro.endDate) - first + 1
+  if (total < count * count * 2) throw new Error('TRAINING_TEMPLATE_TOO_SHORT')
+  const date = (value: number) => new Date(value * 86400000).toISOString().slice(0, 10)
+  const split = (start: number, length: number, index: number) => ({
+    startDate: date(start + Math.floor((length * index) / count)),
+    endDate: date(start + Math.floor((length * (index + 1)) / count) - 1),
+  })
+  const cycles = [macro]
+  for (const [index, title] of ['Adaptación', 'Carga', 'Recuperación', 'Enfoque']
+    .slice(0, count)
+    .entries()) {
+    const meso: TrainingCycle = {
+      ...macro,
+      id: makeId(),
+      parentId: macro.id,
+      type: 'meso',
+      title,
+      goal: '',
+      content: '',
+      ...split(first, total, index),
+    }
+    cycles.push(meso)
+    const start = day(meso.startDate)
+    const length = day(meso.endDate) - start + 1
+    for (let microIndex = 0; microIndex < count; microIndex++) {
+      cycles.push({
+        ...meso,
+        id: makeId(),
+        parentId: meso.id,
+        type: 'micro',
+        title: `${title} · MICRO ${microIndex + 1}`,
+        ...split(start, length, microIndex),
+      })
+    }
+  }
+  return cycles
 }

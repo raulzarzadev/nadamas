@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { LuWandSparkles } from 'react-icons/lu'
 import SortableList from '@/components/ui/sortable-list'
 import { localCalendarDate } from '@/lib/today-training'
 import type { TrainingCycle } from '@/lib/training-planner'
-import { buildDailySessions, sessionCalendarGroup } from '@/lib/training-session-builder'
 import { groupTrainingSessions, reorderTrainingSessions } from '@/lib/training-session-groups'
 import ObjectiveWorkouts, { normalizeObjectiveWorkout } from './ObjectiveWorkouts'
 import PlanningRow from './PlanningRow'
@@ -79,23 +77,6 @@ export default function CycleDetails({
         <h3 className="text-xs font-semibold">Sesiones</h3>
         {!readOnly && (
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <button
-              type="button"
-              disabled={
-                disabled ||
-                !sessionCalendarGroup(value.startDate) ||
-                !sessionCalendarGroup(value.endDate) ||
-                value.endDate < value.startDate
-              }
-              onClick={() => {
-                onChange(buildDailySessions(value, () => crypto.randomUUID()))
-                setExpandedIndex(null)
-              }}
-              className={`${addClass} gap-1`}
-            >
-              <LuWandSparkles aria-hidden="true" />
-              Construir sesiones
-            </button>
             <button type="button" disabled={disabled} onClick={add} className={addClass}>
               + Agregar sesión
             </button>

@@ -26,6 +26,7 @@ import {
 } from '@/lib/training-planner'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import MacroCycleBarsInput from './MacroCycleBarsInput'
+import MacroCycleCreateSheet from './MacroCycleCreateSheet'
 import MacroCyclePeriodInput from './MacroCyclePeriodInput'
 import TodayTrainingSummary from './TodayTrainingSummary'
 import TrainingCycleTimeline from './TrainingCycleTimeline'
@@ -65,6 +66,7 @@ export default function TrainingPlanner() {
   const [revision, setRevision] = useState(0)
   const [planId, setPlanId] = useState<string | null>(null)
   const [cycleId, setCycleId] = useState<string | null>(null)
+  const [creatingMacro, setCreatingMacro] = useState(false)
   const [draft, setDraft] = useState<TrainingCycle | null>(null)
   const [childDrafts, setChildDrafts] = useState<TrainingCycle[] | null>(null)
   const [busy, setBusy] = useState(false)
@@ -126,35 +128,31 @@ export default function TrainingPlanner() {
       ? `Editar ${FIELD_LABELS[editField]}`
       : CYCLE_LABELS[draft.type]
 
-  async function createMacro() {
+  function createMacro() {
     if (busy || !uid) return
-    const now = new Date()
-    const end = new Date(now.getFullYear(), now.getMonth() + 3, now.getDate())
-    const macro: TrainingCycle = {
-      id: crypto.randomUUID(),
-      parentId: null,
-      type: 'macro',
-      title: `Temporada ${plans.length + 1}`,
-      startDate: isoDate(now),
-      endDate: isoDate(end),
-      goal: '',
-      content: '',
-    }
+    setError('')
+    setCreatingMacro(true)
+  }
+
+  async function saveNewMacro(cycles: TrainingCycle[]) {
+    if (busy || !uid) return
+    const macro = cycles[0]
     setBusy(true)
     setError('')
     try {
-      const result = await TrainingPlanCRUD.create([macro])
+      const result = await TrainingPlanCRUD.create(cycles)
       if (!result?.ok) throw new Error('TRAINING_CREATE_FAILED')
       const created: TrainingPlan = {
         id: result.res.id,
         userId: uid,
         createdAt: Date.now(),
-        cycles: [macro],
+        cycles,
       }
       setPlans((items) => [created, ...items])
       setPlanId(created.id)
       setCycleId(macro.id)
-      setBarsDraft([macro])
+      setCreatingMacro(false)
+      setBarsDraft(cycles)
       setEditing(true)
     } catch (cause) {
       reportInternalError('TRAINING_PLAN_CREATE', cause)
@@ -192,6 +190,7 @@ export default function TrainingPlanner() {
     setDraft({
       id: crypto.randomUUID(),
       parentId: type === 'macro' ? null : cycle?.id || null,
+      ...(cycle?.sessionWeekdays ? { sessionWeekdays: cycle.sessionWeekdays } : {}),
       type,
       title: '',
       startDate: type === 'macro' ? today : cycle?.startDate || '',
@@ -324,8 +323,8 @@ export default function TrainingPlanner() {
   return (
     <section className="mx-auto max-w-4xl px-1 sm:px-0" aria-label="Entrenamiento">
       <div
-        inert={Boolean(draft) || deleting || infoOpen}
-        aria-hidden={Boolean(draft) || deleting || infoOpen || undefined}
+        inert={Boolean(draft) || deleting || infoOpen || creatingMacro}
+        aria-hidden={Boolean(draft) || deleting || infoOpen || creatingMacro || undefined}
       >
         {!loading && !loadError && plans.length > 0 && (
           <nav aria-label="MACRO-ciclos" className="flex flex-wrap items-center gap-1.5 pt-4 pb-2">
@@ -661,6 +660,15 @@ export default function TrainingPlanner() {
           corto. Tu planificación es privada.
         </p>
       </Sheet>
+      {creatingMacro && (
+        <MacroCycleCreateSheet
+          number={plans.length + 1}
+          busy={busy}
+          error={error}
+          onClose={() => setCreatingMacro(false)}
+          onCreate={saveNewMacro}
+        />
+      )}
       <Sheet
         open={Boolean(draft)}
         onClose={() => setDraft(null)}

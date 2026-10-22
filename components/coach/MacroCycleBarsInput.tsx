@@ -276,6 +276,7 @@ export default function MacroCycleBarsInput({
               const cycle: TrainingCycle = {
                 id: crypto.randomUUID(),
                 parentId: macro.id,
+                ...(macro.sessionWeekdays ? { sessionWeekdays: macro.sessionWeekdays } : {}),
                 type: macro.type === 'macro' ? 'meso' : 'micro',
                 title: `${childTitle} ${mesos.length + 1}`,
                 ...nextRange,
