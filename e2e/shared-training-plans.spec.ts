@@ -284,7 +284,17 @@ test('entrenos: otro atleta encuentra un entreno público, se suscribe y ve el e
   await page.waitForURL(`**/athlete/training/plans/${planId}`)
   await expect(page.getByRole('heading', { name: title })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Entreno de ejemplo' })).toBeVisible()
+  // Replay the subscribe request as the same user: a second subscribe must not count twice.
+  let subscribeCalls = 0
+  await page.route(`**/api/training-plans/${planId}/subscription`, async (route) => {
+    if (route.request().method() !== 'POST') return route.continue()
+    subscribeCalls++
+    await route.fetch()
+    subscribeCalls++
+    return route.fulfill({ response: await route.fetch() })
+  })
   await page.getByRole('button', { name: 'Suscribirme', exact: true }).click()
+  await expect.poll(() => subscribeCalls).toBe(2)
   await expect(page.getByText('Suscrito', { exact: true })).toBeVisible()
 
   // Subscribing is idempotent: the reloaded preview counts exactly one subscriber.

@@ -168,7 +168,7 @@ export default function AthleteSearch({
   }
   const visiblePlans = plans
     .filter((plan) => {
-      if (!plan.summary || plan.userId === uid) return false
+      if (!uid || !plan.summary || plan.userId === uid) return false
       const needle = normalize(query.trim())
       return [plan.summary.title, plan.summary.goal, plan.summary.authorName].some((field) =>
         normalize(field).includes(needle)

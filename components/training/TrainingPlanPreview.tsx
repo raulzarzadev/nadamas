@@ -26,7 +26,7 @@ import {
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import PlanSharingControls from './PlanSharingControls'
 
-const NOT_AVAILABLE = 'Este entreno no está disponible.'
+const NOT_AVAILABLE = 'Este entreno no está disponible o el enlace ya no es válido.'
 const actionClass =
   'inline-flex min-h-11 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-4 text-sm font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
 const primaryClass =
@@ -113,8 +113,11 @@ export default function TrainingPlanPreview({
       const next = await TrainingPlanSharing.preview(planId, invite)
       setPreview(next)
     } catch (cause) {
-      reportInternalError('TRAINING_PLAN_SUBSCRIPTION', cause)
-      setError(cause instanceof AuthedApiError ? cause.message : GENERIC_USER_ERROR)
+      if (cause instanceof AuthedApiError && cause.status === 404) setError(NOT_AVAILABLE)
+      else {
+        reportInternalError('TRAINING_PLAN_SUBSCRIPTION', cause)
+        setError(GENERIC_USER_ERROR)
+      }
     } finally {
       setBusy(false)
     }
