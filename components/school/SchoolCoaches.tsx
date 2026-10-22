@@ -405,6 +405,7 @@ export default function SchoolCoaches() {
                   readOnly={!isDirector}
                   manageSchoolSchedule={isDirector}
                   allowSchoolScheduleEdit={isDirector}
+                  scheduleCoachOptions={teachers.map(({ id, name }) => ({ id, name }))}
                 />
               </div>
               {profileTab === 'follow-ups' && (

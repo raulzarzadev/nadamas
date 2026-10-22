@@ -50,7 +50,13 @@ const NAV_ICONS = {
 // segmented toggle. Rendered inside the app shell and on marketing pages for
 // logged-in users so the chrome is identical everywhere. When no `role` is
 // passed it follows the active role from RoleContext.
-export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
+export default function AppNav({
+  mode: modeProp,
+  desktopSidebar = false,
+}: {
+  mode?: RoleName
+  desktopSidebar?: boolean
+}) {
   const headerRef = useRef<HTMLElement>(null)
   useEffect(() => {
     const header = headerRef.current
@@ -196,7 +202,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
       count: role === 'athlete' && item.href === '/athlete/schedule' ? upcomingCount : null,
     })),
     ...(role === 'school'
-      ? [{ href: '/school/settings', label: 'Ajustes', icon: FiSettings, count: null }]
+      ? [{ href: '/school/settings', label: 'Configuración', icon: FiSettings, count: null }]
       : []),
   ]
 
@@ -221,7 +227,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
             )}
             <Link
               href="/"
-              className={tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'}
+              className={`${tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'} ${desktopSidebar && canShowWorkspaceNavigation ? 'sm:hidden' : ''}`}
             >
               {tenant ? (
                 <span className="flex min-w-0 items-center gap-2">
@@ -266,7 +272,7 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
           {canShowWorkspaceNavigation && (
             <nav
               aria-label="Navegación principal"
-              className="hidden gap-2 sm:grid"
+              className={`hidden gap-2 ${desktopSidebar ? '' : 'sm:grid'}`}
               style={{
                 gridTemplateColumns: `${primary.map((item) => (item.icon === 'payments' ? '3rem' : 'minmax(0,1fr)')).join(' ')}${role === 'school' ? ' 2.5rem' : ''}`,
               }}
@@ -325,6 +331,61 @@ export default function AppNav({ mode: modeProp }: { mode?: RoleName }) {
             (!tenant || selectedSchool !== null) && <AthleteSchoolSwitcher />}
         </div>
       </header>
+
+      {desktopSidebar && canShowWorkspaceNavigation && (
+        <aside
+          data-app-sidebar
+          className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col gap-6 overflow-y-auto border-r border-(--c-border) bg-white px-3 py-6 sm:flex"
+        >
+          <Link
+            href="/"
+            className="relative mx-3 block h-8 w-28 shrink-0"
+            aria-label={tenant?.name || 'Nadamas'}
+          >
+            <Image
+              src={tenant?.logoUrl || '/logo-nadamas.webp'}
+              alt={tenant?.name || 'Nadamas logo'}
+              fill
+              sizes="112px"
+              style={{ objectFit: 'contain', objectPosition: 'left' }}
+            />
+          </Link>
+          <nav aria-label="Navegación principal" className="grid gap-2">
+            {primary.map((item) => {
+              const Icon = NAV_ICONS[item.icon]
+              const active = isActiveNav(item.href)
+              const count =
+                role === 'athlete' && item.href === '/athlete/schedule' ? upcomingCount : null
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex min-h-11 min-w-0 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) ${active ? 'bg-(--c-ocean) text-white' : 'text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean)'}`}
+                >
+                  <Icon aria-hidden="true" className="size-4 shrink-0" />
+                  <span className="min-w-0 break-words">{item.label}</span>
+                  {count !== null && count > 0 && (
+                    <span className="ml-auto rounded-full bg-current/10 px-1.5 text-xs">
+                      {count}
+                    </span>
+                  )}
+                </Link>
+              )
+            })}
+            {role === 'school' && (
+              <Link
+                href="/school/settings"
+                aria-current={pathname.startsWith('/school/settings') ? 'page' : undefined}
+                className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) ${pathname.startsWith('/school/settings') ? 'bg-(--c-ocean) text-white' : 'text-(--c-text-2) hover:bg-(--c-surface)'}`}
+              >
+                <FiSettings aria-hidden="true" className="size-4" />
+                Configuración
+              </Link>
+            )}
+          </nav>
+        </aside>
+      )}
 
       {/* Small screens: primary nav becomes an app-style bottom tab bar. Rendered
         outside the header because its backdrop-blur would contain `fixed`. */}

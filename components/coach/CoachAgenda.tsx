@@ -9,6 +9,7 @@ import {
   FiLock,
   FiPlus,
   FiSettings,
+  FiTrash2,
   FiUnlock,
   FiUser,
   FiUsers,
@@ -296,6 +297,7 @@ export default function CoachAgenda({
   }, [addStudentSlot])
   const [cancelClassTarget, setCancelClassTarget] = useState<Booking | null>(null)
   const [cancelClassError, setCancelClassError] = useState<string | null>(null)
+  const [confirmBatchDelete, setConfirmBatchDelete] = useState(false)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [showBatchRequests, setShowBatchRequests] = useState(false)
   const [batchRequestError, setBatchRequestError] = useState('')
@@ -305,6 +307,11 @@ export default function CoachAgenda({
     null
   )
   const [batchValue, setBatchValue] = useState('')
+  const [batchSettings, setBatchSettings] = useState<{
+    status: 'available' | 'blocked' | null
+    type: 'particular' | 'grupal' | null
+  }>({ status: null, type: null })
+  const [batchChanged, setBatchChanged] = useState({ status: false, type: false, coaches: false })
   const [batchCoachIds, setBatchCoachIds] = useState<string[]>([])
   const [batchError, setBatchError] = useState('')
   const [batchStudents, setBatchStudents] = useState<Array<{ id: string; name: string }>>([])
@@ -1308,8 +1315,12 @@ export default function CoachAgenda({
       classOfferings: next,
     })
 
-  const updateAvailableSlotGroupType = (slot: CoachAvailableSlot, checked: boolean) => {
-    return run(async () => {
+  const updateAvailableSlotGroupType = (
+    slot: CoachAvailableSlot,
+    checked: boolean,
+    refresh = true
+  ) => {
+    const action = async () => {
       let targetOfferings = offerings
       const targetSchoolId = schoolIdForSlot(slot)
       const schoolClasses = activeBookings.filter(
@@ -1366,7 +1377,8 @@ export default function CoachAgenda({
           classOfferings: next,
         })
       else await saveOfferingList(next)
-    })
+    }
+    return refresh ? run(action) : action().then(() => true)
   }
 
   const overlappingBlockIds = (pairs: { date: string; time: string }[]) =>
@@ -1597,6 +1609,65 @@ export default function CoachAgenda({
     else setBatchRequestError(GENERIC_USER_ERROR)
   }
 
+  async function deleteSelectedClasses() {
+    if (busy || !batchSlots.length) return
+    setBatchError('')
+    const success = await run(async () => {
+      const cancelled = new Set<string>()
+      for (const slot of batchSlots) {
+        const targetSchoolId = schoolIdForSlot(slot)
+        const bookings = batchBookings.filter(
+          (booking) =>
+            booking.coachId === slot.coachId &&
+            booking.date === slot.date &&
+            booking.startTime === slot.startTime &&
+            schoolIdForBooking(booking) === targetSchoolId &&
+            booking.status !== 'cancelled'
+        )
+        for (const booking of bookings) {
+          const key = `${targetSchoolId || ''}|${booking.schoolClassId || booking.id}`
+          if (cancelled.has(key)) continue
+          if (targetSchoolId && booking.schoolClassId) {
+            const studentIds = [
+              ...new Set(
+                bookings
+                  .filter((item) => item.schoolClassId === booking.schoolClassId)
+                  .flatMap((item) => item.schoolClassStudentIds || [])
+              ),
+            ]
+            const response = await postAuthed(
+              `/api/schools/${encodeURIComponent(targetSchoolId)}/classes/${encodeURIComponent(booking.schoolClassId)}/cancellations`,
+              { studentIds }
+            )
+            const result = (await response.json()) as { cancelled: boolean }
+            if (!result.cancelled) throw new Error('BATCH_CLASS_CHANGED')
+          } else {
+            await deleteAuthed(
+              `/api/coach/agenda/bookings?id=${encodeURIComponent(booking.id)}${schoolQueryFor(targetSchoolId)}${manageSchoolSchedule ? `&coachId=${encodeURIComponent(booking.coachId)}` : coachQuery}`
+            )
+          }
+          cancelled.add(key)
+        }
+        await postAuthed(scheduleEndpointFor(slot.coachId), {
+          date: slot.date,
+          allDay: false,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          hidden: true,
+          ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
+        })
+      }
+    })
+    if (success) {
+      setConfirmBatchDelete(false)
+      setBatchAction(null)
+      setBatchSlots([])
+      setMultiSelect(false)
+      setNotice('Clases eliminadas.')
+    } else
+      setBatchError('No pudimos eliminar todas las clases. Revisa la agenda y vuelve a intentarlo.')
+  }
+
   async function openBatchAction(action: 'students' | 'coaches' | 'type' | 'status') {
     setBatchError('')
     const values = new Set(
@@ -1611,6 +1682,17 @@ export default function CoachAgenda({
       )
     )
     setBatchValue(values.size === 1 ? [...values][0] : '')
+    const types = new Set(batchSlots.map((slot) => slot.groupType))
+    const statuses = new Set(
+      batchSlots.map((slot) =>
+        slot.status === 'blocked' ? ('blocked' as const) : ('available' as const)
+      )
+    )
+    setBatchSettings({
+      status: statuses.size === 1 ? [...statuses][0] : null,
+      type: types.size === 1 ? [...types][0] : null,
+    })
+    setBatchChanged({ status: false, type: false, coaches: false })
     setBatchStudentIds([])
     const assigned = [
       ...new Set(batchSlots.flatMap((slot) => slot.assignedCoachIds || [slot.coachId])),
@@ -1635,6 +1717,62 @@ export default function CoachAgenda({
       }
     }
   }
+  async function applyBatchSettings() {
+    if (busy || !batchSlots.length || (batchChanged.coaches && !batchCoachIds.length)) return
+    setBatchError('')
+    const success = await run(async () => {
+      if (batchChanged.type) {
+        for (const slot of batchSlots)
+          await updateAvailableSlotGroupType(slot, batchSettings.type === 'grupal', false)
+      }
+      if (batchChanged.status) {
+        for (const slot of batchSlots) {
+          const targetSchoolId = schoolIdForSlot(slot)
+          if (batchSettings.status === 'blocked') {
+            await postAuthed(scheduleEndpointFor(slot.coachId), {
+              date: slot.date,
+              allDay: false,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              hidden: false,
+              ...(targetSchoolId ? { schoolId: targetSchoolId } : {}),
+            })
+          } else {
+            for (const block of (agenda?.blocks || []).filter(
+              (block) =>
+                block.coachId === slot.coachId &&
+                block.date === slot.date &&
+                block.startTime === slot.startTime &&
+                !block.allDay
+            ))
+              await deleteAuthed(
+                `${scheduleEndpointFor(slot.coachId)}?id=${encodeURIComponent(block.id)}${schoolQueryFor(targetSchoolId)}`
+              )
+          }
+        }
+      }
+      if (batchChanged.coaches && schoolId) {
+        await postAuthed(`/api/schools/${encodeURIComponent(schoolId)}/agenda/teachers`, {
+          coachIds: batchCoachIds,
+          slots: batchSlots.map(({ coachId, date, startTime, endTime, groupType, offeringId }) => ({
+            coachId,
+            date,
+            startTime,
+            endTime,
+            groupType: batchChanged.type ? batchSettings.type : groupType,
+            offeringId,
+          })),
+        })
+      }
+    })
+    if (success) {
+      setBatchAction(null)
+      setBatchSlots([])
+      setNotice('Configuración actualizada.')
+    } else
+      setBatchError('No pudimos aplicar todos los cambios. Revisa la agenda e inténtalo de nuevo.')
+  }
+
   async function applyBatch(studentPayloads?: AddStudentPayload[]) {
     if (busy || !batchAction) return
     if (!schoolId && batchAction === 'coaches') return
@@ -2772,65 +2910,82 @@ export default function CoachAgenda({
         </p>
       )}
       <Sheet
-        open={batchAction !== null && batchAction !== 'students'}
+        open={batchAction !== null && batchAction !== 'students' && !confirmBatchDelete}
         onClose={() => setBatchAction(null)}
         closeDisabled={busy}
         label="Configurar horarios seleccionados"
+        footer={
+          <div className="grid gap-2 pt-3">
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={
+                busy ||
+                !Object.values(batchChanged).some(Boolean) ||
+                (batchChanged.coaches && !batchCoachIds.length)
+              }
+              onClick={() => void applyBatchSettings()}
+            >
+              {busy ? 'Guardando…' : 'Aplicar'}
+            </button>
+            <button
+              type="button"
+              disabled={busy || !batchSlots.length}
+              onClick={() => {
+                setBatchError('')
+                setConfirmBatchDelete(true)
+              }}
+              className="flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-semibold text-rose-700 hover:bg-rose-50"
+            >
+              <FiTrash2 aria-hidden="true" />
+              {batchSlots.length === 1 ? 'Eliminar clase' : 'Eliminar clases'}
+            </button>
+          </div>
+        }
       >
         <div className="grid gap-3">
           <h2 className="text-lg font-bold">
             Configurar {batchSlots.length} {batchSlots.length === 1 ? 'horario' : 'horarios'}
           </h2>
           <BatchNotice count={batchSlots.length} />
-          <div role="tablist" aria-label="Qué configurar" className="flex flex-wrap gap-2">
-            {(['status', 'type', 'coaches'] as const)
-              .filter((action) => action !== 'coaches' || Boolean(schoolId))
-              .map((action) => (
-                <button
-                  key={action}
-                  type="button"
-                  role="tab"
-                  aria-selected={batchAction === action}
-                  disabled={busy}
-                  onClick={() => void openBatchAction(action)}
-                  className={`btn min-h-10 ${batchAction === action ? 'btn-primary' : 'btn-outline'}`}
-                >
-                  {{ status: 'Estado', type: 'Tipo', coaches: 'Profes' }[action]}
-                </button>
-              ))}
-          </div>
-          {batchAction === 'status' && (
-            <div className="grid gap-1 text-sm text-(--c-text-2)">
-              <p>
-                {batchSlots.length - selectedBlockedCount}{' '}
-                {batchSlots.length - selectedBlockedCount === 1 ? 'Disponible' : 'Disponibles'}
-              </p>
-              <p>
-                {selectedBlockedCount} {selectedBlockedCount === 1 ? 'Bloqueado' : 'Bloqueados'}
-              </p>
-            </div>
+          <SlotSegmentedControl
+            label="Estado del horario"
+            leftLabel="Disponible"
+            rightLabel="Bloqueada"
+            leftIcon={<FiUnlock />}
+            rightIcon={<FiLock />}
+            checked={batchSettings.status === null ? null : batchSettings.status === 'blocked'}
+            onChange={(checked) => {
+              setBatchSettings((current) => ({
+                ...current,
+                status: checked ? 'blocked' : 'available',
+              }))
+              setBatchChanged((current) => ({ ...current, status: true }))
+            }}
+            disabled={busy}
+          />
+          <SlotSegmentedControl
+            label="Tipo de clase"
+            leftLabel="Particular"
+            rightLabel="Grupal"
+            leftIcon={<FiUser />}
+            rightIcon={<FiUsers />}
+            checked={batchSettings.type === null ? null : batchSettings.type === 'grupal'}
+            onChange={(checked) => {
+              setBatchSettings((current) => ({
+                ...current,
+                type: checked ? 'grupal' : 'particular',
+              }))
+              setBatchChanged((current) => ({ ...current, type: true }))
+            }}
+            disabled={busy}
+          />
+          {(batchSettings.status === null || batchSettings.type === null) && (
+            <p className="text-xs text-(--c-text-2)">
+              Hay valores distintos entre los horarios. Solo se aplicarán las opciones que cambies.
+            </p>
           )}
-          {batchAction === 'students' ? (
-            <fieldset className="grid gap-2">
-              <legend>Alumnos</legend>
-              {batchStudents.map((student) => (
-                <label key={student.id} className="flex min-h-11 items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={batchStudentIds.includes(student.id)}
-                    onChange={() =>
-                      setBatchStudentIds((current) =>
-                        current.includes(student.id)
-                          ? current.filter((id) => id !== student.id)
-                          : [...current, student.id]
-                      )
-                    }
-                  />
-                  {student.name}
-                </label>
-              ))}
-            </fieldset>
-          ) : batchAction === 'coaches' ? (
+          {schoolId && (
             <fieldset className="grid gap-3">
               <legend className="mb-2 text-sm font-bold text-(--c-text-2)">
                 Profes de los horarios seleccionados
@@ -2847,7 +3002,8 @@ export default function CoachAgenda({
                     type="button"
                     disabled={busy}
                     aria-pressed={batchCoachIds.includes(coach.id)}
-                    onClick={() =>
+                    onClick={() => {
+                      setBatchChanged((current) => ({ ...current, coaches: true }))
                       setBatchCoachIds((current) =>
                         coach.id === UNASSIGNED_SCHOOL_COACH_ID
                           ? [coach.id]
@@ -2858,7 +3014,7 @@ export default function CoachAgenda({
                                 coach.id,
                               ]
                       )
-                    }
+                    }}
                     className="inline-flex min-h-11 items-center rounded-full bg-transparent transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
                   >
                     <CoachBadge
@@ -2874,56 +3030,57 @@ export default function CoachAgenda({
                 todos estos horarios.
               </p>
             </fieldset>
-          ) : batchAction === 'type' ? (
-            <SlotSegmentedControl
-              label="Tipo de clase"
-              leftLabel="Particular"
-              rightLabel="Grupal"
-              leftIcon={<FiUser />}
-              rightIcon={<FiUsers />}
-              checked={batchValue ? batchValue === 'grupal' : null}
-              onChange={(checked) => setBatchValue(checked ? 'grupal' : 'particular')}
-              disabled={busy}
-            />
-          ) : (
-            <SlotSegmentedControl
-              label="Estado del horario"
-              leftLabel="Disponible"
-              rightLabel="Bloqueada"
-              leftIcon={<FiUnlock />}
-              rightIcon={<FiLock />}
-              checked={batchValue ? batchValue === 'blocked' : null}
-              onChange={(checked) => setBatchValue(checked ? 'blocked' : 'available')}
-              disabled={busy}
-            />
-          )}
-          {(batchAction === 'status' || batchAction === 'type') && !batchValue && (
-            <p className="text-sm text-(--c-text-2)">
-              Los horarios tienen valores distintos. Elige una opción para aplicarla a todos.
-            </p>
-          )}
-          {batchAction === 'type' && (
-            <p className="text-sm">
-              El tipo se actualiza en las clases seleccionadas. Para horarios publicados, también se
-              actualizan sus fechas recurrentes.
-            </p>
           )}
           {batchError && <p role="alert">{batchError}</p>}
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={
-              busy ||
-              (batchAction === 'coaches'
-                ? !batchCoachIds.length
-                : batchAction === 'students'
-                  ? !batchStudentIds.length
-                  : !batchValue)
-            }
-            onClick={() => void applyBatch()}
-          >
-            {busy ? 'Guardando…' : 'Aplicar'}
-          </button>
+        </div>
+      </Sheet>
+      <Sheet
+        open={confirmBatchDelete}
+        onClose={() => setConfirmBatchDelete(false)}
+        closeDisabled={busy}
+        label="Eliminar clases seleccionadas"
+        footer={
+          <div className="grid gap-2 pt-3">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void deleteSelectedClasses()}
+              className="btn min-h-11 border-rose-700 bg-rose-700! text-white!"
+            >
+              {busy ? 'Eliminando…' : 'Eliminar clases'}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setConfirmBatchDelete(false)}
+              className="btn btn-ghost min-h-11"
+            >
+              Cancelar
+            </button>
+          </div>
+        }
+        showFooterClose={false}
+      >
+        <div className="grid gap-3">
+          <h2 className="text-lg font-bold">
+            Eliminar {batchSlots.length} {batchSlots.length === 1 ? 'clase' : 'clases'}
+          </h2>
+          <p className="text-sm text-(--c-text-2)">
+            Se quitarán estos horarios de las fechas seleccionadas. Si tienen participantes, sus
+            clases se cancelarán.
+          </p>
+          <ul className="grid gap-1 text-xs text-(--c-text-2)">
+            {batchSlots.map((slot) => (
+              <li key={batchSlotKey(slot)}>
+                {slot.date} · {slot.startTime}–{slot.endTime} · {slot.coachName || coachFallback}
+              </li>
+            ))}
+          </ul>
+          {batchError && (
+            <p role="alert" className="text-sm text-rose-700">
+              {batchError}
+            </p>
+          )}
         </div>
       </Sheet>
       {batchNotesMode && (

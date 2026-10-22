@@ -203,4 +203,58 @@ test('Todos creates each selected hour for each coach without duplicates or unas
   await expect(slotDetails.getByRole('button', { name: 'Configurar', exact: true })).toBeVisible()
   await expect(slotDetails.getByRole('button', { name: 'Entreno', exact: true })).toBeVisible()
   await expect(slotDetails.getByRole('button', { name: 'Nota', exact: true })).toBeVisible()
+  await slotDetails.getByRole('button', { name: 'Seleccionar más horarios', exact: true }).click()
+  await teacherProfile
+    .getByRole('button', { name: new RegExp(`${selectedDate}.*09:00.*Profe 1`) })
+    .click()
+  await teacherProfile.getByRole('button', { name: 'Configurar', exact: true }).click()
+  const batchConfig = page.getByRole('dialog', {
+    name: 'Configurar horarios seleccionados',
+    exact: true,
+  })
+
+  await expect(batchConfig.getByRole('tab')).toHaveCount(0)
+  await expect(batchConfig.getByText('Estado del horario', { exact: true })).toBeVisible()
+  await expect(batchConfig.getByText('Tipo de clase', { exact: true })).toBeVisible()
+  await expect(
+    batchConfig.getByText('Profes de los horarios seleccionados', { exact: true })
+  ).toBeVisible()
+  await batchConfig.getByRole('button', { name: 'Grupal', exact: true }).click()
+  await batchConfig.getByRole('button', { name: 'Bloqueada', exact: true }).click()
+  await batchConfig.getByRole('button', { name: 'Aplicar', exact: true }).click()
+  await expect(batchConfig).not.toBeVisible()
+  const changed = slots(await agenda()).filter(
+    (slot: { coachId: string }) => slot.coachId === teacherIds[1]
+  )
+  expect(changed).toHaveLength(2)
+  expect(
+    changed.every(
+      (slot: { groupType: string; status: string }) =>
+        slot.groupType === 'grupal' && slot.status === 'blocked'
+    )
+  ).toBe(true)
+  await teacherProfile
+    .getByRole('button', { name: new RegExp(`${selectedDate}.*08:00.*Profe 1`) })
+    .click()
+  await slotDetails.getByRole('button', { name: 'Seleccionar más horarios', exact: true }).click()
+  await teacherProfile
+    .getByRole('button', { name: new RegExp(`${selectedDate}.*09:00.*Profe 1`) })
+    .click()
+  await teacherProfile.getByRole('button', { name: 'Configurar', exact: true }).click()
+  await batchConfig.getByRole('button', { name: 'Eliminar clases', exact: true }).click()
+  const confirmation = page.getByRole('dialog', {
+    name: 'Eliminar clases seleccionadas',
+    exact: true,
+  })
+  await expect(
+    confirmation.getByRole('heading', { name: 'Eliminar 2 clases', exact: true })
+  ).toBeVisible()
+  await confirmation.getByRole('button', { name: 'Cancelar', exact: true }).click()
+  expect(slots(await agenda())).toHaveLength(6)
+  await batchConfig.getByRole('button', { name: 'Eliminar clases', exact: true }).click()
+  await confirmation.getByRole('button', { name: 'Eliminar clases', exact: true }).click()
+  await expect(confirmation).not.toBeVisible()
+  const remaining = slots(await agenda())
+  expect(remaining).toHaveLength(4)
+  expect(remaining.some((slot: { coachId: string }) => slot.coachId === teacherIds[1])).toBe(false)
 })

@@ -26,10 +26,10 @@ export default function AppChrome({
           indicator inset); bottom-fixed UI offsets itself by it. */}
       <div
         data-theme="nadamas"
-        className="min-h-screen bg-[var(--c-bg)] text-[var(--c-ocean)] max-sm:has-[[data-app-tabbar]]:[--app-tabbar-h:calc(4rem+env(safe-area-inset-bottom))] has-[[data-action-bar]]:[--app-actionbar-h:4.5rem]"
+        className="min-h-screen sm:has-[[data-app-sidebar]]:pl-56 bg-[var(--c-bg)] text-[var(--c-ocean)] max-sm:has-[[data-app-tabbar]]:[--app-tabbar-h:calc(4rem+env(safe-area-inset-bottom))] has-[[data-action-bar]]:[--app-actionbar-h:4.5rem]"
       >
         <ScrollToTop />
-        {!classDetails && <AppNav mode={mode} />}
+        {!classDetails && <AppNav mode={mode} desktopSidebar />}
         <PwaInstallPrompt />
         <main
           className={`app-content mx-auto max-w-5xl px-0 pb-[calc(5rem+var(--app-tabbar-h,0px))] sm:px-4 sm:pb-24 ${classDetails ? 'pt-1 sm:pt-2' : 'pt-2 sm:pt-6'}`}
