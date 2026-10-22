@@ -322,7 +322,7 @@ export default function TrainingPlanner() {
   }
 
   return (
-    <section className="mx-auto max-w-4xl px-1 sm:px-0" aria-labelledby="training-title">
+    <section className="mx-auto max-w-4xl px-1 sm:px-0" aria-label="Entrenamiento">
       <div
         inert={Boolean(draft) || deleting || infoOpen}
         aria-hidden={Boolean(draft) || deleting || infoOpen || undefined}
@@ -361,35 +361,29 @@ export default function TrainingPlanner() {
             })}
           </nav>
         )}
-        <h1 id="training-title" className="pt-4 text-center text-2xl font-extrabold">
-          Entreno de hoy
-        </h1>
-        <TodayTrainingSummary plans={plans} loading={loading} loadError={loadError} />
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--c-border) py-4">
-          <div>
-            <div className="flex items-center gap-1">
-              <h2 className="text-xl font-extrabold">Planeación</h2>
-              <button
-                type="button"
-                aria-label="Información sobre los ciclos"
-                onClick={() => setInfoOpen(true)}
-                className="grid min-h-11 min-w-11 place-items-center rounded-full text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-              >
-                <FiInfo aria-hidden="true" className="size-3.5" />
-              </button>
+        {plans.length > 0 && (
+          <>
+            <h1 id="training-title" className="pt-4 text-center text-2xl font-extrabold">
+              Entreno de hoy
+            </h1>
+            <TodayTrainingSummary plans={plans} loading={loading} loadError={loadError} />
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-(--c-border) py-4">
+              <div>
+                <div className="flex items-center gap-1">
+                  <h2 className="text-xl font-extrabold">Planeación</h2>
+                  <button
+                    type="button"
+                    aria-label="Información sobre los ciclos"
+                    onClick={() => setInfoOpen(true)}
+                    className="grid min-h-11 min-w-11 place-items-center rounded-full text-(--c-aqua-strong) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                  >
+                    <FiInfo aria-hidden="true" className="size-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-          {!plans.length && (
-            <button
-              type="button"
-              className={primaryClass}
-              disabled={loading || loadError || busy}
-              onClick={() => void createMacro()}
-            >
-              <FiPlus aria-hidden="true" /> Nuevo MACRO-ciclo
-            </button>
-          )}
-        </div>
+          </>
+        )}
         {error && !plan && !draft && !deleting && (
           <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">
             {error}
