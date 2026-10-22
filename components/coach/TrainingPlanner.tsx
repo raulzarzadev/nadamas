@@ -11,6 +11,7 @@ import {
   FiTrash2,
   FiX,
 } from 'react-icons/fi'
+import PlanSharingControls from '@/components/training/PlanSharingControls'
 import DateInput from '@/components/ui/date-input'
 import Sheet from '@/components/ui/sheet'
 import { useUser } from '@/context/UserContext'
@@ -155,6 +156,7 @@ export default function TrainingPlanner() {
         userId: uid,
         createdAt: Date.now(),
         cycles,
+        visibility: 'private',
       }
       setPlans((items) => [created, ...items])
       setPlanId(created.id)
@@ -588,6 +590,14 @@ export default function TrainingPlanner() {
                       </p>
                     ) : null)}
                 </div>
+                {owned && plan && cycle.type === 'macro' && (
+                  <PlanSharingControls
+                    plan={plan}
+                    onChange={(next) =>
+                      setPlans((items) => items.map((item) => (item.id === next.id ? next : item)))
+                    }
+                  />
+                )}
                 {error && !draft && !deleting && (
                   <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">
                     {error}
@@ -691,7 +701,7 @@ export default function TrainingPlanner() {
         <h2 className="text-lg font-bold">Planificación del entrenamiento</h2>
         <p className="mt-3 text-sm text-(--c-text-2)">
           MACRO-ciclo: temporada · MESO-ciclo: bloque de trabajo · MICRO-ciclo: semana o periodo
-          corto. Tu planificación es privada.
+          corto. Tus macrociclos son privados hasta que los hagas públicos.
         </p>
       </Sheet>
       {creatingMacro && (

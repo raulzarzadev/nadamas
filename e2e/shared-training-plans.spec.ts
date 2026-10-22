@@ -116,3 +116,30 @@ test('entrenos: plan suscrito aparece como chip de solo lectura', async ({
   await expect(page.getByRole('button', { name: 'Eliminar', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Agregar serie', exact: true })).toHaveCount(0)
 })
+
+test('entrenos: hacer público un macrociclo se conserva al recargar', async ({
+  page,
+  context,
+  request,
+}) => {
+  test.setTimeout(60000)
+  page.setDefaultTimeout(30000)
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await loginAs(page, request, `visibility-${crypto.randomUUID()}@test.com`)
+  await page.goto('/athlete/training')
+  await createMacro(page, `Temporada pública ${crypto.randomUUID()}`)
+  await page.reload()
+  await page.getByRole('button', { name: /^Temporada pública/ }).click()
+  const toggle = page.getByRole('switch', { name: 'Público' })
+  await expect(toggle).toHaveAttribute('aria-checked', 'false')
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-checked', 'true')
+  await page.reload()
+  await page.getByRole('button', { name: /^Temporada pública/ }).click()
+  await expect(page.getByRole('switch', { name: 'Público' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  )
+  await page.getByRole('button', { name: 'Compartir', exact: true }).click()
+  await expect(page.getByText('Enlace copiado')).toBeVisible()
+})
