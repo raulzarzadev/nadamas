@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { auth, authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { getUser, loginUser } from '@/firebase/users'
 import { analyticsEnabled, trackEvent } from '@/lib/analytics/client'
+import { safeRedirectPath } from '@/lib/post-login-path'
 import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 import { normalizeRoles } from '@/lib/roles'
 import { reportInternalError } from '@/lib/user-facing-error'
@@ -17,7 +18,7 @@ export function UserProvider({ children }) {
   const posthog = usePostHog()
   const analyticsUser = useRef(null)
   const searchParams = useSearchParams()
-  const redirectTo = searchParams?.get('redirectTo')
+  const redirectTo = safeRedirectPath(searchParams?.get('redirectTo'), '') || null
 
   useEffect(() => {
     let active = true

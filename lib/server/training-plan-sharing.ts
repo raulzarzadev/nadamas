@@ -126,6 +126,9 @@ async function deleteSubscription(planId: string, uid: string, ownerUid?: string
     const plan = planSnap.data() as StoredPlan | undefined
     if (ownerUid !== undefined && plan?.userId !== ownerUid) throw new Error('FORBIDDEN')
     if (!subSnap.exists) return
+    // Guards against `_` doc-id collisions between different (planId, uid) pairs.
+    const sub = subSnap.data()
+    if (sub?.planId !== planId || sub?.uid !== uid) return
     tx.delete(subRef)
     // The author may have deleted the plan; the orphan subscription still goes away.
     if (plan) tx.update(planRef, { subscriberCount: FieldValue.increment(-1) })

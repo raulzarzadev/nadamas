@@ -1,4 +1,4 @@
-import { where } from 'firebase/firestore'
+import { limit, where } from 'firebase/firestore'
 import {
   decodeTrainingCycles,
   encodeTrainingCycles,
@@ -6,6 +6,7 @@ import {
 } from '@/lib/training-plan-storage'
 import { buildTrainingPlanSummary } from '@/lib/training-plan-summary'
 import type { TrainingCycle } from '@/lib/training-planner'
+import { reportInternalError } from '@/lib/user-facing-error'
 import { FirebaseCRUD } from '../FirebaseCRUD'
 import type {
   TrainingPlan,
@@ -45,6 +46,7 @@ class TrainingPlans {
   async listPublic(): Promise<TrainingPlan[]> {
     const plans = (await store.getMany([
       where('visibility', '==', 'public'),
+      limit(50),
     ])) as StoredTrainingPlan[]
     return plans.map(decodePlan)
   }
@@ -52,10 +54,16 @@ class TrainingPlans {
     const subs = (await subscriptions.getMany([where('uid', '==', uid)])) as {
       planId?: string
     }[]
-    const plans = await Promise.all(
+    const settled = await Promise.allSettled(
       subs.filter((sub) => sub.planId).map((sub) => this.get(sub.planId as string))
     )
-    return plans.filter((plan): plan is TrainingPlan => plan !== null)
+    const plans: TrainingPlan[] = []
+    for (const result of settled) {
+      if (result.status === 'rejected')
+        reportInternalError('TRAINING_SUBSCRIBED_PLAN_LOAD', result.reason)
+      else if (result.value) plans.push(result.value)
+    }
+    return plans
   }
   create(cycles: TrainingCycle[], author: TrainingPlanAuthor) {
     return store.create({

@@ -9,6 +9,7 @@ import { useEffect } from 'react'
 import { useRole } from '@/context/RoleContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
+import { safeRedirectPath } from '@/lib/post-login-path'
 import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 
 function LoginHeader() {
@@ -74,7 +75,7 @@ export default function LoginPage() {
   const { user } = useUser()
   const { roles, activeRole, enableCoach, setActiveRole } = useRole()
   const wantsCoach = searchParams.get('intent') === 'coach'
-  const redirectTo = searchParams.get('redirectTo')
+  const redirectTo = safeRedirectPath(searchParams.get('redirectTo'), '') || null
 
   useEffect(() => {
     if (!user) return

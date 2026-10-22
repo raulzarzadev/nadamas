@@ -488,3 +488,51 @@ test('entrenos: abrir invitación sin sesión', async ({ browser, request }) => 
   await author.context.close()
   await context.close()
 })
+
+test('entrenos: reglas niegan lectura privada y escritura de subscriberCount', async () => {
+  const signUp = async (email: string) => {
+    const response = await fetch(
+      'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=any',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password: 'password-123', returnSecureToken: true }),
+      }
+    )
+    const body = (await response.json()) as { idToken: string; localId: string }
+    expect(body.idToken).toBeTruthy()
+    return body
+  }
+  const suffix = crypto.randomUUID()
+  const author = await signUp(`rules-author-${suffix}@test.com`)
+  const stranger = await signUp(`rules-stranger-${suffix}@test.com`)
+  const planId = `rules-${suffix}`
+  // Seed through the emulator admin bypass; the assertions below use real user tokens.
+  const seeded = await fetch(`${root}/trainingPlans/${planId}`, {
+    method: 'PATCH',
+    headers: { authorization: 'Bearer owner', 'content-type': 'application/json' },
+    body: JSON.stringify({
+      fields: {
+        userId: { stringValue: author.localId },
+        visibility: { stringValue: 'private' },
+        cycles: { arrayValue: { values: [{ mapValue: { fields: {} } }] } },
+      },
+    }),
+  })
+  expect(seeded.ok).toBe(true)
+
+  const read = await fetch(`${root}/trainingPlans/${planId}`, {
+    headers: { authorization: `Bearer ${stranger.idToken}` },
+  })
+  expect(read.status).toBe(403)
+
+  const write = await fetch(
+    `${root}/trainingPlans/${planId}?updateMask.fieldPaths=subscriberCount`,
+    {
+      method: 'PATCH',
+      headers: { authorization: `Bearer ${author.idToken}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ fields: { subscriberCount: { integerValue: '99' } } }),
+    }
+  )
+  expect(write.status).toBe(403)
+})

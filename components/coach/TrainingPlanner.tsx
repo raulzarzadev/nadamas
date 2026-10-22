@@ -98,7 +98,12 @@ export default function TrainingPlanner() {
       return () => {
         active = false
       }
-    Promise.all([TrainingPlanCRUD.list(uid), TrainingPlanCRUD.listSubscribed(uid)])
+    // Followed plans are optional: their failure must not blank the user's own plans.
+    const loadFollowed = TrainingPlanCRUD.listSubscribed(uid).catch((cause) => {
+      reportInternalError('TRAINING_SUBSCRIPTIONS_LOAD', cause)
+      return [] as Awaited<ReturnType<typeof TrainingPlanCRUD.listSubscribed>>
+    })
+    Promise.all([TrainingPlanCRUD.list(uid), loadFollowed])
       .then(([own, followed]) => {
         if (!active) return
         setPlans(own.sort((a, b) => b.createdAt - a.createdAt))
