@@ -43,6 +43,7 @@ export default function AthleteSearchBar({
   initialTab,
   clearHref,
   onClear,
+  defaultTab,
 }: {
   schoolId?: string
   onSelectCoach?: (coach: Pick) => void
@@ -55,8 +56,11 @@ export default function AthleteSearchBar({
   // With a value: an X inside the bar that clears the pick (link or callback).
   clearHref?: string
   onClear?: () => void
+  // Preselects only this kind when the sheet opens, without opening it on mount.
+  defaultTab?: 'coaches' | 'schools' | 'plans'
 }) {
   const [open, setOpen] = useState(Boolean(initialTab))
+  const label = defaultTab === 'plans' ? 'Buscar entrenos' : 'Buscar entrenador o escuela'
   const close = () => {
     setOpen(false)
     // Drop the one-shot ?search= that reopened the sheet so a reload doesn't reopen it.
@@ -72,24 +76,24 @@ export default function AthleteSearchBar({
         <button
           type="button"
           aria-haspopup="dialog"
-          aria-label={value ? `${value}. Buscar entrenador o escuela` : undefined}
+          aria-label={value ? `${value}. ${label}` : undefined}
           onClick={() => setOpen(true)}
           className={`flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-full border ${value && (clearHref || onClear) ? 'pr-14' : ''} border-(--c-border) bg-white px-4 text-left text-sm text-(--c-text-2) shadow-[0_1px_0_rgba(13,44,72,0.05)] transition-colors hover:border-(--c-aqua-strong) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)`}
         >
           <FiSearch aria-hidden="true" className="size-5 shrink-0 text-(--c-ocean)" />
           <span className={`truncate ${value ? 'font-semibold text-(--c-ocean)' : ''}`}>
-            {value || 'Buscar entrenador o escuela'}
+            {value || label}
           </span>
         </button>
         {value && (clearHref || onClear) && (
           <ClearButton href={clearHref} onClick={onClear} label={`Quitar ${value}`} />
         )}
       </div>
-      <Sheet open={open} onClose={close} label="Buscar entrenador o escuela" size="lg">
+      <Sheet open={open} onClose={close} label={label} size="lg">
         <AthleteSearch
           schoolId={schoolId}
           syncUrl={false}
-          initialTab={initialTab}
+          initialTab={initialTab ?? defaultTab}
           actionLabel={actionLabel}
           onSelectCoach={
             onSelectCoach &&

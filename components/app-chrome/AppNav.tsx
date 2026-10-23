@@ -326,6 +326,7 @@ export default function AppNav({
             role === 'athlete' &&
             !publicAthleteSchedule &&
             !pathname.startsWith('/athlete/search') &&
+            !pathname.startsWith('/athlete/training') &&
             pathname !== '/athlete/payments' &&
             pathname !== '/athlete/progress' &&
             (!tenant || selectedSchool !== null) && <AthleteSchoolSwitcher />}

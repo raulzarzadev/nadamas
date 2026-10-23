@@ -108,7 +108,7 @@ test('create macro wizard saves the goal and optional three-phase template only 
   expect(sessions.sort()).toEqual(expected)
 
   await page.reload()
-  await expect(page.getByText(goal, { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: goal, exact: true })).toBeVisible()
   await page.getByRole('button', { name: goal, exact: true }).click()
   await page.getByRole('button', { name: 'Expandir todo', exact: true }).click()
   await page

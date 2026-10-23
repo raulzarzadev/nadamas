@@ -61,6 +61,22 @@ const FIELD_LABELS: Record<CycleField, string> = {
 const isoDate = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
+const lastPlanKey = (uid: string) => `nadamas.training.lastPlanId.${uid}`
+const readLastPlanId = (uid: string) => {
+  try {
+    return localStorage.getItem(lastPlanKey(uid))
+  } catch {
+    return null
+  }
+}
+const writeLastPlanId = (uid: string, planId: string) => {
+  try {
+    localStorage.setItem(lastPlanKey(uid), planId)
+  } catch {
+    // Storage can be unavailable (private mode); remembering the plan is only a convenience.
+  }
+}
+
 export default function TrainingPlanner() {
   const { user } = useUser()
   const author = useTrainingPlanAuthor()
@@ -108,8 +124,9 @@ export default function TrainingPlanner() {
         if (!active) return
         setPlans(own.sort((a, b) => b.createdAt - a.createdAt))
         setSubscribed(followed.sort((a, b) => b.createdAt - a.createdAt))
-        // `?plan=` (from a plan preview) preselects that plan's chip.
-        const requested = [...own, ...followed].find((item) => item.id === requestedPlanId)
+        // `?plan=` (from a plan preview) preselects that plan's chip; otherwise the last one viewed.
+        const preferredId = requestedPlanId || readLastPlanId(uid)
+        const requested = [...own, ...followed].find((item) => item.id === preferredId)
         if (requested) {
           setPlanId(requested.id)
           setCycleId(requested.cycles.find((node) => node.type === 'macro')?.id || null)
@@ -126,6 +143,10 @@ export default function TrainingPlanner() {
       active = false
     }
   }, [uid, revision, requestedPlanId])
+
+  useEffect(() => {
+    if (uid && planId) writeLastPlanId(uid, planId)
+  }, [uid, planId])
 
   const plan =
     plans.find((item) => item.id === planId) || subscribed.find((item) => item.id === planId)
