@@ -60,3 +60,9 @@ firestore-debug.log
 
 # Local codebase-memory index
 .codebase-memory/
+
+# Playwright output
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
