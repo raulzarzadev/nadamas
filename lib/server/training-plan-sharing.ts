@@ -86,6 +86,21 @@ export async function getPlanPreview(
   }
 }
 
+/**
+ * Title and author for a shared link's preview card (chat apps fetch it signed out).
+ * Only public plans, or private ones opened with the current invite token, reveal details.
+ */
+export async function getPlanShareMeta(
+  planId: string,
+  invite?: string
+): Promise<{ title: string; authorName: string } | null> {
+  if (!isValidDocId(planId)) return null
+  const plan = (await plans().doc(planId).get()).data() as StoredPlan | undefined
+  if (!plan) return null
+  if (visibilityOf(plan) === 'private' && !(await inviteMatches(planId, invite))) return null
+  return { title: plan.summary?.title || '', authorName: plan.summary?.authorName || '' }
+}
+
 export async function subscribe(
   planId: string,
   uid: string,

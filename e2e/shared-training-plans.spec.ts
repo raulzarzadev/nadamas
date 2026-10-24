@@ -341,7 +341,10 @@ async function authorWithPlan(browser: Browser, request: APIRequestContext, titl
 async function copiedInviteUrl(page: Page) {
   await page.getByRole('button', { name: 'Compartir', exact: true }).click()
   await expect(page.getByText('Enlace copiado')).toBeVisible()
-  return page.evaluate(() => navigator.clipboard.readText())
+  const text = await page.evaluate(() => navigator.clipboard.readText())
+  // The copied text is the invitation line followed by the link.
+  expect(text).toMatch(/^¡Te invito a seguir mi entrenamiento «.+» en nadamas! Únete aquí:\n/)
+  return text.split('\n').pop() as string
 }
 
 async function freshAthlete(browser: Browser, request: APIRequestContext, prefix: string) {

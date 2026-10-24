@@ -5,7 +5,7 @@ import { FiShare2 } from 'react-icons/fi'
 import { TrainingPlanCRUD } from '@/firebase/training-plans/main'
 import { TrainingPlanSharing } from '@/firebase/training-plans/sharing'
 import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
-import { shareLink, trainingPlanUrl } from '@/lib/client/share-link'
+import { shareLink, trainingPlanShareText, trainingPlanUrl } from '@/lib/client/share-link'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import PlanSubscribersSheet from './PlanSubscribersSheet'
 
@@ -52,9 +52,11 @@ export default function PlanSharingControls({ plan, onChange }: Props) {
         invite = token || (await TrainingPlanSharing.createInvite(plan.id))
         setToken(invite)
       }
+      const title = plan.summary?.title || 'Macrociclo'
       const outcome = await shareLink(
         trainingPlanUrl(plan.id, invite),
-        plan.summary?.title ?? 'Macrociclo'
+        title,
+        trainingPlanShareText(title, true)
       )
       if (outcome === 'copied') setStatus('Enlace copiado')
     } catch (cause) {

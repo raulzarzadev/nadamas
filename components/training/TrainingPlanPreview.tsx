@@ -10,7 +10,7 @@ import { CoachCRUD } from '@/firebase/coaches/main'
 import { type PlanPreview, TrainingPlanSharing } from '@/firebase/training-plans/sharing'
 import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
 import { AuthedApiError } from '@/lib/client/authed-api'
-import { shareLink, trainingPlanUrl } from '@/lib/client/share-link'
+import { shareLink, trainingPlanShareText, trainingPlanUrl } from '@/lib/client/share-link'
 import {
   getTrainingDateNeighbors,
   getTrainingSessionsForDate,
@@ -131,9 +131,11 @@ export default function TrainingPlanPreview({
     setError('')
     setStatus('')
     try {
+      const title = preview?.summary.title || 'Entreno'
       const outcome = await shareLink(
         trainingPlanUrl(planId, invite),
-        preview?.summary.title ?? 'Entreno'
+        title,
+        trainingPlanShareText(title, Boolean(preview?.isOwner))
       )
       if (outcome === 'copied') setStatus('Enlace copiado')
     } catch (cause) {
