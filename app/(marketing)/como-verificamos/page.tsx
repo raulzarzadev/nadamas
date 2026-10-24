@@ -5,6 +5,24 @@ export const metadata: Metadata = {
   description:
     'Cada coach de nadamas.app pasa una evaluación práctica y teórica antes de publicarse. Así sabes con qué profesional entrenas.',
   alternates: { canonical: 'https://nadamas.app/como-verificamos' },
+  openGraph: {
+    title: 'Cómo verificamos a los coaches',
+    description:
+      'Cada coach de nadamas.app pasa una evaluación práctica y teórica antes de publicarse. Así sabes con qué profesional entrenas.',
+    url: 'https://nadamas.app/como-verificamos',
+    siteName: 'nadamas.app',
+    locale: 'es_MX',
+    type: 'website',
+    images: [
+      {
+        url: '/og-nadamas.png',
+        width: 1200,
+        height: 630,
+        alt: 'Logo de nadamas.app',
+        type: 'image/png',
+      },
+    ],
+  },
 }
 
 export default function ComoVerificamosPage() {
@@ -13,13 +31,9 @@ export default function ComoVerificamosPage() {
       <h1 className="text-3xl font-extrabold" style={{ color: 'var(--c-ocean)' }}>
         Cómo verificamos a los coaches
       </h1>
-      <p
-        className="mt-4 text-[1.05rem] leading-relaxed"
-        style={{ color: 'var(--c-text-2)' }}
-      >
-        No publicamos a cualquiera. Cada coach pasa una evaluación en dos
-        partes antes de aparecer en nadamas.app, y los nadadores que ya
-        entrenaron con él pueden valorarlo.
+      <p className="mt-4 text-[1.05rem] leading-relaxed" style={{ color: 'var(--c-text-2)' }}>
+        No publicamos a cualquiera. Cada coach pasa una evaluación en dos partes antes de aparecer
+        en nadamas.app, y los nadadores que ya entrenaron con él pueden valorarlo.
       </p>
 
       <div
@@ -31,9 +45,8 @@ export default function ComoVerificamosPage() {
             1. Evaluación práctica
           </h2>
           <p className="mt-2">
-            Revisamos experiencia real en el agua: credenciales, trayectoria y,
-            cuando aplica, una sesión de muestra. Queremos saber que sabe
-            enseñar, no solo nadar.
+            Revisamos experiencia real en el agua: credenciales, trayectoria y, cuando aplica, una
+            sesión de muestra. Queremos saber que sabe enseñar, no solo nadar.
           </p>
         </section>
         <section>
@@ -41,8 +54,8 @@ export default function ComoVerificamosPage() {
             2. Evaluación teórica
           </h2>
           <p className="mt-2">
-            Técnica, metodología de entrenamiento y seguridad en el agua. Un
-            buen coach entiende el porqué, no solo el qué.
+            Técnica, metodología de entrenamiento y seguridad en el agua. Un buen coach entiende el
+            porqué, no solo el qué.
           </p>
         </section>
         <section>
@@ -50,9 +63,9 @@ export default function ComoVerificamosPage() {
             3. Perfil transparente y valoraciones
           </h2>
           <p className="mt-2">
-            Cada perfil describe habilidades y cualidades del coach para que
-            sepas qué esperar. Solo los nadadores que tomaron una clase pueden
-            dejar una valoración, y puedes leerlas todas antes de reservar.
+            Cada perfil describe habilidades y cualidades del coach para que sepas qué esperar. Solo
+            los nadadores que tomaron una clase pueden dejar una valoración, y puedes leerlas todas
+            antes de reservar.
           </p>
         </section>
       </div>

@@ -65,6 +65,7 @@ export default function CoachDirectoryList({
   heading,
   onMatchCount,
   mineIds,
+  initialCoaches,
 }: {
   schoolId?: string | null
   availableOnly?: boolean
@@ -87,8 +88,10 @@ export default function CoachDirectoryList({
   onMatchCount?: (count: number) => void
   /** Coaches the athlete already trains with: listed first with a "Registrado" badge. */
   mineIds?: Set<string>
+  /** Server-rendered public directory (no school): shown immediately and crawlable, skips the first fetch. */
+  initialCoaches?: DirectoryCoach[]
 }) {
-  const [coaches, setCoaches] = useState<DirectoryCoach[] | undefined>(undefined)
+  const [coaches, setCoaches] = useState<DirectoryCoach[] | undefined>(initialCoaches)
   const [query, setQuery] = useState('')
   const terminology = useSchoolTerminology()
   const coachSingular = schoolId && terminology.schoolId ? terminology.coachSingular : 'coach'
@@ -100,6 +103,7 @@ export default function CoachDirectoryList({
   // The signal invalidates school availability without polling.
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision invalidates the fetched directory.
   useEffect(() => {
+    if (initialCoaches && !schoolId && revision === 0) return
     let active = true
     setCoaches(undefined)
     const request = schoolId

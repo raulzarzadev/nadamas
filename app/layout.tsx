@@ -31,6 +31,25 @@ const baseMetadata: Metadata = {
       'max-video-preview': -1,
     },
   },
+  openGraph: {
+    title: 'nadamas.app — natación para atletas, entrenadores y clubes',
+    description:
+      'Entrenos, agenda, asistencia y progreso en un solo lugar para atletas, entrenadores y coordinadores de clubes deportivos.',
+    siteName: 'nadamas.app',
+    locale: 'es_MX',
+    type: 'website',
+    images: [
+      {
+        url: '/og-nadamas.png',
+        width: 1200,
+        height: 630,
+        alt: 'Logo de nadamas.app',
+        type: 'image/png',
+      },
+    ],
+  },
+  // X/Twitter falls back to og:image, so page-level OG images (school logos) win.
+  twitter: { card: 'summary_large_image' },
   formatDetection: { email: false, address: false, telephone: false },
   icons: {
     icon: [
@@ -60,6 +79,15 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(`https://${school.slug}.nadamas.app`),
     icons: { icon: [{ url: icon }], apple: [{ url: icon }] },
     appleWebApp: { capable: true, title: school.name, statusBarStyle: 'default' },
+    openGraph: {
+      title: school.name,
+      description: school.description || `Escuela ${school.name}`,
+      siteName: school.name,
+      locale: 'es_MX',
+      type: 'website',
+      images: [{ url: icon }],
+    },
+    twitter: { card: 'summary', images: [icon] },
   }
 }
 

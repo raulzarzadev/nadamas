@@ -10,7 +10,10 @@ import type { Metadata } from 'next'
 import { NADAMAS_PRICING } from '@/lib/pricing'
 
 const title = 'nadamas.app | App para nadadores, entrenadores y escuelas de natación'
-const description = `App en español para organizar clases de natación: agenda, reservas, pagos, asistencia y progreso de alumnos. Para nadadores, entrenadores y escuelas. Desde $${NADAMAS_PRICING.launchMonthly} ${NADAMAS_PRICING.currency} al mes.`
+const description = `App en español: clases de natación, agenda, reservas, pagos, asistencia y progreso para nadadores, entrenadores y escuelas. $${NADAMAS_PRICING.launchMonthly} ${NADAMAS_PRICING.currency}/mes.`
+const shareTitle = 'nadamas.app — natación para atletas, entrenadores y clubes'
+const shareDescription =
+  'Entrenos, agenda, asistencia y progreso en un solo lugar para atletas, entrenadores y coordinadores de clubes deportivos.'
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://nadamas.app'),
@@ -28,18 +31,26 @@ export const metadata: Metadata = {
     'clases de natación',
   ],
   openGraph: {
-    title,
-    description,
+    title: shareTitle,
+    description: shareDescription,
     url: 'https://nadamas.app/',
     siteName: 'nadamas.app',
     locale: 'es_MX',
-    images: [{ url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' }],
+    images: [
+      {
+        url: '/og-nadamas.png',
+        width: 1200,
+        height: 630,
+        alt: 'Logo de nadamas.app',
+        type: 'image/png',
+      },
+    ],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title,
-    description,
+    title: shareTitle,
+    description: shareDescription,
     images: [{ url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' }],
   },
   alternates: { canonical: 'https://nadamas.app/' },

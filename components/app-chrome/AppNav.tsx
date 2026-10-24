@@ -234,7 +234,7 @@ export default function AppNav({
                   {tenant.logoUrl ? (
                     <Image
                       src={tenant.logoUrl}
-                      alt={tenant.name}
+                      alt=""
                       width={40}
                       height={40}
                       className="size-10 shrink-0 rounded-lg object-contain"
@@ -255,7 +255,7 @@ export default function AppNav({
                   sizes="112px"
                   priority
                   style={{ objectFit: 'contain', objectPosition: 'left' }}
-                  alt="Nadamas logo"
+                  alt="nadamas.app"
                 />
               )}
             </Link>
@@ -345,7 +345,7 @@ export default function AppNav({
           >
             <Image
               src={tenant?.logoUrl || '/logo-nadamas.webp'}
-              alt={tenant?.name || 'Nadamas logo'}
+              alt={tenant?.name || 'nadamas.app'}
               fill
               sizes="112px"
               style={{ objectFit: 'contain', objectPosition: 'left' }}

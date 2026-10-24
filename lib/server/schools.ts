@@ -139,12 +139,18 @@ export async function listPublicSchools() {
         id: doc.id,
         name: typeof school.name === 'string' ? school.name : '',
         slug: typeof school.slug === 'string' ? school.slug : '',
+        description: typeof school.description === 'string' ? school.description : '',
         bookingMode: school.bookingMode === 'direct' ? ('direct' as const) : ('request' as const),
         showCoachesSchedules: school.showCoachesSchedules !== false,
       }
     })
     .filter((school) => school.name)
     .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+/** Search engines only get schools with a real description; empty or test schools stay noindex. */
+export function isIndexableSchool(school: { description?: string | null }) {
+  return (school.description?.trim().length ?? 0) >= 40
 }
 
 export async function getSchoolBySlug(slugInput: string) {
