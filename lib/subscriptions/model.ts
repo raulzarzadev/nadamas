@@ -1,5 +1,16 @@
-export type SubscriptionState = 'trialing' | 'active' | 'grace' | 'limited' | 'pending_review'
+export type SubscriptionState =
+  | 'trialing'
+  | 'active'
+  | 'grace'
+  | 'limited'
+  | 'pending_review'
+  | 'exempt'
 export interface SchoolSubscription {
+  paymentExempt?: boolean
+  exemptionReason?: string
+  exemptionUpdatedAt?: number
+  exemptionUpdatedBy?: string
+  exemptionChangeId?: string | null
   stripeSubscriptionId?: string | null
   stripeCustomerId?: string | null
   stripeCheckoutSessionId?: string | null

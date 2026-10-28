@@ -20,6 +20,7 @@ export function subscriptionAccess(
   subscription: SchoolSubscription | null,
   now: number
 ): SubscriptionAccess {
+  if (subscription?.paymentExempt) return { state: 'exempt', fullAccess: true, accessEndsAt: null }
   if (!subscription) return { state: 'active', fullAccess: true, accessEndsAt: null }
   if (subscription.provisionalOrderId)
     return { state: 'pending_review', fullAccess: true, accessEndsAt: null }
@@ -45,6 +46,7 @@ export function subscriptionAccess(
 }
 
 export function subscriptionPrice(subscription: SchoolSubscription | null, now: number): number {
+  if (subscription?.paymentExempt) return 0
   if (subscription?.provisionalOrderId)
     return subscription.provisionalPriceCents === SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS
       ? SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS
@@ -86,4 +88,13 @@ export function newSchoolSubscription(
     createdAt: now,
     updatedAt: now,
   }
+}
+
+export function assertSubscriptionPayable(subscription: SchoolSubscription | null | undefined) {
+  if (subscription?.paymentExempt || subscription?.exemptionChangeId)
+    throw new SubscriptionError(
+      'subscription_exempt',
+      'Esta escuela está exenta de pago. No necesita contratar una suscripción.',
+      409
+    )
 }

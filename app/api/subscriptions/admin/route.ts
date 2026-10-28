@@ -12,6 +12,7 @@ import {
   EMPTY_SUBSCRIPTION_BANK,
   releaseInvalidatedSubscriptionPayment,
   reviewSubscriptionTransfer,
+  setSchoolPaymentExemption,
   subscriptionSettingsRef,
 } from '@/lib/server/subscriptions/store'
 import type {
@@ -55,6 +56,17 @@ export async function POST(request: Request) {
   try {
     const caller = await requireSubscriptionAdmin(request)
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
+    if (body.action === 'setExemption' && validId(body.schoolId)) {
+      if (
+        typeof body.enabled !== 'boolean' ||
+        typeof body.reason !== 'string' ||
+        body.reason.trim().length < 3 ||
+        body.reason.length > 300
+      )
+        return invalid()
+      await setSchoolPaymentExemption(body.schoolId, body.enabled, body.reason.trim(), caller.uid)
+      return NextResponse.json({ ok: true })
+    }
     if (body.action === 'settings') {
       const input = body.settings as SubscriptionBankDetails | undefined
       if (!input) return invalid()

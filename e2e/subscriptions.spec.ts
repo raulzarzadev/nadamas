@@ -255,4 +255,56 @@ test('suscripción: prueba única, códigos por escuela, acceso provisional y re
   expect(
     (await post({ action: 'cancelTransfer', orderId: restoreOrder.id }, schoolId)).status()
   ).toBe(409)
+  // Only global admin can grant or revoke exemptions, including schools without a subscription record.
+  const exemptId = await makeSchool('exenta')
+  const exemption = {
+    action: 'setExemption',
+    schoolId: exemptId,
+    enabled: true,
+    reason: 'Escuela aliada de Nadamas',
+  }
+  expect((await adminPost(exemption, owner)).status()).toBe(403)
+  expect((await adminPost({ ...exemption, reason: '' })).status()).toBe(400)
+  expect((await adminPost(exemption)).ok()).toBe(true)
+  expect((await adminPost(exemption)).ok()).toBe(true)
+  const exempt = await snapshot(exemptId)
+  expect(exempt.access).toMatchObject({ state: 'exempt', fullAccess: true, accessEndsAt: null })
+  expect(exempt.priceCents).toBe(0)
+  expect(exempt.subscription.exemptionUpdatedBy).toBe(admin.localId)
+  expect((await post({ action: 'createTransfer' }, exemptId)).status()).toBe(409)
+  expect(
+    (
+      await request.post(`/api/schools/${exemptId}/students/quick`, {
+        headers: headers(),
+        data: { name: 'Alumno escuela exenta' },
+      })
+    ).status()
+  ).toBe(201)
+  expect(
+    (await adminPost({ ...exemption, enabled: false, reason: 'Terminó el convenio' })).ok()
+  ).toBe(true)
+  expect((await snapshot(exemptId)).access.state).toBe('limited')
+  expect(
+    (
+      await request.post(`/api/schools/${exemptId}/students/quick`, {
+        headers: headers(),
+        data: { name: 'Alta bloqueada tras retirar exención' },
+      })
+    ).status()
+  ).toBe(403)
+  const legacyId = `legacy-exempt-${suffix}`
+  await seed(`schools/${legacyId}`, { name: 'Escuela antigua exenta', createdBy: owner.localId })
+  expect((await adminPost({ ...exemption, schoolId: legacyId })).ok()).toBe(true)
+  expect((await snapshot(legacyId)).access.state).toBe('exempt')
+  expect(
+    (
+      await adminPost({
+        ...exemption,
+        schoolId: legacyId,
+        enabled: false,
+        reason: 'Termina exención',
+      })
+    ).ok()
+  ).toBe(true)
+  expect((await snapshot(legacyId)).access.state).toBe('limited')
 })

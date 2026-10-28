@@ -30,13 +30,15 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [filter, setFilter] = useState('')
-  const [modal, setModal] = useState<'bank' | 'code' | 'review' | null>(null)
+  const [modal, setModal] = useState<'bank' | 'code' | 'review' | 'exemption' | null>(null)
   const [bank, setBank] = useState(emptyBank)
   const [schoolId, setSchoolId] = useState('')
   const [code, setCode] = useState('')
   const [expires, setExpires] = useState('')
   const [review, setReview] = useState<SubscriptionOrder | null>(null)
   const [received, setReceived] = useState('')
+  const [exemptionEnabled, setExemptionEnabled] = useState(true)
+  const [exemptionReason, setExemptionReason] = useState('')
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -127,6 +129,20 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
           <button
             type="button"
             className={subscriptionSecondary}
+            disabled={!data || saving || schools.length === 0}
+            onClick={() => {
+              setSchoolId(schools[0]?.id || '')
+              setExemptionEnabled(true)
+              setExemptionReason('')
+              setError('')
+              setModal('exemption')
+            }}
+          >
+            Exentar escuela
+          </button>
+          <button
+            type="button"
+            className={subscriptionSecondary}
             disabled={loading || saving}
             onClick={load}
           >
@@ -166,39 +182,68 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
             <div className="border-b border-(--c-border) p-4">
               <h3 className="font-bold">Escuelas y acceso</h3>
             </div>
-            {(data?.subscriptions || []).filter((item) => matches(name(item.schoolId))).length ? (
+            {schools.filter((school) => matches(school.name)).length ? (
               <ul className="divide-y divide-(--c-border)">
-                {(data?.subscriptions || [])
-                  .filter((item) => matches(name(item.schoolId)))
-                  .map((item) => {
-                    const access = subscriptionAccess(item, Date.now())
+                {schools
+                  .filter((school) => matches(school.name))
+                  .map((school) => {
+                    const item = data?.subscriptions.find(
+                      (subscription) => subscription.schoolId === school.id
+                    )
+                    const access = subscriptionAccess(item || null, Date.now())
+                    const exempt = Boolean(item?.paymentExempt)
                     return (
                       <li
-                        key={item.schoolId}
+                        key={school.id}
                         className="flex min-w-0 flex-wrap items-center justify-between gap-3 p-4"
                       >
                         <div className="min-w-0">
-                          <p className="break-words font-bold">{name(item.schoolId)}</p>
+                          <p className="break-words font-bold">{school.name}</p>
                           <p className="mt-1 text-xs text-(--c-text-2)">
-                            {subscriptionState[access.state]}
-                            {item.cancelAtPeriodEnd ? ' · Renovación cancelada' : ''}
-                            {access.accessEndsAt
+                            {exempt
+                              ? 'Exenta de pago'
+                              : item
+                                ? subscriptionState[access.state]
+                                : 'Sin periodo registrado'}
+                            {!exempt && item?.cancelAtPeriodEnd ? ' · Renovación cancelada' : ''}
+                            {!exempt && access.accessEndsAt
                               ? ` · Hasta ${subscriptionDate(access.accessEndsAt)}`
                               : ''}
                           </p>
+                          {exempt && item?.exemptionReason && (
+                            <p className="mt-1 break-words text-xs text-(--c-text-2)">
+                              Motivo: {item.exemptionReason}
+                            </p>
+                          )}
                         </div>
-                        <span className="text-sm font-bold">
-                          {subscriptionMoney(subscriptionPrice(item, Date.now()))} MXN / mes
-                        </span>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="text-sm font-bold">
+                            {exempt
+                              ? 'Sin cobro'
+                              : `${subscriptionMoney(subscriptionPrice(item || null, Date.now()))} MXN / mes`}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            className={subscriptionSecondary}
+                            onClick={() => {
+                              setSchoolId(school.id)
+                              setExemptionEnabled(!exempt)
+                              setExemptionReason('')
+                              setError('')
+                              setModal('exemption')
+                            }}
+                          >
+                            {exempt ? 'Quitar exención' : 'Exentar pagos'}
+                          </button>
+                        </div>
                       </li>
                     )
                   })}
               </ul>
             ) : (
               <p className="p-5 text-sm text-(--c-text-2)">
-                {needle
-                  ? 'No hay coincidencias.'
-                  : 'Las suscripciones aparecerán al crear o migrar escuelas.'}
+                {needle ? 'No hay coincidencias.' : 'Todavía no hay escuelas registradas.'}
               </p>
             )}
           </section>
@@ -327,6 +372,92 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
           </section>
         </>
       )}
+      <Sheet
+        open={modal === 'exemption'}
+        onClose={() => setModal(null)}
+        label={exemptionEnabled ? 'Exentar escuela de pago' : 'Quitar exención de pago'}
+        keyboardAware
+        closeDisabled={saving}
+        showFooterClose={false}
+        footer={
+          <ModalFooter
+            form="subscription-exemption"
+            saving={saving}
+            submit={exemptionEnabled ? 'Exentar de pago' : 'Quitar exención'}
+            onClose={() => setModal(null)}
+          />
+        }
+      >
+        <h2 className="text-xl font-bold">
+          {exemptionEnabled ? 'Exentar escuela de pago' : 'Quitar exención de pago'}
+        </h2>
+        <p className="mt-3 text-sm text-(--c-text-2)">
+          {exemptionEnabled
+            ? 'La escuela tendrá todas las funciones disponibles sin pagar. Se detienen las renovaciones automáticas con tarjeta; no se devuelven pagos anteriores.'
+            : `${name(schoolId)} volverá a usar sus fechas originales de prueba o periodo pagado. Si ya vencieron, tendrá acceso limitado. No se inicia otra prueba ni se reanudan cobros automáticos con tarjeta.`}
+        </p>
+        <p className="mt-2 text-xs text-(--c-text-2)">
+          Los periodos existentes se conservan con sus fechas originales; el tiempo sigue
+          transcurriendo durante la exención.
+        </p>
+        <form
+          id="subscription-exemption"
+          className="mt-4 grid min-w-0 grid-cols-1 gap-4"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void mutate(
+              {
+                action: 'setExemption',
+                schoolId,
+                enabled: exemptionEnabled,
+                reason: exemptionReason.trim(),
+              },
+              exemptionEnabled
+                ? 'Escuela exenta de pago. Todas sus funciones están disponibles.'
+                : 'Exención retirada. La escuela vuelve a su acceso según las fechas vigentes.'
+            )
+          }}
+        >
+          <label className="grid min-w-0 gap-2 text-sm font-semibold">
+            Escuela
+            <select
+              className={subscriptionInput}
+              value={schoolId}
+              onChange={(event) => setSchoolId(event.target.value)}
+              disabled={!exemptionEnabled}
+              aria-label="Escuela"
+              required
+            >
+              {schools.map((school) => (
+                <option key={school.id} value={school.id}>
+                  {school.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid min-w-0 gap-2 text-sm font-semibold">
+            Motivo
+            <textarea
+              aria-label="Motivo"
+              className={`${subscriptionInput} [field-sizing:content] min-h-20 py-3`}
+              value={exemptionReason}
+              onChange={(event) => setExemptionReason(event.target.value)}
+              minLength={3}
+              maxLength={300}
+              rows={2}
+              required
+            />
+            <span className="text-xs font-normal text-(--c-text-2)">
+              Se registra en la auditoría de administración.
+            </span>
+          </label>
+          {error && (
+            <p role="alert" className="text-sm text-red-800">
+              {error}
+            </p>
+          )}
+        </form>
+      </Sheet>
       <Sheet
         open={modal === 'bank'}
         onClose={() => setModal(null)}

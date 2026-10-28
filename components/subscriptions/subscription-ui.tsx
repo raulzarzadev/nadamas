@@ -22,6 +22,7 @@ export const subscriptionDate = (value?: number | null) =>
     ? new Date(value).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
     : 'Sin fecha'
 export const subscriptionState: Record<string, string> = {
+  exempt: 'Exenta de pago',
   trialing: 'Prueba gratuita',
   active: 'Suscripción activa',
   grace: 'Periodo de gracia',
@@ -70,6 +71,8 @@ export function CopyDetail({ label, value }: { label: string; value?: string }) 
 export function subscriptionErrorMessage(error: unknown) {
   if (!(error instanceof AuthedApiError)) return GENERIC_USER_ERROR
   const messages: Record<string, string> = {
+    subscription_exempt:
+      'Esta escuela está exenta de pago y tiene todas las funciones disponibles.',
     invalid_code:
       'El código no está disponible para esta escuela. Revisa el código o contacta a Nadamas.',
     payment_pending: 'Primero resuelve la transferencia pendiente para aplicar otro código.',

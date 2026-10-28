@@ -76,7 +76,15 @@ function harness(subscription = base(), provider = live(), promo) {
   const docs = new Map([['schoolSubscriptions/school', structuredClone(subscription)]])
   if (promo) docs.set('subscriptionCodes/promo', structuredClone(promo))
   const writes = []
-  const ref = (collection, id) => ({ id, path: `${collection}/${id}` })
+  const ref = (collection, id) => ({
+    id,
+    path: `${collection}/${id}`,
+    get: async () => ({
+      exists: docs.has(`${collection}/${id}`),
+      data: () => structuredClone(docs.get(`${collection}/${id}`)),
+    }),
+  })
+  const calls = []
   const db = {
     collection: (collection) => ({ doc: (id) => ref(collection, id || `audit${writes.length}`) }),
     runTransaction: async (callback) => {
@@ -109,13 +117,22 @@ function harness(subscription = base(), provider = live(), promo) {
     if (name === '@/lib/subscriptions/engine') return engine
     if (name === './store') return { subscriptionRef: (id) => ref('schoolSubscriptions', id) }
     if (name === './stripe-client')
-      return { stripeConfigured: () => true, stripeRequest: async () => structuredClone(provider) }
+      return {
+        stripeConfigured: () => true,
+        stripeRequest: async (path, params, _key, method) => {
+          calls.push({ path, params: params?.toString(), method })
+          return typeof provider === 'function'
+            ? provider(path, params, docs, method)
+            : structuredClone(provider)
+        },
+      }
     return nativeRequire(name)
   }
   return {
     ...load('../../lib/server/subscriptions/card.ts', requireMock),
     docs,
     writes,
+    calls,
     subscription: () => docs.get('schoolSubscriptions/school'),
   }
 }
@@ -280,4 +297,53 @@ test('canceled provider state cannot restore an old subscription pointer already
   await h.handleStripeEvent(event('evt_deleted', end, 'customer.subscription.deleted'))
   assert.equal(h.subscription().stripeSubscriptionId, undefined)
   assert.equal(h.subscription().periodEndsAt, end * 1000)
+})
+
+test('exempt school webhook cancels recurring charges immediately and preserves paid history', async () => {
+  const h = harness({
+    ...base(),
+    paymentExempt: true,
+    stripeSubscriptionId: 'sub_school',
+    periodStartedAt: start * 1000,
+    periodEndsAt: end * 1000,
+  })
+  await h.handleStripeEvent(event())
+  const cancel = h.calls.find((call) => call.method === 'DELETE')
+  assert.equal(cancel.path, 'subscriptions/sub_school')
+  assert.equal(cancel.params, 'invoice_now=false&prorate=false')
+  assert.equal(h.subscription().paymentExempt, true)
+  assert.equal(h.subscription().stripeSubscriptionId, null)
+  assert.equal(h.subscription().periodEndsAt, end * 1000)
+})
+test('a renewal resume racing with exemption is compensated by immediate provider cancellation', async () => {
+  const h = harness(
+    { ...base(), stripeSubscriptionId: 'sub_school' },
+    (_path, params, docs, method) => {
+      if (params?.get('cancel_at_period_end') === 'false' && method !== 'DELETE')
+        docs.get('schoolSubscriptions/school').paymentExempt = true
+      return live()
+    }
+  )
+  await assert.rejects(
+    () => h.changeCardRenewal('school', false, 'owner'),
+    (error) => error.code === 'subscription_exempt'
+  )
+  assert.equal(h.calls.at(-1).method, 'DELETE')
+  assert.equal(h.calls.at(-1).params, 'invoice_now=false&prorate=false')
+  assert.equal(h.subscription().paymentExempt, true)
+})
+test('exempt schools cannot create checkout, portal or renewal changes', async () => {
+  const h = harness({
+    ...base(),
+    paymentExempt: true,
+    stripeSubscriptionId: 'sub_school',
+    stripeCustomerId: 'cus_school',
+  })
+  for (const operation of [
+    () => h.createCardCheckout('school', 'owner'),
+    () => h.createCardPortal('school'),
+    () => h.changeCardRenewal('school', false, 'owner'),
+  ])
+    await assert.rejects(operation, (error) => error.code === 'subscription_exempt')
+  assert.equal(h.calls.length, 0)
 })

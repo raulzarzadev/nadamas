@@ -17,6 +17,7 @@ import {
 } from '@/lib/server/subscriptions/store'
 import { stripeConfigured } from '@/lib/server/subscriptions/stripe-client'
 import {
+  assertSubscriptionPayable,
   SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS,
   subscriptionAccess,
   subscriptionPrice,
@@ -53,7 +54,7 @@ export async function GET(request: Request) {
     ])
     const sub = (doc.data() as SchoolSubscription) || null
     let priceCents = subscriptionPrice(sub, Date.now())
-    if (access.manager && sub?.promotionalCodeId) {
+    if (access.manager && !sub?.paymentExempt && sub?.promotionalCodeId) {
       const code = (
         await adminDb.collection('subscriptionCodes').doc(sub.promotionalCodeId).get()
       ).data() as SubscriptionCode | undefined
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
       manager: access.manager,
       subscription: access.manager ? sub : null,
       access: subscriptionAccess(sub, Date.now()),
-      priceCents: access.manager ? priceCents : 29900,
+      priceCents: sub?.paymentExempt ? 0 : access.manager ? priceCents : 29900,
       bankDetails: access.manager
         ? ({ ...EMPTY_SUBSCRIPTION_BANK, ...settings?.data() } as SubscriptionBankDetails)
         : null,
@@ -123,6 +124,7 @@ export async function POST(request: Request) {
       const sub = (await subscriptionRef(body.schoolId).get()).data() as
         | SchoolSubscription
         | undefined
+      assertSubscriptionPayable(sub)
       if (sub?.stripeSubscriptionId)
         return NextResponse.json(
           { error: 'Gestiona la renovación de tarjeta desde su opción de pago.' },

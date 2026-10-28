@@ -83,6 +83,9 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
     )
     return () => window.clearTimeout(timer)
   }, [data?.access.accessEndsAt, load])
+  useEffect(() => {
+    if (data?.access.state === 'exempt') setModal(null)
+  }, [data?.access.state])
   async function mutate(values: Record<string, unknown>, message: string, close = true) {
     if (saving) return false
     setSaving(true)
@@ -137,6 +140,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
   const pending = data.orders.find(
     (order) => order.status === 'pending' || order.status === 'reported'
   )
+  const exempt = data.access.state === 'exempt'
   const provisional = data.access.state === 'pending_review'
   const state = provisional ? 'provisional' : data.access.state
   return (
@@ -161,11 +165,16 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
         </div>
         <p className="mt-6">
           <strong className="text-4xl font-extrabold tabular-nums">
-            {subscriptionMoney(data.priceCents)}
+            {exempt ? 'Sin cobro' : subscriptionMoney(data.priceCents)}
           </strong>
-          <span className="ml-2 text-sm text-(--c-text-2)">MXN / mes</span>
+          {!exempt && <span className="ml-2 text-sm text-(--c-text-2)">MXN / mes</span>}
         </p>
-        {data.priceCents === 4900 && (
+        {exempt && (
+          <p className="mt-3 rounded-xl bg-(--c-surface) p-3 text-sm">
+            Tu escuela está exenta de pago. Todas las funciones están disponibles.
+          </p>
+        )}
+        {!exempt && data.priceCents === 4900 && (
           <p className="mt-2 text-sm">
             Precio con código. Se conserva mientras mantengas activa tu suscripción.
           </p>
@@ -192,7 +201,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
             para agregar alumnos, horarios, reservas, ventas y progreso.
           </p>
         )}
-        {data.subscription?.cancelAtPeriodEnd && (
+        {!exempt && data.subscription?.cancelAtPeriodEnd && (
           <p className="mt-3 text-sm">
             La renovación está cancelada. Al terminar el periodo pagado perderás el precio
             promocional, si lo tienes.
@@ -204,7 +213,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
             {error}
           </p>
         )}
-        {data.manager ? (
+        {exempt ? null : data.manager ? (
           <>
             <div className="mt-5 flex flex-wrap gap-2">
               <button
@@ -325,7 +334,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
         </section>
       )}
       <Sheet
-        open={modal === 'transfer'}
+        open={!exempt && modal === 'transfer'}
         onClose={() => setModal(null)}
         label="Pagar suscripción por transferencia"
         closeDisabled={saving}
@@ -413,7 +422,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
         )}
       </Sheet>
       <Sheet
-        open={modal === 'code'}
+        open={!exempt && modal === 'code'}
         onClose={() => setModal(null)}
         label="Aplicar código de suscripción"
         keyboardAware
@@ -474,7 +483,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
         </form>
       </Sheet>
       <Sheet
-        open={modal === 'cancel'}
+        open={!exempt && modal === 'cancel'}
         onClose={() => setModal(null)}
         label="Cancelar renovación"
         closeDisabled={saving}

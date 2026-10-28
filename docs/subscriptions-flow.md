@@ -63,3 +63,11 @@ Admin dispone de datos bancarios, códigos por escuela, estados de suscripción 
 Las escuelas antiguas requieren migración idempotente desde una fecha anunciada, nunca desde su creación histórica. Preparar primero dry-run, verificar propietarios y publicar reglas junto con la aplicación. No se ejecuta migración ni despliegue de producción durante este trabajo.
 
 Verificar expiración exacta, concurrencia al crear escuelas, permisos, códigos de otra escuela, bloqueo con saldo, reprogramación sin ampliaciones, transferencia provisional sin límite de revisión, invalidación, confirmación repetida, cobro fallido y reactivación. Los avisos internos se deduplican por escuela, vencimiento y hito.
+
+## Exención administrativa de pago
+
+Admin puede exentar cualquier escuela del pago de Nadamas, incluidas las escuelas antiguas sin suscripción registrada. La exención conserva acceso completo sin fecha de vencimiento y muestra “Exenta de pago · Sin cobro”. No cambia los pagos que los alumnos hacen a la escuela.
+
+Otorgar y retirar la exención requieren motivo y dejan registro de administrador y fecha. Durante la exención no se ofrecen nuevas contrataciones, transferencias ni códigos a la escuela, ni se envían avisos de vencimiento. Si tiene renovación con tarjeta, se cancela en Stripe antes de completar la exención para evitar futuros cargos; no se devuelve automáticamente un periodo ya pagado.
+
+Quitar la exención restaura las reglas con las fechas originales, sin regalar otra prueba ni reactivar cargos automáticos. Si ya vencieron prueba, periodo pagado y gracia y no existe una transferencia reportada, pasa a acceso limitado. Los registros, saldos e historial se conservan.

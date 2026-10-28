@@ -33,3 +33,8 @@ test('pending manual review suppresses expiry warnings; paid period replaces tri
   assert.equal(subscriptionReminder({ ...sub, provisionalOrderId: 'order' }, end), null)
   assert.equal(subscriptionReminder({ ...sub, periodEndsAt: end + day }, end).kind, 'renewal')
 })
+
+test('exempt schools never receive expiry or payment reminders', () => {
+  assert.equal(subscriptionReminder({ ...sub, paymentExempt: true }, end - day), null)
+  assert.equal(subscriptionReminder({ ...sub, paymentExempt: true }, end), null)
+})

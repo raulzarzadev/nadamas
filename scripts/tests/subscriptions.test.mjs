@@ -93,3 +93,26 @@ test('reactivation quoted at regular price cannot revive an expired promotion by
     29900
   )
 })
+
+test('admin exemption overrides expiry and pending review without changing stored dates', () => {
+  const sub = {
+    ...newSchoolSubscription('s', 'u', true, now),
+    paymentExempt: true,
+    provisionalOrderId: 'pending',
+  }
+  const before = JSON.stringify(sub)
+  assert.deepEqual(subscriptionAccess(sub, now + 400 * 86400000), {
+    state: 'exempt',
+    fullAccess: true,
+    accessEndsAt: null,
+  })
+  assert.equal(subscriptionPrice(sub, now), 0)
+  assert.equal(JSON.stringify(sub), before)
+  assert.equal(
+    subscriptionAccess(
+      { ...sub, paymentExempt: false, provisionalOrderId: null },
+      now + 400 * 86400000
+    ).state,
+    'limited'
+  )
+})

@@ -64,3 +64,9 @@ pnpm typecheck
 node --test scripts/tests/subscriptions.test.mjs scripts/tests/subscription-gates.test.mjs scripts/tests/subscription-stripe.test.mjs scripts/tests/subscription-card.test.mjs scripts/tests/subscription-reminders.test.mjs scripts/tests/request-performance.test.mjs scripts/tests/payments.test.mjs
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3002 pnpm exec playwright test e2e/subscriptions.spec.ts e2e/admin-overview.spec.ts --workers=1
 ```
+
+## Exentar escuelas desde admin
+
+En Admin → Suscripción Nadamas, usar **Exentar escuela**, elegir la escuela y escribir el motivo. También existe la acción **Exentar pagos** en cada fila de escuela. Se muestran todas las escuelas, aunque todavía no tengan un registro de suscripción. La exención da acceso completo sin cobro hasta que admin la retire con **Quitar exención** y un motivo.
+
+El estado se calcula en servidor con prioridad sobre vencimientos. No genera nueva prueba ni borra periodos o pedidos. Si hay Stripe activo se cancela inmediatamente la suscripción del proveedor, sin factura adicional ni prorrateo y conservando las fechas pagadas en Nadamas, antes de completar el cambio; si no se consigue confirmar el cambio con Stripe, no se presenta la escuela como exenta. Un checkout abierto debe cerrarse para evitar pagos simultáneos. Quitar exención nunca reanuda Stripe automáticamente. Los avisos de vencimiento se omiten mientras esté exenta.

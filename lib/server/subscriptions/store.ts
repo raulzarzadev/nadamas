@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { Transaction } from 'firebase-admin/firestore'
 import { adminDb } from '@/lib/server/firebase-admin'
 import {
+  assertSubscriptionPayable,
   newSchoolSubscription,
   SUBSCRIPTION_GRACE_MS,
   SUBSCRIPTION_PRICE_CENTS,
@@ -17,6 +18,7 @@ import type {
   SubscriptionCode,
   SubscriptionOrder,
 } from '@/lib/subscriptions/model'
+import { stripeRequest } from './stripe-client'
 
 export const subscriptionRef = (schoolId: string) =>
   adminDb.collection('schoolSubscriptions').doc(schoolId)
@@ -68,6 +70,7 @@ export async function createSubscriptionTransfer(
     const [subDoc, bankDoc] = await tx.getAll(subscriptionRef(schoolId), subscriptionSettingsRef())
     const sub =
       (subDoc.data() as SchoolSubscription) || newSchoolSubscription(schoolId, ownerId, false, now)
+    assertSubscriptionPayable(sub)
     const previous = sub.pendingOrderId ? await tx.get(orderRef(sub.pendingOrderId)) : null
     if (previous?.exists && ['pending', 'reported'].includes(previous.data()?.status))
       return previous.data() as SubscriptionOrder
@@ -141,6 +144,7 @@ export async function reportSubscriptionTransfer(
     if (!order || !sub || order.schoolId !== schoolId)
       throw new SubscriptionError('invalid_payment', 'No encontramos ese pago.', 404)
     if (order.status === 'confirmed') return
+    assertSubscriptionPayable(sub)
     if (sub.pendingOrderId !== orderId)
       throw new SubscriptionError('invalid_payment', 'No encontramos ese pago.', 404)
     if (order.status === 'reported') return
@@ -163,6 +167,7 @@ export async function redeemSubscriptionCode(schoolId: string, code: string, act
     const [codeDoc, subDoc] = await tx.getAll(ref, subscriptionRef(schoolId))
     const promo = codeDoc.data() as SubscriptionCode | undefined
     const sub = subDoc.data() as SchoolSubscription | undefined
+    assertSubscriptionPayable(sub)
     if (
       !promo ||
       !sub ||
@@ -302,6 +307,7 @@ export async function changeSubscriptionRenewal(
   await adminDb.runTransaction(async (tx) => {
     const doc = await tx.get(subscriptionRef(schoolId))
     const sub = doc.data() as SchoolSubscription | undefined
+    assertSubscriptionPayable(sub)
     if (sub?.stripeSubscriptionId)
       throw new SubscriptionError(
         'card_active',
@@ -325,10 +331,12 @@ export async function createSubscriptionCode(
   const normalized = code.trim().toUpperCase()
   const id = hashCode(normalized)
   await adminDb.runTransaction(async (tx) => {
-    const [school, existing] = await tx.getAll(
+    const [school, existing, subDoc] = await tx.getAll(
       adminDb.collection('schools').doc(schoolId),
-      codeRef(id)
+      codeRef(id),
+      subscriptionRef(schoolId)
     )
+    assertSubscriptionPayable(subDoc.data() as SchoolSubscription | undefined)
     if (!school.exists) throw new SubscriptionError('not_found', 'No encontramos la escuela.', 404)
     if (existing.exists) throw new SubscriptionError('code_exists', 'Elige otro código.', 409)
     const promo: SubscriptionCode = {
@@ -397,4 +405,134 @@ export async function cancelSubscriptionTransfer(
     tx.update(subscriptionRef(schoolId), { pendingOrderId: null, updatedAt: Date.now() })
     audit(tx, actorId, 'transfer_cancelled', { schoolId, orderId }, Date.now())
   })
+}
+
+/** Provider effects precede enabling the exemption, with a transaction lock against new payments. */
+export async function setSchoolPaymentExemption(
+  schoolId: string,
+  enabled: boolean,
+  reason: string,
+  actorId: string
+) {
+  const token = randomBytes(16).toString('hex')
+  const ref = subscriptionRef(schoolId)
+  const reserved = await adminDb.runTransaction(async (tx) => {
+    const [school, doc] = await tx.getAll(adminDb.collection('schools').doc(schoolId), ref)
+    if (!school.exists) throw new SubscriptionError('not_found', 'No encontramos la escuela.', 404)
+    const sub =
+      (doc.data() as SchoolSubscription | undefined) ||
+      newSchoolSubscription(
+        schoolId,
+        String(school.data()?.createdBy || school.data()?.directorId || ''),
+        false,
+        Date.now()
+      )
+    if (sub.exemptionChangeId)
+      throw new SubscriptionError(
+        'exemption_pending',
+        'Hay un cambio de exención en proceso. Inténtalo de nuevo.',
+        409
+      )
+    if (
+      enabled &&
+      sub.stripeCheckoutSessionId &&
+      !sub.stripeCheckoutSessionId.startsWith('cs_') &&
+      (sub.stripeCheckoutExpiresAt || 0) > Date.now()
+    )
+      throw new SubscriptionError(
+        'checkout_pending',
+        'Espera a que termine de prepararse el pago de tarjeta antes de exentar la escuela.',
+        409
+      )
+    tx.set(ref, { ...sub, exemptionChangeId: token })
+    return sub
+  })
+  let providerCancelled = false
+  try {
+    if (enabled && reserved.stripeSubscriptionId) {
+      await stripeRequest(
+        `subscriptions/${encodeURIComponent(reserved.stripeSubscriptionId)}`,
+        new URLSearchParams({ invoice_now: 'false', prorate: 'false' }),
+        `exempt-cancel-${schoolId}-${token}`,
+        'DELETE'
+      )
+      providerCancelled = true
+    }
+    if (enabled && reserved.stripeCheckoutSessionId?.startsWith('cs_')) {
+      const session = await stripeRequest<{ id: string; status: string }>(
+        `checkout/sessions/${encodeURIComponent(reserved.stripeCheckoutSessionId)}`
+      )
+      if (session.status === 'open')
+        await stripeRequest(
+          `checkout/sessions/${encodeURIComponent(session.id)}/expire`,
+          new URLSearchParams(),
+          `exempt-expire-${schoolId}-${token}`
+        )
+      if (session.status === 'complete')
+        throw new SubscriptionError(
+          'checkout_completed',
+          'El pago de tarjeta se está confirmando. Actualiza la suscripción antes de exentar la escuela.',
+          409
+        )
+    }
+    const now = Date.now()
+    await adminDb.runTransaction(async (tx) => {
+      const doc = await tx.get(ref)
+      const current = doc.data() as SchoolSubscription | undefined
+      if (
+        !current ||
+        current.exemptionChangeId !== token ||
+        ((current.stripeSubscriptionId || null) !== (reserved.stripeSubscriptionId || null) &&
+          !(providerCancelled && !current.stripeSubscriptionId)) ||
+        (current.stripeCheckoutSessionId || null) !== (reserved.stripeCheckoutSessionId || null)
+      )
+        throw new SubscriptionError(
+          'subscription_changed',
+          'La suscripción cambió durante la operación. Revísala e inténtalo de nuevo.',
+          409
+        )
+      tx.update(ref, {
+        paymentExempt: enabled,
+        exemptionReason: reason,
+        exemptionUpdatedAt: now,
+        exemptionUpdatedBy: actorId,
+        exemptionChangeId: null,
+        updatedAt: now,
+        ...(enabled && reserved.stripeSubscriptionId
+          ? { cancelAtPeriodEnd: true, stripeSubscriptionId: null }
+          : {}),
+        ...(enabled
+          ? {
+              stripeCheckoutSessionId: null,
+              stripeCheckoutExpiresAt: null,
+              stripeCheckoutCreatedAt: null,
+              stripeCheckoutPriceCents: null,
+              stripeCheckoutPromotionalCodeId: null,
+            }
+          : {}),
+      })
+      audit(
+        tx,
+        actorId,
+        enabled ? 'school_payment_exempted' : 'school_payment_exemption_removed',
+        { schoolId, reason },
+        now
+      )
+    })
+  } catch (error) {
+    await adminDb
+      .runTransaction(async (tx) => {
+        const doc = await tx.get(ref)
+        if (doc.data()?.exemptionChangeId === token)
+          tx.update(ref, {
+            exemptionChangeId: null,
+            ...(providerCancelled &&
+            doc.data()?.stripeSubscriptionId === reserved.stripeSubscriptionId
+              ? { cancelAtPeriodEnd: true, stripeSubscriptionId: null }
+              : {}),
+          })
+      })
+      .catch(() => undefined)
+    throw error
+  }
 }

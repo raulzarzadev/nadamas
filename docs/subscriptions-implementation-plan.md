@@ -39,3 +39,10 @@ Tarjeta necesita proveedor configurado, claves secretas y webhook; transferencia
 - Pantallas y modales inspeccionados a 320 y 1440 px.
 - Stripe no se probó con cobros reales ni credenciales sandbox; necesita configuración externa y conciliación de pagos promocionales tardíos antes de lanzamiento.
 - Sin despliegue, publicación de reglas/índices ni migración de producción.
+
+
+## Ampliación: escuelas exentas de pago
+
+Implementada exención por escuela, exclusiva de admin, con motivo y auditoría. Incluye alta de registros para escuelas antiguas, bloqueo de nuevas compras mientras estén exentas, suspensión de avisos y cancelación de cobros recurrentes de Stripe antes de concederla. Retirarla conserva fechas y no reanuda cobros ni concede otra prueba.
+
+Validación actualizada: 64 pruebas automatizadas de reglas/Stripe/caché/pagos aprobadas, typecheck y Biome aprobados; E2E de admin y suscripciones con concesión/revocación real en emuladores aprobados. Modal móvil inspeccionado. No desplegado.

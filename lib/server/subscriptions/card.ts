@@ -2,6 +2,7 @@ import 'server-only'
 import { randomUUID } from 'node:crypto'
 import { adminDb } from '@/lib/server/firebase-admin'
 import {
+  assertSubscriptionPayable,
   SUBSCRIPTION_GRACE_MS,
   SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS,
   SubscriptionError,
@@ -46,6 +47,9 @@ function appUrl() {
   return `${url.origin}/school/subscription`
 }
 export async function createCardCheckout(schoolId: string, actorId: string) {
+  assertSubscriptionPayable(
+    (await subscriptionRef(schoolId).get()).data() as SchoolSubscription | undefined
+  )
   if (!stripeConfigured())
     throw new SubscriptionError(
       'card_unavailable',
@@ -57,6 +61,7 @@ export async function createCardCheckout(schoolId: string, actorId: string) {
   const reservation = await adminDb.runTransaction(async (tx) => {
     const doc = await tx.get(subscriptionRef(schoolId))
     const sub = doc.data() as SchoolSubscription | undefined
+    assertSubscriptionPayable(sub)
     if (!sub)
       throw new SubscriptionError(
         'subscription_missing',
@@ -168,6 +173,7 @@ export async function createCardCheckout(schoolId: string, actorId: string) {
 }
 export async function createCardPortal(schoolId: string) {
   const sub = (await subscriptionRef(schoolId).get()).data() as SchoolSubscription | undefined
+  assertSubscriptionPayable(sub)
   if (!sub?.stripeCustomerId)
     throw new SubscriptionError('card_missing', 'No hay una tarjeta registrada.', 409)
   const session = await stripeRequest<{ url: string }>(
@@ -182,6 +188,7 @@ export async function createCardPortal(schoolId: string) {
 export async function changeCardRenewal(schoolId: string, cancel: boolean, actorId: string) {
   const doc = await subscriptionRef(schoolId).get()
   const sub = doc.data() as SchoolSubscription | undefined
+  assertSubscriptionPayable(sub)
   if (!sub?.stripeSubscriptionId)
     throw new SubscriptionError('card_missing', 'No hay una suscripción con tarjeta.', 409)
   await stripeRequest(
@@ -189,16 +196,30 @@ export async function changeCardRenewal(schoolId: string, cancel: boolean, actor
     new URLSearchParams({ cancel_at_period_end: String(cancel) }),
     `renewal-${schoolId}-${cancel}-${sub.updatedAt}`
   )
-  await adminDb.runTransaction(async (tx) => {
-    const current = await tx.get(subscriptionRef(schoolId))
-    if (current.data()?.stripeSubscriptionId !== sub.stripeSubscriptionId)
-      throw new SubscriptionError(
-        'subscription_changed',
-        'La suscripción cambió. Actualiza la pantalla.',
-        409
+  try {
+    await adminDb.runTransaction(async (tx) => {
+      const current = await tx.get(subscriptionRef(schoolId))
+      assertSubscriptionPayable(current.data() as SchoolSubscription | undefined)
+      if (current.data()?.stripeSubscriptionId !== sub.stripeSubscriptionId)
+        throw new SubscriptionError(
+          'subscription_changed',
+          'La suscripción cambió. Actualiza la pantalla.',
+          409
+        )
+      tx.update(subscriptionRef(schoolId), { cancelAtPeriodEnd: cancel, updatedAt: Date.now() })
+    })
+  } catch (error) {
+    const current = (await subscriptionRef(schoolId).get()).data() as SchoolSubscription | undefined
+    if (current?.paymentExempt || current?.exemptionChangeId) {
+      await stripeRequest(
+        `subscriptions/${encodeURIComponent(sub.stripeSubscriptionId)}`,
+        new URLSearchParams({ invoice_now: 'false', prorate: 'false' }),
+        `exempt-renewal-race-${schoolId}-${sub.updatedAt}`,
+        'DELETE'
       )
-    tx.update(subscriptionRef(schoolId), { cancelAtPeriodEnd: cancel, updatedAt: Date.now() })
-  })
+    }
+    throw error
+  }
   await adminDb.collection('subscriptionAudit').add({
     actorId,
     schoolId,
@@ -233,6 +254,20 @@ export async function handleStripeEvent(event: StripeObject) {
   )
   const schoolId = live.metadata?.schoolId
   if (!schoolId) return
+  const exemption = (await subscriptionRef(schoolId).get()).data() as SchoolSubscription | undefined
+  if (
+    (exemption?.paymentExempt || exemption?.exemptionChangeId) &&
+    !['canceled', 'incomplete_expired'].includes(live.status)
+  ) {
+    await stripeRequest(
+      `subscriptions/${encodeURIComponent(live.id)}`,
+      new URLSearchParams({ invoice_now: 'false', prorate: 'false' }),
+      `exempt-webhook-${live.id}-${event.id}`,
+      'DELETE'
+    )
+    live.cancel_at_period_end = true
+    live.status = 'canceled'
+  }
   const item = live.items.data[0]
   if (!item || live.items.data.length !== 1) throw new Error('STRIPE_ITEMS_INVALID')
   const invoice = typeof live.latest_invoice === 'object' ? live.latest_invoice : null
@@ -313,7 +348,12 @@ export async function handleStripeEvent(event: StripeObject) {
     const patch: Partial<SchoolSubscription> = {
       stripeSubscriptionId: live.id,
       stripeCustomerId: live.customer,
-      cancelAtPeriodEnd: live.cancel_at_period_end || live.status === 'canceled',
+      cancelAtPeriodEnd: Boolean(
+        sub.paymentExempt ||
+          sub.exemptionChangeId ||
+          live.cancel_at_period_end ||
+          live.status === 'canceled'
+      ),
       stripeLastEventCreated: Math.max(sub.stripeLastEventCreated || 0, Number(event.created) || 0),
       updatedAt: Date.now(),
     }

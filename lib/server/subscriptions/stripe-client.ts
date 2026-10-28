@@ -14,11 +14,12 @@ export function stripeConfigured() {
 export async function stripeRequest<T>(
   path: string,
   params?: URLSearchParams,
-  key?: string
+  key?: string,
+  method?: 'DELETE'
 ): Promise<T> {
   if (!process.env.STRIPE_SECRET_KEY) throw new Error('STRIPE_UNCONFIGURED')
   const response = await fetch(`https://api.stripe.com/v1/${path}`, {
-    method: params ? 'POST' : 'GET',
+    method: method || (params ? 'POST' : 'GET'),
     headers: {
       Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
       'Stripe-Version': '2025-03-31.basil',

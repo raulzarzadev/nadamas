@@ -3,7 +3,7 @@ import type { SchoolSubscription } from './model'
 const DAY = 86400000
 /** One current milestone per deadline; overdue cron runs do not send every missed warning. */
 export function subscriptionReminder(sub: SchoolSubscription, now: number) {
-  if (sub.provisionalOrderId) return null
+  if (sub.paymentExempt || sub.provisionalOrderId) return null
   const end = sub.periodEndsAt || sub.trialEndsAt
   if (!end) return null
   const remaining = end - now
