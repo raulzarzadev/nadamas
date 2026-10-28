@@ -141,6 +141,7 @@ export async function getSchoolStudentHistory(
         location: booking.locationName || '',
         coachIds: [booking.coachId],
         status: schoolBookingHistoryStatus(booking, timezone),
+        pending: booking.status === 'pending',
         note: includeNotes ? notes.get(`${booking.id}|${booking.athleteId}`)?.note || '' : '',
         evaluations,
       } satisfies SchoolHistoryClass
@@ -166,6 +167,7 @@ export async function getSchoolStudentHistory(
         },
         timezone
       ),
+      pending: false,
       note: includeNotes ? notes.get(`${item.id}|${student.id}`)?.note || '' : '',
       evaluations: reviews
         .filter((review) => review.occurrenceId === item.id)
@@ -184,6 +186,7 @@ export async function getSchoolStudentHistory(
     if (existing) {
       existing.coachIds = [...new Set([...existing.coachIds, ...detail.coachIds])]
       if (!existing.note) existing.note = detail.note
+      existing.pending = existing.pending || detail.pending
       existing.evaluations.push(...detail.evaluations)
     } else classes.push(detail)
   }

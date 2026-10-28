@@ -2,8 +2,8 @@ import '../styles/globals.css'
 import type { Metadata, Viewport } from 'next'
 import type { CSSProperties } from 'react'
 import { TenantSchoolProvider } from '@/context/TenantSchoolContext'
-import { SCHOOL_PALETTES } from '@/lib/school'
-import { getTenantSchool } from '@/lib/server/tenant-school'
+import { resolveSchoolPalette } from '@/lib/school-theme'
+import { getTenantBrand, getTenantSchool } from '@/lib/server/tenant-school'
 import { PHProvider } from './posthog-provider'
 
 const baseMetadata: Metadata = {
@@ -67,7 +67,8 @@ const baseMetadata: Metadata = {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const school = await getTenantSchool()
+  // Non-public tenant schools get default nadamas branding (nothing identifying).
+  const school = await getTenantBrand()
   if (!school) return baseMetadata
   const icon = school.logoUrl || '/tenant-icon'
   return {
@@ -99,18 +100,15 @@ const baseViewport: Viewport = {
 }
 
 export async function generateViewport(): Promise<Viewport> {
-  const school = await getTenantSchool()
-  const palette = school
-    ? SCHOOL_PALETTES.find((item) => item.value === school.palette) || SCHOOL_PALETTES[0]
-    : null
+  const school = await getTenantBrand()
+  const palette = school ? resolveSchoolPalette(school) : null
   return { ...baseViewport, ...(palette ? { themeColor: palette.primary } : {}) }
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const school = await getTenantSchool()
-  const palette = school
-    ? SCHOOL_PALETTES.find((item) => item.value === school.palette) || SCHOOL_PALETTES[0]
-    : null
+  const brand = await getTenantBrand()
+  const palette = brand ? resolveSchoolPalette(brand) : null
   const theme = palette
     ? ({
         '--tenant-primary': palette.primary,
@@ -119,15 +117,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         '--tenant-surface': palette.surface,
       } as CSSProperties)
     : undefined
+  // Non-public: keep id/slug for tenant scoping, redact everything identifying.
   const tenant = school
     ? {
         id: school.id,
-        name: school.name,
         slug: school.slug,
-        logoUrl: school.logoUrl || null,
-        palette: school.palette,
-        description: school.description,
         bookingMode: school.bookingMode || 'request',
+        name: brand ? school.name : '',
+        description: brand ? school.description : '',
+        logoUrl: (brand && school.logoUrl) || null,
+        palette: brand ? school.palette : undefined,
       }
     : null
   return (

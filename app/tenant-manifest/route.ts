@@ -1,11 +1,11 @@
-import { SCHOOL_PALETTES } from '@/lib/school'
-import { getTenantSchool } from '@/lib/server/tenant-school'
+import { resolveSchoolPalette } from '@/lib/school-theme'
+import { getTenantBrand } from '@/lib/server/tenant-school'
 
 export async function GET() {
-  const school = await getTenantSchool()
+  // Non-public schools fall back to nadamas defaults.
+  const school = await getTenantBrand()
   if (!school) return Response.redirect('https://nadamas.app/manifest.json')
-  const palette =
-    SCHOOL_PALETTES.find((item) => item.value === school.palette) || SCHOOL_PALETTES[0]
+  const palette = resolveSchoolPalette(school)
   return Response.json(
     {
       id: '/',

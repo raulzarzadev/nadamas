@@ -20,6 +20,7 @@ import {
   type SchoolRole,
   type SchoolTerminologyConfig,
 } from '@/lib/school'
+import type { SchoolGalleryPhoto, SchoolHomeSection } from '@/lib/school-home'
 import { isValidSlug, normalizeSlug } from '@/lib/slug'
 import { adminDb } from './firebase-admin'
 
@@ -46,7 +47,7 @@ function isValidTimezone(timezone: string) {
   }
 }
 
-function isAllowedLogoUrl(value: string) {
+export function isAllowedSchoolImageUrl(value: string) {
   try {
     const url = new URL(value)
     const isStorageEmulator =
@@ -82,7 +83,8 @@ export function validateSchoolInput(
   if (!isValidSlug(slug)) return { ok: false as const, reason: 'slug' as const }
   if (description.length > 1000) return { ok: false as const, reason: 'description' as const }
   if (!isValidTimezone(timezone)) return { ok: false as const, reason: 'timezone' as const }
-  if (logoUrl && !isAllowedLogoUrl(logoUrl)) return { ok: false as const, reason: 'logo' as const }
+  if (logoUrl && !isAllowedSchoolImageUrl(logoUrl))
+    return { ok: false as const, reason: 'logo' as const }
   if (rawPalette !== undefined && !isSchoolPalette(rawPalette)) {
     return { ok: false as const, reason: 'palette' as const }
   }
@@ -335,4 +337,22 @@ export async function createSchool(userId: string, input: SchoolInput) {
   })
 
   return getSchoolById(schoolRef.id)
+}
+
+export async function updateSchoolHomeSettings(
+  schoolId: string,
+  input: {
+    coverUrl?: string | null
+    customColor?: string | null
+    gallery?: SchoolGalleryPhoto[]
+    homeSections?: SchoolHomeSection[]
+  }
+): Promise<School | null> {
+  const ref = adminDb.collection('schools').doc(schoolId)
+  const update: Record<string, unknown> = { updatedAt: Date.now() }
+  for (const key of ['coverUrl', 'customColor', 'gallery', 'homeSections'] as const) {
+    if (input[key] !== undefined) update[key] = input[key]
+  }
+  await ref.update(update)
+  return getSchoolById(schoolId)
 }

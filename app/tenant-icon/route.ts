@@ -1,12 +1,12 @@
-import { SCHOOL_PALETTES } from '@/lib/school'
-import { getTenantSchool } from '@/lib/server/tenant-school'
+import { resolveSchoolPalette } from '@/lib/school-theme'
+import { getTenantBrand } from '@/lib/server/tenant-school'
 
 export async function GET() {
-  const school = await getTenantSchool()
+  // Non-public schools fall back to nadamas defaults.
+  const school = await getTenantBrand()
   if (!school) return Response.redirect('https://nadamas.app/icons/icon_x192.png')
   if (school.logoUrl) return Response.redirect(school.logoUrl)
-  const color =
-    SCHOOL_PALETTES.find((palette) => palette.value === school.palette)?.primary || '#062b49'
+  const color = resolveSchoolPalette(school).primary
   const initial = school.name
     .charAt(0)
     .toUpperCase()
