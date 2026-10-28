@@ -3,12 +3,12 @@ import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { FiArrowRight } from 'react-icons/fi'
 import SchoolPublicContacts from '@/components/school/SchoolPublicContacts'
-import { SCHOOL_PALETTES, type School } from '@/lib/school'
+import type { School } from '@/lib/school'
 import { visibleSchoolContacts } from '@/lib/school-contact'
+import { resolveSchoolPalette } from '@/lib/school-theme'
 
 export default function SchoolPublicHome({ school }: { school: School }) {
-  const palette =
-    SCHOOL_PALETTES.find((option) => option.value === school.palette) || SCHOOL_PALETTES[0]
+  const palette = resolveSchoolPalette(school)
   const schoolTheme = {
     '--school-primary': palette.primary,
     '--school-secondary': palette.secondary,

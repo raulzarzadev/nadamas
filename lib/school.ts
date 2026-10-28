@@ -187,6 +187,7 @@ export interface School {
   description: string
   logoUrl?: string | null
   palette?: SchoolPalette
+  customColor?: string | null
   timezone: string
   createdBy: string
   directorId: string

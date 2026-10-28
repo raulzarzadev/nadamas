@@ -2,7 +2,7 @@ import '../styles/globals.css'
 import type { Metadata, Viewport } from 'next'
 import type { CSSProperties } from 'react'
 import { TenantSchoolProvider } from '@/context/TenantSchoolContext'
-import { SCHOOL_PALETTES } from '@/lib/school'
+import { resolveSchoolPalette } from '@/lib/school-theme'
 import { getTenantSchool } from '@/lib/server/tenant-school'
 import { PHProvider } from './posthog-provider'
 
@@ -100,17 +100,13 @@ const baseViewport: Viewport = {
 
 export async function generateViewport(): Promise<Viewport> {
   const school = await getTenantSchool()
-  const palette = school
-    ? SCHOOL_PALETTES.find((item) => item.value === school.palette) || SCHOOL_PALETTES[0]
-    : null
+  const palette = school ? resolveSchoolPalette(school) : null
   return { ...baseViewport, ...(palette ? { themeColor: palette.primary } : {}) }
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const school = await getTenantSchool()
-  const palette = school
-    ? SCHOOL_PALETTES.find((item) => item.value === school.palette) || SCHOOL_PALETTES[0]
-    : null
+  const palette = school ? resolveSchoolPalette(school) : null
   const theme = palette
     ? ({
         '--tenant-primary': palette.primary,
