@@ -265,3 +265,119 @@ test('client SDK rules deny reading and creating schoolEvents', async () => {
       })
   }
 })
+
+test('el coordinador crea, edita y elimina un evento desde configuración', async ({ page }) => {
+  test.setTimeout(90000)
+  await page.setViewportSize({ width: 320, height: 568 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  let available = false
+  try {
+    available = (await fetch('http://127.0.0.1:8080')).ok
+  } catch {}
+  test.skip(!available, 'requiere emuladores de Firebase')
+  const stamp = Date.now()
+  const email = `school-events-ui-${stamp}@test.com`
+  const root = 'http://127.0.0.1:8080/v1/projects/nadamas-b1ecf/databases/(default)/documents'
+  let schoolId: string | undefined
+  let uid: string | undefined
+  const uploaded: string[] = []
+  const eventIds: string[] = []
+  try {
+    await page.goto('/login')
+    await page.getByRole('button', { name: 'Aceptar política y continuar' }).click()
+    await page.getByLabel('Correo', { exact: true }).fill(email)
+    await page.getByRole('button', { name: 'Recibir código', exact: true }).click()
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+    await page.waitForURL((url) => !url.pathname.includes('/login'))
+    await page.goto('/school/create')
+    await page.getByLabel('Nombre de la escuela').fill(`Eventos ${stamp}`)
+    const image = await page.evaluate(() => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 400
+      canvas.height = 200
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('CANVAS_UNAVAILABLE')
+      context.fillStyle = '#00aa00'
+      context.fillRect(0, 0, 400, 200)
+      return canvas.toDataURL('image/png').split(',')[1]
+    })
+    const file = { name: 'logo.png', mimeType: 'image/png', buffer: Buffer.from(image, 'base64') }
+    await page.locator('input[type=file]').setInputFiles(file)
+    await page.getByRole('button', { name: 'Usar imagen', exact: true }).click()
+    const created = page.waitForResponse(
+      (response) =>
+        response.url().endsWith('/api/schools') && response.request().method() === 'POST'
+    )
+    await page.getByRole('button', { name: 'Crear escuela', exact: true }).click()
+    const { school } = await (await created).json()
+    schoolId = school.id
+    uid = school.directorId
+    uploaded.push(school.logoUrl)
+
+    await page.goto('/school/settings')
+    await expect(page.getByRole('heading', { name: 'Eventos', exact: true })).toBeVisible({
+      timeout: 30000,
+    })
+    await expect(page.getByText('Publica tu próximo evento', { exact: true })).toBeVisible()
+
+    const card = page
+      .locator('section', { has: page.getByRole('heading', { name: 'Eventos', exact: true }) })
+      .last()
+    await card.getByRole('button', { name: 'Nuevo evento' }).click()
+    await card.getByLabel('Fecha', { exact: true }).fill('2999-05-20')
+    await card.getByLabel('Hora (opcional)').fill('08:30')
+    await card.getByLabel('Título', { exact: true }).fill('Travesía La Paz')
+    await card.getByLabel('Descripción', { exact: true }).fill('Nado en aguas abiertas')
+    await card.getByRole('button', { name: 'Agregar enlace' }).click()
+    await card.getByLabel('Texto del enlace 1').fill('Cómo llegar')
+    await card.getByLabel('URL del enlace 1').fill('https://maps.google.com/?q=la+paz')
+    await card.getByLabel('Público', { exact: true }).check()
+    const posted = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/schools/${schoolId}/events`) &&
+        response.request().method() === 'POST'
+    )
+    await card.getByRole('button', { name: 'Guardar evento' }).click()
+    const createdEvent = await posted
+    expect(createdEvent.status()).toBe(201)
+    eventIds.push((await createdEvent.json()).event.id)
+
+    const upcoming = card.getByRole('region', { name: 'Próximos' })
+    await expect(upcoming.getByText('Travesía La Paz')).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
+
+    await upcoming.getByRole('button', { name: 'Editar' }).click()
+    await card.getByLabel('Título', { exact: true }).fill('Travesía La Paz 2')
+    await card.getByRole('button', { name: 'Guardar evento' }).click()
+    await expect(upcoming.getByText('Travesía La Paz 2')).toBeVisible()
+
+    await upcoming.getByRole('button', { name: 'Eliminar' }).click()
+    await upcoming.getByRole('button', { name: 'Confirmar eliminación' }).click()
+    await expect(page.getByText('Travesía La Paz 2')).toHaveCount(0)
+  } finally {
+    for (const url of uploaded.filter(Boolean)) {
+      const parsed = new URL(url)
+      await fetch(`${parsed.origin}${parsed.pathname}`, {
+        method: 'DELETE',
+        headers: { authorization: 'Bearer owner' },
+      })
+    }
+    for (const path of [
+      `otpLoginCodes/${encodeURIComponent(email)}`,
+      ...eventIds.map((id) => `schoolEvents/${id}`),
+      ...(schoolId ? [`schools/${schoolId}`, `schoolAgendaUpdates/${schoolId}`] : []),
+      ...(uid
+        ? [
+            `users/${uid}`,
+            `schoolMemberships/${schoolId}_${uid}`,
+            `schoolProfiles/${schoolId}_${uid}`,
+          ]
+        : []),
+    ]) {
+      await fetch(`${root}/${path}`, {
+        method: 'DELETE',
+        headers: { authorization: 'Bearer owner' },
+      })
+    }
+  }
+})

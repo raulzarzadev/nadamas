@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiArrowDown, FiArrowUp, FiImage, FiTrash2 } from 'react-icons/fi'
 import { uploadSchoolImage } from '@/firebase/school-logos/main'
-import { AuthedApiError, patchAuthed } from '@/lib/client/authed-api'
+import { AuthedApiError, getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import { SCHOOL_PALETTES, type School, type SchoolPalette } from '@/lib/school'
 import {
   DEFAULT_HOME_SECTIONS,
@@ -38,10 +38,24 @@ export default function SchoolHomeAppearanceCard({
 }) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [noUpcoming, setNoUpcoming] = useState(false)
   const gallery = school.gallery ?? []
   const visible = homeSectionsOf(school)
   const rows = [...visible, ...DEFAULT_HOME_SECTIONS.filter((item) => !visible.includes(item))]
   const palette = resolveSchoolPalette(school)
+
+  useEffect(() => {
+    let active = true
+    getAuthed(`/api/schools/${school.id}/events?scope=upcoming`)
+      .then((response) => response.json() as Promise<{ events: unknown[] }>)
+      .then((payload) => {
+        if (active) setNoUpcoming(payload.events.length === 0)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [school.id])
 
   async function save(patch: Patch, work?: () => Promise<Patch>) {
     setBusy(true)
@@ -113,6 +127,7 @@ export default function SchoolHomeAppearanceCard({
   const hints = [
     !school.coverUrl && 'Agrega una foto de portada',
     gallery.length === 0 && 'Sube algunas fotos a la galería',
+    noUpcoming && 'Publica tu próximo evento',
   ].filter(Boolean) as string[]
 
   return (
