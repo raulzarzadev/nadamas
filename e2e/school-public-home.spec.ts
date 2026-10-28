@@ -387,6 +387,21 @@ test('non-public school: hidden from visitors, gated for non-members, open to me
     await expect(memberPage.getByRole('heading', { name: 'Eventos pasados' })).toBeVisible()
     await expect(memberPage.getByText('Convivencia privada pasada')).toBeVisible()
     await memberPage.context().close()
+
+    // Member on the school's own subdomain: redacted tenant falls back to nadamas branding,
+    // never an empty brand tile/name.
+    const subPage = await (await browser.newContext()).newPage()
+    await subPage.setViewportSize({ width: 320, height: 640 })
+    await subPage.goto(`${tenant}/login`)
+    await expect(subPage.getByRole('link', { name: 'nadamas.app inicio' }).first()).toBeVisible()
+    await login(subPage, memberEmail)
+    await subPage.goto(`${tenant}/`)
+    await expect(subPage.getByText('Hola, Ana')).toBeVisible()
+    const brand = subPage.locator('header').getByAltText('nadamas.app').first()
+    await expect(brand).toBeVisible()
+    await subPage.goto(`${tenant}/athlete/schedule`)
+    await expect(subPage.locator('header').getByAltText('nadamas.app').first()).toBeVisible()
+    await subPage.context().close()
   } finally {
     await f.cleanup()
   }

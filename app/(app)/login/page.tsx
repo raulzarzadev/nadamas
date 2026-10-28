@@ -7,14 +7,14 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 import { useRole } from '@/context/RoleContext'
-import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { hasTenantBrand, useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
 import { safeRedirectPath } from '@/lib/post-login-path'
 import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 
 function LoginHeader() {
   const tenant = useTenantSchool()
-  if (tenant)
+  if (hasTenantBrand(tenant))
     return (
       <header className="flex justify-center px-3 pb-6 pt-4">
         <Link href="/" className="flex items-center gap-3 text-(--c-ocean)">

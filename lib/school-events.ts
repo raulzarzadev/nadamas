@@ -16,7 +16,8 @@ export interface SchoolEvent {
   photoUrl: string | null
   links: SchoolEventLink[]
   visibility: 'public' | 'private'
-  createdBy: string
+  /** Stored on the doc; stripped from every listing sent to clients. */
+  createdBy?: string
   createdAt: number
   updatedAt: number
 }

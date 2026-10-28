@@ -72,6 +72,8 @@ test('el coordinador personaliza portada, color y secciones', async ({ page, req
     )
     await page.getByLabel('Color propio').fill('#7c3aed')
     expect((await colorSaved).ok()).toBe(true)
+    // The native picker stays usable while its debounced save runs.
+    await expect(page.getByLabel('Color propio')).toBeEnabled()
     await page.goto(`/school/${slug}`)
     const primary = await page.evaluate(() =>
       getComputedStyle(document.querySelector('[style*="--school-primary"]') as Element)
@@ -103,6 +105,33 @@ test('el coordinador personaliza portada, color y secciones', async ({ page, req
       (value: { stringValue: string }) => value.stringValue
     )
     expect(sections).toEqual(['contacts', 'events'])
+
+    // A palette picked here survives saving the "Datos de la escuela" form.
+    const paletteSaved = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/schools/${schoolId}`) &&
+        response.request().method() === 'PATCH'
+    )
+    await page.getByRole('button', { name: 'Coral', exact: true }).click()
+    expect((await paletteSaved).ok()).toBe(true)
+    await expect(page.getByRole('button', { name: 'Coral', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    await expect(page.getByRole('group', { name: 'Paleta de marca' })).toHaveCount(0)
+    const profileSaved = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/schools/${schoolId}`) &&
+        response.request().method() === 'PATCH'
+    )
+    await page.getByLabel('Descripción', { exact: true }).fill('Nueva descripción')
+    await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click()
+    expect((await profileSaved).ok()).toBe(true)
+    const afterProfile = await (
+      await fetch(`${root}/schools/${schoolId}`, { headers: { authorization: 'Bearer owner' } })
+    ).json()
+    expect(afterProfile.fields.palette.stringValue).toBe('coral')
+    expect(afterProfile.fields.description.stringValue).toBe('Nueva descripción')
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
     expect((await request.get(`/school/${slug}`)).ok()).toBe(true)
   } finally {

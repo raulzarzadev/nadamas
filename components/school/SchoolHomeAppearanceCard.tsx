@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FiArrowDown, FiArrowUp, FiImage, FiTrash2 } from 'react-icons/fi'
 import { uploadSchoolImage } from '@/firebase/school-logos/main'
 import { AuthedApiError, getAuthed, patchAuthed } from '@/lib/client/authed-api'
@@ -43,6 +43,17 @@ export default function SchoolHomeAppearanceCard({
   const visible = homeSectionsOf(school)
   const rows = [...visible, ...DEFAULT_HOME_SECTIONS.filter((item) => !visible.includes(item))]
   const palette = resolveSchoolPalette(school)
+  // Local value while the native picker is dragged; saved after a short pause.
+  const [colorDraft, setColorDraft] = useState<string | null>(null)
+  const colorTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latestColor = useRef<string | null>(null)
+
+  useEffect(
+    () => () => {
+      if (colorTimer.current) clearTimeout(colorTimer.current)
+    },
+    []
+  )
 
   useEffect(() => {
     let active = true
@@ -77,7 +88,25 @@ export default function SchoolHomeAppearanceCard({
     }
   }
 
+  function changeColor(value: string) {
+    latestColor.current = value
+    setColorDraft(value)
+    if (colorTimer.current) clearTimeout(colorTimer.current)
+    colorTimer.current = setTimeout(() => {
+      colorTimer.current = null
+      save({ customColor: value }).then(() => {
+        if (latestColor.current !== value) return
+        latestColor.current = null
+        setColorDraft(null)
+      })
+    }, 400)
+  }
+
   async function pickPalette(palette: SchoolPalette) {
+    if (colorTimer.current) clearTimeout(colorTimer.current)
+    colorTimer.current = null
+    latestColor.current = null
+    setColorDraft(null)
     setBusy(true)
     setMessage(null)
     try {
@@ -133,7 +162,7 @@ export default function SchoolHomeAppearanceCard({
   return (
     <section
       aria-busy={busy}
-      className="min-w-0 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
+      className="min-w-0 rounded-(--r-md) border border-(--c-border) bg-white p-5 shadow-(--shadow-sm)"
     >
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean)">
@@ -222,9 +251,8 @@ export default function SchoolHomeAppearanceCard({
             <input
               type="color"
               aria-label="Color propio"
-              disabled={busy}
-              value={school.customColor ?? palette.primary}
-              onChange={(event) => save({ customColor: event.target.value })}
+              value={colorDraft ?? school.customColor ?? palette.primary}
+              onChange={(event) => changeColor(event.target.value)}
               className="size-11 cursor-pointer rounded-full border border-(--c-border) bg-white p-0"
             />
           </label>

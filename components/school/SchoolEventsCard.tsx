@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiCalendar, FiPlus, FiTrash2 } from 'react-icons/fi'
 import { uploadSchoolImage } from '@/firebase/school-logos/main'
 import {
@@ -59,6 +59,9 @@ export default function SchoolEventsCard({ schoolId }: { schoolId: string }) {
   const [confirming, setConfirming] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  // Bumped on every startDraft so the form (and its uncontrolled file input) remounts.
+  const [draftKey, setDraftKey] = useState(0)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -81,6 +84,14 @@ export default function SchoolEventsCard({ schoolId }: { schoolId: string }) {
     refresh()
   }, [refresh])
 
+  useEffect(() => {
+    if (draftKey === 0) return
+    const form = formRef.current
+    if (!form) return
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    form.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true })
+  }, [draftKey])
+
   function fail(error: unknown, code: string) {
     if (error instanceof AuthedApiError && error.status === 400 && error.message)
       setMessage(error.message)
@@ -92,6 +103,7 @@ export default function SchoolEventsCard({ schoolId }: { schoolId: string }) {
 
   function startDraft(next: Draft) {
     setDraft(next)
+    setDraftKey((key) => key + 1)
     setFile(null)
     setMessage(null)
     setConfirming(null)
@@ -221,7 +233,7 @@ export default function SchoolEventsCard({ schoolId }: { schoolId: string }) {
   return (
     <section
       aria-busy={busy}
-      className="min-w-0 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
+      className="min-w-0 rounded-(--r-md) border border-(--c-border) bg-white p-5 shadow-(--shadow-sm)"
     >
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean)">
@@ -247,7 +259,9 @@ export default function SchoolEventsCard({ schoolId }: { schoolId: string }) {
 
       {draft && (
         <form
-          className="mt-4 grid gap-3"
+          key={draftKey}
+          ref={formRef}
+          className="mt-4 grid scroll-mt-4 gap-3"
           onSubmit={(event) => {
             event.preventDefault()
             save()

@@ -12,7 +12,11 @@ export async function listSchoolEvents(
 ): Promise<SchoolEvent[]> {
   const snapshot = await adminDb.collection(COLLECTION).where('schoolId', '==', schoolId).get()
   return snapshot.docs
-    .map((doc) => ({ ...(doc.data() as Omit<SchoolEvent, 'id'>), id: doc.id }))
+    .map((doc) => {
+      // Never leak the coordinator's uid to visitors, members or SSR props.
+      const { createdBy: _createdBy, ...event } = doc.data() as Omit<SchoolEvent, 'id'>
+      return { ...event, id: doc.id }
+    })
     .filter((event) => includePrivate || event.visibility === 'public')
 }
 

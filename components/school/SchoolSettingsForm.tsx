@@ -8,12 +8,9 @@ import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { patchAuthed } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import {
-  DEFAULT_SCHOOL_PALETTE,
   normalizeSchoolTerminology,
-  SCHOOL_PALETTES,
   type School,
   type SchoolCoachTerm,
-  type SchoolPalette,
   type SchoolParticipantTerm,
 } from '@/lib/school'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
@@ -31,7 +28,6 @@ export default function SchoolSettingsForm({
   const [name, setName] = useState(school.name)
   const [description, setDescription] = useState(school.description)
   const [slug, setSlug] = useState(school.slug)
-  const [palette, setPalette] = useState<SchoolPalette>(school.palette || DEFAULT_SCHOOL_PALETTE)
   const [terminology, setTerminology] = useState(() =>
     normalizeSchoolTerminology(school.terminology)
   )
@@ -73,7 +69,6 @@ export default function SchoolSettingsForm({
         description,
         slug: canEditSlug ? slug : school.slug,
         logoUrl,
-        palette,
         terminology,
       })
       const payload = (await response.json()) as { school: School }
@@ -97,7 +92,6 @@ export default function SchoolSettingsForm({
         'Escuela no encontrada.',
         'No autenticado.',
         'No autorizado.',
-        'Selecciona una paleta válida.',
         'Completa los términos personalizados en singular y plural.',
       ]
       setMessage(safeMessages.includes(serverMessage) ? serverMessage : GENERIC_USER_ERROR)
@@ -141,39 +135,6 @@ export default function SchoolSettingsForm({
             onEditingChange={setEditingLogo}
           />
         </div>
-        <fieldset className="grid gap-2 text-sm font-semibold text-(--c-ocean)">
-          <legend>Paleta de marca</legend>
-          <div className="grid grid-cols-2 gap-2">
-            {SCHOOL_PALETTES.map((option) => {
-              const selected = palette === option.value
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => setPalette(option.value)}
-                  className={`flex min-h-14 items-center gap-2 rounded-[var(--r-sm)] border px-3 text-left text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${selected ? 'border-(--c-ocean) bg-(--c-surface)' : 'border-(--c-border) bg-white hover:bg-(--c-surface)'}`}
-                >
-                  <span className="flex shrink-0 gap-0.5" aria-hidden="true">
-                    <span
-                      className="h-5 w-5 rounded-full"
-                      style={{ backgroundColor: option.primary }}
-                    />
-                    <span
-                      className="h-5 w-5 rounded-full"
-                      style={{ backgroundColor: option.secondary }}
-                    />
-                    <span
-                      className="h-5 w-5 rounded-full"
-                      style={{ backgroundColor: option.accent }}
-                    />
-                  </span>
-                  {option.label}
-                </button>
-              )
-            })}
-          </div>
-        </fieldset>
         <section className="grid gap-4 rounded-[var(--r-sm)] border border-(--c-border) p-4">
           <div>
             <h3 className="font-bold text-(--c-ocean)">Nombres en la escuela</h3>

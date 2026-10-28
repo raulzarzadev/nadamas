@@ -21,7 +21,7 @@ import {
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
-import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { hasTenantBrand, useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
 import { isPastAthleteBooking } from '@/lib/athlete-upcoming-count'
 import { getAuthed } from '@/lib/client/authed-api'
@@ -73,6 +73,7 @@ export default function AppNav({
     }
   }, [])
   const tenant = useTenantSchool()
+  const brandTenant = hasTenantBrand(tenant) ? tenant : null
   const { activeRole, roles } = useRole()
   const terminology = useSchoolTerminology()
   const role = modeProp ?? activeRole
@@ -227,13 +228,13 @@ export default function AppNav({
             )}
             <Link
               href="/"
-              className={`${tenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'} ${desktopSidebar && canShowWorkspaceNavigation ? 'sm:hidden' : ''}`}
+              className={`${brandTenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'} ${desktopSidebar && canShowWorkspaceNavigation ? 'sm:hidden' : ''}`}
             >
-              {tenant ? (
+              {brandTenant ? (
                 <span className="flex min-w-0 items-center gap-2">
-                  {tenant.logoUrl ? (
+                  {brandTenant.logoUrl ? (
                     <Image
-                      src={tenant.logoUrl}
+                      src={brandTenant.logoUrl}
                       alt=""
                       width={40}
                       height={40}
@@ -241,11 +242,11 @@ export default function AppNav({
                     />
                   ) : (
                     <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-(--c-surface) text-lg font-extrabold">
-                      {tenant.name[0]}
+                      {brandTenant.name[0]}
                     </span>
                   )}
                   <span className="max-w-32 truncate text-sm font-extrabold sm:max-w-64">
-                    {tenant.name}
+                    {brandTenant.name}
                   </span>
                 </span>
               ) : (

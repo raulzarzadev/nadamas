@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useRole } from '@/context/RoleContext'
-import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { tenantDisplayName, useTenantSchool } from '@/context/TenantSchoolContext'
 import { SchoolAccessRequestCard } from './SchoolAccessRequests'
 import { useSchoolSelection } from './useSchoolSelection'
 
@@ -51,11 +51,11 @@ function ScopedWorkspaceGate({
       </p>
     )
   if (!selected && mode === 'athlete')
-    return <SchoolAccessRequestCard schoolId={tenant.id} schoolName={tenant.name} />
+    return <SchoolAccessRequestCard schoolId={tenant.id} schoolName={tenantDisplayName(tenant)} />
   if (!selected)
     return (
       <div className="grid gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-6">
-        <h1 className="text-xl font-extrabold">{tenant.name}</h1>
+        <h1 className="text-xl font-extrabold">{tenantDisplayName(tenant)}</h1>
         <p>
           {mode === 'coach'
             ? 'No eres entrenador de esta escuela.'

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import AthleteSearchBar from '@/components/athlete/AthleteSearchBar'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
-import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { tenantDisplayName, useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
 import { ensureAthleteBookings, useAppDispatch } from '@/lib/store/athlete-bookings'
 import MyPlansList, { type NamedPaymentScope } from './MyPlansList'
@@ -104,14 +104,14 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     (guestSchool?.id === scopeSchool && guestSchool?.name) ||
     (scopeSchool
       ? tenant?.id === scopeSchool
-        ? tenant.name
+        ? tenantDisplayName(tenant)
         : schools.find((item) => item.school.id === scopeSchool)?.school.name
       : scopeCoach
         ? coaches.find((coach) => coach.id === scopeCoach)?.name
         : undefined)
   // Every coach/school the athlete works with; inside a school tenant, only that school.
   const myScopes: NamedPaymentScope[] = tenant
-    ? [{ kind: 'school', id: tenant.id, name: tenant.name }]
+    ? [{ kind: 'school', id: tenant.id, name: tenantDisplayName(tenant) }]
     : [
         ...schools.map(({ school }) => ({
           kind: 'school' as const,

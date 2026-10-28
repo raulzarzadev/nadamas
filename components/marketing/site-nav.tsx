@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { FiArrowRight, FiMenu, FiX } from 'react-icons/fi'
-import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { hasTenantBrand, useTenantSchool } from '@/context/TenantSchoolContext'
 import { APP_ORIGIN } from '@/lib/app-routing'
 
 const ROLE_LINKS = [
@@ -17,6 +17,7 @@ const ROLE_LINKS = [
 
 export default function SiteNav() {
   const tenant = useTenantSchool()
+  const brandTenant = hasTenantBrand(tenant) ? tenant : null
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const headerRef = useRef<HTMLElement>(null)
@@ -63,14 +64,14 @@ export default function SiteNav() {
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--c-aqua-strong)"
-          aria-label={tenant ? `${tenant.name} inicio` : 'nadamas.app inicio'}
+          aria-label={brandTenant ? `${brandTenant.name} inicio` : 'nadamas.app inicio'}
           onClick={() => setOpen(false)}
         >
-          {tenant ? (
+          {brandTenant ? (
             <>
-              {tenant.logoUrl ? (
+              {brandTenant.logoUrl ? (
                 <Image
-                  src={tenant.logoUrl}
+                  src={brandTenant.logoUrl}
                   alt=""
                   width={40}
                   height={40}
@@ -79,10 +80,12 @@ export default function SiteNav() {
                 />
               ) : (
                 <span className="grid size-10 place-items-center rounded-lg bg-(--c-surface) font-bold text-(--c-ocean)">
-                  {tenant.name.slice(0, 1).toUpperCase()}
+                  {brandTenant.name.slice(0, 1).toUpperCase()}
                 </span>
               )}
-              <span className="max-w-48 truncate font-bold text-(--c-ocean)">{tenant.name}</span>
+              <span className="max-w-48 truncate font-bold text-(--c-ocean)">
+                {brandTenant.name}
+              </span>
             </>
           ) : (
             <Image

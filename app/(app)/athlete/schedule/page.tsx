@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import AthleteBookingsOverview from '@/components/athlete/AthleteBookingsOverview'
 import AthleteSchoolSchedule from '@/components/athlete/AthleteSchoolSchedule'
 import AthleteSearchBar from '@/components/athlete/AthleteSearchBar'
-import { useTenantSchool } from '@/context/TenantSchoolContext'
+import { tenantDisplayName, useTenantSchool } from '@/context/TenantSchoolContext'
 import type { SchoolBookingMode } from '@/lib/school'
 
 interface PublicSchoolOption {
@@ -51,7 +51,7 @@ export default function FindCoachPage() {
             toolbarActions={<AthleteBookingsOverview view="upcoming" compact />}
             key={tenant.id}
             schoolId={tenant.id}
-            schoolName={tenant.name}
+            schoolName={tenantDisplayName(tenant)}
             bookingMode={tenant.bookingMode || 'request'}
           />
         ) : (

@@ -177,6 +177,12 @@ test('events API hides private events from non-members', async ({ request }) => 
     expect(await titles()).toEqual(['Evento publico'])
     expect(await titles(auth(outsider))).toEqual(['Evento publico'])
     expect(await titles(auth(student))).toEqual(['Evento privado', 'Evento publico'])
+    // The coordinator's uid never reaches visitors or members.
+    for (const headers of [undefined, auth(outsider), auth(student)]) {
+      const listed = (await (await request.get(path, { headers })).json()).events as object[]
+      expect(listed.length).toBeGreaterThan(0)
+      for (const event of listed) expect(event).not.toHaveProperty('createdBy')
+    }
 
     const forbidden = await request.post(path, {
       headers: auth(teacher),
@@ -354,6 +360,37 @@ test('el coordinador crea, edita y elimina un evento desde configuración', asyn
     await upcoming.getByRole('button', { name: 'Eliminar' }).click()
     await upcoming.getByRole('button', { name: 'Confirmar eliminación' }).click()
     await expect(page.getByText('Travesía La Paz 2')).toHaveCount(0)
+
+    // Switching from editing one event to another resets the photo picker.
+    for (const [date, title] of [
+      ['2999-06-01', 'Evento A'],
+      ['2999-06-02', 'Evento B'],
+    ]) {
+      await card.getByRole('button', { name: 'Nuevo evento' }).click()
+      await expect(card.getByLabel('Fecha', { exact: true })).toBeFocused()
+      await card.getByLabel('Fecha', { exact: true }).fill(date)
+      await card.getByLabel('Título', { exact: true }).fill(title)
+      const saved = page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/api/schools/${schoolId}/events`) &&
+          response.request().method() === 'POST'
+      )
+      await card.getByRole('button', { name: 'Guardar evento' }).click()
+      eventIds.push((await (await saved).json()).event.id)
+      await expect(upcoming.getByText(title)).toBeVisible()
+    }
+    const photoInput = card.locator('input[type=file]')
+    const selectedFiles = () =>
+      photoInput.evaluate((input) => (input as HTMLInputElement).files?.length ?? 0)
+    await upcoming.getByRole('button', { name: 'Editar' }).nth(0).click()
+    await expect(card.getByLabel('Título', { exact: true })).toHaveValue('Evento A')
+    await photoInput.setInputFiles(file)
+    expect(await selectedFiles()).toBe(1)
+    await upcoming.getByRole('button', { name: 'Editar' }).nth(1).click()
+    await expect(card.getByLabel('Título', { exact: true })).toHaveValue('Evento B')
+    await expect(card.getByLabel('Fecha', { exact: true })).toBeFocused()
+    expect(await selectedFiles()).toBe(0)
+    await card.getByRole('button', { name: 'Cancelar', exact: true }).click()
   } finally {
     for (const url of uploaded.filter(Boolean)) {
       const parsed = new URL(url)

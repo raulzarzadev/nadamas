@@ -127,6 +127,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         description: brand ? school.description : '',
         logoUrl: (brand && school.logoUrl) || null,
         palette: brand ? school.palette : undefined,
+        redacted: !brand,
       }
     : null
   return (
