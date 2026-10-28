@@ -10,7 +10,7 @@ import type { Metadata } from 'next'
 import { NADAMAS_PRICING } from '@/lib/pricing'
 
 const title = 'nadamas.app | App para nadadores, entrenadores y escuelas de natación'
-const description = `App en español: clases de natación, agenda, reservas, pagos, asistencia y progreso para nadadores, entrenadores y escuelas. $${NADAMAS_PRICING.launchMonthly} ${NADAMAS_PRICING.currency}/mes.`
+const description = `App en español: clases de natación, agenda, reservas, pagos, asistencia y progreso para nadadores, entrenadores y escuelas. $${NADAMAS_PRICING.regularMonthly} ${NADAMAS_PRICING.currency}/mes por escuela, con todos sus profesores incluidos. Prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta para la primera escuela de cada propietario.`
 const shareTitle = 'nadamas.app — natación para atletas, entrenadores y clubes'
 const shareDescription =
   'Entrenos, agenda, asistencia y progreso en un solo lugar para atletas, entrenadores y coordinadores de clubes deportivos.'
@@ -116,10 +116,11 @@ const jsonLd = {
       ],
       offers: {
         '@type': 'Offer',
-        price: String(NADAMAS_PRICING.launchMonthly),
+        price: String(NADAMAS_PRICING.regularMonthly),
         priceCurrency: NADAMAS_PRICING.currency,
         url: 'https://nadamas.app/precio',
         category: 'subscription',
+        description: 'Suscripción mensual por escuela, con todos sus profesores incluidos.',
         availability: 'https://schema.org/InStock',
       },
       publisher: { '@id': 'https://nadamas.app/#org' },

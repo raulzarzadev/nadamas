@@ -4,13 +4,14 @@ import { FiArrowRight, FiCheck, FiGlobe, FiLayers, FiSmartphone } from 'react-ic
 import { NADAMAS_PRICING } from '@/lib/pricing'
 
 export const metadata: Metadata = {
-  title: 'Precios · Oferta de lanzamiento',
+  title: 'Precios · Suscripción por escuela',
   description:
-    'Todas las funcionalidades de Nadamas por $49 MXN al mes, antes $299. Para tu propia escuela, app y enlace personalizado, contacta a ventas.',
+    'Nadamas por $299 MXN al mes por escuela, con todos sus profesores incluidos. Prueba de 15 días sin tarjeta para la primera escuela de cada propietario.',
   alternates: { canonical: 'https://nadamas.app/precio' },
   openGraph: {
-    title: 'Nadamas desde $49 MXN al mes',
-    description: 'Precio de lanzamiento con todas las funcionalidades incluidas.',
+    title: 'Nadamas · $299 MXN al mes por escuela',
+    description:
+      'Todos tus profesores incluidos. Prueba de 15 días sin tarjeta para la primera escuela de cada propietario.',
     url: 'https://nadamas.app/precio',
     images: [{ url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' }],
   },
@@ -32,7 +33,7 @@ export default function PricingPage() {
     <div className="mx-auto max-w-[1100px] px-3 pb-14 pt-10 sm:px-8 sm:pb-20 sm:pt-16">
       <header className="mx-auto max-w-2xl text-center">
         <span className="inline-flex rounded-full bg-(--c-surface) px-4 py-2 text-xs font-bold uppercase tracking-wider text-(--c-aqua-strong)">
-          Precio de lanzamiento
+          Una suscripción por escuela
         </span>
         <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl lg:text-6xl">
           Más tiempo para nadar.
@@ -40,7 +41,7 @@ export default function PricingPage() {
         </h1>
         <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-(--c-text-2) sm:text-lg">
           Clases, alumnos, pagos y progreso en un solo lugar. Una mensualidad con todas las
-          funcionalidades de Nadamas.
+          funcionalidades de Nadamas para tu escuela y todos sus profesores.
         </p>
       </header>
 
@@ -62,20 +63,22 @@ export default function PricingPage() {
           </p>
 
           <div className="mt-7">
-            <p className="text-base text-(--c-text-2)">
-              Antes <s className="decoration-2">${NADAMAS_PRICING.regularMonthly} MXN / mes</s>
-            </p>
             <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
               <span className="text-[5rem] font-extrabold leading-none tracking-tight sm:text-[6rem]">
-                ${NADAMAS_PRICING.launchMonthly}
+                ${NADAMAS_PRICING.regularMonthly}
               </span>
               <span className="text-base font-semibold text-(--c-text-2)">MXN / mes</span>
             </p>
             <p className="mt-3 text-sm font-semibold text-(--c-aqua-strong)">
-              Solo por lanzamiento.
+              Prueba de {NADAMAS_PRICING.trialDays} días sin tarjeta para tu primera escuela.
             </p>
           </div>
 
+          <p className="mt-4 text-sm leading-relaxed text-(--c-text-2)">
+            Una sola prueba por propietario. Escuelas seleccionadas pueden usar un código válido
+            para pagar ${NADAMAS_PRICING.promotionalMonthly} MXN al mes mientras mantengan activa su
+            suscripción. Si cancelan y termina su periodo pagado, pierden ese beneficio.
+          </p>
           <ul className="my-7 space-y-3">
             {FEATURES.map((feature) => (
               <li key={feature} className="flex items-start gap-3 text-sm leading-relaxed">
@@ -91,7 +94,7 @@ export default function PricingPage() {
             href="/login"
             className="mt-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-(--c-aqua-strong) px-5 py-3 font-bold text-white transition-colors hover:bg-(--c-ocean) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--c-aqua-strong)"
           >
-            Empezar con Nadamas
+            Crear mi escuela
             <FiArrowRight aria-hidden="true" />
           </Link>
         </section>
@@ -117,8 +120,8 @@ export default function PricingPage() {
             Tu app. Tu identidad.
           </h2>
           <p className="relative mt-5 max-w-sm text-base leading-relaxed text-[#d0e7ef]">
-            ¿Quieres tener tu propia escuela, app y enlace personalizado? Hablemos de lo que
-            necesitas.
+            Puedes crear tu escuela directamente con la suscripción. Si necesitas ayuda para
+            configurarla o tienes dudas sobre tu enlace e identidad, hablemos.
           </p>
 
           <ul className="my-8 space-y-6">

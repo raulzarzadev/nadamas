@@ -1,5 +1,6 @@
 import { validProfileBirthDate } from '@/lib/additional-profile'
 import { normalizeSchoolMembership } from '@/lib/school'
+import { assertSchoolSubscriptionAccess } from './subscriptions/access'
 import 'server-only'
 
 import { createHash, randomBytes } from 'node:crypto'
@@ -52,7 +53,10 @@ export async function createSchoolInvitation(args: {
   }
   if (args.studentId) invitation.studentId = args.studentId
   if (args.studentData) invitation.studentData = args.studentData
-  await ref.set({ ...invitation, tokenHash: hashInvitationToken(token) })
+  await adminDb.runTransaction(async (tx) => {
+    await assertSchoolSubscriptionAccess(args.schoolId, tx)
+    tx.set(ref, { ...invitation, tokenHash: hashInvitationToken(token) })
+  })
   return { invitation, token }
 }
 
@@ -272,6 +276,7 @@ export async function acceptSchoolInvitation(args: {
     )
 
     const transactionResult = await adminDb.runTransaction(async (transaction) => {
+      await assertSchoolSubscriptionAccess(invitation.schoolId, transaction)
       const invitationSnapshot = await transaction.get(invitation.ref)
       if (invitationSnapshot.data()?.status !== 'pending')
         return { ok: false as const, reason: 'accepted' as const }
@@ -435,6 +440,7 @@ export async function acceptSchoolInvitation(args: {
       : null
 
   const transactionResult = await adminDb.runTransaction(async (transaction) => {
+    await assertSchoolSubscriptionAccess(invitation.schoolId, transaction)
     const invitationSnapshot = await transaction.get(invitation.ref)
     if (
       invitationSnapshot.data()?.status !== 'pending' ||

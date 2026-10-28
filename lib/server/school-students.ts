@@ -1,3 +1,4 @@
+import { assertSchoolSubscriptionAccess } from './subscriptions/access'
 import 'server-only'
 
 import {
@@ -165,7 +166,10 @@ export async function createSchoolStudent(args: {
     createdAt: now,
     updatedAt: now,
   }
-  await ref.set(student)
+  await adminDb.runTransaction(async (tx) => {
+    await assertSchoolSubscriptionAccess(args.schoolId, tx)
+    tx.set(ref, student)
+  })
   return student
 }
 

@@ -16,6 +16,8 @@ import { publicNameFromUser } from '@/lib/public-name'
 import { sendStudentAddedEmail } from '@/lib/server/emails'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { notifyStudentAddedByCoach } from '@/lib/server/notifications'
+import { paymentErrorResponse } from '@/lib/server/payments/reservations'
+import { assertSchoolSubscriptionAccess } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 
@@ -436,7 +438,19 @@ export async function PATCH(request: Request) {
     ...computed,
   }
 
-  await Promise.all([docRef.set(progress, { merge: true }), entryRef.set(entry)])
+  try {
+    await adminDb.runTransaction(async (tx) => {
+      const previous = await tx.get(entryRef)
+      if (!previous.exists && booking.schoolId)
+        await assertSchoolSubscriptionAccess(booking.schoolId, tx)
+      tx.set(docRef, progress, { merge: true })
+      tx.set(entryRef, entry)
+    })
+  } catch (error) {
+    const subscriptionError = paymentErrorResponse(error)
+    if (subscriptionError) return NextResponse.json(subscriptionError, { status: 403 })
+    throw error
+  }
 
   return NextResponse.json({ progress, entry })
 }

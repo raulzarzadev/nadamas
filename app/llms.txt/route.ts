@@ -18,10 +18,10 @@ const content = `# nadamas.app
 
 - Producto: app web (PWA) para organizar clases de natación. Funciona en celular y computadora sin descargar nada.
 - Usuarios: atletas (y sus familias), entrenadores de natación independientes y coordinadores de escuelas o clubes.
-- Precio: $${NADAMAS_PRICING.launchMonthly} ${NADAMAS_PRICING.currency} al mes (precio de lanzamiento; precio regular $${NADAMAS_PRICING.regularMonthly} ${NADAMAS_PRICING.currency}). Incluye todas las funciones.
+- Precio: $${NADAMAS_PRICING.regularMonthly} ${NADAMAS_PRICING.currency} al mes por escuela, incluyendo todos sus profesores. Una prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta por propietario, para su primera escuela. Escuelas seleccionadas pueden activar $${NADAMAS_PRICING.promotionalMonthly} ${NADAMAS_PRICING.currency} al mes mediante un código válido; conservan el beneficio mientras mantengan activa la suscripción. No es una oferta universal ni una promoción de seis meses.
 - Escuelas con app, logo y enlace propios: contacto en hola@nadamas.app.
 - Idioma: español. Mercado principal: México.
-- Pagos: la app registra planes, comprobantes y saldos; no procesa cobros con tarjeta.
+- Pagos de alumnos: la app registra planes, comprobantes y saldos. La suscripción de la escuela a Nadamas se paga por separado, por transferencia con revisión manual o tarjeta cuando el servicio esté configurado.
 
 ## Funciones
 
@@ -37,7 +37,7 @@ ${features}
 
 - [Inicio](https://nadamas.app/): qué es, funciones, cómo funciona y preguntas frecuentes.
 - [Software para escuelas de natación](https://nadamas.app/software-para-escuelas-de-natacion): uso para escuelas y clubes.
-- [Precios](https://nadamas.app/precio): precio de lanzamiento y opción para escuelas.
+- [Precios](https://nadamas.app/precio): suscripción por escuela, prueba gratuita y condiciones de códigos promocionales.
 - [Directorio de entrenadores](https://nadamas.app/coaches): perfiles públicos de entrenadores de natación.
 - [Recursos](https://nadamas.app/recursos): guías y plantillas gratuitas.
 - [Cómo verificamos](https://nadamas.app/como-verificamos): proceso de revisión de entrenadores.

@@ -9,6 +9,7 @@ import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
 import { getSchoolCaller, requireSchoolAccess } from '@/lib/server/school-access'
 import { getSchoolById } from '@/lib/server/schools'
+import { assertSchoolSubscriptionAccess } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 type Props = { params: Promise<{ schoolId: string }> }
@@ -130,6 +131,7 @@ export async function PATCH(request: Request, { params }: Props) {
       if (entry.status !== 'pending' || member.data()?.status === 'suspended') return false
       const now = Date.now()
       if (body.status === 'approved') {
+        await assertSchoolSubscriptionAccess(schoolId, tx)
         const current = member.exists
           ? normalizeSchoolMembership(member.data() as SchoolMembership)
           : null

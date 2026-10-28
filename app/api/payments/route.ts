@@ -28,6 +28,7 @@ import {
   settingsRef,
 } from '@/lib/server/payments/store'
 import { runPaymentTransaction } from '@/lib/server/payments/transaction'
+import { assertSchoolSubscriptionAccess } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 const invalid = () =>
@@ -256,6 +257,7 @@ export async function POST(request: Request) {
         settingsRef(access.key)
       )
       if (existing.exists) return false
+      if (access.scope.kind === 'school') await assertSchoolSubscriptionAccess(access.scope.id, tx)
       const product = productDoc.data() as PaymentProduct & { scope: string }
       const config = { ...DEFAULT_PAYMENT_SETTINGS, ...settingsDoc.data() }
       if (

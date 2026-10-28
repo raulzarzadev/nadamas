@@ -1,3 +1,5 @@
+import { newReservationSchoolIds } from '@/lib/subscription-mutation-policy'
+import { assertSchoolSubscriptionAccess } from '../subscriptions/access'
 import { runPaymentTransaction } from './transaction'
 import 'server-only'
 import type { Transaction } from 'firebase-admin/firestore'
@@ -33,6 +35,10 @@ export type PaymentEvent = {
 // Read every document before returning the writer, so callers can share the same
 // Firestore transaction with class/booking/attendance writes without partial charges.
 export async function preparePaymentEvents(tx: Transaction, events: PaymentEvent[]) {
+  // Check before disabled-billing filtering: free classes still require school access.
+  // A paired release/reserve for the same participant moves an existing commitment.
+  for (const schoolId of newReservationSchoolIds(events))
+    await assertSchoolSubscriptionAccess(schoolId, tx)
   const scopes = [...new Set(events.map((event) => event.scope))]
   const configs = new Map<string, PaymentSettings>()
   const configDocs = scopes.length ? await tx.getAll(...scopes.map(settingsRef)) : []
@@ -248,6 +254,11 @@ export async function paymentTransaction(
   })
 }
 export function paymentErrorResponse(error: unknown) {
+  if (error instanceof Error && 'code' in error && error.code === 'subscription_required')
+    return {
+      error: 'La escuela necesita una suscripción activa para realizar esta acción.',
+      code: 'subscription_required',
+    }
   if (!(error instanceof PaymentRuleError)) return null
   const message =
     error.code === 'package_confirmation_required'

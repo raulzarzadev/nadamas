@@ -4,6 +4,7 @@ import { type SchoolMembership, schoolMembershipHasRole } from '@/lib/school'
 import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { getSchoolMembership } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
+import { assertSchoolSubscriptionAccess } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 
@@ -61,15 +62,19 @@ async function handlePOST(request: Request) {
     const schoolOfferingsRef = adminDb
       .collection('schoolCoachOfferings')
       .doc(`${schoolId}_${coachId}`)
-    await schoolOfferingsRef.set(
-      {
-        schoolId,
-        coachId,
-        classOfferings: body.classOfferings,
-        updatedAt: now,
-      },
-      { merge: true }
-    )
+    await adminDb.runTransaction(async (tx) => {
+      await assertSchoolSubscriptionAccess(schoolId, tx)
+      tx.set(
+        schoolOfferingsRef,
+        {
+          schoolId,
+          coachId,
+          classOfferings: body.classOfferings,
+          updatedAt: now,
+        },
+        { merge: true }
+      )
+    })
     return NextResponse.json({ ok: true })
   }
   const data: Partial<CoachPublic> = {

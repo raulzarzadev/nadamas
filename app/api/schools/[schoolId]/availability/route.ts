@@ -3,6 +3,7 @@ import { schoolMembershipHasRole } from '@/lib/school'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
+import { assertSchoolSubscriptionAccess } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 
@@ -59,10 +60,12 @@ async function handlePUT(request: Request, { params }: RouteProps) {
     })
     .slice(0, 50)
   const payload = { schoolId, teacherId, weeklySlots, updatedAt: Date.now() }
-  await adminDb
-    .collection('schoolAvailability')
-    .doc(`${schoolId}_${teacherId}`)
-    .set(payload, { merge: true })
+  await adminDb.runTransaction(async (tx) => {
+    await assertSchoolSubscriptionAccess(schoolId, tx)
+    tx.set(adminDb.collection('schoolAvailability').doc(`${schoolId}_${teacherId}`), payload, {
+      merge: true,
+    })
+  })
   return NextResponse.json({ availability: payload })
 }
 

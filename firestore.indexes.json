@@ -1,6 +1,20 @@
 {
   "indexes": [
     {
+      "collectionGroup": "subscriptionOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "schoolId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "paymentOrders",
       "queryScope": "COLLECTION",
       "fields": [

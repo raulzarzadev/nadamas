@@ -9,6 +9,7 @@ import type { SchoolClassOccurrence } from '@/lib/school'
 import { bookingBelongsToAccount } from '@/lib/server/booking-ownership'
 import { adminDb } from '@/lib/server/firebase-admin'
 import { listSchoolStudents } from '@/lib/server/school-students'
+import { assertSchoolSubscriptionAccess } from '@/lib/server/subscriptions/access'
 
 export async function saveClassEvaluation(id: string, uid: string, evaluation: ClassEvaluation) {
   return adminDb.runTransaction(async (transaction) => {
@@ -30,6 +31,7 @@ export async function saveClassEvaluation(id: string, uid: string, evaluation: C
       if (!relevantStudents.length || !occurrence.teacherIds[0]) return 404
       booking = {
         id,
+        schoolId: occurrence.schoolId,
         athleteId: uid,
         athleteName: relevantStudents.map((student) => student.name).join(', '),
         coachId: occurrence.teacherIds[0],
@@ -43,6 +45,9 @@ export async function saveClassEvaluation(id: string, uid: string, evaluation: C
     }
     if (!booking || !(await bookingBelongsToAccount(booking, uid))) return 404
     if (!canEvaluateBooking(booking)) return 409
+    const existing = await transaction.get(adminDb.collection('classEvaluations').doc(id))
+    if (!existing.exists && booking.schoolId)
+      await assertSchoolSubscriptionAccess(booking.schoolId, transaction)
     const { privateComment, ...publicFields } = evaluation
     transaction.set(adminDb.collection('classEvaluations').doc(id), {
       ...publicFields,

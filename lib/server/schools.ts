@@ -4,6 +4,7 @@ import {
   type SchoolContact,
   visibleSchoolContacts,
 } from '@/lib/school-contact'
+import { prepareSchoolSubscriptionCreation } from './subscriptions/store'
 import 'server-only'
 
 import type { DocumentSnapshot } from 'firebase-admin/firestore'
@@ -284,14 +285,17 @@ export async function createSchool(userId: string, input: SchoolInput) {
   const membershipRef = adminDb.collection('schoolMemberships').doc(`${schoolRef.id}_${userId}`)
 
   await adminDb.runTransaction(async (transaction) => {
-    const [userSnapshot, slugSnapshot] = await Promise.all([
-      transaction.get(userRef),
-      transaction.get(slugRef),
-    ])
+    const slugSnapshot = await transaction.get(slugRef)
 
-    if (userSnapshot.data()?.createdSchoolId) throw new Error('USER_ALREADY_OWNS_SCHOOL')
     if (slugSnapshot.exists) throw new Error('SCHOOL_SLUG_TAKEN')
+    const applySubscription = await prepareSchoolSubscriptionCreation(
+      transaction,
+      schoolRef.id,
+      userId,
+      now
+    )
 
+    applySubscription()
     transaction.set(schoolRef, {
       name: input.name,
       slug: input.slug,
