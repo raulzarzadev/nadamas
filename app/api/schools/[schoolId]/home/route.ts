@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { publicNameFromUser } from '@/lib/public-name'
 import { visibleSchoolContacts } from '@/lib/school-contact'
 import { homeSectionsOf } from '@/lib/school-home'
 import { resolveSchoolPalette } from '@/lib/school-theme'
@@ -13,6 +12,14 @@ interface RouteProps {
   params: Promise<{ schoolId: string }>
 }
 
+function firstNameOf(user?: Record<string, unknown>) {
+  for (const key of ['nickname', 'displayName', 'name']) {
+    const value = user?.[key]
+    if (typeof value === 'string' && value.trim()) return value.trim().split(/\s+/)[0]
+  }
+  return ''
+}
+
 export async function GET(request: Request, { params }: RouteProps) {
   const { schoolId } = await params
   const access = await requireSchoolAccess(request, schoolId)
@@ -21,7 +28,7 @@ export async function GET(request: Request, { params }: RouteProps) {
   if (!school) return NextResponse.json({ error: 'No encontrado.' }, { status: 404 })
   const user = await adminDb.collection('users').doc(access.caller.uid).get()
   const userData = user.data()
-  const greetingName = userData ? publicNameFromUser(userData).split(/\s+/)[0] : ''
+  const greetingName = firstNameOf(userData)
   const home = await getSchoolMemberHome(school, { uid: access.caller.uid, name: greetingName })
   return NextResponse.json({
     school: {

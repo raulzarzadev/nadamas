@@ -47,7 +47,12 @@ test('member home returns per-profile next class and week attendance', async ({ 
     })
     expect(response.ok).toBe(true)
   }
-  const [director, guardian, outsider] = await Promise.all([signup(), signup(), signup()])
+  const [director, guardian, outsider, emailOnly] = await Promise.all([
+    signup(),
+    signup(),
+    signup(),
+    signup(),
+  ])
   const auth = (user: { idToken: string }) => ({ authorization: `Bearer ${user.idToken}` })
   const path = `/api/schools/${schoolId}/home`
   const today = formatInTimeZone(Date.now(), TIMEZONE, 'yyyy-MM-dd')
@@ -85,6 +90,13 @@ test('member home returns per-profile next class and week attendance', async ({ 
       role: 'student',
       status: 'active',
     })
+    await seed(`schoolMemberships/${schoolId}_${emailOnly.localId}`, {
+      schoolId,
+      userId: emailOnly.localId,
+      role: 'student',
+      status: 'active',
+    })
+    await seed(`users/${emailOnly.localId}`, { email: 'raulzarza.dev@example.com' })
     await seed(`users/${guardian.localId}`, { nickname: 'Mamá Ana' })
     for (const [id, name] of [
       ['s-ana', 'Ana'],
@@ -143,6 +155,8 @@ test('member home returns per-profile next class and week attendance', async ({ 
     const pending = await (await request.get(path, { headers: auth(guardian) })).json()
     expect(pending.profiles[0].nextClass).toMatchObject({ startTime: '07:00', pending: true })
 
+    const anonymous = await request.get(path, { headers: auth(emailOnly) })
+    expect((await anonymous.json()).greetingName).toBe('')
     expect((await request.get(path, { headers: auth(outsider) })).status()).toBe(403)
     expect((await request.get(path)).status()).toBe(401)
   } finally {
