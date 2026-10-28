@@ -30,6 +30,7 @@ export interface SchoolHistoryClass {
   location: string
   coachIds: string[]
   status: 'taken' | 'scheduled' | 'cancelled' | 'absent' | 'unconfirmed'
+  pending: boolean
   note: string
   evaluations: SchoolHistoryEvaluation[]
 }

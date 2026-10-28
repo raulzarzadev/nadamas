@@ -23,6 +23,7 @@ import {
   schoolClassCoachIds,
   schoolScheduleOwners,
 } from '@/lib/server/school-agenda'
+import { viewerSchoolStudents } from '@/lib/server/school-member-home'
 import { getSchoolById } from '@/lib/server/schools'
 
 export const runtime = 'nodejs'
@@ -179,17 +180,9 @@ export async function GET(request: Request, { params }: RouteProps) {
   )
   const viewerStudentIds = new Set(
     viewerId
-      ? studentsSnapshot.docs
-          .filter((doc) => {
-            const student = doc.data()
-            return (
-              student.studentUserId === viewerId ||
-              student.guardianId === viewerId ||
-              (Array.isArray(student.managerIds) && student.managerIds.includes(viewerId)) ||
-              (Array.isArray(student.guardianIds) && student.guardianIds.includes(viewerId))
-            )
-          })
-          .map((doc) => doc.id)
+      ? (await viewerSchoolStudents(schoolId, viewerId, { includeInactive: true })).map(
+          (student) => student.id
+        )
       : []
   )
   if (viewerId && !access.response && schoolMembershipHasRole(access.membership, 'student')) {
