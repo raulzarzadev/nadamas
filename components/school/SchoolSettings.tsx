@@ -6,6 +6,7 @@ import { type School, schoolMembershipHasRole } from '@/lib/school'
 import SchoolBookingSettingsCard from './SchoolBookingSettingsCard'
 import SchoolCalendarCard from './SchoolCalendarCard'
 import SchoolContactsCard from './SchoolContactsCard'
+import SchoolHomeAppearanceCard from './SchoolHomeAppearanceCard'
 import SchoolLocationsCard from './SchoolLocationsCard'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
@@ -63,6 +64,7 @@ function SettingsContent({
         />
       )}
       <SchoolCalendarCard schoolId={school.id} />
+      {canManage && <SchoolHomeAppearanceCard school={school} onUpdated={setSchool} />}
       <SchoolLocationsCard schoolId={school.id} canManage={canManage} />
       <SchoolContactsCard school={school} canManage={canManage} onUpdated={setSchool} />
     </>
