@@ -116,6 +116,7 @@ service cloud.firestore {
         'schoolProfiles',
         'schoolStudents',
         'schoolLocations',
+        'schoolEvents',
         'schoolAvailability',
         'schoolClassSeries',
         'schoolClassOccurrences',

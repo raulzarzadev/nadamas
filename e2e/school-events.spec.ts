@@ -213,3 +213,55 @@ test('events API hides private events from non-members', async ({ request }) => 
       })
   }
 })
+
+test('client SDK rules deny reading and creating schoolEvents', async () => {
+  let ready = false
+  try {
+    ready = (await fetch('http://127.0.0.1:8080')).ok
+  } catch {}
+  test.skip(!ready, 'requiere emuladores de Firebase')
+  const root = 'http://127.0.0.1:8080/v1/projects/nadamas-b1ecf/databases/(default)/documents'
+  const signup = await fetch(
+    'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=local-test',
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        email: `${crypto.randomUUID()}@test.com`,
+        password: 'local-test-password',
+        returnSecureToken: true,
+      }),
+    }
+  )
+  const user = (await signup.json()) as { localId: string; idToken: string }
+  const headers = { authorization: `Bearer ${user.idToken}`, 'content-type': 'application/json' }
+  const id = `rules-${crypto.randomUUID()}`
+  try {
+    const seeded = await fetch(`${root}/schoolEvents/${id}`, {
+      method: 'PATCH',
+      headers: { authorization: 'Bearer owner', 'content-type': 'application/json' },
+      body: JSON.stringify({ fields: { visibility: { stringValue: 'private' } } }),
+    })
+    expect(seeded.ok).toBe(true)
+    const read = await fetch(`${root}/schoolEvents/${id}`, { headers })
+    expect(read.status).toBe(403)
+    const created = await fetch(`${root}/schoolEvents?documentId=forged-${id}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        fields: {
+          userId: { stringValue: user.localId },
+          schoolId: { stringValue: 'x' },
+          visibility: { stringValue: 'public' },
+        },
+      }),
+    })
+    expect(created.status).toBe(403)
+  } finally {
+    for (const doc of [id, `forged-${id}`])
+      await fetch(`${root}/schoolEvents/${doc}`, {
+        method: 'DELETE',
+        headers: { authorization: 'Bearer owner' },
+      })
+  }
+})
