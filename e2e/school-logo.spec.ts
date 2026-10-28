@@ -134,7 +134,7 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
 
     await expect(page.getByRole('heading', { name: 'Configuración de reservas' })).toHaveCount(0)
-    await page.getByRole('link', { name: 'Ajustes', exact: true }).click()
+    await page.getByRole('link', { name: 'Configuración', exact: true }).click()
     await expect(page).toHaveURL(/\/school\/settings$/, { timeout: 30000 })
     await expect(page.getByRole('heading', { name: 'Configuración de reservas' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Sincronizar calendario' })).toBeVisible()
@@ -142,7 +142,7 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
     await expect(page.getByRole('heading', { name: 'Datos de la escuela' })).toBeVisible()
     await expect(page.getByRole('dialog')).toHaveCount(0)
-    await page.locator('input[type=file]').setInputFiles(file)
+    await page.locator('input[type=file][accept*="webp"]').setInputFiles(file)
     await dragImage(1)
     await page.getByRole('button', { name: 'Usar imagen', exact: true }).click()
     const updatedResponse = page.waitForResponse(
