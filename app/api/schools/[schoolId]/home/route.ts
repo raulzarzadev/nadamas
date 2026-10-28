@@ -35,6 +35,7 @@ export async function GET(request: Request, { params }: RouteProps) {
       id: school.id,
       name: school.name,
       slug: school.slug,
+      timezone: school.timezone || 'America/Mexico_City',
       description: school.description,
       logoUrl: school.logoUrl ?? null,
       coverUrl: school.coverUrl ?? null,

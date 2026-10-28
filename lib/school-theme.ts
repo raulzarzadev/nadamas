@@ -99,3 +99,13 @@ export function resolveSchoolPalette(
     surface: preset.surface,
   }
 }
+
+/** CSS custom properties consumed by `--school-*` utilities. */
+export function schoolThemeVars(palette: ThemePalette): Record<string, string> {
+  return {
+    '--school-primary': palette.primary,
+    '--school-secondary': palette.secondary,
+    '--school-accent': palette.accent,
+    '--school-surface': palette.surface,
+  }
+}

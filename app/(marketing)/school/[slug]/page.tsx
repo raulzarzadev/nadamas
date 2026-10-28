@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import SchoolPublicHome from '@/components/school/SchoolPublicHome'
+import { upcomingPublicSchoolEvents } from '@/lib/server/school-events'
 import { getSchoolBySlug, isIndexableSchool } from '@/lib/server/schools'
 import { getTenantSchool } from '@/lib/server/tenant-school'
 
@@ -26,9 +27,10 @@ export async function generateMetadata({ params }: SchoolPublicPageProps): Promi
       siteName: 'nadamas.app',
       locale: 'es_MX',
       type: 'website',
-      images: school.logoUrl
-        ? [{ url: school.logoUrl, alt: school.name }]
-        : [{ url: '/og-nadamas.png', width: 1200, height: 630, alt: 'Logo de nadamas.app' }],
+      images:
+        (school.coverUrl ?? school.logoUrl)
+          ? [{ url: (school.coverUrl ?? school.logoUrl) as string, alt: school.name }]
+          : [{ url: '/og-nadamas.png', width: 1200, height: 630, alt: 'Logo de nadamas.app' }],
     },
   }
 }
@@ -38,5 +40,7 @@ export default async function SchoolPublicPage({ params }: SchoolPublicPageProps
   const school = await getSchoolBySlug(slug)
   if (!school?.isPublic) notFound()
 
-  return <SchoolPublicHome school={school} />
+  // Visitors only ever get public events in server HTML.
+  const publicEvents = await upcomingPublicSchoolEvents(school)
+  return <SchoolPublicHome school={school} publicEvents={publicEvents} />
 }

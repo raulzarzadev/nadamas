@@ -1,6 +1,7 @@
 import 'server-only'
 
-import type { SchoolEvent, SchoolEventInput } from '@/lib/school-events'
+import type { School } from '@/lib/school'
+import { type SchoolEvent, type SchoolEventInput, splitSchoolEvents } from '@/lib/school-events'
 import { adminDb } from './firebase-admin'
 
 const COLLECTION = 'schoolEvents'
@@ -53,4 +54,20 @@ export async function deleteSchoolEvent(schoolId: string, eventId: string): Prom
   if (!snapshot.exists || snapshot.data()?.schoolId !== schoolId) return false
   await ref.delete()
   return true
+}
+
+/** Upcoming PUBLIC events for visitor HTML. Never includes private events; [] on failure. */
+export async function upcomingPublicSchoolEvents(
+  school: Pick<School, 'id' | 'timezone'>,
+  limit = 3
+): Promise<SchoolEvent[]> {
+  try {
+    const events = await listSchoolEvents(school.id, { includePrivate: false })
+    return splitSchoolEvents(events, school.timezone || 'America/Mexico_City').upcoming.slice(
+      0,
+      limit
+    )
+  } catch {
+    return []
+  }
 }

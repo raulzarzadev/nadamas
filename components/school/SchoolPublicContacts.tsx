@@ -13,7 +13,8 @@ export default function SchoolPublicContacts({
   schoolId: string
   initialContacts: SchoolContact[]
 }) {
-  const { user } = useUser() as { user: { uid?: string; id?: string } | null | undefined }
+  // Tolerates rendering outside UserProvider (e.g. a page without app providers).
+  const { user } = (useUser() ?? {}) as { user?: { uid?: string; id?: string } | null }
   const accountId = user?.uid || user?.id
   const [contacts, setContacts] = useState(initialContacts)
   const [loadedAccount, setLoadedAccount] = useState<string | null>(null)

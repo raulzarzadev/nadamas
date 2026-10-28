@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import SchoolPublicHome from '@/components/school/SchoolPublicHome'
+import { upcomingPublicSchoolEvents } from '@/lib/server/school-events'
 import { getSchoolById } from '@/lib/server/schools'
 
 export default async function SchoolSearchPage({
@@ -16,5 +17,7 @@ export default async function SchoolSearchPage({
   if (!school?.isPublic) notFound()
   if ('schedules' in query)
     redirect(`/athlete/search/school/${encodeURIComponent(schoolId)}/schedule`)
-  return <SchoolPublicHome school={school} />
+  return (
+    <SchoolPublicHome school={school} publicEvents={await upcomingPublicSchoolEvents(school)} />
+  )
 }
