@@ -13,6 +13,15 @@ export const getTenantSchool = cache(async () => {
   return school ? { ...school, contacts: visibleSchoolContacts(school.contacts) } : null
 })
 
+/**
+ * Tenant school for branding (metadata, theme, manifest, icon, provider details). Only public
+ * schools: a non-public school's identity must never reach anonymous HTML on its subdomain.
+ */
+export const getTenantBrand = cache(async () => {
+  const school = await getTenantSchool()
+  return school?.isPublic ? school : null
+})
+
 /** Route groups may return 404; the root layout must always render html/body. */
 export async function requireTenantSchool() {
   const school = await getTenantSchool()

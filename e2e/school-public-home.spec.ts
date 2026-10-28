@@ -342,6 +342,18 @@ test('non-public school: hidden from visitors, gated for non-members, open to me
       expect(html).not.toContain(description)
       expect(html).not.toContain('Convivencia privada pasada')
     }
+    // Its own tenant subdomain: root layout, manifest and icon carry no identity either.
+    const tenant = `http://${schoolId}.localhost:3000`
+    const tenantHtml = await (await page.request.get(`${tenant}/`)).text()
+    expect(tenantHtml).not.toContain(name)
+    expect(tenantHtml).not.toContain(description)
+    for (const path of ['/tenant-manifest', '/tenant-icon']) {
+      const response = await page.request.get(`${tenant}${path}`, { maxRedirects: 0 })
+      const body = response.status() < 300 ? await response.text() : ''
+      expect(body).not.toContain(name)
+      expect(body).not.toContain(description)
+      expect(body).not.toContain('>E</text>')
+    }
     // Unknown slug still renders not-found (streamed responses may keep HTTP 200 in dev).
     const missing = await page.request.get(`/school/missing-${id}`)
     expect(
