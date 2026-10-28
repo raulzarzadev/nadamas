@@ -1,4 +1,5 @@
 import type { SchoolContact } from '@/lib/school-contact'
+import type { SchoolGalleryPhoto, SchoolHomeSection } from '@/lib/school-home'
 export const SCHOOL_TIMEZONE_OPTIONS = [
   { value: 'America/Mexico_City', label: 'Ciudad de México' },
   { value: 'America/Monterrey', label: 'Monterrey' },
@@ -188,6 +189,9 @@ export interface School {
   logoUrl?: string | null
   palette?: SchoolPalette
   customColor?: string | null
+  coverUrl?: string | null
+  gallery?: SchoolGalleryPhoto[]
+  homeSections?: SchoolHomeSection[]
   timezone: string
   createdBy: string
   directorId: string
