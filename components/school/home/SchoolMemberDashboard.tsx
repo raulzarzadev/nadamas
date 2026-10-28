@@ -1,9 +1,6 @@
 'use client'
 
-import { onAuthStateChanged } from 'firebase/auth'
-import { type CSSProperties, type ReactNode, useEffect, useState } from 'react'
-import { auth } from '@/firebase/index'
-import { getAuthed } from '@/lib/client/authed-api'
+import type { CSSProperties, ReactNode } from 'react'
 import type { SchoolContact } from '@/lib/school-contact'
 import type { SchoolEvent } from '@/lib/school-events'
 import { formatSchoolDay, type SchoolGalleryPhoto, type SchoolHomeSection } from '@/lib/school-home'
@@ -12,6 +9,7 @@ import type { MemberHomeProfile } from '@/lib/server/school-member-home'
 import SchoolEventsList, { SCHOOL_HOME_SECTION_CLASS } from './SchoolEventsList'
 import SchoolHero from './SchoolHero'
 import SchoolHomeSections from './SchoolHomeSections'
+import { type SchoolGateStatus, useSchoolMemberData } from './use-school-member-data'
 
 interface MemberHomeResponse {
   school: {
@@ -125,38 +123,27 @@ function MemberHome({ home }: { home: MemberHomeResponse }) {
   )
 }
 
+function isMemberHome(payload: unknown): payload is MemberHomeResponse {
+  return Boolean((payload as Partial<MemberHomeResponse> | null)?.school)
+}
+
 /**
  * Member dashboard for a school home. Self-contained: it only needs `schoolId` and fetches
  * everything else from `/api/schools/{id}/home`. Renders `fallback` while auth resolves,
- * when signed out, and (silently) on any non-200 or error.
+ * when signed out, and (silently) on any non-200 or error. Pass a function as `fallback`
+ * to render differently per status (`loading` | `signed-out` | `denied`).
  */
 export default function SchoolMemberDashboard({
   schoolId,
   fallback,
 }: {
   schoolId: string
-  fallback: ReactNode
+  fallback: ReactNode | ((status: SchoolGateStatus) => ReactNode)
 }) {
-  const [home, setHome] = useState<MemberHomeResponse | null>(null)
-
-  useEffect(() => {
-    let current = 0
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const request = ++current
-      setHome(null)
-      if (!user) return
-      getAuthed(`/api/schools/${encodeURIComponent(schoolId)}/home`)
-        .then((response) => response.json() as Promise<MemberHomeResponse>)
-        .then((payload) => {
-          if (request === current && payload?.school) setHome(payload)
-        })
-        .catch(() => {})
-    })
-    return () => {
-      current++
-      unsubscribe()
-    }
-  }, [schoolId])
-
-  return home ? <MemberHome home={home} /> : fallback
+  const state = useSchoolMemberData(
+    `/api/schools/${encodeURIComponent(schoolId)}/home`,
+    isMemberHome
+  )
+  if (state.status === 'ready') return <MemberHome home={state.data} />
+  return typeof fallback === 'function' ? fallback(state.status) : fallback
 }

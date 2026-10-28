@@ -1,15 +1,15 @@
 import Link from 'next/link'
-import type { CSSProperties } from 'react'
 import { FiArrowRight } from 'react-icons/fi'
 import SchoolHero from '@/components/school/home/SchoolHero'
 import SchoolHomeSections from '@/components/school/home/SchoolHomeSections'
 import SchoolJoinButton from '@/components/school/home/SchoolJoinButton'
 import SchoolMemberDashboard from '@/components/school/home/SchoolMemberDashboard'
+import SchoolPageShell from '@/components/school/home/SchoolPageShell'
 import type { School } from '@/lib/school'
 import { visibleSchoolContacts } from '@/lib/school-contact'
 import type { SchoolEvent } from '@/lib/school-events'
 import { homeSectionsOf } from '@/lib/school-home'
-import { resolveSchoolPalette, schoolThemeVars } from '@/lib/school-theme'
+import { resolveSchoolPalette } from '@/lib/school-theme'
 
 function SchoolVisitorHome({
   school,
@@ -51,16 +51,11 @@ export default function SchoolPublicHome({
   publicEvents: SchoolEvent[]
 }) {
   return (
-    <div
-      style={schoolThemeVars(resolveSchoolPalette(school)) as CSSProperties}
-      className="min-h-screen bg-(--school-surface)"
-    >
-      <div className="mx-auto max-w-7xl px-0 pb-8 pt-0 sm:px-8 sm:pb-16 sm:pt-10">
-        <SchoolMemberDashboard
-          schoolId={school.id}
-          fallback={<SchoolVisitorHome school={school} publicEvents={publicEvents} />}
-        />
-      </div>
-    </div>
+    <SchoolPageShell palette={resolveSchoolPalette(school)}>
+      <SchoolMemberDashboard
+        schoolId={school.id}
+        fallback={<SchoolVisitorHome school={school} publicEvents={publicEvents} />}
+      />
+    </SchoolPageShell>
   )
 }

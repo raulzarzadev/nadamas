@@ -67,3 +67,9 @@ export function formatSchoolDay(
   }
   return time ? `${day} ${time}` : day
 }
+
+/** Metadata for non-public schools: nothing identifying, never indexed. */
+export const PRIVATE_SCHOOL_METADATA = {
+  title: 'Escuela',
+  robots: { index: false, follow: false },
+}

@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import SchoolPageShell from '@/components/school/home/SchoolPageShell'
+import SchoolPrivateGate from '@/components/school/home/SchoolPrivateGate'
 import SchoolPublicHome from '@/components/school/SchoolPublicHome'
+import { PRIVATE_SCHOOL_METADATA } from '@/lib/school-home'
+import { resolveSchoolPalette } from '@/lib/school-theme'
 import { upcomingPublicSchoolEvents } from '@/lib/server/school-events'
 import { getSchoolBySlug, isIndexableSchool } from '@/lib/server/schools'
 import { getTenantSchool } from '@/lib/server/tenant-school'
@@ -13,6 +17,8 @@ export async function generateMetadata({ params }: SchoolPublicPageProps): Promi
   const { slug } = await params
   const school = await getSchoolBySlug(slug)
   if (!school) return { title: 'Escuela no disponible' }
+  // Non-public schools: nothing identifying in metadata; members load content client-side.
+  if (!school.isPublic) return PRIVATE_SCHOOL_METADATA
   const description = school.description || `Conoce ${school.name} en Nadamas.`
   const url = `https://nadamas.app/school/${school.slug}`
   return {
@@ -38,7 +44,13 @@ export async function generateMetadata({ params }: SchoolPublicPageProps): Promi
 export default async function SchoolPublicPage({ params }: SchoolPublicPageProps) {
   const { slug } = await params
   const school = await getSchoolBySlug(slug)
-  if (!school?.isPublic) notFound()
+  if (!school) notFound()
+  if (!school.isPublic)
+    return (
+      <SchoolPageShell palette={resolveSchoolPalette({})}>
+        <SchoolPrivateGate schoolId={school.id} slug={school.slug} />
+      </SchoolPageShell>
+    )
 
   // Visitors only ever get public events in server HTML.
   const publicEvents = await upcomingPublicSchoolEvents(school)

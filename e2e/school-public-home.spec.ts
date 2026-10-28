@@ -234,3 +234,148 @@ test('signed-out join goes through login and sends the request', async ({ page }
     await f.cleanup()
   }
 })
+
+const daysFromToday = (days: number) => {
+  const today = formatInTimeZone(Date.now(), TIMEZONE, 'yyyy-MM-dd')
+  return format(addDays(new Date(`${today}T12:00:00`), days), 'yyyy-MM-dd')
+}
+
+test('past events page: visitors get public past events, members also private', async ({
+  browser,
+  page,
+}) => {
+  test.setTimeout(90000)
+  test.skip(!(await emulatorsReady()), 'requiere emuladores de Firebase')
+  const f = fixture()
+  const id = crypto.randomUUID().slice(0, 8)
+  const schoolId = `pubpast-${id}`
+  const email = `pubpast-member-${id}@test.com`
+  try {
+    const member = await f.signup(email)
+    await f.school(schoolId, 'director-x', {})
+    await f.event(schoolId, `${schoolId}-pub`, {
+      date: daysFromToday(-3),
+      title: 'Regata pasada pública',
+      visibility: 'public',
+    })
+    await f.event(schoolId, `${schoolId}-priv`, {
+      date: daysFromToday(-2),
+      title: 'Cena privada pasada',
+      visibility: 'private',
+    })
+    await f.event(schoolId, `${schoolId}-next`, {
+      date: daysFromToday(2),
+      title: 'Clínica futura',
+      visibility: 'public',
+    })
+    await f.seed(`users/${member.localId}`, { email, nickname: 'Ana' })
+    await f.seed(`schoolMemberships/${schoolId}_${member.localId}`, {
+      schoolId,
+      userId: member.localId,
+      role: 'student',
+      status: 'active',
+    })
+
+    // Visitor: past public events are in the server HTML; private and upcoming are not.
+    const html = await (await page.request.get(`/school/${schoolId}/events`)).text()
+    expect(html).toContain('Regata pasada pública')
+    expect(html).not.toContain('Cena privada pasada')
+    expect(html).not.toContain('Clínica futura')
+    await page.setViewportSize({ width: 320, height: 640 })
+    await page.goto(`/school/${schoolId}/events`)
+    await expect(page.getByRole('heading', { name: 'Eventos pasados' })).toBeVisible()
+    await expect(page.getByText('Regata pasada pública')).toBeVisible()
+    await expect(page.getByText('Cena privada pasada')).toHaveCount(0)
+    await noHorizontalScroll(page)
+
+    // Member: public + private past events.
+    const memberPage = await (await browser.newContext()).newPage()
+    await memberPage.goto('/login')
+    await login(memberPage, email)
+    await memberPage.goto(`/school/${schoolId}/events`)
+    await expect(memberPage.getByText('Cena privada pasada')).toBeVisible()
+    await expect(memberPage.getByText('Regata pasada pública')).toBeVisible()
+    await expect(memberPage.getByText('Privado', { exact: true })).toBeVisible()
+    await memberPage.context().close()
+  } finally {
+    await f.cleanup()
+  }
+})
+
+test('non-public school: hidden from visitors, gated for non-members, open to members', async ({
+  browser,
+  page,
+}) => {
+  test.setTimeout(120000)
+  test.skip(!(await emulatorsReady()), 'requiere emuladores de Firebase')
+  const f = fixture()
+  const id = crypto.randomUUID().slice(0, 8)
+  const schoolId = `pubpriv-${id}`
+  const memberEmail = `pubpriv-member-${id}@test.com`
+  const outsiderEmail = `pubpriv-outsider-${id}@test.com`
+  const name = `Escuela Orcas Secretas ${id}`
+  const description = `Descripción oculta ${id}`
+  try {
+    const member = await f.signup(memberEmail)
+    const outsider = await f.signup(outsiderEmail)
+    await f.school(schoolId, 'director-x', { name, description, isPublic: false })
+    await f.event(schoolId, `${schoolId}-priv`, {
+      date: daysFromToday(-1),
+      title: 'Convivencia privada pasada',
+      visibility: 'private',
+    })
+    await f.seed(`users/${member.localId}`, { email: memberEmail, nickname: 'Ana' })
+    await f.seed(`users/${outsider.localId}`, { email: outsiderEmail, nickname: 'Otro' })
+    await f.seed(`schoolMemberships/${schoolId}_${member.localId}`, {
+      schoolId,
+      userId: member.localId,
+      role: 'student',
+      status: 'active',
+    })
+
+    // Visitor: server HTML never contains the school's name or description.
+    for (const path of [`/school/${schoolId}`, `/school/${schoolId}/events`]) {
+      const response = await page.request.get(path)
+      expect(response.status()).toBe(200)
+      const html = await response.text()
+      expect(html).not.toContain(name)
+      expect(html).not.toContain(description)
+      expect(html).not.toContain('Convivencia privada pasada')
+    }
+    // Unknown slug still renders not-found (streamed responses may keep HTTP 200 in dev).
+    const missing = await page.request.get(`/school/missing-${id}`)
+    expect(
+      missing.status() === 404 || (await missing.text()).includes('NEXT_HTTP_ERROR_FALLBACK;404')
+    ).toBe(true)
+    await page.goto(`/school/${schoolId}`)
+    await expect(page.getByText('Inicia sesión para ver tu escuela')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute(
+      'href',
+      `/login?redirectTo=${encodeURIComponent(`/school/${schoolId}`)}`
+    )
+
+    // Signed-in non-member.
+    const outsiderPage = await (await browser.newContext()).newPage()
+    await outsiderPage.goto('/login')
+    await login(outsiderPage, outsiderEmail)
+    await outsiderPage.goto(`/school/${schoolId}`)
+    await expect(outsiderPage.getByText('Esta escuela no está disponible.')).toBeVisible()
+    await outsiderPage.goto(`/school/${schoolId}/events`)
+    await expect(outsiderPage.getByText('Esta escuela no está disponible.')).toBeVisible()
+    await outsiderPage.context().close()
+
+    // Member.
+    const memberPage = await (await browser.newContext()).newPage()
+    await memberPage.goto('/login')
+    await login(memberPage, memberEmail)
+    await memberPage.goto(`/school/${schoolId}`)
+    await expect(memberPage.getByText('Hola, Ana')).toBeVisible()
+    await expect(memberPage.getByText(name).first()).toBeVisible()
+    await memberPage.goto(`/school/${schoolId}/events`)
+    await expect(memberPage.getByRole('heading', { name: 'Eventos pasados' })).toBeVisible()
+    await expect(memberPage.getByText('Convivencia privada pasada')).toBeVisible()
+    await memberPage.context().close()
+  } finally {
+    await f.cleanup()
+  }
+})
