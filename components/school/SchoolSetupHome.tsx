@@ -217,9 +217,15 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
             <HomeActionLink
               href="/school/payments"
               title="Planes y pagos de tu escuela"
+              description="Administra los planes y cobros de tus alumnos"
               icon={FiDollarSign}
             />
-            <HomeActionLink href="/school/settings" title="Configuración" icon={FiSettings} />
+            <HomeActionLink
+              href="/school/settings"
+              title="Configuración"
+              description="Edita la información y preferencias de tu escuela"
+              icon={FiSettings}
+            />
             <HomeActionLink
               title="Invitar a escuela"
               description="Comparte el enlace con tu equipo y las familias"
