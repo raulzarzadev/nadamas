@@ -122,6 +122,8 @@ export default function AppNav({
     school: School
     membership: SchoolMembership
   } | null>(null)
+  const workspaceBrand =
+    brandTenant || (role === 'school' ? selectedSchool?.school || schoolAccess?.school : null)
   const hasDirectorAccess = Boolean(
     schoolAccess?.membership.status === 'active' &&
       (schoolAccess.membership.roles?.includes('director') ||
@@ -217,48 +219,21 @@ export default function AppNav({
           <div className="relative flex items-center gap-2 sm:gap-4">
             {/* Coordinador: the school's name centered in the navbar. */}
             {!tenant && role === 'school' && schoolAccess && (
-              <p className="pointer-events-none absolute inset-x-0 mx-auto grid w-fit max-w-[40%] text-center leading-tight sm:max-w-[50%]">
+              <p className="pointer-events-none absolute inset-x-0 mx-auto hidden w-fit max-w-[40%] text-center leading-tight sm:grid sm:max-w-[50%]">
                 <span className="text-[9px] font-semibold tracking-wide text-(--c-text-2) uppercase">
                   Escuela
                 </span>
                 <span className="truncate text-sm font-bold text-(--c-ocean)">
-                  {schoolAccess.school.name}
+                  {workspaceBrand?.name || schoolAccess.school.name}
                 </span>
               </p>
             )}
             <Link
               href="/"
-              className={`${brandTenant ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'} ${desktopSidebar && canShowWorkspaceNavigation ? 'sm:hidden' : ''}`}
+              aria-label={workspaceBrand ? `${workspaceBrand.name}, inicio` : 'Nadamas, inicio'}
+              className={`${workspaceBrand ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'} ${desktopSidebar && canShowWorkspaceNavigation ? 'sm:hidden' : ''}`}
             >
-              {brandTenant ? (
-                <span className="flex min-w-0 items-center gap-2">
-                  {brandTenant.logoUrl ? (
-                    <Image
-                      src={brandTenant.logoUrl}
-                      alt=""
-                      width={40}
-                      height={40}
-                      className="size-10 shrink-0 rounded-lg object-contain"
-                    />
-                  ) : (
-                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-(--c-surface) text-lg font-extrabold">
-                      {brandTenant.name[0]}
-                    </span>
-                  )}
-                  <span className="max-w-32 truncate text-sm font-extrabold sm:max-w-64">
-                    {brandTenant.name}
-                  </span>
-                </span>
-              ) : (
-                <Image
-                  src="/logo-nadamas.webp"
-                  fill
-                  sizes="112px"
-                  priority
-                  style={{ objectFit: 'contain', objectPosition: 'left' }}
-                  alt="nadamas.app"
-                />
-              )}
+              <WorkspaceBrand school={workspaceBrand} />
             </Link>
             <div className="ml-auto flex items-center gap-2">
               <NotificationsBell />
@@ -341,16 +316,10 @@ export default function AppNav({
         >
           <Link
             href="/"
-            className="relative mx-3 block h-8 w-28 shrink-0"
-            aria-label={tenant?.name || 'Nadamas'}
+            className="mx-3 block min-h-8 min-w-0 shrink-0"
+            aria-label={workspaceBrand ? `${workspaceBrand.name}, inicio` : 'Nadamas, inicio'}
           >
-            <Image
-              src={tenant?.logoUrl || '/logo-nadamas.webp'}
-              alt={tenant?.name || 'nadamas.app'}
-              fill
-              sizes="112px"
-              style={{ objectFit: 'contain', objectPosition: 'left' }}
-            />
+            <WorkspaceBrand school={workspaceBrand} />
           </Link>
           <nav aria-label="Navegación principal" className="grid gap-2">
             {primary.map((item) => {
@@ -434,5 +403,39 @@ export default function AppNav({
         </nav>
       )}
     </>
+  )
+}
+
+function WorkspaceBrand({
+  school,
+}: {
+  school: { name: string; logoUrl?: string | null } | null | undefined
+}) {
+  if (school)
+    return (
+      <span className="flex min-w-0 items-center gap-2">
+        {school.logoUrl && (
+          <Image
+            src={school.logoUrl}
+            alt=""
+            width={40}
+            height={40}
+            className="size-10 shrink-0 rounded-lg object-contain"
+          />
+        )}
+        <span className="min-w-0 break-words text-lg font-extrabold leading-tight text-(--c-ocean)">
+          {school.name}
+        </span>
+      </span>
+    )
+  return (
+    <Image
+      src="/logo-nadamas.webp"
+      alt="nadamas.app"
+      width={112}
+      height={38}
+      priority
+      className="h-8 w-auto max-w-full object-contain object-left"
+    />
   )
 }

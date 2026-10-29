@@ -122,6 +122,18 @@ test('first login configures combined profiles, persists choices and keeps admin
     ).toBeVisible()
     await page.getByRole('link', { name: 'Configurar mi primer plan de pago', exact: true }).click()
     await expect(page).toHaveURL(/\/school\/payments$/)
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    const sidebar = page.locator('[data-app-sidebar]')
+    await expect(
+      sidebar.getByRole('link', { name: `Escuela regreso ${suffix}, inicio`, exact: true })
+    ).toBeVisible()
+    await expect(sidebar.getByRole('img', { name: 'nadamas.app', exact: true })).toHaveCount(0)
+    await page.setViewportSize({ width: 320, height: 900 })
+    await expect(
+      page
+        .locator('header')
+        .getByRole('link', { name: `Escuela regreso ${suffix}, inicio`, exact: true })
+    ).toBeVisible()
     await page.goBack()
     await expect(
       page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
