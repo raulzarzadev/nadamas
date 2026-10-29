@@ -8,3 +8,7 @@ export function getPublicSchoolUrl(slug: string) {
   }
   return `${origin}/school/${slug}`
 }
+
+export function getShareablePublicSchoolUrl(slug: string) {
+  return `https://${slug}.nadamas.app/`
+}

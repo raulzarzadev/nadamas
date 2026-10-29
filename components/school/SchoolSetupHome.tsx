@@ -15,7 +15,7 @@ import {
 import { SchoolSetupCRUD } from '@/firebase/school-setup/main'
 import { getCachedAuthedData, invalidateAuthedCache } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
-import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
+import { getPublicSchoolUrl, getShareablePublicSchoolUrl } from '@/lib/client/school-public-url'
 import type { SchoolSetupSnapshot } from '@/lib/school-setup'
 import { schoolSubscriptionHint } from '@/lib/school-subscription-hint'
 import { reportInternalError } from '@/lib/user-facing-error'
@@ -86,7 +86,8 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
     )
   const completed = data.steps.filter((step) => step.complete).length
   const next = data.steps.find((step) => !step.complete)
-  const publicUrl = getPublicSchoolUrl(data.slug)
+  const publicUrl = getShareablePublicSchoolUrl(data.slug)
+  const localSchoolUrl = getPublicSchoolUrl(data.slug)
   const copySchoolLink = async () => {
     try {
       await copyTextToClipboard(publicUrl)
@@ -183,17 +184,11 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
       </section>
     )
   return (
-    <section
-      aria-labelledby="school-home-title"
-      className="overflow-hidden rounded-2xl border border-(--c-border) bg-white"
-    >
+    <section aria-labelledby="school-home-title" className="grid gap-4">
       <h1 id="school-home-title" className="sr-only">
         Inicio de {data.schoolName}
       </h1>
-      <nav
-        aria-label="Administrar escuela"
-        className="grid gap-3 border-b border-(--c-border) p-5 sm:grid-cols-2 sm:px-7"
-      >
+      <nav aria-label="Administrar escuela" className="grid gap-3 sm:grid-cols-2">
         <Link
           href="/school/setup"
           className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-[var(--c-aqua)] bg-[var(--c-aqua-light)] px-4 py-3 font-bold text-(--c-ocean) shadow-[var(--shadow-sm)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
@@ -239,7 +234,7 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
       </nav>
       <section
         aria-labelledby="school-share-title"
-        className="grid gap-4 border-t border-(--c-border) bg-(--c-surface) p-5 sm:p-7"
+        className="grid gap-4 rounded-2xl border border-(--c-border) bg-white p-5 sm:p-7"
       >
         <div>
           <h2 id="school-share-title" className="flex items-center gap-2 font-bold">
@@ -270,7 +265,7 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
             <FiShare2 aria-hidden="true" /> Copiar enlace
           </button>
           <Link
-            href={publicUrl}
+            href={localSchoolUrl}
             target="_blank"
             rel="noreferrer"
             className="inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-border) bg-white px-5 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
