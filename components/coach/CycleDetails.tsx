@@ -108,6 +108,7 @@ export default function CycleDetails({
                   title={month.title}
                   count={month.count}
                   countLabel="sesiones"
+                  countLabelOne="sesión"
                   expanded={!collapsedMonths[month.id]}
                   handle={readOnly ? undefined : monthHandle}
                   onToggle={() =>
@@ -142,6 +143,7 @@ export default function CycleDetails({
                             title={week.title}
                             count={week.items.length}
                             countLabel="sesiones"
+                            countLabelOne="sesión"
                             expanded={!collapsedWeeks[week.id]}
                             handle={readOnly ? undefined : weekHandle}
                             onToggle={() =>

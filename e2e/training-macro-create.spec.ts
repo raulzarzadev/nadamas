@@ -34,7 +34,11 @@ test('create macro wizard saves the goal and optional three-phase template only 
   await expect(page.locator('[data-app-tabbar]')).toBeVisible()
 
   await page.getByRole('link', { name: 'Entreno', exact: true }).click()
-  await page.getByRole('button', { name: /Crear mi primer (MACRO-ciclo|macrociclo)/i }).click()
+  await page
+    .getByRole('button', {
+      name: /^(Crear mi primer (MACRO-ciclo|macrociclo)|Crear MACRO-ciclo|Crear entreno)$/i,
+    })
+    .click()
   const wizard = page.getByRole('dialog', { name: 'Crear MACRO-ciclo', exact: true })
   await expect(wizard.getByRole('heading', { name: 'Fechas de la temporada' })).toBeVisible()
   await wizard.getByRole('checkbox', { name: 'Lun', exact: true }).check()

@@ -135,7 +135,7 @@ export async function paymentAccess(
       for (const doc of profiles.docs)
         byId.set(doc.id, {
           id: doc.id,
-          name: publicNameFromUser(doc.data()) || doc.data().name || 'Alumno',
+          name: publicNameFromUser(doc.data(), '') || doc.data().name || 'Alumno',
           ownerId: caller.uid,
         })
     }

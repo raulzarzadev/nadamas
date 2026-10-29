@@ -15,12 +15,20 @@ export interface OnboardingInput {
 }
 export function needsOnboarding(
   user:
-    | { roles?: { admin?: boolean }; onboarding?: { version?: number; completedAt?: number } }
+    | {
+        roles?: { admin?: boolean }
+        onboarding?: { version?: number; completedAt?: number }
+        /** Profile read timed out or failed; onboarding state is unknown. */
+        profileUnknown?: boolean
+      }
     | null
     | undefined
 ) {
   return Boolean(
-    user && !user.roles?.admin && !(user.onboarding?.version === 1 && user.onboarding.completedAt)
+    user &&
+      !user.profileUnknown &&
+      !user.roles?.admin &&
+      !(user.onboarding?.version === 1 && user.onboarding.completedAt)
   )
 }
 export function validateOnboarding(value: unknown): OnboardingInput | null {

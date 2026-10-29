@@ -83,7 +83,11 @@ test('entreno: crear ciclos, validar fechas y conservar la planificación', asyn
     await page.getByRole('button', { name: 'Guardar ciclo', exact: true }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
   }
-  await page.getByRole('button', { name: /Crear mi primer (MACRO-ciclo|macrociclo)/i }).click()
+  await page
+    .getByRole('button', {
+      name: /^(Crear mi primer (MACRO-ciclo|macrociclo)|Crear MACRO-ciclo|Crear entreno)$/i,
+    })
+    .click()
   const wizard = page.getByRole('dialog', { name: 'Crear MACRO-ciclo', exact: true })
   await wizard.getByRole('checkbox', { name: 'Lun', exact: true }).check()
   await wizard.getByRole('checkbox', { name: 'Mié', exact: true }).check()

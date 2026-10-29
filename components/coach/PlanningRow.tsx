@@ -8,6 +8,7 @@ export default function PlanningRow({
   title,
   count,
   countLabel,
+  countLabelOne,
   expanded,
   onToggle,
   handle,
@@ -24,6 +25,8 @@ export default function PlanningRow({
   title: string
   count?: number
   countLabel?: string
+  /** Singular form of `countLabel`, used when `count === 1`. */
+  countLabelOne?: string
   expanded: boolean
   onToggle?: () => void
   handle?: ReactNode
@@ -50,7 +53,11 @@ export default function PlanningRow({
           aria-expanded={expanded}
           aria-controls={id}
           onClick={onToggle}
-          aria-label={count === undefined ? title : `${title}, ${count} ${countLabel || ''}`}
+          aria-label={
+            count === undefined
+              ? title
+              : `${title}, ${count} ${(count === 1 && countLabelOne) || countLabel || ''}`
+          }
           className="inline-flex min-h-6 min-w-0 items-center gap-2 rounded text-left text-xs leading-tight font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--c-aqua-strong) focus-visible:ring-inset"
         >
           {dotLabel && (

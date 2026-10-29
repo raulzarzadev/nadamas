@@ -54,7 +54,7 @@ export async function POST(request: Request, { params }: Props) {
     const school = await getSchoolById(schoolId)
     if (!school) return NextResponse.json({}, { status: 404 })
     const profile = await adminDb.collection('users').doc(caller.uid).get()
-    const name = publicNameFromUser({ ...profile.data(), email: caller.email || '' })
+    const name = publicNameFromUser(profile.data(), caller.email?.split('@')[0] || 'Atleta')
     const ref = adminDb.collection('schoolAccessRequests').doc(`${schoolId}_${caller.uid}`)
     const result = await adminDb.runTransaction(async (tx) => {
       const [previous, member] = await Promise.all([

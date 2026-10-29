@@ -49,6 +49,7 @@ export default function TrainingPlanOverview({
           titleHidden
           count={countCycleSessions(cycles, macro.id)}
           countLabel="sesiones"
+          countLabelOne="sesión"
           expanded={macroExpanded}
           controls={
             <div className="flex items-center gap-1">

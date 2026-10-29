@@ -18,5 +18,5 @@ export async function getPublicAthleteDetail(uid: string): Promise<PublicAthlete
   const user = snap.data() || {}
   const photoURL = typeof user.photoURL === 'string' ? user.photoURL : null
   const bio = typeof user.athleteBio === 'string' && user.athleteBio.trim() ? user.athleteBio : null
-  return { uid, name: publicNameFromUser(user), photoURL, bio }
+  return { uid, name: publicNameFromUser(user, 'Atleta'), photoURL, bio }
 }

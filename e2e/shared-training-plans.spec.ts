@@ -18,7 +18,11 @@ async function loginAs(page: Page, request: APIRequestContext, email: string) {
 }
 
 async function createMacro(page: Page, title: string) {
-  await page.getByRole('button', { name: /Crear mi primer (MACRO-ciclo|macrociclo)/i }).click()
+  await page
+    .getByRole('button', {
+      name: /^(Crear mi primer (MACRO-ciclo|macrociclo)|Crear MACRO-ciclo|Crear entreno)$/i,
+    })
+    .click()
   const wizard = page.getByRole('dialog', { name: 'Crear MACRO-ciclo', exact: true })
   await wizard.getByRole('checkbox', { name: 'Lun', exact: true }).check()
   await wizard.getByRole('button', { name: 'Continuar', exact: true }).click()

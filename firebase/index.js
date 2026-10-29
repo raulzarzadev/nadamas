@@ -68,10 +68,14 @@ export const authStateChanged = (cb = () => {}) => {
       photoURL: user.photoURL,
     }
 
+    // Timed-out or failed reads say nothing about the stored profile (e.g.
+    // onboarding), so mark them; gates must not act on missing fields.
+    const unknownProfileUser = { ...fallbackUser, profileUnknown: true }
+
     // Firestore can keep a read pending while offline. Resolve the session
     // within a bounded time, then apply the full profile if it arrives later.
     const timeout = setTimeout(() => {
-      if (auth.currentUser?.uid === user.uid) cb(fallbackUser)
+      if (auth.currentUser?.uid === user.uid) cb(unknownProfileUser)
     }, USER_PROFILE_TIMEOUT_MS)
 
     try {
@@ -80,7 +84,7 @@ export const authStateChanged = (cb = () => {}) => {
       cb(userData || fallbackUser)
     } catch (err) {
       console.error('AUTH_PROFILE_READ')
-      if (auth.currentUser?.uid === user.uid) cb(fallbackUser)
+      if (auth.currentUser?.uid === user.uid) cb(unknownProfileUser)
     } finally {
       clearTimeout(timeout)
     }

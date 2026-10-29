@@ -1017,7 +1017,7 @@ export default function AthleteSchoolSchedule({
                   ? 'Revisa los horarios y las personas seleccionadas antes de reintentar.'
                   : 'Inténtalo de nuevo más tarde.'
       setError(
-        `No pudimos completar ${failed} inscripciones. ${guidance} Las que se enviaron correctamente no se repetirán.`
+        `No pudimos completar ${failed === 1 ? 'la inscripción' : `${failed} inscripciones`}. ${guidance} Las que se enviaron correctamente no se repetirán.`
       )
     } else {
       setSelectedSlot(null)

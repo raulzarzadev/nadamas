@@ -19,7 +19,7 @@ async function scopeName(kind: 'coach' | 'school', id: string) {
   ).data()
   if (!data) return null
   if (kind === 'school') return String(data.name || 'Escuela')
-  return data.roles?.coach || data.isCoach ? publicNameFromUser(data) || 'Entrenador' : null
+  return data.roles?.coach || data.isCoach ? publicNameFromUser(data, 'Entrenador') : null
 }
 
 // Firestore `in` accepts at most 30 values.

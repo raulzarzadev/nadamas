@@ -207,7 +207,7 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
           </h2>
           <div className="grid min-w-0 gap-2 sm:grid-cols-2">
             <HomeActionLink
-              href="/school/settings"
+              href={next ? '/school/setup' : '/school/settings'}
               title={next ? 'Termina la configuración de tu escuela' : 'Configuración'}
               description={
                 next

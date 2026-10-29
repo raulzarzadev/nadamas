@@ -127,6 +127,7 @@ export default function MacroCycleBarsInput({
                   title={cycle.title}
                   count={countCycleSessions(cycles, cycle.id)}
                   countLabel="sesiones"
+                  countLabelOne="sesión"
                   expanded={Boolean(expanded[cycle.id])}
                   handle={readOnly ? undefined : handle}
                   id={`${detailsPrefix}-${cycle.id}`}

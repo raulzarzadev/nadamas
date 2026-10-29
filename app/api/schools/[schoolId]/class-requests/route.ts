@@ -61,7 +61,11 @@ async function handlePOST(request: Request, { params }: RouteProps) {
     ? await getSchoolMembership(schoolId, caller.uid)
     : guarded.membership
   const globalAdmin = guarded.response ? await isGlobalAdmin(caller.uid) : guarded.globalAdmin
-  if (guarded.response && !globalAdmin && (!school.isPublic || membership?.status !== 'active'))
+  if (
+    guarded.response &&
+    !globalAdmin &&
+    (!school.isPublic || (membership && membership.status !== 'active'))
+  )
     return guarded.response
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
   const students = await listSchoolStudents(schoolId, caller.uid)
