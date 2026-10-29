@@ -97,6 +97,7 @@ service cloud.firestore {
         'schoolStudentComments',
         'schoolClassNotes',
         'schoolSubscriptions',
+        'schoolSeatLocks',
         'subscriptionOrders',
         'subscriptionCodes',
         'subscriptionSettings',
