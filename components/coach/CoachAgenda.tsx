@@ -34,7 +34,7 @@ import Sheet from '@/components/ui/sheet'
 import StatusBadge from '@/components/ui/status-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
-import type { CoachClassOffering } from '@/firebase/coaches/coach.model'
+import type { CoachClassOffering, CoachOfferingGroup } from '@/firebase/coaches/coach.model'
 import { effectiveAttendance } from '@/lib/attendance'
 import { hasClassEnded, hasClassStarted } from '@/lib/class-evaluation'
 import {
@@ -1393,7 +1393,12 @@ export default function CoachAgenda({
   }
 
   // Editor de horas (Quitar/Agregar): agrega o quita (día × hora) del offering.
-  const applyHours = (mode: HoursMode, dates: string[], times: string[]) => {
+  const applyHours = (
+    mode: HoursMode,
+    dates: string[],
+    times: string[],
+    groupType?: CoachOfferingGroup
+  ) => {
     if (!selfUid) {
       setError(
         'No se pudo identificar tu cuenta. Cierra sesión, vuelve a entrar e inténtalo de nuevo.'
@@ -1424,7 +1429,7 @@ export default function CoachAgenda({
           const targetOfferings = targetAgenda.offerings || []
           const current = targetOfferings[0]
           const base = current ?? createOffering()
-          const next = offeringWithHours(base, dates, times, base.durationMinutes ?? 60)
+          const next = offeringWithHours(base, dates, times, base.durationMinutes ?? 60, groupType)
           const targetEndpoint = scheduleEndpointFor(targetCoachId)
           for (const block of targetAgenda.blocks || []) {
             if (pairs.some((pair) => blockCoversClassAt(block, pair.date, pair.time))) {
@@ -1451,7 +1456,7 @@ export default function CoachAgenda({
         const base = latestOffering ?? createOffering()
         // Quita bloqueos que tapan estas horas para que queden disponibles.
         await deleteBlocks(dates.flatMap((date) => times.map((time) => ({ date, time }))))
-        const next = offeringWithHours(base, dates, times, base.durationMinutes ?? 60)
+        const next = offeringWithHours(base, dates, times, base.durationMinutes ?? 60, groupType)
         await saveOfferingList(
           latestOffering
             ? latestOfferings.map((item) => (item.id === next.id ? next : item))

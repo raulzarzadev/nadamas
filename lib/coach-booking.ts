@@ -112,7 +112,7 @@ export function flattenCoachBookingSelections(
           scheduleId: schedule.id,
           locationName: offeringPlaceLabel(offering),
           mode: offering.mode,
-          groupType: offering.groupType,
+          groupType: schedule.groupType ?? offering.groupType,
           days: [
             Object.entries(DAY_TO_INDEX).find(([, index]) => index === date.getDay())?.[0] || '',
           ],

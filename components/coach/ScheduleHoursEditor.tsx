@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { FiChevronLeft, FiChevronRight, FiInfo, FiPlus, FiX } from 'react-icons/fi'
 import CoachBadge from '@/components/ui/coach-badge'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
+import type { CoachOfferingGroup } from '@/firebase/coaches/coach.model'
 import {
   addDays,
   dateFromKey,
@@ -52,7 +53,12 @@ export default function ScheduleHoursEditor({
   busy: boolean
   error?: string | null
   onClose: () => void
-  onSubmit: (mode: HoursMode, dates: string[], times: string[]) => void
+  onSubmit: (
+    mode: HoursMode,
+    dates: string[],
+    times: string[],
+    groupType: CoachOfferingGroup
+  ) => void
   coachOptions?: ScheduleCoachOption[]
   selectedCoachId?: string
   onCoachChange?: (coachId: string) => void
@@ -69,6 +75,7 @@ export default function ScheduleHoursEditor({
   const [weekStart, setWeekStart] = useState(() => startOfWeek(dateFromKey(initialKey)))
   const [dates, setDates] = useState<Set<string>>(() => new Set(defaultDate ? [defaultDate] : []))
   const [times, setTimes] = useState<Set<string>>(() => new Set())
+  const [groupType, setGroupType] = useState<CoachOfferingGroup>('grupal')
   const [hoursModalOpen, setHoursModalOpen] = useState(false)
   const [infoOpen, setInfoOpen] = useState(false)
 
@@ -93,6 +100,7 @@ export default function ScheduleHoursEditor({
   const addForAll = mode === 'add' && coachOptions.length > 0 && !selectedCoachId
   const coachSelectionRequired = coachOptions.length > 0 && !selectedCoachId && mode === 'remove'
   const classesPerDay = times.size * (addForAll ? allCoaches.length : 1)
+  const totalSchedules = dates.size * classesPerDay
   const canSubmit =
     dates.size > 0 &&
     times.size > 0 &&
@@ -103,7 +111,14 @@ export default function ScheduleHoursEditor({
   const removalCount = existingOccurrenceCount(existingTimesByDate, dates, times)
 
   return (
-    <Sheet open onClose={onClose} label="Editar horas" keyboardAware fullBleedMobile>
+    <Sheet
+      open
+      onClose={onClose}
+      label="Editar horas"
+      keyboardAware
+      fullBleedMobile
+      showFooterClose={false}
+    >
       <div className="flex max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] w-full flex-col overflow-hidden sm:max-h-[min(calc(var(--sheet-viewport-height,100dvh)-2rem),44rem)]">
         <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-3 sm:px-0 sm:pb-0">
           <div>
@@ -324,9 +339,40 @@ export default function ScheduleHoursEditor({
 
           {/* Horas */}
           <div className="flex flex-col gap-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
-              Horas
-            </span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
+                Horas
+              </span>
+              {!isRemove && (
+                <fieldset className="flex rounded-full border border-[var(--c-border)] bg-[var(--c-bg)] p-0.5">
+                  <legend className="sr-only">Tipo de clase</legend>
+                  {(
+                    [
+                      ['particular', 'Particular'],
+                      ['grupal', 'Grupal'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <label
+                      key={value}
+                      className={`min-h-8 cursor-pointer content-center rounded-full px-3 text-xs font-bold transition-colors has-focus-visible:outline-2 has-focus-visible:outline-[var(--c-aqua-strong)] ${
+                        groupType === value
+                          ? 'bg-[var(--c-ocean)] text-white'
+                          : 'text-[var(--c-text-2)] hover:text-[var(--c-ocean)]'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="schedule-group-type"
+                        className="sr-only"
+                        checked={groupType === value}
+                        onChange={() => setGroupType(value)}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </fieldset>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {[...times].sort().map((time) => (
                 <button
@@ -362,54 +408,53 @@ export default function ScheduleHoursEditor({
 
         <div className="flex shrink-0 flex-col gap-2 bg-white px-4 pb-3 pt-4 sm:px-0 sm:pb-0">
           {error && <p className="text-sm font-semibold text-[var(--c-error,#b91c1c)]">{error}</p>}
-          {dates.size > 0 && times.size > 0 && (
+          {!isRemove && dates.size > 0 && times.size > 0 && (
             <p className="text-center text-sm font-semibold text-[var(--c-text-2)]">
-              {isRemove ? (
-                <span className="text-[var(--c-ocean)]">
-                  {removalCount}{' '}
-                  {removalCount === 1 ? 'horario seleccionado' : 'horarios seleccionados'}
-                </span>
-              ) : (
+              {dates.size} {dates.size === 1 ? 'día' : 'días'} ·{' '}
+              {addForAll && (
                 <>
-                  {dates.size} {dates.size === 1 ? 'día' : 'días'} ·{' '}
-                  {addForAll && (
-                    <>
-                      {allCoaches.length}{' '}
-                      {allCoaches.length === 1
-                        ? coachSingular
-                        : terminology.schoolId
-                          ? terminology.coachPlural
-                          : 'coaches'}{' '}
-                      ·{' '}
-                    </>
-                  )}
-                  {classesPerDay} {classesPerDay === 1 ? 'clase' : 'clases'} por día ·{' '}
-                  <span className="text-[var(--c-ocean)]">
-                    {dates.size * classesPerDay} en total
-                  </span>
+                  {allCoaches.length}{' '}
+                  {allCoaches.length === 1
+                    ? coachSingular
+                    : terminology.schoolId
+                      ? terminology.coachPlural
+                      : 'coaches'}{' '}
+                  ·{' '}
                 </>
               )}
+              {classesPerDay} {classesPerDay === 1 ? 'clase' : 'clases'} por día ·{' '}
+              <span className="text-[var(--c-ocean)]">{totalSchedules} en total</span>
             </p>
           )}
-          <button
-            type="button"
-            disabled={!canSubmit}
-            onClick={() => onSubmit(mode, [...dates], [...times])}
-            className={`min-h-12 rounded-full font-bold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${
-              isRemove
-                ? 'bg-rose-500 hover:bg-rose-600'
-                : 'bg-[var(--c-aqua-strong)] hover:bg-[var(--c-ocean-mid)]'
-            }`}
-          >
-            {isRemove ? 'Quitar horarios' : 'Agregar horarios'}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 rounded-full px-4 text-sm font-bold text-[var(--c-text-2)] hover:text-[var(--c-ocean)]"
-          >
-            Cancelar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-12 rounded-full px-5 text-sm font-bold text-[var(--c-text-2)] hover:text-[var(--c-ocean)]"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={!canSubmit}
+              onClick={() => onSubmit(mode, [...dates], [...times], groupType)}
+              className={`min-h-12 flex-1 rounded-full font-bold text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${
+                isRemove
+                  ? 'bg-rose-500 hover:bg-rose-600'
+                  : 'bg-[var(--c-aqua-strong)] hover:bg-[var(--c-ocean-mid)]'
+              }`}
+            >
+              {!isRemove
+                ? totalSchedules > 0
+                  ? `Agregar ${totalSchedules} ${totalSchedules === 1 ? 'horario' : 'horarios'}`
+                  : 'Agregar horarios'
+                : removalCount === 1
+                  ? 'Quitar este horario'
+                  : removalCount > 1
+                    ? `Quitar estos ${removalCount} horarios`
+                    : 'Quitar horarios'}
+            </button>
+          </div>
         </div>
       </div>
       {hoursModalOpen && (

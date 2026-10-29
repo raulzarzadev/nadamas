@@ -1,5 +1,6 @@
 import type {
   CoachClassOffering,
+  CoachOfferingGroup,
   CoachOfferingSchedule,
   CoachPublic,
 } from '@/firebase/coaches/coach.model'
@@ -391,9 +392,12 @@ export function offeringWithHours(
   offering: CoachClassOffering,
   dates: string[],
   times: string[],
-  durationMinutes: number
+  durationMinutes: number,
+  // Per-hour class type. Omitted: keep the legacy behaviour (hours inherit the offering type).
+  groupType?: CoachOfferingGroup
 ): CoachClassOffering {
-  const schedules = resolveOfferingSchedules(offering)
+  const typeOf = (schedule: CoachOfferingSchedule) => schedule.groupType ?? offering.groupType
+  let schedules = resolveOfferingSchedules(offering)
     .filter(
       (schedule) =>
         scheduleIsOpen(schedule) ||
@@ -404,11 +408,27 @@ export function offeringWithHours(
     )
     .map((schedule) => ({ ...schedule }))
   for (const time of times) {
-    let schedule = schedules.find((s) => !scheduleIsOpen(s) && s.startTime === time)
+    if (groupType) {
+      // The same date and hour can't be both types: switching type moves those dates over.
+      for (const other of schedules) {
+        if (scheduleIsOpen(other) || other.startTime !== time || typeOf(other) === groupType)
+          continue
+        if (other.availabilityMode !== 'dates') continue
+        other.availableDates = (other.availableDates || []).filter((date) => !dates.includes(date))
+        other.days = dayLabelsFromDates(other.availableDates)
+      }
+      schedules = schedules.filter(
+        (s) => s.availabilityMode !== 'dates' || (s.availableDates?.length ?? 0) > 0
+      )
+    }
+    let schedule = schedules.find(
+      (s) => !scheduleIsOpen(s) && s.startTime === time && (!groupType || typeOf(s) === groupType)
+    )
     if (!schedule) {
       schedule = {
         id: crypto.randomUUID(),
         timeMode: 'fixed',
+        ...(groupType && groupType !== offering.groupType ? { groupType } : {}),
         startTime: time,
         endTime: addMinutes(time, durationMinutes),
         availabilityMode: 'dates',
