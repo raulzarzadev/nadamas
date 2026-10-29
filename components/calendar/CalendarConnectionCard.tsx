@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { FiCalendar, FiCheck, FiCopy, FiExternalLink, FiRefreshCw, FiTrash2 } from 'react-icons/fi'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { FiCalendar, FiCheck, FiCopy, FiExternalLink, FiTrash2 } from 'react-icons/fi'
+import Sheet from '@/components/ui/sheet'
 import { deleteAuthed, getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 
@@ -102,7 +103,6 @@ export default function CalendarConnectionCard({
       setConnection(payload)
       setSelectedOffsets(payload.reminderOffsets)
       setStatus('idle')
-      setMessage('Enlace listo. Abre tu aplicación de calendario para completar la suscripción.')
     } catch {
       setStatus('error')
       setMessage('No se pudo actualizar. Intenta de nuevo.')
@@ -141,60 +141,87 @@ export default function CalendarConnectionCard({
     }
   }
 
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const autoCreated = useRef(false)
+  // Embedded (already inside a sheet/panel) shows the options right away; the private link is
+  // created on first view so the calendar links are ready to tap.
+  const optionsVisible = embedded || sheetOpen
+  // biome-ignore lint/correctness/useExhaustiveDependencies: create the link once when options open.
+  useEffect(() => {
+    if (!optionsVisible || status !== 'idle' || connection.connected || autoCreated.current) return
+    // Only once: after "Desligar" the link stays off until the user opens this again.
+    autoCreated.current = true
+    void save()
+  }, [optionsVisible, status])
+
   const busy = status === 'loading' || status === 'saving'
-  const title =
-    calendarRole === 'coach' ? 'Calendario de clases con alumnos' : 'Calendario de mis clases'
-  const body =
+  const hint =
     calendarRole === 'coach'
-      ? 'Sincroniza solo tus clases reales con alumnos asignados.'
-      : 'Suscríbete una vez: las clases nuevas y los cambios de horario aparecerán en tu calendario cuando se actualice.'
+      ? 'Tus clases con alumnos se mostrarán en tu app de calendario favorita.'
+      : 'Tus clases agendadas se mostrarán en tu app de calendario favorita.'
+  const chipClass = (selected: boolean) =>
+    `rounded-full border px-3 py-1.5 text-sm font-bold transition disabled:opacity-60 ${
+      selected
+        ? 'border-(--c-aqua) bg-(--c-aqua-light) text-(--c-ocean)'
+        : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'
+    }`
+  const linkClass =
+    'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface) disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]'
 
-  return (
-    <section
-      id={embedded ? undefined : 'calendar'}
-      className={`rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 ${
-        embedded ? 'shadow-none' : 'scroll-mt-24 shadow-[var(--shadow-sm)]'
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
-          <FiCalendar aria-hidden="true" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-bold text-(--c-ocean)">{title}</h2>
-            {connection.connected && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-(--c-border) bg-(--c-surface) px-2 py-0.5 text-xs font-bold text-(--c-aqua-strong)">
-                <FiCheck aria-hidden="true" size={12} />
-                Enlace activo
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-sm text-(--c-text-2)">{body}</p>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">Recordatorios</p>
+  const options = (
+    <div className="grid gap-5">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
+          Agrégalo a tu calendario
+        </p>
         <div className="mt-2 flex flex-wrap gap-2">
-          {REMINDER_OPTIONS.map((option) => {
-            const selected = selectedOffsets.includes(option.value)
-            return (
+          {links ? (
+            <>
+              {isAppleCalendarPlatform && (
+                <a href={links.apple} className={linkClass}>
+                  Apple
+                  <FiExternalLink aria-hidden="true" />
+                </a>
+              )}
+              <a href={links.google} target="_blank" rel="noreferrer" className={linkClass}>
+                Google
+                <FiExternalLink aria-hidden="true" />
+              </a>
+              <a href={links.outlook} target="_blank" rel="noreferrer" className={linkClass}>
+                Outlook
+                <FiExternalLink aria-hidden="true" />
+              </a>
               <button
-                key={option.value}
                 type="button"
                 disabled={busy}
-                onClick={() => toggleOffset(option.value)}
-                className={`rounded-full border px-3 py-1.5 text-sm font-bold transition disabled:opacity-60 ${
-                  selected
-                    ? 'border-(--c-aqua) bg-(--c-aqua-light) text-(--c-ocean)'
-                    : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'
-                }`}
+                onClick={() => void copyLink()}
+                className={linkClass}
               >
-                {option.label}
+                <FiCopy aria-hidden="true" />
+                Copiar link
               </button>
+            </>
+          ) : (
+            status !== 'error' && (
+              <output className="text-sm text-(--c-text-2)">Preparando tu calendario…</output>
             )
-          })}
+          )}
+        </div>
+      </div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-wide text-(--c-text-2)">Recordatorios</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {REMINDER_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              disabled={busy}
+              onClick={() => toggleOffset(option.value)}
+              className={chipClass(selectedOffsets.includes(option.value))}
+            >
+              {option.label}
+            </button>
+          ))}
           <button
             type="button"
             disabled={busy}
@@ -202,123 +229,70 @@ export default function CalendarConnectionCard({
               setSelectedOffsets([])
               if (connection.connected) void save([])
             }}
-            className={`rounded-full border px-3 py-1.5 text-sm font-bold transition disabled:opacity-60 ${
-              selectedOffsets.length === 0
-                ? 'border-(--c-aqua) bg-(--c-aqua-light) text-(--c-ocean)'
-                : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'
-            }`}
+            className={chipClass(selectedOffsets.length === 0)}
           >
             Ninguno
           </button>
         </div>
       </div>
-
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        {!connection.connected ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void save()}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] bg-(--c-ocean) px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60"
-          >
-            <FiCalendar aria-hidden="true" />
-            Crear enlace de suscripción
-          </button>
-        ) : (
-          <>
-            {links && (
-              <>
-                {isAppleCalendarPlatform ? (
-                  <a
-                    href={links.apple}
-                    className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                  >
-                    Apple / iOS
-                    <FiExternalLink aria-hidden="true" />
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="inline-flex min-h-11 cursor-not-allowed items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-(--c-surface) px-4 py-2.5 text-sm font-bold text-(--c-text-2) opacity-70"
-                  >
-                    Apple / iOS no disponible
-                  </button>
-                )}
-                <a
-                  href={links.google}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                >
-                  Google
-                  <FiExternalLink aria-hidden="true" />
-                </a>
-                <a
-                  href={links.outlook}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-                >
-                  Outlook
-                  <FiExternalLink aria-hidden="true" />
-                </a>
-              </>
-            )}
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void copyLink()}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition hover:bg-(--c-surface) disabled:opacity-60"
-            >
-              <FiCopy aria-hidden="true" />
-              Copiar link
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void save()}
-              aria-label="Actualizar calendario"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-4 py-2.5 text-sm font-bold text-(--c-ocean) transition hover:bg-(--c-surface) disabled:opacity-60"
-            >
-              <FiRefreshCw aria-hidden="true" />
-              Actualizar
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void disconnect()}
-              aria-label="Desligar calendario"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--rose-bd) bg-white px-4 py-2.5 text-sm font-bold text-(--rose-tx) transition hover:bg-(--rose-bg) disabled:opacity-60"
-            >
-              <FiTrash2 aria-hidden="true" />
-              Desligar
-            </button>
-          </>
-        )}
-      </div>
-
-      <p className="mt-3 text-sm text-(--c-text-2)">
-        Elige Apple, Google u Outlook y confirma la suscripción. También puedes copiar el enlace y
-        añadirlo como calendario por URL. Importar un archivo .ics solo guarda una copia. La
-        actualización automática depende de tu aplicación y puede tardar varias horas. En Google
-        Calendar, añade la suscripción desde su versión web.
-      </p>
-      {connection.connected && (
-        <p className="mt-2 text-xs text-(--c-text-2)">
-          Tu enlace es privado: quien lo tenga podrá ver tus clases. Desligar desactiva el enlace;
-          elimina también el calendario de tu aplicación si ya no quieres verlo.
-        </p>
-      )}
-
       {message && (
         <p
           role="status"
-          className={`mt-3 text-sm ${status === 'error' ? 'text-red-600' : 'text-(--c-text-2)'}`}
+          className={`text-sm ${status === 'error' ? 'text-red-600' : 'text-(--c-text-2)'}`}
         >
           {message}
         </p>
       )}
+      {connection.connected && (
+        <div className="grid gap-3 border-t border-(--c-border) pt-4">
+          <p className="text-xs text-(--c-text-2)">
+            Tu enlace es privado: quien lo tenga podrá ver tus clases. Tu app de calendario lo
+            actualiza sola y puede tardar unas horas.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void disconnect()}
+            aria-label="Desligar calendario"
+            className="inline-flex min-h-11 w-fit cursor-pointer items-center justify-center gap-2 rounded-[var(--r-sm)] border border-(--rose-bd) bg-white px-4 py-2.5 text-sm font-bold text-(--rose-tx) transition hover:bg-(--rose-bg) disabled:opacity-60"
+          >
+            <FiTrash2 aria-hidden="true" />
+            Desligar
+          </button>
+        </div>
+      )}
+    </div>
+  )
+
+  if (embedded) return options
+
+  return (
+    <section
+      id="calendar"
+      aria-label="Calendario"
+      className="scroll-mt-24 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)]"
+    >
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => {
+          autoCreated.current = false
+          setSheetOpen(true)
+        }}
+        className="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-5 py-3 text-sm font-bold text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
+      >
+        {connection.connected ? <FiCheck aria-hidden="true" /> : <FiCalendar aria-hidden="true" />}
+        Suscribirme al calendario
+      </button>
+      <p className="mt-2 text-center text-xs text-(--c-text-2)">{hint}</p>
+      <Sheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        label="Suscribirme al calendario"
+        size="lg"
+      >
+        {options}
+      </Sheet>
     </section>
   )
 }
