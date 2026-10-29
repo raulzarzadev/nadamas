@@ -26,6 +26,7 @@ const SCHOOL_ROUTES = new Set([
   'payments',
   'settings',
   'subscription',
+  'setup',
 ])
 const COACH_ROUTES = new Set([
   'training',

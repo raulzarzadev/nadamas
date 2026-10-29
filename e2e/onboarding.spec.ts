@@ -154,10 +154,11 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(page.getByText('1/5 pasos completos', { exact: true })).toBeVisible()
     await expect(page.getByText('Prueba gratuita', { exact: true })).toHaveCount(0)
     await expect(page.getByText(/Gratuita · quedan 15 días/)).toBeVisible()
-    const setupDetails = page.locator('#school-setup-steps')
-    await expect(setupDetails).toHaveJSProperty('open', false)
-    await setupDetails.locator('summary').click()
-    await expect(setupDetails).toHaveJSProperty('open', true)
+    await expect(page.locator('#school-setup-steps')).toHaveCount(0)
+    await expect(page.getByRole('link', { name: /^Inicia tu escuela/ })).toHaveAttribute(
+      'href',
+      '/school/setup'
+    )
     await expect(
       page
         .getByRole('navigation', { name: 'Administrar escuela', exact: true })
@@ -245,10 +246,15 @@ test('first login configures combined profiles, persists choices and keeps admin
     expect(
       (await setupSnapshot()).steps.every((step: { complete: boolean }) => step.complete)
     ).toBe(true)
+    await page.getByRole('link', { name: /^Inicia tu escuela/ }).click()
+    await page.waitForURL(/\/school\/setup$/, { timeout: 15000 })
+    await expect(
+      page.getByRole('heading', { name: 'Inicia tu escuela', exact: true })
+    ).toBeVisible()
     await page.getByRole('button', { name: 'Actualizar', exact: true }).click()
     await expect(page.getByText('5/5 pasos completos', { exact: true })).toBeVisible()
-    await setupDetails.locator('summary').click()
-    await expect(setupDetails).toHaveJSProperty('open', false)
+    await page.getByRole('link', { name: 'Volver a Inicio', exact: true }).click()
+    await expect(page).toHaveURL(/\/school$/)
     await page.setViewportSize({ width: 320, height: 900 })
     await expect(
       page.locator('[data-app-tabbar]').getByRole('link', { name: 'Inicio', exact: true })
@@ -263,6 +269,9 @@ test('first login configures combined profiles, persists choices and keeps admin
     ).toBeVisible()
     await page.evaluate(() => localStorage.setItem('nadamas.activeRole', 'school'))
     await page.getByRole('link', { name: 'Ir a escuela', exact: true }).click()
+    await page.waitForURL((url) => url.pathname === `/school/${createdSchool.slug}`, {
+      timeout: 15000,
+    })
     await page.setViewportSize({ width: 1440, height: 1000 })
     await expect(page.locator('[data-app-sidebar]')).toBeVisible()
     await expect(

@@ -2,10 +2,10 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import {
+  FiArrowLeft,
   FiArrowRight,
   FiCheck,
   FiCheckCircle,
-  FiChevronDown,
   FiCreditCard,
   FiDollarSign,
   FiRefreshCw,
@@ -21,7 +21,7 @@ import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
 import { useSchoolSelection } from './useSchoolSelection'
 
-export default function SchoolSetupHome() {
+export default function SchoolSetupHome({ view = 'home' }: { view?: 'home' | 'steps' }) {
   const { selected, selectedId, schools, status, selectSchool } = useSchoolSelection()
   if (status === 'loading')
     return <output className="block p-5 text-sm">Cargando tu escuela…</output>
@@ -35,11 +35,11 @@ export default function SchoolSetupHome() {
   return (
     <div className="grid gap-4">
       <SchoolSelector schools={schools} selectedId={selectedId} onChange={selectSchool} />
-      <SetupChecklist key={selectedId} schoolId={selectedId} />
+      <SetupChecklist key={selectedId} schoolId={selectedId} view={view} />
     </div>
   )
 }
-function SetupChecklist({ schoolId }: { schoolId: string }) {
+function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | 'steps' }) {
   const endpoint = `/api/schools/${encodeURIComponent(schoolId)}/setup`
   const [data, setData] = useState(() => getCachedAuthedData<SchoolSetupSnapshot>(endpoint))
   const [loading, setLoading] = useState(!data)
@@ -83,61 +83,27 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
     )
   const completed = data.steps.filter((step) => step.complete).length
   const next = data.steps.find((step) => !step.complete)
-  return (
-    <section
-      aria-labelledby="school-home-title"
-      className="overflow-hidden rounded-2xl border border-(--c-border) bg-white"
-    >
-      <h1 id="school-home-title" className="sr-only">
-        Inicio de {data.schoolName}
-      </h1>
-      <nav
-        aria-label="Administrar escuela"
-        className="grid gap-3 border-b border-(--c-border) p-5 sm:grid-cols-3 sm:px-7"
+  if (view === 'steps')
+    return (
+      <section
+        aria-labelledby="school-steps-title"
+        className="overflow-hidden rounded-2xl border border-(--c-border) bg-white"
       >
-        <Link
-          href="/school/subscription"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiCreditCard aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">
-            <span className="block">Suscripción</span>
-            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
-              {schoolSubscriptionHint(data.subscription, now)}
-            </span>
-          </span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-        <Link
-          href="/school/payments"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiDollarSign aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">Planes y pagos</span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-        <Link
-          href="/school/settings"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiSettings aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">Configuración</span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-      </nav>
-      <details id="school-setup-steps" className="group border-b border-(--c-border)">
-        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 p-5 focus-visible:outline-2 focus-visible:-outline-offset-2 sm:px-7 [&::-webkit-details-marker]:hidden">
-          <span className="min-w-0 flex-1">
-            <span className="block font-bold">Inicia tu escuela</span>
-            <span className="mt-1 block text-sm text-(--c-text-2)">
-              {completed}/{data.steps.length} pasos completos
-            </span>
-          </span>
-          <FiChevronDown
-            aria-hidden="true"
-            className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
-          />
-        </summary>
+        <div className="p-5 sm:px-7">
+          <Link
+            href="/school"
+            className="inline-flex min-h-11 items-center gap-2 text-sm font-bold underline"
+          >
+            <FiArrowLeft aria-hidden="true" />
+            Volver a Inicio
+          </Link>
+          <h1 id="school-steps-title" className="mt-3 text-2xl font-extrabold">
+            Inicia tu escuela
+          </h1>
+          <p className="mt-2 text-sm text-(--c-text-2)">
+            {completed}/{data.steps.length} pasos completos
+          </p>
+        </div>
         <div className="px-5 pb-5 sm:px-7">
           <p className="text-sm text-(--c-text-2)">
             {next
@@ -201,7 +167,63 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
             </li>
           ))}
         </ol>
-      </details>
+      </section>
+    )
+  return (
+    <section
+      aria-labelledby="school-home-title"
+      className="overflow-hidden rounded-2xl border border-(--c-border) bg-white"
+    >
+      <h1 id="school-home-title" className="sr-only">
+        Inicio de {data.schoolName}
+      </h1>
+      <nav
+        aria-label="Administrar escuela"
+        className="grid gap-3 border-b border-(--c-border) p-5 sm:grid-cols-2 sm:px-7"
+      >
+        <Link
+          href="/school/subscription"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiCreditCard aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block">Suscripción</span>
+            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
+              {schoolSubscriptionHint(data.subscription, now)}
+            </span>
+          </span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+        <Link
+          href="/school/payments"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiDollarSign aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">Planes y pagos</span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+        <Link
+          href="/school/settings"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiSettings aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">Configuración</span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+        <Link
+          href="/school/setup"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiCheckCircle aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block">Inicia tu escuela</span>
+            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
+              {completed}/{data.steps.length} pasos completos
+            </span>
+          </span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+      </nav>
       <div className="flex flex-wrap items-center gap-4 border-t border-(--c-border) bg-(--c-surface) p-5 sm:px-7">
         <FiCheckCircle aria-hidden="true" />
         <Link

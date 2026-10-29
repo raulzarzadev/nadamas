@@ -201,6 +201,7 @@ export default function AppNav({
           '/school/settings',
           '/school/subscription',
           '/school/create',
+          '/school/setup',
         ].includes(pathname)
       : pathname.startsWith(href)) ||
     (href === '/athlete/schedule' && pathname.startsWith('/athlete/search'))
