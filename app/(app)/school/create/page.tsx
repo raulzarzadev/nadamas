@@ -278,7 +278,7 @@ export default function CreateSchoolPage() {
             <span className="shrink-0">.nadamas.app</span>
           </span>
           <span className="font-normal text-(--c-text-2)">
-            También será la base de tu subdominio.
+            Este será el dominio que podrás compartir en redes sociales y enlaces.
           </span>
         </label>
 
