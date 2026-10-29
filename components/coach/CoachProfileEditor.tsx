@@ -1,10 +1,9 @@
 'use client'
 import CalendarConnectionButton from '@comps/calendar/CalendarConnectionButton'
+import CoachBioCard from '@comps/coach/CoachBioCard'
 import LinksCard from '@comps/coach/LinksCard'
-import MediaCard from '@comps/coach/MediaCard'
 import PersonalDataCard from '@comps/coach/PersonalDataCard'
 import ScoreCard from '@comps/coach/ScoreCard'
-import SkillsCard from '@comps/coach/SkillsCard'
 import Loading from '@comps/Loading'
 import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import Link from 'next/link'
@@ -17,7 +16,8 @@ import { postAuthed } from '@/lib/client/authed-api'
 import { coachMissingItems } from '@/lib/coach-completeness'
 import { computeAutoScore } from '@/lib/coach-score'
 
-export default function CoachProfileEditor() {
+// embedded: rendered inside /profile's Entrenador tab, which already has the title and the athlete switch.
+export default function CoachProfileEditor({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useUser() as {
     user:
       | {
@@ -167,66 +167,65 @@ export default function CoachProfileEditor() {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-extrabold sm:text-3xl">Mi perfil de coach</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-3">
-          <Link href="/profile" className="min-h-11 text-sm font-semibold underline">
-            Perfil de atleta
-          </Link>
-          <CalendarConnectionButton calendarRole="coach" />
-        </div>
-      </header>
+      {!embedded && (
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-2xl font-extrabold sm:text-3xl">Mi perfil de coach</h1>
+          <div className="ml-auto flex flex-wrap items-center gap-3">
+            <Link href="/profile" className="min-h-11 text-sm font-semibold underline">
+              Perfil de atleta
+            </Link>
+            <CalendarConnectionButton calendarRole="coach" />
+          </div>
+        </header>
+      )}
 
-      <ScoreCard
-        verification={pubVal.verification}
-        identityStatus={identityVerification?.status}
-        missingItems={missingItems}
-        onRequestVerification={requestVerification}
-        requesting={requestingVerification}
-        requestError={verificationRequestError}
-        visible={pubVal.publicProfileVisible === true}
-        togglingVisible={savingSection === 'visibility'}
-        onToggleVisible={(next) => savePublic('visibility', { publicProfileVisible: next })}
-      />
+      {embedded && (
+        <CoachBioCard
+          value={pubVal.bio}
+          saving={savingSection === 'bio'}
+          onSave={(bio) => savePublic('bio', { bio })}
+        />
+      )}
 
-      <PublicLinkEditor profileKind="coach" />
+      {/* /profile's Entrenador tab only shows the bio; the full editor stays at /coach/coach-profile. */}
+      {!embedded && (
+        <>
+          <ScoreCard
+            verification={pubVal.verification}
+            identityStatus={identityVerification?.status}
+            missingItems={missingItems}
+            onRequestVerification={requestVerification}
+            requesting={requestingVerification}
+            requestError={verificationRequestError}
+            visible={pubVal.publicProfileVisible === true}
+            togglingVisible={savingSection === 'visibility'}
+            onToggleVisible={(next) => savePublic('visibility', { publicProfileVisible: next })}
+          />
 
-      <ClassEvaluationList privateView />
+          <PublicLinkEditor profileKind="coach" />
 
-      <PersonalDataCard
-        uid={uid}
-        identityValue={{ identityVerification: privVal.identityVerification }}
-        savingIdentity={savingSection === 'private'}
-        onSaveIdentity={(v) => savePrivate('private', v)}
-      />
+          <ClassEvaluationList privateView />
 
-      <LinksCard
-        value={{
-          bio: pubVal.bio,
-          publicLinks: pubVal.publicLinks,
-          socials: pubVal.socials,
-        }}
-        saving={savingSection === 'links'}
-        onSave={(v) => savePublic('links', v)}
-      />
+          <PersonalDataCard
+            uid={uid}
+            identityValue={{ identityVerification: privVal.identityVerification }}
+            savingIdentity={savingSection === 'private'}
+            onSaveIdentity={(v) => savePrivate('private', v)}
+          />
 
-      <SkillsCard
-        value={pubVal.metrics}
-        saving={savingSection === 'metrics'}
-        onSave={(metrics) => savePublic('metrics', { metrics })}
-      />
+          <LinksCard
+            value={{
+              bio: pubVal.bio,
+              publicLinks: pubVal.publicLinks,
+              socials: pubVal.socials,
+            }}
+            saving={savingSection === 'links'}
+            onSave={(v) => savePublic('links', v)}
+          />
+        </>
+      )}
 
-      <MediaCard
-        uid={uid}
-        value={{
-          galleryPhotos: pubVal.galleryPhotos,
-          facePhoto: pubVal.facePhoto,
-          workplacePhotos: pubVal.workplacePhotos,
-          achievementPhotos: pubVal.achievementPhotos,
-        }}
-        saving={savingSection === 'media'}
-        onSave={(v) => savePublic('media', v)}
-      />
+      {/* Galería and Carta de estilo are parked (components kept): docs/coach-profile-parked-sections.md */}
     </div>
   )
 }
