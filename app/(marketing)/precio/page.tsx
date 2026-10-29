@@ -5,7 +5,7 @@ import { NADAMAS_PRICING } from '@/lib/pricing'
 
 const BASIC_PRICE = `$${NADAMAS_PRICING.regularMonthly} ${NADAMAS_PRICING.currency}`
 const BASIC_LIMITS = `${NADAMAS_PRICING.basicLimits.teachers} profes y ${NADAMAS_PRICING.basicLimits.students} alumnos`
-const TRIAL = `Prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta para la primera escuela de cada propietario.`
+const TRIAL = `Prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta.`
 
 export const metadata: Metadata = {
   title: 'Precios · Suscripción por escuela',
@@ -74,7 +74,7 @@ export default function PricingPage() {
               {NADAMAS_PRICING.basicLimits.students} alumnos
             </p>
             <p className="mt-1 text-sm font-semibold text-(--c-aqua-strong)">
-              Prueba de {NADAMAS_PRICING.trialDays} días sin tarjeta para tu primera escuela.
+              Prueba de {NADAMAS_PRICING.trialDays} días sin tarjeta.
             </p>
           </div>
 

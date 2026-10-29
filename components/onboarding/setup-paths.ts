@@ -99,7 +99,7 @@ export function setupPaths(input: OnboardingInput): SetupPath[] {
       actions: [
         {
           title: 'Crear mi escuela',
-          description: `La primera escuela de su propietario tiene ${NADAMAS_PRICING.trialDays} días de prueba.`,
+          description: `Prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta.`,
           href: '/school/create',
           role: 'school',
         },

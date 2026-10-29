@@ -34,7 +34,7 @@ export default function PricingTeaser() {
           <p className="mt-6 text-base text-[#d0e7ef]">
             Hasta {NADAMAS_PRICING.basicLimits.teachers} profes y{' '}
             {NADAMAS_PRICING.basicLimits.students} alumnos. Prueba de {NADAMAS_PRICING.trialDays}{' '}
-            días sin tarjeta para la primera escuela de cada propietario.
+            días sin tarjeta.
           </p>
           <p className="mt-1 flex items-baseline gap-3">
             <span className="text-6xl font-extrabold tracking-tight sm:text-7xl">
