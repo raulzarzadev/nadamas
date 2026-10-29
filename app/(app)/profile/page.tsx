@@ -1,6 +1,5 @@
 'use client'
 import { TextField } from '@comps/Inputs/FormFields'
-import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import SaveButton from '@comps/SaveButton'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -10,7 +9,9 @@ import CoachProfileEditor from '@/components/coach/CoachProfileEditor'
 import AdditionalProfiles from '@/components/profile/AdditionalProfiles'
 import AthleteCredentialButton from '@/components/profile/AthleteCredentialButton'
 import MarketingPreference from '@/components/profile/MarketingPreference'
+import ProfileBioCard from '@/components/profile/ProfileBioCard'
 import ProfileShareActions from '@/components/profile/ProfileShareActions'
+import DateInput from '@/components/ui/date-input'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
 import { useAutosave } from '@/hooks/useAutosave'
@@ -18,6 +19,7 @@ import { patchAuthed } from '@/lib/client/authed-api'
 
 interface ProfileUser {
   athleteBio?: string
+  birthDate?: string | null
   displayName?: string
   email?: string
   firstName?: string
@@ -43,6 +45,7 @@ export default function ProfilePage() {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [athleteBio, setAthleteBio] = useState('')
+  const [birthDate, setBirthDate] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [message, setMessage] = useState<string | null>(null)
   const [editingPersonal, setEditingPersonal] = useState(false)
@@ -57,10 +60,11 @@ export default function ProfilePage() {
     setFirstName((current) => current || user.firstName || '')
     setLastName((current) => current || user.lastName || '')
     setAthleteBio((current) => current || user.athleteBio || '')
+    setBirthDate((current) => current || user.birthDate || '')
   }, [user])
 
   const { saveNow } = useAutosave(
-    JSON.stringify({ nickname, firstName, lastName, athleteBio }),
+    JSON.stringify({ nickname, firstName, lastName, athleteBio, birthDate }),
     () => void save(),
     { enabled: !!user && !!nickname.trim() }
   )
@@ -82,6 +86,7 @@ export default function ProfilePage() {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         athleteBio: athleteBio.trim(),
+        birthDate,
       })
       await refreshUser?.()
       setStatus('saved')
@@ -152,6 +157,16 @@ export default function ProfilePage() {
             <dd className="truncate font-semibold">
               {[firstName, lastName].filter((part) => part.trim()).join(' ') || '—'}
             </dd>
+            <dt className="text-(--c-text-2)">Nacimiento</dt>
+            <dd className="truncate font-semibold">
+              {birthDate
+                ? new Date(`${birthDate}T12:00:00`).toLocaleDateString('es-MX', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })
+                : '—'}
+            </dd>
           </dl>
         )}
 
@@ -178,6 +193,13 @@ export default function ProfilePage() {
               onChange={(event) => setLastName(event.target.value)}
               placeholder="Escribe tus apellido(s)"
               autoComplete="family-name"
+            />
+
+            <DateInput
+              label="Fecha de nacimiento"
+              value={birthDate}
+              onChange={setBirthDate}
+              max={new Date().toISOString().slice(0, 10)}
             />
 
             {message && (
@@ -232,25 +254,17 @@ export default function ProfilePage() {
         <CoachProfileEditor embedded />
       ) : (
         <>
-          <section
-            aria-labelledby="athlete-profile"
-            className="bg-white px-4 py-5 sm:rounded-[var(--r-md)] sm:border sm:border-[var(--c-border)] sm:p-6 sm:shadow-[var(--shadow-sm)] flex flex-col gap-4"
-          >
-            <label className="flex flex-col gap-3 text-[var(--c-ocean)]">
-              <span id="athlete-profile" className="text-lg font-bold">
-                Bio del atleta
-              </span>
-              <textarea
-                value={athleteBio}
-                onChange={(event) => setAthleteBio(event.target.value)}
-                placeholder="Una línea sobre ti como nadador (se muestra en tu perfil público)."
-                rows={3}
-                maxLength={280}
-                className="rounded-[var(--r-sm)] border border-[var(--c-border)] bg-white px-3 py-2 font-normal text-[var(--c-ocean)] outline-none transition focus:border-[var(--c-aqua)] focus:ring-4 focus:ring-[rgba(0,180,216,0.16)]"
-              />
-            </label>
-          </section>
-          <PublicLinkEditor />
+          <ProfileBioCard
+            id="athlete-bio-title"
+            title="Bio del atleta"
+            value={athleteBio}
+            onChange={setAthleteBio}
+            maxLength={280}
+            placeholder="Una línea sobre ti como nadador (se muestra en tu perfil público)."
+            status={status}
+            onSaveNow={saveNow}
+          />
+          {/* Tu enlace público (PublicLinkEditor) hidden for now; Compartir perfil still uses the saved slug. */}
         </>
       )}
 
