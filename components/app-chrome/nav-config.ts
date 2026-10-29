@@ -31,6 +31,12 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   ],
   admin: [
     { href: '/admin/home', label: 'Resumen', mobileLabel: 'Resumen', icon: 'home' },
+    {
+      href: '/admin/app-map',
+      label: 'Mapa de la app',
+      mobileLabel: 'Mapa de la app',
+      icon: 'chart',
+    },
     { href: '/admin/schools', label: 'Escuelas', mobileLabel: 'Escuelas', icon: 'users' },
     { href: '/admin/people', label: 'Personas', mobileLabel: 'Personas', icon: 'users' },
     {
