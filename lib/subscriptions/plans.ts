@@ -28,6 +28,8 @@ export type SeatStudent = {
   status?: string
   studentUserId?: string
   additionalProfileId?: string
+  guardianIds?: string[]
+  managerIds?: string[]
 }
 
 export function schoolPlanLimits(sub: SchoolSubscription | null): SchoolPlanLimits {
@@ -52,14 +54,20 @@ export function seatKeys(input: { memberships: SeatMembership[]; students: SeatS
 } {
   const teachers = new Set<string>()
   const students = new Set<string>()
+  // A guardian's own `student` membership is not a seat: a parent with 3 children counts 3.
+  const guardians = new Set<string>()
+  const ownRoster = new Set<string>()
   for (const s of input.students) {
+    if (s.studentUserId) ownRoster.add(s.studentUserId)
     if (s.status !== 'active') continue
     students.add(s.studentUserId || s.additionalProfileId || s.id)
+    for (const id of [...(s.guardianIds ?? []), ...(s.managerIds ?? [])]) guardians.add(id)
   }
   for (const m of input.memberships) {
     if (m.status !== 'active') continue
     const roles = rolesOf(m)
-    if (roles.includes('student')) students.add(m.userId)
+    const guardianOnly = guardians.has(m.userId) && !ownRoster.has(m.userId)
+    if (roles.includes('student') && !guardianOnly) students.add(m.userId)
     if (roles.includes('teacher') && !roles.includes('director')) teachers.add(m.userId)
   }
   return { teachers, students }

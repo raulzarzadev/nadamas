@@ -50,6 +50,20 @@ test('counts each swimmer once', () => {
   expect(seatUsage(keys).students).toBe(4)
 })
 
+test('a guardian membership is not a seat; a self-enrolled member is', () => {
+  const child = (id: string) => ({ id, status: 'active', guardianIds: ['parent'] })
+  const guardian = seatKeys({
+    students: [child('c1'), child('c2'), { ...child('c3'), managerIds: ['parent'] }],
+    memberships: [{ userId: 'parent', status: 'active', roles: ['student'] }],
+  })
+  expect(seatUsage(guardian).students).toBe(3)
+  const self = seatKeys({
+    students: [],
+    memberships: [{ userId: 'swimmer', status: 'active', roles: ['student'] }],
+  })
+  expect(seatUsage(self).students).toBe(1)
+})
+
 test('teachers exclude directors and inactive', () => {
   const keys = seatKeys({
     students: [],

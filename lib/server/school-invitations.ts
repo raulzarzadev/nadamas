@@ -345,6 +345,8 @@ export async function acceptSchoolInvitation(args: {
           status: 'active',
           studentUserId: target.isSelf ? args.caller.uid : '',
           additionalProfileId: target.profile?.id || '',
+          managerIds: target.isSelf ? [] : [args.caller.uid],
+          guardianIds: target.isSelf ? [] : [args.caller.uid],
         })),
       })
       transaction.set(membershipRef, memberUpdate, { merge: true })

@@ -1,5 +1,5 @@
 import { assertSchoolSubscriptionAccess } from './subscriptions/access'
-import { reserveSchoolSeat, reserveSchoolSeatChanges } from './subscriptions/seats'
+import { reserveSchoolSeatChanges } from './subscriptions/seats'
 import 'server-only'
 
 import {
@@ -246,9 +246,9 @@ export async function getOrRestoreSchoolAgendaStudent(schoolId: string, studentI
       const student = { ...current.data(), id: current.id } as SchoolStudent
       return student.schoolId === schoolId ? student : null
     }
-    const seat = await reserveSchoolSeat(tx, schoolId, 'student', studentId)
+    // No seat reservation: this restores a participant the school already had (legacy agenda
+    // booking) and runs on read endpoints (history, tags), which must never fail on the limit.
     tx.set(ref, restored)
-    seat.claim()
     return restored
   })
 }

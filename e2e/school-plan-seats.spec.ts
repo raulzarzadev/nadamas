@@ -1,5 +1,6 @@
 import './admin-emulator-env'
-import { expect, test } from '@playwright/test'
+import { createHash } from 'node:crypto'
+import { type APIRequestContext, expect, test } from '@playwright/test'
 import { adminDb as db } from '../lib/server/firebase-admin'
 import * as seats from '../lib/server/subscriptions/seats'
 
@@ -182,7 +183,7 @@ async function signup() {
     }
   )
   expect(response.ok).toBe(true)
-  return (await response.json()) as { localId: string; idToken: string }
+  return (await response.json()) as { localId: string; idToken: string; email: string }
 }
 
 async function seedDirectorSchool(students: number) {
@@ -215,6 +216,10 @@ async function cleanupSchool(schoolId: string) {
     .where('schoolId', '==', schoolId)
     .get()
   for (const doc of requests.docs) writer.delete(doc.ref)
+  for (const collection of ['schoolInvitations', 'schoolProfiles']) {
+    const docs = await db.collection(collection).where('schoolId', '==', schoolId).get()
+    for (const doc of docs.docs) writer.delete(doc.ref)
+  }
   writer.delete(db.collection('schools').doc(schoolId))
   await writer.close()
 }
@@ -327,6 +332,74 @@ test('reactivating a suspended student at 100/100 is blocked', async ({ request 
       ).data()?.status
     ).toBe('pending')
   } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+async function seedParentInvitation(schoolId: string) {
+  const parent = await signup()
+  const token = crypto.randomUUID()
+  const childRef = db.collection('additionalProfiles').doc()
+  await childRef.set({
+    ownerId: parent.localId,
+    name: 'Hijo',
+    birthDate: '2015-01-01',
+    gender: 'otro',
+  })
+  await db
+    .collection('schoolInvitations')
+    .doc()
+    .set({
+      schoolId,
+      email: parent.email.toLowerCase(),
+      role: 'student',
+      status: 'pending',
+      expiresAt: Date.now() + 86400000,
+      invitedBy: 'director',
+      // Same hash as hashInvitationToken (that module is server-only).
+      tokenHash: createHash('sha256').update(token).digest('hex'),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    })
+  return {
+    childId: childRef.id,
+    accept: (request: APIRequestContext, participantIds: string[]) =>
+      request.post(`/api/school-invitations/${token}`, {
+        headers: { authorization: `Bearer ${parent.idToken}` },
+        data: { participantIds },
+      }),
+    cleanup: () => childRef.delete(),
+  }
+}
+
+test('a parent enrolling their first child at 99/100 succeeds', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId } = await seedDirectorSchool(99)
+  const invitation = await seedParentInvitation(schoolId)
+  try {
+    const response = await invitation.accept(request, [invitation.childId])
+    expect(response.status(), await response.text()).toBe(200)
+    expect((await seats.readSchoolSeats(schoolId)).usage.students).toBe(100)
+  } finally {
+    await invitation.cleanup()
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('a write adding 2 new students at 99/100 is blocked', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId } = await seedDirectorSchool(99)
+  const invitation = await seedParentInvitation(schoolId)
+  try {
+    const response = await invitation.accept(request, ['self', invitation.childId])
+    expect(response.status(), await response.text()).toBe(409)
+    expect(await response.json()).toEqual({
+      code: 'plan_limit_reached',
+      error: BASIC_LIMIT_MESSAGE,
+    })
+    expect(await studentCount(schoolId)).toBe(99)
+  } finally {
+    await invitation.cleanup()
     await cleanupSchool(schoolId)
   }
 })

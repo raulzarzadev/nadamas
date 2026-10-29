@@ -28,7 +28,7 @@ async function readSeatDocs(schoolId: string, tx?: Transaction) {
   const studentsQuery = adminDb
     .collection('schoolStudents')
     .where('schoolId', '==', schoolId)
-    .select('status', 'studentUserId', 'additionalProfileId')
+    .select('status', 'studentUserId', 'additionalProfileId', 'guardianIds', 'managerIds')
   const [subscription, memberships, students] = tx
     ? await Promise.all([tx.get(subscriptionRef), tx.get(membershipsQuery), tx.get(studentsQuery)])
     : await Promise.all([subscriptionRef.get(), membershipsQuery.get(), studentsQuery.get()])
@@ -55,6 +55,17 @@ export async function readSchoolSeats(
   return { limits, usage: seatUsage(keys), keys }
 }
 
+const noClaim = { claim: () => {} }
+
+/** Reads the per-school lock (joining the transaction's read set); returns its write. */
+async function readSeatLock(tx: Transaction, schoolId: string) {
+  const lockRef = adminDb.collection('schoolSeatLocks').doc(schoolId)
+  await tx.get(lockRef)
+  return () => {
+    tx.set(lockRef, { schoolId, updatedAt: Date.now() }, { merge: true })
+  }
+}
+
 /**
  * Read-only reservation: call after the transaction's own reads, then call `claim()`
  * in its write phase. Every seat-adding transaction reads and writes the same
@@ -66,15 +77,12 @@ export async function reserveSchoolSeat(
   kind: SeatKind,
   key: string
 ): Promise<{ claim: () => void }> {
-  const lockRef = adminDb.collection('schoolSeatLocks').doc(schoolId)
-  await tx.get(lockRef)
+  const claim = await readSeatLock(tx, schoolId)
   const { limits, usage, keys } = await readSchoolSeats(schoolId, tx)
-  if ((kind === 'teacher' ? keys.teachers : keys.students).has(key)) return { claim: () => {} }
+  if ((kind === 'teacher' ? keys.teachers : keys.students).has(key)) return noClaim
   if (!hasSeat(limits, usage, kind))
     throw new SubscriptionError('plan_limit_reached', planLimitMessage(limits), 409)
-  return {
-    claim: () => tx.set(lockRef, { schoolId, updatedAt: Date.now() }, { merge: true }),
-  }
+  return { claim }
 }
 
 const withChanges = <T extends { id: string }>(current: T[], changes: T[] = []) => {
@@ -95,8 +103,7 @@ export async function reserveSchoolSeatChanges(
   kind: SeatKind,
   changes: { memberships?: SeatMembershipDoc[]; students?: SeatStudent[] }
 ): Promise<{ claim: () => void }> {
-  const lockRef = adminDb.collection('schoolSeatLocks').doc(schoolId)
-  await tx.get(lockRef)
+  const claim = await readSeatLock(tx, schoolId)
   const { limits, memberships, students } = await readSeatDocs(schoolId, tx)
   const pick = (keys: ReturnType<typeof seatKeys>) =>
     (kind === 'teacher' ? keys.teachers : keys.students).size
@@ -107,11 +114,9 @@ export async function reserveSchoolSeatChanges(
       students: withChanges(students, changes.students),
     })
   )
-  if (after <= before) return { claim: () => {} }
+  if (after <= before) return noClaim
   const limit = kind === 'teacher' ? limits.teachers : limits.students
   if (limit !== null && after > limit)
     throw new SubscriptionError('plan_limit_reached', planLimitMessage(limits), 409)
-  return {
-    claim: () => tx.set(lockRef, { schoolId, updatedAt: Date.now() }, { merge: true }),
-  }
+  return { claim }
 }
