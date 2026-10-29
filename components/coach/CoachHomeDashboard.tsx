@@ -5,7 +5,15 @@ import CoachOnboardingBanner from '@comps/coach/CoachOnboardingBanner'
 import Link from 'next/link'
 import type React from 'react'
 import { useEffect, useState } from 'react'
-import { FiCalendar, FiChevronRight, FiClock, FiShield, FiUsers } from 'react-icons/fi'
+import {
+  FiActivity,
+  FiCalendar,
+  FiChevronRight,
+  FiClock,
+  FiDollarSign,
+  FiShield,
+  FiUsers,
+} from 'react-icons/fi'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
@@ -14,22 +22,22 @@ import { capitalizeSchoolTerm } from '@/lib/school'
 
 const ACTION_CARDS = [
   {
-    href: '/coach/agenda',
-    title: 'Mis horarios',
-    body: 'Horarios publicados, clases agendadas y bloqueos.',
-    icon: FiCalendar,
-  },
-  {
-    href: '/coach/students',
-    title: 'Alumnos',
-    body: 'Tus nadadores y su progreso en un solo lugar.',
-    icon: FiUsers,
-  },
-  {
     href: '/coach/coach-profile',
     title: 'Mi perfil de coach',
     body: 'Especialidades, experiencia y verificación.',
     icon: FiShield,
+  },
+  {
+    href: '/coach/payments',
+    title: 'Planes y pagos',
+    body: 'Configura tus planes y revisa tus pagos.',
+    icon: FiDollarSign,
+  },
+  {
+    href: '/coach/training',
+    title: 'Entrenos',
+    body: 'Crea y organiza los entrenamientos de tus alumnos.',
+    icon: FiActivity,
   },
 ]
 

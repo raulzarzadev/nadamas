@@ -9,6 +9,7 @@ import {
   FiCalendar,
   FiChevronRight,
   FiClock,
+  FiDollarSign,
   FiSearch,
   FiTrendingUp,
   FiUsers,
@@ -20,16 +21,22 @@ import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/sto
 
 const ACTION_CARDS = [
   {
-    href: '/athlete/search-coaches',
-    title: 'Buscar coaches',
-    body: 'Encuentra un coach y consulta su perfil y horarios.',
-    icon: FiSearch,
+    href: '/athlete/payments',
+    title: 'Planes y pagos',
+    body: 'Consulta los planes de tus coaches y revisa tus pagos.',
+    icon: FiDollarSign,
   },
   {
     href: '/athlete/schedule',
     title: 'Horarios',
     body: 'Consulta horarios disponibles en tus escuelas y con coaches abiertos.',
     icon: FiCalendar,
+  },
+  {
+    href: '/athlete/search-coaches',
+    title: 'Buscar coaches',
+    body: 'Encuentra un coach y consulta su perfil y horarios.',
+    icon: FiSearch,
   },
   {
     href: '/athlete/progress',

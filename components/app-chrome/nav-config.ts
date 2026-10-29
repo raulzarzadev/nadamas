@@ -4,17 +4,7 @@ export interface NavLink {
   href: string
   label: string
   mobileLabel: string
-  icon:
-    | 'home'
-    | 'search'
-    | 'chart'
-    | 'calendar'
-    | 'users'
-    | 'badge'
-    | 'user'
-    | 'bell'
-    | 'payments'
-    | 'training'
+  icon: 'home' | 'search' | 'chart' | 'calendar' | 'users' | 'badge' | 'user' | 'bell' | 'training'
 }
 
 // Primary nav = the role-specific destinations shown as the sub-navbar directly
@@ -22,32 +12,14 @@ export interface NavLink {
 // actions, not frequent navigation.
 export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   athlete: [
-    {
-      href: '/athlete/payments',
-      label: 'Pagos y planes',
-      mobileLabel: 'Planes',
-      icon: 'payments',
-    },
-    { href: '/athlete/schedule', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
+    { href: '/athlete/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
     { href: '/athlete/training', label: 'Entrenos', mobileLabel: 'Entrenos', icon: 'training' },
     { href: '/athlete/progress', label: 'Progreso', mobileLabel: 'Progreso', icon: 'chart' },
   ],
   coach: [
-    {
-      href: '/coach/payments',
-      label: 'Pagos y planes',
-      mobileLabel: 'Planes',
-      icon: 'payments',
-    },
+    { href: '/coach/home', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
     { href: '/coach/agenda', label: 'Mis horarios', mobileLabel: 'Horarios', icon: 'calendar' },
-    { href: '/coach/training', label: 'Entreno', mobileLabel: 'Entreno', icon: 'training' },
     { href: '/coach/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
-    {
-      href: '/coach/coach-profile',
-      label: 'Perfil de coach',
-      mobileLabel: 'Perfil',
-      icon: 'badge',
-    },
   ],
   school: [
     { href: '/school', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
