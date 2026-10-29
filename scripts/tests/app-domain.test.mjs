@@ -122,3 +122,15 @@ test('Firebase helpers are reverse proxied and permit only same-origin framing',
   )
   assert.match(deny.source, /__\/auth/)
 })
+
+test('development login stays on localhost including its current port', () => {
+  assert.equal(routing.appLoginHref('development'), '/login')
+  for (const origin of [
+    'http://localhost:3000',
+    'http://127.0.0.1:3002',
+    'http://school.localhost:3100',
+  ]) {
+    assert.equal(new URL(routing.appLoginHref('development'), origin).origin, origin)
+  }
+  assert.equal(routing.appLoginHref('production'), 'https://app.nadamas.app/login')
+})
