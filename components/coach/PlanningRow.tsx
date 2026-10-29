@@ -17,10 +17,12 @@ export default function PlanningRow({
   id,
   indicatorLabel,
   leading,
+  dotLabel,
+  dotFilled = true,
 }: {
   title: string
-  count: number
-  countLabel: string
+  count?: number
+  countLabel?: string
   expanded: boolean
   onToggle?: () => void
   handle?: ReactNode
@@ -30,6 +32,10 @@ export default function PlanningRow({
   id?: string
   indicatorLabel?: string
   leading?: ReactNode
+  /** Green dot before the title (e.g. the day already has a session); the text is its accessible label. */
+  dotLabel?: string
+  /** false = hollow dot (e.g. the day has no session yet). */
+  dotFilled?: boolean
 }) {
   return (
     <div className="flex min-h-6 min-w-0 items-center gap-1 px-1 text-(--c-ocean)">
@@ -41,16 +47,26 @@ export default function PlanningRow({
           aria-expanded={expanded}
           aria-controls={id}
           onClick={onToggle}
-          aria-label={`${title}, ${count} ${countLabel}`}
+          aria-label={count === undefined ? title : `${title}, ${count} ${countLabel || ''}`}
           className="inline-flex min-h-6 min-w-0 items-center gap-2 rounded text-left text-xs leading-tight font-semibold outline-none focus-visible:ring-2 focus-visible:ring-(--c-aqua-strong) focus-visible:ring-inset"
         >
+          {dotLabel && (
+            <span
+              role="img"
+              aria-label={dotLabel}
+              title={dotLabel}
+              className={`size-2 shrink-0 rounded-full ${dotFilled ? 'bg-[#1f9d57]' : 'border border-[#1f9d57]'}`}
+            />
+          )}
           <span className="min-w-0 truncate">{title}</span>
-          <span
-            aria-hidden="true"
-            className={`shrink-0 text-[10px] ${indicatorLabel ? 'rounded-full bg-[#258575]/10 px-1.5 py-0.5 font-semibold text-[#176454]' : 'font-normal text-(--c-text-2)'}`}
-          >
-            ({count})
-          </span>
+          {count !== undefined && (
+            <span
+              aria-hidden="true"
+              className={`shrink-0 text-[10px] ${indicatorLabel ? 'rounded-full bg-[#258575]/10 px-1.5 py-0.5 font-semibold text-[#176454]' : 'font-normal text-(--c-text-2)'}`}
+            >
+              ({count})
+            </span>
+          )}
           {indicatorLabel && (
             <span
               role="img"
@@ -66,8 +82,18 @@ export default function PlanningRow({
         </button>
       ) : (
         <span className="inline-flex min-h-6 min-w-0 items-center gap-2 text-xs leading-tight font-semibold">
+          {dotLabel && (
+            <span
+              role="img"
+              aria-label={dotLabel}
+              title={dotLabel}
+              className={`size-2 shrink-0 rounded-full ${dotFilled ? 'bg-[#1f9d57]' : 'border border-[#1f9d57]'}`}
+            />
+          )}
           <span className="min-w-0 truncate">{title}</span>
-          <span className="shrink-0 text-[10px] font-normal text-(--c-text-2)">({count})</span>
+          {count !== undefined && (
+            <span className="shrink-0 text-[10px] font-normal text-(--c-text-2)">({count})</span>
+          )}
         </span>
       )}
       {onEdit && (

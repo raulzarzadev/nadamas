@@ -2,13 +2,17 @@
 
 import { useId, useState } from 'react'
 import { FiCheck, FiEdit2, FiRepeat, FiTrash2 } from 'react-icons/fi'
+import Sheet from '@/components/ui/sheet'
 import {
+  blockDistance,
+  formatTrainingDistance,
   formatTrainingSummaryDuration,
   normalizeClassTraining,
   workoutDuration,
 } from '@/lib/class-training'
 import type { ObjectiveWorkout } from '@/lib/training-planner'
 import ClassTrainingEditor from './ClassTrainingEditor'
+import { useTrainingSave } from './training-save-context'
 import WorkoutTransferSheet from './WorkoutTransferSheet'
 
 const actionClass =
@@ -29,12 +33,20 @@ export function normalizeObjectiveWorkout(
 
 function WorkoutTime({ workout }: { workout: ObjectiveWorkout }) {
   const duration = workoutDuration(workout.blocks)
-  return duration.seconds ? (
+  const meters = workout.blocks.reduce((total, block) => total + blockDistance(block), 0)
+  if (!meters && !duration.seconds) return null
+  return (
     <em className="ml-1 text-[10px] font-normal opacity-75">
-      · {!duration.complete && 'Tiempo calculado '}
-      {formatTrainingSummaryDuration(duration.seconds)}
+      {meters > 0 && <> · {formatTrainingDistance(meters)}</>}
+      {duration.seconds > 0 && (
+        <>
+          {' '}
+          · {!duration.complete && '~'}
+          {formatTrainingSummaryDuration(duration.seconds)}
+        </>
+      )}
     </em>
-  ) : null
+  )
 }
 
 export default function ObjectiveWorkouts({
@@ -43,16 +55,33 @@ export default function ObjectiveWorkouts({
   disabled,
   readOnly = false,
   onRequestEdit,
+  sessionTitle,
 }: {
   workouts: ObjectiveWorkout[]
   onChange: (workouts: ObjectiveWorkout[]) => void
   disabled: boolean
   readOnly?: boolean
   onRequestEdit?: () => void
+  sessionTitle?: string
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const saveTraining = useTrainingSave()
   const [transferOpen, setTransferOpen] = useState(false)
+  const [newWorkout, setNewWorkout] = useState<ObjectiveWorkout | null>(null)
+  const [editingSeries, setEditingSeries] = useState(false)
+  const createSession = () =>
+    setNewWorkout({
+      id: crypto.randomUUID(),
+      title: sessionTitle || '',
+      blocks: ['Calentamiento', 'Enfoque', 'Afloje'].map((title) => ({
+        id: crypto.randomUUID(),
+        title,
+        repetitions: 1,
+        series: [],
+      })),
+    })
   const panelId = useId()
   const selected = workouts.find((workout) => workout.id === selectedId) ?? workouts[0]
   const selectedIndex = workouts.findIndex((workout) => workout.id === selected?.id)
@@ -66,7 +95,7 @@ export default function ObjectiveWorkouts({
         className={`${actionClass} inline-flex items-center gap-1`}
       >
         <FiRepeat aria-hidden="true" />
-        Exportar / importar
+        Transferir
       </button>
     ) : null
   return (
@@ -78,18 +107,9 @@ export default function ObjectiveWorkouts({
               type="button"
               disabled={disabled}
               className="inline-flex min-h-9 cursor-pointer items-center justify-center rounded-full bg-black px-4 text-xs font-semibold text-white hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:cursor-not-allowed disabled:opacity-40"
-              onClick={() => {
-                if (readOnly) onRequestEdit?.()
-                const workout: ObjectiveWorkout = {
-                  id: crypto.randomUUID(),
-                  blocks: [{ id: crypto.randomUUID(), repetitions: 1, series: [] }],
-                }
-                onChange([...workouts, workout])
-                setSelectedId(workout.id)
-                setEditingId(workout.id)
-              }}
+              onClick={createSession}
             >
-              + Agregar entreno
+              + Agregar sesión
             </button>
           )}
           {transferAction}
@@ -105,14 +125,9 @@ export default function ObjectiveWorkouts({
               type="button"
               disabled={disabled}
               className="inline-flex min-h-7 items-center justify-center rounded-full border border-dashed border-(--c-aqua-strong) bg-white px-2.5 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-40"
-              onClick={() => {
-                const workout = { id: crypto.randomUUID(), blocks: [] }
-                onChange([...workouts, workout])
-                setSelectedId(workout.id)
-                setEditingId(workout.id)
-              }}
+              onClick={createSession}
             >
-              + Entreno
+              + Agregar sesión
             </button>
           )}
           {workouts.map((workout, index) => (
@@ -130,7 +145,6 @@ export default function ObjectiveWorkouts({
               <WorkoutTime workout={workout} />
             </button>
           ))}
-          <span className="ml-auto inline-flex items-center">{transferAction}</span>
         </fieldset>
       )}
       {selected && (
@@ -139,83 +153,27 @@ export default function ObjectiveWorkouts({
           aria-label={selected.title?.trim() || `Entreno ${selectedIndex + 1}`}
           className="grid min-w-0 gap-3"
         >
-          {!readOnly && (
-            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-              {isEditing && (
-                <input
-                  type="text"
-                  aria-label="Título del entreno"
-                  maxLength={100}
-                  disabled={disabled}
-                  value={selected.title ?? ''}
-                  placeholder={`Entreno ${selectedIndex + 1}`}
-                  onChange={(event) =>
-                    onChange(
-                      workouts.map((workout) =>
-                        workout.id === selected.id
-                          ? { ...workout, title: event.target.value }
-                          : workout
-                      )
-                    )
-                  }
-                  className="box-border h-7 w-full min-w-0 max-w-full flex-[1_1_10rem] rounded-lg border border-(--c-border) bg-white px-2 text-xs font-semibold text-(--c-ocean) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
-                />
-              )}
+          {/* Description and the session actions share one row. */}
+          <div className="flex min-w-0 items-start gap-2">
+            <p className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">
+              {selected.observations?.trim()}
+            </p>
+            <div className="flex shrink-0 flex-wrap justify-end gap-1">
+              {transferAction}
               {!readOnly && (
-                <div className="flex shrink-0 flex-wrap justify-end gap-1">
-                  {isEditing && (
-                    <button
-                      type="button"
-                      disabled={disabled}
-                      className="inline-flex min-h-7 items-center justify-center gap-1 rounded-full px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
-                      onClick={() => {
-                        const next = workouts.filter((workout) => workout.id !== selected.id)
-                        onChange(next)
-                        setSelectedId(next[Math.min(selectedIndex, next.length - 1)]?.id ?? null)
-                        setEditingId(null)
-                      }}
-                    >
-                      <FiTrash2 aria-hidden="true" />
-                      Eliminar
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    className={`inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) focus-visible:outline-2 disabled:opacity-50 ${isEditing ? 'border-(--c-ocean)! bg-(--c-ocean)! text-white! hover:bg-(--c-ocean)!' : ''}`}
-                    onClick={() => setEditingId(isEditing ? null : selected.id)}
-                  >
-                    {isEditing ? <FiCheck aria-hidden="true" /> : <FiEdit2 aria-hidden="true" />}
-                    {isEditing ? 'Listo' : 'Editar'}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  aria-haspopup="dialog"
+                  className="inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) focus-visible:outline-2 disabled:opacity-50"
+                  onClick={() => setEditingId(selected.id)}
+                >
+                  <FiEdit2 aria-hidden="true" />
+                  Editar
+                </button>
               )}
             </div>
-          )}
-          {isEditing ? (
-            <textarea
-              aria-label="Observaciones del entreno"
-              placeholder="Observaciones"
-              rows={1}
-              maxLength={2000}
-              disabled={disabled}
-              value={selected.observations ?? ''}
-              onChange={(event) =>
-                onChange(
-                  workouts.map((workout) =>
-                    workout.id === selected.id
-                      ? { ...workout, observations: event.target.value }
-                      : workout
-                  )
-                )
-              }
-              className="box-border min-h-8 max-h-64 w-full min-w-0 max-w-full resize-none overflow-y-auto rounded-lg [field-sizing:content] border border-(--c-border) bg-white px-2 py-1.5 text-xs leading-relaxed font-normal text-(--c-ocean) placeholder:text-(--c-text-2) outline-none focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
-            />
-          ) : selected.observations?.trim() ? (
-            <p className="whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">
-              {selected.observations}
-            </p>
-          ) : null}
+          </div>
           <ClassTrainingEditor
             key={selected.id}
             onCreateFirstBlock={
@@ -233,7 +191,7 @@ export default function ObjectiveWorkouts({
             }
             blocks={selected.blocks}
             disabled={disabled}
-            readOnly={!isEditing}
+            readOnly
             onChange={(blocks) =>
               onChange(
                 workouts.map((workout) =>
@@ -243,6 +201,102 @@ export default function ObjectiveWorkouts({
             }
           />
         </section>
+      )}
+      {isEditing && selected && (
+        <Sheet
+          open
+          label="Editar sesión"
+          keyboardAware
+          onClose={() => setEditingId(null)}
+          footer={
+            editingSeries ? undefined : (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  disabled={disabled}
+                  className="btn btn-ghost min-h-11 text-(--rose-tx)"
+                  onClick={() => {
+                    const next = workouts.filter((workout) => workout.id !== selected.id)
+                    onChange(next)
+                    setSelectedId(next[Math.min(selectedIndex, next.length - 1)]?.id ?? null)
+                    setEditingId(null)
+                  }}
+                >
+                  <FiTrash2 aria-hidden="true" />
+                  Eliminar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary min-h-11"
+                  disabled={disabled || saving}
+                  onClick={async () => {
+                    if (!saveTraining) return setEditingId(null)
+                    setSaving(true)
+                    const saved = await saveTraining()
+                    setSaving(false)
+                    if (saved) setEditingId(null)
+                  }}
+                >
+                  <FiCheck aria-hidden="true" />
+                  {saving ? 'Guardando…' : 'Guardar sesión'}
+                </button>
+              </div>
+            )
+          }
+        >
+          <div className="grid min-w-0 gap-4 pb-4">
+            <h2 className="text-xl font-bold">Editar sesión</h2>
+            <label className="grid min-w-0 gap-2 text-sm font-semibold">
+              Nombre
+              <input
+                maxLength={100}
+                disabled={disabled}
+                value={selected.title ?? ''}
+                placeholder={`Entreno ${selectedIndex + 1}`}
+                onChange={(event) =>
+                  onChange(
+                    workouts.map((workout) =>
+                      workout.id === selected.id
+                        ? { ...workout, title: event.target.value }
+                        : workout
+                    )
+                  )
+                }
+                className="box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 outline-none focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
+              />
+            </label>
+            <label className="grid min-w-0 gap-2 text-sm font-semibold">
+              Descripción
+              <textarea
+                maxLength={2000}
+                disabled={disabled}
+                value={selected.observations ?? ''}
+                onChange={(event) =>
+                  onChange(
+                    workouts.map((workout) =>
+                      workout.id === selected.id
+                        ? { ...workout, observations: event.target.value }
+                        : workout
+                    )
+                  )
+                }
+                className="box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 py-2 outline-none [field-sizing:content] focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
+              />
+            </label>
+            <ClassTrainingEditor
+              blocks={selected.blocks}
+              disabled={disabled}
+              onEditingChange={setEditingSeries}
+              onChange={(blocks) =>
+                onChange(
+                  workouts.map((workout) =>
+                    workout.id === selected.id ? { ...workout, blocks } : workout
+                  )
+                )
+              }
+            />
+          </div>
+        </Sheet>
       )}
       {transferOpen && (
         <WorkoutTransferSheet
@@ -258,6 +312,72 @@ export default function ObjectiveWorkouts({
             setTransferOpen(false)
           }}
         />
+      )}
+      {newWorkout && (
+        <Sheet
+          open
+          label="Agregar sesión"
+          keyboardAware
+          onClose={() => setNewWorkout(null)}
+          footer={
+            editingSeries ? undefined : (
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  className="btn btn-outline min-h-11"
+                  onClick={() => setNewWorkout(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary min-h-11"
+                  disabled={disabled}
+                  onClick={() => {
+                    if (readOnly) onRequestEdit?.()
+                    onChange([...workouts, newWorkout])
+                    setSelectedId(newWorkout.id)
+                    setEditingId(null)
+                    setNewWorkout(null)
+                  }}
+                >
+                  Agregar sesión
+                </button>
+              </div>
+            )
+          }
+        >
+          <div className="grid min-w-0 gap-4 pb-4">
+            <h2 className="text-xl font-bold">Agregar sesión</h2>
+            <label className="grid min-w-0 gap-2 text-sm font-semibold">
+              Nombre
+              <input
+                maxLength={100}
+                value={newWorkout.title || ''}
+                onChange={(event) => setNewWorkout({ ...newWorkout, title: event.target.value })}
+                placeholder="Nombre de la sesión"
+                className="box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 outline-none focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
+              />
+            </label>
+            <label className="grid min-w-0 gap-2 text-sm font-semibold">
+              Descripción
+              <textarea
+                maxLength={2000}
+                value={newWorkout.observations || ''}
+                onChange={(event) =>
+                  setNewWorkout({ ...newWorkout, observations: event.target.value })
+                }
+                className="box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 py-2 outline-none [field-sizing:content] focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
+              />
+            </label>
+            <ClassTrainingEditor
+              blocks={newWorkout.blocks}
+              onChange={(blocks) => setNewWorkout({ ...newWorkout, blocks })}
+              disabled={disabled}
+              onEditingChange={setEditingSeries}
+            />
+          </div>
+        </Sheet>
       )}
     </section>
   )

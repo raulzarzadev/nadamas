@@ -18,9 +18,12 @@ const load = (file, imports = {}) => {
   return exports
 }
 const calendar = load('lib/training-session-builder.ts')
-const { groupTrainingSessions, reorderTrainingSessions } = load('lib/training-session-groups.ts', {
-  './training-session-builder': calendar,
-})
+const { groupTrainingSessions, reorderTrainingSessions, countCycleSessions } = load(
+  'lib/training-session-groups.ts',
+  {
+    './training-session-builder': calendar,
+  }
+)
 const value = {
   id: 'micro',
   goal: '',
@@ -30,6 +33,29 @@ const value = {
   objectiveTitles: ['September', 'October', 'Next week', 'Undated'],
   objectiveWorkouts: [[{ id: 'workout-a', blocks: [] }], [], [{ id: 'workout-c', blocks: [] }], []],
 }
+test('cycle counts include only descendant sessions, even when a session has several workouts', () => {
+  const cycles = [
+    { id: 'macro', parentId: null, type: 'macro', goal: '' },
+    { id: 'meso', parentId: 'macro', type: 'meso', goal: '' },
+    {
+      ...value,
+      type: 'micro',
+      parentId: 'meso',
+      objectiveWorkouts: [[{ id: 'a' }, { id: 'b' }], [], [], []],
+    },
+    {
+      id: 'other',
+      parentId: 'macro',
+      type: 'micro',
+      goal: '',
+      objectives: ['one'],
+      objectiveDates: ['2026-11-01'],
+    },
+  ]
+  assert.equal(countCycleSessions(cycles, 'macro'), 5)
+  assert.equal(countCycleSessions(cycles, 'meso'), 4)
+  assert.equal(countCycleSessions(cycles, 'micro'), 4)
+})
 test('calendar hierarchy groups all sessions by month and Monday-based week with accurate counts', () => {
   const groups = groupTrainingSessions(value)
   assert.deepEqual(

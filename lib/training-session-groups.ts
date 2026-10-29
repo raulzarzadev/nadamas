@@ -17,6 +17,26 @@ export interface SessionMonth {
   count: number
 }
 
+/** Count sessions in a cycle and its descendants. */
+export function countCycleSessions(cycles: TrainingCycle[], rootId: string): number {
+  const visited = new Set<string>()
+  const count = (id: string): number => {
+    if (visited.has(id)) return 0
+    visited.add(id)
+    const cycle = cycles.find((item) => item.id === id)
+    if (!cycle) return 0
+    const own =
+      cycle.type === 'micro'
+        ? groupTrainingSessions(cycle).reduce((sum, month) => sum + month.count, 0)
+        : 0
+    return (
+      own +
+      cycles.filter((item) => item.parentId === id).reduce((sum, child) => sum + count(child.id), 0)
+    )
+  }
+  return count(rootId)
+}
+
 export function groupTrainingSessions(value: TrainingCycle): SessionMonth[] {
   const descriptions = value.objectives ?? [
     ...new Set(

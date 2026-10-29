@@ -30,7 +30,7 @@ function BlockTotal({ block }: { block: ClassTrainingBlock }) {
       {duration.seconds > 0 && (
         <>
           {' '}
-          · {!duration.complete && 'Tiempo calculado '}
+          · {!duration.complete && '~'}
           {formatTrainingSummaryDuration(duration.seconds)}
         </>
       )}
@@ -165,7 +165,9 @@ export default function ClassTrainingEditor({
             className="min-w-0 rounded-2xl border border-(--c-border) bg-(--c-surface) p-3"
           >
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <h3 className="text-base font-bold">{block.title || `Bloque ${index + 1}`}</h3>
+              <h3 className="text-base font-bold">
+                {index + 1}. {block.title || 'Bloque'}
+              </h3>
               <BlockTotal block={block} />
             </div>
             {block.observations?.trim() && (
@@ -213,11 +215,11 @@ export default function ClassTrainingEditor({
             disabled={disabled}
             className="min-w-0 rounded-2xl border border-(--c-border) bg-(--c-surface) p-3"
           >
-            <div className="flex items-center gap-1">
-              {blockHandle}
-              <div className="min-w-0 flex-1">
-                <h3 className="wrap-anywhere text-sm font-bold">
-                  {block.title || `Bloque ${index + 1}`}
+            {/* Block drag handle sits on the right so it never lines up with the series handles. */}
+            <div className="mb-1 flex items-center gap-1">
+              <div className="min-w-0 flex-1 pl-1">
+                <h3 className="wrap-anywhere text-base font-extrabold">
+                  {index + 1}. {block.title || 'Bloque'}
                 </h3>
                 <BlockTotal block={block} />
               </div>
@@ -250,6 +252,7 @@ export default function ClassTrainingEditor({
               >
                 <FiMoreHorizontal aria-hidden="true" className="size-5" />
               </button>
+              {blockHandle}
             </div>
             {block.observations?.trim() && (
               <p className="mb-2 whitespace-pre-wrap wrap-anywhere text-xs text-(--c-text-2)">

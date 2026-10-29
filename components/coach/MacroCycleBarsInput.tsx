@@ -10,6 +10,7 @@ import {
   type TrainingCycle,
   updateCycleWithEarlierStart,
 } from '@/lib/training-planner'
+import { countCycleSessions } from '@/lib/training-session-groups'
 import CycleDateLabels from './CycleDateLabels'
 import CycleDetails from './CycleDetails'
 import PlanningRow from './PlanningRow'
@@ -124,13 +125,8 @@ export default function MacroCycleBarsInput({
               >
                 <PlanningRow
                   title={cycle.title}
-                  count={
-                    cycle.type === 'meso'
-                      ? cycles.filter((item) => item.parentId === cycle.id).length
-                      : (cycle.objectives?.length ??
-                        cycle.goal.split('\n').filter((text) => text.trim()).length)
-                  }
-                  countLabel={cycle.type === 'meso' ? 'MICRO-ciclos' : 'sesiones'}
+                  count={countCycleSessions(cycles, cycle.id)}
+                  countLabel="sesiones"
                   expanded={Boolean(expanded[cycle.id])}
                   handle={readOnly ? undefined : handle}
                   id={`${detailsPrefix}-${cycle.id}`}

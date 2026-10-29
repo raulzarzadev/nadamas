@@ -202,13 +202,10 @@ export default function CycleDetails({
                                           ) : undefined
                                         }
                                         title={title}
-                                        count={workouts(selected).length}
-                                        indicatorLabel={
-                                          workouts(selected).length
-                                            ? `${workouts(selected).length} entrenos para este día`
-                                            : undefined
+                                        dotLabel={
+                                          workouts(selected).length ? 'Tiene sesión' : 'Sin sesión'
                                         }
-                                        countLabel="entrenos"
+                                        dotFilled={workouts(selected).length > 0}
                                         expanded={expanded}
                                         handle={readOnly ? undefined : handle}
                                         onToggle={() =>
@@ -225,6 +222,17 @@ export default function CycleDetails({
                                         )}
                                         <ObjectiveWorkouts
                                           workouts={workouts(selected)}
+                                          sessionTitle={
+                                            value.objectiveDates?.[selected]
+                                              ? new Date(
+                                                  `${value.objectiveDates[selected]}T12:00:00`
+                                                ).toLocaleDateString('es-MX', {
+                                                  weekday: 'long',
+                                                  day: 'numeric',
+                                                  month: 'short',
+                                                })
+                                              : title
+                                          }
                                           disabled={disabled}
                                           readOnly={readOnly}
                                           onRequestEdit={onRequestEdit}

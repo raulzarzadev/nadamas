@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { FiCheck, FiChevronDown, FiChevronRight, FiEdit2, FiX } from 'react-icons/fi'
 import type { TrainingCycle } from '@/lib/training-planner'
+import { countCycleSessions } from '@/lib/training-session-groups'
 import CycleCompactSummary from './CycleCompactSummary'
 import MacroCycleBarsInput from './MacroCycleBarsInput'
 import MacroCyclePeriodInput from './MacroCyclePeriodInput'
@@ -45,8 +46,8 @@ export default function TrainingPlanOverview({
       >
         <PlanningRow
           title={macro.title}
-          count={cycles.filter((cycle) => cycle.parentId === macro.id).length}
-          countLabel="MESO-ciclos"
+          count={countCycleSessions(cycles, macro.id)}
+          countLabel="sesiones"
           expanded={macroExpanded}
           controls={
             <div className="flex items-center gap-1">

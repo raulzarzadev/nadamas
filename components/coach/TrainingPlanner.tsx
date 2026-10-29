@@ -34,6 +34,7 @@ import MacroCyclePeriodInput from './MacroCyclePeriodInput'
 import TodayTrainingSummary from './TodayTrainingSummary'
 import TrainingCycleTimeline from './TrainingCycleTimeline'
 import TrainingPlanOverview from './TrainingPlanOverview'
+import { TrainingSaveContext } from './training-save-context'
 import { useTrainingPlanAuthor } from './use-training-plan-author'
 
 const actionClass =
@@ -363,6 +364,33 @@ export default function TrainingPlanner({
     } catch (cause) {
       reportInternalError('TRAINING_BARS_SAVE', cause)
       setError(GENERIC_USER_ERROR)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Saves pending plan edits but stays in edit mode (used by a day's session sheet).
+  async function saveEditsNow() {
+    if (!plan || !barsDraft || !barsDirty) return true
+    if (busy) return false
+    const validation = barsDraft.map((item) => validateTrainingCycle(item, barsDraft)).find(Boolean)
+    if (validation || barsDraft.length > 100) {
+      setError(validation || 'Este MACRO-ciclo ya tiene 100 ciclos.')
+      return false
+    }
+    setBusy(true)
+    setError('')
+    try {
+      const result = await TrainingPlanCRUD.update(plan.id, barsDraft, author)
+      if (!result?.ok) throw new Error('TRAINING_SESSION_SAVE_FAILED')
+      setPlans((items) =>
+        items.map((item) => (item.id === plan.id ? { ...item, cycles: barsDraft } : item))
+      )
+      return true
+    } catch (cause) {
+      reportInternalError('TRAINING_SESSION_SAVE', cause)
+      setError(GENERIC_USER_ERROR)
+      return false
     } finally {
       setBusy(false)
     }
@@ -741,17 +769,19 @@ export default function TrainingPlanner({
               }
             >
               {cycle.type === 'macro' && plan && (
-                <TrainingPlanOverview
-                  key={plan.id}
-                  macros={(owned ? plans : [plan]).flatMap((item) =>
-                    item.cycles.filter((node) => node.type === 'macro')
-                  )}
-                  cycles={editing ? planCycles : plan.cycles}
-                  onChange={setBarsDraft}
-                  onRequestEdit={owned ? startEditing : undefined}
-                  disabled={busy}
-                  readOnly={!owned || !editing}
-                />
+                <TrainingSaveContext.Provider value={saveEditsNow}>
+                  <TrainingPlanOverview
+                    key={plan.id}
+                    macros={(owned ? plans : [plan]).flatMap((item) =>
+                      item.cycles.filter((node) => node.type === 'macro')
+                    )}
+                    cycles={editing ? planCycles : plan.cycles}
+                    onChange={setBarsDraft}
+                    onRequestEdit={owned ? startEditing : undefined}
+                    disabled={busy}
+                    readOnly={!owned || !editing}
+                  />
+                </TrainingSaveContext.Provider>
               )}
               {cycle.type !== 'macro' && (
                 <>
