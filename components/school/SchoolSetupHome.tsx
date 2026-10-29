@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import {
+  FiActivity,
   FiArrowLeft,
   FiArrowRight,
   FiCheck,
@@ -11,7 +12,9 @@ import {
   FiRefreshCw,
   FiSettings,
   FiShare2,
+  FiUser,
 } from 'react-icons/fi'
+import { useRole } from '@/context/RoleContext'
 import { SchoolSetupCRUD } from '@/firebase/school-setup/main'
 import { getCachedAuthedData, invalidateAuthedCache } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
@@ -42,6 +45,7 @@ export default function SchoolSetupHome({ view = 'home' }: { view?: 'home' | 'st
   )
 }
 function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | 'steps' }) {
+  const { roles } = useRole()
   const endpoint = `/api/schools/${encodeURIComponent(schoolId)}/setup`
   const [data, setData] = useState(() => getCachedAuthedData<SchoolSetupSnapshot>(endpoint))
   const [loading, setLoading] = useState(!data)
@@ -229,6 +233,32 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
         >
           <FiSettings aria-hidden="true" className="shrink-0" />
           <span className="min-w-0 flex-1">Configuración</span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+        <Link
+          href={roles.coach ? '/coach/coach-profile' : '/coach/activate'}
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiUser aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block">Perfil de coach</span>
+            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
+              {roles.coach ? 'Edita tu perfil profesional' : 'Activa tu perfil para configurarlo'}
+            </span>
+          </span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+        <Link
+          href="/profile"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiActivity aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block">Perfil de nadador</span>
+            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
+              Edita tu nombre, datos y perfil público
+            </span>
+          </span>
           <FiArrowRight aria-hidden="true" className="shrink-0" />
         </Link>
       </nav>
