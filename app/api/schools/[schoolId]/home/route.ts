@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { schoolMembershipHasRole } from '@/lib/school'
 import { visibleSchoolContacts } from '@/lib/school-contact'
 import { homeSectionsOf } from '@/lib/school-home'
 import { resolveSchoolPalette } from '@/lib/school-theme'
@@ -45,5 +46,8 @@ export async function GET(request: Request, { params }: RouteProps) {
       contacts: visibleSchoolContacts(school.contacts),
     },
     ...home,
+    canManageHome: Boolean(
+      access.membership && schoolMembershipHasRole(access.membership, 'director')
+    ),
   })
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { FiArrowDown, FiArrowUp, FiImage, FiTrash2 } from 'react-icons/fi'
+import { FiArrowDown, FiArrowUp, FiTrash2 } from 'react-icons/fi'
 import { uploadSchoolImage } from '@/firebase/school-logos/main'
 import { AuthedApiError, getAuthed, patchAuthed } from '@/lib/client/authed-api'
 import { SCHOOL_PALETTES, type School, type SchoolPalette } from '@/lib/school'
@@ -161,23 +161,12 @@ export default function SchoolHomeAppearanceCard({
 
   return (
     <section
+      id="apariencia"
       aria-busy={busy}
-      className="min-w-0 rounded-(--r-md) border border-(--c-border) bg-white p-5 shadow-(--shadow-sm)"
+      className="min-w-0 scroll-mt-24 rounded-(--r-md) border border-(--c-border) bg-white p-5 shadow-(--shadow-sm)"
     >
-      <div className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean)">
-          <FiImage aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <h2 className="font-bold text-(--c-ocean)">Apariencia de tu página</h2>
-          <p className="mt-1 text-sm text-(--c-text-2)">
-            Portada, color, galería y orden de lo que ven tus visitantes.
-          </p>
-        </div>
-      </div>
-
       {hints.length > 0 && (
-        <div className="mt-4 rounded-(--r-sm) bg-(--c-surface) p-3">
+        <div className="rounded-(--r-sm) bg-(--c-surface) p-3">
           <h3 className="text-sm font-bold text-(--c-ocean)">Para completar tu página</h3>
           <ul className="mt-1 list-disc pl-5 text-sm text-(--c-text-2)">
             {hints.map((hint) => (
@@ -187,7 +176,7 @@ export default function SchoolHomeAppearanceCard({
         </div>
       )}
 
-      <div className="mt-5 grid gap-2">
+      <div className="mt-5 grid gap-2 first:mt-0">
         <h3 className="text-sm font-bold text-(--c-ocean)">Foto de portada</h3>
         {school.coverUrl && (
           // biome-ignore lint/performance/noImgElement: remote storage preview
@@ -226,7 +215,8 @@ export default function SchoolHomeAppearanceCard({
       </div>
 
       <div className="mt-5 grid gap-2">
-        <h3 className="text-sm font-bold text-(--c-ocean)">Color</h3>
+        <h3 className="text-sm font-bold text-(--c-ocean)">Paleta de colores</h3>
+        <p className="text-xs text-(--c-text-2)">Elige los colores para la página de tu escuela.</p>
         <div className="flex flex-wrap items-center gap-2">
           {SCHOOL_PALETTES.map((item) => {
             const selected = !school.customColor && (school.palette ?? 'ocean') === item.value
@@ -236,14 +226,20 @@ export default function SchoolHomeAppearanceCard({
                 type="button"
                 disabled={busy}
                 aria-pressed={selected}
-                aria-label={item.label}
+                aria-label={`Paleta ${item.label}`}
                 title={item.label}
                 onClick={() => {
                   if (!selected) pickPalette(item.value)
                 }}
-                className={`size-11 rounded-full border-2 ${selected ? 'border-(--c-ocean) ring-2 ring-(--c-ocean)/30' : 'border-white ring-1 ring-(--c-border)'}`}
-                style={{ backgroundColor: item.primary }}
-              />
+                className={`grid min-h-11 min-w-16 gap-1 rounded-xl border px-2 py-1.5 text-center text-[10px] font-semibold text-(--c-ocean) ${selected ? 'border-(--c-ocean) ring-1 ring-(--c-ocean)' : 'border-(--c-border) bg-white'}`}
+              >
+                <span aria-hidden="true" className="flex h-4 overflow-hidden rounded-full">
+                  {[item.primary, item.secondary, item.accent].map((color) => (
+                    <span key={color} className="flex-1" style={{ backgroundColor: color }} />
+                  ))}
+                </span>
+                {item.label}
+              </button>
             )
           })}
           <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-(--c-ocean)">

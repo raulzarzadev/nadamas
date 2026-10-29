@@ -1,6 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
+import { FiArrowRight } from 'react-icons/fi'
 import type { SchoolContact } from '@/lib/school-contact'
 import type { SchoolEvent } from '@/lib/school-events'
 import { formatSchoolDay, type SchoolGalleryPhoto, type SchoolHomeSection } from '@/lib/school-home'
@@ -28,6 +30,7 @@ interface MemberHomeResponse {
   greetingName: string
   profiles: MemberHomeProfile[]
   events: SchoolEvent[]
+  canManageHome?: boolean
 }
 
 const DEFAULT_TIMEZONE = 'America/Mexico_City'
@@ -60,6 +63,32 @@ function MemberHome({ home }: { home: MemberHomeResponse }) {
   return (
     <div style={schoolThemeVars(school.palette) as CSSProperties}>
       <SchoolHero school={school} size="small" greetingName={home.greetingName} />
+      {home.canManageHome &&
+        !school.coverUrl &&
+        school.gallery.length === 0 &&
+        home.events.length === 0 &&
+        school.contacts.length === 0 && (
+          <section
+            className="mx-4 mt-4 grid gap-3 rounded-2xl border border-(--c-border) bg-white p-5 sm:mx-0"
+            aria-labelledby="school-home-setup-title"
+          >
+            <div>
+              <h2 id="school-home-setup-title" className="text-lg font-extrabold text-(--c-ocean)">
+                Este es el inicio de tu escuela
+              </h2>
+              <p className="mt-1 text-sm leading-relaxed text-(--c-text-2)">
+                Tus alumnos y profesores verán aquí el inicio de la escuela. Configura su apariencia
+                y el contenido que quieres compartir.
+              </p>
+            </div>
+            <Link
+              href={`/school/settings?schoolId=${encodeURIComponent(school.id)}#apariencia`}
+              className="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-4 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean)"
+            >
+              Configurar inicio <FiArrowRight aria-hidden="true" />
+            </Link>
+          </section>
+        )}
       {upcoming.length > 0 && (
         <PersonalSection id="school-next-classes-title" title="Próximos entrenos">
           <ul className="mt-4 grid gap-2">
