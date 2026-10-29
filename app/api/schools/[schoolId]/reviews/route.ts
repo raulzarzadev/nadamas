@@ -4,6 +4,10 @@ import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { getSchoolClassOccurrence } from '@/lib/server/school-classes'
 import { listSchoolStudents } from '@/lib/server/school-students'
+import {
+  assertSchoolSubscriptionAccess,
+  subscriptionErrorResponse,
+} from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 interface RouteProps {
@@ -113,6 +117,20 @@ export async function POST(request: Request, { params }: RouteProps) {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   }
-  await ref.set(review, { merge: true })
+  try {
+    await adminDb.runTransaction(async (tx) => {
+      const existing = await tx.get(ref)
+      if (!existing.exists) await assertSchoolSubscriptionAccess(schoolId, tx)
+      tx.set(
+        ref,
+        { ...review, createdAt: existing.data()?.createdAt || review.createdAt },
+        { merge: true }
+      )
+    })
+  } catch (error) {
+    const response = subscriptionErrorResponse(error)
+    if (response) return response
+    throw error
+  }
   return NextResponse.json({ review })
 }

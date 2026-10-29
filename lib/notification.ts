@@ -1,4 +1,5 @@
 export type NotificationType =
+  | 'subscription_reminder'
   | 'athlete_profile_invitation'
   | 'payment_reviewed'
   | 'payment_pending'

@@ -27,8 +27,8 @@ export default function Hero() {
       <div className="relative mx-auto flex min-h-[min(calc(100svh-72px),720px)] max-w-[1180px] items-end px-4 pb-10 pt-10 sm:px-8 sm:pt-12 sm:pb-12">
         <div className="w-full min-w-0 max-w-[56rem]">
           <p className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-[#9ceaf0] backdrop-blur-sm">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-[#9ceaf0]" />
-            Desde ${NADAMAS_PRICING.launchMonthly} {NADAMAS_PRICING.currency} al mes
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-[#9ceaf0]" />$
+            {NADAMAS_PRICING.regularMonthly} {NADAMAS_PRICING.currency} al mes por escuela
           </p>
           <h1
             className="mt-5 text-[2.2rem] font-extrabold min-[380px]:text-[2.5rem] sm:text-5xl lg:text-[3.3rem]"

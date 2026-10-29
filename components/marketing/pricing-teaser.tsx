@@ -23,7 +23,7 @@ export default function PricingTeaser() {
           style={{ background: 'var(--grad-brand)' }}
         />
         <div className="relative">
-          <p className="text-sm font-bold uppercase text-[#9ceaf0]">Precio de lanzamiento</p>
+          <p className="text-sm font-bold uppercase text-[#9ceaf0]">Una suscripción por escuela</p>
           <h2
             id="precio-title"
             className="mt-3 text-3xl font-extrabold sm:text-4xl"
@@ -32,16 +32,19 @@ export default function PricingTeaser() {
             Todas las funciones, un solo precio.
           </h2>
           <p className="mt-6 text-base text-[#d0e7ef]">
-            Antes{' '}
-            <s>
-              ${NADAMAS_PRICING.regularMonthly} {NADAMAS_PRICING.currency}
-            </s>
+            Incluye a todos tus profesores. Prueba de {NADAMAS_PRICING.trialDays} días sin tarjeta
+            para la primera escuela de cada propietario.
           </p>
           <p className="mt-1 flex items-baseline gap-3">
             <span className="text-6xl font-extrabold tracking-tight sm:text-7xl">
-              ${NADAMAS_PRICING.launchMonthly}
+              ${NADAMAS_PRICING.regularMonthly}
             </span>
             <span className="font-semibold text-[#d0e7ef]">{NADAMAS_PRICING.currency} / mes</span>
+          </p>
+          <p className="mt-4 text-sm leading-relaxed text-[#d0e7ef]">
+            Escuelas seleccionadas pueden aplicar un código válido para pagar $
+            {NADAMAS_PRICING.promotionalMonthly} {NADAMAS_PRICING.currency} al mes mientras
+            mantengan activa su suscripción.
           </p>
         </div>
         <div className="relative">

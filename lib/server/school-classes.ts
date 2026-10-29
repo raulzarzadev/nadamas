@@ -1,3 +1,4 @@
+import { assertSchoolSubscriptionAccess } from './subscriptions/access'
 import 'server-only'
 
 import type { QuerySnapshot } from 'firebase-admin/firestore'
@@ -140,6 +141,7 @@ export async function createSchoolClass(
     )
   const dates = datesForInput(input)
   return adminDb.runTransaction(async (tx) => {
+    await assertSchoolSubscriptionAccess(input.schoolId, tx)
     if (billing.idempotencyKey) {
       const previous = await tx.get(seriesRef)
       if (previous.exists) {
@@ -352,6 +354,7 @@ export async function createClassRequest(
     updatedAt: now,
   }
   await runPaymentTransaction(async (transaction) => {
+    await assertSchoolSubscriptionAccess(input.schoolId, transaction)
     if (billing) {
       // Pending requests validate eligibility without holding credits. Approval
       // rechecks availability and reserves the actual assigned classes atomically.

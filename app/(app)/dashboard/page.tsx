@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
+import { needsOnboarding } from '@/lib/onboarding/model'
 import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 
 export default function DashboardEntryPage() {
@@ -17,6 +18,11 @@ export default function DashboardEntryPage() {
 
     if (user === null) {
       router.replace('/login?redirectTo=/dashboard')
+      return
+    }
+
+    if (needsOnboarding(user)) {
+      router.replace('/welcome')
       return
     }
 

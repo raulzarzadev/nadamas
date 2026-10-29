@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { parseClassEvaluation } from '@/lib/class-evaluation'
 import { saveClassEvaluation } from '@/lib/server/class-evaluations'
 import { adminAuth } from '@/lib/server/firebase-admin'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const token = request.headers.get('authorization')?.match(/^Bearer (.+)$/i)?.[1]
@@ -30,6 +31,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Esta clase no está disponible para evaluar.' }, { status })
     return NextResponse.json({ ok: true, evaluation })
   } catch (error) {
+    const subscriptionError = subscriptionErrorResponse(error)
+    if (subscriptionError) return subscriptionError
     console.error('[CLASS_EVALUATION_SAVE]', error)
     return NextResponse.json(
       { error: 'No pudimos guardar la evaluación. Inténtalo de nuevo.' },

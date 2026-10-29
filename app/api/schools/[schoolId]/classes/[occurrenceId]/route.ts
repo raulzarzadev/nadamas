@@ -16,6 +16,7 @@ import { legacySchoolOfferings, schoolClassAgendaBooking } from '@/lib/server/sc
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { getSchoolClassOccurrence } from '@/lib/server/school-classes'
 import { listSchoolStudents } from '@/lib/server/school-students'
+import { assertSchoolSubscriptionAccess } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 
@@ -320,6 +321,8 @@ async function handlePATCH(request: Request, { params }: RouteProps) {
   await paymentTransaction(billingEvents, async (tx) => {
     const fresh = await tx.get(adminDb.collection('schoolClassOccurrences').doc(occurrenceId))
     if (fresh.data()?.updatedAt !== occurrence.updatedAt) throw new Error('CLASS_CHANGED')
+    if (status === 'scheduled' && occurrence.status === 'pending')
+      await assertSchoolSubscriptionAccess(schoolId, tx)
     tx.update(fresh.ref, update)
   })
   if (status || hasScheduleChange)

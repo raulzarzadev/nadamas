@@ -96,6 +96,7 @@ export default function CreateSchoolPage() {
       })
       const payload = (await response.json()) as { school: School }
       setOwnedSchool(payload.school)
+      window.localStorage.setItem('nadamas.schoolId', payload.school.id)
       window.dispatchEvent(new Event('nadamas:school-access-updated'))
       setStatus('success')
       setMessage('Tu escuela quedó creada.')
@@ -115,7 +116,7 @@ export default function CreateSchoolPage() {
     return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando…</div>
   }
 
-  if (ownedSchool) {
+  if (ownedSchool && status === 'success') {
     return (
       <section className="mx-auto flex max-w-2xl flex-col gap-5">
         <Link
@@ -130,9 +131,7 @@ export default function CreateSchoolPage() {
               Modo escuela
             </p>
             <h1 className="mt-2 text-3xl font-extrabold">{ownedSchool.name}</h1>
-            <p className="mt-2 text-white/75">
-              Ya tienes una escuela creada y eres su coordinador.
-            </p>
+            <p className="mt-2 text-white/75">Tu escuela quedó creada y eres su coordinador.</p>
           </div>
           <div className="flex flex-col gap-4 p-6 sm:p-8">
             <div className="flex items-center gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-4">
@@ -142,6 +141,9 @@ export default function CreateSchoolPage() {
                 <p className="text-sm text-(--c-text-2)">{ownedSchool.slug}.nadamas.app</p>
               </div>
             </div>
+            <Link href="/school/subscription" className="btn btn-primary min-h-11 w-full">
+              Ver suscripción y acceso
+            </Link>
             <Link
               href={getPublicSchoolUrl(ownedSchool.slug)}
               className="btn btn-primary min-h-11 w-full"
@@ -172,6 +174,18 @@ export default function CreateSchoolPage() {
         </p>
       </div>
 
+      <div className="rounded-xl border border-(--c-border) bg-white p-4 text-sm">
+        <p className="font-bold">$299 MXN al mes por escuela · todos sus profesores incluidos</p>
+        <p className="mt-2 text-(--c-text-2)">
+          {ownedSchool
+            ? 'Las escuelas adicionales requieren una suscripción desde el inicio. Puedes crearla y activar su acceso desde Suscripción.'
+            : 'Si aún no has usado tu prueba como propietario, tu primera escuela incluye 15 días gratis, sin tarjeta. Después necesitarás suscribirte para crear nuevas reservas y seguir ampliando tu operación.'}
+        </p>
+        <p className="mt-2 text-xs text-(--c-text-2)">
+          Una sola prueba por propietario. Si tienes un código asignado a esta escuela, podrás
+          activar el precio de $49 MXN al mes desde Suscripción.
+        </p>
+      </div>
       <form
         onSubmit={submit}
         className="flex flex-col gap-5 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-7"
@@ -215,9 +229,9 @@ export default function CreateSchoolPage() {
             value={form.description}
             onChange={(event) => updateField('description', event.target.value)}
             maxLength={1000}
-            rows={4}
+            rows={2}
             placeholder="Cuéntale a las familias qué hace especial a tu escuela."
-            className="rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 py-3 text-base font-normal outline-none transition focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-light)"
+            className="[field-sizing:content] min-h-20 rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 py-3 text-base font-normal outline-none transition focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-light)"
           />
         </label>
 

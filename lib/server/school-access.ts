@@ -1,4 +1,6 @@
 import { normalizeSchoolMembership } from '@/lib/school'
+import { schoolMutationRequiresSubscription } from '@/lib/subscription-mutation-policy'
+import { assertSchoolSubscriptionAccess, subscriptionErrorResponse } from './subscriptions/access'
 import 'server-only'
 
 import { NextResponse } from 'next/server'
@@ -96,5 +98,19 @@ export async function requireSchoolAccess(
     return { response: NextResponse.json({ error: 'No autorizado.' }, { status: 403 }) }
   }
 
+  if (schoolMutationRequiresSubscription(request.method, new URL(request.url).pathname)) {
+    try {
+      await assertSchoolSubscriptionAccess(schoolId)
+    } catch (error) {
+      const response = subscriptionErrorResponse(error)
+      if (response) return { response }
+      return {
+        response: NextResponse.json(
+          { error: 'No pudimos verificar el acceso de la escuela. Inténtalo de nuevo.' },
+          { status: 503 }
+        ),
+      }
+    }
+  }
   return { caller, membership, globalAdmin }
 }

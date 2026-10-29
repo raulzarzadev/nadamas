@@ -295,7 +295,11 @@ test('el coordinador crea, edita y elimina un evento desde configuración', asyn
     await page.getByRole('button', { name: 'Recibir código', exact: true }).click()
     await page.getByRole('button', { name: 'Entrar', exact: true }).click()
     await page.waitForURL((url) => !url.pathname.includes('/login'))
-    await page.goto('/school/create')
+    await page.goto('/welcome')
+    await page.getByRole('checkbox', { name: 'Coordino una escuela', exact: true }).check()
+    await page.getByRole('button', { name: 'Ver mis primeros pasos' }).click()
+    await expect(page.getByRole('heading', { name: 'Como coordinador' })).toBeVisible()
+    await page.getByRole('link', { name: /Crear mi escuela/ }).click()
     await page.getByLabel('Nombre de la escuela').fill(`Eventos ${stamp}`)
     const image = await page.evaluate(() => {
       const canvas = document.createElement('canvas')

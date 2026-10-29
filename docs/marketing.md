@@ -90,3 +90,8 @@ Todos los textos incluyen `nadamas.app` y el canal de WhatsApp: `https://whatsap
 - Empieza con emoji + "Para <audiencia>:".
 - Emojis dentro del texto, cierre con `👉 nadamas.app`.
 - En Facebook/Instagram, 2–3 hashtags terminando en `#nadamas`.
+
+
+## Precio público de Nadamas
+
+La suscripción cuesta $299 MXN al mes por escuela e incluye a todos sus profesores. La primera escuela de cada propietario tiene una única prueba de 15 días sin tarjeta. Los $49 MXN al mes se reservan a escuelas seleccionadas con un código válido administrado desde Nadamas; el precio se conserva mientras la suscripción siga activa y se pierde al finalizar un periodo cancelado o la gracia sin resolver el pago. No anunciar $49 como precio general ni una promoción automática de seis meses. Los pagos de clases y cuotas de alumnos son independientes de esta suscripción.

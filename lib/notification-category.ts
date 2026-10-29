@@ -11,6 +11,7 @@ export const NOTIFICATION_CATEGORIES: Array<{ id: NotificationCategory; label: s
 ]
 
 const BY_TYPE: Record<NotificationType, NotificationCategory> = {
+  subscription_reminder: 'payments',
   payment_pending: 'payments',
   payment_reviewed: 'payments',
   athlete_profile_invitation: 'invitations',

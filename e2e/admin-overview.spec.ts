@@ -149,7 +149,9 @@ test('admin overview protects global data and explores schools, roles, profiles 
     })
     await page.goto('/admin/home')
     await expect(page.getByRole('heading', { name: 'Panel de administración' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Actualizar', exact: true })).toBeEnabled()
+    await expect(
+      page.getByRole('button', { name: 'Actualizar', exact: true }).first()
+    ).toBeEnabled()
     await page.getByRole('searchbox', { name: 'Buscar escuelas' }).fill(suffix)
     await expect(
       page.getByRole('heading', { name: `Escuela ${suffix}`, exact: true })
@@ -176,14 +178,59 @@ test('admin overview protects global data and explores schools, roles, profiles 
     ).toBeVisible()
     await expect(page.getByText('5 clases · sin caducidad', { exact: true })).toBeVisible()
     await sections.getByRole('button', { name: 'Suscripción Nadamas', exact: true }).click()
-    await expect(page.getByText('$49', { exact: true })).toBeVisible()
     await expect(
-      page.getByText('Oferta publicada · Cobro pendiente de integrar', { exact: true })
+      page.getByRole('heading', { name: 'Suscripciones de Nadamas', exact: true })
     ).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Nuevo código', exact: true })).toBeEnabled()
+    await page.getByRole('button', { name: 'Datos bancarios', exact: true }).click()
+    const bankDialog = page.getByRole('dialog', { name: 'Datos bancarios de Nadamas' })
+    await expect(
+      bankDialog.getByRole('textbox', { name: 'Beneficiario', exact: true })
+    ).toBeVisible()
+    for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true
+      )
+      await bankDialog.getByRole('textbox', { name: 'CLABE', exact: true }).focus()
+      await expect(
+        bankDialog.getByRole('button', { name: 'Guardar', exact: true })
+      ).toBeInViewport()
+      await page.screenshot({
+        path: `/tmp/nadamas-subscription-admin-${width}.png`,
+        fullPage: false,
+      })
+    }
+    await bankDialog.getByRole('button', { name: 'Cancelar', exact: true }).click()
+    await page.getByRole('button', { name: 'Exentar escuela', exact: true }).click()
+    const exemptionDialog = page.getByRole('dialog', { name: 'Exentar escuela de pago' })
+    await exemptionDialog.getByLabel('Escuela', { exact: true }).selectOption(suffix)
+    await exemptionDialog
+      .getByRole('textbox', { name: 'Motivo', exact: true })
+      .fill('Escuela aliada para pruebas')
+    await page.setViewportSize({ width: 320, height: 900 })
+    await expect(
+      exemptionDialog.getByRole('button', { name: 'Exentar de pago', exact: true })
+    ).toBeInViewport()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: '/tmp/nadamas-exemption-admin-mobile.png', fullPage: false })
+    await exemptionDialog.getByRole('button', { name: 'Exentar de pago', exact: true }).click()
+    await expect(exemptionDialog).not.toBeVisible()
+    const exemptRow = page.getByRole('listitem').filter({ hasText: `Escuela ${suffix}` })
+    await expect(exemptRow.getByText('Sin cobro', { exact: true })).toBeVisible()
+    await exemptRow.getByRole('button', { name: 'Quitar exención', exact: true }).click()
+    const removalDialog = page.getByRole('dialog', { name: 'Quitar exención de pago' })
+    await removalDialog
+      .getByRole('textbox', { name: 'Motivo', exact: true })
+      .fill('Termina convenio de pruebas')
+    await removalDialog.getByRole('button', { name: 'Quitar exención', exact: true }).click()
+    await expect(removalDialog).not.toBeVisible()
     expect(overviewRequests).toBe(1)
-    await page.getByRole('button', { name: 'Actualizar', exact: true }).click()
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).first().click()
     await expect.poll(() => overviewRequests).toBe(2)
-    await expect(page.getByRole('button', { name: 'Actualizar', exact: true })).toBeEnabled()
+    await expect(
+      page.getByRole('button', { name: 'Actualizar', exact: true }).first()
+    ).toBeEnabled()
     await sections.getByRole('button', { name: 'Escuelas', exact: true }).click()
     for (const width of [320, 390, 1440]) {
       await page.setViewportSize({ width, height: 900 })
@@ -192,6 +239,38 @@ test('admin overview protects global data and explores schools, roles, profiles 
       )
       await page.screenshot({ path: `/tmp/nadamas-admin-${width}.png`, fullPage: true })
     }
+    await seed(`schoolSubscriptions/${suffix}`, {
+      schoolId: suffix,
+      ownerId: admin.localId,
+      trialStartedAt: Date.now(),
+      trialEndsAt: Date.now() + 15 * 86400000,
+      cancelAtPeriodEnd: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    })
+    await page.evaluate((schoolId) => localStorage.setItem('nadamas.schoolId', schoolId), suffix)
+    await page.goto('/school/subscription')
+    await expect(page.getByRole('heading', { name: 'Suscripción de la escuela' })).toBeVisible()
+    await expect(page.getByText('Prueba gratuita', { exact: true })).toBeVisible()
+    await page.setViewportSize({ width: 320, height: 900 })
+    await page.screenshot({ path: '/tmp/nadamas-subscription-mobile.png', fullPage: false })
+    await page.getByRole('button', { name: 'Tengo un código', exact: true }).click()
+    const codeDialog = page.getByRole('dialog', { name: 'Aplicar código de suscripción' })
+    for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height: 900 })
+      await codeDialog.getByRole('textbox', { name: 'Código promocional' }).fill('CODIGO-PRUEBA')
+      await expect(
+        codeDialog.getByRole('button', { name: 'Aplicar código', exact: true })
+      ).toBeInViewport()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true
+      )
+      await page.screenshot({
+        path: `/tmp/nadamas-subscription-school-${width}.png`,
+        fullPage: true,
+      })
+    }
+    await codeDialog.getByRole('button', { name: 'Cancelar', exact: true }).click()
   } finally {
     for (const path of paths.reverse())
       await fetch(`${root}/${path}`, {

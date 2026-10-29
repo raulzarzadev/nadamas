@@ -2,13 +2,13 @@
 
 import Link from 'next/link'
 import { type ReactNode, useState } from 'react'
+import AdminSubscriptions from '@/components/subscriptions/AdminSubscriptions'
 import {
   ADMIN_ROLE_LABELS,
   type AdminOverview,
   type AdminPaymentProduct,
   type AdminPersonRole,
 } from '@/lib/admin-overview'
-import { NADAMAS_PRICING } from '@/lib/pricing'
 import AdminSchoolDetails from './AdminSchoolDetails'
 
 export type AdminOverviewTab = 'schools' | 'people' | 'profiles' | 'payments' | 'subscription'
@@ -69,39 +69,7 @@ export default function AdminOverviewLists({
   const slice = <T,>(items: T[]) =>
     items.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
 
-  if (tab === 'subscription')
-    return (
-      <section
-        className="mt-5 bg-white p-4 sm:rounded-2xl sm:border sm:border-(--c-border) sm:p-6"
-        aria-labelledby="app-subscription"
-      >
-        <Badge>Precio de lanzamiento</Badge>
-        <h2 id="app-subscription" className="mt-4 text-xl font-bold">
-          Suscripción de Nadamas
-        </h2>
-        <p className="mt-4 text-(--c-text-2)">
-          Antes <s>${NADAMAS_PRICING.regularMonthly} MXN / mes</s>
-        </p>
-        <p className="mt-2">
-          <span className="text-5xl font-extrabold">${NADAMAS_PRICING.launchMonthly}</span>
-          <span className="ml-2 text-sm text-(--c-text-2)">MXN / mes</span>
-        </p>
-        <p className="mt-4 text-sm">Incluye todas las funcionalidades.</p>
-        <div className="mt-5 rounded-xl bg-(--c-surface) p-4 text-sm leading-relaxed">
-          <p className="font-bold">Oferta publicada · Cobro pendiente de integrar</p>
-          <p className="mt-2 text-(--c-text-2)">
-            Todavía no se registran suscripciones ni cobros de la aplicación. Los pagos de alumnos a
-            escuelas y entrenadores se muestran en «Planes y pagos».
-          </p>
-        </div>
-        <Link
-          href="/precio"
-          className="mt-4 inline-flex min-h-11 items-center font-bold text-(--c-aqua-strong) underline"
-        >
-          Ver página de precios
-        </Link>
-      </section>
-    )
+  if (tab === 'subscription') return <AdminSubscriptions query={query} />
 
   return (
     <div className="mt-5">

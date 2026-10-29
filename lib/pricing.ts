@@ -1,5 +1,6 @@
 export const NADAMAS_PRICING = {
   regularMonthly: 299,
-  launchMonthly: 49,
+  promotionalMonthly: 49,
+  trialDays: 15,
   currency: 'MXN',
 } as const

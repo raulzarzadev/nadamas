@@ -6,7 +6,7 @@ import { auth, authStateChanged, googleLogin, logOut } from '@/firebase/index'
 import { getUser, loginUser } from '@/firebase/users'
 import { analyticsEnabled, trackEvent } from '@/lib/analytics/client'
 import { safeRedirectPath } from '@/lib/post-login-path'
-import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
+
 import { normalizeRoles } from '@/lib/roles'
 import { reportInternalError } from '@/lib/user-facing-error'
 
@@ -48,9 +48,19 @@ export function UserProvider({ children }) {
   const refreshUser = async () => {
     const id = user?.uid || user?.id
     if (!id) return null
-    const freshUser = await getUser(id)
-    setUser(freshUser)
-    return freshUser
+    let timeout
+    try {
+      const freshUser = await Promise.race([
+        getUser(id),
+        new Promise((_, reject) => {
+          timeout = setTimeout(() => reject(new Error('PROFILE_TIMEOUT')), 15000)
+        }),
+      ])
+      setUser(freshUser)
+      return freshUser
+    } finally {
+      clearTimeout(timeout)
+    }
   }
 
   const login = async (provider = 'google') => {
@@ -63,9 +73,7 @@ export function UserProvider({ children }) {
             .then((res) => {
               setUser(res)
               trackEvent('login_success', { provider })
-              redirectTo
-                ? router.push(redirectTo)
-                : router.push(destinationForRole(entryRoleForSession(normalizeRoles(res))))
+              redirectTo ? router.push(redirectTo) : router.push('/dashboard')
             })
             .catch((err) => {
               reportInternalError('AUTH_PROFILE', err)

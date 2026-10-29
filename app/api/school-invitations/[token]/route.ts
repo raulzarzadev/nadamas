@@ -7,6 +7,7 @@ import {
   getInvitationByToken,
 } from '@/lib/server/school-invitations'
 import { getSchoolById } from '@/lib/server/schools'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 
@@ -44,7 +45,7 @@ export async function GET(request: Request, { params }: RouteProps) {
   })
 }
 
-export async function POST(request: Request, { params }: RouteProps) {
+async function handlePOST(request: Request, { params }: RouteProps) {
   const caller = await getSchoolCaller(request)
   if (!caller) return NextResponse.json({ error: 'No autenticado.' }, { status: 401 })
   const { token } = await params
@@ -120,4 +121,14 @@ export async function POST(request: Request, { params }: RouteProps) {
     }).catch(() => {})
   }
   return NextResponse.json(result)
+}
+
+export async function POST(request: Request, props: RouteProps) {
+  try {
+    return await handlePOST(request, props)
+  } catch (error) {
+    const response = subscriptionErrorResponse(error)
+    if (response) return response
+    throw error
+  }
 }

@@ -16,7 +16,9 @@ test('pase de lista: credencial, incorporación, duplicados y modal móvil', asy
   const suffix = crypto.randomUUID()
   const schoolId = `attendance-${suffix}`
   const occurrenceId = `attendance-class-${suffix}`
-  const date = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+  const date = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', {
+    timeZone: 'America/Mexico_City',
+  })
   const created = new Set<string>()
   function encode(value: unknown): Record<string, unknown> {
     if (typeof value === 'string') return { stringValue: value }
@@ -65,6 +67,12 @@ test('pase de lista: credencial, incorporación, duplicados y modal móvil', asy
       email: account.email,
       nickname: name,
       roles: { athlete: true, coach, admin: false },
+      onboarding: {
+        version: 1,
+        interests: [coach ? 'coach' : 'swimmer'],
+        coachContext: coach ? 'independent' : null,
+        completedAt: 1,
+      },
     })
     return account
   }
@@ -202,7 +210,17 @@ test('pase de lista: credencial, incorporación, duplicados y modal móvil', asy
     await page.waitForURL(/\/athlete\/(bookings|progress)$/)
     await page.evaluate((id) => window.localStorage.setItem('nadamas.schoolId', id), schoolId)
     await page.goto('/school/students')
+    const reportRequest = page.waitForResponse((response) =>
+      response.url().includes('/attendance/report')
+    )
     await page.getByRole('button', { name: 'Pases de lista', exact: true }).click()
+    const reportResponse = await reportRequest
+    const reportPayload = await reportResponse.json()
+    expect(reportResponse.ok(), JSON.stringify({ date, reportPayload })).toBe(true)
+    expect(
+      reportPayload.classes.some((item: { startTime: string }) => item.startTime === '18:00'),
+      JSON.stringify({ date, reportPayload })
+    ).toBe(true)
     await page
       .getByRole('dialog', { name: 'Pases de lista', exact: true })
       .getByRole('button', { name: /18:00.*19:00/ })

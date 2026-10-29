@@ -1,5 +1,10 @@
 export const APP_ORIGIN = 'https://app.nadamas.app'
 
+/** Development login stays on the current localhost host and port. */
+export function appLoginHref(environment = process.env.NODE_ENV) {
+  return environment === 'development' ? '/login' : `${APP_ORIGIN}/login`
+}
+
 const APP_ROOTS = new Set([
   'login',
   'logout',

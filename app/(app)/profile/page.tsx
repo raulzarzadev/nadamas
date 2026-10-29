@@ -164,6 +164,18 @@ export default function ProfilePage() {
         />
       </div>
 
+      <div className="rounded-2xl border border-(--c-border) bg-white p-5">
+        <h2 className="font-bold">Cómo uso Nadamas</h2>
+        <p className="mt-2 text-sm text-(--c-text-2)">
+          Nadador, entrenador o coordinador: combina tus perfiles y retoma tus primeros pasos.
+        </p>
+        <Link
+          href="/welcome"
+          className="mt-3 inline-flex min-h-11 items-center font-bold underline"
+        >
+          Configurar mis perfiles
+        </Link>
+      </div>
       <AdditionalProfiles />
 
       <PublicLinkEditor />
