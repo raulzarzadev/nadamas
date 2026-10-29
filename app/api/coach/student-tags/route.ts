@@ -9,6 +9,7 @@ import { requirePersonalCoach } from '@/lib/server/personal-class-access'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { schoolLabelList } from '@/lib/server/school-labels'
 import { getOrRestoreSchoolAgendaStudent } from '@/lib/server/school-students'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 import { STUDENT_LABEL_COLORS, studentLabelColor } from '@/lib/student-label-colors'
 
 export const runtime = 'nodejs'
@@ -151,7 +152,9 @@ export async function GET(request: Request) {
       },
       { headers: { 'Cache-Control': 'private, no-store' } }
     )
-  } catch {
+  } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     return NextResponse.json({ error: 'No pudimos cargar las etiquetas.' }, { status: 500 })
   }
 }
@@ -218,7 +221,9 @@ export async function POST(request: Request) {
         })
     })
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     return NextResponse.json({ error: 'No pudimos guardar la etiqueta.' }, { status: 500 })
   }
 }
@@ -255,7 +260,9 @@ export async function DELETE(request: Request) {
       throw new Error('label_delete_failed')
     await labelRef.delete()
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     return NextResponse.json({ error: 'No pudimos eliminar la etiqueta.' }, { status: 500 })
   }
 }

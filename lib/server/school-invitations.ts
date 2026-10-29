@@ -1,6 +1,7 @@
 import { validProfileBirthDate } from '@/lib/additional-profile'
 import { normalizeSchoolMembership } from '@/lib/school'
 import { assertSchoolSubscriptionAccess } from './subscriptions/access'
+import { reserveSchoolSeatChanges } from './subscriptions/seats'
 import 'server-only'
 
 import { createHash, randomBytes } from 'node:crypto'
@@ -328,19 +329,26 @@ export async function acceptSchoolInvitation(args: {
           ? [existingMembership.role]
           : []
       const roles = [...new Set([...existingRoles, 'student'] as SchoolRole[])]
-      transaction.set(
-        membershipRef,
-        {
-          schoolId: invitation.schoolId,
-          userId: args.caller.uid,
-          role: existingMembership?.role || 'student',
-          roles,
+      const memberUpdate = {
+        schoolId: invitation.schoolId,
+        userId: args.caller.uid,
+        role: existingMembership?.role || 'student',
+        roles,
+        status: 'active',
+        createdAt: existingMembership?.createdAt || now,
+        updatedAt: now,
+      }
+      const seat = await reserveSchoolSeatChanges(transaction, invitation.schoolId, 'student', {
+        memberships: [{ ...memberUpdate, id: membershipRef.id }],
+        students: uniqueTargets.map((target) => ({
+          id: target.ref.id,
           status: 'active',
-          createdAt: existingMembership?.createdAt || now,
-          updatedAt: now,
-        },
-        { merge: true }
-      )
+          studentUserId: target.isSelf ? args.caller.uid : '',
+          additionalProfileId: target.profile?.id || '',
+        })),
+      })
+      transaction.set(membershipRef, memberUpdate, { merge: true })
+      seat.claim()
       for (let index = 0; index < uniqueTargets.length; index += 1) {
         const target = uniqueTargets[index]
         const snapshot = studentSnapshots[index]
@@ -483,6 +491,35 @@ export async function acceptSchoolInvitation(args: {
       status: 'active' as const,
       updatedAt: now,
     }
+    const currentMember = membershipSnapshot.exists
+      ? normalizeSchoolMembership(membershipSnapshot.data() as SchoolMembership)
+      : null
+    // Existing memberships only gain the role (status unchanged); new ones start active.
+    const memberAfter = currentMember
+      ? {
+          ...currentMember,
+          id: membershipRef.id,
+          roles: [
+            ...new Set([
+              ...(currentMember.roles?.length ? currentMember.roles : [currentMember.role]),
+              invitation.role,
+            ]),
+          ],
+        }
+      : {
+          id: membershipRef.id,
+          userId: args.caller.uid,
+          role: invitation.role,
+          roles: [invitation.role],
+          status: 'active',
+        }
+    const studentSeat = studentRef
+      ? await reserveSchoolSeatChanges(transaction, invitation.schoolId, 'student', {
+          memberships: [memberAfter],
+          students: [{ ...studentDocument, id: studentRef.id }],
+        })
+      : null
+    studentSeat?.claim()
     if (invitation.role === 'teacher') {
       transaction.set(
         adminDb.collection('users').doc(args.caller.uid),

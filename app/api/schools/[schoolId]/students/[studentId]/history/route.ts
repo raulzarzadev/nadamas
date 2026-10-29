@@ -5,6 +5,7 @@ import { requireSchoolAccess } from '@/lib/server/school-access'
 import { getSchoolStudentHistory } from '@/lib/server/school-student-history'
 import { getOrRestoreSchoolAgendaStudent } from '@/lib/server/school-students'
 import { getSchoolById } from '@/lib/server/schools'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 
@@ -50,7 +51,9 @@ export async function GET(
       director || teacher
     )
     return NextResponse.json(history)
-  } catch {
+  } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     return NextResponse.json(
       { error: 'No se pudo cargar el historial del alumno.' },
       { status: 500 }

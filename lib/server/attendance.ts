@@ -30,6 +30,7 @@ import {
   schoolScheduleOwners,
 } from './school-agenda'
 import { listSchoolStudents } from './school-students'
+import { reserveSchoolSeat } from './subscriptions/seats'
 
 export function attendanceClassMatches(a: SchoolClassOccurrence, b: SchoolClassOccurrence) {
   return (
@@ -533,6 +534,7 @@ export async function recordAttendance(args: {
       ...paymentEvents,
     ])
     const now = Date.now()
+    let seat: { claim: () => void } | null = null
     if (!args.student && !studentSnapshot.exists && args.profile) {
       // This is a roster relationship only; it does not grant account roles or school access.
       const owner =
@@ -542,6 +544,8 @@ export async function recordAttendance(args: {
             )
           : null
       const ownerId = owner?.data()?.ownerId
+      // profileId is the roster seat key (additionalProfileId or studentUserId).
+      seat = await reserveSchoolSeat(transaction, args.schoolId, 'student', profileId || studentId)
       transaction.set(studentRef, {
         id: studentId,
         schoolId: args.schoolId,
@@ -603,6 +607,7 @@ export async function recordAttendance(args: {
       method: args.method,
     }
     applyPayment()
+    seat?.claim()
     transaction.set(recordRef, record)
     transaction.set(
       agendaRef,

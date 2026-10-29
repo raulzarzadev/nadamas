@@ -17,6 +17,7 @@ import { createSchoolInvitation } from '@/lib/server/school-invitations'
 import { getSchoolStudentSummaries } from '@/lib/server/school-student-summary'
 import { createSchoolStudent, listSchoolStudents } from '@/lib/server/school-students'
 import { getSchoolById } from '@/lib/server/schools'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 
@@ -170,20 +171,27 @@ export async function POST(request: Request, { params }: RouteProps) {
       { status: 400 }
     )
   }
-  const student = await createSchoolStudent({
-    schoolId,
-    createdBy: access.caller.uid,
-    guardianId: !isStaff ? access.caller.uid : undefined,
-    additionalProfileId: additional?.id,
-    guardianEmail: !isStaff ? access.caller.email || '' : '',
-    name: additional?.name || name,
-    birthDate: additional?.birthDate || birthDate,
-    gender: additional?.gender || (gender as SchoolGender),
-    guardianName,
-    guardianRelationship,
-    guardianPhone,
-    studentEmail,
-  })
+  let student: Awaited<ReturnType<typeof createSchoolStudent>>
+  try {
+    student = await createSchoolStudent({
+      schoolId,
+      createdBy: access.caller.uid,
+      guardianId: !isStaff ? access.caller.uid : undefined,
+      additionalProfileId: additional?.id,
+      guardianEmail: !isStaff ? access.caller.email || '' : '',
+      name: additional?.name || name,
+      birthDate: additional?.birthDate || birthDate,
+      gender: additional?.gender || (gender as SchoolGender),
+      guardianName,
+      guardianRelationship,
+      guardianPhone,
+      studentEmail,
+    })
+  } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
+    throw error
+  }
   const school = await getSchoolById(schoolId)
   let invitation = null
   let inviteUrl: string | null = null

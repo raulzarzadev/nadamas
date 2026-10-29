@@ -17,14 +17,9 @@ import {
   seatUsage,
 } from '@/lib/subscriptions/plans'
 
-export async function readSchoolSeats(
-  schoolId: string,
-  tx?: Transaction
-): Promise<{
-  limits: SchoolPlanLimits
-  usage: SeatUsage
-  keys: { teachers: Set<string>; students: Set<string> }
-}> {
+type SeatMembershipDoc = SeatMembership & { id: string }
+
+async function readSeatDocs(schoolId: string, tx?: Transaction) {
   const subscriptionRef = adminDb.collection('schoolSubscriptions').doc(schoolId)
   const membershipsQuery = adminDb
     .collection('schoolMemberships')
@@ -37,15 +32,27 @@ export async function readSchoolSeats(
   const [subscription, memberships, students] = tx
     ? await Promise.all([tx.get(subscriptionRef), tx.get(membershipsQuery), tx.get(studentsQuery)])
     : await Promise.all([subscriptionRef.get(), membershipsQuery.get(), studentsQuery.get()])
-  const keys = seatKeys({
-    memberships: memberships.docs.map((doc) => doc.data() as SeatMembership),
-    students: students.docs.map((doc) => ({ ...(doc.data() as SeatStudent), id: doc.id })),
-  })
   return {
     limits: schoolPlanLimits((subscription.data() as SchoolSubscription | undefined) ?? null),
-    usage: seatUsage(keys),
-    keys,
+    memberships: memberships.docs.map((doc) => ({
+      ...(doc.data() as SeatMembership),
+      id: doc.id,
+    })),
+    students: students.docs.map((doc) => ({ ...(doc.data() as SeatStudent), id: doc.id })),
   }
+}
+
+export async function readSchoolSeats(
+  schoolId: string,
+  tx?: Transaction
+): Promise<{
+  limits: SchoolPlanLimits
+  usage: SeatUsage
+  keys: { teachers: Set<string>; students: Set<string> }
+}> {
+  const { limits, memberships, students } = await readSeatDocs(schoolId, tx)
+  const keys = seatKeys({ memberships, students })
+  return { limits, usage: seatUsage(keys), keys }
 }
 
 /**
@@ -64,6 +71,45 @@ export async function reserveSchoolSeat(
   const { limits, usage, keys } = await readSchoolSeats(schoolId, tx)
   if ((kind === 'teacher' ? keys.teachers : keys.students).has(key)) return { claim: () => {} }
   if (!hasSeat(limits, usage, kind))
+    throw new SubscriptionError('plan_limit_reached', planLimitMessage(limits), 409)
+  return {
+    claim: () => tx.set(lockRef, { schoolId, updatedAt: Date.now() }, { merge: true }),
+  }
+}
+
+const withChanges = <T extends { id: string }>(current: T[], changes: T[] = []) => {
+  const byId = new Map(current.map((item) => [item.id, item]))
+  for (const change of changes) byId.set(change.id, change)
+  return [...byId.values()]
+}
+
+/**
+ * Like `reserveSchoolSeat`, for writes that touch several roster/membership docs at once
+ * (or re-key an existing one). Pass each touched doc's post-write seat fields; the seat
+ * count is recomputed with them applied, so re-keying an already counted person is a no-op
+ * and two new people in one write need two free seats. Same read-then-`claim()` contract.
+ */
+export async function reserveSchoolSeatChanges(
+  tx: Transaction,
+  schoolId: string,
+  kind: SeatKind,
+  changes: { memberships?: SeatMembershipDoc[]; students?: SeatStudent[] }
+): Promise<{ claim: () => void }> {
+  const lockRef = adminDb.collection('schoolSeatLocks').doc(schoolId)
+  await tx.get(lockRef)
+  const { limits, memberships, students } = await readSeatDocs(schoolId, tx)
+  const pick = (keys: ReturnType<typeof seatKeys>) =>
+    (kind === 'teacher' ? keys.teachers : keys.students).size
+  const before = pick(seatKeys({ memberships, students }))
+  const after = pick(
+    seatKeys({
+      memberships: withChanges(memberships, changes.memberships),
+      students: withChanges(students, changes.students),
+    })
+  )
+  if (after <= before) return { claim: () => {} }
+  const limit = kind === 'teacher' ? limits.teachers : limits.students
+  if (limit !== null && after > limit)
     throw new SubscriptionError('plan_limit_reached', planLimitMessage(limits), 409)
   return {
     claim: () => tx.set(lockRef, { schoolId, updatedAt: Date.now() }, { merge: true }),

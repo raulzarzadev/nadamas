@@ -9,6 +9,7 @@ import { adminAuth, adminDb } from '@/lib/server/firebase-admin'
 import { requirePersonalCoach } from '@/lib/server/personal-class-access'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { getOrRestoreSchoolAgendaStudent } from '@/lib/server/school-students'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 export async function POST(request: Request) {
@@ -137,6 +138,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   } catch (error) {
     if (pending) await pending.ref.update({ status: 'failed' }).catch(() => {})
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     console.error('[ATHLETE_PROFILE_INVITATION_SEND]', error)
     return NextResponse.json(
       { error: 'No pudimos enviar la invitación. Espera un momento e inténtalo de nuevo.' },

@@ -164,3 +164,169 @@ test('client SDK rules deny reading and writing schoolSeatLocks', async () => {
       })
   }
 })
+
+const BASIC_LIMIT_MESSAGE =
+  'Llegaste al límite de tu plan Básico (5 profes / 100 alumnos). Contáctanos para un plan personalizado.'
+
+async function signup() {
+  const response = await fetch(
+    'http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp?key=local-test',
+    {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        email: `${crypto.randomUUID()}@test.com`,
+        password: 'local-test-password',
+        returnSecureToken: true,
+      }),
+    }
+  )
+  expect(response.ok).toBe(true)
+  return (await response.json()) as { localId: string; idToken: string }
+}
+
+async function seedDirectorSchool(students: number) {
+  const schoolId = await seedSchool({ students })
+  const director = await signup()
+  await db.collection('schools').doc(schoolId).set({
+    name: 'Escuela de prueba',
+    createdBy: director.localId,
+    directorId: director.localId,
+    isPublic: true,
+  })
+  await db
+    .collection('schoolMemberships')
+    .doc(`${schoolId}_${director.localId}`)
+    .set({
+      schoolId,
+      userId: director.localId,
+      role: 'director',
+      roles: ['director'],
+      status: 'active',
+    })
+  return { schoolId, directorHeaders: { authorization: `Bearer ${director.idToken}` } }
+}
+
+async function cleanupSchool(schoolId: string) {
+  await cleanup(schoolId)
+  const writer = db.bulkWriter()
+  const requests = await db
+    .collection('schoolAccessRequests')
+    .where('schoolId', '==', schoolId)
+    .get()
+  for (const doc of requests.docs) writer.delete(doc.ref)
+  writer.delete(db.collection('schools').doc(schoolId))
+  await writer.close()
+}
+
+async function seedAccessRequest(schoolId: string, userId: string) {
+  await db
+    .collection('schoolAccessRequests')
+    .doc(`${schoolId}_${userId}`)
+    .set({
+      id: `${schoolId}_${userId}`,
+      schoolId,
+      userId,
+      name: 'Nadador',
+      email: '',
+      status: 'pending',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    })
+}
+
+const studentCount = async (schoolId: string) =>
+  (await db.collection('schoolStudents').where('schoolId', '==', schoolId).count().get()).data()
+    .count
+
+test('createSchoolStudent at 100 returns plan_limit_reached', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId, directorHeaders } = await seedDirectorSchool(100)
+  try {
+    const response = await request.post(`/api/schools/${schoolId}/students/quick`, {
+      headers: directorHeaders,
+      data: { name: 'Alumno nuevo' },
+    })
+    expect(response.status(), await response.text()).toBe(409)
+    expect(await response.json()).toEqual({
+      code: 'plan_limit_reached',
+      error: BASIC_LIMIT_MESSAGE,
+    })
+    expect(await studentCount(schoolId)).toBe(100)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('createSchoolStudent at 99 enrolls and claims the seat lock', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId, directorHeaders } = await seedDirectorSchool(99)
+  try {
+    const response = await request.post(`/api/schools/${schoolId}/students/quick`, {
+      headers: directorHeaders,
+      data: { name: 'Alumno nuevo' },
+    })
+    expect(response.status(), await response.text()).toBe(201)
+    expect(await studentCount(schoolId)).toBe(100)
+    expect((await db.collection('schoolSeatLocks').doc(schoolId).get()).exists).toBe(true)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('approving an access request for an already-active student is not blocked', async ({
+  request,
+}) => {
+  test.setTimeout(60000)
+  const { schoolId, directorHeaders } = await seedDirectorSchool(99)
+  const athlete = await signup()
+  try {
+    await db
+      .collection('schoolStudents')
+      .doc(`${schoolId}_${athlete.localId}`)
+      .set({ schoolId, status: 'active', studentUserId: athlete.localId, name: 'Nadador' })
+    await seedAccessRequest(schoolId, athlete.localId)
+    expect((await seats.readSchoolSeats(schoolId)).usage.students).toBe(100)
+    const response = await request.patch(`/api/schools/${schoolId}/access-requests`, {
+      headers: directorHeaders,
+      data: { userId: athlete.localId, status: 'approved' },
+    })
+    expect(response.ok(), await response.text()).toBe(true)
+    expect((await seats.readSchoolSeats(schoolId)).usage.students).toBe(100)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('reactivating a suspended student at 100/100 is blocked', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId, directorHeaders } = await seedDirectorSchool(100)
+  const athlete = await signup()
+  const studentRef = db.collection('schoolStudents').doc(`${schoolId}_${athlete.localId}`)
+  try {
+    await studentRef.set({
+      schoolId,
+      status: 'inactive',
+      studentUserId: athlete.localId,
+      name: 'Nadador',
+    })
+    await seedAccessRequest(schoolId, athlete.localId)
+    const response = await request.patch(`/api/schools/${schoolId}/access-requests`, {
+      headers: directorHeaders,
+      data: { userId: athlete.localId, status: 'approved' },
+    })
+    expect(response.status(), await response.text()).toBe(409)
+    expect(await response.json()).toEqual({
+      code: 'plan_limit_reached',
+      error: BASIC_LIMIT_MESSAGE,
+    })
+    expect((await studentRef.get()).data()?.status).toBe('inactive')
+    expect(
+      (
+        await db.collection('schoolAccessRequests').doc(`${schoolId}_${athlete.localId}`).get()
+      ).data()?.status
+    ).toBe('pending')
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})

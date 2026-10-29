@@ -1,4 +1,5 @@
 import { assertSchoolSubscriptionAccess } from './subscriptions/access'
+import { reserveSchoolSeat, reserveSchoolSeatChanges } from './subscriptions/seats'
 import 'server-only'
 
 import {
@@ -125,27 +126,14 @@ export async function createSchoolStudent(args: {
   studentEmail?: string
   additionalProfileId?: string
   studentUserId?: string
+  /** Also activate this account's `student` membership in the same transaction. */
+  memberUserId?: string
 }) {
   const now = Date.now()
   const linkedId = args.additionalProfileId || args.studentUserId
   const ref = linkedId
     ? adminDb.collection('schoolStudents').doc(`${args.schoolId}_${linkedId}`)
     : adminDb.collection('schoolStudents').doc()
-  if (linkedId) {
-    const current = await ref.get()
-    if (current.exists) {
-      const student = current.data() as SchoolStudent
-      const managedBy = [...(student.managerIds || []), ...(student.guardianIds || [])]
-      const sameAccount = args.studentUserId && student.studentUserId === args.studentUserId
-      if (
-        student.schoolId !== args.schoolId ||
-        (!sameAccount && !managedBy.includes(args.guardianId || ''))
-      ) {
-        throw new Error('SCHOOL_STUDENT_ALREADY_LINKED')
-      }
-      return { ...student, id: ref.id }
-    }
-  }
   const student: SchoolStudent = {
     id: ref.id,
     schoolId: args.schoolId,
@@ -166,11 +154,56 @@ export async function createSchoolStudent(args: {
     createdAt: now,
     updatedAt: now,
   }
-  await adminDb.runTransaction(async (tx) => {
+  const membershipRef = args.memberUserId
+    ? adminDb.collection('schoolMemberships').doc(`${args.schoolId}_${args.memberUserId}`)
+    : null
+  return adminDb.runTransaction(async (tx) => {
+    const [current, membership] = await Promise.all([
+      linkedId ? tx.get(ref) : null,
+      membershipRef ? tx.get(membershipRef) : null,
+    ])
+    let existing: SchoolStudent | null = null
+    if (current?.exists) {
+      const data = current.data() as SchoolStudent
+      const managedBy = [...(data.managerIds || []), ...(data.guardianIds || [])]
+      const sameAccount = args.studentUserId && data.studentUserId === args.studentUserId
+      if (
+        data.schoolId !== args.schoolId ||
+        (!sameAccount && !managedBy.includes(args.guardianId || ''))
+      ) {
+        throw new Error('SCHOOL_STUDENT_ALREADY_LINKED')
+      }
+      existing = { ...data, id: ref.id }
+    }
+    if (existing && !membershipRef) return existing
     await assertSchoolSubscriptionAccess(args.schoolId, tx)
-    tx.set(ref, student)
+    const memberData = membership?.data() as SchoolMembership | undefined
+    const memberUpdate =
+      membershipRef && args.memberUserId
+        ? {
+            schoolId: args.schoolId,
+            userId: args.memberUserId,
+            role: memberData?.role || 'student',
+            roles: [
+              ...new Set([
+                ...(memberData?.roles || (memberData?.role ? [memberData.role] : [])),
+                'student' as const,
+              ]),
+            ],
+            status: 'active' as const,
+            createdAt: memberData?.createdAt || now,
+            updatedAt: now,
+          }
+        : null
+    const seat = await reserveSchoolSeatChanges(tx, args.schoolId, 'student', {
+      students: existing ? [] : [student],
+      memberships: memberUpdate && membershipRef ? [{ ...memberUpdate, id: membershipRef.id }] : [],
+    })
+    if (!existing) tx.set(ref, student)
+    if (membershipRef && memberUpdate) tx.set(membershipRef, memberUpdate, { merge: true })
+    seat.claim()
+    return existing || student
   })
-  return student
 }
 
 /** Restore legacy agenda participants without changing their IDs or existing history. */
@@ -213,7 +246,9 @@ export async function getOrRestoreSchoolAgendaStudent(schoolId: string, studentI
       const student = { ...current.data(), id: current.id } as SchoolStudent
       return student.schoolId === schoolId ? student : null
     }
+    const seat = await reserveSchoolSeat(tx, schoolId, 'student', studentId)
     tx.set(ref, restored)
+    seat.claim()
     return restored
   })
 }
