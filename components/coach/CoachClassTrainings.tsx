@@ -4,7 +4,14 @@ import { useCallback, useEffect, useState } from 'react'
 import { FiChevronDown, FiCopy, FiEdit2, FiRepeat } from 'react-icons/fi'
 import LabelChip, { type ColorLabel } from '@/components/ui/label-chip'
 import Sheet from '@/components/ui/sheet'
-import { type ClassTrainingBlock, normalizeClassTraining } from '@/lib/class-training'
+import {
+  blockDistance,
+  type ClassTrainingBlock,
+  formatTrainingDistance,
+  formatTrainingDuration,
+  normalizeClassTraining,
+  workoutDuration,
+} from '@/lib/class-training'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { ObjectiveWorkout } from '@/lib/training-planner'
 import { reportInternalError } from '@/lib/user-facing-error'
@@ -37,6 +44,20 @@ type Draft = {
   description: string
   tags: string[]
   training: ClassTrainingBlock[]
+}
+
+function SessionTotals({ blocks }: { blocks: ClassTrainingBlock[] }) {
+  const meters = blocks.reduce((total, block) => total + blockDistance(block), 0)
+  const duration = workoutDuration(blocks)
+  if (!blocks.length) return null
+  return (
+    <span className="text-xs font-normal text-(--c-text-2)">
+      {formatTrainingDistance(meters)} ·{' '}
+      {duration.seconds > 0
+        ? `${duration.complete ? '' : '~'}${formatTrainingDuration(duration.seconds)} ${duration.seconds >= 3600 ? 'h' : 'min'}`
+        : 'Tiempo sin calcular'}
+    </span>
+  )
 }
 
 export default function CoachClassTrainings({ createRequest }: { createRequest: number }) {
@@ -205,6 +226,7 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
                       {item.schoolId ? 'Escuela' : 'Clase personal'}
                     </span>
                   </span>
+                  <SessionTotals blocks={item.training} />
                   {item.tags?.length > 0 && (
                     <span className="flex flex-wrap gap-1.5">
                       {item.tags.map((tag) => (
@@ -289,6 +311,7 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
                     {item.title}{' '}
                     <span className="text-xs font-normal text-(--c-text-2)">· Sesión suelta</span>
                   </span>
+                  <SessionTotals blocks={item.training} />
                   {item.tags?.length > 0 && (
                     <span className="flex flex-wrap gap-1.5">
                       {item.tags.map((tag) => (
@@ -394,8 +417,9 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
       {draft && (
         <Sheet
           open
-          label={draft.id || editClass ? 'Editar sesión' : 'Crear sesión suelta'}
+          label={draft.id || editClass ? 'Editar sesión' : 'Nueva sesión'}
           keyboardAware
+          showFooterClose={false}
           closeDisabled={saving}
           onClose={() => {
             setDraft(null)
@@ -428,6 +452,9 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
           }
         >
           <div className="grid min-w-0 gap-4 pb-4">
+            <h2 className="text-xl font-bold">
+              {draft.id || editClass ? 'Editar sesión' : 'Nueva sesión'}
+            </h2>
             <label className="grid min-w-0 gap-2 text-sm font-semibold">
               Nombre de la sesión
               <input
