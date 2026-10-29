@@ -19,12 +19,6 @@ const ACTION_CARDS = [
     body: 'Configura tus planes y revisa tus pagos.',
     icon: FiDollarSign,
   },
-  {
-    href: '/coach/training',
-    title: 'Entrenos',
-    body: 'Crea y organiza los entrenamientos de tus alumnos.',
-    icon: FiActivity,
-  },
 ]
 
 function todayKey() {
