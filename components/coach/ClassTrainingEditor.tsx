@@ -121,8 +121,14 @@ export default function ClassTrainingEditor({
                     <strong className="mr-1 inline-block" hidden={series.kind === 'pause'}>
                       {series.repetitions}×
                       {series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
+                      {series.durationSeconds
+                        ? ` ${formatTrainingDuration(series.durationSeconds)} min`
+                        : ''}
                     </strong>
                     <span>{series.exercise}</span>
+                    {series.zone && (
+                      <span className="ml-1 text-[11px] font-semibold">· {series.zone}</span>
+                    )}
                     {series.material && (
                       <span className="ml-1 text-[11px] text-(--c-text-2)">
                         · {series.material}
@@ -130,7 +136,13 @@ export default function ClassTrainingEditor({
                     )}
                     {series.interval && !/^0+:0+$/.test(series.interval.trim()) && (
                       <span className="ml-1 text-[11px] text-(--c-text-2)">
-                        · {series.kind === 'pause' ? '' : 'Cada '}
+                        ·{' '}
+                        {series.kind === 'pause'
+                          ? ''
+                          : (series.intervalType ??
+                                (series.durationSeconds ? 'rest' : 'interval')) === 'rest'
+                            ? 'Descanso '
+                            : 'Cada '}
                         {series.interval}
                       </span>
                     )}
@@ -228,8 +240,14 @@ export default function ClassTrainingEditor({
                         <strong className="mr-1 inline-block" hidden={series.kind === 'pause'}>
                           {series.repetitions}×
                           {series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
+                          {series.durationSeconds
+                            ? ` ${formatTrainingDuration(series.durationSeconds)} min`
+                            : ''}
                         </strong>
                         <span>{series.exercise}</span>
+                        {series.zone && (
+                          <span className="ml-1 text-[11px] font-semibold">· {series.zone}</span>
+                        )}
                         {series.material && (
                           <span className="ml-1 text-[11px] text-(--c-text-2)">
                             · {series.material}
@@ -237,7 +255,13 @@ export default function ClassTrainingEditor({
                         )}
                         {series.interval && !/^0+:0+$/.test(series.interval.trim()) && (
                           <span className="ml-1 text-[11px] text-(--c-text-2)">
-                            · {series.kind === 'pause' ? '' : 'Cada '}
+                            ·{' '}
+                            {series.kind === 'pause'
+                              ? ''
+                              : (series.intervalType ??
+                                    (series.durationSeconds ? 'rest' : 'interval')) === 'rest'
+                                ? 'Descanso '
+                                : 'Cada '}
                             {series.interval}
                           </span>
                         )}

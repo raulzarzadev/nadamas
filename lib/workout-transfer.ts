@@ -89,8 +89,12 @@ export function exportWorkoutText(workout: ObjectiveWorkout): string {
       // Preserve an explicitly empty pause description as well.
       if (series.kind === 'pause' && !series.exercise) fields.push('Técnica: ')
       if (series.material) fields.push(`Material: ${inline(series.material)}`)
+      if (series.durationSeconds) fields.push(`Tiempo: ${series.durationSeconds} s`)
+      if (series.zone) fields.push(`Zona: ${series.zone}`)
       if (series.kind !== 'pause' && series.interval)
-        fields.push(`Cada: ${inline(series.interval)}`)
+        fields.push(
+          `${(series.intervalType ?? (series.durationSeconds ? 'rest' : 'interval')) === 'rest' ? 'Descanso' : 'Cada'}: ${inline(series.interval)}`
+        )
       lines.push(`  - ${fields.join(' | ')}`)
     }
   }
@@ -164,15 +168,25 @@ function readWorkoutSheet(text: string): RecordValue {
       }
       const seen = new Set<string>()
       for (const field of fields) {
-        const match = field.match(/^(Técnica|Material|Cada|Repeticiones|Distancia):\s?(.*)$/)
+        const match = field.match(
+          /^(Técnica|Material|Cada|Descanso|Repeticiones|Distancia|Tiempo|Zona):\s?(.*)$/
+        )
         if (!match || seen.has(match[1])) return failImport()
         seen.add(match[1])
         const value = readInline(match[2])
         if (match[1] === 'Técnica') series.exercise = value
         else if (match[1] === 'Material') series.material = value
-        else if (match[1] === 'Cada') {
+        else if (match[1] === 'Zona') {
+          if (pause || !/^Z[1-5]$/.test(value)) return failImport()
+          series.zone = value
+        } else if (match[1] === 'Tiempo') {
+          const duration = value.match(/^(\d+) s$/)
+          if (pause || !duration) return failImport()
+          series.durationSeconds = Number(duration[1])
+        } else if (match[1] === 'Cada' || match[1] === 'Descanso') {
           if (pause) return failImport()
           series.interval = value
+          series.intervalType = match[1] === 'Descanso' ? 'rest' : 'interval'
         } else if (match[1] === 'Repeticiones') {
           if (!pause || !/^\d+$/.test(value)) return failImport()
           series.repetitions = Number(value)

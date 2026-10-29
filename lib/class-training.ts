@@ -3,6 +3,9 @@ export interface ClassTrainingSeries {
   id: string
   repetitions: number
   distanceMeters: number | null
+  durationSeconds?: number | null
+  intervalType?: 'interval' | 'rest'
+  zone?: 'Z1' | 'Z2' | 'Z3' | 'Z4' | 'Z5'
   exercise: string
   material?: string
   interval: string
@@ -75,6 +78,14 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
           (!Number.isInteger(item.distanceMeters) ||
             item.distanceMeters < 1 ||
             item.distanceMeters > 100000)) ||
+        (item.durationSeconds != null &&
+          (!Number.isInteger(item.durationSeconds) ||
+            item.durationSeconds < 1 ||
+            item.durationSeconds > 59999)) ||
+        (item.zone !== undefined && !['Z1', 'Z2', 'Z3', 'Z4', 'Z5'].includes(item.zone)) ||
+        (item.intervalType !== undefined &&
+          item.intervalType !== 'interval' &&
+          item.intervalType !== 'rest') ||
         // Technique is optional (a series can be just "4 × 100 m").
         typeof item.exercise !== 'string' ||
         item.exercise.length > 200 ||
@@ -90,6 +101,11 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
         ...(item.kind === 'pause' ? { kind: 'pause' as const } : {}),
         repetitions: item.repetitions,
         distanceMeters: item.distanceMeters,
+        ...(item.durationSeconds != null ? { durationSeconds: item.durationSeconds } : {}),
+        ...(item.zone ? { zone: item.zone as ClassTrainingSeries['zone'] } : {}),
+        ...(item.intervalType
+          ? { intervalType: item.intervalType as ClassTrainingSeries['intervalType'] }
+          : {}),
         exercise: item.exercise.trim(),
         material: item.material?.trim() || '',
         interval: item.interval.trim(),
@@ -110,7 +126,13 @@ export function normalizeClassTraining(value: unknown): ClassTrainingBlock[] | n
 
 export function seriesDurationSeconds(series: ClassTrainingSeries): number | null {
   const match = series.interval.trim().match(/^(\d+):([0-5]\d)$/)
-  if (!match) return null
+  const isRest = (series.intervalType ?? (series.durationSeconds ? 'rest' : 'interval')) === 'rest'
+  if (isRest && series.kind !== 'pause') {
+    if (!series.durationSeconds) return null
+    const rest = match ? Number(match[1]) * 60 + Number(match[2]) : 0
+    return series.durationSeconds * series.repetitions + rest * (series.repetitions - 1)
+  }
+  if (!match) return series.durationSeconds ? series.durationSeconds * series.repetitions : null
   const seconds = Number(match[1]) * 60 + Number(match[2])
   if (!seconds) return null
   return seconds * (series.kind === 'pause' ? 1 : series.repetitions)

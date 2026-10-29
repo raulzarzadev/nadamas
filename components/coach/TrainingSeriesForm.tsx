@@ -28,6 +28,12 @@ export default function TrainingSeriesForm({
   onCancel: () => void
 }) {
   const [step, setStep] = useState(0)
+  const [measure, setMeasure] = useState<'distance' | 'time'>(
+    initial?.durationSeconds ? 'time' : 'distance'
+  )
+  const [intervalType, setIntervalType] = useState<'interval' | 'rest'>(
+    initial?.intervalType ?? (initial?.durationSeconds ? 'rest' : 'interval')
+  )
   const techniqueInput = useRef<HTMLInputElement>(null)
   const materialInput = useRef<HTMLInputElement>(null)
   // Techniques/materials this coach typed with "Otro" before, shown as extra chips.
@@ -147,7 +153,7 @@ export default function TrainingSeriesForm({
         kind: 'materials',
         values: newMaterials,
       }).catch(() => {})
-    onSave(draft)
+    onSave({ ...draft, intervalType })
   }
   const inputClass =
     'box-border min-h-12 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 text-base outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset'
@@ -155,31 +161,48 @@ export default function TrainingSeriesForm({
     <section aria-label="Formulario de serie" className="grid gap-4">
       <h2 className="text-xl font-bold">Serie {seriesNumber}</h2>
       <p className="text-xs font-semibold text-(--c-text-2)" aria-live="polite">
-        Paso {step + 1} de 5
+        Paso {step + 1} de {STEPS.length}
       </p>
-      <div className="flex gap-1" aria-hidden="true">
+      <nav className="-my-4 flex gap-1" aria-label="Pasos de la serie">
         {STEPS.map((label, index) => (
-          <span
+          <button
+            type="button"
             key={label}
-            className={`h-1 flex-1 rounded-full ${index <= step ? 'bg-(--c-ocean)' : 'bg-(--c-border)'}`}
-          />
+            aria-label={`Paso ${index + 1}: ${index === 4 && intervalType === 'rest' ? 'Descanso' : label}`}
+            aria-current={index === step ? 'step' : undefined}
+            disabled={!valid && index !== step}
+            onClick={() => setStep(index)}
+            className="flex min-h-11 min-w-0 flex-1 items-center rounded focus-visible:outline-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
+          >
+            <span
+              className={`h-1 w-full rounded-full ${index <= step ? 'bg-(--c-ocean)' : 'bg-(--c-border)'}`}
+            />
+          </button>
         ))}
-      </div>
+      </nav>
       <p role="status" aria-live="polite" className="text-xs leading-relaxed text-(--c-text-2)">
         {[
           draft.repetitions > 0 &&
-            (draft.distanceMeters
-              ? `${draft.repetitions} × ${draft.distanceMeters} m`
-              : `${draft.repetitions} ${draft.repetitions === 1 ? 'repetición' : 'repeticiones'}`),
+            (draft.durationSeconds
+              ? `${draft.repetitions} × ${Math.floor(draft.durationSeconds / 60)}:${String(draft.durationSeconds % 60).padStart(2, '0')} min`
+              : draft.distanceMeters
+                ? `${draft.repetitions} × ${draft.distanceMeters} m`
+                : `${draft.repetitions} ${draft.repetitions === 1 ? 'repetición' : 'repeticiones'}`),
           draft.exercise.trim(),
           draft.material?.trim() && `Con ${draft.material.trim()}`,
-          draft.interval?.trim() && `Intervalo ${draft.interval.trim()}`,
+          draft.zone,
+          draft.interval?.trim() &&
+            `${intervalType === 'rest' ? 'Descanso' : 'Intervalo'} ${draft.interval.trim()}`,
         ]
           .filter(Boolean)
           .join(' · ')}
       </p>
       <h3 ref={heading} tabIndex={-1} className="text-lg font-bold outline-none">
-        {STEPS[step]}
+        {step === 1 && measure === 'time'
+          ? 'Tiempo'
+          : step === 4 && intervalType === 'rest'
+            ? 'Descanso'
+            : STEPS[step]}
         {OPTIONAL_STEPS.has(step) && (
           <span className="ml-1 text-sm font-normal text-(--c-text-2)">(opcional)</span>
         )}
@@ -197,21 +220,58 @@ export default function TrainingSeriesForm({
       )}
       {step === 1 && (
         <div className="grid min-w-0 gap-2">
-          <p className="text-xs text-(--c-text-2)">Metros por repetición</p>
-          <NumberStepper
-            focusOnMount
-            label="Metros por repetición"
-            value={draft.distanceMeters ?? 0}
-            min={0}
-            max={100000}
-            step={25}
-            onValueChange={(distanceMeters) =>
-              setDraft({ ...draft, distanceMeters: distanceMeters > 0 ? distanceMeters : null })
-            }
-          />
-          <p className="text-xs text-(--c-text-2)">
-            De 25 en 25 metros. En 0, la serie queda sin distancia.
-          </p>
+          <fieldset className="flex rounded-full border border-(--c-border) bg-(--c-surface) p-1">
+            <legend className="sr-only">Medida de la serie</legend>
+            {(['distance', 'time'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={measure === option}
+                onClick={() => {
+                  if (option === measure) return
+                  setMeasure(option)
+                  setIntervalMinutes('')
+                  setIntervalSeconds('')
+                  setIntervalType(option === 'time' ? 'rest' : 'interval')
+                  setDraft({ ...draft, distanceMeters: null, durationSeconds: null, interval: '' })
+                }}
+                className={`min-h-10 flex-1 rounded-full text-sm font-bold ${measure === option ? 'bg-(--c-ocean) text-white' : 'text-(--c-ocean)'}`}
+              >
+                {option === 'distance' ? 'Distancia' : 'Tiempo'}
+              </button>
+            ))}
+          </fieldset>
+          {measure === 'time' ? (
+            <>
+              <p className="text-xs text-(--c-text-2)">Tiempo por repetición</p>
+              <DurationInput
+                minutes={String(Math.floor((draft.durationSeconds || 0) / 60))}
+                seconds={String((draft.durationSeconds || 0) % 60)}
+                onChange={(minutes, seconds) => {
+                  const durationSeconds = Number(minutes) * 60 + Number(seconds)
+                  setDraft({ ...draft, durationSeconds: durationSeconds || null })
+                }}
+              />
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-(--c-text-2)">Metros por repetición</p>
+              <NumberStepper
+                focusOnMount
+                label="Metros por repetición"
+                value={draft.distanceMeters ?? 0}
+                min={0}
+                max={100000}
+                step={25}
+                onValueChange={(distanceMeters) =>
+                  setDraft({ ...draft, distanceMeters: distanceMeters > 0 ? distanceMeters : null })
+                }
+              />
+              <p className="text-xs text-(--c-text-2)">
+                De 25 en 25 metros. En 0, la serie queda sin distancia.
+              </p>
+            </>
+          )}
         </div>
       )}
       {step === 2 && (
@@ -293,6 +353,22 @@ export default function TrainingSeriesForm({
               </button>
             ))}
           </fieldset>
+          <fieldset className="flex flex-wrap gap-2">
+            <legend className="mb-2 text-sm text-(--c-text-2)">
+              Zona de intensidad (opcional)
+            </legend>
+            {(['Z1', 'Z2', 'Z3', 'Z4', 'Z5'] as const).map((zone) => (
+              <button
+                key={zone}
+                type="button"
+                aria-pressed={draft.zone === zone}
+                onClick={() => setDraft({ ...draft, zone: draft.zone === zone ? undefined : zone })}
+                className={`min-h-11 min-w-11 rounded-full border px-4 text-sm font-bold ${draft.zone === zone ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean)'}`}
+              >
+                {zone}
+              </button>
+            ))}
+          </fieldset>
         </div>
       )}
       {step === 3 && (
@@ -361,12 +437,33 @@ export default function TrainingSeriesForm({
         </div>
       )}
       {step === 4 && (
-        <DurationInput
-          focusOnMount
-          minutes={intervalMinutes}
-          seconds={intervalSeconds}
-          onChange={setInterval}
-        />
+        <div className="grid gap-3">
+          <fieldset className="flex rounded-full border border-(--c-border) bg-(--c-surface) p-1">
+            <legend className="sr-only">Tipo de tiempo entre repeticiones</legend>
+            {(['interval', 'rest'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={intervalType === option}
+                onClick={() => setIntervalType(option)}
+                className={`min-h-10 flex-1 rounded-full text-sm font-bold ${intervalType === option ? 'bg-(--c-ocean) text-white' : 'text-(--c-ocean)'}`}
+              >
+                {option === 'interval' ? 'Intervalo' : 'Descanso'}
+              </button>
+            ))}
+          </fieldset>
+          <p className="text-xs text-(--c-text-2)">
+            {intervalType === 'rest'
+              ? 'Descanso entre cada repetición.'
+              : 'Tiempo entre el inicio de una repetición y la siguiente.'}
+          </p>
+          <DurationInput
+            focusOnMount
+            minutes={intervalMinutes}
+            seconds={intervalSeconds}
+            onChange={setInterval}
+          />
+        </div>
       )}
       <div className="flex flex-wrap gap-2 pt-2">
         <button type="button" onClick={onCancel} className="btn border btn-ghost min-h-11">
@@ -384,10 +481,10 @@ export default function TrainingSeriesForm({
         <button
           type="button"
           disabled={!valid}
-          onClick={() => (step < 4 ? setStep(step + 1) : save())}
+          onClick={() => (step < STEPS.length - 1 ? setStep(step + 1) : save())}
           className="btn border btn-primary ml-auto min-h-11"
         >
-          {step === 4 ? 'Guardar serie' : 'Siguiente'}
+          {step === STEPS.length - 1 ? 'Guardar serie' : 'Siguiente'}
         </button>
       </div>
     </section>
