@@ -11,6 +11,10 @@ export interface SchoolSubscription {
   exemptionUpdatedAt?: number
   exemptionUpdatedBy?: string
   exemptionChangeId?: string | null
+  customLimits?: { teachers: number; students: number } | null
+  customPlanReason?: string
+  customPlanUpdatedAt?: number
+  customPlanUpdatedBy?: string
   stripeSubscriptionId?: string | null
   stripeCustomerId?: string | null
   stripeCheckoutSessionId?: string | null
