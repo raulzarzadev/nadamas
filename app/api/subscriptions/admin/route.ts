@@ -38,12 +38,38 @@ export async function GET(request: Request) {
       adminDb.collection('subscriptionOrders').orderBy('createdAt', 'desc').limit(200).get(),
       adminDb.collection('subscriptionCodes').orderBy('createdAt', 'desc').limit(200).get(),
     ])
+    const actorIds = [
+      ...new Set(
+        codes.docs.flatMap((doc) =>
+          ((doc.data() as SubscriptionCode).uses || []).map((use) => use.actorId)
+        )
+      ),
+    ]
+    const actorDocs = actorIds.length
+      ? await adminDb.getAll(...actorIds.map((id) => adminDb.collection('users').doc(id)))
+      : []
+    const actorNames = new Map(
+      actorDocs.map((doc) => {
+        const user = doc.data() || {}
+        const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ')
+        return [doc.id, fullName || user.displayName || user.name || user.email || doc.id]
+      })
+    )
     const result: SubscriptionAdminSnapshot = {
       settings: { ...EMPTY_SUBSCRIPTION_BANK, ...settings.data() },
       schools: schools.docs.map((doc) => ({ id: doc.id, name: String(doc.data().name || '') })),
       subscriptions: subscriptions.docs.map((doc) => doc.data() as SchoolSubscription),
       orders: orders.docs.map((doc) => ({ ...doc.data(), id: doc.id }) as SubscriptionOrder),
-      codes: codes.docs.map((doc) => ({ ...doc.data(), id: doc.id }) as SubscriptionCode),
+      codes: codes.docs.map((doc) => {
+        const code = { ...doc.data(), id: doc.id } as SubscriptionCode
+        return {
+          ...code,
+          uses: code.uses?.map((use) => ({
+            ...use,
+            actorName: actorNames.get(use.actorId) || use.actorId,
+          })),
+        }
+      }),
     }
     return NextResponse.json(result, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
@@ -115,7 +141,7 @@ export async function POST(request: Request) {
       await batch.commit()
       return NextResponse.json({ ok: true })
     }
-    if (body.action === 'createCode' && validId(body.schoolId)) {
+    if (body.action === 'createCode') {
       const code =
         body.code === undefined ? `ND-${randomBytes(5).toString('hex').toUpperCase()}` : body.code
       if (typeof code !== 'string' || !/^[a-zA-Z0-9-]{4,64}$/.test(code.trim())) return invalid()
@@ -125,7 +151,15 @@ export async function POST(request: Request) {
         (typeof expiresAt !== 'number' || !Number.isFinite(expiresAt) || expiresAt <= Date.now())
       )
         return invalid()
-      await createSubscriptionCode(body.schoolId, code, caller.uid, expiresAt as number | null)
+      const maxUses = body.maxUses
+      if (
+        typeof maxUses !== 'number' ||
+        !Number.isInteger(maxUses) ||
+        maxUses < 1 ||
+        maxUses > 1000
+      )
+        return invalid()
+      await createSubscriptionCode(code, caller.uid, expiresAt as number | null, maxUses)
       return NextResponse.json({ ok: true, code: code.trim().toUpperCase() })
     }
     if (body.action === 'disableCode' && validId(body.codeId)) {

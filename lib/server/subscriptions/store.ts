@@ -10,6 +10,8 @@ import {
   SUBSCRIPTION_PRICE_CENTS,
   SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS,
   SubscriptionError,
+  subscriptionCodeAvailableForSchool,
+  subscriptionCodeRedeemed,
   subscriptionMonthEnd,
   subscriptionPrice,
 } from '@/lib/subscriptions/engine'
@@ -93,10 +95,13 @@ export async function createSubscriptionTransfer(
     const codeDoc = sub.promotionalCodeId ? await tx.get(codeRef(sub.promotionalCodeId)) : null
     const promo = codeDoc?.data() as SubscriptionCode | undefined
     const newCode =
-      promo?.active && !promo.redeemedAt && (!promo.expiresAt || now < promo.expiresAt)
+      promo?.active &&
+      subscriptionCodeAvailableForSchool(promo, schoolId) &&
+      !subscriptionCodeRedeemed(promo, schoolId) &&
+      (!promo.expiresAt || now < promo.expiresAt)
     const amountCents = newCode
       ? SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS
-      : promo && !promo.redeemedAt
+      : promo && !subscriptionCodeRedeemed(promo, schoolId)
         ? SUBSCRIPTION_PRICE_CENTS
         : subscriptionPrice(sub, now)
     const bank = bankDoc.data() as SubscriptionBankDetails | undefined
@@ -106,6 +111,24 @@ export async function createSubscriptionTransfer(
         'Las transferencias todavía no están disponibles. Inténtalo más tarde.',
         409
       )
+    const schoolLetters = schoolName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .slice(0, 3)
+      .padEnd(3, 'X')
+    const newReference = () => `NM${schoolLetters}${randomBytes(4).toString('hex').toUpperCase()}`
+    let reference = newReference()
+    while (
+      !(
+        await tx.get(
+          adminDb.collection('subscriptionOrders').where('reference', '==', reference).limit(1)
+        )
+      ).empty
+    ) {
+      reference = newReference()
+    }
     const order: SubscriptionOrder = {
       id,
       schoolId,
@@ -113,7 +136,7 @@ export async function createSubscriptionTransfer(
       ownerId,
       amountCents,
       currency: 'MXN',
-      reference: `ND${id.toUpperCase()}`,
+      reference,
       status: 'pending',
       promotionalCodeId:
         amountCents === SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS ? sub.promotionalCodeId : null,
@@ -166,15 +189,32 @@ export async function redeemSubscriptionCode(schoolId: string, code: string, act
   await adminDb.runTransaction(async (tx) => {
     const ref = codeRef(hashCode(code))
     const [codeDoc, subDoc] = await tx.getAll(ref, subscriptionRef(schoolId))
-    const promo = codeDoc.data() as SubscriptionCode | undefined
+    let promo = codeDoc.data() as SubscriptionCode | undefined
     const sub = subDoc.data() as SchoolSubscription | undefined
+    // Upgrade unused single-school codes when they are first applied.
+    let upgradeCode = false
+    if (promo && promo.maxUses === undefined && !promo.redeemedAt) {
+      const assigned =
+        promo.schoolId && promo.schoolId !== schoolId
+          ? ((await tx.get(subscriptionRef(promo.schoolId))).data() as
+              | SchoolSubscription
+              | undefined)
+          : undefined
+      if (!assigned || assigned.promotionalCodeId !== ref.id) {
+        promo = { ...promo, maxUses: 1, uses: [] }
+        upgradeCode = true
+      }
+    }
     assertSubscriptionPayable(sub)
     if (
       !promo ||
       !sub ||
-      promo.schoolId !== schoolId ||
+      (promo.maxUses === undefined && promo.schoolId !== schoolId) ||
       !promo.active ||
-      promo.redeemedAt ||
+      subscriptionCodeRedeemed(promo, schoolId) ||
+      (promo.maxUses !== undefined &&
+        !promo.uses?.some((use) => use.schoolId === schoolId) &&
+        (promo.uses?.length || 0) >= promo.maxUses) ||
       (promo.expiresAt && now >= promo.expiresAt)
     )
       throw new SubscriptionError(
@@ -197,7 +237,31 @@ export async function redeemSubscriptionCode(schoolId: string, code: string, act
         'Resuelve el pago pendiente antes de aplicar otro código.',
         409
       )
-    // Code is reserved to this school; only a confirmed payment consumes it.
+    const previousRef =
+      sub.promotionalCodeId && sub.promotionalCodeId !== ref.id
+        ? codeRef(sub.promotionalCodeId)
+        : null
+    const previous = previousRef
+      ? ((await tx.get(previousRef)).data() as SubscriptionCode | undefined)
+      : undefined
+    if (
+      previousRef &&
+      previous?.maxUses !== undefined &&
+      !subscriptionCodeRedeemed(previous, schoolId)
+    )
+      tx.update(previousRef, {
+        uses: (previous.uses || []).filter((use) => use.schoolId !== schoolId),
+      })
+    // Reserve a use atomically when the school applies the code.
+    if (promo.maxUses !== undefined && !promo.uses?.some((use) => use.schoolId === schoolId)) {
+      tx.update(ref, {
+        ...(upgradeCode ? { maxUses: 1, schoolId: null } : {}),
+        uses: [
+          ...(promo.uses || []),
+          { schoolId, actorId, appliedAt: now, redeemedAt: null, redeemedOrderId: null },
+        ],
+      })
+    }
     tx.update(subscriptionRef(schoolId), {
       promotionalCodeId: ref.id,
       promotionalGrantedAt: now,
@@ -242,7 +306,8 @@ export async function reviewSubscriptionTransfer(
       const promo = promoDoc?.data() as SubscriptionCode | undefined
       const newCode =
         promo &&
-        !promo.redeemedAt &&
+        !subscriptionCodeRedeemed(promo, order.schoolId) &&
+        subscriptionCodeAvailableForSchool(promo, order.schoolId) &&
         promo.active &&
         (!promo.expiresAt || order.createdAt < promo.expiresAt)
       if (order.promotionalCodeId && !newCode && deadline && received >= deadline)
@@ -278,8 +343,19 @@ export async function reviewSubscriptionTransfer(
         provisionalPriceCents: null,
         updatedAt: now,
       })
-      if (promo && !promo.redeemedAt)
-        tx.update(codeRef(promo.id), { redeemedAt: now, redeemedOrderId: orderId })
+      if (promo && !subscriptionCodeRedeemed(promo, order.schoolId))
+        tx.update(
+          codeRef(promo.id),
+          promo.maxUses !== undefined
+            ? {
+                uses: (promo.uses || []).map((use) =>
+                  use.schoolId === order.schoolId
+                    ? { ...use, redeemedAt: now, redeemedOrderId: orderId }
+                    : use
+                ),
+              }
+            : { redeemedAt: now, redeemedOrderId: orderId }
+        )
     } else {
       tx.update(orderRef(orderId), { status, reviewedAt: now, reviewedBy: actorId })
       tx.update(subscriptionRef(order.schoolId), {
@@ -323,27 +399,22 @@ export async function changeSubscriptionRenewal(
 }
 
 export async function createSubscriptionCode(
-  schoolId: string,
   code: string,
   actorId: string,
-  expiresAt: number | null
+  expiresAt: number | null,
+  maxUses: number
 ) {
   const now = Date.now()
   const normalized = code.trim().toUpperCase()
   const id = hashCode(normalized)
   await adminDb.runTransaction(async (tx) => {
-    const [school, existing, subDoc] = await tx.getAll(
-      adminDb.collection('schools').doc(schoolId),
-      codeRef(id),
-      subscriptionRef(schoolId)
-    )
-    assertSubscriptionPayable(subDoc.data() as SchoolSubscription | undefined)
-    if (!school.exists) throw new SubscriptionError('not_found', 'No encontramos la escuela.', 404)
+    const existing = await tx.get(codeRef(id))
     if (existing.exists) throw new SubscriptionError('code_exists', 'Elige otro código.', 409)
     const promo: SubscriptionCode = {
       id,
       code: normalized,
-      schoolId,
+      maxUses,
+      uses: [],
       active: true,
       createdAt: now,
       createdBy: actorId,
@@ -352,7 +423,7 @@ export async function createSubscriptionCode(
       redeemedOrderId: null,
     }
     tx.create(codeRef(id), promo)
-    audit(tx, actorId, 'code_created', { schoolId, codeId: id }, now)
+    audit(tx, actorId, 'code_created', { codeId: id, maxUses }, now)
   })
 }
 

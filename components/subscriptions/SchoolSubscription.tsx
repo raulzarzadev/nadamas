@@ -461,7 +461,8 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
       >
         <h2 className="text-xl font-bold">Tengo un código</h2>
         <p className="mt-2 text-sm text-(--c-text-2)">
-          El código debe estar asignado a esta escuela. El precio se aplica a tu siguiente pago.
+          Aplica un código promocional con usos disponibles. El precio se aplica a tu siguiente
+          pago.
         </p>
         <form
           id="subscription-code"

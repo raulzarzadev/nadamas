@@ -73,7 +73,17 @@ export interface SubscriptionOrder {
 export interface SubscriptionCode {
   id: string
   code: string
-  schoolId: string
+  /** Present on older codes restricted to one school. */
+  schoolId?: string
+  maxUses?: number
+  uses?: Array<{
+    schoolId: string
+    actorId: string
+    actorName?: string
+    appliedAt: number
+    redeemedAt: number | null
+    redeemedOrderId: string | null
+  }>
   active: boolean
   createdAt: number
   createdBy: string

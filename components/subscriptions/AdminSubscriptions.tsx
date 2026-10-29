@@ -33,11 +33,13 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [filter, setFilter] = useState('')
+  const [tab, setTab] = useState<'schools' | 'transfers' | 'codes'>('schools')
   const [modal, setModal] = useState<'bank' | 'code' | 'review' | 'exemption' | 'plan' | null>(null)
   const [bank, setBank] = useState(emptyBank)
   const [schoolId, setSchoolId] = useState('')
   const [code, setCode] = useState('')
   const [expires, setExpires] = useState('')
+  const [maxUses, setMaxUses] = useState('1')
   const [review, setReview] = useState<SubscriptionOrder | null>(null)
   const [received, setReceived] = useState('')
   const [exemptionEnabled, setExemptionEnabled] = useState(true)
@@ -90,343 +92,419 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
         Number(b.status === 'reported') - Number(a.status === 'reported') ||
         b.createdAt - a.createdAt
     )
-  const codes = (data?.codes || []).filter((item) => matches(item.code, name(item.schoolId)))
+  const codes = (data?.codes || []).filter((item) =>
+    matches(
+      item.code,
+      item.schoolId ? name(item.schoolId) : '',
+      ...(item.uses || []).map((use) => name(use.schoolId))
+    )
+  )
   return (
     <section className="mt-5 grid min-w-0 gap-5" aria-busy={loading || saving}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">Suscripciones de Nadamas</h2>
           <p className="mt-1 text-sm text-(--c-text-2)">
-            $299 MXN al mes por escuela · $49 con código asignado.
+            $299 MXN al mes por escuela · $49 con código promocional.
           </p>
           <p className="mt-1 text-xs text-(--c-text-2)">
             Plan Básico: hasta {NADAMAS_PRICING.basicLimits.teachers} profes y{' '}
             {NADAMAS_PRICING.basicLimits.students} alumnos. Estos pagos son de escuelas a Nadamas.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className={subscriptionSecondary}
-            disabled={!data || saving}
-            onClick={() => {
-              setBank(data?.settings || emptyBank)
-              setError('')
-              setModal('bank')
-            }}
-          >
-            <FiSettings aria-hidden="true" />
-            Datos bancarios
-          </button>
-          <button
-            type="button"
-            className={subscriptionButton}
-            disabled={!data || saving || schools.length === 0}
-            onClick={() => {
-              setSchoolId(schools[0]?.id || '')
-              setCode('')
-              setExpires('')
-              setError('')
-              setModal('code')
-            }}
-          >
-            <FiPlus aria-hidden="true" />
-            Nuevo código
-          </button>
-          <button
-            type="button"
-            className={subscriptionSecondary}
-            disabled={!data || saving || schools.length === 0}
-            onClick={() => {
-              setSchoolId(schools[0]?.id || '')
-              setExemptionEnabled(true)
-              setExemptionReason('')
-              setError('')
-              setModal('exemption')
-            }}
-          >
-            Exentar escuela
-          </button>
-          <button
-            type="button"
-            className={subscriptionSecondary}
-            disabled={loading || saving}
-            onClick={load}
-          >
-            Actualizar
-          </button>
-        </div>
       </div>
-      <label className="grid min-w-0 gap-2 text-sm font-semibold">
-        Buscar escuela, referencia o código
-        <input
-          type="search"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-          className={subscriptionInput}
-          placeholder="Nombre, referencia o código"
-        />
-      </label>
-      {notice && <output className="text-sm text-green-800">{notice}</output>}
-      {error && !modal && (
-        <div role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-800">
-          {error}
-          <button
-            type="button"
-            className="ml-2 min-h-11 font-bold underline"
-            disabled={loading}
-            onClick={load}
-          >
-            Reintentar
-          </button>
-        </div>
-      )}
-      {!data && loading ? (
-        <output className="p-5 text-sm">Cargando suscripciones…</output>
-      ) : (
-        <>
-          <section className="overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-(--c-border)">
-            <div className="border-b border-(--c-border) p-4">
-              <h3 className="font-bold">Escuelas y acceso</h3>
+      <div className="grid min-w-0 gap-4 lg:grid-cols-[10rem_minmax(0,1fr)] lg:items-start">
+        <nav
+          aria-label="Secciones de suscripciones"
+          className="flex min-w-0 gap-2 overflow-x-auto lg:flex-col lg:overflow-visible"
+        >
+          {(
+            [
+              ['schools', 'Escuelas'],
+              ['transfers', 'Transferencias'],
+              ['codes', 'Códigos'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={tab === id}
+              onClick={() => {
+                setTab(id)
+                setFilter('')
+              }}
+              className={`min-h-11 shrink-0 rounded-xl border px-4 text-left text-sm font-bold ${tab === id ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) border-transparent bg-white text-(--c-ocean)'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+        <div className="grid min-w-0 gap-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={tab === 'transfers' ? subscriptionSecondary : 'hidden'}
+              disabled={!data || saving}
+              onClick={() => {
+                setBank(data?.settings || emptyBank)
+                setError('')
+                setModal('bank')
+              }}
+            >
+              <FiSettings aria-hidden="true" />
+              Datos bancarios
+            </button>
+            <button
+              type="button"
+              className={tab === 'codes' ? subscriptionButton : 'hidden'}
+              disabled={!data || saving}
+              onClick={() => {
+                setMaxUses('1')
+                setCode('')
+                setExpires('')
+                setError('')
+                setModal('code')
+              }}
+            >
+              <FiPlus aria-hidden="true" />
+              Nuevo código
+            </button>
+            <button
+              type="button"
+              className={tab === 'schools' ? subscriptionSecondary : 'hidden'}
+              disabled={!data || saving || schools.length === 0}
+              onClick={() => {
+                setSchoolId(schools[0]?.id || '')
+                setExemptionEnabled(true)
+                setExemptionReason('')
+                setError('')
+                setModal('exemption')
+              }}
+            >
+              Exentar escuela
+            </button>
+            <button
+              type="button"
+              className={subscriptionSecondary}
+              disabled={loading || saving}
+              onClick={load}
+            >
+              Actualizar
+            </button>
+          </div>
+          <label className="grid min-w-0 gap-2 text-sm font-semibold">
+            {tab === 'schools'
+              ? 'Buscar escuela'
+              : tab === 'transfers'
+                ? 'Buscar escuela o referencia'
+                : 'Buscar código o escuela'}
+            <input
+              type="search"
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              className={subscriptionInput}
+              placeholder={
+                tab === 'schools'
+                  ? 'Nombre de la escuela'
+                  : tab === 'transfers'
+                    ? 'Escuela o referencia'
+                    : 'Código o escuela'
+              }
+            />
+          </label>
+          {notice && <output className="text-sm text-green-800">{notice}</output>}
+          {error && !modal && (
+            <div role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-800">
+              {error}
+              <button
+                type="button"
+                className="ml-2 min-h-11 font-bold underline"
+                disabled={loading}
+                onClick={load}
+              >
+                Reintentar
+              </button>
             </div>
-            {schools.filter((school) => matches(school.name)).length ? (
-              <ul className="divide-y divide-(--c-border)">
-                {schools
-                  .filter((school) => matches(school.name))
-                  .map((school) => {
-                    const item = data?.subscriptions.find(
-                      (subscription) => subscription.schoolId === school.id
-                    )
-                    const access = subscriptionAccess(item || null, Date.now())
-                    const exempt = Boolean(item?.paymentExempt)
-                    return (
-                      <li
-                        key={school.id}
-                        className="flex min-w-0 flex-wrap items-center justify-between gap-3 p-4"
-                      >
-                        <div className="min-w-0">
-                          <p className="break-words font-bold">{school.name}</p>
-                          <p className="mt-1 text-xs text-(--c-text-2)">
-                            {exempt
-                              ? 'Exenta de pago'
-                              : item
-                                ? subscriptionState[access.state]
-                                : 'Sin periodo registrado'}
-                            {!exempt && item?.cancelAtPeriodEnd ? ' · Renovación cancelada' : ''}
-                            {!exempt && access.accessEndsAt
-                              ? ` · Hasta ${subscriptionDate(access.accessEndsAt)}`
-                              : ''}
-                          </p>
-                          {exempt && item?.exemptionReason && (
-                            <p className="mt-1 break-words text-xs text-(--c-text-2)">
-                              Motivo: {item.exemptionReason}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-3">
-                          <p className="min-w-0 text-sm">
-                            <span className="font-semibold">Plan: </span>
-                            {adminPlanLabel(item)}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              disabled={saving}
-                              className={subscriptionSecondary}
-                              onClick={() => {
-                                setSchoolId(school.id)
-                                setPlanTeachers(String(item?.customLimits?.teachers ?? ''))
-                                setPlanStudents(String(item?.customLimits?.students ?? ''))
-                                setPlanReason('')
-                                setError('')
-                                setModal('plan')
-                              }}
-                            >
-                              {item?.customLimits ? 'Editar' : 'Pasar a Personalizado'}
-                            </button>
-                            {item?.customLimits && (
+          )}
+          {!data && loading ? (
+            <output className="p-5 text-sm">Cargando suscripciones…</output>
+          ) : (
+            <>
+              <section
+                hidden={tab !== 'schools'}
+                className="overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-(--c-border)"
+              >
+                <div className="border-b border-(--c-border) p-4">
+                  <h3 className="font-bold">Escuelas y acceso</h3>
+                </div>
+                {schools.filter((school) => matches(school.name)).length ? (
+                  <ul className="divide-y divide-(--c-border)">
+                    {schools
+                      .filter((school) => matches(school.name))
+                      .map((school) => {
+                        const item = data?.subscriptions.find(
+                          (subscription) => subscription.schoolId === school.id
+                        )
+                        const access = subscriptionAccess(item || null, Date.now())
+                        const exempt = Boolean(item?.paymentExempt)
+                        return (
+                          <li
+                            key={school.id}
+                            className="flex min-w-0 flex-wrap items-center justify-between gap-3 p-4"
+                          >
+                            <div className="min-w-0">
+                              <p className="break-words font-bold">{school.name}</p>
+                              <p className="mt-1 text-xs text-(--c-text-2)">
+                                {exempt
+                                  ? 'Exenta de pago'
+                                  : item
+                                    ? subscriptionState[access.state]
+                                    : 'Sin periodo registrado'}
+                                {!exempt && item?.cancelAtPeriodEnd
+                                  ? ' · Renovación cancelada'
+                                  : ''}
+                                {!exempt && access.accessEndsAt
+                                  ? ` · Hasta ${subscriptionDate(access.accessEndsAt)}`
+                                  : ''}
+                              </p>
+                              {exempt && item?.exemptionReason && (
+                                <p className="mt-1 break-words text-xs text-(--c-text-2)">
+                                  Motivo: {item.exemptionReason}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-3">
+                              <p className="min-w-0 text-sm">
+                                <span className="font-semibold">Plan: </span>
+                                {adminPlanLabel(item)}
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  disabled={saving}
+                                  className={subscriptionSecondary}
+                                  onClick={() => {
+                                    setSchoolId(school.id)
+                                    setPlanTeachers(String(item?.customLimits?.teachers ?? ''))
+                                    setPlanStudents(String(item?.customLimits?.students ?? ''))
+                                    setPlanReason('')
+                                    setError('')
+                                    setModal('plan')
+                                  }}
+                                >
+                                  {item?.customLimits ? 'Editar' : 'Pasar a Personalizado'}
+                                </button>
+                                {item?.customLimits && (
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    className={subscriptionSecondary}
+                                    onClick={() => {
+                                      if (
+                                        window.confirm(
+                                          `${school.name} volverá al plan Básico y se quitará la exención de pago.`
+                                        )
+                                      )
+                                        void mutate(
+                                          {
+                                            action: 'setCustomPlan',
+                                            schoolId: school.id,
+                                            limits: null,
+                                            reason: 'Vuelve al plan Básico',
+                                          },
+                                          'La escuela volvió al plan Básico.'
+                                        )
+                                    }}
+                                  >
+                                    Volver a Básico
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <span className="text-sm font-bold">
+                                {exempt
+                                  ? 'Sin cobro'
+                                  : `${subscriptionMoney(subscriptionPrice(item || null, Date.now()))} MXN / mes`}
+                              </span>
                               <button
                                 type="button"
                                 disabled={saving}
                                 className={subscriptionSecondary}
                                 onClick={() => {
-                                  if (
-                                    window.confirm(
-                                      `${school.name} volverá al plan Básico y se quitará la exención de pago.`
-                                    )
-                                  )
-                                    void mutate(
-                                      {
-                                        action: 'setCustomPlan',
-                                        schoolId: school.id,
-                                        limits: null,
-                                        reason: 'Vuelve al plan Básico',
-                                      },
-                                      'La escuela volvió al plan Básico.'
-                                    )
+                                  setSchoolId(school.id)
+                                  setExemptionEnabled(!exempt)
+                                  setExemptionReason('')
+                                  setError('')
+                                  setModal('exemption')
                                 }}
                               >
-                                Volver a Básico
+                                {exempt ? 'Quitar exención' : 'Exentar pagos'}
                               </button>
-                            )}
-                          </div>
+                            </div>
+                          </li>
+                        )
+                      })}
+                  </ul>
+                ) : (
+                  <p className="p-5 text-sm text-(--c-text-2)">
+                    {needle ? 'No hay coincidencias.' : 'Todavía no hay escuelas registradas.'}
+                  </p>
+                )}
+              </section>
+              <section
+                hidden={tab !== 'transfers'}
+                className="overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-(--c-border)"
+              >
+                <div className="border-b border-(--c-border) p-4">
+                  <h3 className="font-bold">Transferencias</h3>
+                  <p className="mt-1 text-xs text-(--c-text-2)">
+                    Reportadas mantienen acceso normal hasta que las confirmes o invalides.
+                  </p>
+                </div>
+                {orders.length ? (
+                  <ul className="divide-y divide-(--c-border)">
+                    {orders.map((order) => (
+                      <li
+                        key={order.id}
+                        className="flex min-w-0 flex-wrap items-center justify-between gap-3 p-4"
+                      >
+                        <div className="min-w-0">
+                          <p className="break-words font-bold">{order.schoolName}</p>
+                          <p className="mt-1 break-all text-sm">
+                            {order.reference} · {subscriptionMoney(order.amountCents)} MXN
+                          </p>
+                          <p className="mt-1 text-xs text-(--c-text-2)">
+                            {orderState[order.status]} · Creada {subscriptionDate(order.createdAt)}
+                          </p>
+                          {order.receivedAt && (
+                            <p className="mt-1 text-xs text-(--c-text-2)">
+                              Ingreso {subscriptionDate(order.receivedAt)} · Verificación{' '}
+                              {subscriptionDate(order.reviewedAt)}
+                            </p>
+                          )}
                         </div>
-                        <div className="flex flex-wrap items-center gap-3">
-                          <span className="text-sm font-bold">
-                            {exempt
-                              ? 'Sin cobro'
-                              : `${subscriptionMoney(subscriptionPrice(item || null, Date.now()))} MXN / mes`}
-                          </span>
+                        {(order.status === 'pending' || order.status === 'reported') && (
+                          <button
+                            type="button"
+                            className={subscriptionSecondary}
+                            disabled={saving}
+                            onClick={() => {
+                              setReview(order)
+                              setReceived(
+                                new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+                                  .toISOString()
+                                  .slice(0, 16)
+                              )
+                              setError('')
+                              setModal('review')
+                            }}
+                          >
+                            Revisar
+                          </button>
+                        )}
+                        {order.status === 'invalidated' && (
+                          <button
+                            type="button"
+                            className={subscriptionSecondary}
+                            disabled={saving}
+                            onClick={() =>
+                              void mutate(
+                                { action: 'releasePayment', schoolId: order.schoolId },
+                                'La escuela puede preparar un nuevo pago.'
+                              )
+                            }
+                          >
+                            Permitir nuevo pago
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="p-5 text-sm text-(--c-text-2)">
+                    {needle
+                      ? 'No hay coincidencias.'
+                      : 'Todavía no hay solicitudes de transferencia.'}
+                  </p>
+                )}
+              </section>
+              <section
+                hidden={tab !== 'codes'}
+                className="overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-(--c-border)"
+              >
+                <div className="border-b border-(--c-border) p-4">
+                  <h3 className="text-xl font-extrabold tracking-tight text-(--c-ocean)">
+                    Códigos promocionales
+                  </h3>
+                  <p className="mt-1 text-xs text-(--c-text-2)">
+                    Los usos se reservan al aplicar el código. Desactivarlo no retira beneficios ya
+                    concedidos.
+                  </p>
+                </div>
+                {codes.length ? (
+                  <ul className="divide-y divide-(--c-border)">
+                    {codes.map((item) => (
+                      <li
+                        key={item.id}
+                        className="flex min-w-0 flex-wrap items-center justify-between gap-3 p-4"
+                      >
+                        <div className="min-w-0">
+                          <h4 className="break-words text-lg font-bold leading-snug text-(--c-ocean)">
+                            {item.code}
+                          </h4>
+                          {item.schoolId && (
+                            <p className="mt-1 text-sm">{name(item.schoolId)} (código anterior)</p>
+                          )}
+                          <p className="mt-1 text-xs text-(--c-text-2)">
+                            {item.active ? 'Activo' : 'Desactivado'}
+                            {item.maxUses !== undefined
+                              ? ` · ${Math.max(0, item.maxUses - (item.uses?.length || 0))} de ${item.maxUses} usos disponibles`
+                              : item.redeemedAt
+                                ? ' · Canjeado'
+                                : ' · 1 uso disponible'}
+                            {item.expiresAt
+                              ? ` · Canjear antes del ${subscriptionDate(item.expiresAt)}`
+                              : ''}
+                          </p>
+                          {(item.uses || []).map((use) => (
+                            <p key={use.schoolId} className="mt-1 text-xs text-(--c-text-2)">
+                              {name(use.schoolId)} · {use.actorName || use.actorId} ·{' '}
+                              {subscriptionDate(use.appliedAt)} ·{' '}
+                              {use.redeemedAt ? 'Pago confirmado' : 'Aplicado'}
+                            </p>
+                          ))}
+                        </div>
+                        {item.active && (
                           <button
                             type="button"
                             disabled={saving}
                             className={subscriptionSecondary}
-                            onClick={() => {
-                              setSchoolId(school.id)
-                              setExemptionEnabled(!exempt)
-                              setExemptionReason('')
-                              setError('')
-                              setModal('exemption')
-                            }}
+                            onClick={() =>
+                              void mutate(
+                                { action: 'disableCode', codeId: item.id },
+                                'Código desactivado.'
+                              )
+                            }
                           >
-                            {exempt ? 'Quitar exención' : 'Exentar pagos'}
+                            Desactivar
                           </button>
-                        </div>
+                        )}
                       </li>
-                    )
-                  })}
-              </ul>
-            ) : (
-              <p className="p-5 text-sm text-(--c-text-2)">
-                {needle ? 'No hay coincidencias.' : 'Todavía no hay escuelas registradas.'}
-              </p>
-            )}
-          </section>
-          <section className="overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-(--c-border)">
-            <div className="border-b border-(--c-border) p-4">
-              <h3 className="font-bold">Transferencias</h3>
-              <p className="mt-1 text-xs text-(--c-text-2)">
-                Reportadas mantienen acceso normal hasta que las confirmes o invalides.
-              </p>
-            </div>
-            {orders.length ? (
-              <ul className="divide-y divide-(--c-border)">
-                {orders.map((order) => (
-                  <li
-                    key={order.id}
-                    className="flex min-w-0 flex-wrap items-center justify-between gap-3 p-4"
-                  >
-                    <div className="min-w-0">
-                      <p className="break-words font-bold">{order.schoolName}</p>
-                      <p className="mt-1 break-all text-sm">
-                        {order.reference} · {subscriptionMoney(order.amountCents)} MXN
-                      </p>
-                      <p className="mt-1 text-xs text-(--c-text-2)">
-                        {orderState[order.status]} · Creada {subscriptionDate(order.createdAt)}
-                      </p>
-                      {order.receivedAt && (
-                        <p className="mt-1 text-xs text-(--c-text-2)">
-                          Ingreso {subscriptionDate(order.receivedAt)} · Verificación{' '}
-                          {subscriptionDate(order.reviewedAt)}
-                        </p>
-                      )}
-                    </div>
-                    {(order.status === 'pending' || order.status === 'reported') && (
-                      <button
-                        type="button"
-                        className={subscriptionSecondary}
-                        disabled={saving}
-                        onClick={() => {
-                          setReview(order)
-                          setReceived(
-                            new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-                              .toISOString()
-                              .slice(0, 16)
-                          )
-                          setError('')
-                          setModal('review')
-                        }}
-                      >
-                        Revisar
-                      </button>
-                    )}
-                    {order.status === 'invalidated' && (
-                      <button
-                        type="button"
-                        className={subscriptionSecondary}
-                        disabled={saving}
-                        onClick={() =>
-                          void mutate(
-                            { action: 'releasePayment', schoolId: order.schoolId },
-                            'La escuela puede preparar un nuevo pago.'
-                          )
-                        }
-                      >
-                        Permitir nuevo pago
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="p-5 text-sm text-(--c-text-2)">
-                {needle ? 'No hay coincidencias.' : 'Todavía no hay solicitudes de transferencia.'}
-              </p>
-            )}
-          </section>
-          <section className="overflow-hidden bg-white sm:rounded-2xl sm:border sm:border-(--c-border)">
-            <div className="border-b border-(--c-border) p-4">
-              <h3 className="font-bold">Códigos de $49</h3>
-              <p className="mt-1 text-xs text-(--c-text-2)">
-                Cada código pertenece a una escuela. Desactivarlo no retira beneficios ya
-                concedidos.
-              </p>
-            </div>
-            {codes.length ? (
-              <ul className="divide-y divide-(--c-border)">
-                {codes.map((item) => (
-                  <li
-                    key={item.id}
-                    className="flex min-w-0 flex-wrap items-center justify-between gap-3 p-4"
-                  >
-                    <div className="min-w-0">
-                      <p className="break-words font-bold">{name(item.schoolId)}</p>
-                      <p className="mt-1 break-all font-mono text-sm">{item.code}</p>
-                      <p className="mt-1 text-xs text-(--c-text-2)">
-                        {item.redeemedAt ? 'Canjeado' : item.active ? 'Disponible' : 'Desactivado'}
-                        {item.expiresAt
-                          ? ` · Canjear antes del ${subscriptionDate(item.expiresAt)}`
-                          : ''}
-                      </p>
-                    </div>
-                    {item.active && !item.redeemedAt && (
-                      <button
-                        type="button"
-                        disabled={saving}
-                        className={subscriptionSecondary}
-                        onClick={() =>
-                          void mutate(
-                            { action: 'disableCode', codeId: item.id },
-                            'Código desactivado.'
-                          )
-                        }
-                      >
-                        Desactivar
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="p-5 text-sm text-(--c-text-2)">
-                {needle
-                  ? 'No hay coincidencias.'
-                  : 'Crea un código para ofrecer $49 a una escuela seleccionada.'}
-              </p>
-            )}
-          </section>
-        </>
-      )}
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="p-5 text-sm text-(--c-text-2)">
+                    {needle
+                      ? 'No hay coincidencias.'
+                      : 'Crea un código para ofrecer $49 a las escuelas.'}
+                  </p>
+                )}
+              </section>
+            </>
+          )}
+        </div>
+      </div>
       <Sheet
         open={modal === 'plan'}
         onClose={() => setModal(null)}
@@ -683,7 +761,7 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
             void mutate(
               {
                 action: 'createCode',
-                schoolId,
+                maxUses: Number(maxUses),
                 ...(code.trim() ? { code: code.trim() } : {}),
                 ...(expires ? { expiresAt: new Date(`${expires}T23:59:59`).getTime() } : {}),
               },
@@ -692,19 +770,20 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
           }}
         >
           <label className="grid min-w-0 gap-2 text-sm font-semibold">
-            Escuela
-            <select
+            Número de usos
+            <input
+              type="number"
               className={subscriptionInput}
-              value={schoolId}
-              onChange={(event) => setSchoolId(event.target.value)}
+              min={1}
+              max={1000}
+              step={1}
+              value={maxUses}
+              onChange={(event) => setMaxUses(event.target.value)}
               required
-            >
-              {schools.map((school) => (
-                <option key={school.id} value={school.id}>
-                  {school.name}
-                </option>
-              ))}
-            </select>
+            />
+            <span className="text-xs font-normal text-(--c-text-2)">
+              Cada escuela que aplique el código reserva un uso.
+            </span>
           </label>
           <label className="grid min-w-0 gap-2 text-sm font-semibold">
             Código (opcional)

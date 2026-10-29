@@ -1,5 +1,21 @@
 import { NADAMAS_PRICING } from '../pricing'
-import type { SchoolSubscription, SubscriptionAccess } from './model'
+import type { SchoolSubscription, SubscriptionAccess, SubscriptionCode } from './model'
+
+export function subscriptionCodeUse(code: SubscriptionCode, schoolId: string) {
+  return code.uses?.find((use) => use.schoolId === schoolId)
+}
+
+export function subscriptionCodeRedeemed(code: SubscriptionCode, schoolId: string) {
+  return code.maxUses !== undefined
+    ? Boolean(subscriptionCodeUse(code, schoolId)?.redeemedAt)
+    : Boolean(code.redeemedAt)
+}
+
+export function subscriptionCodeAvailableForSchool(code: SubscriptionCode, schoolId: string) {
+  return code.maxUses !== undefined
+    ? Boolean(subscriptionCodeUse(code, schoolId))
+    : code.schoolId === schoolId
+}
 
 export const SUBSCRIPTION_PRICE_CENTS = NADAMAS_PRICING.regularMonthly * 100
 export const SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS = NADAMAS_PRICING.promotionalMonthly * 100

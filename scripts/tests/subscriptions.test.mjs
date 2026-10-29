@@ -5,13 +5,22 @@ import ts from 'typescript'
 
 const source = readFileSync(new URL('../../lib/subscriptions/engine.ts', import.meta.url), 'utf8')
 const module = { exports: {} }
+const pricing = { NADAMAS_PRICING: { regularMonthly: 299, promotionalMonthly: 49, trialDays: 30 } }
 new Function(
+  'require',
   'exports',
   'module',
   ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText
-)(module.exports, module)
+)(
+  (name) => {
+    if (name === '../pricing') return pricing
+    throw new Error(`Unexpected dependency: ${name}`)
+  },
+  module.exports,
+  module
+)
 const {
   newSchoolSubscription,
   subscriptionAccess,

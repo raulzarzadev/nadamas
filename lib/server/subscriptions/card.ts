@@ -6,6 +6,8 @@ import {
   SUBSCRIPTION_GRACE_MS,
   SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS,
   SubscriptionError,
+  subscriptionCodeAvailableForSchool,
+  subscriptionCodeRedeemed,
   subscriptionPrice,
 } from '@/lib/subscriptions/engine'
 import type { SchoolSubscription, SubscriptionCode } from '@/lib/subscriptions/model'
@@ -97,10 +99,13 @@ export async function createCardCheckout(schoolId: string, actorId: string) {
       : null
     const promo = promoDoc?.data() as SubscriptionCode | undefined
     const eligible =
-      promo?.active && !promo.redeemedAt && (!promo.expiresAt || promo.expiresAt > now)
+      promo?.active &&
+      subscriptionCodeAvailableForSchool(promo, schoolId) &&
+      !subscriptionCodeRedeemed(promo, schoolId) &&
+      (!promo.expiresAt || promo.expiresAt > now)
     const price = eligible
       ? SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS
-      : promo && !promo.redeemedAt
+      : promo && !subscriptionCodeRedeemed(promo, schoolId)
         ? 29900
         : subscriptionPrice(sub, now)
     tx.update(subscriptionRef(schoolId), {
@@ -320,10 +325,16 @@ export async function handleStripeEvent(event: StripeObject) {
       throw new Error('STRIPE_PRICE_INVALID')
     if (item.price.unit_amount === 4900) {
       const promo = promoDoc?.data() as SubscriptionCode | undefined
-      if (!promo || promo.schoolId !== schoolId || sub.promotionalCodeId !== promoRef?.id)
+      if (
+        !promo ||
+        !subscriptionCodeAvailableForSchool(promo, schoolId) ||
+        sub.promotionalCodeId !== promoRef?.id
+      )
         throw new Error('STRIPE_PROMO_INVALID')
       const recurringBenefit = Boolean(
-        promo.redeemedAt && sub.promotionalGrantedAt && sub.stripeSubscriptionId === live.id
+        subscriptionCodeRedeemed(promo, schoolId) &&
+          sub.promotionalGrantedAt &&
+          sub.stripeSubscriptionId === live.id
       )
       if (!recurringBenefit) {
         const quotedAt = sub.stripeCheckoutCreatedAt
@@ -334,7 +345,7 @@ export async function handleStripeEvent(event: StripeObject) {
             (!promo.expiresAt || quotedAt < promo.expiresAt)
         )
         if (
-          promo.redeemedAt ||
+          subscriptionCodeRedeemed(promo, schoolId) ||
           !promo.active ||
           (promo.expiresAt && Date.now() >= promo.expiresAt && !validQuote)
         )
@@ -370,8 +381,20 @@ export async function handleStripeEvent(event: StripeObject) {
           ? sub.promotionalGrantedAt || start
           : null
       }
-      if (promoRef && invoice && !promoDoc?.data()?.redeemedAt)
-        tx.update(promoRef, { redeemedAt: Date.now(), redeemedOrderId: invoice.id })
+      const promo = promoDoc?.data() as SubscriptionCode | undefined
+      if (promoRef && invoice && promo && !subscriptionCodeRedeemed(promo, schoolId))
+        tx.update(
+          promoRef,
+          promo.maxUses !== undefined
+            ? {
+                uses: (promo.uses || []).map((use) =>
+                  use.schoolId === schoolId
+                    ? { ...use, redeemedAt: Date.now(), redeemedOrderId: invoice.id }
+                    : use
+                ),
+              }
+            : { redeemedAt: Date.now(), redeemedOrderId: invoice.id }
+        )
     }
     if (live.status === 'canceled' || live.status === 'incomplete_expired') {
       patch.stripeSubscriptionId = null

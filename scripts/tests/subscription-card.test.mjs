@@ -17,7 +17,11 @@ function load(file, requireMock = nativeRequire) {
   )(requireMock, module.exports, module)
   return module.exports
 }
-const engine = load('../../lib/subscriptions/engine.ts')
+const engine = load('../../lib/subscriptions/engine.ts', (name) => {
+  if (name === '../pricing')
+    return { NADAMAS_PRICING: { regularMonthly: 299, promotionalMonthly: 49, trialDays: 30 } }
+  return nativeRequire(name)
+})
 const start = 1793188800,
   end = 1795867200
 const base = () => ({
@@ -346,4 +350,52 @@ test('exempt schools cannot create checkout, portal or renewal changes', async (
   ])
     await assert.rejects(operation, (error) => error.code === 'subscription_exempt')
   assert.equal(h.calls.length, 0)
+})
+
+test('a shared code records the payment only for the school that reserved it', async () => {
+  const shared = {
+    ...promo(),
+    schoolId: undefined,
+    maxUses: 2,
+    uses: [
+      {
+        schoolId: 'school',
+        actorId: 'user',
+        appliedAt: 1,
+        redeemedAt: null,
+        redeemedOrderId: null,
+      },
+      {
+        schoolId: 'other',
+        actorId: 'other-user',
+        appliedAt: 2,
+        redeemedAt: null,
+        redeemedOrderId: null,
+      },
+    ],
+  }
+  const h = harness({ ...base(), promotionalCodeId: 'promo' }, live(4900), shared)
+  await h.handleStripeEvent(event())
+  const uses = h.docs.get('subscriptionCodes/promo').uses
+  assert.equal(uses[0].redeemedOrderId, 'in_school')
+  assert.equal(uses[1].redeemedAt, null)
+})
+
+test('a shared code cannot be used by a school without a reservation', async () => {
+  const shared = {
+    ...promo(),
+    schoolId: undefined,
+    maxUses: 1,
+    uses: [
+      {
+        schoolId: 'other',
+        actorId: 'other-user',
+        appliedAt: 1,
+        redeemedAt: null,
+        redeemedOrderId: null,
+      },
+    ],
+  }
+  const h = harness({ ...base(), promotionalCodeId: 'promo' }, live(4900), shared)
+  await assert.rejects(h.handleStripeEvent(event()), /STRIPE_PROMO_INVALID/)
 })

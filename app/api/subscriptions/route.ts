@@ -22,6 +22,8 @@ import {
   SUBSCRIPTION_PRICE_CENTS,
   SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS,
   subscriptionAccess,
+  subscriptionCodeAvailableForSchool,
+  subscriptionCodeRedeemed,
   subscriptionPrice,
 } from '@/lib/subscriptions/engine'
 import type {
@@ -64,8 +66,13 @@ export async function GET(request: Request) {
       const code = (
         await adminDb.collection('subscriptionCodes').doc(sub.promotionalCodeId).get()
       ).data() as SubscriptionCode | undefined
-      if (code && !code.redeemedAt) priceCents = SUBSCRIPTION_PRICE_CENTS
-      if (code?.active && !code.redeemedAt && (!code.expiresAt || Date.now() < code.expiresAt))
+      if (code && !subscriptionCodeRedeemed(code, schoolId)) priceCents = SUBSCRIPTION_PRICE_CENTS
+      if (
+        code?.active &&
+        subscriptionCodeAvailableForSchool(code, schoolId) &&
+        !subscriptionCodeRedeemed(code, schoolId) &&
+        (!code.expiresAt || Date.now() < code.expiresAt)
+      )
         priceCents = SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS
     }
     const snapshot: SubscriptionSnapshot = {
