@@ -13,6 +13,7 @@ import {
   workoutDuration,
 } from '@/lib/class-training'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
+import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import type { ObjectiveWorkout } from '@/lib/training-planner'
 import { reportInternalError } from '@/lib/user-facing-error'
 import ClassTrainingEditor from './ClassTrainingEditor'
@@ -69,12 +70,33 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
   const [draft, setDraft] = useState<Draft | null>(null)
   const [transfer, setTransfer] = useState<ObjectiveWorkout | null>(null)
   const [saving, setSaving] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const [shareMessage, setShareMessage] = useState('')
   const [editingSeries, setEditingSeries] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [tagInput, setTagInput] = useState('')
   const [tagColor, setTagColor] = useState('blue')
   const [tagColors, setTagColors] = useState<Record<string, string>>({})
   const [catalog, setCatalog] = useState<ColorLabel[]>([])
+  async function shareSession() {
+    const id = editClass?.id || draft?.id
+    if (!id || sharing) return
+    setSharing(true)
+    setShareMessage('')
+    try {
+      const response = await postAuthed('/api/coach/session-share', {
+        id,
+        kind: editClass ? (editClass.schoolId ? 'schoolClass' : 'class') : 'standalone',
+      })
+      const payload = (await response.json()) as { token: string }
+      await copyTextToClipboard(`${window.location.origin}/entreno/${payload.token}`)
+      setShareMessage('Enlace copiado. Comparte la última versión guardada.')
+    } catch {
+      setShareMessage('No se pudo copiar el enlace. Inténtalo de nuevo.')
+    } finally {
+      setSharing(false)
+    }
+  }
   const addTag = (value: string) => {
     if (!draft) return
     const name = value.trim()
@@ -452,9 +474,27 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
           }
         >
           <div className="grid min-w-0 gap-4 pb-4">
-            <h2 className="text-xl font-bold">
-              {draft.id || editClass ? 'Editar sesión' : 'Nueva sesión'}
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
+              <h2 className="text-xl font-bold">
+                {draft.id || editClass ? 'Editar sesión' : 'Nueva sesión'}
+              </h2>
+              {(draft.id || editClass) && (
+                <button
+                  type="button"
+                  disabled={sharing}
+                  onClick={() => void shareSession()}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) disabled:opacity-50"
+                >
+                  <FiCopy aria-hidden="true" />
+                  {sharing ? 'Copiando…' : 'Copiar enlace'}
+                </button>
+              )}
+            </div>
+            {shareMessage && (
+              <p role="status" className="text-xs text-(--c-text-2)">
+                {shareMessage}
+              </p>
+            )}
             <label className="grid min-w-0 gap-2 text-sm font-semibold">
               Nombre de la sesión
               <input
