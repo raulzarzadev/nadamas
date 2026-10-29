@@ -188,13 +188,6 @@ export default function CreateSchoolPage() {
                 Ir a escuela <FiArrowRight aria-hidden="true" />
               </Link>
             </div>
-            <p className="text-sm leading-relaxed text-(--c-text-2)">
-              Tu siguiente paso es configurar un plan de pago. Después crea los horarios de clases y
-              agrega a tus profes y alumnos.
-            </p>
-            <Link href="/school/subscription" className="btn btn-outline min-h-11 w-full">
-              Ver suscripción y acceso
-            </Link>
           </div>
         </div>
       </section>
