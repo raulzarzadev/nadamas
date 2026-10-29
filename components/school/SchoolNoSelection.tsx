@@ -18,8 +18,8 @@ export default function SchoolNoSelection() {
           Configura tu escuela
         </h1>
         <p className="mt-3 max-w-xl leading-relaxed text-(--c-text-2)">
-          Si coordinas los horarios y las agendas de varios entrenadores y alumnos, este modo es
-          para ti.
+          Primero crea tu escuela. Después configura un plan de pago y los horarios de clases. Al
+          terminar podrás agregar más profes y alumnos.
         </p>
         <div className="mt-6">
           <p className="mb-2 text-xs font-bold uppercase tracking-wide text-(--c-text-2)">
@@ -38,28 +38,26 @@ export default function SchoolNoSelection() {
       <div>
         <h2 className="text-base font-bold text-(--c-ocean)">Después podrás</h2>
         <ol className="mt-4 space-y-4">
-          <li className="flex gap-3">
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-(--c-surface) text-sm font-bold text-(--c-ocean-mid)">
-              1
-            </span>
-            <span>
-              <span className="block font-semibold text-(--c-ocean)">Invitar a tu equipo</span>
-              <span className="mt-0.5 block text-sm leading-relaxed text-(--c-text-2)">
-                Agrega entrenadores y alumnos a tu escuela.
+          {[
+            [
+              'Configurar un plan de pago',
+              'Define los paquetes o mensualidades que ofrecerás a tus alumnos.',
+            ],
+            ['Crear los horarios de clases', 'Organiza los días, horas y grupos de tu escuela.'],
+            ['Agregar profes y alumnos', 'Invita a tu equipo e incorpora alumnos a los horarios.'],
+          ].map(([title, description], index) => (
+            <li key={title} className="flex gap-3">
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-(--c-surface) text-sm font-bold text-(--c-ocean-mid)">
+                {index + 2}
               </span>
-            </span>
-          </li>
-          <li className="flex gap-3">
-            <span className="grid size-7 shrink-0 place-items-center rounded-full bg-(--c-surface) text-sm font-bold text-(--c-ocean-mid)">
-              2
-            </span>
-            <span>
-              <span className="block font-semibold text-(--c-ocean)">Organizar los horarios</span>
-              <span className="mt-0.5 block text-sm leading-relaxed text-(--c-text-2)">
-                Crea clases y asigna entrenadores y alumnos.
+              <span>
+                <span className="block font-semibold text-(--c-ocean)">{title}</span>
+                <span className="mt-0.5 block text-sm leading-relaxed text-(--c-text-2)">
+                  {description}
+                </span>
               </span>
-            </span>
-          </li>
+            </li>
+          ))}
         </ol>
       </div>
     </section>

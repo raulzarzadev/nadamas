@@ -9,3 +9,5 @@ La entrada por dashboard, login y las pantallas iniciales de atleta/coach/escuel
 El alta con Google devuelve ahora el perfil creado; antes `setDoc` resolvía sin perfil y el estado de sesión podía volver a `undefined`. La lectura de preferencia de rol tolera almacenamiento local no disponible. Las peticiones de configuración y refresco de perfil tienen tiempo límite y error recuperable.
 
 Validación: pruebas puras de selección combinada, validación de contexto de entrenador, rutas de próximos pasos y retorno del perfil al crear cuenta; E2E de primer acceso con OTP, móvil320, combinación de tres perfiles, persistencia, permisos admin y reentrada sin repetir; regresiones de pagos, asistencia y eventos.
+
+El coordinador sigue este orden: crear escuela → configurar un plan de pago → crear horarios → agregar profesores y alumnos. Planes sin una escuela seleccionada reutiliza la guía de creación de escuela; no muestra instrucciones para buscar un entrenador como alumno. Tras crear la escuela, la acción principal abre sus planes de pago. Cuando existe un plan, el catálogo ofrece continuar a horarios.

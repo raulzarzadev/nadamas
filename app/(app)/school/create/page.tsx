@@ -141,12 +141,19 @@ export default function CreateSchoolPage() {
                 <p className="text-sm text-(--c-text-2)">{ownedSchool.slug}.nadamas.app</p>
               </div>
             </div>
-            <Link href="/school/subscription" className="btn btn-primary min-h-11 w-full">
+            <p className="text-sm leading-relaxed text-(--c-text-2)">
+              Tu siguiente paso es configurar un plan de pago. Después crea los horarios de clases y
+              agrega a tus profes y alumnos.
+            </p>
+            <Link href="/school/payments" className="btn btn-primary min-h-11 w-full">
+              Configurar mi primer plan de pago
+            </Link>
+            <Link href="/school/subscription" className="btn btn-outline min-h-11 w-full">
               Ver suscripción y acceso
             </Link>
             <Link
               href={getPublicSchoolUrl(ownedSchool.slug)}
-              className="btn btn-primary min-h-11 w-full"
+              className="btn btn-outline min-h-11 w-full"
             >
               Ver página pública
             </Link>

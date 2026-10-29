@@ -515,6 +515,19 @@ export default function PaymentsPanel({
             ) : (
               <p className="text-sm text-(--c-text-2)">{emptyPlansText}</p>
             ))}
+          {data.manager && data.scope.kind === 'school' && products.length > 0 && (
+            <aside className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-(--c-border) bg-(--c-surface) p-4">
+              <div>
+                <p className="font-bold">Siguiente paso: horarios de clases</p>
+                <p className="mt-1 text-sm text-(--c-text-2)">
+                  Ya tienes planes. Configura los horarios y después agrega a tus profes y alumnos.
+                </p>
+              </div>
+              <Link href="/school/classes" className="btn btn-primary min-h-11">
+                Configurar horarios
+              </Link>
+            </aside>
+          )}
           {products.map((product) => (
             <article
               key={product.id}

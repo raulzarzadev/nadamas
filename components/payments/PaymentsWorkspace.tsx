@@ -2,6 +2,7 @@
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import AthleteSearchBar from '@/components/athlete/AthleteSearchBar'
+import SchoolNoSelection from '@/components/school/SchoolNoSelection'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { tenantDisplayName, useTenantSchool } from '@/context/TenantSchoolContext'
@@ -73,6 +74,7 @@ export default function PaymentsWorkspace({ mode }: { mode: 'school' | 'coach' |
     return <ProfileLoadingSkeleton />
   if (status === 'error')
     return <p role="alert">No pudimos cargar tu espacio. Inténtalo de nuevo.</p>
+  if (mode === 'school' && !selectedId && !params.get('schoolId')) return <SchoolNoSelection />
   // A coach's Planes is always their personal space; a selected school doesn't apply here.
   if (mode === 'coach' && (tenant || params.get('schoolId')))
     return (

@@ -84,3 +84,11 @@ test('Google account creation returns a usable profile instead of leaving auth l
   assert.equal(profile.id, 'new-user')
   assert.equal(profile.displayName, written.displayName)
 })
+
+test('coordinator setup follows school, payment plan, schedules, teachers and students', () => {
+  const path = setupPaths({ interests: ['coordinator'], coachContext: null })[0]
+  assert.deepEqual(
+    path.actions.map((action) => action.href),
+    ['/school/create', '/school/payments', '/school/classes', '/school/coaches', '/school/students']
+  )
+})

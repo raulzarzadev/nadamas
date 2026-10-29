@@ -94,6 +94,21 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(page.getByRole('heading', { name: 'Como nadador' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Como entrenador' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Como coordinador' })).toBeVisible()
+    await page.goto('/school/payments')
+    await expect(page.getByRole('heading', { name: 'Configura tu escuela' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Crear escuela', exact: true })).toHaveAttribute(
+      'href',
+      '/school/create'
+    )
+    await expect(
+      page.getByText('Busca una escuela o un entrenador para ver sus planes y tus pagos.')
+    ).toHaveCount(0)
+    await expect(page.getByText('Configurar un plan de pago', { exact: true })).toBeVisible()
+    await expect(page.getByText('Crear los horarios de clases', { exact: true })).toBeVisible()
+    await expect(page.getByText('Agregar profes y alumnos', { exact: true })).toBeVisible()
+    await page.screenshot({ path: '/tmp/nadamas-coordinator-no-school.png', fullPage: true })
+    await page.goto('/welcome')
+    await expect(page.getByRole('heading', { name: 'Como coordinador' })).toBeVisible()
     const snapshot = await request.get('/api/onboarding', { headers })
     const saved = (await snapshot.json()).onboarding
     expect(saved.interests).toEqual(['swimmer', 'coach', 'coordinator'])
