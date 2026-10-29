@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PublicAthletePageProps): Prom
   if (!detail) return { title: 'Perfil no disponible' }
 
   const title = detail.name
-  const description = detail.bio || 'Perfil de nadador en nadamas.'
+  const description = detail.bio || 'Perfil de atleta en nadamas.'
 
   return {
     metadataBase: METADATA_BASE,

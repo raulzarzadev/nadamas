@@ -171,7 +171,7 @@ export default function CoachProfileEditor() {
         <h1 className="text-2xl font-extrabold sm:text-3xl">Mi perfil de coach</h1>
         <div className="ml-auto flex flex-wrap items-center gap-3">
           <Link href="/profile" className="min-h-11 text-sm font-semibold underline">
-            Perfil de nadador
+            Perfil de atleta
           </Link>
           <CalendarConnectionButton calendarRole="coach" />
         </div>

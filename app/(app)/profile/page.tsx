@@ -105,7 +105,7 @@ export default function ProfilePage() {
           )}
           <div className="min-w-0">
             <p className="text-xs font-bold uppercase tracking-wide text-(--c-aqua-strong)">
-              Perfil de nadador
+              Perfil de atleta
             </p>
             <h1 className="truncate text-2xl font-extrabold">
               {user.nickname || user.displayName || 'Mi cuenta'}

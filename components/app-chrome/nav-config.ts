@@ -43,9 +43,9 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
 
 // Secondary nav = low-frequency account-adjacent links in the role-pill dropdown.
 export const SECONDARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
-  athlete: [{ href: '/profile', label: 'Perfil de nadador', mobileLabel: 'Perfil', icon: 'user' }],
-  coach: [{ href: '/profile', label: 'Perfil de nadador', mobileLabel: 'Perfil', icon: 'user' }],
-  school: [{ href: '/profile', label: 'Perfil de nadador', mobileLabel: 'Perfil', icon: 'user' }],
+  athlete: [{ href: '/profile', label: 'Perfil de atleta', mobileLabel: 'Perfil', icon: 'user' }],
+  coach: [{ href: '/profile', label: 'Perfil de atleta', mobileLabel: 'Perfil', icon: 'user' }],
+  school: [{ href: '/profile', label: 'Perfil de atleta', mobileLabel: 'Perfil', icon: 'user' }],
   admin: [{ href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' }],
 }
 

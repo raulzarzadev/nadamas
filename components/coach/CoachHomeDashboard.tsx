@@ -103,7 +103,7 @@ export default function CoachHomeDashboard() {
         />
         <HomeActionLink
           href="/profile"
-          title="Perfil de nadador"
+          title="Perfil de atleta"
           description="Edita tu nombre, datos y perfil público"
           icon={FiActivity}
         />
