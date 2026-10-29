@@ -6,7 +6,6 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiCheck,
-  FiCheckCircle,
   FiCreditCard,
   FiDollarSign,
   FiRefreshCw,
@@ -193,6 +192,12 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
         Inicio de {data.schoolName}
       </h1>
       <nav aria-label="Administrar escuela" className="grid min-w-0 gap-4 p-2">
+        <HomeActionLink
+          href="/school/subscription"
+          title="Suscripción"
+          description={schoolSubscriptionHint(data.subscription, now)}
+          icon={FiCreditCard}
+        />
         <section aria-labelledby="school-actions-title" className="grid min-w-0 gap-2">
           <h2
             id="school-actions-title"
@@ -202,29 +207,21 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
           </h2>
           <div className="grid min-w-0 gap-2 sm:grid-cols-2">
             <HomeActionLink
-              href="/school/setup"
-              title="Inicia tu escuela"
-              description={`${completed}/${data.steps.length} pasos completos`}
-              icon={FiCheckCircle}
-              featured
-            />
-            <HomeActionLink
-              href="/school/subscription"
-              title="Suscripción"
-              description={schoolSubscriptionHint(data.subscription, now)}
-              icon={FiCreditCard}
+              href="/school/settings"
+              title={next ? 'Termina la configuración de tu escuela' : 'Configuración'}
+              description={
+                next
+                  ? `${completed}/${data.steps.length} pasos completos`
+                  : 'Edita la información y preferencias de tu escuela'
+              }
+              icon={FiSettings}
+              featured={Boolean(next)}
             />
             <HomeActionLink
               href="/school/payments"
               title="Planes y pagos de tu escuela"
               description="Administra los planes y cobros de tus alumnos"
               icon={FiDollarSign}
-            />
-            <HomeActionLink
-              href="/school/settings"
-              title="Configuración"
-              description="Edita la información y preferencias de tu escuela"
-              icon={FiSettings}
             />
             <HomeActionLink
               title="Invitar a escuela"
