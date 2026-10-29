@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiEdit2, FiPlus, FiRepeat, FiTrash2 } from 'react-icons/fi'
+import { FiMoreHorizontal, FiPlus, FiTrash2 } from 'react-icons/fi'
 import TrainingSeriesForm from '@/components/coach/TrainingSeriesForm'
 import WorkoutTransferSheet from '@/components/coach/WorkoutTransferSheet'
 import DurationInput from '@/components/ui/duration-input'
@@ -11,29 +11,88 @@ import Sheet from '@/components/ui/sheet'
 import SortableList from '@/components/ui/sortable-list'
 import TrainingBrace from '@/components/ui/training-brace'
 import {
+  blockDistance,
   blockDuration,
   type ClassTrainingBlock,
   type ClassTrainingSeries,
+  formatSeriesDuration,
+  formatTrainingDistance,
   formatTrainingDuration,
+  formatTrainingSummaryDuration,
   seriesDurationSeconds,
 } from '@/lib/class-training'
 
-function SeriesTotal({ series }: { series: ClassTrainingSeries }) {
-  const seconds = seriesDurationSeconds(series)
-  return seconds ? (
-    <em className="ml-1 text-[10px] font-normal text-(--c-text-2)">
-      · {formatTrainingDuration(seconds)}
-    </em>
-  ) : null
-}
 function BlockTotal({ block }: { block: ClassTrainingBlock }) {
   const duration = blockDuration(block)
-  return duration.seconds ? (
-    <em className="ml-2 text-[10px] font-normal text-(--c-text-2)">
-      {!duration.complete && 'Tiempo calculado '}
-      {formatTrainingDuration(duration.seconds)}
-    </em>
-  ) : null
+  return (
+    <span className="text-xs font-normal italic text-(--c-text-2)">
+      {formatTrainingDistance(blockDistance(block))}
+      {duration.seconds > 0 && (
+        <>
+          {' '}
+          · {!duration.complete && 'Tiempo calculado '}
+          {formatTrainingSummaryDuration(duration.seconds)}
+        </>
+      )}
+    </span>
+  )
+}
+
+function PauseIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="size-3">
+      <rect x="6" y="5" width="4" height="14" rx="1" />
+      <rect x="14" y="5" width="4" height="14" rx="1" />
+    </svg>
+  )
+}
+
+function PauseDivider({ series }: { series: ClassTrainingSeries }) {
+  return (
+    <span className="flex w-full items-center gap-2">
+      <span className="h-px flex-1 bg-(--c-border)" />
+      <span className="inline-flex items-center gap-1 rounded-full bg-(--c-surface) px-2 py-1 text-xs font-bold text-(--c-ocean)">
+        <PauseIcon /> Pausa {series.interval}
+      </span>
+      <span className="h-px flex-1 bg-(--c-border)" />
+    </span>
+  )
+}
+
+function SeriesContent({
+  series,
+  readOnly = false,
+}: {
+  series: ClassTrainingSeries
+  readOnly?: boolean
+}) {
+  const details = [
+    series.zone,
+    series.material,
+    series.interval && !/^0+:0+$/.test(series.interval.trim())
+      ? `${(series.intervalType ?? (series.durationSeconds ? 'rest' : 'interval')) === 'rest' ? 'Descanso' : 'cada'} ${series.interval}`
+      : '',
+  ].filter(Boolean)
+  const seconds = seriesDurationSeconds(series)
+  return (
+    <span className="flex min-w-0 w-full items-baseline gap-2">
+      <span className="min-w-0 flex-1 wrap-anywhere">
+        <span className="block text-sm font-bold">
+          {series.repetitions}×{series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
+          {series.durationSeconds ? ` ${formatTrainingDuration(series.durationSeconds)} min` : ''}
+          {series.exercise ? ` ${series.exercise}` : ''}
+        </span>
+        {details.length > 0 && (
+          <span className="block text-xs text-(--c-text-2)">{details.join(' · ')}</span>
+        )}
+      </span>
+      {readOnly && seconds !== null && (
+        <span className="text-xs font-bold tabular-nums text-(--c-text-2)">
+          {formatSeriesDuration(seconds)}
+        </span>
+      )}
+    </span>
+  )
 }
 
 export default function ClassTrainingEditor({
@@ -61,6 +120,7 @@ export default function ClassTrainingEditor({
     seriesId?: string
     time: string
   } | null>(null)
+  const [menuBlockId, setMenuBlockId] = useState<string | null>(null)
   const [transferBlockId, setTransferBlockId] = useState<string | null>(null)
   // Block settings sheet: title, repetitions and delete.
   const [blockForm, setBlockForm] = useState<{
@@ -71,10 +131,14 @@ export default function ClassTrainingEditor({
   } | null>(null)
   useEffect(() => {
     onEditingChange?.(
-      Boolean(editing) || Boolean(blockForm) || Boolean(pauseForm) || Boolean(transferBlockId)
+      Boolean(editing) ||
+        Boolean(blockForm) ||
+        Boolean(pauseForm) ||
+        Boolean(transferBlockId) ||
+        Boolean(menuBlockId)
     )
     return () => onEditingChange?.(false)
-  }, [editing, blockForm, pauseForm, transferBlockId, onEditingChange])
+  }, [editing, blockForm, pauseForm, transferBlockId, menuBlockId, onEditingChange])
   if (readOnly)
     return (
       <section aria-label="Entrenamiento" className="grid min-w-0 gap-2">
@@ -86,7 +150,7 @@ export default function ClassTrainingEditor({
                 type="button"
                 disabled={disabled}
                 onClick={onCreateFirstBlock}
-                className="inline-flex min-h-9 items-center gap-2 rounded-full bg-black px-4 text-xs font-semibold text-white hover:bg-black/80 focus-visible:outline-2 disabled:opacity-40"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-(--c-ocean) px-4 text-xs font-semibold text-white disabled:opacity-40"
               >
                 <FiPlus aria-hidden="true" />
                 Crear bloque
@@ -95,67 +159,38 @@ export default function ClassTrainingEditor({
           </div>
         )}
         {blocks.map((block, index) => (
-          <fieldset
+          <section
             key={block.id}
-            className="min-w-0 rounded-2xl border border-(--c-border) bg-(--c-surface) p-2"
+            aria-label={block.title || `Bloque ${index + 1}`}
+            className="min-w-0 rounded-2xl border border-(--c-border) bg-(--c-surface) p-3"
           >
-            <legend className="px-1 text-sm font-bold">
-              <span className="mr-1 font-normal text-(--c-text-2)">{index + 1} ·</span>
-              {block.title || 'Bloque'}
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <h3 className="text-base font-bold">{block.title || `Bloque ${index + 1}`}</h3>
               <BlockTotal block={block} />
-            </legend>
+            </div>
             {block.observations?.trim() && (
-              <p className="mb-2 whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">
+              <p className="mt-1 whitespace-pre-wrap wrap-anywhere text-xs text-(--c-text-2)">
                 {block.observations}
               </p>
             )}
-            <div className="grid min-h-20 grid-cols-[auto_minmax(0,1fr)] gap-x-1.5 gap-y-1">
-              <div className="flex items-center gap-1 self-stretch text-sm font-bold">
-                <div className="relative flex w-10 shrink-0 items-center justify-center">
-                  <span>{block.repetitions}×</span>
-                </div>
+            <div className="mt-2 flex min-w-0 items-stretch gap-2">
+              <div className="flex items-center gap-1 font-bold text-(--c-ocean)">
+                <span>{block.repetitions}×</span>
                 <TrainingBrace />
               </div>
-              <ul className="grid min-w-0 content-center gap-1">
+              <ul className="grid min-w-0 flex-1 content-center gap-2 py-1">
                 {block.series.map((series) => (
-                  <li
-                    key={series.id}
-                    className="min-w-0 wrap-anywhere py-0.5 text-xs leading-tight"
-                  >
-                    <strong className="mr-1 inline-block" hidden={series.kind === 'pause'}>
-                      {series.repetitions}×
-                      {series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
-                      {series.durationSeconds
-                        ? ` ${formatTrainingDuration(series.durationSeconds)} min`
-                        : ''}
-                    </strong>
-                    <span>{series.exercise}</span>
-                    {series.zone && (
-                      <span className="ml-1 text-[11px] font-semibold">· {series.zone}</span>
+                  <li key={series.id}>
+                    {series.kind === 'pause' ? (
+                      <PauseDivider series={series} />
+                    ) : (
+                      <SeriesContent series={series} readOnly />
                     )}
-                    {series.material && (
-                      <span className="ml-1 text-[11px] text-(--c-text-2)">
-                        · {series.material}
-                      </span>
-                    )}
-                    {series.interval && !/^0+:0+$/.test(series.interval.trim()) && (
-                      <span className="ml-1 text-[11px] text-(--c-text-2)">
-                        ·{' '}
-                        {series.kind === 'pause'
-                          ? ''
-                          : (series.intervalType ??
-                                (series.durationSeconds ? 'rest' : 'interval')) === 'rest'
-                            ? 'Descanso '
-                            : 'Cada '}
-                        {series.interval}
-                      </span>
-                    )}
-                    <SeriesTotal series={series} />
                   </li>
                 ))}
               </ul>
             </div>
-          </fieldset>
+          </section>
         ))}
       </section>
     )
@@ -170,153 +205,130 @@ export default function ClassTrainingEditor({
         disabled={disabled}
         label="bloque"
         className="grid gap-2"
+        handleClassName="size-11"
       >
         {(block, index, blockHandle) => (
           <fieldset
             key={block.id}
             disabled={disabled}
-            className="min-w-0 rounded-2xl border border-(--c-border) bg-(--c-surface) p-2"
+            className="min-w-0 rounded-2xl border border-(--c-border) bg-(--c-surface) p-3"
           >
-            <legend className="px-1 text-sm font-bold">
-              <span className="inline-flex items-center gap-1">
-                {blockHandle}
-                <span className="font-normal text-(--c-text-2)">{index + 1} ·</span>
-                {block.title || 'Bloque'}
+            <div className="flex items-center gap-1">
+              {blockHandle}
+              <div className="min-w-0 flex-1">
+                <h3 className="wrap-anywhere text-sm font-bold">
+                  {block.title || `Bloque ${index + 1}`}
+                </h3>
+                <BlockTotal block={block} />
+              </div>
+              <div className="flex shrink-0 items-center rounded-full border border-(--c-border)">
                 <button
                   type="button"
-                  aria-label={`Editar ${block.title || `bloque ${index + 1}`}`}
-                  title="Editar bloque"
-                  onClick={() =>
-                    setBlockForm({
-                      id: block.id,
-                      title: block.title || '',
-                      observations: block.observations || '',
-                      repetitions: block.repetitions,
-                    })
-                  }
-                  className="grid size-6 place-items-center rounded-full text-(--c-text-2) hover:bg-white focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+                  aria-label="Menos repeticiones"
+                  disabled={block.repetitions <= 1}
+                  onClick={() => update(block.id, { repetitions: block.repetitions - 1 })}
+                  className="size-11 text-lg disabled:opacity-40"
                 >
-                  <FiEdit2 aria-hidden="true" className="size-3.5" />
+                  −
                 </button>
-              </span>
-              <BlockTotal block={block} />
-            </legend>
-
+                <span className="min-w-6 text-center text-sm font-bold">{block.repetitions}×</span>
+                <button
+                  type="button"
+                  aria-label="Más repeticiones"
+                  disabled={block.repetitions >= 99}
+                  onClick={() => update(block.id, { repetitions: block.repetitions + 1 })}
+                  className="size-11 text-lg disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
+              <button
+                type="button"
+                aria-label="Opciones del bloque"
+                onClick={() => setMenuBlockId(block.id)}
+                className="grid size-11 shrink-0 place-items-center rounded-full text-(--c-text-2)"
+              >
+                <FiMoreHorizontal aria-hidden="true" className="size-5" />
+              </button>
+            </div>
             {block.observations?.trim() && (
-              <p className="mb-2 whitespace-pre-wrap wrap-anywhere text-xs leading-relaxed text-(--c-text-2)">
+              <p className="mb-2 whitespace-pre-wrap wrap-anywhere text-xs text-(--c-text-2)">
                 {block.observations}
               </p>
             )}
-            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-1.5 gap-y-1">
-              <div className="flex items-center gap-1 self-stretch text-sm font-bold">
-                <div className="relative flex w-10 shrink-0 items-center justify-center">
-                  <span>{block.repetitions}×</span>
-                </div>
-                <TrainingBrace />
-              </div>
-              <div className="min-w-0">
-                <SortableList
-                  items={block.series}
-                  onChange={(series) => update(block.id, { series })}
-                  disabled={disabled}
-                  label="serie"
+            <SortableList
+              items={block.series}
+              onChange={(series) => update(block.id, { series })}
+              disabled={disabled}
+              label="serie"
+              className="grid gap-1"
+              handleClassName="size-11"
+            >
+              {(series, seriesIndex, seriesHandle) => (
+                <div
+                  className={
+                    series.kind === 'pause'
+                      ? 'flex items-center'
+                      : 'flex items-center rounded-xl border border-(--c-border)'
+                  }
                 >
-                  {(series, seriesIndex, seriesHandle) => (
-                    <div
-                      key={series.id}
-                      className="flex items-center gap-1 rounded-lg transition-colors hover:bg-white/80 focus-within:bg-white/80"
-                    >
-                      {seriesHandle}
-                      <button
-                        type="button"
-                        aria-label={`Editar serie ${seriesIndex + 1}`}
-                        onClick={() =>
-                          series.kind === 'pause'
-                            ? setPauseForm({
-                                blockId: block.id,
-                                seriesId: series.id,
-                                time: series.interval,
-                              })
-                            : setEditing({ blockId: block.id, series })
-                        }
-                        className="min-h-6 min-w-0 flex-1 rounded-lg py-0.5 text-left text-xs leading-tight focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-                      >
-                        <strong className="mr-1 inline-block" hidden={series.kind === 'pause'}>
-                          {series.repetitions}×
-                          {series.distanceMeters !== null ? ` ${series.distanceMeters} m` : ''}
-                          {series.durationSeconds
-                            ? ` ${formatTrainingDuration(series.durationSeconds)} min`
-                            : ''}
-                        </strong>
-                        <span>{series.exercise}</span>
-                        {series.zone && (
-                          <span className="ml-1 text-[11px] font-semibold">· {series.zone}</span>
-                        )}
-                        {series.material && (
-                          <span className="ml-1 text-[11px] text-(--c-text-2)">
-                            · {series.material}
-                          </span>
-                        )}
-                        {series.interval && !/^0+:0+$/.test(series.interval.trim()) && (
-                          <span className="ml-1 text-[11px] text-(--c-text-2)">
-                            ·{' '}
-                            {series.kind === 'pause'
-                              ? ''
-                              : (series.intervalType ??
-                                    (series.durationSeconds ? 'rest' : 'interval')) === 'rest'
-                                ? 'Descanso '
-                                : 'Cada '}
-                            {series.interval}
-                          </span>
-                        )}
-                        <SeriesTotal series={series} />
-                      </button>
-                      <div className="shrink-0">
-                        <button
-                          type="button"
-                          aria-label={`Eliminar serie ${seriesIndex + 1}`}
-                          onClick={() =>
-                            update(block.id, {
-                              series: block.series.filter((item) => item.id !== series.id),
-                            })
-                          }
-                          className="grid size-6 place-items-center rounded-full text-(--c-text-2) hover:bg-white focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
-                        >
-                          <FiTrash2 aria-hidden="true" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </SortableList>
-                <div className="flex flex-wrap justify-start gap-2">
+                  {seriesHandle}
                   <button
                     type="button"
-                    disabled={block.series.length >= 30}
-                    onClick={() => setEditing({ blockId: block.id })}
-                    className="relative inline-flex h-8 items-center gap-1 rounded-lg bg-(--c-ocean) px-2.5 text-xs font-semibold text-white before:absolute before:-inset-y-1.5 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
+                    aria-label={
+                      series.kind === 'pause'
+                        ? `Editar pausa ${seriesIndex + 1}`
+                        : `Editar serie ${seriesIndex + 1}`
+                    }
+                    onClick={() =>
+                      series.kind === 'pause'
+                        ? setPauseForm({
+                            blockId: block.id,
+                            seriesId: series.id,
+                            time: series.interval,
+                          })
+                        : setEditing({ blockId: block.id, series })
+                    }
+                    className="flex min-h-11 min-w-0 flex-1 items-center py-1 text-left focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
                   >
-                    <FiPlus aria-hidden="true" />
-                    Serie
+                    {series.kind === 'pause' ? (
+                      <PauseDivider series={series} />
+                    ) : (
+                      <SeriesContent series={series} />
+                    )}
                   </button>
                   <button
                     type="button"
-                    disabled={disabled || block.series.length >= 30}
-                    onClick={() => setPauseForm({ blockId: block.id, time: '' })}
-                    className="relative inline-flex h-8 items-center gap-1 rounded-lg bg-(--c-ocean) px-2.5 text-xs font-semibold text-white before:absolute before:-inset-y-1.5 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
+                    aria-label={`Eliminar serie ${seriesIndex + 1}`}
+                    onClick={() =>
+                      update(block.id, {
+                        series: block.series.filter((item) => item.id !== series.id),
+                      })
+                    }
+                    className="grid size-11 shrink-0 place-items-center rounded-full text-(--c-text-2)"
                   >
-                    <FiPlus aria-hidden="true" />
-                    Pausa
-                  </button>
-                  <button
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => setTransferBlockId(block.id)}
-                    className="btn btn-subtle w-fit"
-                  >
-                    <FiRepeat aria-hidden="true" /> Transferir
+                    <FiTrash2 aria-hidden="true" />
                   </button>
                 </div>
-              </div>
+              )}
+            </SortableList>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                disabled={block.series.length >= 30}
+                onClick={() => setEditing({ blockId: block.id })}
+                className="min-h-11 flex-1 rounded-xl border border-dashed border-(--c-aqua-strong) text-sm font-bold text-(--c-ocean) disabled:opacity-50"
+              >
+                + Serie
+              </button>
+              <button
+                type="button"
+                disabled={block.series.length >= 30}
+                onClick={() => setPauseForm({ blockId: block.id, time: '' })}
+                className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-dashed border-(--c-border) px-4 text-sm font-semibold text-(--c-text-2) disabled:opacity-50"
+              >
+                <PauseIcon /> Pausa
+              </button>
             </div>
           </fieldset>
         )}
@@ -324,15 +336,66 @@ export default function ClassTrainingEditor({
       <button
         type="button"
         disabled={disabled || blocks.length >= 20}
-        // Adds an empty 1× block right away; repetitions and series are edited in place.
         onClick={() =>
           onChange([...blocks, { id: crypto.randomUUID(), repetitions: 1, series: [] }])
         }
-        className={`relative inline-flex h-8 w-fit items-center justify-center gap-1 rounded-lg bg-(--c-ocean) px-2.5 text-xs font-semibold text-white before:absolute before:-inset-y-1.5 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 ${blocks.length === 0 ? 'justify-self-center' : 'justify-self-end'}`}
+        className="min-h-14 w-full rounded-2xl border border-dashed border-(--c-aqua-strong) text-sm font-bold text-(--c-ocean) disabled:opacity-50"
       >
-        <FiPlus aria-hidden="true" />
-        Bloque
+        + Agregar bloque
       </button>
+      {menuBlockId &&
+        createPortal(
+          <Sheet open label="Opciones del bloque" onClose={() => setMenuBlockId(null)}>
+            <div className="grid gap-2 pb-4">
+              <h2 className="text-lg font-bold">Opciones del bloque</h2>
+              <button
+                type="button"
+                className="btn btn-subtle min-h-11 justify-start"
+                onClick={() => {
+                  const block = blocks.find((item) => item.id === menuBlockId)
+                  if (block)
+                    setBlockForm({
+                      id: block.id,
+                      title: block.title || '',
+                      observations: block.observations || '',
+                      repetitions: block.repetitions,
+                    })
+                  setMenuBlockId(null)
+                }}
+              >
+                Editar título y observaciones
+              </button>
+              <button
+                type="button"
+                className="btn btn-subtle min-h-11 justify-start"
+                onClick={() => {
+                  setTransferBlockId(menuBlockId)
+                  setMenuBlockId(null)
+                }}
+              >
+                Transferir
+              </button>
+              <button
+                type="button"
+                className="btn btn-subtle min-h-11 justify-start text-rose-700"
+                onClick={() => {
+                  const block = blocks.find((item) => item.id === menuBlockId)
+                  if (block)
+                    setBlockForm({
+                      id: block.id,
+                      title: block.title || '',
+                      observations: block.observations || '',
+                      repetitions: block.repetitions,
+                    })
+                  setMenuBlockId(null)
+                }}
+              >
+                Eliminar bloque
+              </button>
+            </div>
+          </Sheet>,
+          document.body
+        )}
       {transferBlockId &&
         blocks.some((block) => block.id === transferBlockId) &&
         createPortal(

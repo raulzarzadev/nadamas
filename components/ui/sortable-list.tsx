@@ -24,8 +24,10 @@ function SortableItem({
   label,
   disabled,
   children,
+  handleClassName,
 }: {
   id: string
+  handleClassName?: string
   label: string
   disabled: boolean
   children: (handle: ReactNode) => ReactNode
@@ -59,7 +61,7 @@ function SortableItem({
           {...listeners}
           aria-label={`Reordenar ${label}`}
           title="Arrastra para reordenar"
-          className="grid size-6 shrink-0 touch-none cursor-grab place-items-center rounded text-(--c-text-2) hover:bg-white active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-(--c-ocean)"
+          className={`grid shrink-0 touch-none cursor-grab place-items-center rounded text-(--c-text-2) hover:bg-white active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-(--c-ocean) ${handleClassName ?? 'size-6'}`}
         >
           <FiMenu aria-hidden="true" className="size-3" />
         </button>
@@ -74,6 +76,7 @@ export default function SortableList<T extends { id: string }>({
   disabled = false,
   label,
   className,
+  handleClassName,
   children,
 }: {
   items: T[]
@@ -81,6 +84,7 @@ export default function SortableList<T extends { id: string }>({
   disabled?: boolean
   label: string
   className?: string
+  handleClassName?: string
   children: (item: T, index: number, handle: ReactNode) => ReactNode
 }) {
   const sensors = useSensors(
@@ -112,6 +116,7 @@ export default function SortableList<T extends { id: string }>({
               id={item.id}
               label={`${label} ${index + 1}`}
               disabled={disabled}
+              handleClassName={handleClassName}
             >
               {(handle) => children(item, index, handle)}
             </SortableItem>

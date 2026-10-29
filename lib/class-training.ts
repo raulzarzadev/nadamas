@@ -163,3 +163,28 @@ export function workoutDuration(blocks: ClassTrainingBlock[]) {
     complete: durations.length > 0 && durations.every((duration) => duration.complete),
   }
 }
+
+export function formatTrainingDistance(meters: number) {
+  return `${new Intl.NumberFormat('es-MX').format(meters).replace(/,/g, '.')} m`
+}
+
+export function blockDistance(block: ClassTrainingBlock) {
+  return (
+    block.series.reduce(
+      (total, series) =>
+        total + (series.kind === 'pause' ? 0 : (series.distanceMeters ?? 0) * series.repetitions),
+      0
+    ) * block.repetitions
+  )
+}
+
+export function formatTrainingSummaryDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60)
+  return minutes < 60
+    ? `${minutes} min`
+    : `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')} h`
+}
+
+export function formatSeriesDuration(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+}

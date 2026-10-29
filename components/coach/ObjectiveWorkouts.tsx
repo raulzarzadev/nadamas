@@ -3,7 +3,7 @@
 import { useId, useState } from 'react'
 import { FiCheck, FiEdit2, FiRepeat, FiTrash2 } from 'react-icons/fi'
 import {
-  formatTrainingDuration,
+  formatTrainingSummaryDuration,
   normalizeClassTraining,
   workoutDuration,
 } from '@/lib/class-training'
@@ -32,7 +32,7 @@ function WorkoutTime({ workout }: { workout: ObjectiveWorkout }) {
   return duration.seconds ? (
     <em className="ml-1 text-[10px] font-normal opacity-75">
       · {!duration.complete && 'Tiempo calculado '}
-      {formatTrainingDuration(duration.seconds)}
+      {formatTrainingSummaryDuration(duration.seconds)}
     </em>
   ) : null
 }
