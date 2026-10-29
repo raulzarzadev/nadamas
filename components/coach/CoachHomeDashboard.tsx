@@ -1,7 +1,6 @@
 'use client'
 
 import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
-import CoachOnboardingBanner from '@comps/coach/CoachOnboardingBanner'
 import type React from 'react'
 import { useEffect, useState } from 'react'
 import { FiActivity, FiCalendar, FiClock, FiDollarSign, FiShield, FiUsers } from 'react-icons/fi'
@@ -69,8 +68,6 @@ export default function CoachHomeDashboard() {
         </h1>
         <p className="mt-1 text-(--c-text-2)">Esto es lo que tienes por delante.</p>
       </div>
-
-      <CoachOnboardingBanner />
 
       <div className="grid grid-cols-3 gap-3">
         <StatTile
