@@ -187,9 +187,6 @@ export default function CreateSchoolPage() {
               Tu siguiente paso es configurar un plan de pago. Después crea los horarios de clases y
               agrega a tus profes y alumnos.
             </p>
-            <Link href="/school/payments" className="btn btn-primary min-h-11 w-full">
-              Configurar mi primer plan de pago
-            </Link>
             <Link href="/school/subscription" className="btn btn-outline min-h-11 w-full">
               Ver suscripción y acceso
             </Link>
@@ -198,19 +195,6 @@ export default function CreateSchoolPage() {
               className="btn btn-outline min-h-11 w-full"
             >
               Ver página pública
-            </Link>
-            <Link
-              href="/school/create?new=1"
-              onClick={() => {
-                setStatus('idle')
-                setForm(INITIAL_FORM)
-                setLogoFile(null)
-                setSlugTouched(false)
-                setMessage(null)
-              }}
-              className="inline-flex min-h-11 items-center justify-center text-sm font-bold underline"
-            >
-              Crear otra escuela
             </Link>
           </div>
         </div>

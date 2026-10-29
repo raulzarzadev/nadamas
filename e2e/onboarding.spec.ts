@@ -120,7 +120,11 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(
       page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
     ).toBeVisible()
-    await page.getByRole('link', { name: 'Configurar mi primer plan de pago', exact: true }).click()
+    await expect(
+      page.getByRole('link', { name: 'Configurar mi primer plan de pago', exact: true })
+    ).toHaveCount(0)
+    await expect(page.getByRole('link', { name: 'Crear otra escuela', exact: true })).toHaveCount(0)
+    await page.goto('/school/payments')
     await expect(page).toHaveURL(/\/school\/payments$/)
     await page.setViewportSize({ width: 1440, height: 1000 })
     const sidebar = page.locator('[data-app-sidebar]')
@@ -143,7 +147,7 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(
       page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
     ).toBeVisible()
-    await page.getByRole('link', { name: 'Crear otra escuela', exact: true }).click()
+    await page.goto('/school/create?new=1')
     await expect(page).toHaveURL(/\/school\/create\?new=1$/)
     await expect(page.getByRole('heading', { name: 'Crea tu escuela', exact: true })).toBeVisible()
     await page.goBack()
