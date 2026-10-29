@@ -29,7 +29,7 @@ function BlockTotal({ block }: { block: ClassTrainingBlock }) {
   const duration = blockDuration(block)
   return duration.seconds ? (
     <em className="ml-2 text-[10px] font-normal text-(--c-text-2)">
-      {!duration.complete && 'Tiempo definido '}
+      {!duration.complete && 'Tiempo calculado '}
       {formatTrainingDuration(duration.seconds)}
     </em>
   ) : null

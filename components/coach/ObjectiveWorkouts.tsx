@@ -31,7 +31,7 @@ function WorkoutTime({ workout }: { workout: ObjectiveWorkout }) {
   const duration = workoutDuration(workout.blocks)
   return duration.seconds ? (
     <em className="ml-1 text-[10px] font-normal opacity-75">
-      · {!duration.complete && 'Tiempo definido '}
+      · {!duration.complete && 'Tiempo calculado '}
       {formatTrainingDuration(duration.seconds)}
     </em>
   ) : null

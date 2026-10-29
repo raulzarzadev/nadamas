@@ -267,9 +267,6 @@ export default function TrainingSeriesForm({
                   setDraft({ ...draft, distanceMeters: distanceMeters > 0 ? distanceMeters : null })
                 }
               />
-              <p className="text-xs text-(--c-text-2)">
-                De 25 en 25 metros. En 0, la serie queda sin distancia.
-              </p>
             </>
           )}
         </div>
@@ -288,6 +285,22 @@ export default function TrainingSeriesForm({
               className={inputClass}
             />
           </label>
+          <fieldset className="flex flex-wrap gap-2">
+            <legend className="mb-2 text-sm text-(--c-text-2)">
+              Zona de intensidad (opcional)
+            </legend>
+            {(['Z1', 'Z2', 'Z3', 'Z4', 'Z5'] as const).map((zone) => (
+              <button
+                key={zone}
+                type="button"
+                aria-pressed={draft.zone === zone}
+                onClick={() => setDraft({ ...draft, zone: draft.zone === zone ? undefined : zone })}
+                className={`min-h-11 min-w-11 rounded-full border px-4 text-sm font-bold ${draft.zone === zone ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean)'}`}
+              >
+                {zone}
+              </button>
+            ))}
+          </fieldset>
           <fieldset className="flex flex-wrap gap-1.5">
             <legend className="mb-1 text-xs font-semibold text-(--c-text-2)">Comunes</legend>
             {styles.map((style) => (
@@ -350,22 +363,6 @@ export default function TrainingSeriesForm({
                 className={`btn border h-9 min-h-9 px-3 text-xs ${selectedComplement === complement ? 'btn-primary' : 'btn-outline'}`}
               >
                 {complement}
-              </button>
-            ))}
-          </fieldset>
-          <fieldset className="flex flex-wrap gap-2">
-            <legend className="mb-2 text-sm text-(--c-text-2)">
-              Zona de intensidad (opcional)
-            </legend>
-            {(['Z1', 'Z2', 'Z3', 'Z4', 'Z5'] as const).map((zone) => (
-              <button
-                key={zone}
-                type="button"
-                aria-pressed={draft.zone === zone}
-                onClick={() => setDraft({ ...draft, zone: draft.zone === zone ? undefined : zone })}
-                className={`min-h-11 min-w-11 rounded-full border px-4 text-sm font-bold ${draft.zone === zone ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-ocean)'}`}
-              >
-                {zone}
               </button>
             ))}
           </fieldset>
