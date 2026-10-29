@@ -403,3 +403,117 @@ test('a write adding 2 new students at 99/100 is blocked', async ({ request }) =
     await cleanupSchool(schoolId)
   }
 })
+
+async function seedTeacherInvitation(schoolId: string) {
+  const teacher = await signup()
+  const token = crypto.randomUUID()
+  const invitationRef = db.collection('schoolInvitations').doc()
+  await invitationRef.set({
+    schoolId,
+    email: teacher.email.toLowerCase(),
+    role: 'teacher',
+    status: 'pending',
+    expiresAt: Date.now() + 86400000,
+    invitedBy: 'director',
+    tokenHash: createHash('sha256').update(token).digest('hex'),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  })
+  return {
+    teacherId: teacher.localId,
+    invitationRef,
+    accept: (request: APIRequestContext) =>
+      request.post(`/api/school-invitations/${token}`, {
+        headers: { authorization: `Bearer ${teacher.idToken}` },
+        data: { profile: { name: 'Profe Nuevo' } },
+      }),
+  }
+}
+
+const teacherSeatsOf = async (schoolId: string) =>
+  (await seats.readSchoolSeats(schoolId)).usage.teachers
+
+test('accepting a 6th teacher invitation is blocked', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId } = await seedDirectorSchool(0)
+  for (let i = 0; i < 5; i++)
+    await db
+      .collection('schoolMemberships')
+      .doc(`${schoolId}_teacher-${i}`)
+      .set({
+        schoolId,
+        userId: `teacher-${i}`,
+        role: 'teacher',
+        roles: ['teacher'],
+        status: 'active',
+      })
+  const invitation = await seedTeacherInvitation(schoolId)
+  try {
+    const response = await invitation.accept(request)
+    expect(response.status(), await response.text()).toBe(409)
+    expect(await response.json()).toEqual({
+      code: 'plan_limit_reached',
+      error: BASIC_LIMIT_MESSAGE,
+    })
+    expect((await invitation.invitationRef.get()).data()?.status).toBe('pending')
+    expect(await teacherSeatsOf(schoolId)).toBe(5)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('accepting a teacher invitation under the limit claims the seat lock', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId } = await seedDirectorSchool(0)
+  for (let i = 0; i < 4; i++)
+    await db
+      .collection('schoolMemberships')
+      .doc(`${schoolId}_teacher-${i}`)
+      .set({
+        schoolId,
+        userId: `teacher-${i}`,
+        role: 'teacher',
+        roles: ['teacher'],
+        status: 'active',
+      })
+  const invitation = await seedTeacherInvitation(schoolId)
+  try {
+    const response = await invitation.accept(request)
+    expect(response.status(), await response.text()).toBe(200)
+    expect(await teacherSeatsOf(schoolId)).toBe(5)
+    expect((await db.collection('schoolSeatLocks').doc(schoolId).get()).exists).toBe(true)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('legacy school over the teacher limit still adds students but blocks teachers', async ({
+  request,
+}) => {
+  test.setTimeout(60000)
+  const { schoolId, directorHeaders } = await seedDirectorSchool(10)
+  for (let i = 0; i < 7; i++)
+    await db
+      .collection('schoolMemberships')
+      .doc(`${schoolId}_teacher-${i}`)
+      .set({
+        schoolId,
+        userId: `teacher-${i}`,
+        role: 'teacher',
+        roles: ['teacher'],
+        status: 'active',
+      })
+  const invitation = await seedTeacherInvitation(schoolId)
+  try {
+    const created = await request.post(`/api/schools/${schoolId}/students/quick`, {
+      headers: directorHeaders,
+      data: { name: 'Alumno nuevo' },
+    })
+    expect(created.status(), await created.text()).toBe(201)
+    const response = await invitation.accept(request)
+    expect(response.status(), await response.text()).toBe(409)
+    expect((await response.json()).code).toBe('plan_limit_reached')
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})

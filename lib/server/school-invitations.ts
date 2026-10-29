@@ -521,7 +521,14 @@ export async function acceptSchoolInvitation(args: {
           students: [{ ...studentDocument, id: studentRef.id }],
         })
       : null
+    const teacherSeat =
+      invitation.role === 'teacher'
+        ? await reserveSchoolSeatChanges(transaction, invitation.schoolId, 'teacher', {
+            memberships: [memberAfter],
+          })
+        : null
     studentSeat?.claim()
+    teacherSeat?.claim()
     if (invitation.role === 'teacher') {
       transaction.set(
         adminDb.collection('users').doc(args.caller.uid),
