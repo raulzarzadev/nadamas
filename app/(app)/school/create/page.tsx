@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiMapPin } from 'react-icons/fi'
 import SchoolLogoInput from '@/components/school/SchoolLogoInput'
@@ -27,6 +28,11 @@ const INITIAL_FORM: FormState = {
 }
 
 export default function CreateSchoolPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const creatingAdditional = searchParams.get('new') === '1'
+  const [loadError, setLoadError] = useState(false)
+  const [revision, setRevision] = useState(0)
   const { user } = useUser() as { user: { uid?: string; id?: string } | null }
   const [form, setForm] = useState<FormState>(INITIAL_FORM)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -39,12 +45,26 @@ export default function CreateSchoolPage() {
   const [slugTouched, setSlugTouched] = useState(false)
 
   useEffect(() => {
-    getAuthed('/api/schools')
+    void revision
+    let active = true
+    setLoading(true)
+    setLoadError(false)
+    getAuthed('/api/schools', 15000)
       .then((response) => response.json() as Promise<{ ownedSchool?: School | null }>)
-      .then((payload) => setOwnedSchool(payload.ownedSchool || null))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+      .then((payload) => {
+        if (active) setOwnedSchool(payload.ownedSchool || null)
+      })
+      .catch((error) => {
+        reportInternalError('SCHOOL_CREATE_LOAD', error)
+        if (active) setLoadError(true)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [revision])
 
   function updateField(field: keyof FormState, value: string) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -96,10 +116,15 @@ export default function CreateSchoolPage() {
       })
       const payload = (await response.json()) as { school: School }
       setOwnedSchool(payload.school)
-      window.localStorage.setItem('nadamas.schoolId', payload.school.id)
+      try {
+        window.localStorage.setItem('nadamas.schoolId', payload.school.id)
+      } catch (error) {
+        reportInternalError('SCHOOL_SELECTION_SAVE', error)
+      }
       window.dispatchEvent(new Event('nadamas:school-access-updated'))
       setStatus('success')
       setMessage('Tu escuela quedó creada.')
+      router.replace(`/school/create?created=${encodeURIComponent(payload.school.id)}`)
     } catch (error) {
       reportInternalError('SCHOOL_CREATE', error)
       setStatus('error')
@@ -116,7 +141,22 @@ export default function CreateSchoolPage() {
     return <div className="py-16 text-center text-sm text-(--c-text-2)">Cargando…</div>
   }
 
-  if (ownedSchool && status === 'success') {
+  if (loadError)
+    return (
+      <section className="mx-auto max-w-2xl p-6" role="alert">
+        <h1 className="text-xl font-bold">No pudimos cargar tus escuelas</h1>
+        <p className="mt-3 text-sm">Inténtalo de nuevo para continuar sin repetir la creación.</p>
+        <button
+          type="button"
+          className="btn btn-primary mt-4 min-h-11"
+          onClick={() => setRevision((value) => value + 1)}
+        >
+          Volver a intentar
+        </button>
+      </section>
+    )
+
+  if (ownedSchool && (!creatingAdditional || status === 'success')) {
     return (
       <section className="mx-auto flex max-w-2xl flex-col gap-5">
         <Link
@@ -131,7 +171,9 @@ export default function CreateSchoolPage() {
               Modo escuela
             </p>
             <h1 className="mt-2 text-3xl font-extrabold">{ownedSchool.name}</h1>
-            <p className="mt-2 text-white/75">Tu escuela quedó creada y eres su coordinador.</p>
+            <p className="mt-2 text-white/75">
+              Tu escuela ya está creada. Continúa con su configuración.
+            </p>
           </div>
           <div className="flex flex-col gap-4 p-6 sm:p-8">
             <div className="flex items-center gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-4">
@@ -156,6 +198,19 @@ export default function CreateSchoolPage() {
               className="btn btn-outline min-h-11 w-full"
             >
               Ver página pública
+            </Link>
+            <Link
+              href="/school/create?new=1"
+              onClick={() => {
+                setStatus('idle')
+                setForm(INITIAL_FORM)
+                setLogoFile(null)
+                setSlugTouched(false)
+                setMessage(null)
+              }}
+              className="inline-flex min-h-11 items-center justify-center text-sm font-bold underline"
+            >
+              Crear otra escuela
             </Link>
           </div>
         </div>

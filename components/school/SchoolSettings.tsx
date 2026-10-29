@@ -34,7 +34,7 @@ export default function SchoolSettings() {
       <div className="grid gap-2">
         <SchoolSelector schools={schools} selectedId={selectedId || ''} onChange={selectSchool} />
         <Link
-          href="/school/create"
+          href="/school/create?new=1"
           className="inline-flex min-h-11 items-center text-sm font-bold underline focus-visible:outline-2"
         >
           Crear otra escuela

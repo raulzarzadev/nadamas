@@ -107,6 +107,37 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(page.getByText('Crear los horarios de clases', { exact: true })).toBeVisible()
     await expect(page.getByText('Agregar profes y alumnos', { exact: true })).toBeVisible()
     await page.screenshot({ path: '/tmp/nadamas-coordinator-no-school.png', fullPage: true })
+    await page.getByRole('link', { name: 'Crear escuela', exact: true }).click()
+    await page.getByLabel('Nombre de la escuela', { exact: true }).fill(`Escuela regreso ${suffix}`)
+    const creation = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/schools' &&
+        response.request().method() === 'POST'
+    )
+    await page.getByRole('button', { name: 'Crear escuela', exact: true }).click()
+    expect((await creation).ok()).toBe(true)
+    await expect(page).toHaveURL(/\/school\/create\?created=/)
+    await expect(
+      page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
+    ).toBeVisible()
+    await page.getByRole('link', { name: 'Configurar mi primer plan de pago', exact: true }).click()
+    await expect(page).toHaveURL(/\/school\/payments$/)
+    await page.goBack()
+    await expect(
+      page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
+    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Crea tu escuela', exact: true })).toHaveCount(0)
+    await page.reload()
+    await expect(
+      page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
+    ).toBeVisible()
+    await page.getByRole('link', { name: 'Crear otra escuela', exact: true }).click()
+    await expect(page).toHaveURL(/\/school\/create\?new=1$/)
+    await expect(page.getByRole('heading', { name: 'Crea tu escuela', exact: true })).toBeVisible()
+    await page.goBack()
+    await expect(
+      page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
+    ).toBeVisible()
     await page.goto('/welcome')
     await expect(page.getByRole('heading', { name: 'Como coordinador' })).toBeVisible()
     const snapshot = await request.get('/api/onboarding', { headers })
