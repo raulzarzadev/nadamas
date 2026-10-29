@@ -10,5 +10,11 @@ export function getPublicSchoolUrl(slug: string) {
 }
 
 export function getShareablePublicSchoolUrl(slug: string) {
+  if (typeof window !== 'undefined') {
+    const { hostname, port, protocol } = window.location
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.localhost')) {
+      return `${protocol}//${slug}.localhost${port ? `:${port}` : ''}/`
+    }
+  }
   return `https://${slug}.nadamas.app/`
 }

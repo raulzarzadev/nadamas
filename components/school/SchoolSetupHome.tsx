@@ -184,11 +184,11 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
       </section>
     )
   return (
-    <section aria-labelledby="school-home-title" className="grid gap-4">
+    <section aria-labelledby="school-home-title" className="grid min-w-0 max-w-full gap-4">
       <h1 id="school-home-title" className="sr-only">
         Inicio de {data.schoolName}
       </h1>
-      <nav aria-label="Administrar escuela" className="grid gap-3 p-2 sm:grid-cols-2">
+      <nav aria-label="Administrar escuela" className="grid min-w-0 gap-3 p-2 sm:grid-cols-2">
         <Link
           href="/school/setup"
           className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-[var(--c-aqua)] bg-[var(--c-aqua-light)] px-4 py-3 font-bold text-(--c-ocean) shadow-[var(--shadow-sm)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
@@ -234,19 +234,19 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
       </nav>
       <section
         aria-labelledby="school-share-title"
-        className="grid gap-4 rounded-2xl border border-(--c-border) bg-white p-5 sm:p-7"
+        className="grid min-w-0 max-w-full gap-4 rounded-2xl border border-(--c-border) bg-white p-5 sm:p-7"
       >
-        <div>
+        <div className="min-w-0">
           <h2 id="school-share-title" className="flex items-center gap-2 font-bold">
             <FiShare2 aria-hidden="true" /> Comparte tu escuela
           </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-(--c-text-2)">
+          <p className="mt-2 min-w-0 max-w-3xl text-sm leading-relaxed text-(--c-text-2) break-words">
             Puedes administrar tu escuela desde aquí. Te recomendamos abrirla e instalar la app
             desde su subdominio; después comparte este enlace con tus alumnos, profes y familias
             para que lleguen directo a tu escuela.
           </p>
         </div>
-        <p className="break-all rounded-xl border border-(--c-border) bg-white px-4 py-3 text-sm text-(--c-ocean)">
+        <p className="min-w-0 max-w-full break-all rounded-xl border border-(--c-border) bg-white px-4 py-3 text-sm text-(--c-ocean)">
           {publicUrl}
         </p>
         {shareStatus !== 'idle' && (
