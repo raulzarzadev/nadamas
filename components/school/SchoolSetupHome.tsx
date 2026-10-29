@@ -10,9 +10,11 @@ import {
   FiDollarSign,
   FiRefreshCw,
   FiSettings,
+  FiShare2,
 } from 'react-icons/fi'
 import { SchoolSetupCRUD } from '@/firebase/school-setup/main'
 import { getCachedAuthedData, invalidateAuthedCache } from '@/lib/client/authed-api'
+import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import type { SchoolSetupSnapshot } from '@/lib/school-setup'
 import { schoolSubscriptionHint } from '@/lib/school-subscription-hint'
@@ -44,6 +46,7 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
   const [data, setData] = useState(() => getCachedAuthedData<SchoolSetupSnapshot>(endpoint))
   const [loading, setLoading] = useState(!data)
   const [error, setError] = useState(false)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle')
   const [now, setNow] = useState(Date.now)
   const load = useCallback(async () => {
     setLoading(true)
@@ -83,6 +86,16 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
     )
   const completed = data.steps.filter((step) => step.complete).length
   const next = data.steps.find((step) => !step.complete)
+  const publicUrl = getPublicSchoolUrl(data.slug)
+  const copySchoolLink = async () => {
+    try {
+      await copyTextToClipboard(publicUrl)
+      setShareStatus('copied')
+    } catch (cause) {
+      reportInternalError('SCHOOL_LINK_COPY', cause)
+      setShareStatus('error')
+    }
+  }
   if (view === 'steps')
     return (
       <section
@@ -224,15 +237,48 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
           <FiArrowRight aria-hidden="true" className="shrink-0" />
         </Link>
       </nav>
-      <div className="flex flex-wrap items-center gap-4 border-t border-(--c-border) bg-(--c-surface) p-5 sm:px-7">
-        <FiCheckCircle aria-hidden="true" />
-        <Link
-          href={getPublicSchoolUrl(data.slug)}
-          className="inline-flex min-h-11 items-center font-bold underline"
-        >
-          Ver mi escuela
-        </Link>
-      </div>
+      <section
+        aria-labelledby="school-share-title"
+        className="grid gap-4 border-t border-(--c-border) bg-(--c-surface) p-5 sm:p-7"
+      >
+        <div>
+          <h2 id="school-share-title" className="flex items-center gap-2 font-bold">
+            <FiShare2 aria-hidden="true" /> Comparte tu escuela
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-(--c-text-2)">
+            Puedes administrar tu escuela desde aquí. Te recomendamos abrirla e instalar la app
+            desde su subdominio; después comparte este enlace con tus alumnos, profes y familias
+            para que lleguen directo a tu escuela.
+          </p>
+        </div>
+        <p className="break-all rounded-xl border border-(--c-border) bg-white px-4 py-3 text-sm text-(--c-ocean)">
+          {publicUrl}
+        </p>
+        {shareStatus !== 'idle' && (
+          <p role="status" className="text-sm font-semibold text-(--c-ocean)">
+            {shareStatus === 'copied'
+              ? 'Enlace copiado. Ya puedes compartirlo.'
+              : 'No pudimos copiar el enlace. Inténtalo de nuevo.'}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={copySchoolLink}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+          >
+            <FiShare2 aria-hidden="true" /> Copiar enlace
+          </button>
+          <Link
+            href={publicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-border) bg-white px-5 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+          >
+            Abrir mi escuela
+          </Link>
+        </div>
+      </section>
     </section>
   )
 }
