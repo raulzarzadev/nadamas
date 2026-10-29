@@ -50,6 +50,7 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
   const [loading, setLoading] = useState(!data)
   const [error, setError] = useState(false)
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle')
+  const [inviteExpanded, setInviteExpanded] = useState(false)
   const [now, setNow] = useState(Date.now)
   const load = useCallback(async () => {
     setLoading(true)
@@ -191,81 +192,111 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
       <h1 id="school-home-title" className="sr-only">
         Inicio de {data.schoolName}
       </h1>
-      <nav aria-label="Administrar escuela" className="grid min-w-0 gap-3 p-2 sm:grid-cols-2">
-        <HomeActionLink
-          href="/school/setup"
-          title="Inicia tu escuela"
-          description={`${completed}/${data.steps.length} pasos completos`}
-          icon={FiCheckCircle}
-          featured
-        />
-        <HomeActionLink
-          href="/school/subscription"
-          title="Suscripción"
-          description={schoolSubscriptionHint(data.subscription, now)}
-          icon={FiCreditCard}
-        />
-        <HomeActionLink
-          href="/school/payments"
-          title="Planes y pagos de tu escuela"
-          icon={FiDollarSign}
-        />
-        <HomeActionLink href="/school/settings" title="Configuración" icon={FiSettings} />
-        <HomeActionLink
-          href="/school/coach-profile"
-          title="Perfil de coach"
-          description="Configura tu perfil profesional"
-          icon={FiShield}
-        />
-        <HomeActionLink
-          href="/profile"
-          title="Perfil de nadador"
-          description="Edita tu nombre, datos y perfil público"
-          icon={FiActivity}
-        />
-      </nav>
-      <section
-        aria-labelledby="school-share-title"
-        className="grid min-w-0 max-w-full gap-4 rounded-2xl border border-(--c-border) bg-white p-5 sm:p-7"
-      >
-        <div className="min-w-0">
-          <h2 id="school-share-title" className="flex items-center gap-2 font-bold">
-            <FiShare2 aria-hidden="true" /> Comparte tu escuela
+      <nav aria-label="Administrar escuela" className="grid min-w-0 gap-4 p-2">
+        <section aria-labelledby="school-actions-title" className="grid min-w-0 gap-2">
+          <h2
+            id="school-actions-title"
+            className="px-1 text-[11px] font-bold uppercase tracking-wider text-(--c-text-2)"
+          >
+            Tu escuela
           </h2>
-          <p className="mt-2 min-w-0 max-w-3xl text-sm leading-relaxed text-(--c-text-2) break-words">
-            Puedes administrar tu escuela desde aquí. Te recomendamos abrirla e instalar la app
-            desde su subdominio; después comparte este enlace con tus alumnos, profes y familias
-            para que lleguen directo a tu escuela.
-          </p>
-        </div>
-        <p className="min-w-0 max-w-full break-all rounded-xl border border-(--c-border) bg-white px-4 py-3 text-sm text-(--c-ocean)">
-          {publicUrl}
-        </p>
-        {shareStatus !== 'idle' && (
-          <p role="status" className="text-sm font-semibold text-(--c-ocean)">
-            {shareStatus === 'copied'
-              ? 'Enlace copiado. Ya puedes compartirlo.'
-              : 'No pudimos copiar el enlace. Inténtalo de nuevo.'}
-          </p>
-        )}
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={copySchoolLink}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+          <div className="grid min-w-0 gap-2 sm:grid-cols-2">
+            <HomeActionLink
+              href="/school/setup"
+              title="Inicia tu escuela"
+              description={`${completed}/${data.steps.length} pasos completos`}
+              icon={FiCheckCircle}
+              featured
+            />
+            <HomeActionLink
+              href="/school/subscription"
+              title="Suscripción"
+              description={schoolSubscriptionHint(data.subscription, now)}
+              icon={FiCreditCard}
+            />
+            <HomeActionLink
+              href="/school/payments"
+              title="Planes y pagos de tu escuela"
+              icon={FiDollarSign}
+            />
+            <HomeActionLink href="/school/settings" title="Configuración" icon={FiSettings} />
+            <HomeActionLink
+              title="Invitar a escuela"
+              description="Comparte el enlace con tu equipo y las familias"
+              icon={FiShare2}
+              onClick={() => setInviteExpanded((expanded) => !expanded)}
+              expanded={inviteExpanded}
+              controls="school-invite-details"
+            />
+          </div>
+          <div
+            id="school-invite-details"
+            hidden={!inviteExpanded}
+            className={`${inviteExpanded ? 'grid' : 'hidden'} min-w-0 gap-4 rounded-2xl border border-(--c-border) bg-white p-5 sm:p-7`}
           >
-            <FiShare2 aria-hidden="true" /> Copiar enlace
-          </button>
-          <Link
-            href={localSchoolUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-border) bg-white px-5 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+            <div className="min-w-0">
+              <h3 className="font-bold">Enlace para invitar a tu escuela</h3>
+              <p className="mt-2 min-w-0 max-w-3xl text-sm leading-relaxed text-(--c-text-2) break-words">
+                Puedes administrar tu escuela desde aquí. Te recomendamos abrirla e instalar la app
+                desde su subdominio; después comparte este enlace con tus alumnos, profes y familias
+                para que lleguen directo a tu escuela.
+              </p>
+            </div>
+            <p className="min-w-0 max-w-full break-all rounded-xl border border-(--c-border) bg-white px-4 py-3 text-sm text-(--c-ocean)">
+              {publicUrl}
+            </p>
+            {shareStatus !== 'idle' && (
+              <p role="status" className="text-sm font-semibold text-(--c-ocean)">
+                {shareStatus === 'copied'
+                  ? 'Enlace copiado. Ya puedes compartirlo.'
+                  : 'No pudimos copiar el enlace. Inténtalo de nuevo.'}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={copySchoolLink}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                <FiShare2 aria-hidden="true" /> Copiar enlace
+              </button>
+              <Link
+                href={localSchoolUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-border) bg-white px-5 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                Abrir mi escuela
+              </Link>
+            </div>
+          </div>
+        </section>
+        <section
+          aria-labelledby="school-profiles-title"
+          className="grid min-w-0 gap-2 border-t border-(--c-border) pt-4"
+        >
+          <h2
+            id="school-profiles-title"
+            className="px-1 text-[11px] font-bold uppercase tracking-wider text-(--c-text-2)"
           >
-            Abrir mi escuela
-          </Link>
-        </div>
-      </section>
+            Tus perfiles
+          </h2>
+          <div className="grid min-w-0 gap-2 sm:grid-cols-2">
+            <HomeActionLink
+              href="/school/coach-profile"
+              title="Perfil de coach"
+              description="Configura tu perfil profesional"
+              icon={FiShield}
+            />
+            <HomeActionLink
+              href="/profile"
+              title="Perfil de nadador"
+              description="Edita tu nombre, datos y perfil público"
+              icon={FiActivity}
+            />
+          </div>
+        </section>
+      </nav>
     </section>
   )
 }
