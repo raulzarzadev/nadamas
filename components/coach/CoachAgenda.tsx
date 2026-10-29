@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiCalendar,
+  FiCheck,
   FiClipboard,
+  FiEdit2,
   FiLock,
   FiPlus,
   FiSettings,
@@ -2111,6 +2113,9 @@ export default function CoachAgenda({
                     booking.status === 'pending' ||
                     booking.schoolClassStudents?.some((student) => student.pending)
                 )
+                // Hour holding only unresolved requests: render it hollow so a
+                // stack of requests reads calmer than confirmed (filled) classes.
+                const onlyRequests = row.bookings.every((booking) => booking.schoolRequestId)
                 const isGroupClass =
                   row.bookings.length > 1 ||
                   row.bookings.some((booking) => booking.groupType === 'grupal')
@@ -2152,7 +2157,17 @@ export default function CoachAgenda({
                     time={row.sort}
                     showTime={showTime}
                     showSeparator={!classDetails && showSeparator}
-                    status={classBlocked ? 'blocked' : isGroupClass ? 'group' : 'booked'}
+                    status={
+                      classBlocked
+                        ? 'blocked'
+                        : onlyRequests
+                          ? isGroupClass
+                            ? 'groupAvailable'
+                            : 'available'
+                          : isGroupClass
+                            ? 'group'
+                            : 'booked'
+                    }
                     coachName={
                       firstBooking.coachId === UNASSIGNED_SCHOOL_COACH_ID
                         ? 'Sin profe aún'
@@ -2243,105 +2258,118 @@ export default function CoachAgenda({
                             noShow,
                             note,
                             pending,
-                          }) => (
-                            <li
-                              key={rowKey}
-                              className="flex items-center justify-between gap-2 rounded-[var(--r-sm)] bg-white/55 px-2.5 py-1.5"
-                            >
-                              <div className="flex min-w-0 items-center gap-2.5">
-                                <div className="relative size-9 shrink-0">
-                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
-                                    {initials(studentName)}
-                                  </span>
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  {booking.schoolClassTitle && (
-                                    <span className="block text-xs font-semibold text-[var(--c-text-2)]">
-                                      {booking.schoolClassTitle}
+                          }) => {
+                            const isRequest = Boolean(booking.schoolRequestId)
+                            const showRequestActions =
+                              isRequest && manageSchoolSchedule && !hideBookingActions
+                            return (
+                              <li
+                                key={rowKey}
+                                className={`flex flex-wrap items-center justify-between gap-x-2 gap-y-2.5 rounded-[var(--r-sm)] px-2.5 py-1.5 ${
+                                  isRequest
+                                    ? 'border border-(--c-border) bg-white py-2.5'
+                                    : 'bg-white/55'
+                                }`}
+                              >
+                                <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                                  <div className="relative size-9 shrink-0">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-xs font-bold text-[var(--c-ocean)] shadow-[0_1px_0_rgba(10,37,64,0.04)]">
+                                      {initials(studentName)}
                                     </span>
-                                  )}
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
-                                      {studentName}
-                                    </span>
-                                    {!hideBookingActions && (
-                                      <StudentLabels
-                                        key={`${studentId}:${labelRevision}`}
-                                        studentId={studentId}
-                                        schoolId={schoolIdForBooking(booking) || undefined}
-                                        compact
-                                        readOnly
-                                      />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    {booking.schoolClassTitle && (
+                                      <span className="block text-xs font-semibold text-[var(--c-text-2)]">
+                                        {booking.schoolClassTitle}
+                                      </span>
                                     )}
+                                    <div className="flex flex-wrap items-center gap-1.5">
+                                      <span className="block break-words text-base font-extrabold leading-tight text-[var(--c-ocean)]">
+                                        {studentName}
+                                      </span>
+                                      {!hideBookingActions && (
+                                        <StudentLabels
+                                          key={`${studentId}:${labelRevision}`}
+                                          studentId={studentId}
+                                          schoolId={schoolIdForBooking(booking) || undefined}
+                                          compact
+                                          readOnly
+                                        />
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
-                                {pending && <StatusBadge status="pending" />}
-                                {noShow && (
-                                  <span className="rounded-full border border-(--rose-bd) bg-(--rose-bg) px-2 py-0.5 text-xs font-bold text-(--rose-tx)">
-                                    No asistió
-                                  </span>
+                                {(!isRequest || noShow) && (
+                                  <div className="ml-auto flex shrink-0 flex-col items-end gap-1 self-start">
+                                    {/* Requests already show "Pendiente" once on the card header. */}
+                                    {pending && !isRequest && <StatusBadge status="pending" />}
+                                    {noShow && (
+                                      <span className="rounded-full border border-(--rose-bd) bg-(--rose-bg) px-2 py-0.5 text-xs font-bold text-(--rose-tx)">
+                                        No asistió
+                                      </span>
+                                    )}
+                                    {!hideBookingActions && !booking.schoolRequestId && (
+                                      <button
+                                        type="button"
+                                        aria-label={`Abrir ficha de ${studentName}`}
+                                        title={`Ficha de ${studentName}`}
+                                        onClick={() => {
+                                          setStudentAction({
+                                            booking,
+                                            student: {
+                                              studentId,
+                                              studentName,
+                                              attended,
+                                              note,
+                                              date: booking.date,
+                                              startTime: booking.startTime,
+                                              started: hasClassStarted(booking),
+                                            },
+                                          })
+                                          setStudentActionError(null)
+                                        }}
+                                        disabled={busy}
+                                        className="relative inline-flex size-8 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] before:absolute before:-inset-1.5 hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
+                                      >
+                                        <FiClipboard aria-hidden="true" size={14} />
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
-                                {!hideBookingActions && !booking.schoolRequestId && (
-                                  <button
-                                    type="button"
-                                    aria-label={`Abrir ficha de ${studentName}`}
-                                    title={`Ficha de ${studentName}`}
-                                    onClick={() => {
-                                      setStudentAction({
-                                        booking,
-                                        student: {
-                                          studentId,
-                                          studentName,
-                                          attended,
-                                          note,
-                                          date: booking.date,
-                                          startTime: booking.startTime,
-                                          started: hasClassStarted(booking),
-                                        },
-                                      })
-                                      setStudentActionError(null)
-                                    }}
-                                    disabled={busy}
-                                    className="relative inline-flex size-8 items-center justify-center rounded-full border border-[var(--c-border)] bg-white text-[var(--c-ocean)] before:absolute before:-inset-1.5 hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)] disabled:opacity-50"
-                                  >
-                                    <FiClipboard aria-hidden="true" size={14} />
-                                  </button>
-                                )}
-                              </div>
-                              {booking.schoolRequestId &&
-                                manageSchoolSchedule &&
-                                !hideBookingActions && (
-                                  <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                                {showRequestActions && (
+                                  <div className="grid w-full grid-cols-2 items-center gap-2 border-t border-(--c-border) pt-2.5 sm:flex">
                                     <button
                                       type="button"
                                       onClick={() => handleSchoolRequest(booking, 'approved')}
                                       disabled={busy}
-                                      className="min-h-10 rounded-full bg-emerald-700 px-3 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+                                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-emerald-700 px-4 text-xs font-bold text-white hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
                                     >
+                                      <FiCheck aria-hidden="true" className="size-3.5" />
                                       Aprobar
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => handleSchoolRequest(booking, 'rejected')}
                                       disabled={busy}
-                                      className="min-h-10 rounded-full border border-[var(--rose-bd)] px-3 text-xs font-bold text-[var(--rose-tx)] hover:bg-[var(--rose-bg)] disabled:opacity-50"
+                                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full border border-(--rose-bd) bg-white px-4 text-xs font-bold text-(--rose-tx) hover:bg-(--rose-bg) focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
                                     >
+                                      <FiX aria-hidden="true" className="size-3.5" />
                                       Rechazar
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => void openSchoolRequestEditor(booking)}
                                       disabled={busy}
-                                      className="col-span-2 min-h-10 rounded-full border border-[var(--c-border)] px-3 text-xs font-bold text-[var(--c-ocean)] hover:bg-white disabled:opacity-50 sm:col-span-1"
+                                      className="col-span-2 inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold text-(--c-text-2) underline-offset-2 hover:text-(--c-ocean) hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 sm:ml-auto"
                                     >
+                                      <FiEdit2 aria-hidden="true" className="size-3.5" />
                                       Cambiar hora o entrenador
                                     </button>
                                   </div>
                                 )}
-                            </li>
-                          )
+                              </li>
+                            )
+                          }
                         )}
                     </ul>
                   </ClassCard>

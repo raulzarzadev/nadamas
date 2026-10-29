@@ -41,17 +41,43 @@ export default function ClassRequestCard({
   onEdit?: () => void
   onChange?: () => void
 }) {
-  const buttonClass =
-    'relative inline-flex h-8 min-h-8 min-w-8 justify-center shrink-0 items-center gap-1 whitespace-nowrap rounded-lg px-2 text-[11px] font-medium text-(--c-ocean) hover:bg-white/70 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50 before:absolute before:-inset-y-1.5'
+  // Same action language as the expanded request in CoachAgenda:
+  // solid green approve, rose outline reject, quiet text for secondary actions.
+  const buttonBase =
+    'relative inline-flex h-8 min-h-8 min-w-8 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 text-[11px] font-bold before:absolute before:-inset-y-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50 @min-[400px]/request-actions:px-3'
+  const approveClass = `${buttonBase} bg-emerald-700 text-white hover:bg-emerald-800`
+  const rejectClass = `${buttonBase} border border-(--rose-bd) bg-white text-(--rose-tx) hover:bg-(--rose-bg)`
+  const secondaryClass = `${buttonBase} font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean)`
+  // Only approved requests occupy the hour; the rest render hollow.
+  const cardStatus =
+    status === 'approved'
+      ? groupType === 'grupal'
+        ? 'group'
+        : 'booked'
+      : groupType === 'grupal'
+        ? 'groupAvailable'
+        : 'available'
   return (
     <ClassCard
       time={time}
-      date={date}
+      // Date joins the time row ("jue 29 de oct · 05:00") so the card header
+      // fits coach · tipo · estado on one line, even on mobile.
+      timeLabel={
+        <>
+          <span className="inline-block font-semibold text-(--c-text-2) first-letter:uppercase">
+            {date}
+          </span>
+          <span aria-hidden="true" className="px-1.5 font-semibold text-(--c-text-2)">
+            ·
+          </span>
+          {time}
+        </>
+      }
       coachName={coachName}
       showCoachName
       unassigned={unassigned}
       groupType={groupType}
-      status={groupType === 'grupal' ? 'group' : 'booked'}
+      status={cardStatus}
       pending={status === 'pending'}
       showSeparator={false}
       compact
@@ -71,28 +97,30 @@ export default function ClassRequestCard({
         ) : undefined
       }
     >
-      <div className="@container/request-actions flex items-center gap-2 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-1 [&>div>div:first-child]:min-w-0">
+      {/* One white row per student, actions inline on the right: keeps each
+          request ~one avatar tall when 5+ are stacked. */}
+      <div className="@container/request-actions flex items-center gap-2 rounded-xl border border-(--c-border) bg-white pr-2 [&>div:first-child]:min-w-0 [&>div:first-child]:flex-1 [&>div:first-child]:bg-transparent [&>div:first-child]:py-1.5 [&>div:first-child]:pl-2 [&>div:first-child]:pr-0 [&>div>div:first-child]:min-w-0">
         <ClassStudentRow name={studentName} disabled={busy} onEdit={onEdit} />
         {(status === 'pending' ? onAccept || onReject : onChange || onArchive) && (
-          <div className="flex shrink-0 items-center justify-end gap-1">
+          <div className="flex shrink-0 items-center justify-end gap-1.5">
             {status === 'pending' && onAccept && (
               <button
                 type="button"
                 disabled={busy}
-                className={buttonClass}
+                className={approveClass}
                 onClick={onAccept}
-                aria-label={`Aceptar solicitud de ${studentName}`}
-                title="Aceptar"
+                aria-label={`Aprobar solicitud de ${studentName}`}
+                title="Aprobar"
               >
                 <FiCheck aria-hidden="true" />
-                <span className="hidden @min-[400px]/request-actions:inline">Aceptar</span>
+                <span className="hidden @min-[400px]/request-actions:inline">Aprobar</span>
               </button>
             )}
             {status === 'pending' && onReject && (
               <button
                 type="button"
                 disabled={busy}
-                className={buttonClass}
+                className={rejectClass}
                 onClick={onReject}
                 aria-label={`Rechazar solicitud de ${studentName}`}
                 title="Rechazar"
@@ -105,7 +133,7 @@ export default function ClassRequestCard({
               <button
                 type="button"
                 disabled={busy}
-                className={buttonClass}
+                className={secondaryClass}
                 onClick={onChange}
                 aria-label={`Cambiar estado de la solicitud de ${studentName}`}
                 title="Cambiar estado"
@@ -118,7 +146,7 @@ export default function ClassRequestCard({
               <button
                 type="button"
                 disabled={busy}
-                className={buttonClass}
+                className={secondaryClass}
                 onClick={onArchive}
                 aria-label={`Archivar solicitud de ${studentName}`}
                 title="Archivar"
