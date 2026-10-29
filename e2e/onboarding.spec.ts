@@ -137,3 +137,21 @@ test('first login configures combined profiles, persists choices and keeps admin
     )
   }
 })
+
+test('new Google emulator account reaches welcome without remaining on the loading skeleton', async ({
+  page,
+}) => {
+  test.setTimeout(45000)
+  await page.goto('/login')
+  await page.getByRole('button', { name: 'Aceptar política y continuar' }).click()
+  const popupReady = page.waitForEvent('popup')
+  await page.getByRole('button', { name: 'Continuar con Google' }).click()
+  const popup = await popupReady
+  await popup.getByText('Add new account', { exact: true }).click()
+  await popup.getByRole('button', { name: 'Auto-generate user information' }).click()
+  await popup.getByRole('button', { name: 'Sign in with Google.com' }).click()
+  await page.waitForURL('**/welcome', { timeout: 20000 })
+  await expect(page.getByRole('heading', { name: 'Vamos a configurar tu perfil.' })).toBeVisible()
+  await expect(page.getByRole('checkbox', { name: 'Soy nadador', exact: true })).toBeVisible()
+  await page.screenshot({ path: '/tmp/nadamas-google-welcome.png', fullPage: false })
+})
