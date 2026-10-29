@@ -31,6 +31,26 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   ],
   admin: [
     { href: '/admin/home', label: 'Resumen', mobileLabel: 'Resumen', icon: 'home' },
+    { href: '/admin/schools', label: 'Escuelas', mobileLabel: 'Escuelas', icon: 'users' },
+    { href: '/admin/people', label: 'Personas', mobileLabel: 'Personas', icon: 'users' },
+    {
+      href: '/admin/profiles',
+      label: 'Perfiles adicionales',
+      mobileLabel: 'Perfiles adicionales',
+      icon: 'users',
+    },
+    {
+      href: '/admin/payments',
+      label: 'Planes y pagos',
+      mobileLabel: 'Planes y pagos',
+      icon: 'users',
+    },
+    {
+      href: '/admin/subscriptions',
+      label: 'Suscripciones y códigos',
+      mobileLabel: 'Suscripciones y códigos',
+      icon: 'users',
+    },
     {
       href: '/admin/verify-queue',
       label: 'Verificaciones',

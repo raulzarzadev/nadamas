@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FaPersonSwimming } from 'react-icons/fa6'
+import { FaCrown, FaPersonSwimming } from 'react-icons/fa6'
 import { FiCreditCard, FiGrid, FiShare2, FiShield } from 'react-icons/fi'
 import { GiWhistle } from 'react-icons/gi'
 import { AthleteCredentialDialog } from '@/components/profile/AthleteCredentialButton'
@@ -70,7 +70,9 @@ export default function RoleSwitcher({
       ? GiWhistle
       : displayedRole === 'athlete'
         ? FaPersonSwimming
-        : FiShield
+        : displayedRole === 'admin'
+          ? FaCrown
+          : FiShield
   const coachRoleLabel = terminology.schoolId
     ? capitalizeSchoolTerm(terminology.coachSingular)
     : ROLE_LABEL.coach
@@ -407,8 +409,9 @@ export default function RoleSwitcher({
                     setActiveRole('admin')
                     setOpen(false)
                   }}
-                  className={modeItemClassName('admin')}
+                  className={`${modeItemClassName('admin')} flex items-center gap-2`}
                 >
+                  <FaCrown aria-hidden="true" className="size-4 shrink-0" />
                   Modo {ROLE_LABEL.admin}
                 </button>
               </div>

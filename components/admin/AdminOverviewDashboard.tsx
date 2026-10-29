@@ -2,31 +2,24 @@
 
 import { SearchField } from '@comps/Inputs/FormFields'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiArrowRight, FiRefreshCw } from 'react-icons/fi'
-import { ADMIN_ROLE_LABELS, type AdminOverview, type AdminPersonRole } from '@/lib/admin-overview'
+import type { AdminOverview, AdminPersonRole } from '@/lib/admin-overview'
 import { getAuthed, getCachedAuthedData, invalidateAuthedCache } from '@/lib/client/authed-api'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import AdminOverviewLists, { type AdminOverviewTab } from './AdminOverviewLists'
 
 const OVERVIEW_URL = '/api/admin/overview'
-const TABS: { id: AdminOverviewTab; label: string }[] = [
-  { id: 'schools', label: 'Escuelas' },
-  { id: 'people', label: 'Personas' },
-  { id: 'profiles', label: 'Perfiles adicionales' },
-  { id: 'payments', label: 'Planes y pagos' },
-  { id: 'subscription', label: 'Suscripción Nadamas' },
-]
 
-export default function AdminOverviewDashboard() {
+export default function AdminOverviewDashboard({ section }: { section?: AdminOverviewTab }) {
   const [data, setData] = useState<AdminOverview | null>(
     () => getCachedAuthedData(OVERVIEW_URL) || null
   )
   const [busy, setBusy] = useState(true)
   const [error, setError] = useState(false)
   const [reload, setReload] = useState(0)
-  const [tab, setTab] = useState<AdminOverviewTab>('schools')
-  const [role, setRole] = useState<AdminPersonRole | 'all'>('all')
+  const router = useRouter()
   const [query, setQuery] = useState('')
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the refresh counter intentionally reruns this load.
@@ -57,11 +50,31 @@ export default function AdminOverviewDashboard() {
     setReload((value) => value + 1)
   }
   function openTab(next: AdminOverviewTab, nextRole: AdminPersonRole | 'all' = 'all') {
-    setTab(next)
-    setRole(nextRole)
-    setQuery('')
+    router.push(
+      `/admin/${next === 'subscription' ? 'subscriptions' : next}${nextRole !== 'all' ? `?role=${nextRole}` : ''}`
+    )
   }
 
+  if (section)
+    return (
+      <div className="grid min-w-0 gap-4">
+        {section !== 'subscription' && (
+          <SearchField
+            label="Buscar"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onClear={() => setQuery('')}
+            placeholder="Nombre, correo o escuela"
+          />
+        )}
+        {error && <p role="alert">{GENERIC_USER_ERROR}</p>}
+        {data ? (
+          <AdminOverviewLists data={data} tab={section} query={query} role={'all' as const} />
+        ) : (
+          <p>Cargando…</p>
+        )}
+      </div>
+    )
   return (
     <div className="flex min-w-0 flex-col gap-6" aria-busy={busy}>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -233,63 +246,6 @@ export default function AdminOverviewDashboard() {
               </p>
             </div>
           </div>
-          <section aria-label="Explorar la plataforma" className="min-w-0">
-            <fieldset className="flex min-w-0 flex-wrap gap-2" aria-label="Secciones del panel">
-              {TABS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  aria-pressed={tab === item.id}
-                  onClick={() => openTab(item.id)}
-                  className={`min-h-11 rounded-full px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${tab === item.id ? 'bg-(--c-ocean) text-white' : 'bg-white text-(--c-ocean) hover:bg-(--c-surface)'}`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </fieldset>
-            {tab !== 'subscription' && (
-              <div className="mt-5">
-                <SearchField
-                  label={`Buscar ${TABS.find((item) => item.id === tab)?.label.toLowerCase()}`}
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onClear={() => setQuery('')}
-                  placeholder={
-                    tab === 'people'
-                      ? 'Nombre, correo o escuela'
-                      : tab === 'profiles'
-                        ? 'Nombre o cuenta responsable'
-                        : 'Nombre o escuela'
-                  }
-                />
-              </div>
-            )}
-            {tab === 'people' && (
-              <fieldset
-                className="mt-3 flex min-w-0 flex-wrap gap-2"
-                aria-label="Filtrar personas por rol"
-              >
-                {(['all', 'coordinator', 'coach', 'athlete', 'admin'] as const).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={role === value}
-                    onClick={() => setRole(value)}
-                    className={`min-h-11 rounded-full px-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${role === value ? 'bg-(--c-aqua-strong) text-white' : 'bg-white text-(--c-ocean)'}`}
-                  >
-                    {value === 'all' ? 'Todos' : ADMIN_ROLE_LABELS[value]}
-                  </button>
-                ))}
-              </fieldset>
-            )}
-            <AdminOverviewLists
-              key={`${tab}:${role}:${query}`}
-              data={data}
-              tab={tab}
-              query={query}
-              role={role}
-            />
-          </section>
         </>
       )}
     </div>

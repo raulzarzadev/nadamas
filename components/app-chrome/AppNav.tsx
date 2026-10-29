@@ -3,7 +3,7 @@ import CoachSchoolSwitcher from '@comps/coach/CoachSchoolSwitcher'
 import AthleteSchoolSwitcher from '@comps/school/AthleteSchoolSwitcher'
 import Image from 'next/image'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import {
   FiActivity,
@@ -53,13 +53,17 @@ export default function AppNav({
   mode?: RoleName
   desktopSidebar?: boolean
 }) {
+  const router = useRouter()
   const headerRef = useRef<HTMLElement>(null)
   useEffect(() => {
     const header = headerRef.current
     const parent = header?.parentElement
     if (!header || !parent) return
-    const measure = () =>
-      parent.style.setProperty('--app-header-h', `${header.getBoundingClientRect().height}px`)
+    const measure = () => {
+      const height = `${Math.ceil(header.getBoundingClientRect().height)}px`
+      if (parent.style.getPropertyValue('--app-header-h') !== height)
+        parent.style.setProperty('--app-header-h', height)
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(header)
@@ -248,6 +252,23 @@ export default function AppNav({
             </nav>
           )}
 
+          {canShowWorkspaceNavigation && role === 'admin' && (
+            <label className="grid gap-1 text-xs font-semibold sm:hidden">
+              Administración
+              <select
+                aria-label="Sección de administración"
+                value={primary.find((item) => isActiveNav(item.href))?.href || '/admin/home'}
+                onChange={(event) => router.push(event.target.value)}
+                className="min-h-11 w-full rounded-xl border border-(--c-border) bg-white px-3 text-sm text-(--c-ocean)"
+              >
+                {primary.map((item) => (
+                  <option key={item.href} value={item.href}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {canShowWorkspaceNavigation && role === 'coach' && <CoachSchoolSwitcher />}
           {canShowWorkspaceNavigation &&
             role === 'athlete' &&
@@ -295,7 +316,7 @@ export default function AppNav({
 
       {/* Small screens: primary nav becomes an app-style bottom tab bar. Rendered
         outside the header because its backdrop-blur would contain `fixed`. */}
-      {canShowWorkspaceNavigation && (
+      {canShowWorkspaceNavigation && role !== 'admin' && (
         <nav
           aria-label="Navegación principal"
           data-app-tabbar
