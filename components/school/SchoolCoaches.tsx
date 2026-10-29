@@ -13,7 +13,12 @@ import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { getAuthed, getCachedAuthedData, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { normalizeEntitySearch } from '@/lib/entity-matching'
-import { capitalizeSchoolTerm, type SchoolInvitation, schoolMembershipHasRole } from '@/lib/school'
+import {
+  capitalizeSchoolTerm,
+  type SchoolInvitation,
+  type SchoolStudent,
+  schoolMembershipHasRole,
+} from '@/lib/school'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
 import TeacherFollowUps from './TeacherFollowUps'
@@ -446,11 +451,29 @@ function InviteCoach({
   onCreated: (invite: SchoolInvitation) => void
 }) {
   const [email, setEmail] = useState('')
+  const [students, setStudents] = useState<SchoolStudent[]>([])
+  const [studentId, setStudentId] = useState('')
+  const [studentsError, setStudentsError] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [limitMessage, setLimitMessage] = useState<string | null>(null)
   const terminology = useSchoolTerminology()
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
+  useEffect(() => {
+    let active = true
+    getAuthed(`/api/schools/${schoolId}/students`)
+      .then((response) => response.json() as Promise<{ students?: SchoolStudent[] }>)
+      .then((payload) => {
+        if (active)
+          setStudents((payload.students || []).filter((student) => student.status === 'active'))
+      })
+      .catch(() => {
+        if (active) setStudentsError(true)
+      })
+    return () => {
+      active = false
+    }
+  }, [schoolId])
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     setSaving(true)
@@ -485,15 +508,57 @@ function InviteCoach({
         <p className="mt-1 text-sm text-(--c-text-2)">
           Se enviará un enlace para crear o completar la cuenta de la persona invitada.
         </p>
-        <label className="mt-5 grid gap-1 text-sm font-semibold text-(--c-ocean)">
+        {students.length > 0 && (
+          <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
+            Elegir un atleta de la escuela (opcional)
+            <select
+              value={studentId}
+              onChange={(event) => {
+                const id = event.target.value
+                setStudentId(id)
+                setEmail(students.find((student) => student.id === id)?.studentEmail || '')
+              }}
+              className="min-h-11 w-full rounded-[var(--r-sm)] border border-(--c-border) bg-white px-3 font-normal"
+            >
+              <option value="">Invitar por correo</option>
+              {students.map((student) => (
+                <option key={student.id} value={student.id}>
+                  {student.name}
+                </option>
+              ))}
+            </select>
+            {studentId && !students.find((student) => student.id === studentId)?.studentEmail && (
+              <span className="text-xs font-normal text-(--c-text-2)">
+                Escribe el correo de la cuenta del atleta para enviarle la invitación.
+              </span>
+            )}
+          </label>
+        )}
+        {studentsError && (
+          <p className="text-sm text-(--c-text-2)">
+            No se pudo cargar la lista de atletas. Puedes invitarlos por correo.
+          </p>
+        )}
+        <label className="grid gap-1 text-sm font-semibold text-(--c-ocean)">
           Correo electrónico
           <input
             required
             type="email"
+            list="school-athlete-emails"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              setEmail(event.target.value)
+              setStudentId('')
+            }}
             className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
           />
+          <datalist id="school-athlete-emails">
+            {students
+              .filter((student) => student.studentEmail)
+              .map((student) => (
+                <option key={student.id} value={student.studentEmail} label={student.name} />
+              ))}
+          </datalist>
         </label>
         {limitMessage && (
           <div className="mt-3">
