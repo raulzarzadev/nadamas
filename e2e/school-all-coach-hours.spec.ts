@@ -92,7 +92,7 @@ test('Todos creates each selected hour for each coach without duplicates or unas
     const picker = page.getByRole('dialog', { name: 'Agregar horas', exact: true })
     await picker.getByRole('button', { name: '08:00', exact: true }).click()
     await picker.getByRole('button', { name: '09:00', exact: true }).click()
-    await picker.getByRole('button', { name: 'Agregar 2 horarios', exact: true }).click()
+    await picker.getByRole('button', { name: 'Agregar 2 horas', exact: true }).click()
     await expect(editor.getByText('6 clases', { exact: false })).toBeVisible()
     await expect(
       editor.getByText(/3 (profes|entrenadores|coaches|profesores|instructores)/)

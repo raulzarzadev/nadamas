@@ -1,8 +1,8 @@
 'use client'
 
 import Sheet from '@comps/ui/sheet'
-import { useId, useState } from 'react'
-import { FiCheck, FiPlus, FiX } from 'react-icons/fi'
+import { useState } from 'react'
+import { FiCheck, FiEye, FiEyeOff } from 'react-icons/fi'
 import { HOUR_OPTIONS } from '@/lib/coach-offerings'
 
 const focusClass =
@@ -28,7 +28,6 @@ export default function HourPickerModal({
   onClose: () => void
   onSubmit: (times: string[]) => void
 }) {
-  const id = useId()
   const [showHalfHours, setShowHalfHours] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const wholeHourOptions = HOUR_OPTIONS.filter((time) => time.endsWith(':00'))
@@ -59,28 +58,13 @@ export default function HourPickerModal({
         if (!busy) onClose()
       }}
       label="Agregar horas"
+      title="Agregar horas"
       keyboardAware
       fullBleedMobile
       closeDisabled={busy}
       showFooterClose={false}
       footer={
         <footer className="flex shrink-0 flex-col gap-3 border-t border-[var(--c-border)] px-4 py-3 text-[var(--c-ocean)] sm:px-0 sm:pb-0">
-          <div
-            className="px-1 text-xs leading-relaxed text-[var(--c-text-2)]"
-            role="status"
-            aria-live="polite"
-          >
-            <p>
-              {times.length
-                ? `${times.length} ${times.length === 1 ? 'horario para agregar' : 'horarios para agregar'}`
-                : 'Selecciona al menos un horario nuevo'}
-            </p>
-            {times.length > 0 && (
-              <p className="max-h-12 overflow-y-auto break-words tabular-nums">
-                {times.join(' · ')}
-              </p>
-            )}
-          </div>
           {error && (
             <p role="alert" className="mt-3 text-sm text-[var(--c-error,#b91c1c)]">
               {error}
@@ -104,34 +88,14 @@ export default function HourPickerModal({
               {busy
                 ? 'Agregando…'
                 : times.length
-                  ? `Agregar ${times.length} ${times.length === 1 ? 'horario' : 'horarios'}`
-                  : 'Agregar horarios'}
+                  ? `Agregar ${times.length} ${times.length === 1 ? 'hora' : 'horas'}`
+                  : 'Agregar horas'}
             </button>
           </div>
         </footer>
       }
     >
       <div className="flex w-full flex-col text-[var(--c-ocean)]">
-        <header className="flex shrink-0 items-start justify-between gap-3 px-4 pt-2 sm:px-0 sm:pt-0">
-          <div>
-            <h3 id={`${id}-title`} className="text-xl font-bold">
-              Agregar horas
-            </h3>
-            <p id={`${id}-description`} className="mt-1 text-sm text-[var(--c-text-2)]">
-              Selecciona las horas en las que puedes dar clase.
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={onClose}
-            aria-label="Cerrar selector de horas"
-            className={`grid size-11 shrink-0 place-items-center rounded-full hover:bg-[var(--c-surface)] ${focusClass}`}
-          >
-            <FiX aria-hidden="true" />
-          </button>
-        </header>
-
         <div className="px-4 pt-1 pb-3 sm:px-0">
           <button
             type="button"
@@ -139,8 +103,12 @@ export default function HourPickerModal({
             aria-pressed={showHalfHours}
             className={`ml-auto flex min-h-8 items-center gap-1 rounded-lg px-1 text-[11px] font-normal text-[var(--c-text-2)] transition-colors hover:bg-[var(--c-surface)] hover:text-[var(--c-ocean)] ${focusClass}`}
           >
-            <FiPlus aria-hidden="true" className="text-xs" />
-            {showHalfHours ? 'Ocultar medias horas' : 'Agregar medias horas'}
+            {showHalfHours ? (
+              <FiEye aria-hidden="true" className="text-xs" />
+            ) : (
+              <FiEyeOff aria-hidden="true" className="text-xs" />
+            )}
+            {showHalfHours ? 'Ocultar medias horas' : 'Mostrar medias horas'}
           </button>
 
           <div className="mt-0 space-y-4">

@@ -53,6 +53,8 @@ export default function Sheet({
   children,
   footer,
   label,
+  title,
+  description,
   keyboardAware = false,
   fullBleedMobile = false,
   modalTopGap = false,
@@ -65,6 +67,10 @@ export default function Sheet({
   children: ReactNode
   footer?: ReactNode
   label?: string
+  /** Visible title on the close-button row, so the modal doesn't need its own heading row. */
+  title?: string
+  /** Short line under the title. */
+  description?: string
   keyboardAware?: boolean
   fullBleedMobile?: boolean
   modalTopGap?: boolean
@@ -286,14 +292,26 @@ export default function Sheet({
             />
           </button>
         </div>
-        <div className="hidden shrink-0 justify-end sm:flex">
+        <div
+          className={
+            title
+              ? 'flex shrink-0 items-start justify-between gap-3 px-4 pb-1 sm:px-0'
+              : 'hidden shrink-0 justify-end sm:flex'
+          }
+        >
+          {title && (
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold text-(--c-ocean)">{title}</h2>
+              {description && <p className="mt-0.5 text-sm text-(--c-text-2)">{description}</p>}
+            </div>
+          )}
           <button
             type="button"
             aria-label="Cerrar modal"
             title="Cerrar"
             disabled={closeDisabled}
             onClick={requestClose}
-            className="-mt-2 -mr-2 grid min-h-11 min-w-11 place-items-center rounded-full text-(--c-text-2) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
+            className="-mt-2 -mr-2 hidden sm:grid min-h-11 min-w-11 place-items-center rounded-full text-(--c-text-2) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
           >
             <FiX aria-hidden="true" className="h-5 w-5" />
           </button>
