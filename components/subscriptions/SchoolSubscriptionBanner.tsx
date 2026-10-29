@@ -7,20 +7,31 @@ import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { SubscriptionCRUD } from '@/firebase/subscriptions/main'
 import type { SubscriptionSnapshot } from '@/lib/subscriptions/model'
 import { planOverLimit, planOverLimitMessage } from '@/lib/subscriptions/plans'
+import { PlanLimitText } from './PlanLimitNotice'
 import { subscriptionDate, subscriptionState } from './subscription-ui'
 
 export default function SchoolSubscriptionBanner() {
   const { selectedId } = useSchoolSelection()
   const pathname = usePathname()
   const [data, setData] = useState<SubscriptionSnapshot | null>(null)
+  // Seat usage is costly to count: fetched once per school, not on every poll.
+  const [plan, setPlan] = useState<SubscriptionSnapshot['plan']>(undefined)
   useEffect(() => {
     let active = true
+    let usageLoaded = false
     setData(null)
+    setPlan(undefined)
     async function load() {
       if (!selectedId) return
       try {
-        const next = await SubscriptionCRUD.get(selectedId)
-        if (active) setData(next)
+        const withUsage = !usageLoaded
+        const next = await SubscriptionCRUD.get(selectedId, { usage: withUsage })
+        if (!active) return
+        if (withUsage) {
+          usageLoaded = true
+          setPlan(next.plan)
+        }
+        setData(next)
       } catch {
         /* The subscription page provides a retry; keep workspace available. */
       }
@@ -41,14 +52,14 @@ export default function SchoolSubscriptionBanner() {
   if (!data || pathname === '/school/subscription' || data.schoolId !== selectedId) return null
   const provisional = data.access.state === 'pending_review'
   const state = provisional ? 'provisional' : data.access.state
-  const overLimit = planOverLimit(data.plan.limits, data.plan.usage)
+  const overLimit = !!plan && planOverLimit(plan.limits, plan.usage)
   if (
     !overLimit &&
     (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd))
   )
     return null
-  if (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd))
-    return <OverLimitNotice message={planOverLimitMessage(data.plan.limits)} />
+  if (plan && (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd)))
+    return <OverLimitNotice message={planOverLimitMessage(plan.limits)} />
   return (
     <aside
       aria-label="Estado de suscripción"
@@ -65,9 +76,9 @@ export default function SchoolSubscriptionBanner() {
                 ? 'La renovación está cancelada.'
                 : `Hasta el ${subscriptionDate(data.access.accessEndsAt)}.`}
         </p>
-        {overLimit && (
-          <p role="alert" className="mt-2 text-xs font-semibold">
-            <OverLimitText message={planOverLimitMessage(data.plan.limits)} />
+        {overLimit && plan && (
+          <p role="status" className="mt-2 text-xs font-semibold">
+            <PlanLimitText message={planOverLimitMessage(plan.limits)} />
           </p>
         )}
       </div>
@@ -85,28 +96,14 @@ export default function SchoolSubscriptionBanner() {
   )
 }
 
-function OverLimitText({ message }: { message: string }) {
-  const word = 'Contáctanos'
-  const at = message.indexOf(word)
-  return (
-    <>
-      {message.slice(0, at)}
-      <Link href="/contacto" className="font-bold underline focus-visible:outline-2">
-        {word}
-      </Link>
-      {message.slice(at + word.length)}
-    </>
-  )
-}
-
 function OverLimitNotice({ message }: { message: string }) {
   return (
     <aside
       aria-label="Límites del plan"
       className="mb-4 border-y border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-xl sm:border"
     >
-      <p role="alert">
-        <OverLimitText message={message} />
+      <p role="status">
+        <PlanLimitText message={message} />
       </p>
     </aside>
   )

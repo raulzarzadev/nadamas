@@ -30,7 +30,7 @@ import {
   schoolScheduleOwners,
 } from './school-agenda'
 import { listSchoolStudents } from './school-students'
-import { reserveSchoolSeat } from './subscriptions/seats'
+import { reserveSchoolSeatChanges } from './subscriptions/seats'
 
 export function attendanceClassMatches(a: SchoolClassOccurrence, b: SchoolClassOccurrence) {
   return (
@@ -544,15 +544,8 @@ export async function recordAttendance(args: {
             )
           : null
       const ownerId = owner?.data()?.ownerId
-      // profileId is the roster seat key (additionalProfileId or studentUserId).
-      seat = await reserveSchoolSeat(transaction, args.schoolId, 'student', profileId || studentId)
-      transaction.set(studentRef, {
-        id: studentId,
-        schoolId: args.schoolId,
-        name: args.profile.name,
-        birthDate: args.profile.birthDate || '',
-        gender: args.profile.gender || 'otro',
-        ...(args.profile.profileType === 'additional'
+      const link =
+        args.profile.profileType === 'additional'
           ? {
               additionalProfileId: profileId,
               managerIds: ownerId ? [ownerId] : [],
@@ -563,7 +556,19 @@ export async function recordAttendance(args: {
               accountParticipant: true,
               managerIds: [],
               guardianIds: [],
-            }),
+            }
+      // Count with the new roster doc applied: linking someone already counted (e.g. a
+      // guardian's own student seat moving to their child) is net zero and not blocked.
+      seat = await reserveSchoolSeatChanges(transaction, args.schoolId, 'student', {
+        students: [{ id: studentId, status: 'active', ...link }],
+      })
+      transaction.set(studentRef, {
+        id: studentId,
+        schoolId: args.schoolId,
+        name: args.profile.name,
+        birthDate: args.profile.birthDate || '',
+        gender: args.profile.gender || 'otro',
+        ...link,
         guardianName: '',
         guardianRelationship: '',
         guardianPhone: '',

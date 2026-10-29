@@ -1,7 +1,9 @@
 import { validProfileBirthDate } from '@/lib/additional-profile'
 import { normalizeSchoolMembership } from '@/lib/school'
+import { SubscriptionError } from '@/lib/subscriptions/engine'
+import { hasSeat, planLimitMessage } from '@/lib/subscriptions/plans'
 import { assertSchoolSubscriptionAccess } from './subscriptions/access'
-import { reserveSchoolSeatChanges } from './subscriptions/seats'
+import { readSchoolSeats, reserveSchoolSeatChanges } from './subscriptions/seats'
 import 'server-only'
 
 import { createHash, randomBytes } from 'node:crypto'
@@ -54,6 +56,13 @@ export async function createSchoolInvitation(args: {
   }
   if (args.studentId) invitation.studentId = args.studentId
   if (args.studentData) invitation.studentData = args.studentData
+  if (args.role === 'teacher') {
+    // Non-reserving pre-check so the director learns about the limit up front;
+    // the seat itself is reserved when the invitation is accepted.
+    const { limits, usage } = await readSchoolSeats(args.schoolId)
+    if (!hasSeat(limits, usage, 'teacher'))
+      throw new SubscriptionError('plan_limit_reached', planLimitMessage(limits), 409)
+  }
   await adminDb.runTransaction(async (tx) => {
     await assertSchoolSubscriptionAccess(args.schoolId, tx)
     tx.set(ref, { ...invitation, tokenHash: hashInvitationToken(token) })

@@ -91,7 +91,8 @@ export interface SubscriptionSnapshot {
   bankDetails: SubscriptionBankDetails | null
   orders: SubscriptionOrder[]
   cardAvailable: boolean
-  plan: { limits: SchoolPlanLimits; usage: SeatUsage }
+  /** Only for managers that asked for it (`usage=1`). */
+  plan?: { limits: SchoolPlanLimits; usage: SeatUsage }
 }
 export interface SubscriptionAdminSnapshot {
   settings: SubscriptionBankDetails

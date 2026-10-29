@@ -5,7 +5,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiPlus, FiUsers } from 'react-icons/fi'
 import PersonFields from '@/components/profile/PersonFields'
-import PlanLimitNotice, { planLimitMessageOf } from '@/components/subscriptions/PlanLimitNotice'
+import { planLimitMemberMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import Sheet from '@/components/ui/sheet'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
@@ -69,7 +69,6 @@ export default function SchoolInvitationPage() {
   const [additionalError, setAdditionalError] = useState('')
   const [additionalForm, setAdditionalForm] = useState<AdditionalProfileForm>(EMPTY_ADDITIONAL_FORM)
   const [error, setError] = useState<string | null>(null)
-  const [limitMessage, setLimitMessage] = useState<string | null>(null)
   const [accountMismatch, setAccountMismatch] = useState(false)
   const wrongAccount =
     accountMismatch ||
@@ -123,7 +122,6 @@ export default function SchoolInvitationPage() {
     if (!invitation || saving || wrongAccount) return
     setSaving(true)
     setError(null)
-    setLimitMessage(null)
     try {
       await postAuthed(`/api/school-invitations/${token}`, {
         ...profile,
@@ -134,8 +132,9 @@ export default function SchoolInvitationPage() {
       }
       setAccepted(true)
     } catch (error) {
-      const limit = planLimitMessageOf(error)
-      if (limit) setLimitMessage(limit)
+      // The invitee cannot change the school's plan: tell them to let the school know.
+      const limit = planLimitMemberMessageOf(error)
+      if (limit) setError(limit)
       else if (error instanceof AuthedApiError && error.code === 'email_mismatch')
         setAccountMismatch(true)
       else setError(GENERIC_USER_ERROR)
@@ -152,15 +151,15 @@ export default function SchoolInvitationPage() {
     }
     setSaving(true)
     setError(null)
-    setLimitMessage(null)
     try {
       await postAuthed(`/api/school-invitations/${token}`, {
         participantIds: selectedParticipantIds,
       })
       setAccepted(true)
     } catch (error) {
-      const limit = planLimitMessageOf(error)
-      if (limit) setLimitMessage(limit)
+      // The invitee cannot change the school's plan: tell them to let the school know.
+      const limit = planLimitMemberMessageOf(error)
+      if (limit) setError(limit)
       else if (error instanceof AuthedApiError && error.code === 'email_mismatch')
         setAccountMismatch(true)
       else setError(GENERIC_USER_ERROR)
@@ -323,7 +322,6 @@ export default function SchoolInvitationPage() {
           >
             <FiPlus aria-hidden="true" /> Agregar un Adicional en Mi perfil
           </button>
-          {limitMessage && <PlanLimitNotice message={limitMessage} />}
           {error && (
             <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
               {error}
@@ -420,8 +418,11 @@ export default function SchoolInvitationPage() {
           fields={['name', 'phone', 'bio']}
           disabled={saving}
         />
-        {limitMessage && <PlanLimitNotice message={limitMessage} />}
-        {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
+            {error}
+          </p>
+        )}
         <button
           type="submit"
           disabled={saving || invitation.status !== 'pending'}

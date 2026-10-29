@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { planLimitMemberMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import DateInput from '@/components/ui/date-input'
 import GenderSelector from '@/components/ui/gender-selector'
 import PhoneNumberInput from '@/components/ui/phone-number-input'
@@ -52,8 +53,11 @@ export default function AthleteProfileInvitationPage() {
       await postAuthed(`/api/athlete-profile-invitations/${token}`, profile)
       setAccepted(true)
       await refreshUser?.()
-    } catch {
-      setError('No pudimos aceptar la invitación. Revisa tus datos e inténtalo de nuevo.')
+    } catch (cause) {
+      setError(
+        planLimitMemberMessageOf(cause) ||
+          'No pudimos aceptar la invitación. Revisa tus datos e inténtalo de nuevo.'
+      )
     } finally {
       setBusy(false)
     }

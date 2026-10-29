@@ -7,10 +7,12 @@ import { SubscriptionCRUD } from '@/firebase/subscriptions/main'
 import { NADAMAS_PRICING } from '@/lib/pricing'
 import { subscriptionAccess, subscriptionPrice } from '@/lib/subscriptions/engine'
 import type {
+  SchoolSubscription,
   SubscriptionAdminSnapshot,
   SubscriptionBankDetails,
   SubscriptionOrder,
 } from '@/lib/subscriptions/model'
+import { schoolPlanLimits } from '@/lib/subscriptions/plans'
 import { reportInternalError } from '@/lib/user-facing-error'
 import {
   orderState,
@@ -224,9 +226,7 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
                         <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-3">
                           <p className="min-w-0 text-sm">
                             <span className="font-semibold">Plan: </span>
-                            {item?.customLimits
-                              ? `Personalizado · ${item.customLimits.teachers} profes · ${item.customLimits.students} alumnos`
-                              : 'Básico'}
+                            {adminPlanLabel(item)}
                           </p>
                           <div className="flex flex-wrap gap-2">
                             <button
@@ -473,7 +473,7 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
               className={subscriptionInput}
               value={planTeachers}
               onChange={(event) => setPlanTeachers(event.target.value)}
-              min={6}
+              min={NADAMAS_PRICING.basicLimits.teachers + 1}
               max={100000}
               step={1}
               required
@@ -488,7 +488,7 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
               className={subscriptionInput}
               value={planStudents}
               onChange={(event) => setPlanStudents(event.target.value)}
-              min={101}
+              min={NADAMAS_PRICING.basicLimits.students + 1}
               max={100000}
               step={1}
               required
@@ -856,4 +856,10 @@ function ModalFooter({
       </button>
     </div>
   )
+}
+
+function adminPlanLabel(item: SchoolSubscription | undefined) {
+  const limits = schoolPlanLimits(item ?? null)
+  if (limits.plan === 'unlimited') return 'Exenta · sin límite'
+  return `${limits.plan === 'basic' ? 'Básico' : 'Personalizado'} · ${limits.teachers} profes · ${limits.students} alumnos`
 }

@@ -48,7 +48,7 @@ async function signup(email: string) {
     }
   )
   expect(response.ok).toBe(true)
-  return (await response.json()) as { localId: string }
+  return (await response.json()) as { localId: string; idToken: string }
 }
 
 async function login(page: Page, email: string) {
@@ -62,7 +62,7 @@ async function login(page: Page, email: string) {
   await page.waitForURL((url) => !url.pathname.includes('/login'))
 }
 
-async function seedSchool(options: { teachers: number; students: number }) {
+async function seedSchool(options: { teachers: number; students: number; isPublic?: boolean }) {
   const id = crypto.randomUUID().slice(0, 8)
   const schoolId = `plansui-${id}`
   const email = `plansui-${id}@test.com`
@@ -79,6 +79,7 @@ async function seedSchool(options: { teachers: number; students: number }) {
     directorId: director.localId,
     createdBy: director.localId,
     timezone: 'America/Mexico_City',
+    isPublic: options.isPublic ?? false,
     createdAt: now,
     updatedAt: now,
   })
@@ -119,7 +120,7 @@ async function seedSchool(options: { teachers: number; students: number }) {
       status: 'active',
       studentUserId: `s${i}`,
     })
-  return { schoolId, email }
+  return { schoolId, email, directorToken: director.idToken, directorId: director.localId }
 }
 
 test('/precio shows the Básico and Personalizado plans without "todos sus profesores"', async ({
@@ -167,4 +168,121 @@ test('subscription screen shows plan usage', async ({ page }) => {
   await expect(page.getByText('2 de 5 profes')).toBeVisible()
   await expect(page.getByText('3 de 100 alumnos')).toBeVisible()
   await expect(page.getByText('Plan Básico')).toBeVisible()
+})
+
+test('subscription screen at 101/100 shows the over-limit notice with a contact link', async ({
+  page,
+}) => {
+  test.setTimeout(180000)
+  test.skip(!(await emulatorsReady()), 'requiere emuladores de Firebase')
+  const { email, schoolId } = await seedSchool({ teachers: 0, students: 101 })
+  await page.goto('/login')
+  await login(page, email)
+  await page.goto(`/school/subscription?schoolId=${schoolId}`)
+  await expect(page.getByText('101 de 100 alumnos')).toBeVisible()
+  const notice = page.getByRole('status').filter({
+    hasText:
+      'Tu escuela supera los límites del plan Básico. Contáctanos para un plan personalizado.',
+  })
+  await expect(notice).toBeVisible()
+  await expect(notice.getByRole('link', { name: 'Contáctanos' })).toHaveAttribute(
+    'href',
+    '/contacto'
+  )
+})
+
+test('an athlete requesting a class at 100/100 is told to let the school know', async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(180000)
+  test.skip(!(await emulatorsReady()), 'requiere emuladores de Firebase')
+  // 99 seeded swimmers + the athlete's own seat = 100/100; enrolling her child needs a 101st.
+  const { schoolId, directorToken, directorId } = await seedSchool({
+    teachers: 0,
+    students: 99,
+    isPublic: true,
+  })
+  const date = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10)
+  const schedule = await request.post(`/api/schools/${schoolId}/teachers/${directorId}/schedule`, {
+    headers: { authorization: `Bearer ${directorToken}` },
+    data: {
+      classOfferings: [
+        {
+          id: `plan-${schoolId}`,
+          mode: 'fixed',
+          placeName: 'Alberca',
+          groupType: 'particular',
+          currency: 'MXN',
+          unit: 'clase',
+          schedules: [
+            {
+              id: 'plan-hour',
+              startTime: '16:00',
+              endTime: '17:00',
+              timeMode: 'fixed',
+              days: [
+                ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][
+                  new Date(`${date}T12:00:00`).getDay()
+                ],
+              ],
+              availabilityMode: 'dates',
+              availableDates: [date],
+            },
+          ],
+        },
+      ],
+    },
+  })
+  expect(schedule.status(), await schedule.text()).toBe(200)
+  const athleteEmail = `plansui-athlete-${crypto.randomUUID().slice(0, 8)}@test.com`
+  const athlete = await signup(athleteEmail)
+  await seed(`users/${athlete.localId}`, {
+    email: athleteEmail,
+    nickname: 'Nadadora Nueva',
+    roles: { athlete: true, coach: false, admin: false },
+  })
+  await seed(`schoolMemberships/${schoolId}_${athlete.localId}`, {
+    schoolId,
+    userId: athlete.localId,
+    role: 'student',
+    roles: ['student'],
+    status: 'active',
+  })
+  await seed(`schoolStudents/${schoolId}_${athlete.localId}`, {
+    schoolId,
+    name: 'Nadadora Nueva',
+    status: 'active',
+    studentUserId: athlete.localId,
+    accountParticipant: true,
+    managerIds: [athlete.localId],
+    guardianIds: [athlete.localId],
+  })
+  const child = await request.post('/api/additional-profiles', {
+    headers: { authorization: `Bearer ${athlete.idToken}` },
+    data: { name: 'Hija Nueva', birthDate: '2018-01-01', gender: 'otro' },
+  })
+  expect(child.status(), await child.text()).toBe(201)
+  await page.goto('/login')
+  await login(page, athleteEmail)
+  await page.goto(`/athlete/search/school/${schoolId}/schedule?date=${date}`)
+  await page.getByRole('button', { name: /· 16:00 · Directora Plan/ }).click()
+  await page.getByRole('button', { name: 'Continuar', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Solicitar horario' })
+  await dialog.getByRole('checkbox', { name: 'Nadadora Nueva (yo)' }).uncheck()
+  await dialog.getByRole('checkbox', { name: /Hija Nueva/ }).check()
+  const sent = page.waitForResponse(
+    (response) =>
+      response.url().includes(`/api/schools/${schoolId}/class-requests`) &&
+      response.request().method() === 'POST'
+  )
+  await dialog.getByRole('button', { name: 'Enviar solicitud', exact: true }).click()
+  const response = await sent
+  expect(response.status(), await response.text()).toBe(409)
+  expect((await response.json()).code).toBe('plan_limit_reached')
+  await expect(
+    dialog.getByText('La escuela llegó al límite de su plan. Avísale a la escuela.', {
+      exact: false,
+    })
+  ).toBeVisible()
 })

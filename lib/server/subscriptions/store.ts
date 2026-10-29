@@ -502,6 +502,8 @@ export async function setSchoolPaymentExemption(
         ...(enabled && reserved.stripeSubscriptionId
           ? { cancelAtPeriodEnd: true, stripeSubscriptionId: null }
           : {}),
+        // Custom limits only exist on an exempt school: removing the exemption ends the plan.
+        ...(enabled ? {} : { customLimits: null }),
         ...(enabled
           ? {
               stripeCheckoutSessionId: null,

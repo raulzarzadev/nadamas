@@ -26,7 +26,7 @@ import ClassQuickActions, {
 } from '@/components/coach/ClassQuickActions'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
-import PlanLimitNotice, { planLimitMessageOf } from '@/components/subscriptions/PlanLimitNotice'
+import { planLimitMemberMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import ClassCard from '@/components/ui/class-card'
 import ClassRequestCard from '@/components/ui/class-request-card'
 import CoachBadge from '@/components/ui/coach-badge'
@@ -287,7 +287,6 @@ export default function CoachAgenda({
   )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [limitMessage, setLimitMessage] = useState<string | null>(null)
   const [attendanceStudentMode, setAttendanceStudentMode] = useState(false)
   const [addingFromAttendance, setAddingFromAttendance] = useState(false)
   const [addStudentSlot, setAddStudentSlot] = useState<ActiveSlot | null>(null)
@@ -831,15 +830,14 @@ export default function CoachAgenda({
   async function run(action: () => Promise<unknown>) {
     setBusy(true)
     setError(null)
-    setLimitMessage(null)
     try {
       await action()
       await loadAgenda(monthOfSelected)
       return true
     } catch (err) {
-      const limit = planLimitMessageOf(err)
+      // Whoever books here may not manage the school's plan: ask them to tell the school.
+      const limit = planLimitMemberMessageOf(err)
       if (limit) {
-        setLimitMessage(limit)
         setError(limit)
         return false
       }
@@ -2053,12 +2051,7 @@ export default function CoachAgenda({
             : '@container rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-sm)]'
         }
       >
-        {error && limitMessage === error && (
-          <div className="px-4 pb-2 sm:px-5">
-            <PlanLimitNotice message={limitMessage} />
-          </div>
-        )}
-        {error && limitMessage !== error && (
+        {error && (
           <p className="px-4 pb-2 text-sm text-[var(--c-error,#b91c1c)] sm:px-5">{error}</p>
         )}
         {notice && (

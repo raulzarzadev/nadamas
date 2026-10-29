@@ -630,3 +630,88 @@ test('non-admin cannot set custom plan', async ({ request }) => {
     await cleanupSchool(schoolId)
   }
 })
+
+test('creating a teacher invitation at 5/5 returns plan_limit_reached', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId, directorHeaders } = await seedDirectorSchool(0)
+  await seedTeachers(schoolId, 5)
+  try {
+    const invite = (role: string) =>
+      request.post(`/api/schools/${schoolId}/invitations`, {
+        headers: directorHeaders,
+        data: { email: `${crypto.randomUUID()}@test.com`, role },
+      })
+    const blocked = await invite('teacher')
+    expect(blocked.status(), await blocked.text()).toBe(409)
+    expect(await blocked.json()).toEqual({ code: 'plan_limit_reached', error: BASIC_LIMIT_MESSAGE })
+    const pending = await db
+      .collection('schoolInvitations')
+      .where('schoolId', '==', schoolId)
+      .count()
+      .get()
+    expect(pending.data().count).toBe(0)
+    // Student invitations do not take a teacher seat.
+    expect((await invite('student')).status()).toBe(201)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('subscription snapshot includes plan usage only for managers asking for it', async ({
+  request,
+}) => {
+  test.setTimeout(60000)
+  const { schoolId, directorHeaders } = await seedDirectorSchool(3)
+  const member = await signup()
+  await db
+    .collection('schoolMemberships')
+    .doc(`${schoolId}_${member.localId}`)
+    .set({
+      schoolId,
+      userId: member.localId,
+      role: 'teacher',
+      roles: ['teacher'],
+      status: 'active',
+    })
+  const memberHeaders = { authorization: `Bearer ${member.idToken}` }
+  const snapshot = async (headers: Record<string, string>, usage: boolean) => {
+    const response = await request.get(
+      `/api/subscriptions?schoolId=${schoolId}${usage ? '&usage=1' : ''}`,
+      { headers }
+    )
+    expect(response.status(), await response.text()).toBe(200)
+    return (await response.json()) as Record<string, unknown>
+  }
+  try {
+    expect(await snapshot(directorHeaders, false)).not.toHaveProperty('plan')
+    expect((await snapshot(directorHeaders, true)).plan).toEqual({
+      limits: { plan: 'basic', teachers: 5, students: 100 },
+      usage: { teachers: 1, students: 3 },
+    })
+    expect(await snapshot(memberHeaders, true)).not.toHaveProperty('plan')
+    expect(await snapshot(memberHeaders, false)).not.toHaveProperty('plan')
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('removing the payment exemption also clears custom limits', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId } = await seedDirectorSchool(0)
+  const admin = await adminUser()
+  try {
+    expect((await setPlan(request, admin, schoolId, { teachers: 10, students: 150 })).ok()).toBe(
+      true
+    )
+    const removed = await request.post('/api/subscriptions/admin', {
+      headers: admin,
+      data: { action: 'setExemption', schoolId, enabled: false, reason: 'Fin del convenio' },
+    })
+    expect(removed.status(), await removed.text()).toBe(200)
+    const sub = (await db.collection('schoolSubscriptions').doc(schoolId).get()).data()
+    expect(sub?.paymentExempt).toBe(false)
+    expect(sub?.customLimits ?? null).toBeNull()
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})

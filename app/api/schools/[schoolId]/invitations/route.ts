@@ -4,6 +4,7 @@ import { sendSchoolInvitationEmail } from '@/lib/server/emails'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { createSchoolInvitation, listSchoolInvitations } from '@/lib/server/school-invitations'
 import { getSchoolById } from '@/lib/server/schools'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 
@@ -68,7 +69,9 @@ export async function POST(request: Request, { params }: RouteProps) {
     }
 
     return NextResponse.json({ invitation, inviteUrl }, { status: 201 })
-  } catch {
+  } catch (error) {
+    const response = subscriptionErrorResponse(error)
+    if (response) return response
     return NextResponse.json({ error: 'No se pudo crear la invitación.' }, { status: 500 })
   }
 }

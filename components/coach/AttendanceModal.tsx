@@ -2,6 +2,7 @@
 
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { FiCheck, FiHash, FiRepeat, FiSearch } from 'react-icons/fi'
+import { PLAN_LIMIT_MEMBER_MESSAGE } from '@/components/subscriptions/PlanLimitNotice'
 import Avatar from '@/components/ui/avatar'
 import DateInput from '@/components/ui/date-input'
 import ScheduleTag from '@/components/ui/schedule-tag'
@@ -35,6 +36,7 @@ const ERRORS: Record<string, string> = {
   blocked: 'La clase está bloqueada. Desbloquéala desde Configurar clase para pasar lista.',
   not_found: 'No encontramos al atleta. Revisa el ID o su credencial.',
   forbidden: 'No tienes permiso para pasar lista en esta clase.',
+  plan_limit_reached: PLAN_LIMIT_MEMBER_MESSAGE,
 }
 
 export default function AttendanceModal({
