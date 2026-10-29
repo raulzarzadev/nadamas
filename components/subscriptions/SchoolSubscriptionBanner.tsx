@@ -40,7 +40,11 @@ export default function SchoolSubscriptionBanner() {
   if (!data || pathname === '/school/subscription' || data.schoolId !== selectedId) return null
   const provisional = data.access.state === 'pending_review'
   const state = provisional ? 'provisional' : data.access.state
-  if (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd))
+  if (
+    state === 'trialing' ||
+    state === 'exempt' ||
+    (state === 'active' && !data.subscription?.cancelAtPeriodEnd)
+  )
     return null
   return (
     <aside

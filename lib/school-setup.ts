@@ -1,3 +1,5 @@
+import type { SubscriptionAccess } from './subscriptions/model'
+
 export interface SchoolSetupFacts {
   paymentPlan: boolean
   schedules: boolean
@@ -12,6 +14,7 @@ export interface SchoolSetupStep {
   complete: boolean
 }
 export interface SchoolSetupSnapshot {
+  subscription?: SubscriptionAccess
   schoolId: string
   schoolName: string
   slug: string

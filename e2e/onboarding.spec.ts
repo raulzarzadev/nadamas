@@ -151,11 +151,17 @@ test('first login configures combined profiles, persists choices and keeps admin
       .getByRole('link', { name: 'Inicio', exact: true })
       .click()
     await expect(page).toHaveURL(/\/school$/)
-    await expect(page.getByText('1 de 5 pasos completos', { exact: true })).toBeVisible()
+    await expect(page.getByText('1/5 pasos completos', { exact: true })).toBeVisible()
+    await expect(page.getByText('Prueba gratuita', { exact: true })).toHaveCount(0)
+    await expect(page.getByText(/Gratuita · quedan 15 días/)).toBeVisible()
+    const setupDetails = page.locator('#school-setup-steps')
+    await expect(setupDetails).toHaveJSProperty('open', false)
+    await setupDetails.locator('summary').click()
+    await expect(setupDetails).toHaveJSProperty('open', true)
     await expect(
       page
         .getByRole('navigation', { name: 'Administrar escuela', exact: true })
-        .getByRole('link', { name: 'Suscripción', exact: true })
+        .getByRole('link', { name: /^Suscripción/ })
     ).toHaveAttribute('href', '/school/subscription')
     await expect(
       page
@@ -240,7 +246,9 @@ test('first login configures combined profiles, persists choices and keeps admin
       (await setupSnapshot()).steps.every((step: { complete: boolean }) => step.complete)
     ).toBe(true)
     await page.getByRole('button', { name: 'Actualizar', exact: true }).click()
-    await expect(page.getByText('5 de 5 pasos completos', { exact: true })).toBeVisible()
+    await expect(page.getByText('5/5 pasos completos', { exact: true })).toBeVisible()
+    await setupDetails.locator('summary').click()
+    await expect(setupDetails).toHaveJSProperty('open', false)
     await page.setViewportSize({ width: 320, height: 900 })
     await expect(
       page.locator('[data-app-tabbar]').getByRole('link', { name: 'Inicio', exact: true })
@@ -267,7 +275,7 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(page.locator('[data-app-sidebar]')).not.toBeVisible()
     await expect(page.locator('[data-app-tabbar]')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-    await page.goBack()
+    await page.goto(`/school/create?created=${createdSchool.id}`)
     await expect(
       page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
     ).toBeVisible()

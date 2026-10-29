@@ -5,6 +5,7 @@ import {
   FiArrowRight,
   FiCheck,
   FiCheckCircle,
+  FiChevronDown,
   FiCreditCard,
   FiDollarSign,
   FiRefreshCw,
@@ -14,6 +15,7 @@ import { SchoolSetupCRUD } from '@/firebase/school-setup/main'
 import { getCachedAuthedData, invalidateAuthedCache } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
 import type { SchoolSetupSnapshot } from '@/lib/school-setup'
+import { schoolSubscriptionHint } from '@/lib/school-subscription-hint'
 import { reportInternalError } from '@/lib/user-facing-error'
 import SchoolNoSelection from './SchoolNoSelection'
 import SchoolSelector from './SchoolSelector'
@@ -42,6 +44,7 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
   const [data, setData] = useState(() => getCachedAuthedData<SchoolSetupSnapshot>(endpoint))
   const [loading, setLoading] = useState(!data)
   const [error, setError] = useState(false)
+  const [now, setNow] = useState(Date.now)
   const load = useCallback(async () => {
     setLoading(true)
     setError(false)
@@ -56,12 +59,16 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
   }, [schoolId])
   useEffect(() => {
     void load()
+    const timer = window.setInterval(() => setNow(Date.now()), 60000)
     const refresh = () => {
       invalidateAuthedCache(endpoint)
       void load()
     }
     window.addEventListener('focus', refresh)
-    return () => window.removeEventListener('focus', refresh)
+    return () => {
+      window.removeEventListener('focus', refresh)
+      window.clearInterval(timer)
+    }
   }, [load, endpoint])
   if (!data && loading)
     return <output className="block p-5 text-sm">Revisando los pasos de tu escuela…</output>
@@ -81,47 +88,9 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
       aria-labelledby="school-home-title"
       className="overflow-hidden rounded-2xl border border-(--c-border) bg-white"
     >
-      <div className="border-b border-(--c-border) p-5 sm:p-7">
-        <p className="text-xs font-bold uppercase tracking-widest text-(--c-text-2)">
-          Inicio de tu escuela
-        </p>
-        <h1 id="school-home-title" className="mt-2 break-words text-2xl font-extrabold sm:text-3xl">
-          {data.schoolName}
-        </h1>
-        <p className="mt-3 text-sm text-(--c-text-2)">
-          {next
-            ? 'Completa estos pasos para preparar tu escuela. Continuaremos desde donde te quedaste.'
-            : 'Tu escuela está lista. Ya completaste todos los pasos de configuración.'}
-        </p>
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm font-bold">
-            {completed} de {data.steps.length} pasos completos
-          </p>
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold underline"
-            disabled={loading}
-            onClick={() => {
-              invalidateAuthedCache(endpoint)
-              void load()
-            }}
-          >
-            <FiRefreshCw aria-hidden="true" />
-            {loading ? 'Actualizando…' : 'Actualizar'}
-          </button>
-        </div>
-        <progress
-          aria-label="Configuración de la escuela"
-          value={completed}
-          max={data.steps.length}
-          className="h-2 w-full accent-(--c-ocean)"
-        />
-        {error && (
-          <p role="alert" className="mt-3 text-sm text-red-800">
-            No pudimos actualizar los pasos. Conservamos la última información; vuelve a intentarlo.
-          </p>
-        )}
-      </div>
+      <h1 id="school-home-title" className="sr-only">
+        Inicio de {data.schoolName}
+      </h1>
       <nav
         aria-label="Administrar escuela"
         className="grid gap-3 border-b border-(--c-border) p-5 sm:grid-cols-3 sm:px-7"
@@ -131,7 +100,12 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
           className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
         >
           <FiCreditCard aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">Suscripción</span>
+          <span className="min-w-0 flex-1">
+            <span className="block">Suscripción</span>
+            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
+              {schoolSubscriptionHint(data.subscription, now)}
+            </span>
+          </span>
           <FiArrowRight aria-hidden="true" className="shrink-0" />
         </Link>
         <Link
@@ -151,36 +125,83 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
           <FiArrowRight aria-hidden="true" className="shrink-0" />
         </Link>
       </nav>
-      <ol className="divide-y divide-(--c-border)">
-        {data.steps.map((step, index) => (
-          <li key={step.id} className="flex min-w-0 flex-wrap items-center gap-4 p-5 sm:px-7">
-            <span
-              className={`grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold ${step.complete ? 'bg-emerald-50 text-emerald-800' : 'bg-(--c-surface) text-(--c-ocean)'}`}
-            >
-              {step.complete ? <FiCheck aria-hidden="true" /> : index + 1}
+      <details id="school-setup-steps" className="group border-b border-(--c-border)">
+        <summary className="flex min-h-16 cursor-pointer list-none items-center gap-3 p-5 focus-visible:outline-2 focus-visible:-outline-offset-2 sm:px-7 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold">Inicia tu escuela</span>
+            <span className="mt-1 block text-sm text-(--c-text-2)">
+              {completed}/{data.steps.length} pasos completos
             </span>
-            <div className="min-w-0 flex-1 basis-48">
-              <p className="font-bold">{step.title}</p>
-              <p className="mt-1 text-sm text-(--c-text-2)">{step.description}</p>
-              <p
-                className={`mt-2 text-xs font-bold ${step.complete ? 'text-emerald-800' : 'text-(--c-text-2)'}`}
+          </span>
+          <FiChevronDown
+            aria-hidden="true"
+            className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+          />
+        </summary>
+        <div className="px-5 pb-5 sm:px-7">
+          <p className="text-sm text-(--c-text-2)">
+            {next
+              ? 'Completa estos pasos para preparar tu escuela. Continuaremos desde donde te quedaste.'
+              : 'Tu escuela está lista. Ya completaste todos los pasos de configuración.'}
+          </p>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold underline"
+              disabled={loading}
+              onClick={() => {
+                invalidateAuthedCache(endpoint)
+                void load()
+              }}
+            >
+              <FiRefreshCw aria-hidden="true" />
+              {loading ? 'Actualizando…' : 'Actualizar'}
+            </button>
+          </div>
+          <progress
+            aria-label="Configuración de la escuela"
+            value={completed}
+            max={data.steps.length}
+            className="h-2 w-full accent-(--c-ocean)"
+          />
+          {error && (
+            <p role="alert" className="mt-3 text-sm text-red-800">
+              No pudimos actualizar los pasos. Conservamos la última información; vuelve a
+              intentarlo.
+            </p>
+          )}
+        </div>
+        <ol className="divide-y divide-(--c-border)">
+          {data.steps.map((step, index) => (
+            <li key={step.id} className="flex min-w-0 flex-wrap items-center gap-4 p-5 sm:px-7">
+              <span
+                className={`grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold ${step.complete ? 'bg-emerald-50 text-emerald-800' : 'bg-(--c-surface) text-(--c-ocean)'}`}
               >
-                {step.complete ? 'Completado' : 'Pendiente'}
-              </p>
-            </div>
-            {!step.complete && (
-              <Link
-                href={step.href}
-                aria-label={`Configurar: ${step.title}`}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-(--c-border) px-4 text-sm font-bold focus-visible:outline-2"
-              >
-                Configurar
-                <FiArrowRight aria-hidden="true" />
-              </Link>
-            )}
-          </li>
-        ))}
-      </ol>
+                {step.complete ? <FiCheck aria-hidden="true" /> : index + 1}
+              </span>
+              <div className="min-w-0 flex-1 basis-48">
+                <p className="font-bold">{step.title}</p>
+                <p className="mt-1 text-sm text-(--c-text-2)">{step.description}</p>
+                <p
+                  className={`mt-2 text-xs font-bold ${step.complete ? 'text-emerald-800' : 'text-(--c-text-2)'}`}
+                >
+                  {step.complete ? 'Completado' : 'Pendiente'}
+                </p>
+              </div>
+              {!step.complete && (
+                <Link
+                  href={step.href}
+                  aria-label={`Configurar: ${step.title}`}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-(--c-border) px-4 text-sm font-bold focus-visible:outline-2"
+                >
+                  Configurar
+                  <FiArrowRight aria-hidden="true" />
+                </Link>
+              )}
+            </li>
+          ))}
+        </ol>
+      </details>
       <div className="flex flex-wrap items-center gap-4 border-t border-(--c-border) bg-(--c-surface) p-5 sm:px-7">
         <FiCheckCircle aria-hidden="true" />
         <Link
