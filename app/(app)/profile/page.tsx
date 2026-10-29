@@ -15,13 +15,27 @@ import { useUser } from '@/context/UserContext'
 import { useAutosave } from '@/hooks/useAutosave'
 import { patchAuthed } from '@/lib/client/authed-api'
 
+interface ProfileUser {
+  athleteBio?: string
+  displayName?: string
+  email?: string
+  firstName?: string
+  lastName?: string
+  name?: string
+  nickname?: string
+  photoURL?: string
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const { user, refreshUser } = useUser() as {
-    user: any
+    user: ProfileUser | null | undefined
     refreshUser?: () => Promise<unknown>
   }
-  const { roles } = useRole()
+  const { activeRole, roles } = useRole()
+  const canManageCoachProfile = activeRole === 'school' || (activeRole === 'coach' && roles.coach)
+  const coachProfileHref =
+    activeRole === 'school' ? '/school/coach-profile' : '/coach/coach-profile'
 
   const [nickname, setNickname] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -90,6 +104,9 @@ export default function ProfilePage() {
             </div>
           )}
           <div className="min-w-0">
+            <p className="text-xs font-bold uppercase tracking-wide text-(--c-aqua-strong)">
+              Perfil de nadador
+            </p>
             <h1 className="truncate text-2xl font-extrabold">
               {user.nickname || user.displayName || 'Mi cuenta'}
             </h1>
@@ -100,12 +117,12 @@ export default function ProfilePage() {
         <AthleteCredentialButton />
         <MarketingPreference />
 
-        {roles.coach && (
+        {canManageCoachProfile && (
           <Link
-            href="/coach/coach-profile"
+            href={coachProfileHref}
             className="btn btn-outline min-h-11 w-full justify-center text-[var(--c-ocean)] sm:w-fit"
           >
-            Ver perfil de coach
+            {activeRole === 'school' ? 'Configurar perfil de coach' : 'Ver perfil de coach'}
           </Link>
         )}
       </div>
@@ -164,18 +181,20 @@ export default function ProfilePage() {
         />
       </div>
 
-      <div className="rounded-2xl border border-(--c-border) bg-white p-5">
-        <h2 className="font-bold">Cómo uso Nadamas</h2>
-        <p className="mt-2 text-sm text-(--c-text-2)">
-          Nadador, entrenador o coordinador: combina tus perfiles y retoma tus primeros pasos.
-        </p>
-        <Link
-          href="/welcome"
-          className="mt-3 inline-flex min-h-11 items-center font-bold underline"
-        >
-          Configurar mis perfiles
-        </Link>
-      </div>
+      {activeRole !== 'athlete' && (
+        <div className="rounded-2xl border border-(--c-border) bg-white p-5">
+          <h2 className="font-bold">Cómo uso Nadamas</h2>
+          <p className="mt-2 text-sm text-(--c-text-2)">
+            Puedes configurar tus perfiles de nadador y coach desde el modo que estás usando.
+          </p>
+          <Link
+            href="/welcome"
+            className="mt-3 inline-flex min-h-11 items-center font-bold underline"
+          >
+            Configurar mis perfiles
+          </Link>
+        </div>
+      )}
       <AdditionalProfiles />
 
       <PublicLinkEditor />

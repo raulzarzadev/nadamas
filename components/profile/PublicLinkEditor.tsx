@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { isValidSlug, normalizeSlug, type SlugKind, slugify } from '@/lib/slug'
@@ -91,11 +90,10 @@ function SlugRow({
   )
 }
 
-export default function PublicLinkEditor() {
+export default function PublicLinkEditor({ profileKind = 'athlete' }: { profileKind?: SlugKind }) {
   const { user } = useUser() as {
     user: { nickname?: string; displayName?: string; name?: string } | null
   }
-  const { roles } = useRole()
   const [slugs, setSlugs] = useState<{ coach?: string; athlete?: string } | null>(null)
 
   useEffect(() => {
@@ -124,8 +122,9 @@ export default function PublicLinkEditor() {
           Comparte un enlace corto a tu perfil. Cada enlace debe ser único por tipo de perfil.
         </p>
       </div>
-      <SlugRow kind="athlete" initial={slugs.athlete || ''} suggestion={suggestion} />
-      {roles.coach && (
+      {profileKind === 'athlete' ? (
+        <SlugRow kind="athlete" initial={slugs.athlete || ''} suggestion={suggestion} />
+      ) : (
         <SlugRow kind="coach" initial={slugs.coach || ''} suggestion={`${suggestion}-coach`} />
       )}
     </div>

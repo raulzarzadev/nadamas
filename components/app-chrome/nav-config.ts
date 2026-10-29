@@ -26,7 +26,6 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     { href: '/school/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
     { href: '/school/coaches', label: 'Profes', mobileLabel: 'Profes', icon: 'badge' },
     { href: '/school/classes', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },
-    { href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' },
   ],
   admin: [
     { href: '/admin/home', label: 'Resumen', mobileLabel: 'Resumen', icon: 'home' },
@@ -44,9 +43,9 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
 
 // Secondary nav = low-frequency account-adjacent links in the role-pill dropdown.
 export const SECONDARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
-  athlete: [{ href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' }],
-  coach: [{ href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' }],
-  school: [{ href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' }],
+  athlete: [{ href: '/profile', label: 'Perfil de nadador', mobileLabel: 'Perfil', icon: 'user' }],
+  coach: [{ href: '/profile', label: 'Perfil de nadador', mobileLabel: 'Perfil', icon: 'user' }],
+  school: [{ href: '/profile', label: 'Perfil de nadador', mobileLabel: 'Perfil', icon: 'user' }],
   admin: [{ href: '/profile', label: 'Mi perfil', mobileLabel: 'Perfil', icon: 'user' }],
 }
 

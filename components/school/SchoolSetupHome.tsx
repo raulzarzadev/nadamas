@@ -12,9 +12,9 @@ import {
   FiRefreshCw,
   FiSettings,
   FiShare2,
-  FiUser,
+  FiShield,
 } from 'react-icons/fi'
-import { useRole } from '@/context/RoleContext'
+import HomeActionLink from '@/components/Home/HomeActionLink'
 import { SchoolSetupCRUD } from '@/firebase/school-setup/main'
 import { getCachedAuthedData, invalidateAuthedCache } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
@@ -45,7 +45,6 @@ export default function SchoolSetupHome({ view = 'home' }: { view?: 'home' | 'st
   )
 }
 function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | 'steps' }) {
-  const { roles } = useRole()
   const endpoint = `/api/schools/${encodeURIComponent(schoolId)}/setup`
   const [data, setData] = useState(() => getCachedAuthedData<SchoolSetupSnapshot>(endpoint))
   const [loading, setLoading] = useState(!data)
@@ -193,74 +192,37 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
         Inicio de {data.schoolName}
       </h1>
       <nav aria-label="Administrar escuela" className="grid min-w-0 gap-3 p-2 sm:grid-cols-2">
-        <Link
+        <HomeActionLink
           href="/school/setup"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-[var(--c-aqua)] bg-[var(--c-aqua-light)] px-4 py-3 font-bold text-(--c-ocean) shadow-[var(--shadow-sm)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-        >
-          <FiCheckCircle aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">
-            <span className="block">Inicia tu escuela</span>
-            <span className="mt-0.5 block text-xs font-normal">
-              {completed}/{data.steps.length} pasos completos
-            </span>
-          </span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-        <Link
+          title="Inicia tu escuela"
+          description={`${completed}/${data.steps.length} pasos completos`}
+          icon={FiCheckCircle}
+          featured
+        />
+        <HomeActionLink
           href="/school/subscription"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiCreditCard aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">
-            <span className="block">Suscripción</span>
-            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
-              {schoolSubscriptionHint(data.subscription, now)}
-            </span>
-          </span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-        <Link
+          title="Suscripción"
+          description={schoolSubscriptionHint(data.subscription, now)}
+          icon={FiCreditCard}
+        />
+        <HomeActionLink
           href="/school/payments"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiDollarSign aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">Planes y pagos</span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-        <Link
-          href="/school/settings"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiSettings aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">Configuración</span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-        <Link
-          href={roles.coach ? '/coach/coach-profile' : '/coach/activate'}
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiUser aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">
-            <span className="block">Perfil de coach</span>
-            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
-              {roles.coach ? 'Edita tu perfil profesional' : 'Activa tu perfil para configurarlo'}
-            </span>
-          </span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-        <Link
+          title="Planes y pagos de tu escuela"
+          icon={FiDollarSign}
+        />
+        <HomeActionLink href="/school/settings" title="Configuración" icon={FiSettings} />
+        <HomeActionLink
+          href="/school/coach-profile"
+          title="Perfil de coach"
+          description="Configura tu perfil profesional"
+          icon={FiShield}
+        />
+        <HomeActionLink
           href="/profile"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiActivity aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">
-            <span className="block">Perfil de nadador</span>
-            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
-              Edita tu nombre, datos y perfil público
-            </span>
-          </span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
+          title="Perfil de nadador"
+          description="Edita tu nombre, datos y perfil público"
+          icon={FiActivity}
+        />
       </nav>
       <section
         aria-labelledby="school-share-title"
