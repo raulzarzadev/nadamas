@@ -51,12 +51,6 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
   ],
   school: [
     { href: '/school', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
-    {
-      href: '/school/payments',
-      label: 'Pagos y planes',
-      mobileLabel: 'Planes',
-      icon: 'payments',
-    },
     { href: '/school/students', label: 'Alumnos', mobileLabel: 'Alumnos', icon: 'users' },
     { href: '/school/coaches', label: 'Profes', mobileLabel: 'Profes', icon: 'badge' },
     { href: '/school/classes', label: 'Horarios', mobileLabel: 'Horarios', icon: 'calendar' },

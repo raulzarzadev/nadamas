@@ -1,7 +1,14 @@
 'use client'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { FiArrowRight, FiCheck, FiCheckCircle, FiRefreshCw } from 'react-icons/fi'
+import {
+  FiArrowRight,
+  FiCheck,
+  FiCheckCircle,
+  FiDollarSign,
+  FiRefreshCw,
+  FiSettings,
+} from 'react-icons/fi'
 import { SchoolSetupCRUD } from '@/firebase/school-setup/main'
 import { getCachedAuthedData, invalidateAuthedCache } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
@@ -120,6 +127,27 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
           </p>
         )}
       </div>
+      <nav
+        aria-label="Administrar escuela"
+        className="grid gap-3 border-b border-(--c-border) p-5 sm:grid-cols-2 sm:px-7"
+      >
+        <Link
+          href="/school/payments"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiDollarSign aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">Planes y pagos</span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+        <Link
+          href="/school/settings"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiSettings aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">Configuración</span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+      </nav>
       <ol className="divide-y divide-(--c-border)">
         {data.steps.map((step, index) => (
           <li key={step.id} className="flex min-w-0 flex-wrap items-center gap-4 p-5 sm:px-7">

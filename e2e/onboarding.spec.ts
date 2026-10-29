@@ -153,6 +153,18 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(page).toHaveURL(/\/school$/)
     await expect(page.getByText('1 de 5 pasos completos', { exact: true })).toBeVisible()
     await expect(
+      page
+        .getByRole('navigation', { name: 'Administrar escuela', exact: true })
+        .getByRole('link', { name: 'Planes y pagos', exact: true })
+    ).toBeVisible()
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Administrar escuela', exact: true })
+        .getByRole('link', { name: 'Configuración', exact: true })
+    ).toBeVisible()
+    await expect(page.locator('[data-app-sidebar] a[href="/school/payments"]')).toHaveCount(0)
+    await expect(page.locator('[data-app-sidebar] a[href="/school/settings"]')).toHaveCount(0)
+    await expect(
       page.locator('[data-app-sidebar]').getByRole('link', { name: 'Inicio', exact: true })
     ).toHaveAttribute('aria-current', 'page')
     const setupEndpoint = `/api/schools/${createdSchool.id}/setup`
@@ -228,6 +240,7 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(
       page.locator('[data-app-tabbar]').getByRole('link', { name: 'Inicio', exact: true })
     ).toBeVisible()
+    await expect(page.locator('[data-app-tabbar] a')).toHaveCount(4)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: '/tmp/nadamas-school-setup-home.png', fullPage: true })
     await page.goto(`/school/create?created=${createdSchool.id}`)

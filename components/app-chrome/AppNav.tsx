@@ -13,7 +13,6 @@ import {
   FiDollarSign,
   FiHome,
   FiSearch,
-  FiSettings,
   FiShield,
   FiUser,
   FiUsers,
@@ -195,7 +194,15 @@ export default function AppNav({
 
   // Athlete search lives inside Horarios, so its pages keep that tab active.
   const isActiveNav = (href: string) =>
-    (href === '/school' ? pathname === href : pathname.startsWith(href)) ||
+    (href === '/school'
+      ? [
+          '/school',
+          '/school/payments',
+          '/school/settings',
+          '/school/subscription',
+          '/school/create',
+        ].includes(pathname)
+      : pathname.startsWith(href)) ||
     (href === '/athlete/schedule' && pathname.startsWith('/athlete/search'))
   const tabs = [
     ...primary.map((item) => ({
@@ -204,9 +211,6 @@ export default function AppNav({
       icon: NAV_ICONS[item.icon],
       count: role === 'athlete' && item.href === '/athlete/schedule' ? upcomingCount : null,
     })),
-    ...(role === 'school'
-      ? [{ href: '/school/settings', label: 'Configuración', icon: FiSettings, count: null }]
-      : []),
   ]
 
   return (
@@ -239,7 +243,7 @@ export default function AppNav({
               aria-label="Navegación principal"
               className={`hidden gap-2 ${desktopSidebar ? '' : 'sm:grid'}`}
               style={{
-                gridTemplateColumns: `${primary.map((item) => (item.icon === 'payments' ? '3rem' : 'minmax(0,1fr)')).join(' ')}${role === 'school' ? ' 2.5rem' : ''}`,
+                gridTemplateColumns: `${primary.map((item) => (item.icon === 'payments' ? '3rem' : 'minmax(0,1fr)')).join(' ')}`,
               }}
             >
               {primary.map((l) => {
@@ -273,16 +277,6 @@ export default function AppNav({
                   </Link>
                 )
               })}
-              {role === 'school' && (
-                <Link
-                  href="/school/settings"
-                  aria-label="Configuración de escuela"
-                  aria-current={pathname.startsWith('/school/settings') ? 'page' : undefined}
-                  className={`flex min-h-12 items-center justify-center rounded-[var(--r-sm)] border focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${pathname.startsWith('/school/settings') ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:bg-(--c-surface)'}`}
-                >
-                  <FiSettings aria-hidden="true" className="size-5" />
-                </Link>
-              )}
             </nav>
           )}
 
@@ -333,16 +327,6 @@ export default function AppNav({
                 </Link>
               )
             })}
-            {role === 'school' && (
-              <Link
-                href="/school/settings"
-                aria-current={pathname.startsWith('/school/settings') ? 'page' : undefined}
-                className={`flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) ${pathname.startsWith('/school/settings') ? 'bg-(--c-ocean) text-white' : 'text-(--c-text-2) hover:bg-(--c-surface)'}`}
-              >
-                <FiSettings aria-hidden="true" className="size-4" />
-                Configuración
-              </Link>
-            )}
           </nav>
         </aside>
       )}

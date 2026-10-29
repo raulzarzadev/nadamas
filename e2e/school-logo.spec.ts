@@ -134,7 +134,11 @@ test('recorta y sube el logo al crear y editar una escuela', async ({ page, requ
     await page.getByRole('button', { name: 'Cerrar', exact: true }).click()
 
     await expect(page.getByRole('heading', { name: 'Configuración de reservas' })).toHaveCount(0)
-    await page.getByRole('link', { name: 'Configuración', exact: true }).click()
+    await page.getByRole('link', { name: 'Inicio', exact: true }).click()
+    await page
+      .getByRole('navigation', { name: 'Administrar escuela', exact: true })
+      .getByRole('link', { name: 'Configuración', exact: true })
+      .click()
     await expect(page).toHaveURL(/\/school\/settings$/, { timeout: 30000 })
     await expect(page.getByRole('heading', { name: 'Configuración de reservas' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Sincronizar calendario' })).toBeVisible()
