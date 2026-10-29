@@ -18,12 +18,14 @@ export default function WorkoutTransferSheet({
   disabled,
   onClose,
   onImport,
+  maxImportBlocks,
 }: {
   workout?: ObjectiveWorkout
   allowImport: boolean
   disabled: boolean
   onClose: () => void
   onImport: (workout: ObjectiveWorkout) => void
+  maxImportBlocks?: number
 }) {
   const [mode, setMode] = useState<'export' | 'import'>(workout ? 'export' : 'import')
   const [input, setInput] = useState('')
@@ -66,6 +68,10 @@ export default function WorkoutTransferSheet({
             onClick={() => {
               try {
                 const imported = importWorkoutText(input)
+                if (maxImportBlocks !== undefined && imported.blocks.length > maxImportBlocks) {
+                  setError(`Puedes agregar hasta ${maxImportBlocks} bloques más.`)
+                  return
+                }
                 onImport(imported)
               } catch {
                 setError(WORKOUT_IMPORT_ERROR)
@@ -135,7 +141,7 @@ export default function WorkoutTransferSheet({
         </label>
         {mode === 'import' && (
           <p className="text-xs text-(--c-text-2)">
-            Después de importar, pulsa Guardar en la temporada para conservar los cambios.
+            Después de importar, guarda tus cambios para conservarlos.
           </p>
         )}
         {error && (

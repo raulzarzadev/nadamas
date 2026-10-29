@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi'
+import { FiEdit2, FiPlus, FiRepeat, FiTrash2 } from 'react-icons/fi'
 import TrainingSeriesForm from '@/components/coach/TrainingSeriesForm'
+import WorkoutTransferSheet from '@/components/coach/WorkoutTransferSheet'
 import DurationInput from '@/components/ui/duration-input'
 import NumberStepper from '@/components/ui/number-stepper'
 import Sheet from '@/components/ui/sheet'
@@ -60,6 +61,7 @@ export default function ClassTrainingEditor({
     seriesId?: string
     time: string
   } | null>(null)
+  const [transferBlockId, setTransferBlockId] = useState<string | null>(null)
   // Block settings sheet: title, repetitions and delete.
   const [blockForm, setBlockForm] = useState<{
     id: string
@@ -68,9 +70,11 @@ export default function ClassTrainingEditor({
     repetitions: number
   } | null>(null)
   useEffect(() => {
-    onEditingChange?.(Boolean(editing) || Boolean(blockForm) || Boolean(pauseForm))
+    onEditingChange?.(
+      Boolean(editing) || Boolean(blockForm) || Boolean(pauseForm) || Boolean(transferBlockId)
+    )
     return () => onEditingChange?.(false)
-  }, [editing, blockForm, pauseForm, onEditingChange])
+  }, [editing, blockForm, pauseForm, transferBlockId, onEditingChange])
   if (readOnly)
     return (
       <section aria-label="Entrenamiento" className="grid min-w-0 gap-2">
@@ -289,19 +293,27 @@ export default function ClassTrainingEditor({
                     type="button"
                     disabled={block.series.length >= 30}
                     onClick={() => setEditing({ blockId: block.id })}
-                    className="btn btn-subtle w-fit"
+                    className="relative inline-flex h-8 items-center gap-1 rounded-lg bg-(--c-ocean) px-2.5 text-xs font-semibold text-white before:absolute before:-inset-y-1.5 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
                   >
                     <FiPlus aria-hidden="true" />
-                    Agregar serie
+                    Serie
                   </button>
                   <button
                     type="button"
                     disabled={disabled || block.series.length >= 30}
                     onClick={() => setPauseForm({ blockId: block.id, time: '' })}
-                    className="btn btn-subtle w-fit"
+                    className="relative inline-flex h-8 items-center gap-1 rounded-lg bg-(--c-ocean) px-2.5 text-xs font-semibold text-white before:absolute before:-inset-y-1.5 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50"
                   >
                     <FiPlus aria-hidden="true" />
-                    Agregar pausa
+                    Pausa
+                  </button>
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setTransferBlockId(block.id)}
+                    className="btn btn-subtle w-fit"
+                  >
+                    <FiRepeat aria-hidden="true" /> Transferir
                   </button>
                 </div>
               </div>
@@ -316,15 +328,36 @@ export default function ClassTrainingEditor({
         onClick={() =>
           onChange([...blocks, { id: crypto.randomUUID(), repetitions: 1, series: [] }])
         }
-        className={
-          blocks.length === 0
-            ? 'inline-flex min-h-9 w-fit items-center justify-center gap-2 justify-self-center rounded-full bg-black px-4 text-xs font-semibold text-white hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40'
-            : 'btn btn-subtle w-fit justify-self-end'
-        }
+        className={`relative inline-flex h-8 w-fit items-center justify-center gap-1 rounded-lg bg-(--c-ocean) px-2.5 text-xs font-semibold text-white before:absolute before:-inset-y-1.5 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-ocean) disabled:opacity-50 ${blocks.length === 0 ? 'justify-self-center' : 'justify-self-end'}`}
       >
         <FiPlus aria-hidden="true" />
-        {blocks.length === 0 ? 'Agregar primer bloque' : 'Agregar bloque'}
+        Bloque
       </button>
+      {transferBlockId &&
+        blocks.some((block) => block.id === transferBlockId) &&
+        createPortal(
+          <WorkoutTransferSheet
+            workout={{
+              id: transferBlockId,
+              title: blocks.find((block) => block.id === transferBlockId)?.title || 'Bloque',
+              blocks: blocks.filter((block) => block.id === transferBlockId),
+            }}
+            allowImport={blocks.length < 20}
+            maxImportBlocks={20 - blocks.length}
+            disabled={disabled}
+            onClose={() => setTransferBlockId(null)}
+            onImport={(workout) => {
+              const index = blocks.findIndex((block) => block.id === transferBlockId)
+              onChange([
+                ...blocks.slice(0, index + 1),
+                ...workout.blocks,
+                ...blocks.slice(index + 1),
+              ])
+              setTransferBlockId(null)
+            }}
+          />,
+          document.body
+        )}
       {editing &&
         createPortal(
           <Sheet
