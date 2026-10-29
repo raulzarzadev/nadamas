@@ -184,7 +184,7 @@ export default function SchoolCoaches() {
             .map((teacher) => (
               <div key={teacher.id} className="rounded-xl border border-(--c-border)">
                 <ClassStudentRow
-                  name={teacher.name}
+                  name={`${teacher.name}${teacher.id === selected.membership.userId ? ' (tú)' : ''}`}
                   labels={
                     isDirector && (
                       <StudentLabels

@@ -12,12 +12,9 @@ export default function ContactoPage() {
       <h1 className="text-3xl font-extrabold" style={{ color: 'var(--c-ocean)' }}>
         Contacto
       </h1>
-      <p
-        className="mt-4 text-[1.05rem] leading-relaxed"
-        style={{ color: 'var(--c-text-2)' }}
-      >
-        ¿Eres nadador o coach y quieres hablar con nosotros? Estamos
-        construyendo nadamas.app y nos interesa lo que tengas que decir.
+      <p className="mt-4 text-[1.05rem] leading-relaxed" style={{ color: 'var(--c-text-2)' }}>
+        ¿Eres nadador o coach y quieres hablar con nosotros? Estamos construyendo nadamas.app y nos
+        interesa lo que tengas que decir.
       </p>
       <div className="mt-8 flex flex-col gap-3">
         <a

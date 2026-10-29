@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FiPlus, FiSearch, FiTrash2, FiUsers } from 'react-icons/fi'
+import { FiMail, FiPlus, FiSearch, FiShare2, FiTrash2, FiUsers } from 'react-icons/fi'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
 import StudentProfileModal from '@/components/coach/StudentProfileModal'
@@ -15,6 +15,8 @@ import StudentListRow from '@/components/ui/student-list-row'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import type { AdditionalProfile } from '@/lib/additional-profile'
 import { deleteAuthed, getAuthed, getCachedAuthedData, postAuthed } from '@/lib/client/authed-api'
+import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
+import { getShareablePublicSchoolUrl } from '@/lib/client/school-public-url'
 import { entityNameMatches, normalizeEntitySearch } from '@/lib/entity-matching'
 import {
   capitalizeSchoolTerm,
@@ -23,6 +25,7 @@ import {
   type SchoolStudent,
   schoolMembershipHasRole,
 } from '@/lib/school'
+import { reportInternalError } from '@/lib/user-facing-error'
 import SchoolAccessRequests from './SchoolAccessRequests'
 import SchoolAttendanceReport from './SchoolAttendanceReport'
 import SchoolNoSelection from './SchoolNoSelection'
@@ -48,6 +51,8 @@ export default function SchoolStudents() {
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<string | null>(null)
   const [showStudent, setShowStudent] = useState(false)
+  const [studentInviteMode, setStudentInviteMode] = useState(false)
+  const [inviteLinkStatus, setInviteLinkStatus] = useState<'idle' | 'copied' | 'error'>('idle')
   const [historyStudent, setHistoryStudent] = useState<SchoolStudent | null>(null)
   const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null)
 
@@ -107,9 +112,25 @@ export default function SchoolStudents() {
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
   const canAssignClasses = isDirector || schoolMembershipHasRole(selected.membership, 'teacher')
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
+  const showRosterTools = !isDirector || students.length > 0
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
+
+  async function copyInvitationLink() {
+    try {
+      await copyTextToClipboard(`${getShareablePublicSchoolUrl(activeSchool.school.slug)}?join=1`)
+      setInviteLinkStatus('copied')
+    } catch (error) {
+      reportInternalError('SCHOOL_STUDENT_INVITE_LINK_COPY', error)
+      setInviteLinkStatus('error')
+    }
+  }
+
+  function openStudentForm(inviteByEmail = false) {
+    setStudentInviteMode(inviteByEmail)
+    setShowStudent(true)
+  }
 
   async function deleteInvitation(invitation: SchoolInvitation) {
     const action = invitation.status === 'pending' ? 'cancelar' : 'eliminar'
@@ -130,37 +151,52 @@ export default function SchoolStudents() {
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">{capitalizeSchoolTerm(participantPlural)}</h1>
       <SchoolSelector schools={schools} selectedId={selected.school.id} onChange={selectSchool} />
-      <div className="grid gap-2">
-        <label className="relative min-w-0">
-          <span className="sr-only">Buscar por nombre o correo</span>
-          <FiSearch
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--c-text-2)"
-          />
-          <input
-            type="search"
-            value={studentQuery}
-            onChange={(event) => setStudentQuery(event.target.value)}
-            placeholder={`Buscar ${participantSingular}`}
-            className="min-h-11 w-full rounded-full border border-(--c-border) bg-white pr-3 pl-10 text-sm"
-          />
-        </label>
-        {(canAssignClasses || isStudentAccount) && (
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            {canAssignClasses && (
-              <SchoolAttendanceReport schoolId={activeSchool.school.id} subtle />
+      {showRosterTools && (
+        <>
+          <div className="grid gap-2">
+            <label className="relative min-w-0">
+              <span className="sr-only">Buscar por nombre o correo</span>
+              <FiSearch
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--c-text-2)"
+              />
+              <input
+                type="search"
+                value={studentQuery}
+                onChange={(event) => setStudentQuery(event.target.value)}
+                placeholder={`Buscar ${participantSingular}`}
+                className="min-h-11 w-full rounded-full border border-(--c-border) bg-white pr-3 pl-10 text-sm"
+              />
+            </label>
+            {(canAssignClasses || isStudentAccount) && (
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                {canAssignClasses && (
+                  <SchoolAttendanceReport schoolId={activeSchool.school.id} subtle />
+                )}
+                <button
+                  type="button"
+                  onClick={() => openStudentForm()}
+                  className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3 text-xs font-semibold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                >
+                  <FiPlus aria-hidden="true" />{' '}
+                  {canAssignClasses ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
+                </button>
+              </div>
             )}
-            <button
-              type="button"
-              onClick={() => setShowStudent(true)}
-              className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3 text-xs font-semibold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-            >
-              <FiPlus aria-hidden="true" />{' '}
-              {canAssignClasses ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
-            </button>
           </div>
-        )}
-      </div>
+          {canAssignClasses && (
+            <StudentLabelTools
+              key={`student-labels:${activeSchool.school.id}`}
+              schoolId={activeSchool.school.id}
+              students={students.map((student) => ({ id: student.id, name: student.name }))}
+              revision={labelRevision}
+              onFilter={setLabelFilter}
+              onData={setLabelData}
+              onUpdated={() => setLabelRevision((current) => current + 1)}
+            />
+          )}
+        </>
+      )}
       {isDirector && showAccess && (
         <Sheet open onClose={() => setShowAccess(false)} label="Solicitudes de acceso" size="lg">
           <SchoolAccessRequests
@@ -180,17 +216,6 @@ export default function SchoolStudents() {
         <p className="rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
           {message}
         </p>
-      )}
-      {canAssignClasses && (
-        <StudentLabelTools
-          key={`student-labels:${activeSchool.school.id}`}
-          schoolId={activeSchool.school.id}
-          students={students.map((student) => ({ id: student.id, name: student.name }))}
-          revision={labelRevision}
-          onFilter={setLabelFilter}
-          onData={setLabelData}
-          onUpdated={() => setLabelRevision((current) => current + 1)}
-        />
       )}
       {loading ? (
         <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
@@ -226,14 +251,46 @@ export default function SchoolStudents() {
           <FiUsers className="text-3xl text-(--c-ocean-mid)" aria-hidden="true" />
           <h2 className="font-bold text-(--c-ocean)">
             {isDirector
-              ? `Invita o agrega a ${participantPlural}`
+              ? `Aún no tienes ${participantPlural}`
               : `Tus ${participantPlural} adicionales`}
           </h2>
           <p className="max-w-md text-sm text-(--c-text-2)">
             {isDirector
-              ? `Invita por correo o registra los datos de ${participantPlural}.`
+              ? activeSchool.school.isPublic
+                ? `Comparte el enlace para que soliciten unirse a ${activeSchool.school.name}, o invítalos por correo.`
+                : `Invítalos por correo para que se unan a ${activeSchool.school.name}.`
               : 'Gestiona personas adultas o menores mediante perfiles Adicionales.'}
           </p>
+          {isDirector && (
+            <div className="flex flex-wrap justify-center gap-2">
+              {activeSchool.school.isPublic && (
+                <button
+                  type="button"
+                  onClick={() => void copyInvitationLink()}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-(--c-ocean) px-4 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                >
+                  <FiShare2 aria-hidden="true" /> Compartir enlace de invitación
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => openStudentForm(true)}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-(--c-border) bg-white px-4 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                <FiMail aria-hidden="true" /> Invitar por correo
+              </button>
+            </div>
+          )}
+          {isDirector && inviteLinkStatus !== 'idle' && (
+            <p
+              role={inviteLinkStatus === 'error' ? 'alert' : 'status'}
+              className="text-sm font-semibold text-(--c-ocean)"
+            >
+              {inviteLinkStatus === 'copied'
+                ? 'Enlace copiado. Al abrirlo, podrán solicitar acceso a tu escuela.'
+                : 'No pudimos copiar el enlace. Inténtalo de nuevo.'}
+            </p>
+          )}
         </div>
       )}
       {isDirector && invitations.length > 0 && (
@@ -321,8 +378,12 @@ export default function SchoolStudents() {
       {showStudent && (
         <StudentForm
           schoolId={selected.school.id}
+          initialInvite={studentInviteMode}
           canInvite={canAssignClasses}
-          onClose={() => setShowStudent(false)}
+          onClose={() => {
+            setShowStudent(false)
+            setStudentInviteMode(false)
+          }}
           onCreated={(student, invitation) => {
             if (student) {
               setStudents((current) =>
@@ -333,6 +394,7 @@ export default function SchoolStudents() {
             }
             if (invitation) setInvitations((current) => [invitation, ...current])
             setShowStudent(false)
+            setStudentInviteMode(false)
           }}
         />
       )}
@@ -343,6 +405,7 @@ export default function SchoolStudents() {
 export function StudentForm({
   schoolId,
   initialName = '',
+  initialInvite = false,
   onPersonalCreated,
   canInvite,
   onClose,
@@ -350,6 +413,7 @@ export function StudentForm({
 }: {
   schoolId?: string
   initialName?: string
+  initialInvite?: boolean
   onPersonalCreated?: (student: {
     athleteId: string
     name: string
@@ -375,7 +439,7 @@ export function StudentForm({
   const [error, setError] = useState<string | null>(null)
   const [limitMessage, setLimitMessage] = useState<string | null>(null)
   // School students only: send the email invitation when saving.
-  const [invite, setInvite] = useState(false)
+  const [invite, setInvite] = useState(initialInvite)
   const [profiles, setProfiles] = useState<AdditionalProfile[]>([])
   const [additionalProfileId, setAdditionalProfileId] = useState('')
   useEffect(() => {

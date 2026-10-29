@@ -19,6 +19,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     '/athlete/schedule',
     '/coach/agenda',
     '/school/classes',
+    '/school',
   ].includes(pathname)
   const needsSetup = setupEntry && needsOnboarding(user as Parameters<typeof needsOnboarding>[0])
 

@@ -1,15 +1,11 @@
 'use client'
-import { use, useEffect, useState } from 'react'
+import EventForm, { type EventDoc } from '@comps/events/EventForm'
 import { useRouter } from 'next/navigation'
+import { use, useEffect, useState } from 'react'
 import { useUser } from '@/context/UserContext'
 import { listenEvent } from '@/firebase/events'
-import EventForm, { type EventDoc } from '@comps/events/EventForm'
 
-export default function EditEventPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const { user } = useUser()

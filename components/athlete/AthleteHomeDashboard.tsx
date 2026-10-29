@@ -1,7 +1,6 @@
 'use client'
 
 import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
-import PublicLinkEditor from '@comps/profile/PublicLinkEditor'
 import Link from 'next/link'
 import type React from 'react'
 import { useEffect, useState } from 'react'
@@ -9,10 +8,13 @@ import {
   FiCalendar,
   FiChevronRight,
   FiClock,
+  FiDollarSign,
   FiSearch,
   FiTrendingUp,
+  FiUser,
   FiUsers,
 } from 'react-icons/fi'
+import HomeActionLink from '@/components/Home/HomeActionLink'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { capitalizeSchoolTerm } from '@/lib/school'
@@ -20,16 +22,22 @@ import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/sto
 
 const ACTION_CARDS = [
   {
-    href: '/athlete/search-coaches',
-    title: 'Buscar coaches',
-    body: 'Encuentra un coach y consulta su perfil y horarios.',
-    icon: FiSearch,
+    href: '/athlete/payments',
+    title: 'Planes y pagos',
+    body: 'Consulta los planes de tus coaches y revisa tus pagos.',
+    icon: FiDollarSign,
   },
   {
     href: '/athlete/schedule',
     title: 'Horarios',
     body: 'Consulta horarios disponibles en tus escuelas y con coaches abiertos.',
     icon: FiCalendar,
+  },
+  {
+    href: '/athlete/search-coaches',
+    title: 'Buscar coaches',
+    body: 'Encuentra un coach y consulta su perfil y horarios.',
+    icon: FiSearch,
   },
   {
     href: '/athlete/progress',
@@ -157,38 +165,30 @@ export default function AthleteHomeDashboard() {
 
       <CalendarConnectionCard calendarRole="athlete" />
 
+      <HomeActionLink
+        href="/profile"
+        title="Perfil de nadador"
+        description="Edita tu nombre, datos y perfil público"
+        icon={FiUser}
+      />
+
       <div className="grid gap-3 sm:grid-cols-2">
         {ACTION_CARDS.map((card) => {
-          const Icon = card.icon
           return (
-            <Link
+            <HomeActionLink
               key={card.href}
               href={card.href}
-              className="group flex items-start gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
-                <Icon aria-hidden="true" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1 font-bold text-(--c-ocean)">
-                  {card.title}
-                  <FiChevronRight
-                    aria-hidden="true"
-                    className="text-(--c-text-2) transition-transform group-hover:translate-x-0.5"
-                  />
-                </span>
-                <span className="mt-1 block text-sm text-(--c-text-2)">
-                  {card.href === '/athlete/schedule' && terminology.schoolId
-                    ? `Consulta horarios de tus ${coachPlural} de la escuela o filtra otra escuela.`
-                    : card.body}
-                </span>
-              </span>
-            </Link>
+              title={card.title}
+              description={
+                card.href === '/athlete/schedule' && terminology.schoolId
+                  ? `Consulta horarios de tus ${coachPlural} de la escuela o filtra otra escuela.`
+                  : card.body
+              }
+              icon={card.icon}
+            />
           )
         })}
       </div>
-
-      <PublicLinkEditor />
     </div>
   )
 }

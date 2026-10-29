@@ -53,13 +53,12 @@ export default function SchoolSubscriptionBanner() {
   const provisional = data.access.state === 'pending_review'
   const state = provisional ? 'provisional' : data.access.state
   const overLimit = !!plan && planOverLimit(plan.limits, plan.usage)
-  if (
-    !overLimit &&
-    (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd))
-  )
-    return null
-  if (plan && (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd)))
-    return <OverLimitNotice message={planOverLimitMessage(plan.limits)} />
+  const quiet =
+    state === 'trialing' ||
+    state === 'exempt' ||
+    (state === 'active' && !data.subscription?.cancelAtPeriodEnd)
+  if (!overLimit && quiet) return null
+  if (plan && quiet) return <OverLimitNotice message={planOverLimitMessage(plan.limits)} />
   return (
     <aside
       aria-label="Estado de suscripción"

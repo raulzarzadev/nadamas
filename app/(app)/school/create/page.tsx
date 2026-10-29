@@ -218,19 +218,36 @@ export default function CreateSchoolPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-(--c-border) bg-white p-4 text-sm">
-        <p className="font-bold">
-          ${NADAMAS_PRICING.regularMonthly} {NADAMAS_PRICING.currency} al mes por escuela · hasta{' '}
-          {NADAMAS_PRICING.basicLimits.teachers} profes y {NADAMAS_PRICING.basicLimits.students}{' '}
-          alumnos
-        </p>
-        {ownedSchool && (
+      {ownedSchool ? (
+        <div className="rounded-xl border border-(--c-border) bg-white p-4 text-sm">
+          <p className="font-bold">
+            ${NADAMAS_PRICING.regularMonthly} {NADAMAS_PRICING.currency} al mes por escuela · hasta{' '}
+            {NADAMAS_PRICING.basicLimits.teachers} profes y {NADAMAS_PRICING.basicLimits.students}{' '}
+            alumnos
+          </p>
           <p className="mt-2 text-(--c-text-2)">
             Las escuelas adicionales requieren una suscripción desde el inicio. Puedes crearla y
             activar su acceso desde Suscripción.
           </p>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--c-border) bg-white p-4 text-sm">
+          {/* Informative only: the first school always starts on the trial. */}
+          <label className="flex items-center gap-3 font-bold">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-primary checkbox-sm pointer-events-none"
+              checked
+              readOnly
+              tabIndex={-1}
+            />
+            Suscripción básica gratis por {NADAMAS_PRICING.trialDays} días
+          </label>
+          <Link href="/precio" className="min-h-11 content-center font-bold underline">
+            Ver suscripciones
+          </Link>
+        </div>
+      )}
       <form
         onSubmit={submit}
         className="flex flex-col gap-5 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-7"

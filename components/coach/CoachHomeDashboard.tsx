@@ -2,10 +2,10 @@
 
 import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
 import CoachOnboardingBanner from '@comps/coach/CoachOnboardingBanner'
-import Link from 'next/link'
 import type React from 'react'
 import { useEffect, useState } from 'react'
-import { FiCalendar, FiChevronRight, FiClock, FiShield, FiUsers } from 'react-icons/fi'
+import { FiActivity, FiCalendar, FiClock, FiDollarSign, FiShield, FiUsers } from 'react-icons/fi'
+import HomeActionLink from '@/components/Home/HomeActionLink'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
 import { useUser } from '@/context/UserContext'
 import { getAuthed } from '@/lib/client/authed-api'
@@ -14,22 +14,16 @@ import { capitalizeSchoolTerm } from '@/lib/school'
 
 const ACTION_CARDS = [
   {
-    href: '/coach/agenda',
-    title: 'Mis horarios',
-    body: 'Horarios publicados, clases agendadas y bloqueos.',
-    icon: FiCalendar,
+    href: '/coach/payments',
+    title: 'Planes y pagos',
+    body: 'Configura tus planes y revisa tus pagos.',
+    icon: FiDollarSign,
   },
   {
-    href: '/coach/students',
-    title: 'Alumnos',
-    body: 'Tus nadadores y su progreso en un solo lugar.',
-    icon: FiUsers,
-  },
-  {
-    href: '/coach/coach-profile',
-    title: 'Mi perfil de coach',
-    body: 'Especialidades, experiencia y verificación.',
-    icon: FiShield,
+    href: '/coach/training',
+    title: 'Entrenos',
+    body: 'Crea y organiza los entrenamientos de tus alumnos.',
+    icon: FiActivity,
   },
 ]
 
@@ -100,35 +94,39 @@ export default function CoachHomeDashboard() {
 
       <CalendarConnectionCard calendarRole="coach" />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <HomeActionLink
+          href="/coach/coach-profile"
+          title="Perfil de coach"
+          description="Configura tu perfil profesional"
+          icon={FiShield}
+        />
+        <HomeActionLink
+          href="/profile"
+          title="Perfil de nadador"
+          description="Edita tu nombre, datos y perfil público"
+          icon={FiActivity}
+        />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
         {ACTION_CARDS.map((card) => {
-          const Icon = card.icon
           return (
-            <Link
+            <HomeActionLink
               key={card.href}
               href={card.href}
-              className="group flex items-start gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-(--c-surface) text-(--c-ocean-mid)">
-                <Icon aria-hidden="true" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1 font-bold text-(--c-ocean)">
-                  {card.href === '/coach/students' && terminology.schoolId
-                    ? capitalizeSchoolTerm(participantPlural)
-                    : card.title}
-                  <FiChevronRight
-                    aria-hidden="true"
-                    className="text-(--c-text-2) transition-transform group-hover:translate-x-0.5"
-                  />
-                </span>
-                <span className="mt-1 block text-sm text-(--c-text-2)">
-                  {card.href === '/coach/students' && terminology.schoolId
-                    ? `Tus ${participantPlural} y su progreso en un solo lugar.`
-                    : card.body}
-                </span>
-              </span>
-            </Link>
+              title={
+                card.href === '/coach/students' && terminology.schoolId
+                  ? capitalizeSchoolTerm(participantPlural)
+                  : card.title
+              }
+              description={
+                card.href === '/coach/students' && terminology.schoolId
+                  ? `Tus ${participantPlural} y su progreso en un solo lugar.`
+                  : card.body
+              }
+              icon={card.icon}
+            />
           )
         })}
       </div>

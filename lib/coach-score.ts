@@ -17,17 +17,13 @@ export interface ScorableProfile {
   certifications?: { url: string; name: string }[] | null
 }
 
-const clamp = (n: number, lo: number, hi: number): number =>
-  Math.max(lo, Math.min(hi, n))
+const clamp = (n: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, n))
 
 /**
  * Pure: total auto score for a coach profile, integer clamped 0..MAX.
  * Counts only skill dimensions that exist in the current schema.
  */
-export function computeAutoScore(
-  profile: ScorableProfile,
-  weights = COACH_SCORE
-): number {
+export function computeAutoScore(profile: ScorableProfile, weights = COACH_SCORE): number {
   let pts = 0
 
   if (profile.metrics && Object.keys(profile.metrics).length > 0) {
@@ -41,16 +37,11 @@ export function computeAutoScore(
   }
 
   const galleryPhotos = profile.galleryPhotos ?? []
-  const facePhoto =
-    profile.facePhoto ??
-    galleryPhotos.find((photo) => photo.label === 'Yo') ??
-    null
+  const facePhoto = profile.facePhoto ?? galleryPhotos.find((photo) => photo.label === 'Yo') ?? null
   const workplacePhotos =
-    profile.workplacePhotos ??
-    galleryPhotos.filter((photo) => photo.label === 'Lugares de trabajo')
+    profile.workplacePhotos ?? galleryPhotos.filter((photo) => photo.label === 'Lugares de trabajo')
   const achievementPhotos =
-    profile.achievementPhotos ??
-    galleryPhotos.filter((photo) => photo.label === 'Logros y eventos')
+    profile.achievementPhotos ?? galleryPhotos.filter((photo) => photo.label === 'Logros y eventos')
 
   if (profile.bio && profile.bio.trim().length > 0) pts += weights.bio
   if (facePhoto?.url) pts += weights.facePhoto
@@ -59,19 +50,13 @@ export function computeAutoScore(
   pts += Math.min(wp, weights.maxScoredWorkplacePhotos) * weights.perWorkplacePhoto
 
   const ap = achievementPhotos?.length ?? 0
-  pts +=
-    Math.min(ap, weights.maxScoredAchievementPhotos) *
-    weights.perAchievementPhoto
+  pts += Math.min(ap, weights.maxScoredAchievementPhotos) * weights.perAchievementPhoto
 
-  const idn =
-    profile.identityVerification?.document?.url
-      ? 1
-      : profile.idDocuments?.length ?? 0
+  const idn = profile.identityVerification?.document?.url ? 1 : (profile.idDocuments?.length ?? 0)
   pts += Math.min(idn, weights.maxScoredIdDocuments) * weights.perIdDocument
 
   const cert = profile.certifications?.length ?? 0
-  pts +=
-    Math.min(cert, weights.maxScoredCertifications) * weights.perCertification
+  pts += Math.min(cert, weights.maxScoredCertifications) * weights.perCertification
 
   return clamp(Math.round(pts), 0, weights.MAX)
 }
@@ -83,9 +68,7 @@ export interface CoachVerification {
 }
 
 /** Pure: the score athletes see — admin override wins, else autoScore. */
-export function effectiveScore(
-  verification: CoachVerification | null | undefined
-): number {
+export function effectiveScore(verification: CoachVerification | null | undefined): number {
   if (!verification) return 0
   return verification.adminScoreOverride ?? verification.autoScore ?? 0
 }
