@@ -51,8 +51,18 @@ if (analyticsEnabled()) {
       if (!event) return null
       // Never replay sign-in links: their URL can carry one-time credentials.
       if (event.event === '$snapshot' && privateReplayRoute(window.location.pathname)) return null
-      if (event.event !== '$snapshot')
-        event.properties = sanitizeAnalyticsProperties(event.properties)
+      if (event.event !== '$snapshot') {
+        // `token` is the project key PostHog batches by; without it ingestion drops the event.
+        const { token, distinct_id, $device_id, $session_id, $window_id } = event.properties
+        event.properties = {
+          ...sanitizeAnalyticsProperties(event.properties),
+          token,
+          distinct_id,
+          $device_id,
+          $session_id,
+          $window_id,
+        }
+      }
       return event
     },
     loaded: (client) =>
