@@ -7,10 +7,12 @@ import CoachDirectoryList from '@/components/coach/CoachDirectoryList'
 import { SearchField } from '@/components/Inputs/FormFields'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import TrainingPlanCard from '@/components/training/TrainingPlanCard'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { TrainingPlanCRUD } from '@/firebase/training-plans/main'
 import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
+import { getAuthed } from '@/lib/client/authed-api'
 import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/store/athlete-bookings'
 import { localCalendarDate } from '@/lib/today-training'
 import { reportInternalError } from '@/lib/user-facing-error'
@@ -46,18 +48,24 @@ export default function AthleteSearch({
   onSelectSchool?: (school: { id: string; name: string }) => void
   actionLabel?: string
 }) {
+  // Inside a school's own app (tenant subdomain) search only that school's profes and entrenos.
+  const tenant = useTenantSchool()
+  const scopeSchoolId = tenant?.id || schoolId
+  const startTab = tenant && initialTab === 'schools' ? undefined : initialTab
   const [kinds, setKinds] = useState<Record<Kind, boolean>>({
-    schools: !initialTab || initialTab === 'schools',
-    coaches: !initialTab || initialTab === 'coaches',
-    plans: !onSelectCoach && !onSelectSchool && (!initialTab || initialTab === 'plans'),
+    schools: !tenant && (!startTab || startTab === 'schools'),
+    coaches: !startTab || startTab === 'coaches',
+    plans: !onSelectCoach && !onSelectSchool && (!startTab || startTab === 'plans'),
   })
   // Embedded pickers (schedule sheet, payments) select a coach/school; plans don't apply there.
   const kindOptions = (
     onSelectCoach || onSelectSchool ? ['schools', 'coaches'] : ['schools', 'coaches', 'plans']
-  ) as Kind[]
+  ).filter((kind) => !tenant || kind !== 'schools') as Kind[]
   const plansEnabled = kindOptions.includes('plans')
   const [plans, setPlans] = useState<TrainingPlan[]>([])
   const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set())
+  // Tenant only: coaches of the school, whose plans are the only ones listed.
+  const [tenantCoachIds, setTenantCoachIds] = useState<Set<string>>()
   const [plansLoading, setPlansLoading] = useState(true)
   const [plansError, setPlansError] = useState(false)
   const [today] = useState(() => localCalendarDate(new Date()))
@@ -114,6 +122,22 @@ export default function AthleteSearch({
     }
   }, [])
   useEffect(() => {
+    if (!plansEnabled || !tenant) return
+    let active = true
+    getAuthed(`/api/schools/${encodeURIComponent(tenant.id)}/coaches`)
+      .then((response) => response.json() as Promise<{ coaches?: { id: string }[] }>)
+      .then((payload) => {
+        if (active) setTenantCoachIds(new Set((payload.coaches || []).map((coach) => coach.id)))
+      })
+      .catch((cause) => {
+        reportInternalError('TRAINING_PLANS_SCHOOL_COACHES', cause)
+        if (active) setPlansError(true)
+      })
+    return () => {
+      active = false
+    }
+  }, [plansEnabled, tenant])
+  useEffect(() => {
     if (!plansEnabled) return
     let active = true
     TrainingPlanCRUD.listPublic()
@@ -166,9 +190,13 @@ export default function AthleteSearch({
     if (end && end < today) return 2
     return start && start > today ? 1 : 0
   }
-  const visiblePlans = plans
+  const searchablePlans = plans.filter(
+    (plan) =>
+      uid && plan.summary && plan.userId !== uid && (!tenant || tenantCoachIds?.has(plan.userId))
+  )
+  const visiblePlans = searchablePlans
     .filter((plan) => {
-      if (!uid || !plan.summary || plan.userId === uid) return false
+      if (!plan.summary) return false
       const needle = normalize(query.trim())
       return [plan.summary.title, plan.summary.goal, plan.summary.authorName].some((field) =>
         normalize(field).includes(needle)
@@ -192,14 +220,26 @@ export default function AthleteSearch({
     !error &&
     (!kinds.schools || visible.length === 0) &&
     (!kinds.coaches || coachMatches === 0) &&
-    (!kinds.plans || (!plansLoading && !plansError && visiblePlans.length === 0))
+    (!kinds.plans ||
+      (!plansLoading &&
+        !plansError &&
+        (!tenant || tenantCoachIds !== undefined) &&
+        visiblePlans.length === 0))
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4">
       <SearchField
-        label={kinds.plans ? 'Buscar escuelas, profes o entrenos' : 'Buscar escuelas o profes'}
+        label={
+          tenant
+            ? 'Buscar profes o entrenos'
+            : kinds.plans
+              ? 'Buscar escuelas, profes o entrenos'
+              : 'Buscar escuelas o profes'
+        }
         placeholder={
           both
-            ? 'Escuela, profe, entreno, técnica o ciudad…'
+            ? tenant
+              ? 'Profe, entreno o técnica…'
+              : 'Escuela, profe, entreno, técnica o ciudad…'
             : kinds.schools
               ? 'Nombre de la escuela…'
               : kinds.plans
@@ -230,7 +270,11 @@ export default function AthleteSearch({
         ))}
       </fieldset>
       {nothingMatches && (
-        <p className="py-4 text-center text-sm text-(--c-text-2)">No encontramos coincidencias.</p>
+        <p className="py-4 text-center text-sm text-(--c-text-2)">
+          {tenant && kinds.plans && !kinds.coaches && searchablePlans.length === 0
+            ? 'Los entrenadores de esta escuela aún no han publicado entrenos.'
+            : 'No encontramos coincidencias.'}
+        </p>
       )}
       {schoolsShown && (
         <section aria-label="Escuelas" className="grid min-w-0 grid-cols-1 gap-3">
@@ -274,7 +318,7 @@ export default function AthleteSearch({
       {kinds.coaches && (
         <section aria-label="Profes" className="grid min-w-0 grid-cols-1 empty:hidden">
           <CoachDirectoryList
-            schoolId={schoolId}
+            schoolId={scopeSchoolId}
             coachHrefBase="/athlete/search/coach"
             onSelectCoach={onSelectCoach}
             actionLabel={actionLabel}

@@ -1,5 +1,6 @@
 'use client'
 
+import AthleteSearchBar from '@comps/athlete/AthleteSearchBar'
 import CalendarConnectionCard from '@comps/calendar/CalendarConnectionCard'
 import Link from 'next/link'
 import type React from 'react'
@@ -97,6 +98,8 @@ export default function AthleteHomeDashboard() {
 
   return (
     <div className="flex flex-col gap-6">
+      <AthleteSearchBar />
+
       <div>
         <h1 className="text-3xl font-extrabold text-(--c-ocean)">
           Hola{firstName ? `, ${firstName}` : ', nadador'}
@@ -167,7 +170,7 @@ export default function AthleteHomeDashboard() {
 
       <HomeActionLink
         href="/profile"
-        title="Perfil de nadador"
+        title="Perfil de atleta"
         description="Edita tu nombre, datos y perfil público"
         icon={FiUser}
       />

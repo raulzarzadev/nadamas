@@ -77,7 +77,15 @@ const writeLastPlanId = (uid: string, planId: string) => {
   }
 }
 
-export default function TrainingPlanner() {
+// onSearch (athlete Entrenos): the empty state also offers searching public plans;
+// onEmptyChange lets the host hide its own search bar while that empty state shows.
+export default function TrainingPlanner({
+  onSearch,
+  onEmptyChange,
+}: {
+  onSearch?: () => void
+  onEmptyChange?: (empty: boolean) => void
+} = {}) {
   const { user } = useUser()
   const author = useTrainingPlanAuthor()
   const uid = user?.uid || user?.id
@@ -99,6 +107,11 @@ export default function TrainingPlanner() {
   const [barsDraft, setBarsDraft] = useState<TrainingCycle[] | null>(null)
   const [editing, setEditing] = useState(false)
   const [editField, setEditField] = useState<CycleField | null>(null)
+
+  const empty = !loading && !loadError && !plans.length && !subscribed.length
+  useEffect(() => {
+    onEmptyChange?.(empty)
+  }, [empty, onEmptyChange])
 
   // Retry deliberately reloads the same owner-scoped collection.
   // biome-ignore lint/correctness/useExhaustiveDependencies: revision triggers an explicit retry.
@@ -483,274 +496,292 @@ export default function TrainingPlanner() {
               Reintentar
             </button>
           </div>
-        ) : !plans.length && !subscribed.length ? (
+        ) : empty ? (
           <div className="rounded-2xl border border-dashed border-(--c-border) bg-(--c-surface) px-5 py-10 text-center">
             <FiActivity className="mx-auto mb-4 size-8" aria-hidden="true" />
-            <h2 className="text-lg font-bold">Tu temporada empieza aquí</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-(--c-text-2)">
-              Crea un MACRO-ciclo con su objetivo y fechas. Después organiza sus bloques y semanas
-              de entrenamiento.
-            </p>
-            <button
-              type="button"
-              className={`${primaryClass} mt-5`}
-              disabled={busy}
-              onClick={() => void createMacro()}
-            >
-              Crear mi primer MACRO-ciclo
-            </button>
-          </div>
-        ) : (
-          <>
-            {!cycle ? (
-              <p className="py-8 text-(--c-text-2)">
-                Selecciona un MACRO-ciclo para ver su planificación.
-              </p>
-            ) : (
+            {onSearch ? (
               <>
-                {cycle.parentId && (
-                  <nav
-                    aria-label="Ciclos de entrenamiento"
-                    className="flex min-w-0 flex-wrap items-center gap-1 text-sm"
-                  >
-                    {plan?.cycles
-                      .filter(
-                        (item) =>
-                          item.id !== cycle.id && (item.type === 'macro' || item.id === parent?.id)
-                      )
-                      .map((item) => (
-                        <button
-                          type="button"
-                          key={item.id}
-                          className="flex min-h-11 items-center gap-1 rounded-lg px-2 font-semibold focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                          onClick={() => setCycleId(item.id)}
-                        >
-                          {item.title}
-                          <FiChevronRight aria-hidden="true" />
-                        </button>
-                      ))}
-                  </nav>
-                )}
-                <div className="sticky top-[var(--app-header-h,0px)] z-40 grid min-h-9 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 bg-(--c-bg) py-1">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1">
-                      {editing ? (
-                        <input
-                          aria-label="Título del ciclo"
-                          disabled={busy}
-                          maxLength={100}
-                          value={
-                            planCycles.find((item) => item.id === cycle.id)?.title ?? cycle.title
-                          }
-                          onChange={(event) =>
-                            setBarsDraft(
-                              planCycles.map((item) =>
-                                item.id === cycle.id ? { ...item, title: event.target.value } : item
-                              )
-                            )
-                          }
-                          className="box-border h-7 w-full min-w-0 rounded-lg border border-(--c-border) bg-white px-2 text-xs font-semibold text-(--c-ocean) outline-none hover:border-(--c-border) focus:border-(--c-aqua-strong) focus:bg-white focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
-                        />
-                      ) : (
-                        <h2 className="min-w-0 truncate text-sm font-semibold" title={cycle.title}>
-                          {cycle.title}
-                        </h2>
-                      )}
-                    </div>
-                  </div>
-                  {editing ? (
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        className={
-                          'inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
-                        }
-                        disabled={busy}
-                        onClick={stopEditing}
-                      >
-                        <FiX aria-hidden="true" />
-                        Descartar
-                      </button>
-                      <button
-                        type="button"
-                        className={
-                          'inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
-                        }
-                        disabled={busy}
-                        onClick={() => {
-                          setError('')
-                          setDeleting(true)
-                        }}
-                      >
-                        <FiTrash2 aria-hidden="true" />
-                        Eliminar
-                      </button>
-                      <button
-                        type="button"
-                        className={
-                          'inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50' +
-                          ' border-transparent bg-(--c-ocean)! text-white!'
-                        }
-                        disabled={busy}
-                        onClick={() => void finishEditing()}
-                      >
-                        <FiSave aria-hidden="true" />
-                        {busy ? 'Guardando…' : 'Guardar'}
-                      </button>
-                    </div>
-                  ) : owned ? (
-                    <button
-                      type="button"
-                      className={
-                        'inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
-                      }
-                      onClick={startEditing}
-                    >
-                      <FiEdit2 aria-hidden="true" />
-                      Editar
-                    </button>
-                  ) : null}
-                </div>
-                <div className="mb-3 grid min-w-0 grid-cols-2 gap-1">
-                  <p className="col-span-2 flex items-center gap-1 text-sm text-(--c-text-2)">
-                    {dateLabel(cycle.startDate)} — {dateLabel(cycle.endDate)}
-                    {editButton('dates')}
-                  </p>
-                  {cycle.type === 'macro' &&
-                    (editing ? (
-                      <textarea
-                        aria-label="Objetivos, comentarios e instrucciones de la temporada"
-                        placeholder="Agrega objetivos, comentarios, instrucciones extra, etc."
-                        rows={1}
-                        maxLength={10000}
-                        disabled={busy}
-                        value={
-                          planCycles.find((item) => item.id === cycle.id)?.content ?? cycle.content
-                        }
-                        onChange={(event) =>
-                          setBarsDraft(
-                            planCycles.map((item) =>
-                              item.id === cycle.id ? { ...item, content: event.target.value } : item
-                            )
-                          )
-                        }
-                        className="[field-sizing:content] col-span-2 box-border min-h-8 w-full min-w-0 max-w-full resize-none rounded-lg border border-(--c-border) bg-white px-2 py-1.5 text-xs leading-relaxed outline-none placeholder:text-(--c-text-2) focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
-                      />
-                    ) : cycle.content.trim() ? (
-                      <p className="col-span-2 whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed text-(--c-text-2)">
-                        {cycle.content}
-                      </p>
-                    ) : null)}
-                </div>
-                {owned && plan && cycle.type === 'macro' && (
-                  <PlanSharingControls
-                    key={plan.id}
-                    plan={plan}
-                    onChange={(next) =>
-                      setPlans((items) => items.map((item) => (item.id === next.id ? next : item)))
-                    }
-                  />
-                )}
-                {!owned && plan && cycle.type === 'macro' && (
+                <h2 className="text-lg font-bold">No tienes entrenos aún</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm text-(--c-text-2)">
+                  Crea uno o busca uno.
+                </p>
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
                   <button
                     type="button"
+                    className={primaryClass}
                     disabled={busy}
-                    onClick={() => void unfollow(plan.id)}
-                    className="mb-3 inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-border) bg-white px-4 text-xs font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
+                    onClick={() => void createMacro()}
                   >
-                    Dejar de seguir
+                    Crear entreno
                   </button>
-                )}
-                {error && !draft && !deleting && (
-                  <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">
-                    {error}
-                  </p>
-                )}
-                <article
-                  className={
-                    cycle.type === 'macro'
-                      ? 'min-w-0'
-                      : 'rounded-2xl border border-(--c-border) bg-white px-2 py-5 sm:p-5'
-                  }
+                  <button type="button" className={actionClass} onClick={onSearch}>
+                    Buscar entrenos
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold">Tu temporada empieza aquí</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm text-(--c-text-2)">
+                  Crea un MACRO-ciclo con su objetivo y fechas. Después organiza sus bloques y
+                  semanas de entrenamiento.
+                </p>
+                <button
+                  type="button"
+                  className={`${primaryClass} mt-5`}
+                  disabled={busy}
+                  onClick={() => void createMacro()}
                 >
-                  {cycle.type === 'macro' && plan && (
-                    <TrainingPlanOverview
-                      key={plan.id}
-                      macros={(owned ? plans : [plan]).flatMap((item) =>
-                        item.cycles.filter((node) => node.type === 'macro')
-                      )}
-                      cycles={editing ? planCycles : plan.cycles}
-                      onChange={setBarsDraft}
-                      onRequestEdit={owned ? startEditing : undefined}
+                  Crear mi primer MACRO-ciclo
+                </button>
+              </>
+            )}
+          </div>
+        ) : !cycle ? (
+          <p className="py-8 text-(--c-text-2)">
+            Selecciona un MACRO-ciclo para ver su planificación.
+          </p>
+        ) : (
+          <>
+            {cycle.parentId && (
+              <nav
+                aria-label="Ciclos de entrenamiento"
+                className="flex min-w-0 flex-wrap items-center gap-1 text-sm"
+              >
+                {plan?.cycles
+                  .filter(
+                    (item) =>
+                      item.id !== cycle.id && (item.type === 'macro' || item.id === parent?.id)
+                  )
+                  .map((item) => (
+                    <button
+                      type="button"
+                      key={item.id}
+                      className="flex min-h-11 items-center gap-1 rounded-lg px-2 font-semibold focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                      onClick={() => setCycleId(item.id)}
+                    >
+                      {item.title}
+                      <FiChevronRight aria-hidden="true" />
+                    </button>
+                  ))}
+              </nav>
+            )}
+            <div className="sticky top-[var(--app-header-h,0px)] z-40 grid min-h-9 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 bg-(--c-bg) py-1">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1">
+                  {editing ? (
+                    <input
+                      aria-label="Título del ciclo"
                       disabled={busy}
-                      readOnly={!owned || !editing}
+                      maxLength={100}
+                      value={planCycles.find((item) => item.id === cycle.id)?.title ?? cycle.title}
+                      onChange={(event) =>
+                        setBarsDraft(
+                          planCycles.map((item) =>
+                            item.id === cycle.id ? { ...item, title: event.target.value } : item
+                          )
+                        )
+                      }
+                      className="box-border h-7 w-full min-w-0 rounded-lg border border-(--c-border) bg-white px-2 text-xs font-semibold text-(--c-ocean) outline-none hover:border-(--c-border) focus:border-(--c-aqua-strong) focus:bg-white focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
                     />
+                  ) : (
+                    <h2 className="min-w-0 truncate text-sm font-semibold" title={cycle.title}>
+                      {cycle.title}
+                    </h2>
                   )}
-                  {cycle.type !== 'macro' && (
-                    <>
-                      <div className="mt-5 flex items-center gap-1">
-                        <h3 className="text-sm font-bold">Objetivo</h3>
-                        {editButton('goal')}
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-sm">
-                        {cycle.goal || 'Sin objetivo definido todavía.'}
-                      </p>
-                      <div className="mt-5 flex items-center gap-1">
-                        <h3 className="text-sm font-bold">{contentLabel(cycle.type)}</h3>
-                        {editButton('content')}
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-sm text-(--c-text-2)">
-                        {cycle.content || 'Añade el trabajo que quieres desarrollar en este ciclo.'}
-                      </p>
-                    </>
+                </div>
+              </div>
+              {editing ? (
+                <div className="flex items-center justify-end gap-1">
+                  <button
+                    type="button"
+                    className={
+                      'inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
+                    }
+                    disabled={busy}
+                    onClick={stopEditing}
+                  >
+                    <FiX aria-hidden="true" />
+                    Descartar
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      'inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
+                    }
+                    disabled={busy}
+                    onClick={() => {
+                      setError('')
+                      setDeleting(true)
+                    }}
+                  >
+                    <FiTrash2 aria-hidden="true" />
+                    Eliminar
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      'inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50' +
+                      ' border-transparent bg-(--c-ocean)! text-white!'
+                    }
+                    disabled={busy}
+                    onClick={() => void finishEditing()}
+                  >
+                    <FiSave aria-hidden="true" />
+                    {busy ? 'Guardando…' : 'Guardar'}
+                  </button>
+                </div>
+              ) : owned ? (
+                <button
+                  type="button"
+                  className={
+                    'inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50'
+                  }
+                  onClick={startEditing}
+                >
+                  <FiEdit2 aria-hidden="true" />
+                  Editar
+                </button>
+              ) : null}
+            </div>
+            <div className="mb-3 grid min-w-0 grid-cols-2 gap-1">
+              <p className="col-span-2 flex items-center gap-1 text-sm text-(--c-text-2)">
+                {dateLabel(cycle.startDate)} — {dateLabel(cycle.endDate)}
+                {editButton('dates')}
+              </p>
+              {cycle.type === 'macro' &&
+                (editing ? (
+                  <textarea
+                    aria-label="Objetivos, comentarios e instrucciones de la temporada"
+                    placeholder="Agrega objetivos, comentarios, instrucciones extra, etc."
+                    rows={1}
+                    maxLength={10000}
+                    disabled={busy}
+                    value={
+                      planCycles.find((item) => item.id === cycle.id)?.content ?? cycle.content
+                    }
+                    onChange={(event) =>
+                      setBarsDraft(
+                        planCycles.map((item) =>
+                          item.id === cycle.id ? { ...item, content: event.target.value } : item
+                        )
+                      )
+                    }
+                    className="[field-sizing:content] col-span-2 box-border min-h-8 w-full min-w-0 max-w-full resize-none rounded-lg border border-(--c-border) bg-white px-2 py-1.5 text-xs leading-relaxed outline-none placeholder:text-(--c-text-2) focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+                  />
+                ) : cycle.content.trim() ? (
+                  <p className="col-span-2 whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed text-(--c-text-2)">
+                    {cycle.content}
+                  </p>
+                ) : null)}
+            </div>
+            {owned && plan && cycle.type === 'macro' && (
+              <PlanSharingControls
+                key={plan.id}
+                plan={plan}
+                onChange={(next) =>
+                  setPlans((items) => items.map((item) => (item.id === next.id ? next : item)))
+                }
+              />
+            )}
+            {!owned && plan && cycle.type === 'macro' && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void unfollow(plan.id)}
+                className="mb-3 inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-border) bg-white px-4 text-xs font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
+              >
+                Dejar de seguir
+              </button>
+            )}
+            {error && !draft && !deleting && (
+              <p role="alert" className="mb-3 text-sm text-(--c-error,#b91c1c)">
+                {error}
+              </p>
+            )}
+            <article
+              className={
+                cycle.type === 'macro'
+                  ? 'min-w-0'
+                  : 'rounded-2xl border border-(--c-border) bg-white px-2 py-5 sm:p-5'
+              }
+            >
+              {cycle.type === 'macro' && plan && (
+                <TrainingPlanOverview
+                  key={plan.id}
+                  macros={(owned ? plans : [plan]).flatMap((item) =>
+                    item.cycles.filter((node) => node.type === 'macro')
                   )}
-                </article>
-                {cycle.type !== 'macro' && nextType && (
-                  <section className="mt-6" aria-labelledby="child-cycles-title">
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <h2 id="child-cycles-title" className="text-lg font-bold">
-                        {nextType === 'meso' ? 'MESO-ciclos' : 'MICRO-ciclos'}
-                      </h2>
-                      {editing && (
+                  cycles={editing ? planCycles : plan.cycles}
+                  onChange={setBarsDraft}
+                  onRequestEdit={owned ? startEditing : undefined}
+                  disabled={busy}
+                  readOnly={!owned || !editing}
+                />
+              )}
+              {cycle.type !== 'macro' && (
+                <>
+                  <div className="mt-5 flex items-center gap-1">
+                    <h3 className="text-sm font-bold">Objetivo</h3>
+                    {editButton('goal')}
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap break-words text-sm">
+                    {cycle.goal || 'Sin objetivo definido todavía.'}
+                  </p>
+                  <div className="mt-5 flex items-center gap-1">
+                    <h3 className="text-sm font-bold">{contentLabel(cycle.type)}</h3>
+                    {editButton('content')}
+                  </div>
+                  <p className="mt-1 whitespace-pre-wrap break-words text-sm text-(--c-text-2)">
+                    {cycle.content || 'Añade el trabajo que quieres desarrollar en este ciclo.'}
+                  </p>
+                </>
+              )}
+            </article>
+            {cycle.type !== 'macro' && nextType && (
+              <section className="mt-6" aria-labelledby="child-cycles-title">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <h2 id="child-cycles-title" className="text-lg font-bold">
+                    {nextType === 'meso' ? 'MESO-ciclos' : 'MICRO-ciclos'}
+                  </h2>
+                  {editing && (
+                    <button
+                      type="button"
+                      className={actionClass}
+                      onClick={() => openCreate(nextType)}
+                    >
+                      <FiPlus aria-hidden="true" />
+                      {nextType === 'meso' ? 'Nuevo MESO-ciclo' : 'Nuevo MICRO-ciclo'}
+                    </button>
+                  )}
+                </div>
+                {!children.length ? (
+                  <p className="rounded-xl border border-dashed border-(--c-border) p-5 text-sm text-(--c-text-2)">
+                    Todavía no hay {nextType === 'meso' ? 'MESO-ciclos' : 'MICRO-ciclos'}. Añade el
+                    primer bloque de esta planificación.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-(--c-border) rounded-xl border border-(--c-border) bg-white">
+                    {children.map((child) => (
+                      <li key={child.id}>
                         <button
                           type="button"
-                          className={actionClass}
-                          onClick={() => openCreate(nextType)}
+                          className="flex min-h-20 w-full items-center justify-between gap-3 p-4 text-left hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                          onClick={() => setCycleId(child.id)}
                         >
-                          <FiPlus aria-hidden="true" />
-                          {nextType === 'meso' ? 'Nuevo MESO-ciclo' : 'Nuevo MICRO-ciclo'}
+                          <span className="min-w-0">
+                            <span className="block break-words font-bold">{child.title}</span>
+                            <span className="mt-1 block text-xs text-(--c-text-2)">
+                              {dateLabel(child.startDate)} — {dateLabel(child.endDate)}
+                            </span>
+                          </span>
+                          <FiChevronRight aria-hidden="true" className="shrink-0" />
                         </button>
-                      )}
-                    </div>
-                    {!children.length ? (
-                      <p className="rounded-xl border border-dashed border-(--c-border) p-5 text-sm text-(--c-text-2)">
-                        Todavía no hay {nextType === 'meso' ? 'MESO-ciclos' : 'MICRO-ciclos'}. Añade
-                        el primer bloque de esta planificación.
-                      </p>
-                    ) : (
-                      <ul className="divide-y divide-(--c-border) rounded-xl border border-(--c-border) bg-white">
-                        {children.map((child) => (
-                          <li key={child.id}>
-                            <button
-                              type="button"
-                              className="flex min-h-20 w-full items-center justify-between gap-3 p-4 text-left hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-                              onClick={() => setCycleId(child.id)}
-                            >
-                              <span className="min-w-0">
-                                <span className="block break-words font-bold">{child.title}</span>
-                                <span className="mt-1 block text-xs text-(--c-text-2)">
-                                  {dateLabel(child.startDate)} — {dateLabel(child.endDate)}
-                                </span>
-                              </span>
-                              <FiChevronRight aria-hidden="true" className="shrink-0" />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </section>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </>
+              </section>
             )}
           </>
         )}

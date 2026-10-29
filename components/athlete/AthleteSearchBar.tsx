@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { FiSearch, FiX } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
+import { useTenantSchool } from '@/context/TenantSchoolContext'
 import AthleteSearch from './AthleteSearch'
 
 type Pick = { id: string; name: string }
@@ -44,6 +45,9 @@ export default function AthleteSearchBar({
   clearHref,
   onClear,
   defaultTab,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger,
 }: {
   schoolId?: string
   onSelectCoach?: (coach: Pick) => void
@@ -58,9 +62,25 @@ export default function AthleteSearchBar({
   onClear?: () => void
   // Preselects only this kind when the sheet opens, without opening it on mount.
   defaultTab?: 'coaches' | 'schools' | 'plans'
+  // Optional controlled sheet, so the host page can open the search from elsewhere.
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  // Keep only the sheet (opened via `open`) when the host shows its own search action.
+  hideTrigger?: boolean
 }) {
-  const [open, setOpen] = useState(Boolean(initialTab))
-  const label = defaultTab === 'plans' ? 'Buscar entrenos' : 'Buscar entrenador o escuela'
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(Boolean(initialTab))
+  const open = controlledOpen ?? uncontrolledOpen
+  const setOpen = (next: boolean) => {
+    setUncontrolledOpen(next)
+    onOpenChange?.(next)
+  }
+  const tenant = useTenantSchool()
+  const label =
+    defaultTab === 'plans'
+      ? 'Buscar entrenos'
+      : tenant
+        ? 'Buscar entrenador o entreno'
+        : 'Buscar entrenador o escuela'
   const close = () => {
     setOpen(false)
     // Drop the one-shot ?search= that reopened the sheet so a reload doesn't reopen it.
@@ -72,7 +92,7 @@ export default function AthleteSearchBar({
   }
   return (
     <>
-      <div className="relative">
+      <div className={hideTrigger ? 'hidden' : 'relative'}>
         <button
           type="button"
           aria-haspopup="dialog"

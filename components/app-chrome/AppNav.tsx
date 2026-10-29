@@ -191,7 +191,7 @@ export default function AppNav({
     <>
       <header
         ref={headerRef}
-        className="sticky top-0 z-30 border-b border-[var(--c-border)] bg-white/90 backdrop-blur"
+        className="sticky top-0 z-40 border-b border-[var(--c-border)] bg-white/90 backdrop-blur"
       >
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="relative flex items-center gap-2 sm:gap-4">
@@ -246,6 +246,7 @@ export default function AppNav({
           {canShowWorkspaceNavigation &&
             role === 'athlete' &&
             !publicAthleteSchedule &&
+            pathname !== '/athlete/home' &&
             !pathname.startsWith('/athlete/search') &&
             !pathname.startsWith('/athlete/training') &&
             pathname !== '/athlete/payments' &&
