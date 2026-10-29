@@ -16,6 +16,7 @@ import { getAuthed } from '@/lib/client/authed-api'
 import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/store/athlete-bookings'
 import { localCalendarDate } from '@/lib/today-training'
 import { reportInternalError } from '@/lib/user-facing-error'
+import AthleteScheduleBrowser from './AthleteScheduleBrowser'
 import RegisteredBadge from './RegisteredBadge'
 
 type PublicSchool = { id: string; name: string; slug: string }
@@ -40,7 +41,7 @@ export default function AthleteSearch({
 }: {
   schoolId?: string
   // Start with only this kind selected; all are selected when omitted.
-  initialTab?: Kind
+  initialTab?: Kind | 'schedules'
   // false when embedded (e.g. the Horarios search sheet) so filter changes don't rewrite the URL.
   syncUrl?: boolean
   // When set, picking a coach/school calls these instead of opening its schedule.
@@ -51,7 +52,10 @@ export default function AthleteSearch({
   // Inside a school's own app (tenant subdomain) search only that school's profes and entrenos.
   const tenant = useTenantSchool()
   const scopeSchoolId = tenant?.id || schoolId
-  const startTab = tenant && initialTab === 'schools' ? undefined : initialTab
+  // "Horarios" is exclusive: it swaps the lists for the available-hours calendar.
+  const [showSchedules, setShowSchedules] = useState(initialTab === 'schedules')
+  const startTab =
+    initialTab === 'schedules' || (tenant && initialTab === 'schools') ? undefined : initialTab
   const [kinds, setKinds] = useState<Record<Kind, boolean>>({
     schools: !tenant && (!startTab || startTab === 'schools'),
     coaches: !startTab || startTab === 'coaches',
@@ -62,6 +66,8 @@ export default function AthleteSearch({
     onSelectCoach || onSelectSchool ? ['schools', 'coaches'] : ['schools', 'coaches', 'plans']
   ).filter((kind) => !tenant || kind !== 'schools') as Kind[]
   const plansEnabled = kindOptions.includes('plans')
+  // Not inside pickers (payments / schedule coach pick): they need a coach or school back.
+  const schedulesEnabled = !onSelectCoach && !onSelectSchool
   const [plans, setPlans] = useState<TrainingPlan[]>([])
   const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set())
   // Tenant only: coaches of the school, whose plans are the only ones listed.
@@ -168,6 +174,15 @@ export default function AthleteSearch({
     }
   }, [plansEnabled])
   const toggle = (kind: Kind) => {
+    if (showSchedules) {
+      setShowSchedules(false)
+      setKinds({
+        schools: kind === 'schools',
+        coaches: kind === 'coaches',
+        plans: kind === 'plans',
+      })
+      return
+    }
     const next = { ...kinds, [kind]: !kinds[kind] }
     // Keep at least one kind selected.
     if (!next.schools && !next.coaches && !next.plans) return
@@ -227,56 +242,73 @@ export default function AthleteSearch({
         visiblePlans.length === 0))
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4">
-      <SearchField
-        label={
-          tenant
-            ? 'Buscar profes o entrenos'
-            : kinds.plans
-              ? 'Buscar escuelas, profes o entrenos'
-              : 'Buscar escuelas o profes'
-        }
-        placeholder={
-          both
-            ? tenant
-              ? 'Profe, entreno o técnica…'
-              : 'Escuela, profe, entreno, técnica o ciudad…'
-            : kinds.schools
-              ? 'Nombre de la escuela…'
+      {!showSchedules && (
+        <SearchField
+          label={
+            tenant
+              ? 'Buscar profes o entrenos'
               : kinds.plans
-                ? 'Nombre, objetivo o entrenador…'
-                : 'Técnica, triatlón, tu ciudad…'
-        }
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        onClear={() => setQuery('')}
-        className="rounded-full px-6 text-base"
-      />
+                ? 'Buscar escuelas, profes o entrenos'
+                : 'Buscar escuelas o profes'
+          }
+          placeholder={
+            both
+              ? tenant
+                ? 'Profe, entreno o técnica…'
+                : 'Escuela, profe, entreno, técnica o ciudad…'
+              : kinds.schools
+                ? 'Nombre de la escuela…'
+                : kinds.plans
+                  ? 'Nombre, objetivo o entrenador…'
+                  : 'Técnica, triatlón, tu ciudad…'
+          }
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onClear={() => setQuery('')}
+          className="rounded-full px-6 text-base"
+        />
+      )}
       <fieldset className="flex flex-wrap gap-2">
         <legend className="sr-only">Mostrar</legend>
         {kindOptions.map((kind) => (
           <label
             key={kind}
-            className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--c-aqua-strong) ${kinds[kind] ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:text-(--c-ocean)'}`}
+            className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--c-aqua-strong) ${kinds[kind] && !showSchedules ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:text-(--c-ocean)'}`}
           >
             <input
               type="checkbox"
               className="sr-only"
-              checked={kinds[kind]}
+              checked={kinds[kind] && !showSchedules}
               onChange={() => toggle(kind)}
             />
-            {kinds[kind] && <FiCheck aria-hidden="true" className="size-4" />}
+            {kinds[kind] && !showSchedules && <FiCheck aria-hidden="true" className="size-4" />}
             {KIND_LABEL[kind]}
           </label>
         ))}
+        {schedulesEnabled && (
+          <label
+            className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-(--c-aqua-strong) ${showSchedules ? 'border-(--c-ocean) bg-(--c-ocean) text-white' : 'border-(--c-border) bg-white text-(--c-text-2) hover:text-(--c-ocean)'}`}
+          >
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={showSchedules}
+              onChange={() => setShowSchedules(true)}
+            />
+            {showSchedules && <FiCheck aria-hidden="true" className="size-4" />}
+            Horarios
+          </label>
+        )}
       </fieldset>
-      {nothingMatches && (
+      {showSchedules && <AthleteScheduleBrowser />}
+      {!showSchedules && nothingMatches && (
         <p className="py-4 text-center text-sm text-(--c-text-2)">
           {tenant && kinds.plans && !kinds.coaches && searchablePlans.length === 0
             ? 'Los entrenadores de esta escuela aún no han publicado entrenos.'
             : 'No encontramos coincidencias.'}
         </p>
       )}
-      {schoolsShown && (
+      {!showSchedules && schoolsShown && (
         <section aria-label="Escuelas" className="grid min-w-0 grid-cols-1 gap-3">
           {both && <h3 className="text-xs font-semibold text-(--c-text-2)">Escuelas</h3>}
           {error ? (
@@ -315,7 +347,7 @@ export default function AthleteSearch({
           )}
         </section>
       )}
-      {kinds.coaches && (
+      {!showSchedules && kinds.coaches && (
         <section aria-label="Profes" className="grid min-w-0 grid-cols-1 empty:hidden">
           <CoachDirectoryList
             schoolId={scopeSchoolId}
@@ -332,7 +364,7 @@ export default function AthleteSearch({
           />
         </section>
       )}
-      {kinds.plans && plansEnabled && (plansError || visiblePlans.length > 0) && (
+      {!showSchedules && kinds.plans && plansEnabled && (plansError || visiblePlans.length > 0) && (
         <section aria-label="Entrenos" className="grid min-w-0 grid-cols-1 gap-3">
           {both && <h3 className="text-xs font-semibold text-(--c-text-2)">Entrenos</h3>}
           {plansError ? (

@@ -61,7 +61,7 @@ export default function AthleteSearchBar({
   clearHref?: string
   onClear?: () => void
   // Preselects only this kind when the sheet opens, without opening it on mount.
-  defaultTab?: 'coaches' | 'schools' | 'plans'
+  defaultTab?: 'coaches' | 'schools' | 'plans' | 'schedules'
   // Optional controlled sheet, so the host page can open the search from elsewhere.
   open?: boolean
   onOpenChange?: (open: boolean) => void
@@ -78,9 +78,11 @@ export default function AthleteSearchBar({
   const label =
     defaultTab === 'plans'
       ? 'Buscar entrenos'
-      : tenant
-        ? 'Buscar entrenador o entreno'
-        : 'Buscar entrenador o escuela'
+      : defaultTab === 'schedules'
+        ? 'Buscar horarios'
+        : tenant
+          ? 'Buscar entrenador o entreno'
+          : 'Buscar entrenador o escuela'
   const close = () => {
     setOpen(false)
     // Drop the one-shot ?search= that reopened the sheet so a reload doesn't reopen it.

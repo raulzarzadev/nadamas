@@ -288,10 +288,13 @@ export default function AthleteBookingsOverview({
   view = 'progress',
   onUpcomingCountChange,
   compact = false,
+  inline = false,
 }: {
   view?: 'upcoming' | 'progress'
   onUpcomingCountChange?: (count: number) => void
   compact?: boolean
+  /** Upcoming view rendered in the page (Horarios) instead of behind a button + sheet. */
+  inline?: boolean
 }) {
   const showUpcoming = view === 'upcoming'
   const [upcomingOpen, setUpcomingOpen] = useState(false)
@@ -522,12 +525,14 @@ export default function AthleteBookingsOverview({
               ? `Busca a tu ${terminology.coachSingular} y reserva tu primer entrenamiento.`
               : 'Encuentra un coach y reserva tu primer entrenamiento.'}
           </p>
-          <Link
-            href="/athlete/schedule"
-            className="inline-flex items-center justify-center rounded-full bg-[var(--c-ocean)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
-          >
-            Buscar {terminology.schoolId ? terminology.coachSingular : 'coach'}
-          </Link>
+          {!inline && (
+            <Link
+              href="/athlete/schedule"
+              className="inline-flex items-center justify-center rounded-full bg-[var(--c-ocean)] px-5 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+            >
+              Buscar {terminology.schoolId ? terminology.coachSingular : 'coach'}
+            </Link>
+          )}
         </div>
       ) : (
         <>
@@ -570,7 +575,7 @@ export default function AthleteBookingsOverview({
                 <div className="grid justify-items-center gap-3 rounded-xl border border-dashed border-(--c-border) bg-(--c-surface) p-5 text-center">
                   <p className="text-sm text-(--c-text-2)">No hay próximas clases.</p>
                   <Link
-                    href="/athlete/schedule?search=coaches"
+                    href="/athlete/schedule/find?search=coaches"
                     className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white transition hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
                   >
                     <FiSearch aria-hidden="true" /> Buscar una clase
@@ -594,26 +599,27 @@ export default function AthleteBookingsOverview({
 
       {showUpcoming && bookings !== undefined && !error && (
         <section className="grid gap-3 border-t border-(--c-border) pt-4">
-          <h2 className="font-bold text-(--c-ocean)">
-            Pendientes de evaluación ({pendingEvaluations.length})
-          </h2>
-          {pendingEvaluations.length > 0 ? (
-            <ul className="flex flex-col gap-2">
-              {groupByClassTime(pendingEvaluations).map((group) => (
-                <BookingGroupRow
-                  compact
-                  key={group[0].id}
-                  bookings={group}
-                  coach={coaches[group[0].coachId]}
-                  onEvaluate={(booking) => {
-                    setEvaluationSaved(false)
-                    setToEvaluate(booking)
-                  }}
-                />
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-(--c-text-2)">No tienes clases pendientes de evaluación.</p>
+          {/* Only shown when something is waiting for an evaluation. */}
+          {pendingEvaluations.length > 0 && (
+            <>
+              <h2 className="font-bold text-(--c-ocean)">
+                Pendientes de evaluación ({pendingEvaluations.length})
+              </h2>
+              <ul className="flex flex-col gap-2">
+                {groupByClassTime(pendingEvaluations).map((group) => (
+                  <BookingGroupRow
+                    compact
+                    key={group[0].id}
+                    bookings={group}
+                    coach={coaches[group[0].coachId]}
+                    onEvaluate={(booking) => {
+                      setEvaluationSaved(false)
+                      setToEvaluate(booking)
+                    }}
+                  />
+                ))}
+              </ul>
+            </>
           )}
           <button
             type="button"
@@ -752,7 +758,7 @@ export default function AthleteBookingsOverview({
       </Sheet>
     </div>
   )
-  if (!showUpcoming) return content
+  if (!showUpcoming || inline) return content
   return (
     <>
       <div

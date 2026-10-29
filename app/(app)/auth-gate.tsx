@@ -17,6 +17,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   const setupEntry = [
     '/athlete/progress',
     '/athlete/schedule',
+    '/athlete/schedule/find',
     '/coach/agenda',
     '/school/classes',
     '/school',

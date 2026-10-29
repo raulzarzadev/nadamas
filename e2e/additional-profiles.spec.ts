@@ -813,7 +813,8 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
       })
       .click()
     await page.goto('/athlete/schedule')
-    await page.getByRole('button', { name: /^Próximas clases/ }).click()
+    // Horarios lists upcoming classes inline at the top.
+    await expect(page.getByRole('heading', { name: 'Próximas clases', level: 1 })).toBeVisible()
     const bookingResponse = await request.post('/api/coach/agenda/bookings', {
       headers: otherHeaders,
       data: {
@@ -831,9 +832,7 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
     expect(bookingResponse.status(), await bookingResponse.text()).toBe(200)
     const syncedBooking = (await bookingResponse.json()).booking
     created.push(['bookings', syncedBooking.id])
-    await expect(
-      page.getByRole('dialog', { name: 'Próximas clases' }).getByText('16:00', { exact: true })
-    ).toBeVisible()
+    await expect(page.locator('main').getByText('16:00', { exact: true }).first()).toBeVisible()
     await expect(coachPage.getByText('Alumno sincronizado', { exact: true })).toBeVisible()
     const directoryResponse = await request.get(`/api/schools/${schoolId}/coaches`, { headers })
     expect(directoryResponse.ok()).toBe(true)

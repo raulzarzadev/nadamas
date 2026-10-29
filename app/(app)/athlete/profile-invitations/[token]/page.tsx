@@ -65,7 +65,7 @@ export default function AthleteProfileInvitationPage() {
         <p>
           Tu correo está verificado y tu cuenta está ligada al registro de atleta de tu entrenador.
         </p>
-        <Link href="/athlete/schedule" className="btn btn-primary">
+        <Link href="/athlete/schedule/find" className="btn btn-primary">
           Ver mis clases
         </Link>
       </section>

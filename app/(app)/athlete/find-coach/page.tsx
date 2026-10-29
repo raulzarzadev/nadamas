@@ -11,5 +11,5 @@ export default async function LegacyFindCoachPage({
     if (Array.isArray(value)) for (const item of value) params.append(key, item)
     else if (value !== undefined) params.set(key, value)
   }
-  redirect(`/athlete/schedule${params.size ? `?${params}` : ''}`)
+  redirect(`/athlete/schedule/find${params.size ? `?${params}` : ''}`)
 }

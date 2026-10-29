@@ -18,7 +18,7 @@ export default function ScheduleHeader({
       <AthleteSearchBar
         schoolId={schoolId}
         value={name}
-        clearHref={`/athlete/schedule?search=${searchTab}`}
+        clearHref={`/athlete/schedule/find?search=${searchTab}`}
       />
     </>
   )

@@ -20,7 +20,7 @@ export default function TenantWorkspaceGate({
   // Public entry points remain available before an athlete joins the tenant.
   if (
     mode === 'athlete' &&
-    (pathname === '/athlete/schedule' || pathname.startsWith('/athlete/invitations/'))
+    (pathname === '/athlete/schedule/find' || pathname.startsWith('/athlete/invitations/'))
   )
     return children
   return <ScopedWorkspaceGate mode={mode}>{children}</ScopedWorkspaceGate>
