@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   FiActivity,
   FiChevronRight,
@@ -369,9 +369,17 @@ export default function TrainingPlanner({
     }
   }
 
+  const latestPlan = useRef(plan)
+  latestPlan.current = plan
+  const latestBarsDraft = useRef(barsDraft)
+  latestBarsDraft.current = barsDraft
   // Saves pending plan edits but stays in edit mode (used by a day's session sheet).
   async function saveEditsNow() {
-    if (!plan || !barsDraft || !barsDirty) return true
+    // Refs: the sheet calls this right after onChange, before this closure re-renders.
+    const plan = latestPlan.current
+    const barsDraft = latestBarsDraft.current
+    if (!plan || !barsDraft || JSON.stringify(barsDraft) === JSON.stringify(plan.cycles))
+      return true
     if (busy) return false
     const validation = barsDraft.map((item) => validateTrainingCycle(item, barsDraft)).find(Boolean)
     if (validation || barsDraft.length > 100) {

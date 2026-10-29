@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { FiMoreHorizontal, FiPlus, FiTrash2 } from 'react-icons/fi'
+import { FiPlus, FiRepeat, FiTrash2 } from 'react-icons/fi'
 import TrainingSeriesForm from '@/components/coach/TrainingSeriesForm'
 import WorkoutTransferSheet from '@/components/coach/WorkoutTransferSheet'
 import DurationInput from '@/components/ui/duration-input'
-import NumberStepper from '@/components/ui/number-stepper'
 import Sheet from '@/components/ui/sheet'
 import SortableList from '@/components/ui/sortable-list'
 import TrainingBrace from '@/components/ui/training-brace'
@@ -120,25 +119,12 @@ export default function ClassTrainingEditor({
     seriesId?: string
     time: string
   } | null>(null)
-  const [menuBlockId, setMenuBlockId] = useState<string | null>(null)
   const [transferBlockId, setTransferBlockId] = useState<string | null>(null)
   // Block settings sheet: title, repetitions and delete.
-  const [blockForm, setBlockForm] = useState<{
-    id: string
-    title: string
-    observations: string
-    repetitions: number
-  } | null>(null)
   useEffect(() => {
-    onEditingChange?.(
-      Boolean(editing) ||
-        Boolean(blockForm) ||
-        Boolean(pauseForm) ||
-        Boolean(transferBlockId) ||
-        Boolean(menuBlockId)
-    )
+    onEditingChange?.(Boolean(editing) || Boolean(pauseForm) || Boolean(transferBlockId))
     return () => onEditingChange?.(false)
-  }, [editing, blockForm, pauseForm, transferBlockId, menuBlockId, onEditingChange])
+  }, [editing, pauseForm, transferBlockId, onEditingChange])
   if (readOnly)
     return (
       <section aria-label="Entrenamiento" className="grid min-w-0 gap-2">
@@ -216,14 +202,23 @@ export default function ClassTrainingEditor({
             className="min-w-0 rounded-2xl border border-(--c-border) bg-(--c-surface) p-3"
           >
             {/* Block drag handle sits on the right so it never lines up with the series handles. */}
-            <div className="mb-1 flex items-center gap-1">
-              <div className="min-w-0 flex-1 pl-1">
-                <h3 className="wrap-anywhere text-base font-extrabold">
-                  {index + 1}. {block.title || 'Bloque'}
-                </h3>
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                aria-label={`Nombre del bloque ${index + 1}`}
+                maxLength={60}
+                value={block.title ?? ''}
+                placeholder={`Bloque ${index + 1}`}
+                onChange={(event) => update(block.id, { title: event.target.value })}
+                className="box-border h-10 min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 text-base font-extrabold text-(--c-ocean) outline-none hover:border-(--c-border) focus:border-(--c-aqua-strong) focus:bg-white focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+              />
+              {blockHandle}
+            </div>
+            <div className="mb-2 flex flex-wrap items-center gap-1 pl-1">
+              <span className="min-w-0 flex-1">
                 <BlockTotal block={block} />
-              </div>
-              <div className="flex shrink-0 items-center rounded-full border border-(--c-border)">
+              </span>
+              <div className="flex shrink-0 items-center rounded-full border border-(--c-border) bg-white">
                 <button
                   type="button"
                   aria-label="Menos repeticiones"
@@ -246,19 +241,32 @@ export default function ClassTrainingEditor({
               </div>
               <button
                 type="button"
-                aria-label="Opciones del bloque"
-                onClick={() => setMenuBlockId(block.id)}
-                className="grid size-11 shrink-0 place-items-center rounded-full text-(--c-text-2)"
+                aria-label={`Transferir bloque ${index + 1}`}
+                title="Transferir"
+                onClick={() => setTransferBlockId(block.id)}
+                className="grid size-11 shrink-0 place-items-center rounded-full text-(--c-ocean) hover:bg-white"
               >
-                <FiMoreHorizontal aria-hidden="true" className="size-5" />
+                <FiRepeat aria-hidden="true" className="size-4" />
               </button>
-              {blockHandle}
+              <button
+                type="button"
+                aria-label={`Eliminar bloque ${index + 1}`}
+                title="Eliminar bloque"
+                onClick={() => onChange(blocks.filter((item) => item.id !== block.id))}
+                className="grid size-11 shrink-0 place-items-center rounded-full text-(--rose-tx) hover:bg-white"
+              >
+                <FiTrash2 aria-hidden="true" className="size-4" />
+              </button>
             </div>
-            {block.observations?.trim() && (
-              <p className="mb-2 whitespace-pre-wrap wrap-anywhere text-xs text-(--c-text-2)">
-                {block.observations}
-              </p>
-            )}
+            <textarea
+              aria-label={`Descripción del bloque ${index + 1}`}
+              maxLength={2000}
+              rows={1}
+              value={block.observations ?? ''}
+              placeholder="Descripción del bloque"
+              onChange={(event) => update(block.id, { observations: event.target.value })}
+              className="mb-2 box-border min-h-9 w-full min-w-0 resize-none rounded-lg border border-(--c-border) bg-white px-2 py-1.5 text-xs leading-relaxed text-(--c-ocean) outline-none [field-sizing:content] placeholder:text-(--c-text-2) focus:border-(--c-aqua-strong) focus:ring-2 focus:ring-(--c-aqua-strong) focus:ring-inset"
+            />
             <SortableList
               items={block.series}
               onChange={(series) => update(block.id, { series })}
@@ -346,59 +354,6 @@ export default function ClassTrainingEditor({
       >
         + Agregar bloque
       </button>
-      {menuBlockId &&
-        createPortal(
-          <Sheet open label="Opciones del bloque" onClose={() => setMenuBlockId(null)}>
-            <div className="grid gap-2 pb-4">
-              <h2 className="text-lg font-bold">Opciones del bloque</h2>
-              <button
-                type="button"
-                className="btn btn-subtle min-h-11 justify-start"
-                onClick={() => {
-                  const block = blocks.find((item) => item.id === menuBlockId)
-                  if (block)
-                    setBlockForm({
-                      id: block.id,
-                      title: block.title || '',
-                      observations: block.observations || '',
-                      repetitions: block.repetitions,
-                    })
-                  setMenuBlockId(null)
-                }}
-              >
-                Editar título y observaciones
-              </button>
-              <button
-                type="button"
-                className="btn btn-subtle min-h-11 justify-start"
-                onClick={() => {
-                  setTransferBlockId(menuBlockId)
-                  setMenuBlockId(null)
-                }}
-              >
-                Transferir
-              </button>
-              <button
-                type="button"
-                className="btn btn-subtle min-h-11 justify-start text-rose-700"
-                onClick={() => {
-                  const block = blocks.find((item) => item.id === menuBlockId)
-                  if (block)
-                    setBlockForm({
-                      id: block.id,
-                      title: block.title || '',
-                      observations: block.observations || '',
-                      repetitions: block.repetitions,
-                    })
-                  setMenuBlockId(null)
-                }}
-              >
-                Eliminar bloque
-              </button>
-            </div>
-          </Sheet>,
-          document.body
-        )}
       {transferBlockId &&
         blocks.some((block) => block.id === transferBlockId) &&
         createPortal(
@@ -514,98 +469,6 @@ export default function ClassTrainingEditor({
                   setPauseForm({ ...pauseForm, time: `${minutes}:${seconds}` })
                 }
               />
-            </div>
-          </Sheet>,
-          document.body
-        )}
-      {blockForm &&
-        createPortal(
-          <Sheet
-            open
-            keyboardAware
-            fullBleedMobile
-            label="Editar bloque"
-            onClose={() => setBlockForm(null)}
-            footer={
-              <div className="flex items-center gap-2 px-4 sm:px-0">
-                <button
-                  type="button"
-                  className="btn btn-ghost min-h-11 gap-1.5 text-rose-700"
-                  onClick={() => {
-                    onChange(blocks.filter((item) => item.id !== blockForm.id))
-                    setBlockForm(null)
-                  }}
-                >
-                  <FiTrash2 aria-hidden="true" /> Eliminar bloque
-                </button>
-                <button
-                  type="button"
-                  className="btn border btn-primary ml-auto min-h-11"
-                  disabled={
-                    !Number.isInteger(blockForm.repetitions) ||
-                    blockForm.repetitions < 1 ||
-                    blockForm.repetitions > 99
-                  }
-                  onClick={() => {
-                    const title = blockForm.title.trim()
-                    setBlockForm(null)
-                    onChange(
-                      blocks.map((item) =>
-                        item.id === blockForm.id
-                          ? {
-                              id: item.id,
-                              ...(title ? { title } : {}),
-                              observations: blockForm.observations.trim(),
-                              repetitions: blockForm.repetitions,
-                              series: item.series,
-                            }
-                          : item
-                      )
-                    )
-                  }}
-                >
-                  Guardar
-                </button>
-              </div>
-            }
-          >
-            <div className="grid gap-4 px-4 pb-4 sm:px-0">
-              <h2 className="text-xl font-bold">Editar bloque</h2>
-              <label className="grid gap-2 text-sm font-semibold">
-                Título
-                <input
-                  type="text"
-                  maxLength={60}
-                  placeholder={`Bloque ${blocks.findIndex((item) => item.id === blockForm.id) + 1}`}
-                  value={blockForm.title}
-                  onChange={(event) => setBlockForm({ ...blockForm, title: event.target.value })}
-                  className="box-border min-h-12 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 text-base outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
-                />
-              </label>
-              <label className="grid min-w-0 gap-2 text-sm font-semibold">
-                Observaciones (opcional)
-                <textarea
-                  rows={1}
-                  maxLength={2000}
-                  placeholder="Observaciones del bloque"
-                  value={blockForm.observations}
-                  onChange={(event) =>
-                    setBlockForm({ ...blockForm, observations: event.target.value })
-                  }
-                  className="[field-sizing:content] box-border min-h-11 w-full min-w-0 max-w-full resize-none rounded-xl border border-(--c-border) bg-white p-3 text-base font-normal outline-none focus:border-(--c-ocean) focus:ring-2 focus:ring-(--c-ocean) focus:ring-inset"
-                />
-              </label>
-              <div className="grid min-w-0 gap-2">
-                <p className="text-sm font-semibold">¿Cuántas veces se repite?</p>
-                <NumberStepper
-                  label="¿Cuántas veces se repite?"
-                  min={1}
-                  max={99}
-                  value={blockForm.repetitions}
-                  disabled={disabled}
-                  onValueChange={(repetitions) => setBlockForm({ ...blockForm, repetitions })}
-                />
-              </div>
             </div>
           </Sheet>,
           document.body

@@ -86,8 +86,30 @@ export default function ObjectiveWorkouts({
   const selected = workouts.find((workout) => workout.id === selectedId) ?? workouts[0]
   const selectedIndex = workouts.findIndex((workout) => workout.id === selected?.id)
   const isEditing = !readOnly && editingId === selected?.id
+  // The edit sheet works on a local copy so typing doesn't re-render the whole plan;
+  // it is handed to the plan (and saved) only on Guardar / Eliminar.
+  const [draft, setDraft] = useState<ObjectiveWorkout | null>(null)
+  const openEditor = (workout: ObjectiveWorkout) => {
+    setDraft(workout)
+    setEditingId(workout.id)
+  }
+  const closeEditor = () => {
+    setEditingId(null)
+    setDraft(null)
+  }
+  const commit = async (next: ObjectiveWorkout[]) => {
+    onChange(next)
+    if (!saveTraining) return closeEditor()
+    setSaving(true)
+    // Let the plan apply onChange before saving it.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    const saved = await saveTraining()
+    setSaving(false)
+    if (saved) closeEditor()
+  }
+  const canImport = !readOnly || Boolean(onRequestEdit)
   const transferAction =
-    !readOnly || selected ? (
+    canImport || selected ? (
       <button
         type="button"
         disabled={disabled}
@@ -166,7 +188,7 @@ export default function ObjectiveWorkouts({
                   disabled={disabled}
                   aria-haspopup="dialog"
                   className="inline-flex min-h-7 items-center justify-center gap-1 rounded-full border border-(--c-border) bg-white px-2 text-[10px] font-semibold text-(--c-ocean) focus-visible:outline-2 disabled:opacity-50"
-                  onClick={() => setEditingId(selected.id)}
+                  onClick={() => openEditor(selected)}
                 >
                   <FiEdit2 aria-hidden="true" />
                   Editar
@@ -181,12 +203,7 @@ export default function ObjectiveWorkouts({
                 ? undefined
                 : () => {
                     const block = { id: crypto.randomUUID(), repetitions: 1, series: [] }
-                    onChange(
-                      workouts.map((workout) =>
-                        workout.id === selected.id ? { ...workout, blocks: [block] } : workout
-                      )
-                    )
-                    setEditingId(selected.id)
+                    openEditor({ ...selected, blocks: [block] })
                   }
             }
             blocks={selected.blocks}
@@ -202,24 +219,30 @@ export default function ObjectiveWorkouts({
           />
         </section>
       )}
-      {isEditing && selected && (
+      {isEditing && draft && (
         <Sheet
           open
           label="Editar sesión"
           keyboardAware
-          onClose={() => setEditingId(null)}
+          showFooterClose={false}
+          closeDisabled={saving}
+          // Closing keeps the edits: it saves them like Guardar sesión.
+          onClose={() => {
+            const original = workouts.find((workout) => workout.id === draft.id)
+            if (JSON.stringify(original) === JSON.stringify(draft)) return closeEditor()
+            void commit(workouts.map((workout) => (workout.id === draft.id ? draft : workout)))
+          }}
           footer={
             editingSeries ? undefined : (
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <button
                   type="button"
-                  disabled={disabled}
+                  disabled={disabled || saving}
                   className="btn btn-ghost min-h-11 text-(--rose-tx)"
                   onClick={() => {
-                    const next = workouts.filter((workout) => workout.id !== selected.id)
-                    onChange(next)
+                    const next = workouts.filter((workout) => workout.id !== draft.id)
                     setSelectedId(next[Math.min(selectedIndex, next.length - 1)]?.id ?? null)
-                    setEditingId(null)
+                    void commit(next)
                   }}
                 >
                   <FiTrash2 aria-hidden="true" />
@@ -229,13 +252,11 @@ export default function ObjectiveWorkouts({
                   type="button"
                   className="btn btn-primary min-h-11"
                   disabled={disabled || saving}
-                  onClick={async () => {
-                    if (!saveTraining) return setEditingId(null)
-                    setSaving(true)
-                    const saved = await saveTraining()
-                    setSaving(false)
-                    if (saved) setEditingId(null)
-                  }}
+                  onClick={() =>
+                    void commit(
+                      workouts.map((workout) => (workout.id === draft.id ? draft : workout))
+                    )
+                  }
                 >
                   <FiCheck aria-hidden="true" />
                   {saving ? 'Guardando…' : 'Guardar sesión'}
@@ -251,17 +272,9 @@ export default function ObjectiveWorkouts({
               <input
                 maxLength={100}
                 disabled={disabled}
-                value={selected.title ?? ''}
+                value={draft.title ?? ''}
                 placeholder={`Entreno ${selectedIndex + 1}`}
-                onChange={(event) =>
-                  onChange(
-                    workouts.map((workout) =>
-                      workout.id === selected.id
-                        ? { ...workout, title: event.target.value }
-                        : workout
-                    )
-                  )
-                }
+                onChange={(event) => setDraft({ ...draft, title: event.target.value })}
                 className="box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 outline-none focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
               />
             </label>
@@ -270,30 +283,16 @@ export default function ObjectiveWorkouts({
               <textarea
                 maxLength={2000}
                 disabled={disabled}
-                value={selected.observations ?? ''}
-                onChange={(event) =>
-                  onChange(
-                    workouts.map((workout) =>
-                      workout.id === selected.id
-                        ? { ...workout, observations: event.target.value }
-                        : workout
-                    )
-                  )
-                }
+                value={draft.observations ?? ''}
+                onChange={(event) => setDraft({ ...draft, observations: event.target.value })}
                 className="box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 py-2 outline-none [field-sizing:content] focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
               />
             </label>
             <ClassTrainingEditor
-              blocks={selected.blocks}
+              blocks={draft.blocks}
               disabled={disabled}
               onEditingChange={setEditingSeries}
-              onChange={(blocks) =>
-                onChange(
-                  workouts.map((workout) =>
-                    workout.id === selected.id ? { ...workout, blocks } : workout
-                  )
-                )
-              }
+              onChange={(blocks) => setDraft({ ...draft, blocks })}
             />
           </div>
         </Sheet>
@@ -301,11 +300,13 @@ export default function ObjectiveWorkouts({
       {transferOpen && (
         <WorkoutTransferSheet
           workout={selected}
-          allowImport={!readOnly}
+          allowImport={canImport}
           disabled={disabled}
           onClose={() => setTransferOpen(false)}
           onImport={(workout) => {
-            if (disabled || readOnly) return
+            if (disabled || !canImport) return
+            // Importing into a read-only day switches the plan to edit mode, like Agregar sesión.
+            if (readOnly) onRequestEdit?.()
             onChange([...workouts, workout])
             setSelectedId(workout.id)
             setEditingId(null)
