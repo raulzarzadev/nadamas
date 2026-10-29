@@ -111,6 +111,7 @@ export default function SchoolStudents() {
   const isDirector = schoolMembershipHasRole(selected.membership, 'director')
   const canAssignClasses = isDirector || schoolMembershipHasRole(selected.membership, 'teacher')
   const isStudentAccount = schoolMembershipHasRole(selected.membership, 'student')
+  const showRosterTools = !isDirector || students.length > 0
   const participantSingular = terminology.schoolId ? terminology.participantSingular : 'alumno'
   const participantPlural = terminology.schoolId ? terminology.participantPlural : 'alumnos'
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
@@ -149,37 +150,52 @@ export default function SchoolStudents() {
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">{capitalizeSchoolTerm(participantPlural)}</h1>
       <SchoolSelector schools={schools} selectedId={selected.school.id} onChange={selectSchool} />
-      <div className="grid gap-2">
-        <label className="relative min-w-0">
-          <span className="sr-only">Buscar por nombre o correo</span>
-          <FiSearch
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--c-text-2)"
-          />
-          <input
-            type="search"
-            value={studentQuery}
-            onChange={(event) => setStudentQuery(event.target.value)}
-            placeholder={`Buscar ${participantSingular}`}
-            className="min-h-11 w-full rounded-full border border-(--c-border) bg-white pr-3 pl-10 text-sm"
-          />
-        </label>
-        {(canAssignClasses || isStudentAccount) && (
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            {canAssignClasses && (
-              <SchoolAttendanceReport schoolId={activeSchool.school.id} subtle />
+      {showRosterTools && (
+        <>
+          <div className="grid gap-2">
+            <label className="relative min-w-0">
+              <span className="sr-only">Buscar por nombre o correo</span>
+              <FiSearch
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--c-text-2)"
+              />
+              <input
+                type="search"
+                value={studentQuery}
+                onChange={(event) => setStudentQuery(event.target.value)}
+                placeholder={`Buscar ${participantSingular}`}
+                className="min-h-11 w-full rounded-full border border-(--c-border) bg-white pr-3 pl-10 text-sm"
+              />
+            </label>
+            {(canAssignClasses || isStudentAccount) && (
+              <div className="flex flex-wrap items-center justify-end gap-1.5">
+                {canAssignClasses && (
+                  <SchoolAttendanceReport schoolId={activeSchool.school.id} subtle />
+                )}
+                <button
+                  type="button"
+                  onClick={() => openStudentForm()}
+                  className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3 text-xs font-semibold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                >
+                  <FiPlus aria-hidden="true" />{' '}
+                  {canAssignClasses ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
+                </button>
+              </div>
             )}
-            <button
-              type="button"
-              onClick={() => openStudentForm()}
-              className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3 text-xs font-semibold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-            >
-              <FiPlus aria-hidden="true" />{' '}
-              {canAssignClasses ? `Agregar ${participantSingular}` : 'Agregar Adicional'}
-            </button>
           </div>
-        )}
-      </div>
+          {canAssignClasses && (
+            <StudentLabelTools
+              key={`student-labels:${activeSchool.school.id}`}
+              schoolId={activeSchool.school.id}
+              students={students.map((student) => ({ id: student.id, name: student.name }))}
+              revision={labelRevision}
+              onFilter={setLabelFilter}
+              onData={setLabelData}
+              onUpdated={() => setLabelRevision((current) => current + 1)}
+            />
+          )}
+        </>
+      )}
       {isDirector && showAccess && (
         <Sheet open onClose={() => setShowAccess(false)} label="Solicitudes de acceso" size="lg">
           <SchoolAccessRequests
@@ -199,17 +215,6 @@ export default function SchoolStudents() {
         <p className="rounded-[var(--r-sm)] bg-(--c-surface) p-3 text-sm text-(--c-text-2)">
           {message}
         </p>
-      )}
-      {canAssignClasses && (
-        <StudentLabelTools
-          key={`student-labels:${activeSchool.school.id}`}
-          schoolId={activeSchool.school.id}
-          students={students.map((student) => ({ id: student.id, name: student.name }))}
-          revision={labelRevision}
-          onFilter={setLabelFilter}
-          onData={setLabelData}
-          onUpdated={() => setLabelRevision((current) => current + 1)}
-        />
       )}
       {loading ? (
         <div className="py-12 text-center text-sm text-(--c-text-2)">Cargando…</div>
