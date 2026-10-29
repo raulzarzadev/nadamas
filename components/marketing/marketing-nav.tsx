@@ -10,7 +10,7 @@ export default function MarketingNav() {
   const { user } = useUser() as { user: unknown }
   const tenant = useTenantSchool()
 
-  if (tenant) return user ? <AppNav /> : <SiteNav />
-  if (user) return <AppNav />
+  if (tenant) return user ? <AppNav desktopSidebar /> : <SiteNav />
+  if (user) return <AppNav desktopSidebar />
   return <SiteNav />
 }

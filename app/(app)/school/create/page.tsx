@@ -181,10 +181,15 @@ export default function CreateSchoolPage() {
                 <FiMapPin aria-hidden="true" className="shrink-0 text-(--c-ocean-mid)" />
                 <div className="min-w-0">
                   <p className="font-bold text-(--c-ocean)">Página pública</p>
-                  <p className="break-all text-sm text-(--c-text-2)">{ownedSchool.slug}.nadamas.app</p>
+                  <p className="break-all text-sm text-(--c-text-2)">
+                    {ownedSchool.slug}.nadamas.app
+                  </p>
                 </div>
               </div>
-              <Link href={getPublicSchoolUrl(ownedSchool.slug)} className="btn btn-primary min-h-11 shrink-0 gap-2">
+              <Link
+                href={getPublicSchoolUrl(ownedSchool.slug)}
+                className="btn btn-primary min-h-11 shrink-0 gap-2"
+              >
                 Ir a escuela <FiArrowRight aria-hidden="true" />
               </Link>
             </div>

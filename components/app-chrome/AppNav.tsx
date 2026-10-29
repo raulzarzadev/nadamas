@@ -130,7 +130,7 @@ export default function AppNav({
         schoolAccess.membership.role === 'director')
   )
   const canShowWorkspaceNavigation =
-    pathname !== '/' &&
+    (pathname !== '/' || Boolean(tenant)) &&
     (role !== 'coach' || roles.coach) &&
     (role !== 'school' || hasDirectorAccess) &&
     (!tenant ||
