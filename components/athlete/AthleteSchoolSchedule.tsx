@@ -182,7 +182,7 @@ export default function AthleteSchoolSchedule({
   const [students, setStudents] = useState<Array<SchoolStudent & { schoolId?: string }>>([])
   const [additionalProfiles, setAdditionalProfiles] = useState<AdditionalProfile[]>([])
   const coachFilter = coachId || 'all'
-  const schoolFilter = initialSchoolId || 'all'
+  const schoolFilter = initialSchoolId || schoolId || 'all'
   const [selectedStatuses, setSelectedStatuses] = useState<Set<HourStatus>>(
     () => new Set(HOUR_STATUSES)
   )

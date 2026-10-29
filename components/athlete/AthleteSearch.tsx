@@ -332,7 +332,7 @@ export default function AthleteSearch({
           />
         </section>
       )}
-      {kinds.plans && plansEnabled && (
+      {kinds.plans && plansEnabled && (plansError || visiblePlans.length > 0) && (
         <section aria-label="Entrenos" className="grid min-w-0 grid-cols-1 gap-3">
           {both && <h3 className="text-xs font-semibold text-(--c-text-2)">Entrenos</h3>}
           {plansError ? (

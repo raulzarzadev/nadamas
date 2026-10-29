@@ -4,9 +4,8 @@ import Loading from '@comps/Loading'
 import Sheet from '@comps/ui/sheet'
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
-import { FiCalendar, FiChevronRight, FiEdit3, FiSearch, FiUser, FiX } from 'react-icons/fi'
+import { FiCalendar, FiChevronRight, FiEdit3, FiSearch, FiUser } from 'react-icons/fi'
 import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
-import CalendarConnectionCard from '@/components/calendar/CalendarConnectionCard'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import ClassCard from '@/components/ui/class-card'
 import StatusBadge from '@/components/ui/status-badge'
@@ -300,7 +299,6 @@ export default function AthleteBookingsOverview({
   const terminology = useSchoolTerminology()
   const [toEvaluate, setToEvaluate] = useState<Booking | null>(null)
   const [evaluationSaved, setEvaluationSaved] = useState(false)
-  const [calendarOpen, setCalendarOpen] = useState(false)
   const dispatch = useAppDispatch()
   const bookingState = useAppSelector((state) => state.athleteBookings)
   const bookings =
@@ -452,34 +450,6 @@ export default function AthleteBookingsOverview({
       onUpcomingCountChange?.(activeCount)
     }
   }, [bookings, activeCount, onUpcomingCountChange])
-
-  const calendarSheet = (
-    <Sheet
-      open={calendarOpen}
-      onClose={() => setCalendarOpen(false)}
-      label="Suscribirme al calendario"
-      keyboardAware
-      fullBleedMobile
-      size="xl"
-    >
-      <div id="class-calendar-subscription" className="grid gap-4 px-4 pb-3 sm:px-0 sm:pb-0">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="class-calendar-title" className="text-xl font-bold">
-            Suscribirme al calendario
-          </h2>
-          <button
-            type="button"
-            aria-label="Cerrar calendario"
-            onClick={() => setCalendarOpen(false)}
-            className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full hover:bg-[var(--c-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--c-aqua-strong)]"
-          >
-            <FiX aria-hidden="true" size={22} />
-          </button>
-        </div>
-        {calendarOpen && <CalendarConnectionCard calendarRole="athlete" embedded />}
-      </div>
-    </Sheet>
-  )
 
   const content = (
     <div className="flex flex-col gap-5">
@@ -803,24 +773,7 @@ export default function AthleteBookingsOverview({
         >
           Próximas clases{bookings !== undefined ? ` (${activeCount})` : ''}
         </button>
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          aria-controls="class-calendar-subscription"
-          onClick={() => setCalendarOpen(true)}
-          title="Suscribirme al calendario"
-          aria-label="Suscribirme al calendario"
-          className={
-            compact
-              ? 'inline-flex min-h-9 items-center justify-center gap-1 rounded-lg px-2 text-xs text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean)'
-              : 'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-4 py-2 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface)'
-          }
-        >
-          <FiCalendar aria-hidden="true" className="shrink-0" />
-          <span className={compact ? 'hidden sm:inline' : ''}>Suscribirme al calendario</span>
-        </button>
       </div>
-      {calendarSheet}
       <Sheet
         open={upcomingOpen}
         onClose={() => setUpcomingOpen(false)}
