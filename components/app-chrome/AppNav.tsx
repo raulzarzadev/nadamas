@@ -4,18 +4,20 @@ import AthleteSchoolSwitcher from '@comps/school/AthleteSchoolSwitcher'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import {
   FiActivity,
   FiBarChart2,
   FiBell,
   FiCalendar,
+  FiCreditCard,
   FiHome,
   FiSearch,
   FiShield,
   FiUser,
   FiUsers,
 } from 'react-icons/fi'
+import { AthleteCredentialDialog } from '@/components/profile/AthleteCredentialButton'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { useRole } from '@/context/RoleContext'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -76,7 +78,7 @@ export default function AppNav({
     includePersonal: role === 'coach' || role === 'athlete',
     athleteMode: role === 'athlete',
   })
-  const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/schedule'
+  const publicAthleteSchedule = role === 'athlete' && pathname === '/athlete/schedule/find'
   const primary = PRIMARY_NAV_BY_ROLE[role].map((item) => {
     if (
       terminology.schoolId &&
@@ -179,6 +181,10 @@ export default function AppNav({
         ].includes(pathname)
       : pathname.startsWith(href)) ||
     (href === '/athlete/schedule' && pathname.startsWith('/athlete/search'))
+  const showCredentialTab = role === 'athlete'
+  const [credentialOpen, setCredentialOpen] = useState(false)
+  // Credential goes after the first half of the tabs (3 tabs: Inicio · Entrenos · Credencial · Progreso).
+  const credentialIndex = Math.ceil(primary.length / 2)
   const tabs = [
     ...primary.map((item) => ({
       href: item.href,
@@ -297,35 +303,56 @@ export default function AppNav({
         >
           <ul
             className="grid h-16"
-            style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}
+            style={{
+              gridTemplateColumns: `repeat(${tabs.length + (showCredentialTab ? 1 : 0)}, minmax(0, 1fr))`,
+            }}
           >
-            {tabs.map(({ href, label, icon: Icon }) => {
+            {tabs.map(({ href, label, icon: Icon }, index) => {
               const active = isActiveNav(href)
               return (
-                <li key={href} className="min-w-0">
-                  <Link
-                    href={href}
-                    aria-label={label}
-                    aria-current={active ? 'page' : undefined}
-                    className={`flex h-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 px-1 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${
-                      active ? 'text-(--c-ocean)' : 'text-(--c-text-2) hover:text-(--c-ocean)'
-                    }`}
-                  >
-                    <span
-                      className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
-                        active ? 'bg-(--c-ocean) text-white' : ''
+                <Fragment key={href}>
+                  {showCredentialTab && index === credentialIndex && (
+                    <li className="relative min-w-0">
+                      {/* Athlete mode: the digital credential sits in the middle of the tab bar. */}
+                      <button
+                        type="button"
+                        aria-label="Credencial digital"
+                        onClick={() => setCredentialOpen(true)}
+                        className="absolute left-1/2 -top-4 flex -translate-x-1/2 flex-col items-center gap-1 text-[11px] font-semibold text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                      >
+                        <span className="grid size-12 place-items-center rounded-full bg-(--c-ocean) text-white shadow-[0_6px_16px_rgba(10,37,64,0.25)] ring-4 ring-white">
+                          <FiCreditCard aria-hidden="true" className="size-5" />
+                        </span>
+                        Credencial
+                      </button>
+                    </li>
+                  )}
+                  <li className="min-w-0">
+                    <Link
+                      href={href}
+                      aria-label={label}
+                      aria-current={active ? 'page' : undefined}
+                      className={`flex h-full min-w-0 cursor-pointer flex-col items-center justify-center gap-1 px-1 text-[11px] font-semibold transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${
+                        active ? 'text-(--c-ocean)' : 'text-(--c-text-2) hover:text-(--c-ocean)'
                       }`}
                     >
-                      <Icon aria-hidden="true" className="size-5" />
-                    </span>
-                    <span className="max-w-full truncate">{label}</span>
-                  </Link>
-                </li>
+                      <span
+                        className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+                          active ? 'bg-(--c-ocean) text-white' : ''
+                        }`}
+                      >
+                        <Icon aria-hidden="true" className="size-5" />
+                      </span>
+                      <span className="max-w-full truncate">{label}</span>
+                    </Link>
+                  </li>
+                </Fragment>
               )
             })}
           </ul>
         </nav>
       )}
+      {credentialOpen && <AthleteCredentialDialog onClose={() => setCredentialOpen(false)} />}
     </>
   )
 }
