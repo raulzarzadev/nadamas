@@ -540,9 +540,24 @@ export default function TrainingPlanner({
               <>
                 <h2 className="text-lg font-bold">Tu temporada empieza aquí</h2>
                 <p className="mx-auto mt-2 max-w-md text-sm text-(--c-text-2)">
-                  Crea un MACRO-ciclo con su objetivo y fechas. Después organiza sus bloques y
-                  semanas de entrenamiento.
+                  Comienza creando un MACRO-ciclo. También puedes preparar sesiones individuales;
+                  después podrás modificarlas, duplicarlas o usarlas en tus clases.
                 </p>
+                {onCreateSession && (
+                  <div className="mt-5 flex flex-wrap justify-center gap-2">
+                    <button
+                      type="button"
+                      className={primaryClass}
+                      disabled={busy}
+                      onClick={createMacro}
+                    >
+                      Crear MACRO-ciclo
+                    </button>
+                    <button type="button" className={actionClass} onClick={onCreateSession}>
+                      Crear sesión suelta
+                    </button>
+                  </div>
+                )}
                 {!onCreateSession && (
                   <button
                     type="button"

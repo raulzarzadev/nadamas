@@ -11,11 +11,13 @@ export default function StudentLabelColorSelector({
   onChange,
   disabled,
   modal = false,
+  square = false,
 }: {
   value: string
   onChange: (value: string) => void
   disabled?: boolean
   modal?: boolean
+  square?: boolean
 }) {
   const [open, setOpen] = useState(false)
   if (modal)
@@ -25,15 +27,25 @@ export default function StudentLabelColorSelector({
           type="button"
           disabled={disabled}
           onClick={() => setOpen(true)}
-          className="btn btn-outline min-h-11 shrink-0 gap-2 border px-3 text-sm"
+          className={
+            square
+              ? 'grid size-11 shrink-0 place-items-center rounded-xl border border-(--c-border) focus-visible:outline-2 focus-visible:outline-(--c-ocean)'
+              : 'btn btn-outline min-h-11 shrink-0 gap-2 border px-3 text-sm'
+          }
           aria-label="Seleccionar color de la etiqueta"
+          title="Seleccionar color de la etiqueta"
+          style={square ? { backgroundColor: studentLabelColor(value).color } : undefined}
         >
-          <span
-            aria-hidden="true"
-            className="size-4 rounded-full"
-            style={{ backgroundColor: studentLabelColor(value).color }}
-          />{' '}
-          Color
+          {!square && (
+            <>
+              <span
+                aria-hidden="true"
+                className="size-4 rounded-full"
+                style={{ backgroundColor: studentLabelColor(value).color }}
+              />{' '}
+              Color
+            </>
+          )}
         </button>
         {open &&
           createPortal(

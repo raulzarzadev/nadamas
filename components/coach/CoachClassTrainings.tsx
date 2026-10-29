@@ -1,15 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { FiChevronDown, FiCopy, FiEdit2 } from 'react-icons/fi'
+import { FiChevronDown, FiCopy, FiEdit2, FiRepeat } from 'react-icons/fi'
+import LabelChip, { type ColorLabel } from '@/components/ui/label-chip'
 import Sheet from '@/components/ui/sheet'
-import { useUser } from '@/context/UserContext'
 import { type ClassTrainingBlock, normalizeClassTraining } from '@/lib/class-training'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { ObjectiveWorkout } from '@/lib/training-planner'
 import { reportInternalError } from '@/lib/user-facing-error'
-import ClassNotesModal from './ClassNotesModal'
 import ClassTrainingEditor from './ClassTrainingEditor'
+import StudentLabelColorSelector from './StudentLabelColorSelector'
 import WorkoutTransferSheet from './WorkoutTransferSheet'
 
 type ClassTraining = {
@@ -17,15 +17,29 @@ type ClassTraining = {
   schoolId: string | null
   date: string
   startTime: string
+  title: string
+  description: string
+  tags: string[]
   training: ClassTrainingBlock[]
 }
 
-type Standalone = { id: string; title: string; training: ClassTrainingBlock[]; updatedAt: number }
-type Draft = { id?: string; title: string; training: ClassTrainingBlock[] }
+type Standalone = {
+  id: string
+  title: string
+  description: string
+  tags: string[]
+  training: ClassTrainingBlock[]
+  updatedAt: number
+}
+type Draft = {
+  id?: string
+  title: string
+  description: string
+  tags: string[]
+  training: ClassTrainingBlock[]
+}
 
 export default function CoachClassTrainings({ createRequest }: { createRequest: number }) {
-  const { user } = useUser()
-  const uid = user?.uid || user?.id
   const [items, setItems] = useState<ClassTraining[]>([])
   const [sessions, setSessions] = useState<Standalone[]>([])
   const [visibleCount, setVisibleCount] = useState(5)
@@ -36,6 +50,27 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
   const [saving, setSaving] = useState(false)
   const [editingSeries, setEditingSeries] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [tagInput, setTagInput] = useState('')
+  const [tagColor, setTagColor] = useState('blue')
+  const [tagColors, setTagColors] = useState<Record<string, string>>({})
+  const [catalog, setCatalog] = useState<ColorLabel[]>([])
+  const addTag = (value: string) => {
+    if (!draft) return
+    const name = value.trim()
+    if (
+      !name ||
+      draft.tags.length >= 20 ||
+      draft.tags.some((tag) => tag.toLocaleLowerCase('es-MX') === name.toLocaleLowerCase('es-MX'))
+    )
+      return
+    const existing = catalog.find(
+      (label) => label.name.toLocaleLowerCase('es-MX') === name.toLocaleLowerCase('es-MX')
+    )
+    const selected = existing?.name || name
+    setDraft({ ...draft, tags: [...draft.tags, selected] })
+    setTagColors((colors) => ({ ...colors, [selected]: existing?.color || tagColor }))
+    setTagInput('')
+  }
   const load = useCallback(async () => {
     const [classResponse, sessionResponse] = await Promise.all([
       getAuthed('/api/coach/class-trainings'),
@@ -50,6 +85,7 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
       }))
     )
     setSessions(standalone.items as Standalone[])
+    setCatalog(standalone.labels || [])
     setError(false)
   }, [])
   useEffect(() => {
@@ -61,13 +97,24 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
   useEffect(() => {
     if (createRequest) {
       setSaveError('')
-      setDraft({ title: '', training: [] })
+      setTagInput('')
+      setEditClass(null)
+      setDraft({ title: '', description: '', tags: [], training: [] })
     }
   }, [createRequest])
-  const duplicate = (title: string, training: ClassTrainingBlock[]) => {
+  const duplicate = (
+    title: string,
+    training: ClassTrainingBlock[],
+    description = '',
+    tags: string[] = []
+  ) => {
     setSaveError('')
+    setTagInput('')
+    setEditClass(null)
     setDraft({
       title: `Copia de ${title}`.slice(0, 100),
+      description,
+      tags: [...tags],
       training: training.map((block) => ({
         ...block,
         id: crypto.randomUUID(),
@@ -80,16 +127,41 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
     setSaving(true)
     setSaveError('')
     try {
-      const response = draft.id
-        ? await patchAuthed('/api/coach/standalone-sessions', draft)
-        : await postAuthed('/api/coach/standalone-sessions', draft)
+      const pendingTag = tagInput.trim()
+      const tags =
+        pendingTag &&
+        draft.tags.length < 20 &&
+        !draft.tags.some(
+          (tag) => tag.toLocaleLowerCase('es-MX') === pendingTag.toLocaleLowerCase('es-MX')
+        )
+          ? [...draft.tags, pendingTag]
+          : draft.tags
+      const payloadToSave = {
+        ...draft,
+        tags,
+        tagColors: { ...tagColors, ...(pendingTag ? { [pendingTag]: tagColor } : {}) },
+      }
+      const response = editClass
+        ? await patchAuthed('/api/coach/class-trainings', {
+            ...payloadToSave,
+            schoolId: editClass.schoolId,
+            date: editClass.date,
+            startTime: editClass.startTime,
+          })
+        : draft.id
+          ? await patchAuthed('/api/coach/standalone-sessions', payloadToSave)
+          : await postAuthed('/api/coach/standalone-sessions', payloadToSave)
       if (!response.ok) throw new Error('SESSION_SAVE_FAILED')
-      const payload = (await response.json()) as { item: Standalone }
-      setSessions((previous) => [
-        payload.item,
-        ...previous.filter((item) => item.id !== payload.item.id),
-      ])
+      if (!editClass) {
+        const payload = (await response.json()) as { item: Standalone }
+        setSessions((previous) => [
+          payload.item,
+          ...previous.filter((item) => item.id !== payload.item.id),
+        ])
+      }
       setDraft(null)
+      setEditClass(null)
+      void load().catch(() => setError(true))
     } catch (cause) {
       reportInternalError('COACH_SESSION_SAVE', cause)
       setSaveError('No pudimos guardar la sesión. Inténtalo de nuevo.')
@@ -118,35 +190,76 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
               className="rounded-xl border border-(--c-border) bg-white px-4"
             >
               <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 py-2 text-sm font-semibold text-(--c-ocean)">
-                <span>
-                  <span className="capitalize">
-                    {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </span>{' '}
-                  · {item.startTime}
-                  <span className="ml-2 text-xs font-normal text-(--c-text-2)">
-                    {item.schoolId ? 'Escuela' : 'Clase personal'}
+                <span className="grid min-w-0 gap-1.5">
+                  {item.title && <span>{item.title}</span>}
+                  <span>
+                    <span className="capitalize">
+                      {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>{' '}
+                    · {item.startTime}
+                    <span className="ml-2 text-xs font-normal text-(--c-text-2)">
+                      {item.schoolId ? 'Escuela' : 'Clase personal'}
+                    </span>
                   </span>
+                  {item.tags?.length > 0 && (
+                    <span className="flex flex-wrap gap-1.5">
+                      {item.tags.map((tag) => (
+                        <LabelChip
+                          key={tag}
+                          label={
+                            catalog.find(
+                              (label) =>
+                                label.name.toLocaleLowerCase('es-MX') ===
+                                tag.toLocaleLowerCase('es-MX')
+                            ) || { id: tag, name: tag }
+                          }
+                        />
+                      ))}
+                    </span>
+                  )}
                 </span>
                 <FiChevronDown aria-hidden="true" className="shrink-0" />
               </summary>
               <div className="border-t border-(--c-border) py-3">
+                {item.description && (
+                  <p className="mb-2 whitespace-pre-wrap text-sm text-(--c-text-2)">
+                    {item.description}
+                  </p>
+                )}
                 <ClassTrainingEditor blocks={item.training} onChange={() => {}} readOnly />
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() => setEditClass(item)}
+                    onClick={() => {
+                      setSaveError('')
+                      setTagInput('')
+                      setEditClass(item)
+                      setDraft({
+                        title: item.title || `Clase ${item.date} ${item.startTime}`,
+                        description: item.description || '',
+                        tags: item.tags || [],
+                        training: item.training,
+                      })
+                    }}
                   >
                     <FiEdit2 aria-hidden="true" /> Editar
                   </button>
                   <button
                     type="button"
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() => duplicate(`clase ${item.date} ${item.startTime}`, item.training)}
+                    onClick={() =>
+                      duplicate(
+                        item.title || `clase ${item.date} ${item.startTime}`,
+                        item.training,
+                        item.description,
+                        item.tags
+                      )
+                    }
                   >
                     <FiCopy aria-hidden="true" /> Duplicar
                   </button>
@@ -156,12 +269,13 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
                     onClick={() =>
                       setTransfer({
                         id: item.id,
-                        title: `Clase ${item.date} ${item.startTime}`,
+                        title: item.title || `Clase ${item.date} ${item.startTime}`,
+                        observations: item.description,
                         blocks: item.training,
                       })
                     }
                   >
-                    <FiCopy aria-hidden="true" /> Importar / exportar entreno
+                    <FiRepeat aria-hidden="true" /> Transferir
                   </button>
                 </div>
               </div>
@@ -170,13 +284,36 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
           {sessions.slice(0, visibleCount).map((item) => (
             <details key={item.id} className="rounded-xl border border-(--c-border) bg-white px-4">
               <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 py-2 text-sm font-semibold text-(--c-ocean)">
-                <span>
-                  {item.title}{' '}
-                  <span className="text-xs font-normal text-(--c-text-2)">· Sesión suelta</span>
+                <span className="grid min-w-0 gap-1.5">
+                  <span>
+                    {item.title}{' '}
+                    <span className="text-xs font-normal text-(--c-text-2)">· Sesión suelta</span>
+                  </span>
+                  {item.tags?.length > 0 && (
+                    <span className="flex flex-wrap gap-1.5">
+                      {item.tags.map((tag) => (
+                        <LabelChip
+                          key={tag}
+                          label={
+                            catalog.find(
+                              (label) =>
+                                label.name.toLocaleLowerCase('es-MX') ===
+                                tag.toLocaleLowerCase('es-MX')
+                            ) || { id: tag, name: tag }
+                          }
+                        />
+                      ))}
+                    </span>
+                  )}
                 </span>
                 <FiChevronDown aria-hidden="true" />
               </summary>
               <div className="border-t border-(--c-border) py-3">
+                {item.description && (
+                  <p className="mb-2 whitespace-pre-wrap text-sm text-(--c-text-2)">
+                    {item.description}
+                  </p>
+                )}
                 <ClassTrainingEditor blocks={item.training} onChange={() => {}} readOnly />
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
@@ -184,7 +321,14 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
                     onClick={() => {
                       setSaveError('')
-                      setDraft({ id: item.id, title: item.title, training: item.training })
+                      setTagInput('')
+                      setDraft({
+                        id: item.id,
+                        title: item.title,
+                        description: item.description || '',
+                        tags: item.tags || [],
+                        training: item.training,
+                      })
                     }}
                   >
                     <FiEdit2 aria-hidden="true" /> Editar
@@ -192,7 +336,9 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
                   <button
                     type="button"
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() => duplicate(item.title, item.training)}
+                    onClick={() =>
+                      duplicate(item.title, item.training, item.description, item.tags)
+                    }
                   >
                     <FiCopy aria-hidden="true" /> Duplicar
                   </button>
@@ -200,10 +346,15 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
                     type="button"
                     className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
                     onClick={() =>
-                      setTransfer({ id: item.id, title: item.title, blocks: item.training })
+                      setTransfer({
+                        id: item.id,
+                        title: item.title,
+                        observations: item.description,
+                        blocks: item.training,
+                      })
                     }
                   >
-                    <FiCopy aria-hidden="true" /> Importar / exportar entreno
+                    <FiRepeat aria-hidden="true" /> Transferir
                   </button>
                 </div>
               </div>
@@ -220,22 +371,6 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
           )}
         </section>
       )}
-      {editClass && uid && (
-        <ClassNotesModal
-          target={{
-            schoolId: editClass.schoolId || undefined,
-            coachId: uid,
-            date: editClass.date,
-            startTime: editClass.startTime,
-            groupType: 'particular',
-          }}
-          initialAction="training"
-          onClose={() => setEditClass(null)}
-          onUpdated={() => {
-            void load().catch(() => setError(true))
-          }}
-        />
-      )}
       {transfer && (
         <WorkoutTransferSheet
           workout={transfer}
@@ -245,17 +380,27 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
           onImport={(workout) => {
             setTransfer(null)
             setSaveError('')
-            setDraft({ title: workout.title || 'Entreno importado', training: workout.blocks })
+            setTagInput('')
+            setEditClass(null)
+            setDraft({
+              title: workout.title || 'Entreno importado',
+              description: workout.observations || '',
+              tags: [],
+              training: workout.blocks,
+            })
           }}
         />
       )}
       {draft && (
         <Sheet
           open
-          label={draft.id ? 'Editar sesión' : 'Crear sesión suelta'}
+          label={draft.id || editClass ? 'Editar sesión' : 'Crear sesión suelta'}
           keyboardAware
           closeDisabled={saving}
-          onClose={() => setDraft(null)}
+          onClose={() => {
+            setDraft(null)
+            setEditClass(null)
+          }}
           footer={
             editingSeries ? undefined : (
               <div className="flex flex-wrap justify-end gap-2">
@@ -263,7 +408,10 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
                   type="button"
                   disabled={saving}
                   className="btn btn-outline min-h-11"
-                  onClick={() => setDraft(null)}
+                  onClick={() => {
+                    setDraft(null)
+                    setEditClass(null)
+                  }}
                 >
                   Cancelar
                 </button>
@@ -280,9 +428,6 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
           }
         >
           <div className="grid min-w-0 gap-4 pb-4">
-            <h2 className="text-xl font-bold">
-              {draft.id ? 'Editar sesión' : 'Crear sesión suelta'}
-            </h2>
             <label className="grid min-w-0 gap-2 text-sm font-semibold">
               Nombre de la sesión
               <input
@@ -292,6 +437,96 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
                 onChange={(event) => setDraft({ ...draft, title: event.target.value })}
               />
             </label>
+            <label className="grid min-w-0 gap-2 text-sm font-semibold">
+              Descripción <span className="sr-only">(opcional)</span>
+              <textarea
+                className="box-border min-h-20 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 py-2 outline-none [field-sizing:content] focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
+                maxLength={2000}
+                value={draft.description}
+                onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+                placeholder="Describe el objetivo de esta sesión"
+              />
+            </label>
+            <div className="grid min-w-0 gap-2">
+              <label htmlFor="session-tag" className="text-sm font-semibold">
+                Etiquetas
+              </label>
+              <div className="flex min-w-0 gap-2">
+                <input
+                  id="session-tag"
+                  className="box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
+                  maxLength={40}
+                  value={tagInput}
+                  onChange={(event) => setTagInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      addTag(tagInput)
+                    }
+                  }}
+                  placeholder="Ej. Resistencia"
+                />
+                <StudentLabelColorSelector value={tagColor} onChange={setTagColor} modal square />
+                <button
+                  type="button"
+                  className="btn btn-outline min-h-11"
+                  disabled={!tagInput.trim() || draft.tags.length >= 20}
+                  onClick={() => addTag(tagInput)}
+                >
+                  Agregar
+                </button>
+              </div>
+              {catalog.some(
+                (label) =>
+                  !draft.tags.some(
+                    (tag) =>
+                      tag.toLocaleLowerCase('es-MX') === label.name.toLocaleLowerCase('es-MX')
+                  ) &&
+                  label.name
+                    .toLocaleLowerCase('es-MX')
+                    .includes(tagInput.trim().toLocaleLowerCase('es-MX'))
+              ) && (
+                <div className="grid gap-1">
+                  <p className="text-xs text-(--c-text-2)">Sugerencias</p>
+                  <div className="flex flex-wrap gap-2">
+                    {catalog
+                      .filter(
+                        (label) =>
+                          !draft.tags.some(
+                            (tag) =>
+                              tag.toLocaleLowerCase('es-MX') ===
+                              label.name.toLocaleLowerCase('es-MX')
+                          ) &&
+                          label.name
+                            .toLocaleLowerCase('es-MX')
+                            .includes(tagInput.trim().toLocaleLowerCase('es-MX'))
+                      )
+                      .map((label) => (
+                        <span key={label.id} className="inline-flex min-h-11 items-center">
+                          <LabelChip label={label} onClick={() => addTag(label.name)} />
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {draft.tags.map((tag) => (
+                  <span key={tag} className="inline-flex min-h-11 items-center">
+                    <LabelChip
+                      label={
+                        catalog.find(
+                          (label) =>
+                            label.name.toLocaleLowerCase('es-MX') === tag.toLocaleLowerCase('es-MX')
+                        ) || { id: tag, name: tag, color: tagColors[tag] }
+                      }
+                      onRemove={() =>
+                        setDraft({ ...draft, tags: draft.tags.filter((item) => item !== tag) })
+                      }
+                    />
+                  </span>
+                ))}
+              </div>
+            </div>
             <ClassTrainingEditor
               blocks={draft.training}
               onChange={(training) => setDraft({ ...draft, training })}
