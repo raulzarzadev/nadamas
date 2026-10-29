@@ -195,7 +195,7 @@ export default function AppNav({
 
   // Athlete search lives inside Horarios, so its pages keep that tab active.
   const isActiveNav = (href: string) =>
-    pathname.startsWith(href) ||
+    (href === '/school' ? pathname === href : pathname.startsWith(href)) ||
     (href === '/athlete/schedule' && pathname.startsWith('/athlete/search'))
   const tabs = [
     ...primary.map((item) => ({
@@ -218,7 +218,7 @@ export default function AppNav({
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="relative flex items-center gap-2 sm:gap-4">
             <Link
-              href="/"
+              href={role === 'school' ? '/school' : '/'}
               aria-label={workspaceBrand ? `${workspaceBrand.name}, inicio` : 'Nadamas, inicio'}
               className={`${workspaceBrand ? 'min-w-0 flex-1' : 'relative block h-7 w-24 shrink-0 sm:w-28'} ${desktopSidebar && canShowWorkspaceNavigation ? 'sm:hidden' : ''}`}
             >
@@ -304,7 +304,7 @@ export default function AppNav({
           className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col gap-6 overflow-y-auto border-r border-(--c-border) bg-white px-3 py-6 sm:flex"
         >
           <Link
-            href="/"
+            href={role === 'school' ? '/school' : '/'}
             className="mx-3 block min-h-8 min-w-0 shrink-0"
             aria-label={workspaceBrand ? `${workspaceBrand.name}, inicio` : 'Nadamas, inicio'}
           >

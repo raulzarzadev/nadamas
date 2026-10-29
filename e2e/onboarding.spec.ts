@@ -115,7 +115,9 @@ test('first login configures combined profiles, persists choices and keeps admin
         response.request().method() === 'POST'
     )
     await page.getByRole('button', { name: 'Crear escuela', exact: true }).click()
-    expect((await creation).ok()).toBe(true)
+    const creationResponse = await creation
+    expect(creationResponse.ok()).toBe(true)
+    const createdSchool = (await creationResponse.json()).school
     await expect(page).toHaveURL(/\/school\/create\?created=/)
     await expect(
       page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
@@ -143,6 +145,92 @@ test('first login configures combined profiles, persists choices and keeps admin
       page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })
     ).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Crea tu escuela', exact: true })).toHaveCount(0)
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    await page
+      .locator('[data-app-sidebar]')
+      .getByRole('link', { name: 'Inicio', exact: true })
+      .click()
+    await expect(page).toHaveURL(/\/school$/)
+    await expect(page.getByText('1 de 5 pasos completos', { exact: true })).toBeVisible()
+    await expect(
+      page.locator('[data-app-sidebar]').getByRole('link', { name: 'Inicio', exact: true })
+    ).toHaveAttribute('aria-current', 'page')
+    const setupEndpoint = `/api/schools/${createdSchool.id}/setup`
+    const setupSnapshot = async () => {
+      const response = await request.get(setupEndpoint, { headers })
+      expect(response.ok(), await response.text()).toBe(true)
+      return response.json()
+    }
+    expect((await request.get(setupEndpoint)).status()).toBe(401)
+    expect((await request.get(`/api/schools/other-${suffix}/setup`, { headers })).status()).toBe(
+      403
+    )
+    expect(
+      (await setupSnapshot()).steps.map((step: { complete: boolean }) => step.complete)
+    ).toEqual([true, false, false, false, false])
+    await seed(`paymentProducts/setup-${suffix}`, {
+      scope: `school:${createdSchool.id}`,
+      active: false,
+      mode: 'classes',
+    })
+    expect((await setupSnapshot()).steps[1].complete).toBe(false)
+    await seed(`paymentProducts/setup-${suffix}`, {
+      scope: `school:${createdSchool.id}`,
+      active: true,
+      mode: 'classes',
+    })
+    await seed(`schoolClassOccurrences/setup-${suffix}`, {
+      id: `setup-${suffix}`,
+      schoolId: createdSchool.id,
+      seriesId: `setup-${suffix}`,
+      status: 'scheduled',
+      type: 'group',
+      title: 'Clase inicial',
+      date: '2026-12-01',
+      startTime: '09:00',
+      endTime: '10:00',
+      teacherIds: [account.localId],
+      studentIds: [],
+      timezone: 'America/Mazatlan',
+    })
+    await seed(`schoolMemberships/${createdSchool.id}_additional`, {
+      schoolId: createdSchool.id,
+      userId: `teacher-${suffix}`,
+      roles: ['teacher'],
+      role: 'teacher',
+      status: 'pending',
+    })
+    expect(
+      (await setupSnapshot()).steps.map((step: { complete: boolean }) => step.complete)
+    ).toEqual([true, true, true, false, false])
+    await seed(`schoolMemberships/${createdSchool.id}_additional`, {
+      schoolId: createdSchool.id,
+      userId: `teacher-${suffix}`,
+      roles: ['teacher'],
+      role: 'teacher',
+      status: 'active',
+    })
+    await seed(`schoolStudents/setup-${suffix}`, {
+      id: `setup-${suffix}`,
+      schoolId: createdSchool.id,
+      name: 'Alumno inicial',
+      status: 'active',
+      studentUserId: `student-${suffix}`,
+      guardianIds: [],
+      managerIds: [],
+    })
+    expect(
+      (await setupSnapshot()).steps.every((step: { complete: boolean }) => step.complete)
+    ).toBe(true)
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click()
+    await expect(page.getByText('5 de 5 pasos completos', { exact: true })).toBeVisible()
+    await page.setViewportSize({ width: 320, height: 900 })
+    await expect(
+      page.locator('[data-app-tabbar]').getByRole('link', { name: 'Inicio', exact: true })
+    ).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: '/tmp/nadamas-school-setup-home.png', fullPage: true })
+    await page.goto(`/school/create?created=${createdSchool.id}`)
     await page.reload()
     await expect(
       page.getByRole('heading', { name: `Escuela regreso ${suffix}`, exact: true })

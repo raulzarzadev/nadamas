@@ -50,6 +50,7 @@ export const PRIMARY_NAV_BY_ROLE: Record<RoleName, NavLink[]> = {
     },
   ],
   school: [
+    { href: '/school', label: 'Inicio', mobileLabel: 'Inicio', icon: 'home' },
     {
       href: '/school/payments',
       label: 'Pagos y planes',

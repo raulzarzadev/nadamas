@@ -1,5 +1,4 @@
-import { redirect } from 'next/navigation'
-
+import SchoolSetupHome from '@/components/school/SchoolSetupHome'
 export default function SchoolHomePage() {
-  redirect('/school/classes')
+  return <SchoolSetupHome />
 }

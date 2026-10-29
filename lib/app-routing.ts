@@ -11,6 +11,7 @@ const APP_ROOTS = new Set([
   'profile',
   'notifications',
   'dashboard',
+  'welcome',
   'interfaces',
   'auth',
   'athlete',
@@ -24,6 +25,7 @@ const SCHOOL_ROUTES = new Set([
   'classes',
   'payments',
   'settings',
+  'subscription',
 ])
 const COACH_ROUTES = new Set([
   'training',

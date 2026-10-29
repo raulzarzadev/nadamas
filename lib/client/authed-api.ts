@@ -160,7 +160,7 @@ export async function getAuthed(path: string, timeoutMs?: number) {
       ? 15_000
       : pathname === '/api/schools'
         ? 60_000
-        : /^\/api\/schools\/[^/]+\/(students|classes|teachers|agenda|locations|invitations|class-requests|access-requests)(?:\/|$)/.test(
+        : /^\/api\/schools\/[^/]+\/(students|classes|teachers|agenda|locations|invitations|class-requests|access-requests|setup)(?:\/|$)/.test(
               pathname
             ) ||
             pathname === '/api/coach/agenda' ||
