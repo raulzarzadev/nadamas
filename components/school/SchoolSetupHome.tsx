@@ -5,6 +5,7 @@ import {
   FiArrowRight,
   FiCheck,
   FiCheckCircle,
+  FiCreditCard,
   FiDollarSign,
   FiRefreshCw,
   FiSettings,
@@ -115,12 +116,6 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
           max={data.steps.length}
           className="h-2 w-full accent-(--c-ocean)"
         />
-        {next && (
-          <Link href={next.href} className="btn btn-primary mt-5 min-h-12 w-full gap-2 sm:w-auto">
-            {next.title}
-            <FiArrowRight aria-hidden="true" />
-          </Link>
-        )}
         {error && (
           <p role="alert" className="mt-3 text-sm text-red-800">
             No pudimos actualizar los pasos. Conservamos la última información; vuelve a intentarlo.
@@ -129,8 +124,16 @@ function SetupChecklist({ schoolId }: { schoolId: string }) {
       </div>
       <nav
         aria-label="Administrar escuela"
-        className="grid gap-3 border-b border-(--c-border) p-5 sm:grid-cols-2 sm:px-7"
+        className="grid gap-3 border-b border-(--c-border) p-5 sm:grid-cols-3 sm:px-7"
       >
+        <Link
+          href="/school/subscription"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
+        >
+          <FiCreditCard aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">Suscripción</span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
         <Link
           href="/school/payments"
           className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"

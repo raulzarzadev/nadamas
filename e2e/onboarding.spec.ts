@@ -155,6 +155,11 @@ test('first login configures combined profiles, persists choices and keeps admin
     await expect(
       page
         .getByRole('navigation', { name: 'Administrar escuela', exact: true })
+        .getByRole('link', { name: 'Suscripción', exact: true })
+    ).toHaveAttribute('href', '/school/subscription')
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Administrar escuela', exact: true })
         .getByRole('link', { name: 'Planes y pagos', exact: true })
     ).toBeVisible()
     await expect(
