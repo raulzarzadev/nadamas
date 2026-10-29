@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { FiArrowLeft, FiCheck, FiMapPin } from 'react-icons/fi'
+import { FiArrowLeft, FiArrowRight, FiCheck, FiMapPin } from 'react-icons/fi'
 import SchoolLogoInput from '@/components/school/SchoolLogoInput'
 import { useUser } from '@/context/UserContext'
 import { uploadSchoolLogo } from '@/firebase/school-logos/main'
@@ -176,12 +176,17 @@ export default function CreateSchoolPage() {
             </p>
           </div>
           <div className="flex flex-col gap-4 p-6 sm:p-8">
-            <div className="flex items-center gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-4">
-              <FiMapPin aria-hidden="true" className="shrink-0 text-(--c-ocean-mid)" />
-              <div>
-                <p className="font-bold text-(--c-ocean)">Página pública</p>
-                <p className="text-sm text-(--c-text-2)">{ownedSchool.slug}.nadamas.app</p>
+            <div className="flex flex-wrap items-center gap-3 rounded-[var(--r-sm)] bg-(--c-surface) p-4">
+              <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
+                <FiMapPin aria-hidden="true" className="shrink-0 text-(--c-ocean-mid)" />
+                <div className="min-w-0">
+                  <p className="font-bold text-(--c-ocean)">Página pública</p>
+                  <p className="break-all text-sm text-(--c-text-2)">{ownedSchool.slug}.nadamas.app</p>
+                </div>
               </div>
+              <Link href={getPublicSchoolUrl(ownedSchool.slug)} className="btn btn-primary min-h-11 shrink-0 gap-2">
+                Ir a escuela <FiArrowRight aria-hidden="true" />
+              </Link>
             </div>
             <p className="text-sm leading-relaxed text-(--c-text-2)">
               Tu siguiente paso es configurar un plan de pago. Después crea los horarios de clases y
@@ -189,12 +194,6 @@ export default function CreateSchoolPage() {
             </p>
             <Link href="/school/subscription" className="btn btn-outline min-h-11 w-full">
               Ver suscripción y acceso
-            </Link>
-            <Link
-              href={getPublicSchoolUrl(ownedSchool.slug)}
-              className="btn btn-outline min-h-11 w-full"
-            >
-              Ver página pública
             </Link>
           </div>
         </div>
