@@ -517,3 +517,116 @@ test('legacy school over the teacher limit still adds students but blocks teache
     await cleanupSchool(schoolId)
   }
 })
+
+async function adminUser() {
+  const user = await signup()
+  await db
+    .collection('users')
+    .doc(user.localId)
+    .set({ roles: { athlete: true, admin: true } })
+  return { authorization: `Bearer ${user.idToken}` }
+}
+
+async function seedTeachers(schoolId: string, count: number) {
+  for (let i = 0; i < count; i++)
+    await db
+      .collection('schoolMemberships')
+      .doc(`${schoolId}_teacher-${i}`)
+      .set({
+        schoolId,
+        userId: `teacher-${i}`,
+        role: 'teacher',
+        roles: ['teacher'],
+        status: 'active',
+      })
+}
+
+const setPlan = (
+  request: APIRequestContext,
+  headers: Record<string, string>,
+  schoolId: string,
+  limits: { teachers: number; students: number } | null
+) =>
+  request.post('/api/subscriptions/admin', {
+    headers,
+    data: { action: 'setCustomPlan', schoolId, limits, reason: 'Convenio especial' },
+  })
+
+test('admin sets custom limits and the 6th teacher passes', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId } = await seedDirectorSchool(0)
+  await seedTeachers(schoolId, 5)
+  const admin = await adminUser()
+  const invitation = await seedTeacherInvitation(schoolId)
+  try {
+    const response = await setPlan(request, admin, schoolId, { teachers: 8, students: 150 })
+    expect(response.ok(), await response.text()).toBe(true)
+    const sub = (await db.collection('schoolSubscriptions').doc(schoolId).get()).data()
+    expect(sub?.paymentExempt).toBe(true)
+    expect(sub?.customLimits).toEqual({ teachers: 8, students: 150 })
+    const accepted = await invitation.accept(request)
+    expect(accepted.status(), await accepted.text()).toBe(200)
+    expect(await teacherSeatsOf(schoolId)).toBe(6)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('invalid custom limits are rejected', async ({ request }) => {
+  const { schoolId } = await seedDirectorSchool(0)
+  const admin = await adminUser()
+  try {
+    for (const limits of [
+      { teachers: 5, students: 100 },
+      { teachers: 6.5, students: 200 },
+      { teachers: 6, students: 100001 },
+    ]) {
+      const response = await setPlan(request, admin, schoolId, limits)
+      expect(response.status()).toBe(400)
+      expect((await response.json()).code).toBe('invalid_limits')
+    }
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('back to basic clears exemption and limits', async ({ request }) => {
+  test.setTimeout(60000)
+  const { schoolId } = await seedDirectorSchool(0)
+  await seedTeachers(schoolId, 8)
+  const admin = await adminUser()
+  const invitation = await seedTeacherInvitation(schoolId)
+  try {
+    expect((await setPlan(request, admin, schoolId, { teachers: 10, students: 150 })).ok()).toBe(
+      true
+    )
+    expect((await setPlan(request, admin, schoolId, null)).ok()).toBe(true)
+    const sub = (await db.collection('schoolSubscriptions').doc(schoolId).get()).data()
+    expect(sub?.paymentExempt).toBe(false)
+    expect(sub?.customLimits ?? null).toBeNull()
+    // Back on Basic the school needs a live trial/payment to accept anyone.
+    await db
+      .collection('schoolSubscriptions')
+      .doc(schoolId)
+      .update({ trialEndsAt: Date.now() + 86400000 })
+    const blocked = await invitation.accept(request)
+    expect(blocked.status(), await blocked.text()).toBe(409)
+    // Going back again is a harmless no-op.
+    expect((await setPlan(request, admin, schoolId, null)).ok()).toBe(true)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
+
+test('non-admin cannot set custom plan', async ({ request }) => {
+  const { schoolId, directorHeaders } = await seedDirectorSchool(0)
+  try {
+    const response = await setPlan(request, directorHeaders, schoolId, {
+      teachers: 8,
+      students: 150,
+    })
+    expect(response.status()).toBe(403)
+  } finally {
+    await cleanupSchool(schoolId)
+  }
+})
