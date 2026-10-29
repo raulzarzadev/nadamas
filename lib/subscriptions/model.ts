@@ -1,3 +1,5 @@
+import type { SchoolPlanLimits, SeatUsage } from './plans'
+
 export type SubscriptionState =
   | 'trialing'
   | 'active'
@@ -89,6 +91,7 @@ export interface SubscriptionSnapshot {
   bankDetails: SubscriptionBankDetails | null
   orders: SubscriptionOrder[]
   cardAvailable: boolean
+  plan: { limits: SchoolPlanLimits; usage: SeatUsage }
 }
 export interface SubscriptionAdminSnapshot {
   settings: SubscriptionBankDetails

@@ -9,6 +9,7 @@ import { useUser } from '@/context/UserContext'
 import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
+import { NADAMAS_PRICING } from '@/lib/pricing'
 import { DEFAULT_SCHOOL_TIMEZONE, SCHOOL_TIMEZONE_OPTIONS, type School } from '@/lib/school'
 import { slugify } from '@/lib/slug'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
@@ -218,7 +219,11 @@ export default function CreateSchoolPage() {
       </div>
 
       <div className="rounded-xl border border-(--c-border) bg-white p-4 text-sm">
-        <p className="font-bold">$299 MXN al mes por escuela · todos sus profesores incluidos</p>
+        <p className="font-bold">
+          ${NADAMAS_PRICING.regularMonthly} {NADAMAS_PRICING.currency} al mes por escuela · hasta{' '}
+          {NADAMAS_PRICING.basicLimits.teachers} profes y {NADAMAS_PRICING.basicLimits.students}{' '}
+          alumnos
+        </p>
         {ownedSchool && (
           <p className="mt-2 text-(--c-text-2)">
             Las escuelas adicionales requieren una suscripción desde el inicio. Puedes crearla y

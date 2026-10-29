@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import { SubscriptionCRUD } from '@/firebase/subscriptions/main'
 import type { SubscriptionSnapshot } from '@/lib/subscriptions/model'
+import { planOverLimit, planOverLimitMessage } from '@/lib/subscriptions/plans'
 import { subscriptionDate, subscriptionState } from './subscription-ui'
 
 export default function SchoolSubscriptionBanner() {
@@ -40,8 +41,14 @@ export default function SchoolSubscriptionBanner() {
   if (!data || pathname === '/school/subscription' || data.schoolId !== selectedId) return null
   const provisional = data.access.state === 'pending_review'
   const state = provisional ? 'provisional' : data.access.state
-  if (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd))
+  const overLimit = planOverLimit(data.plan.limits, data.plan.usage)
+  if (
+    !overLimit &&
+    (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd))
+  )
     return null
+  if (state === 'exempt' || (state === 'active' && !data.subscription?.cancelAtPeriodEnd))
+    return <OverLimitNotice message={planOverLimitMessage(data.plan.limits)} />
   return (
     <aside
       aria-label="Estado de suscripción"
@@ -58,6 +65,11 @@ export default function SchoolSubscriptionBanner() {
                 ? 'La renovación está cancelada.'
                 : `Hasta el ${subscriptionDate(data.access.accessEndsAt)}.`}
         </p>
+        {overLimit && (
+          <p role="alert" className="mt-2 text-xs font-semibold">
+            <OverLimitText message={planOverLimitMessage(data.plan.limits)} />
+          </p>
+        )}
       </div>
       {data.manager ? (
         <Link
@@ -69,6 +81,33 @@ export default function SchoolSubscriptionBanner() {
       ) : (
         <p className="text-xs">La persona responsable administra la suscripción.</p>
       )}
+    </aside>
+  )
+}
+
+function OverLimitText({ message }: { message: string }) {
+  const word = 'Contáctanos'
+  const at = message.indexOf(word)
+  return (
+    <>
+      {message.slice(0, at)}
+      <Link href="/contacto" className="font-bold underline focus-visible:outline-2">
+        {word}
+      </Link>
+      {message.slice(at + word.length)}
+    </>
+  )
+}
+
+function OverLimitNotice({ message }: { message: string }) {
+  return (
+    <aside
+      aria-label="Límites del plan"
+      className="mb-4 border-y border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 sm:rounded-xl sm:border"
+    >
+      <p role="alert">
+        <OverLimitText message={message} />
+      </p>
     </aside>
   )
 }

@@ -5,6 +5,7 @@ import {
   subscriptionErrorResponse,
   subscriptionSchoolAccess,
 } from '@/lib/server/subscriptions/access'
+import { readSchoolSeats } from '@/lib/server/subscriptions/seats'
 import {
   cancelSubscriptionTransfer,
   changeSubscriptionRenewal,
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     const schoolId = new URL(request.url).searchParams.get('schoolId')
     if (!validId(schoolId)) return invalid()
     const access = await subscriptionSchoolAccess(request, schoolId)
-    const [doc, settings, orders] = await Promise.all([
+    const [doc, settings, orders, seats] = await Promise.all([
       subscriptionRef(schoolId).get(),
       access.manager ? subscriptionSettingsRef().get() : null,
       access.manager
@@ -51,6 +52,7 @@ export async function GET(request: Request) {
             .limit(200)
             .get()
         : null,
+      readSchoolSeats(schoolId),
     ])
     const sub = (doc.data() as SchoolSubscription) || null
     let priceCents = subscriptionPrice(sub, Date.now())
@@ -77,6 +79,7 @@ export async function GET(request: Request) {
           .map((item) => ({ ...item.data(), id: item.id }) as SubscriptionOrder)
           .sort((a, b) => b.createdAt - a.createdAt) || [],
       cardAvailable: stripeConfigured(),
+      plan: { limits: seats.limits, usage: seats.usage },
     }
     return NextResponse.json(snapshot, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {

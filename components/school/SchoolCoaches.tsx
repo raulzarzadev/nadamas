@@ -7,6 +7,7 @@ import { FiClock, FiEdit2, FiPhone, FiSearch, FiSend, FiShield } from 'react-ico
 import CoachAgenda from '@/components/coach/CoachAgenda'
 import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
+import PlanLimitNotice, { planLimitMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import ClassStudentRow from '@/components/ui/class-student-row'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import { useSchoolTerminology } from '@/context/SchoolTerminologyContext'
@@ -447,12 +448,14 @@ function InviteCoach({
   const [email, setEmail] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [limitMessage, setLimitMessage] = useState<string | null>(null)
   const terminology = useSchoolTerminology()
   const coachSingular = terminology.schoolId ? terminology.coachSingular : 'coach'
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     setSaving(true)
     setError(null)
+    setLimitMessage(null)
     try {
       const response = await postAuthed(`/api/schools/${schoolId}/invitations`, {
         email,
@@ -460,8 +463,10 @@ function InviteCoach({
       })
       const payload = (await response.json()) as { invitation: SchoolInvitation }
       onCreated(payload.invitation)
-    } catch {
-      setError('No se pudo enviar la invitación. Inténtalo de nuevo.')
+    } catch (cause) {
+      const limit = planLimitMessageOf(cause)
+      if (limit) setLimitMessage(limit)
+      else setError('No se pudo enviar la invitación. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }
@@ -490,6 +495,11 @@ function InviteCoach({
             className="min-h-11 rounded-[var(--r-sm)] border border-(--c-border) px-3 font-normal"
           />
         </label>
+        {limitMessage && (
+          <div className="mt-3">
+            <PlanLimitNotice message={limitMessage} />
+          </div>
+        )}
         {error && <p className="mt-3 text-sm text-(--c-error,#b91c1c)">{error}</p>}
         <button type="submit" disabled={saving} className="btn btn-primary mt-5 min-h-11 w-full">
           {saving ? 'Enviando…' : 'Enviar'}

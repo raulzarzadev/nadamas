@@ -89,3 +89,23 @@ export function hasSeat(limits: SchoolPlanLimits, usage: SeatUsage, kind: SeatKi
   const used = kind === 'teacher' ? usage.teachers : usage.students
   return limit === null || used < limit
 }
+
+export function planUsageLabel(limits: SchoolPlanLimits, usage: SeatUsage): string {
+  if (limits.plan === 'unlimited') return 'Sin límite'
+  const name = limits.plan === 'basic' ? 'Plan Básico' : 'Plan Personalizado'
+  return `${name} · ${usage.teachers} de ${limits.teachers} profes · ${usage.students} de ${limits.students} alumnos`
+}
+
+/** True when any seat kind is above its limit (e.g. the school was over before limits existed). */
+export function planOverLimit(limits: SchoolPlanLimits, usage: SeatUsage): boolean {
+  return (
+    (limits.teachers !== null && usage.teachers > limits.teachers) ||
+    (limits.students !== null && usage.students > limits.students)
+  )
+}
+
+export function planOverLimitMessage(limits: SchoolPlanLimits): string {
+  return limits.plan === 'basic'
+    ? 'Tu escuela supera los límites del plan Básico. Contáctanos para un plan personalizado.'
+    : 'Tu escuela supera los límites de su plan. Contáctanos para ampliarlo.'
+}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { FiPlus, FiSettings } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 import { SubscriptionCRUD } from '@/firebase/subscriptions/main'
+import { NADAMAS_PRICING } from '@/lib/pricing'
 import { subscriptionAccess, subscriptionPrice } from '@/lib/subscriptions/engine'
 import type {
   SubscriptionAdminSnapshot,
@@ -97,7 +98,8 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
             $299 MXN al mes por escuela · $49 con código asignado.
           </p>
           <p className="mt-1 text-xs text-(--c-text-2)">
-            Incluye a todos sus profesores. Estos pagos son de escuelas a Nadamas.
+            Plan Básico: hasta {NADAMAS_PRICING.basicLimits.teachers} profes y{' '}
+            {NADAMAS_PRICING.basicLimits.students} alumnos. Estos pagos son de escuelas a Nadamas.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

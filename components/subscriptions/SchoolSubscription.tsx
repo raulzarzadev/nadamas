@@ -7,6 +7,7 @@ import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import Sheet from '@/components/ui/sheet'
 import { SubscriptionCRUD } from '@/firebase/subscriptions/main'
 import type { SubscriptionSnapshot } from '@/lib/subscriptions/model'
+import { planUsageLabel } from '@/lib/subscriptions/plans'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import {
   CopyDetail,
@@ -156,7 +157,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
           <div>
             <h1 className="text-2xl font-extrabold">Suscripción de la escuela</h1>
             <p className="mt-2 text-sm text-(--c-text-2)">
-              Una suscripción incluye a todos sus profesores.
+              {planUsageLabel(data.plan.limits, data.plan.usage)}
             </p>
           </div>
           <span className="rounded-full bg-(--c-surface) px-3 py-2 text-xs font-bold">
