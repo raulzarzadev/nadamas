@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiArrowUp } from 'react-icons/fi'
 import { localCalendarDate } from '@/lib/today-training'
 import type { TrainingCycle } from '@/lib/training-planner'
 
@@ -15,6 +14,7 @@ export default function CycleCompactSummary({
   showDates = true,
   onEditDates,
   disabled = false,
+  count,
 }: {
   cycle: TrainingCycle
   periods: TrainingCycle[]
@@ -22,6 +22,8 @@ export default function CycleCompactSummary({
   showDates?: boolean
   onEditDates?: () => void
   disabled?: boolean
+  /** Session count shown inside the MACRO bar, after its name. */
+  count?: number
 }) {
   const [today, setToday] = useState(() => localCalendarDate(new Date()))
   useEffect(() => {
@@ -74,9 +76,10 @@ export default function CycleCompactSummary({
         {showToday ? `Hoy: ${today}. El MICRO-ciclo actual se muestra destacado.` : ''}
       </span>
 
-      <span aria-hidden="true" className="relative grid w-full gap-2">
+      <span aria-hidden="true" className={`relative grid w-full gap-2 ${showToday ? 'mt-4' : ''}`}>
         <span className="flex h-6 w-full min-w-0 items-center rounded-full bg-[#a8d2df] px-2 text-[10px] font-semibold text-(--c-ocean)">
           <span className="truncate">{cycle.title}</span>
+          {count !== undefined && <span className="ml-1 shrink-0 font-normal">({count})</span>}
         </span>
         <span className="relative block h-6 w-full">
           {segments.map((segment, index) => {
@@ -135,27 +138,30 @@ export default function CycleCompactSummary({
           </span>
         )}
         {showToday && (
+          // Same hollow marker as the plan bars above Entreno de hoy.
           <span
-            className="absolute top-[calc(100%+1.25rem)] z-20 w-0"
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-1 bottom-0 z-20 w-1.5 -translate-x-1/2 rounded-full border border-white shadow-[0_0_0_1px_rgba(13,44,72,0.25)]"
+            // Clamped so the marker stays inside the bars at the first and last day.
             style={{
-              left: `${((current - first) / length) * 100}%`,
+              left: `clamp(3px, ${((current - first) / length) * 100}%, calc(100% - 3px))`,
             }}
           >
             <span
-              className={`absolute top-4 w-max text-[11px] leading-none font-medium text-(--c-ocean) ${current - first < length * 0.04 ? 'left-0' : 'right-1'}`}
+              className={`absolute bottom-full mb-1 w-max text-[9px] leading-none font-bold text-(--c-ocean) ${
+                current - first < length * 0.05
+                  ? 'left-0'
+                  : last - current < length * 0.05
+                    ? 'right-0'
+                    : 'left-1/2 -translate-x-1/2'
+              }`}
             >
               Hoy
             </span>
-            <FiArrowUp
-              aria-hidden="true"
-              className="absolute top-0 -left-2 size-4 text-(--c-ocean)"
-            />
           </span>
         )}
       </span>
-      <div
-        className={`${showToday ? 'mb-9' : ''} relative mt-1 h-3 text-[9px] leading-none font-medium text-(--c-ocean)/60`}
-      >
+      <div className={`relative mt-1 h-3 text-[9px] leading-none font-medium text-(--c-ocean)/60`}>
         {monthTicks
           .filter((tick) => !showDates || (tick.position > 20 && tick.position < 80))
           .map((tick) => (

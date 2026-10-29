@@ -19,6 +19,7 @@ export default function PlanningRow({
   leading,
   dotLabel,
   dotFilled = true,
+  titleHidden = false,
 }: {
   title: string
   count?: number
@@ -36,6 +37,8 @@ export default function PlanningRow({
   dotLabel?: string
   /** false = hollow dot (e.g. the day has no session yet). */
   dotFilled?: boolean
+  /** Keep the title for screen readers only (e.g. it is already shown inside the bars below). */
+  titleHidden?: boolean
 }) {
   return (
     <div className="flex min-h-6 min-w-0 items-center gap-1 px-1 text-(--c-ocean)">
@@ -58,8 +61,8 @@ export default function PlanningRow({
               className={`size-2 shrink-0 rounded-full ${dotFilled ? 'bg-[#1f9d57]' : 'border border-[#1f9d57]'}`}
             />
           )}
-          <span className="min-w-0 truncate">{title}</span>
-          {count !== undefined && (
+          <span className={titleHidden ? 'sr-only' : 'min-w-0 truncate'}>{title}</span>
+          {count !== undefined && !titleHidden && (
             <span
               aria-hidden="true"
               className={`shrink-0 text-[10px] ${indicatorLabel ? 'rounded-full bg-[#258575]/10 px-1.5 py-0.5 font-semibold text-[#176454]' : 'font-normal text-(--c-text-2)'}`}
@@ -90,8 +93,8 @@ export default function PlanningRow({
               className={`size-2 shrink-0 rounded-full ${dotFilled ? 'bg-[#1f9d57]' : 'border border-[#1f9d57]'}`}
             />
           )}
-          <span className="min-w-0 truncate">{title}</span>
-          {count !== undefined && (
+          <span className={titleHidden ? 'sr-only' : 'min-w-0 truncate'}>{title}</span>
+          {count !== undefined && !titleHidden && (
             <span className="shrink-0 text-[10px] font-normal text-(--c-text-2)">({count})</span>
           )}
         </span>

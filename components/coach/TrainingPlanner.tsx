@@ -20,6 +20,7 @@ import { TrainingPlanCRUD } from '@/firebase/training-plans/main'
 import { TrainingPlanSharing } from '@/firebase/training-plans/sharing'
 import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
 import { snapCalendarEdge } from '@/lib/timeline-snap'
+import { localCalendarDate } from '@/lib/today-training'
 import {
   CHILD_CYCLE,
   CYCLE_LABELS,
@@ -31,6 +32,7 @@ import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error
 import MacroCycleBarsInput from './MacroCycleBarsInput'
 import MacroCycleCreateSheet from './MacroCycleCreateSheet'
 import MacroCyclePeriodInput from './MacroCyclePeriodInput'
+import PlanStructureBars from './PlanStructureBars'
 import TodayTrainingSummary from './TodayTrainingSummary'
 import TrainingCycleTimeline from './TrainingCycleTimeline'
 import TrainingPlanOverview from './TrainingPlanOverview'
@@ -504,6 +506,10 @@ export default function TrainingPlanner({
         )}
         {plans.length + subscribed.length > 0 && (
           <>
+            <PlanStructureBars
+              plans={plan && !owned ? [plan] : [...plans, ...subscribed]}
+              date={localCalendarDate(new Date())}
+            />
             <h1 id="training-title" className="pt-4 text-center text-2xl font-extrabold">
               Entreno de hoy
             </h1>

@@ -46,6 +46,7 @@ export default function TrainingPlanOverview({
       >
         <PlanningRow
           title={macro.title}
+          titleHidden
           count={countCycleSessions(cycles, macro.id)}
           countLabel="sesiones"
           expanded={macroExpanded}
@@ -114,6 +115,7 @@ export default function TrainingPlanOverview({
       {!macroExpanded && (
         <CycleCompactSummary
           cycle={macro}
+          count={countCycleSessions(cycles, macro.id)}
           periods={cycles.filter((cycle) => cycle.parentId === macro.id)}
           subPeriods={cycles.filter((cycle) => cycle.type === 'micro')}
         />
@@ -126,6 +128,7 @@ export default function TrainingPlanOverview({
                 onEditDates={readOnly ? undefined : onEditDates}
                 disabled={disabled}
                 cycle={macro}
+                count={countCycleSessions(cycles, macro.id)}
                 periods={cycles.filter((cycle) => cycle.parentId === macro.id)}
                 subPeriods={cycles.filter((cycle) => cycle.type === 'micro')}
               />
