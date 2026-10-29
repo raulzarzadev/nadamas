@@ -4,6 +4,7 @@ export const SCHOOL_TIMEZONE_OPTIONS = [
   { value: 'America/Mexico_City', label: 'Ciudad de México' },
   { value: 'America/Monterrey', label: 'Monterrey' },
   { value: 'America/Tijuana', label: 'Tijuana' },
+  { value: 'America/Mazatlan', label: 'La Paz, BCS' },
   { value: 'America/Hermosillo', label: 'Hermosillo' },
   { value: 'America/Cancun', label: 'Cancún' },
   { value: 'UTC', label: 'UTC' },
