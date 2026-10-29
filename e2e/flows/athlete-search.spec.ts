@@ -239,9 +239,29 @@ test.beforeAll(async () => {
     createdAt: Date.now(),
     visibility: 'public',
     cycles: [
-      { id: 'macro-s', parentId: null, type: 'macro', title: schoolPlanTitle, startDate: start, endDate: end, goal: 'Técnica', sessionWeekdays: [2], content: '' },
+      {
+        id: 'macro-s',
+        parentId: null,
+        type: 'macro',
+        title: schoolPlanTitle,
+        startDate: start,
+        endDate: end,
+        goal: 'Técnica',
+        sessionWeekdays: [2],
+        content: '',
+      },
     ],
-    summary: { title: schoolPlanTitle, goal: 'Técnica', content: '', startDate: start, endDate: end, sessionWeekdays: [2], authorName: schoolCoachName, authorPhoto: '', authorRole: 'coach' },
+    summary: {
+      title: schoolPlanTitle,
+      goal: 'Técnica',
+      content: '',
+      startDate: start,
+      endDate: end,
+      sessionWeekdays: [2],
+      authorName: schoolCoachName,
+      authorPhoto: '',
+      authorRole: 'coach',
+    },
   })
 })
 
@@ -252,7 +272,9 @@ async function deleteWhere(collection: string, field: string, value: string) {
     body: JSON.stringify({
       structuredQuery: {
         from: [{ collectionId: collection }],
-        where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } } },
+        where: {
+          fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: { stringValue: value } },
+        },
       },
     }),
   })
@@ -310,7 +332,10 @@ test('2. home + tab bar + credencial', async ({ page, request }) => {
   await expect(page.getByRole('heading', { name: /Hola/ })).toBeVisible()
   const box = await page.getByRole('heading', { name: /Hola/ }).boundingBox()
   console.log('h1 box', box)
-  console.log('searchbtn box', await page.getByRole('button', { name: 'Buscar entrenador o escuela' }).boundingBox())
+  console.log(
+    'searchbtn box',
+    await page.getByRole('button', { name: 'Buscar entrenador o escuela' }).boundingBox()
+  )
   await expect(page.getByText('Reserva tu primera clase')).toBeVisible()
   // tab bar
   const tab = page.getByRole('navigation').filter({ hasText: 'Credencial' })
@@ -343,22 +368,32 @@ test('3. horarios vacio + reservar clase particular', async ({ page, request }) 
   page.setDefaultTimeout(40000)
   await loginAs(page, request, readyEmail)
   await page.goto('/athlete/home')
-  await page.getByRole('link', { name: 'Horarios', exact: true }).locator('visible=true').first().click()
+  await page
+    .getByRole('link', { name: 'Horarios', exact: true })
+    .locator('visible=true')
+    .first()
+    .click()
   await page.waitForURL('**/athlete/schedule')
   await expect(page.getByText('Aún no tienes clases próximas.')).toBeVisible()
   await shot(page, '06-horarios-empty')
   await page.getByRole('button', { name: 'Buscar más horarios' }).click()
   const dlg = page.getByRole('dialog')
   await expect(dlg.getByText('Sábado').first()).toBeVisible({ timeout: 30000 })
-  for (const label of ['Escuelas', 'Profes', 'Entrenos', 'Horarios']) await expect(dlg.getByRole('checkbox', { name: label })).toBeAttached()
+  for (const label of ['Escuelas', 'Profes', 'Entrenos', 'Horarios'])
+    await expect(dlg.getByRole('checkbox', { name: label })).toBeAttached()
   await expect(dlg.getByRole('checkbox', { name: 'Horarios' })).toBeChecked()
-  await dlg.getByRole('button', { name: new RegExp(`17:30 · ${independentName} · particular`) }).first().click()
+  await dlg
+    .getByRole('button', { name: new RegExp(`17:30 · ${independentName} · particular`) })
+    .first()
+    .click()
   await dlg.getByRole('button', { name: 'Continuar', exact: true }).click()
   const sheet = page.getByRole('dialog', { name: 'Reservar horario' })
   await expect(sheet).toBeVisible()
   const t0 = Date.now()
   await sheet.getByRole('button', { name: 'Reservar', exact: true }).click()
-  await expect(page.getByText('La clase se agendó con éxito.').first()).toBeVisible({ timeout: 40000 })
+  await expect(page.getByText('La clase se agendó con éxito.').first()).toBeVisible({
+    timeout: 40000,
+  })
   console.log('BOOK_LATENCY_MS', Date.now() - t0)
   await page.getByRole('button', { name: 'Entendido', exact: true }).click()
   await page.getByRole('button', { name: 'Cerrar', exact: true }).last().click()
@@ -375,14 +410,19 @@ test('4. horarios: reservar clase grupal', async ({ page, request }) => {
   page.setDefaultTimeout(40000)
   await loginAs(page, request, readyEmail)
   const dlg = await openHorariosSheet(page)
-  await dlg.getByRole('button', { name: new RegExp(`19:00 · ${independentName} · grupal`) }).first().click()
+  await dlg
+    .getByRole('button', { name: new RegExp(`19:00 · ${independentName} · grupal`) })
+    .first()
+    .click()
   await dlg.getByRole('button', { name: 'Continuar', exact: true }).click()
   const sheet = page.getByRole('dialog', { name: 'Reservar horario' })
   await expect(sheet).toBeVisible()
   await shot(page, '13-group-sheet')
   console.log('GROUP SHEET', await sheet.innerText())
   await sheet.getByRole('button', { name: 'Reservar', exact: true }).click()
-  await expect(page.getByText('La clase se agendó con éxito.').first()).toBeVisible({ timeout: 40000 })
+  await expect(page.getByText('La clase se agendó con éxito.').first()).toBeVisible({
+    timeout: 40000,
+  })
   await page.getByRole('button', { name: 'Entendido', exact: true }).click()
   await page.goto('/athlete/schedule')
   await expect(page.getByText('Grupal', { exact: true }).first()).toBeVisible()
@@ -399,10 +439,20 @@ test('5. sheet: Escuelas / Profes / Entrenos', async ({ page, request }) => {
   await page.waitForTimeout(4000)
   await shot(page, '15-search-default')
   console.log('DEFAULT:', await dlg.innerText())
-  console.log('CHECKED', await dlg.getByRole('checkbox').evaluateAll((els) => els.map((e) => `${e.parentElement?.textContent}:${(e as HTMLInputElement).checked}`)))
+  console.log(
+    'CHECKED',
+    await dlg
+      .getByRole('checkbox')
+      .evaluateAll((els) =>
+        els.map((e) => `${e.parentElement?.textContent}:${(e as HTMLInputElement).checked}`)
+      )
+  )
 })
 
-test('6. buscar profe por nombre -> horarios del profe -> detalle del horario', async ({ page, request }) => {
+test('6. buscar profe por nombre -> horarios del profe -> detalle del horario', async ({
+  page,
+  request,
+}) => {
   test.setTimeout(150000)
   page.setDefaultTimeout(40000)
   await loginAs(page, request, readyEmail)
@@ -410,13 +460,24 @@ test('6. buscar profe por nombre -> horarios del profe -> detalle del horario', 
   await dlg.getByRole('searchbox').fill(independentName)
   await dlg.getByRole('link', { name: new RegExp(`: ${independentName}$`) }).click()
   await page.waitForURL('**/athlete/search/coach/**')
-  await expect(page.getByRole('button', { name: new RegExp(`17:30 · ${independentName} · particular`) }).first()).toBeVisible({ timeout: 30000 })
-  await page.getByRole('button', { name: new RegExp(`2026.*17:30 · ${independentName} · particular`) }).nth(1).click()
+  await expect(
+    page
+      .getByRole('button', { name: new RegExp(`17:30 · ${independentName} · particular`) })
+      .first()
+  ).toBeVisible({ timeout: 30000 })
+  await page
+    .getByRole('button', { name: new RegExp(`2026.*17:30 · ${independentName} · particular`) })
+    .nth(1)
+    .click()
   await page.getByRole('button', { name: /Ver 1 horario/ }).click()
   await page.waitForTimeout(1000)
   await shot(page, '17b-slot-details')
-  for (const d of await page.getByRole('dialog').all()) console.log('DETAILS>>', await d.innerText())
-  await page.getByLabel('Horarios seleccionados').getByRole('button', { name: 'Continuar', exact: true }).click()
+  for (const d of await page.getByRole('dialog').all())
+    console.log('DETAILS>>', await d.innerText())
+  await page
+    .getByLabel('Horarios seleccionados')
+    .getByRole('button', { name: 'Continuar', exact: true })
+    .click()
   const sheet = page.getByRole('dialog', { name: 'Reservar horario' })
   await expect(sheet).toBeVisible()
   const text = await sheet.innerText()
@@ -439,7 +500,10 @@ test('7. escuela publica: buscar -> ver escuela -> horarios', async ({ page, req
   await page.waitForURL('**/schedule')
   await page.waitForTimeout(5000)
   await shot(page, '19-school-schedule')
-  await page.getByRole('button', { name: new RegExp(`17:30 · ${schoolCoachName} · particular`) }).first().click()
+  await page
+    .getByRole('button', { name: new RegExp(`17:30 · ${schoolCoachName} · particular`) })
+    .first()
+    .click()
   await page.waitForTimeout(2500)
   await shot(page, '20-school-chip-click')
   console.log('AFTER CHIP>>', await page.locator('body').innerText())
@@ -467,7 +531,12 @@ test('8. escuela publica: solicitar unirme', async ({ page, request }) => {
   await page.goto(`/athlete/search/school/${schoolId}`)
   await expect(page.getByRole('button', { name: 'Solicitar unirme al equipo' })).toBeVisible()
   await page.waitForTimeout(2000)
-  const responsePromise = page.waitForResponse((r) => r.url().includes('/access-requests') && r.request().method() === 'POST', { timeout: 30000 }).catch(() => null)
+  const responsePromise = page
+    .waitForResponse(
+      (r) => r.url().includes('/access-requests') && r.request().method() === 'POST',
+      { timeout: 30000 }
+    )
+    .catch(() => null)
   await page.getByRole('button', { name: 'Solicitar unirme al equipo' }).click()
   const resp = await responsePromise
   console.log('JOIN RESP', resp?.status(), resp ? await resp.text() : 'none')
@@ -478,25 +547,42 @@ test('8. escuela publica: solicitar unirme', async ({ page, request }) => {
   for (const d of await page.getByRole('dialog').all()) console.log('DLG>>', await d.innerText())
 })
 
-test('9. entrenos: estado vacio -> buscar plan publico -> suscribirme', async ({ page, request }) => {
+test('9. entrenos: estado vacio -> buscar plan publico -> suscribirme', async ({
+  page,
+  request,
+}) => {
   test.setTimeout(150000)
   page.setDefaultTimeout(40000)
   await loginAs(page, request, readyEmail)
   await page.goto('/athlete/home')
   await expect(page.getByRole('heading', { name: /Hola, Nadia/ })).toBeVisible()
-  await page.getByRole('link', { name: 'Entrenos', exact: true }).locator('visible=true').first().click()
+  await page
+    .getByRole('link', { name: 'Entrenos', exact: true })
+    .locator('visible=true')
+    .first()
+    .click()
   await page.waitForURL('**/athlete/training')
   await expect(page.getByText('No tienes entrenos aún')).toBeVisible()
   await shot(page, '23-entrenos-empty')
   console.log('EMPTY:', await page.locator('main').innerText())
-  await page.getByRole('button', { name: /Buscar entrenos/ }).first().click()
+  await page
+    .getByRole('button', { name: /Buscar entrenos/ })
+    .first()
+    .click()
   const dlg = page.getByRole('dialog')
   await expect(dlg.getByRole('searchbox')).toBeVisible()
   await dlg.getByRole('searchbox').fill(planTitle)
   await page.waitForTimeout(2500)
   await shot(page, '24-entrenos-search')
   console.log('SEARCH:', await dlg.innerText())
-  console.log('CHECKED', await dlg.getByRole('checkbox').evaluateAll((els) => els.map((e) => `${e.parentElement?.textContent}:${(e as HTMLInputElement).checked}`)))
+  console.log(
+    'CHECKED',
+    await dlg
+      .getByRole('checkbox')
+      .evaluateAll((els) =>
+        els.map((e) => `${e.parentElement?.textContent}:${(e as HTMLInputElement).checked}`)
+      )
+  )
   await dlg.getByRole('link', { name: new RegExp(planTitle) }).click()
   await page.waitForURL(`**/athlete/training/plans/${planId}`)
   await page.waitForTimeout(3500)
@@ -507,12 +593,17 @@ test('9. entrenos: estado vacio -> buscar plan publico -> suscribirme', async ({
   console.log('AFTER SUB:', await page.locator('main').innerText())
   console.log('URL', page.url())
   await page.goto('/athlete/training')
-  await expect(page.getByRole('button', { name: `Suscrito: ${planTitle}`, exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: `Suscrito: ${planTitle}`, exact: true })
+  ).toBeVisible()
   await shot(page, '27-entrenos-subscribed')
   console.log('ENTRENOS:', await page.locator('main').innerText())
 })
 
-test('10. subdominio de escuela: la busqueda solo muestra profes y entrenos de esa escuela', async ({ page, request }) => {
+test('10. subdominio de escuela: la busqueda solo muestra profes y entrenos de esa escuela', async ({
+  page,
+  request,
+}) => {
   test.setTimeout(180000)
   page.setDefaultTimeout(40000)
   await page.goto(tenantUrl + (await loginLink(request, tenantEmail)))
@@ -546,7 +637,9 @@ test('11. subdominio: miembro reserva horario de la escuela', async ({ page, req
   await page.waitForTimeout(2000)
   await page.getByRole('button', { name: 'Buscar más horarios' }).click()
   const dlg = page.getByRole('dialog')
-  const chip = dlg.getByRole('button', { name: new RegExp(`17:30 · ${schoolCoachName} · particular`) }).first()
+  const chip = dlg
+    .getByRole('button', { name: new RegExp(`17:30 · ${schoolCoachName} · particular`) })
+    .first()
   await expect(chip).toBeVisible({ timeout: 40000 })
   await shot(page, '30-tenant-horarios')
   console.log('TENANT HORARIOS:', (await dlg.innerText()).slice(0, 600))
@@ -561,24 +654,30 @@ test('11. subdominio: miembro reserva horario de la escuela', async ({ page, req
   console.log('SCHOOL BOOK MS', Date.now() - t0)
   await page.waitForTimeout(1000)
   await shot(page, '31-tenant-booked')
-  for (const d of await page.getByRole('dialog').all()) console.log('AFTER>>', (await d.innerText()).slice(0, 500))
+  for (const d of await page.getByRole('dialog').all())
+    console.log('AFTER>>', (await d.innerText()).slice(0, 500))
 })
 
-test('12. home: CTA reserva tu primera clase, buscar coaches y margenes en movil', async ({ page, request }) => {
+test('12. home: CTA reserva tu primera clase, buscar coaches y margenes en movil', async ({
+  page,
+  request,
+}) => {
   test.setTimeout(150000)
   page.setDefaultTimeout(40000)
   await loginAs(page, request, readyEmail)
   await page.goto('/athlete/home')
   await expect(page.getByRole('heading', { name: /Hola, Nadia/ })).toBeVisible()
   const h1 = await page.getByRole('heading', { name: /Hola, Nadia/ }).boundingBox()
-  expect.soft(h1?.x ?? 0, 'friccion: el titulo de Inicio pega al borde izquierdo en 390px').toBeGreaterThanOrEqual(12)
+  expect
+    .soft(h1?.x ?? 0, 'friccion: el titulo de Inicio pega al borde izquierdo en 390px')
+    .toBeGreaterThanOrEqual(12)
   await page.getByRole('link', { name: /Buscar coaches/ }).click()
   await page.waitForURL('**/athlete/search-coaches')
   await page.waitForTimeout(3000)
   await shot(page, '32-search-coaches')
   console.log('SEARCH-COACHES:', (await page.locator('main').innerText()).slice(0, 400))
   await page.goto('/athlete/home')
-  await expect(page.getByText('Tu próxima clase', { exact: true })).toBeVisible()
+  await expect(page.getByText('Tu próxima clase', { exact: true })).toBeVisible({ timeout: 30000 })
   await shot(page, '33-home-with-class')
   console.log('HOME w/ booking:', (await page.locator('main').innerText()).slice(0, 300))
 })
