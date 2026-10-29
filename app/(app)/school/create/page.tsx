@@ -9,6 +9,7 @@ import { useUser } from '@/context/UserContext'
 import { uploadSchoolLogo } from '@/firebase/school-logos/main'
 import { getAuthed, postAuthed } from '@/lib/client/authed-api'
 import { getPublicSchoolUrl } from '@/lib/client/school-public-url'
+import { NADAMAS_PRICING } from '@/lib/pricing'
 import { DEFAULT_SCHOOL_TIMEZONE, SCHOOL_TIMEZONE_OPTIONS, type School } from '@/lib/school'
 import { slugify } from '@/lib/slug'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
@@ -217,15 +218,35 @@ export default function CreateSchoolPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-(--c-border) bg-white p-4 text-sm">
-        <p className="font-bold">$299 MXN al mes por escuela · todos sus profesores incluidos</p>
-        {ownedSchool && (
+      {ownedSchool ? (
+        <div className="rounded-xl border border-(--c-border) bg-white p-4 text-sm">
+          <p className="font-bold">
+            ${NADAMAS_PRICING.regularMonthly} {NADAMAS_PRICING.currency} al mes por escuela · todos
+            sus profesores incluidos
+          </p>
           <p className="mt-2 text-(--c-text-2)">
             Las escuelas adicionales requieren una suscripción desde el inicio. Puedes crearla y
             activar su acceso desde Suscripción.
           </p>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--c-border) bg-white p-4 text-sm">
+          {/* Informative only: the first school always starts on the trial. */}
+          <label className="flex items-center gap-3 font-bold">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-primary checkbox-sm pointer-events-none"
+              checked
+              readOnly
+              tabIndex={-1}
+            />
+            Suscripción básica gratis por {NADAMAS_PRICING.trialDays} días
+          </label>
+          <Link href="/precio" className="min-h-11 content-center font-bold underline">
+            Ver suscripciones
+          </Link>
+        </div>
+      )}
       <form
         onSubmit={submit}
         className="flex flex-col gap-5 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5 shadow-[var(--shadow-sm)] sm:p-7"
