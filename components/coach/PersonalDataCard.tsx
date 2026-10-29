@@ -1,13 +1,11 @@
 'use client'
-import { TextField } from '@comps/Inputs/FormFields'
 import ImageInput from '@comps/Inputs/ImageInput'
 import SaveButton from '@comps/SaveButton'
 import { useEffect, useState } from 'react'
-import { useUser } from '@/context/UserContext'
+import PersonalProfileCard from '@/components/profile/PersonalProfileCard'
 import type { CoachDocument, CoachIdentityVerification } from '@/firebase/coaches/coach.model'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { useAutosave } from '@/hooks/useAutosave'
-import { patchAuthed } from '@/lib/client/authed-api'
 import { optimizeImageForUpload } from '@/lib/image-optimizer'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
 import ProfileSection from './ProfileSection'
@@ -41,42 +39,12 @@ export default function PersonalDataCard({
   savingIdentity: boolean
   onSaveIdentity: (v: IdentityValue) => void
 }) {
-  const { user, refreshUser } = useUser() as {
-    user: {
-      nickname?: string
-      displayName?: string
-      name?: string
-      firstName?: string
-      lastName?: string
-    } | null
-    refreshUser?: () => Promise<unknown>
-  }
-
-  const [nickname, setNickname] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
-  const [message, setMessage] = useState<string | null>(null)
-
   const [identityDraft, setIdentityDraft] = useState<IdentityValue>(identityValue || {})
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState<number | undefined>()
   const [identityError, setIdentityError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!user) return
-    setNickname((current) => current || user.nickname || user.displayName || user.name || '')
-    setFirstName((current) => current || user.firstName || '')
-    setLastName((current) => current || user.lastName || '')
-  }, [user])
-
   useEffect(() => setIdentityDraft(identityValue || {}), [identityValue])
-
-  const { saveNow } = useAutosave(
-    JSON.stringify({ nickname, firstName, lastName }),
-    () => void save(),
-    { enabled: !!nickname.trim() }
-  )
 
   const verification = identityDraft.identityVerification || {
     status: 'not_submitted' as const,
@@ -87,38 +55,6 @@ export default function PersonalDataCard({
     () => onSaveIdentity({ identityVerification: verification }),
     { enabled: !busy && !!verification.document }
   )
-
-  const hasLegalName = !!(user?.firstName?.trim() && user?.lastName?.trim())
-  const summary = hasLegalName
-    ? `${nickname || 'Sin nombre visible'} · datos completos`
-    : 'Falta nombre y apellidos'
-
-  const buttonStatus =
-    status === 'saving' || savingIdentity ? 'saving' : status === 'error' ? 'error' : status
-
-  async function save() {
-    const trimmed = nickname.trim()
-    if (!trimmed) {
-      setStatus('error')
-      setMessage('El nombre visible es obligatorio.')
-      return
-    }
-    setStatus('saving')
-    setMessage(null)
-    try {
-      await patchAuthed('/api/profile', {
-        nickname: trimmed,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-      })
-      await refreshUser?.()
-      setStatus('saved')
-      setMessage('Datos guardados')
-    } catch {
-      setStatus('error')
-      setMessage('No se pudo guardar. Intenta de nuevo.')
-    }
-  }
 
   const uploadIne = async (file: File) => {
     setIdentityError(null)
@@ -163,70 +99,44 @@ export default function PersonalDataCard({
   }
 
   return (
-    <ProfileSection
-      id="coach-verification-documents"
-      title="Datos personales"
-      description="Administra los datos de tu perfil y tus documentos de verificación."
-      summary={summary}
-      surface="tinted"
-    >
-      <TextField
-        label="Nombre visible (nickname)"
-        value={nickname}
-        onChange={(event) => setNickname(event.target.value)}
-        placeholder="Cómo quieres que te vean"
-      />
+    <>
+      <PersonalProfileCard />
+      <ProfileSection
+        id="coach-verification-documents"
+        title="Documento de identidad"
+        description="Administra los datos de tu perfil y tus documentos de verificación."
+        summary={identityStatusCopy(verification)}
+        surface="tinted"
+      >
+        <div className="flex flex-col gap-4 pt-1">
+          {identityError && <p className="text-sm text-(--c-error,#b91c1c)">{identityError}</p>}
 
-      <TextField
-        label="Nombre(s)"
-        value={firstName}
-        onChange={(event) => setFirstName(event.target.value)}
-        placeholder="Escribe tus nombre(s)"
-        autoComplete="given-name"
-      />
+          <ImageInput
+            label="Documento de identidad"
+            imageUrl={verification.document?.url}
+            imageAlt="Documento de identidad subido"
+            busy={busy}
+            progress={progress}
+            helperText={`${identityStatusCopy(verification)}${verification.document?.name ? ` · ${verification.document.name}` : ''}`}
+            onFileSelected={uploadIne}
+          />
 
-      <TextField
-        label="Apellido(s)"
-        value={lastName}
-        onChange={(event) => setLastName(event.target.value)}
-        placeholder="Escribe tus apellido(s)"
-        autoComplete="family-name"
-      />
-
-      <div className="flex flex-col gap-4 pt-1">
-        {identityError && <p className="text-sm text-(--c-error,#b91c1c)">{identityError}</p>}
-
-        <ImageInput
-          label="Documento de identidad"
-          imageUrl={verification.document?.url}
-          imageAlt="Documento de identidad subido"
-          busy={busy}
-          progress={progress}
-          helperText={`${identityStatusCopy(verification)}${verification.document?.name ? ` · ${verification.document.name}` : ''}`}
-          onFileSelected={uploadIne}
+          <p className="rounded-2xl bg-white/70 px-4 py-3 pt-0 text-xs leading-5 text-(--c-text-2)">
+            <span className="font-semibold text-(--c-ocean-mid)">¿Por qué pedimos esto?</span> Solo
+            para verificar tu identidad. Los atletas u otros coaches nunca tienen acceso a este
+            documento ni a estos datos.
+          </p>
+        </div>
+        <SaveButton
+          status={savingIdentity ? 'saving' : 'idle'}
+          onClick={() => {
+            saveIdentityNow()
+          }}
+          idleLabel="Guardado"
+          savedLabel="Datos guardados"
+          className="self-start sm:self-auto"
         />
-
-        <p className="rounded-2xl bg-white/70 px-4 py-3 pt-0 text-xs leading-5 text-(--c-text-2)">
-          <span className="font-semibold text-(--c-ocean-mid)">¿Por qué pedimos esto?</span> Solo
-          para verificar tu identidad. Los atletas u otros coaches nunca tienen acceso a este
-          documento ni a estos datos.
-        </p>
-      </div>
-      {message && (
-        <p className={`text-sm ${status === 'error' ? 'text-red-600' : 'text-[var(--c-text-2)]'}`}>
-          {message}
-        </p>
-      )}
-      <SaveButton
-        status={buttonStatus}
-        onClick={() => {
-          saveNow()
-          saveIdentityNow()
-        }}
-        idleLabel="Guardado"
-        savedLabel="Datos guardados"
-        className="self-start sm:self-auto"
-      />
-    </ProfileSection>
+      </ProfileSection>
+    </>
   )
 }
