@@ -206,11 +206,11 @@ export default function PaymentsPanel({
           <button
             type="button"
             aria-label="Configuración de pagos"
-            title="Configuración"
-            className="grid size-10 cursor-pointer place-items-center rounded-full border border-(--c-border) bg-white text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+            className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full border border-(--c-border) bg-white px-3.5 text-sm font-semibold text-(--c-ocean) transition-colors hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
             onClick={() => setSettings({ ...data.settings })}
           >
-            <FiSettings aria-hidden="true" className="size-5" />
+            <FiSettings aria-hidden="true" className="size-4" />
+            Configuración
           </button>,
           settingsSlot
         )}
