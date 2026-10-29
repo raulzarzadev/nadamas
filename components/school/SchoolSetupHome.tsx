@@ -188,7 +188,7 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
       <h1 id="school-home-title" className="sr-only">
         Inicio de {data.schoolName}
       </h1>
-      <nav aria-label="Administrar escuela" className="grid gap-3 sm:grid-cols-2">
+      <nav aria-label="Administrar escuela" className="grid gap-3 p-2 sm:grid-cols-2">
         <Link
           href="/school/setup"
           className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-[var(--c-aqua)] bg-[var(--c-aqua-light)] px-4 py-3 font-bold text-(--c-ocean) shadow-[var(--shadow-sm)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
