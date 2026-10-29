@@ -57,6 +57,12 @@ test('pagos: permisos, confirmación idempotente, reservas, devoluciones y lími
       email: account.email,
       nickname: name,
       roles: { athlete: true, coach, admin: false },
+      onboarding: {
+        version: 1,
+        interests: [coach ? 'coach' : 'swimmer'],
+        coachContext: coach ? 'independent' : null,
+        completedAt: 1,
+      },
     })
     return account
   }

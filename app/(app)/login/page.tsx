@@ -9,6 +9,7 @@ import { useEffect } from 'react'
 import { useRole } from '@/context/RoleContext'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
+import { needsOnboarding } from '@/lib/onboarding/model'
 import { safeRedirectPath } from '@/lib/post-login-path'
 import { destinationForRole, entryRoleForSession } from '@/lib/role-destination'
 
@@ -82,6 +83,11 @@ export default function LoginPage() {
 
     if (redirectTo) {
       router.replace(redirectTo)
+      return
+    }
+
+    if (needsOnboarding(user)) {
+      router.replace('/welcome')
       return
     }
 

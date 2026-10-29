@@ -147,7 +147,7 @@ export function getCachedAuthedData<T>(path: string): T | undefined {
   return requestCache.peek(`${userId}|${path}`) as T | undefined
 }
 
-export async function getAuthed(path: string) {
+export async function getAuthed(path: string, timeoutMs?: number) {
   if (!auth.currentUser) await getAuthToken()
   const userId = auth.currentUser?.uid
   if (cacheUser !== userId) {
@@ -174,16 +174,21 @@ export async function getAuthed(path: string) {
     async () => {
       const token = await getAuthToken()
       if (auth.currentUser?.uid !== userId) throw new Error('auth_session_changed')
-      return requestAuthed(path, undefined, token)
+      return requestAuthed(
+        path,
+        timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : undefined,
+        token
+      )
     },
     ttl
   )
 }
 
-export function postAuthed(path: string, body?: unknown) {
+export function postAuthed(path: string, body?: unknown, timeoutMs?: number) {
   return requestAuthed(path, {
     method: 'POST',
     body: JSON.stringify(body || {}),
+    ...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
   })
 }
 

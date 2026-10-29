@@ -2,10 +2,9 @@
 /* ---------USERS------ */
 /* -------------------- */
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
-import { db } from '.'
-
-import { FirebaseCRUD } from './FirebaseCRUD'
 import { Dates } from 'firebase-dates-util'
+import { db } from '.'
+import { FirebaseCRUD } from './FirebaseCRUD'
 
 export const getUser = async (userId) => {
   // TODO transform to listenUser
@@ -17,15 +16,13 @@ export const getUser = async (userId) => {
   return FirebaseCRUD.normalizeDoc(docSnap)
 }
 
-
-
 export const getTeamMember = async (userId) => {
   const docRef = doc(db, 'users', userId)
   const docSnap = await getDoc(docRef)
   const user = FirebaseCRUD.normalizeDoc(docSnap)
   // TODO set just the data that is necesary
   const member = {
-    ...user
+    ...user,
   }
   return member
 }
@@ -46,16 +43,13 @@ export const loginUser = async (user) => {
 
 export const createNewUser = async (user) => {
   const userFormat = Dates.deepFormatObjectDates({ ...user, createdAt: new Date() }, 'number')
-  return await setDoc(doc(db, 'users', user.id), {
-    ...userFormat,
-  })
-
+  await setDoc(doc(db, 'users', user.id), userFormat)
+  return { ...userFormat, id: user.id }
 }
 
 export const updateUser = async (user) => {
   const userFormat = Dates.deepFormatObjectDates(user, 'number')
-  return updateDoc(doc(db, 'users', user.id), userFormat)
-    .catch((err) => console.log(`err`, err))
+  return updateDoc(doc(db, 'users', user.id), userFormat).catch((err) => console.log(`err`, err))
 }
 
 /**

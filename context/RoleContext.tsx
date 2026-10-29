@@ -49,8 +49,13 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       setActiveRolePreferenceReady(true)
       return
     }
-    setStored(localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY))
-    setActiveRolePreferenceReady(true)
+    try {
+      setStored(localStorage.getItem(ACTIVE_ROLE_STORAGE_KEY))
+    } catch {
+      setStored(null)
+    } finally {
+      setActiveRolePreferenceReady(true)
+    }
   }, [])
 
   const activeRole = useMemo(() => resolveActiveRole(stored, roles), [stored, roles])
@@ -62,7 +67,11 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
   const setActiveRole = useCallback(
     (role: RoleName, options?: { navigate?: boolean }) => {
       if (typeof window !== 'undefined') {
-        localStorage.setItem(ACTIVE_ROLE_STORAGE_KEY, role)
+        try {
+          localStorage.setItem(ACTIVE_ROLE_STORAGE_KEY, role)
+        } catch {
+          /* Session role still works when storage is unavailable. */
+        }
       }
       trackEvent('role_changed', { role })
       setStored(role)
