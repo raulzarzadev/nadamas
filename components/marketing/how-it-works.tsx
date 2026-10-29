@@ -35,8 +35,6 @@ const JOURNEYS = [
     number: '02',
     audience: 'Para entrenadores',
     title: 'Una agenda clara para enseñar mejor.',
-    intro:
-      'Gestiona tus horarios, clases y alumnos desde tu propio espacio, trabajes por tu cuenta o con una escuela.',
     steps: [
       { title: 'Organiza tus horarios' },
       { title: 'Gestiona alumnos y pagos' },
@@ -84,15 +82,6 @@ const JOURNEYS = [
 export default function HowItWorks() {
   return (
     <>
-      <section id="como-funciona" className="scroll-mt-20 px-5 pt-16 sm:px-8 sm:pt-20">
-        <div className="mx-auto max-w-[1180px]">
-          <p className="text-sm font-bold uppercase text-[#a94732]">Cómo funciona</p>
-          <h2 className="mt-3 max-w-[18ch] text-3xl font-extrabold sm:text-4xl">
-            Un espacio para cada forma de vivir la natación.
-          </h2>
-        </div>
-      </section>
-
       {JOURNEYS.map((journey) => {
         const dark = journey.tone === 'dark'
         const background =
@@ -122,12 +111,14 @@ export default function HowItWorks() {
                 >
                   {journey.title}
                 </h2>
-                <p
-                  className="mt-5 max-w-[48ch] text-base leading-relaxed sm:text-lg"
-                  style={{ color: secondary }}
-                >
-                  {journey.intro}
-                </p>
+                {'intro' in journey && (
+                  <p
+                    className="mt-5 max-w-[48ch] text-base leading-relaxed sm:text-lg"
+                    style={{ color: secondary }}
+                  >
+                    {journey.intro}
+                  </p>
+                )}
 
                 <ol className="mt-8">
                   {journey.steps.map((step, index) => (

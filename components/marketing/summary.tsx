@@ -1,5 +1,9 @@
-// Answer-first block: a self-contained definition that search engines and AI
-// assistants can quote verbatim. Keep it factual and in sync with llms.txt.
+// Short pitch: meta/OG description (keep under ~160 chars).
+export const PITCH_TEXT =
+  'nadamas.app es donde atletas, entrenadores y dueños de clubes organizan sus entrenamientos, planes y equipos, para que tú solo te enfoques en entrenar.'
+
+// Self-contained factual definition for search engines and AI assistants
+// (llms.txt + JSON-LD only; not rendered on the page).
 export const SUMMARY_TEXT =
   'nadamas.app es una app web en español para organizar clases de natación. Los entrenadores publican horarios y gestionan alumnos, pagos y progreso; los atletas reservan clases y consultan su avance; y los coordinadores administran una escuela completa con varios entrenadores.'
 
@@ -41,8 +45,13 @@ export default function Summary() {
           <h2 id="que-es-title" className="mt-3 max-w-[20ch] text-3xl font-extrabold sm:text-4xl">
             ¿Qué es nadamas.app?
           </h2>
-          <p className="mt-5 max-w-[56ch] text-lg leading-relaxed text-(--c-text-2)">
-            {SUMMARY_TEXT}
+          <p className="mt-5 max-w-[48ch] text-xl font-semibold leading-relaxed">
+            Es la forma en que atletas, entrenadores y dueños de clubes mantienen organizados sus
+            entrenamientos, planes y equipos.
+          </p>
+          <p className="mt-4 max-w-[56ch] text-lg leading-relaxed text-(--c-text-2)">
+            Un punto de encuentro en línea para tu equipo, siempre al día, con herramientas pensadas
+            para que tú solo te enfoques en entrenar.
           </p>
         </div>
 

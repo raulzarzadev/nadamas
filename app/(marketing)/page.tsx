@@ -5,15 +5,14 @@ import Hero from '@comps/marketing/hero'
 import HowItWorks from '@comps/marketing/how-it-works'
 import PoolMoments from '@comps/marketing/pool-moments'
 import PricingTeaser from '@comps/marketing/pricing-teaser'
-import Summary, { SUMMARY_TEXT } from '@comps/marketing/summary'
+import Summary, { PITCH_TEXT, SUMMARY_TEXT } from '@comps/marketing/summary'
 import type { Metadata } from 'next'
 import { NADAMAS_PRICING } from '@/lib/pricing'
 
 const title = 'nadamas.app | App para nadadores, entrenadores y escuelas de natación'
-const description = `App en español: clases de natación, agenda, reservas, pagos, asistencia y progreso para nadadores, entrenadores y escuelas. $${NADAMAS_PRICING.regularMonthly} ${NADAMAS_PRICING.currency}/mes por escuela, con todos sus profesores incluidos. Prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta para la primera escuela de cada propietario.`
+const description = PITCH_TEXT
 const shareTitle = 'nadamas.app — natación para atletas, entrenadores y clubes'
-const shareDescription =
-  'Entrenos, agenda, asistencia y progreso en un solo lugar para atletas, entrenadores y coordinadores de clubes deportivos.'
+const shareDescription = PITCH_TEXT
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://nadamas.app'),

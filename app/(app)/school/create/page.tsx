@@ -183,15 +183,12 @@ export default function CreateSchoolPage() {
 
       <div className="rounded-xl border border-(--c-border) bg-white p-4 text-sm">
         <p className="font-bold">$299 MXN al mes por escuela · todos sus profesores incluidos</p>
-        <p className="mt-2 text-(--c-text-2)">
-          {ownedSchool
-            ? 'Las escuelas adicionales requieren una suscripción desde el inicio. Puedes crearla y activar su acceso desde Suscripción.'
-            : 'Si aún no has usado tu prueba como propietario, tu primera escuela incluye 15 días gratis, sin tarjeta. Después necesitarás suscribirte para crear nuevas reservas y seguir ampliando tu operación.'}
-        </p>
-        <p className="mt-2 text-xs text-(--c-text-2)">
-          Una sola prueba por propietario. Si tienes un código asignado a esta escuela, podrás
-          activar el precio de $49 MXN al mes desde Suscripción.
-        </p>
+        {ownedSchool && (
+          <p className="mt-2 text-(--c-text-2)">
+            Las escuelas adicionales requieren una suscripción desde el inicio. Puedes crearla y
+            activar su acceso desde Suscripción.
+          </p>
+        )}
       </div>
       <form
         onSubmit={submit}

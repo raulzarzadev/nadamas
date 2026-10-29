@@ -1,4 +1,5 @@
 import '../styles/globals.css'
+import { PITCH_TEXT } from '@comps/marketing/summary'
 import type { Metadata, Viewport } from 'next'
 import type { CSSProperties } from 'react'
 import { TenantSchoolProvider } from '@/context/TenantSchoolContext'
@@ -13,8 +14,7 @@ const baseMetadata: Metadata = {
     default: 'nadamas.app | Coaches de natación y seguimiento de progreso',
     template: '%s | nadamas.app',
   },
-  description:
-    'Encuentra coaches de natación verificados, reserva clases y da seguimiento al progreso de tu entrenamiento.',
+  description: PITCH_TEXT,
   applicationName: 'nadamas.app',
   authors: [{ name: 'nadamas.app', url: 'https://nadamas.app' }],
   creator: 'nadamas.app',
@@ -33,8 +33,7 @@ const baseMetadata: Metadata = {
   },
   openGraph: {
     title: 'nadamas.app — natación para atletas, entrenadores y clubes',
-    description:
-      'Entrenos, agenda, asistencia y progreso en un solo lugar para atletas, entrenadores y coordinadores de clubes deportivos.',
+    description: PITCH_TEXT,
     siteName: 'nadamas.app',
     locale: 'es_MX',
     type: 'website',

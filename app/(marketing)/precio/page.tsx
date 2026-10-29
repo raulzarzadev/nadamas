@@ -74,11 +74,6 @@ export default function PricingPage() {
             </p>
           </div>
 
-          <p className="mt-4 text-sm leading-relaxed text-(--c-text-2)">
-            Una sola prueba por propietario. Escuelas seleccionadas pueden usar un código válido
-            para pagar ${NADAMAS_PRICING.promotionalMonthly} MXN al mes mientras mantengan activa su
-            suscripción. Si cancelan y termina su periodo pagado, pierden ese beneficio.
-          </p>
           <ul className="my-7 space-y-3">
             {FEATURES.map((feature) => (
               <li key={feature} className="flex items-start gap-3 text-sm leading-relaxed">
