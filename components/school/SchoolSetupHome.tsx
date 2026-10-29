@@ -182,6 +182,19 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
         className="grid gap-3 border-b border-(--c-border) p-5 sm:grid-cols-2 sm:px-7"
       >
         <Link
+          href="/school/setup"
+          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-[var(--c-aqua)] bg-[var(--c-aqua-light)] px-4 py-3 font-bold text-(--c-ocean) shadow-[var(--shadow-sm)] transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+        >
+          <FiCheckCircle aria-hidden="true" className="shrink-0" />
+          <span className="min-w-0 flex-1">
+            <span className="block">Inicia tu escuela</span>
+            <span className="mt-0.5 block text-xs font-normal">
+              {completed}/{data.steps.length} pasos completos
+            </span>
+          </span>
+          <FiArrowRight aria-hidden="true" className="shrink-0" />
+        </Link>
+        <Link
           href="/school/subscription"
           className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
         >
@@ -208,19 +221,6 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
         >
           <FiSettings aria-hidden="true" className="shrink-0" />
           <span className="min-w-0 flex-1">Configuración</span>
-          <FiArrowRight aria-hidden="true" className="shrink-0" />
-        </Link>
-        <Link
-          href="/school/setup"
-          className="flex min-h-14 min-w-0 items-center gap-3 rounded-xl border border-(--c-border) px-4 py-3 font-bold hover:bg-(--c-surface) focus-visible:outline-2"
-        >
-          <FiCheckCircle aria-hidden="true" className="shrink-0" />
-          <span className="min-w-0 flex-1">
-            <span className="block">Inicia tu escuela</span>
-            <span className="mt-0.5 block text-xs font-normal text-(--c-text-2)">
-              {completed}/{data.steps.length} pasos completos
-            </span>
-          </span>
           <FiArrowRight aria-hidden="true" className="shrink-0" />
         </Link>
       </nav>
