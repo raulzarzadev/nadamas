@@ -5,6 +5,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiPlus, FiUsers } from 'react-icons/fi'
 import PersonFields from '@/components/profile/PersonFields'
+import { planLimitMemberMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import Sheet from '@/components/ui/sheet'
 import { useRole } from '@/context/RoleContext'
 import { useUser } from '@/context/UserContext'
@@ -131,7 +132,10 @@ export default function SchoolInvitationPage() {
       }
       setAccepted(true)
     } catch (error) {
-      if (error instanceof AuthedApiError && error.code === 'email_mismatch')
+      // The invitee cannot change the school's plan: tell them to let the school know.
+      const limit = planLimitMemberMessageOf(error)
+      if (limit) setError(limit)
+      else if (error instanceof AuthedApiError && error.code === 'email_mismatch')
         setAccountMismatch(true)
       else setError(GENERIC_USER_ERROR)
     } finally {
@@ -153,7 +157,10 @@ export default function SchoolInvitationPage() {
       })
       setAccepted(true)
     } catch (error) {
-      if (error instanceof AuthedApiError && error.code === 'email_mismatch')
+      // The invitee cannot change the school's plan: tell them to let the school know.
+      const limit = planLimitMemberMessageOf(error)
+      if (limit) setError(limit)
+      else if (error instanceof AuthedApiError && error.code === 'email_mismatch')
         setAccountMismatch(true)
       else setError(GENERIC_USER_ERROR)
     } finally {
@@ -411,7 +418,11 @@ export default function SchoolInvitationPage() {
           fields={['name', 'phone', 'bio']}
           disabled={saving}
         />
-        {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-(--c-error,#b91c1c)">
+            {error}
+          </p>
+        )}
         <button
           type="submit"
           disabled={saving || invitation.status !== 'pending'}

@@ -9,7 +9,11 @@ import { adminDb } from '@/lib/server/firebase-admin'
 import { createNotification } from '@/lib/server/notifications'
 import { getSchoolCaller, requireSchoolAccess } from '@/lib/server/school-access'
 import { getSchoolById } from '@/lib/server/schools'
-import { assertSchoolSubscriptionAccess } from '@/lib/server/subscriptions/access'
+import {
+  assertSchoolSubscriptionAccess,
+  subscriptionErrorResponse,
+} from '@/lib/server/subscriptions/access'
+import { reserveSchoolSeatChanges } from '@/lib/server/subscriptions/seats'
 
 export const runtime = 'nodejs'
 type Props = { params: Promise<{ schoolId: string }> }
@@ -138,43 +142,47 @@ export async function PATCH(request: Request, { params }: Props) {
         const roles = [
           ...new Set([...(current?.roles || []), ...(current ? [current.role] : []), 'student']),
         ]
-        tx.set(
-          memberRef,
-          {
-            id: ref.id,
-            schoolId,
-            userId: entry.userId,
-            role: current?.role || 'student',
-            roles,
-            status: 'active',
-            createdAt: current?.createdAt || now,
-            updatedAt: now,
-          },
-          { merge: true }
-        )
+        const memberUpdate = {
+          id: ref.id,
+          schoolId,
+          userId: entry.userId,
+          role: current?.role || 'student',
+          roles,
+          status: 'active',
+          createdAt: current?.createdAt || now,
+          updatedAt: now,
+        }
         const linked = roster.docs.find((doc) => doc.data().studentUserId === entry.userId)
-        if (linked || student.exists) {
-          tx.update(linked?.ref || studentRef, { status: 'active', updatedAt: now })
-        } else
-          tx.set(studentRef, {
-            id: ref.id,
-            schoolId,
-            name: entry.name,
-            birthDate: '',
-            gender: 'otro',
-            guardianIds: [],
-            managerIds: [],
-            guardianName: '',
-            guardianRelationship: '',
-            guardianPhone: '',
-            guardianEmail: '',
-            studentEmail: entry.email,
-            studentUserId: entry.userId,
-            accountParticipant: true,
-            status: 'active',
-            createdAt: now,
-            updatedAt: now,
-          })
+        const activated = linked || (student.exists ? student : null)
+        const newStudent = {
+          id: ref.id,
+          schoolId,
+          name: entry.name,
+          birthDate: '',
+          gender: 'otro',
+          guardianIds: [],
+          managerIds: [],
+          guardianName: '',
+          guardianRelationship: '',
+          guardianPhone: '',
+          guardianEmail: '',
+          studentEmail: entry.email,
+          studentUserId: entry.userId,
+          accountParticipant: true,
+          status: 'active',
+          createdAt: now,
+          updatedAt: now,
+        }
+        const seat = await reserveSchoolSeatChanges(tx, schoolId, 'student', {
+          memberships: [memberUpdate],
+          students: [
+            activated ? { ...activated.data(), id: activated.id, status: 'active' } : newStudent,
+          ],
+        })
+        tx.set(memberRef, memberUpdate, { merge: true })
+        if (activated) tx.update(activated.ref, { status: 'active', updatedAt: now })
+        else tx.set(studentRef, newStudent)
+        seat.claim()
       }
       tx.update(ref, { status: body.status, reviewedBy: access.caller.uid, updatedAt: now })
       return true
@@ -193,7 +201,7 @@ export async function PATCH(request: Request, { params }: Props) {
       link: '/athlete/progress',
     }).catch(() => {})
     return NextResponse.json({ ok: true })
-  } catch {
-    return failure()
+  } catch (error) {
+    return subscriptionErrorResponse(error) || failure()
   }
 }

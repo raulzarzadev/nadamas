@@ -1,3 +1,5 @@
+import type { SchoolPlanLimits, SeatUsage } from './plans'
+
 export type SubscriptionState =
   | 'trialing'
   | 'active'
@@ -11,6 +13,10 @@ export interface SchoolSubscription {
   exemptionUpdatedAt?: number
   exemptionUpdatedBy?: string
   exemptionChangeId?: string | null
+  customLimits?: { teachers: number; students: number } | null
+  customPlanReason?: string
+  customPlanUpdatedAt?: number
+  customPlanUpdatedBy?: string
   stripeSubscriptionId?: string | null
   stripeCustomerId?: string | null
   stripeCheckoutSessionId?: string | null
@@ -85,6 +91,8 @@ export interface SubscriptionSnapshot {
   bankDetails: SubscriptionBankDetails | null
   orders: SubscriptionOrder[]
   cardAvailable: boolean
+  /** Only for managers that asked for it (`usage=1`). */
+  plan?: { limits: SchoolPlanLimits; usage: SeatUsage }
 }
 export interface SubscriptionAdminSnapshot {
   settings: SubscriptionBankDetails

@@ -119,7 +119,7 @@ const jsonLd = {
         priceCurrency: NADAMAS_PRICING.currency,
         url: 'https://nadamas.app/precio',
         category: 'subscription',
-        description: 'Suscripción mensual por escuela, con todos sus profesores incluidos.',
+        description: `Suscripción mensual por escuela, hasta ${NADAMAS_PRICING.basicLimits.teachers} profes y ${NADAMAS_PRICING.basicLimits.students} alumnos.`,
         availability: 'https://schema.org/InStock',
       },
       publisher: { '@id': 'https://nadamas.app/#org' },

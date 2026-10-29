@@ -1,8 +1,9 @@
+import { NADAMAS_PRICING } from '../pricing'
 import type { SchoolSubscription, SubscriptionAccess } from './model'
 
-export const SUBSCRIPTION_PRICE_CENTS = 29900
-export const SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS = 4900
-export const SUBSCRIPTION_TRIAL_MS = 15 * 24 * 60 * 60 * 1000
+export const SUBSCRIPTION_PRICE_CENTS = NADAMAS_PRICING.regularMonthly * 100
+export const SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS = NADAMAS_PRICING.promotionalMonthly * 100
+export const SUBSCRIPTION_TRIAL_MS = NADAMAS_PRICING.trialDays * 24 * 60 * 60 * 1000
 export const SUBSCRIPTION_GRACE_MS = 3 * 24 * 60 * 60 * 1000
 
 export class SubscriptionError extends Error {

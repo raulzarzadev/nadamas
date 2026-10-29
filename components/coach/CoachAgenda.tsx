@@ -28,6 +28,7 @@ import ClassQuickActions, {
 } from '@/components/coach/ClassQuickActions'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
 import SchoolReassignStudent from '@/components/school/SchoolReassignStudent'
+import { planLimitMemberMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import ClassCard from '@/components/ui/class-card'
 import ClassRequestCard from '@/components/ui/class-request-card'
 import CoachBadge from '@/components/ui/coach-badge'
@@ -836,6 +837,12 @@ export default function CoachAgenda({
       await loadAgenda(monthOfSelected)
       return true
     } catch (err) {
+      // Whoever books here may not manage the school's plan: ask them to tell the school.
+      const limit = planLimitMemberMessageOf(err)
+      if (limit) {
+        setError(limit)
+        return false
+      }
       reportInternalError('COACH_AGENDA_ACTION', err)
       setError(
         err instanceof AuthedApiError && err.code === 'payment_required'

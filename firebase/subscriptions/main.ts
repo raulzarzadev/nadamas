@@ -12,9 +12,12 @@ async function read<T>(response: Response): Promise<T> {
   return result as T
 }
 class Subscriptions {
-  async get(schoolId: string) {
+  /** `usage` asks for the plan's seat usage (managers only; counting seats is costly). */
+  async get(schoolId: string, { usage = false }: { usage?: boolean } = {}) {
     return read<SubscriptionSnapshot>(
-      await getAuthed(`/api/subscriptions?schoolId=${encodeURIComponent(schoolId)}`)
+      await getAuthed(
+        `/api/subscriptions?schoolId=${encodeURIComponent(schoolId)}${usage ? '&usage=1' : ''}`
+      )
     )
   }
   async update(schoolId: string, values: object) {

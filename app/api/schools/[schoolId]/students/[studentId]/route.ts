@@ -3,6 +3,7 @@ import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
 import { getOrRestoreSchoolAgendaStudent } from '@/lib/server/school-students'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 async function updateStudent(
@@ -72,7 +73,9 @@ async function updateStudent(
     return NextResponse.json({
       student: { ...current, ...changes, id: snapshot.id, updatedAt: now },
     })
-  } catch {
+  } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     return NextResponse.json(
       { error: 'No pudimos guardar los datos. Inténtalo de nuevo.' },
       { status: 500 }

@@ -5,6 +5,7 @@ import {
   subscriptionErrorResponse,
   subscriptionSchoolAccess,
 } from '@/lib/server/subscriptions/access'
+import { readSchoolSeats } from '@/lib/server/subscriptions/seats'
 import {
   cancelSubscriptionTransfer,
   changeSubscriptionRenewal,
@@ -18,6 +19,7 @@ import {
 import { stripeConfigured } from '@/lib/server/subscriptions/stripe-client'
 import {
   assertSubscriptionPayable,
+  SUBSCRIPTION_PRICE_CENTS,
   SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS,
   subscriptionAccess,
   subscriptionPrice,
@@ -37,10 +39,13 @@ const invalid = () =>
   NextResponse.json({ error: 'Revisa los datos e inténtalo de nuevo.' }, { status: 400 })
 export async function GET(request: Request) {
   try {
-    const schoolId = new URL(request.url).searchParams.get('schoolId')
+    const params = new URL(request.url).searchParams
+    const schoolId = params.get('schoolId')
     if (!validId(schoolId)) return invalid()
     const access = await subscriptionSchoolAccess(request, schoolId)
-    const [doc, settings, orders] = await Promise.all([
+    // Seat counts read every membership and roster doc: only on demand, only for managers.
+    const withUsage = access.manager && params.get('usage') === '1'
+    const [doc, settings, orders, seats] = await Promise.all([
       subscriptionRef(schoolId).get(),
       access.manager ? subscriptionSettingsRef().get() : null,
       access.manager
@@ -51,6 +56,7 @@ export async function GET(request: Request) {
             .limit(200)
             .get()
         : null,
+      withUsage ? readSchoolSeats(schoolId) : null,
     ])
     const sub = (doc.data() as SchoolSubscription) || null
     let priceCents = subscriptionPrice(sub, Date.now())
@@ -58,7 +64,7 @@ export async function GET(request: Request) {
       const code = (
         await adminDb.collection('subscriptionCodes').doc(sub.promotionalCodeId).get()
       ).data() as SubscriptionCode | undefined
-      if (code && !code.redeemedAt) priceCents = 29900
+      if (code && !code.redeemedAt) priceCents = SUBSCRIPTION_PRICE_CENTS
       if (code?.active && !code.redeemedAt && (!code.expiresAt || Date.now() < code.expiresAt))
         priceCents = SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS
     }
@@ -68,7 +74,7 @@ export async function GET(request: Request) {
       manager: access.manager,
       subscription: access.manager ? sub : null,
       access: subscriptionAccess(sub, Date.now()),
-      priceCents: sub?.paymentExempt ? 0 : access.manager ? priceCents : 29900,
+      priceCents: sub?.paymentExempt ? 0 : access.manager ? priceCents : SUBSCRIPTION_PRICE_CENTS,
       bankDetails: access.manager
         ? ({ ...EMPTY_SUBSCRIPTION_BANK, ...settings?.data() } as SubscriptionBankDetails)
         : null,
@@ -77,6 +83,7 @@ export async function GET(request: Request) {
           .map((item) => ({ ...item.data(), id: item.id }) as SubscriptionOrder)
           .sort((a, b) => b.createdAt - a.createdAt) || [],
       cardAvailable: stripeConfigured(),
+      ...(seats && { plan: { limits: seats.limits, usage: seats.usage } }),
     }
     return NextResponse.json(snapshot, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {

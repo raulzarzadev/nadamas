@@ -90,6 +90,7 @@ export function subscriptionErrorMessage(error: unknown) {
     checkout_pending: 'Estamos preparando o confirmando tu pago. Actualiza en unos momentos.',
     card_unavailable: 'El pago con tarjeta todavía no está disponible.',
     unauthenticated: 'Tu sesión terminó. Vuelve a iniciar sesión.',
+    invalid_limits: 'Revisa los límites del plan personalizado.',
   }
   return messages[error.code || ''] || GENERIC_USER_ERROR
 }

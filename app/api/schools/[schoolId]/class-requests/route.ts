@@ -83,9 +83,12 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       caller.name ||
       caller.email?.split('@')[0] ||
       'Atleta'
+    if (membership?.status && membership.status !== 'active')
+      return NextResponse.json({ error: 'No puedes reservar en esta escuela.' }, { status: 403 })
     if (participant?.type === 'self') {
       student = await createSchoolStudent({
         schoolId,
+        memberUserId: caller.uid,
         studentUserId: caller.uid,
         guardianId: caller.uid,
         guardianEmail: caller.email || '',
@@ -106,6 +109,7 @@ async function handlePOST(request: Request, { params }: RouteProps) {
         return NextResponse.json({ error: 'Perfil adicional inválido.' }, { status: 400 })
       student = await createSchoolStudent({
         schoolId,
+        memberUserId: caller.uid,
         guardianId: caller.uid,
         guardianEmail: caller.email || '',
         name: profile.name,
@@ -123,28 +127,6 @@ async function handlePOST(request: Request, { params }: RouteProps) {
       )
     }
     studentId = student.id
-    const existingMembership = membership
-    if (existingMembership?.status && existingMembership.status !== 'active')
-      return NextResponse.json({ error: 'No puedes reservar en esta escuela.' }, { status: 403 })
-    const roles = new Set<string>(
-      existingMembership?.roles || (existingMembership?.role ? [existingMembership.role] : [])
-    )
-    roles.add('student')
-    await adminDb
-      .collection('schoolMemberships')
-      .doc(`${schoolId}_${caller.uid}`)
-      .set(
-        {
-          schoolId,
-          userId: caller.uid,
-          role: existingMembership?.role || 'student',
-          roles: [...roles],
-          status: 'active',
-          createdAt: existingMembership?.createdAt || Date.now(),
-          updatedAt: Date.now(),
-        },
-        { merge: true }
-      )
   }
   if (!student) return NextResponse.json({ error: 'Alumno inválido.' }, { status: 400 })
   const canRequestForParticipant =

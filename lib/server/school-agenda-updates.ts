@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 import { reportServerError } from '@/lib/analytics/server'
 import { adminDb } from './firebase-admin'
 import { paymentErrorResponse } from './payments/reservations'
+import { subscriptionErrorResponse } from './subscriptions/access'
 
 /** Publish only after an authorized mutation succeeds; never expose agenda data. */
 export function withSchoolAgendaUpdate<Args extends unknown[]>(
@@ -24,6 +25,8 @@ export function withSchoolAgendaUpdate<Args extends unknown[]>(
     } catch (error) {
       const paymentError = paymentErrorResponse(error)
       if (paymentError) return NextResponse.json(paymentError, { status: 409 })
+      const subscriptionError = subscriptionErrorResponse(error)
+      if (subscriptionError) return subscriptionError
       throw error
     }
     if (!response.ok) return response

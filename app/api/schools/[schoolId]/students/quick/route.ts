@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { createSchoolStudent } from '@/lib/server/school-students'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export async function POST(
   request: Request,
@@ -25,7 +26,9 @@ export async function POST(
       guardianPhone: '',
     })
     return NextResponse.json({ student }, { status: 201 })
-  } catch {
+  } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     return NextResponse.json({ error: 'No pudimos crear el alumno.' }, { status: 500 })
   }
 }

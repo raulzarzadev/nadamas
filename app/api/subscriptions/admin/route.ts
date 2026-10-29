@@ -12,6 +12,7 @@ import {
   EMPTY_SUBSCRIPTION_BANK,
   releaseInvalidatedSubscriptionPayment,
   reviewSubscriptionTransfer,
+  setSchoolCustomPlan,
   setSchoolPaymentExemption,
   subscriptionSettingsRef,
 } from '@/lib/server/subscriptions/store'
@@ -65,6 +66,26 @@ export async function POST(request: Request) {
       )
         return invalid()
       await setSchoolPaymentExemption(body.schoolId, body.enabled, body.reason.trim(), caller.uid)
+      return NextResponse.json({ ok: true })
+    }
+    if (body.action === 'setCustomPlan' && validId(body.schoolId)) {
+      const input = body.limits as { teachers?: unknown; students?: unknown } | null | undefined
+      if (
+        input === undefined ||
+        (input !== null && (typeof input !== 'object' || Array.isArray(input))) ||
+        typeof body.reason !== 'string' ||
+        body.reason.trim().length < 3 ||
+        body.reason.length > 300
+      )
+        return invalid()
+      await setSchoolCustomPlan(
+        body.schoolId,
+        input === null
+          ? null
+          : { teachers: input.teachers as number, students: input.students as number },
+        body.reason.trim(),
+        caller.uid
+      )
       return NextResponse.json({ ok: true })
     }
     if (body.action === 'settings') {

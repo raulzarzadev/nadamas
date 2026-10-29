@@ -4,12 +4,15 @@ import { useCallback, useEffect, useState } from 'react'
 import { FiPlus, FiSettings } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 import { SubscriptionCRUD } from '@/firebase/subscriptions/main'
+import { NADAMAS_PRICING } from '@/lib/pricing'
 import { subscriptionAccess, subscriptionPrice } from '@/lib/subscriptions/engine'
 import type {
+  SchoolSubscription,
   SubscriptionAdminSnapshot,
   SubscriptionBankDetails,
   SubscriptionOrder,
 } from '@/lib/subscriptions/model'
+import { schoolPlanLimits } from '@/lib/subscriptions/plans'
 import { reportInternalError } from '@/lib/user-facing-error'
 import {
   orderState,
@@ -30,7 +33,7 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [filter, setFilter] = useState('')
-  const [modal, setModal] = useState<'bank' | 'code' | 'review' | 'exemption' | null>(null)
+  const [modal, setModal] = useState<'bank' | 'code' | 'review' | 'exemption' | 'plan' | null>(null)
   const [bank, setBank] = useState(emptyBank)
   const [schoolId, setSchoolId] = useState('')
   const [code, setCode] = useState('')
@@ -39,6 +42,9 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
   const [received, setReceived] = useState('')
   const [exemptionEnabled, setExemptionEnabled] = useState(true)
   const [exemptionReason, setExemptionReason] = useState('')
+  const [planTeachers, setPlanTeachers] = useState('')
+  const [planStudents, setPlanStudents] = useState('')
+  const [planReason, setPlanReason] = useState('')
   const load = useCallback(async () => {
     setLoading(true)
     try {
@@ -94,7 +100,8 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
             $299 MXN al mes por escuela · $49 con código asignado.
           </p>
           <p className="mt-1 text-xs text-(--c-text-2)">
-            Incluye a todos sus profesores. Estos pagos son de escuelas a Nadamas.
+            Plan Básico: hasta {NADAMAS_PRICING.basicLimits.teachers} profes y{' '}
+            {NADAMAS_PRICING.basicLimits.students} alumnos. Estos pagos son de escuelas a Nadamas.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -215,6 +222,54 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
                               Motivo: {item.exemptionReason}
                             </p>
                           )}
+                        </div>
+                        <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) p-3">
+                          <p className="min-w-0 text-sm">
+                            <span className="font-semibold">Plan: </span>
+                            {adminPlanLabel(item)}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              disabled={saving}
+                              className={subscriptionSecondary}
+                              onClick={() => {
+                                setSchoolId(school.id)
+                                setPlanTeachers(String(item?.customLimits?.teachers ?? ''))
+                                setPlanStudents(String(item?.customLimits?.students ?? ''))
+                                setPlanReason('')
+                                setError('')
+                                setModal('plan')
+                              }}
+                            >
+                              {item?.customLimits ? 'Editar' : 'Pasar a Personalizado'}
+                            </button>
+                            {item?.customLimits && (
+                              <button
+                                type="button"
+                                disabled={saving}
+                                className={subscriptionSecondary}
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `${school.name} volverá al plan Básico y se quitará la exención de pago.`
+                                    )
+                                  )
+                                    void mutate(
+                                      {
+                                        action: 'setCustomPlan',
+                                        schoolId: school.id,
+                                        limits: null,
+                                        reason: 'Vuelve al plan Básico',
+                                      },
+                                      'La escuela volvió al plan Básico.'
+                                    )
+                                }}
+                              >
+                                Volver a Básico
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-3">
                           <span className="text-sm font-bold">
@@ -372,6 +427,96 @@ export default function AdminSubscriptions({ query = '' }: { query?: string }) {
           </section>
         </>
       )}
+      <Sheet
+        open={modal === 'plan'}
+        onClose={() => setModal(null)}
+        label="Plan Personalizado"
+        keyboardAware
+        closeDisabled={saving}
+        showFooterClose={false}
+        footer={
+          <ModalFooter
+            form="subscription-plan"
+            saving={saving}
+            submit="Guardar plan"
+            onClose={() => setModal(null)}
+          />
+        }
+      >
+        <h2 className="text-xl font-bold">Plan Personalizado</h2>
+        <p className="mt-3 text-sm text-(--c-text-2)">
+          {name(schoolId)} quedará exenta de pago con estos límites. Deben superar los del plan
+          Básico.
+        </p>
+        <form
+          id="subscription-plan"
+          className="mt-4 grid min-w-0 grid-cols-1 gap-4"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void mutate(
+              {
+                action: 'setCustomPlan',
+                schoolId,
+                limits: { teachers: Number(planTeachers), students: Number(planStudents) },
+                reason: planReason.trim(),
+              },
+              'Plan Personalizado guardado.'
+            )
+          }}
+        >
+          <label className="grid min-w-0 gap-2 text-sm font-semibold">
+            Profes
+            <input
+              aria-label="Profes"
+              type="number"
+              inputMode="numeric"
+              className={subscriptionInput}
+              value={planTeachers}
+              onChange={(event) => setPlanTeachers(event.target.value)}
+              min={NADAMAS_PRICING.basicLimits.teachers + 1}
+              max={100000}
+              step={1}
+              required
+            />
+          </label>
+          <label className="grid min-w-0 gap-2 text-sm font-semibold">
+            Alumnos
+            <input
+              aria-label="Alumnos"
+              type="number"
+              inputMode="numeric"
+              className={subscriptionInput}
+              value={planStudents}
+              onChange={(event) => setPlanStudents(event.target.value)}
+              min={NADAMAS_PRICING.basicLimits.students + 1}
+              max={100000}
+              step={1}
+              required
+            />
+          </label>
+          <label className="grid min-w-0 gap-2 text-sm font-semibold">
+            Nota
+            <textarea
+              aria-label="Nota"
+              className={`${subscriptionInput} [field-sizing:content] min-h-20 py-3`}
+              value={planReason}
+              onChange={(event) => setPlanReason(event.target.value)}
+              minLength={3}
+              maxLength={300}
+              rows={2}
+              required
+            />
+            <span className="text-xs font-normal text-(--c-text-2)">
+              Se registra en la auditoría de administración.
+            </span>
+          </label>
+          {error && (
+            <p role="alert" className="text-sm text-red-800">
+              {error}
+            </p>
+          )}
+        </form>
+      </Sheet>
       <Sheet
         open={modal === 'exemption'}
         onClose={() => setModal(null)}
@@ -711,4 +856,10 @@ function ModalFooter({
       </button>
     </div>
   )
+}
+
+function adminPlanLabel(item: SchoolSubscription | undefined) {
+  const limits = schoolPlanLimits(item ?? null)
+  if (limits.plan === 'unlimited') return 'Exenta · sin límite'
+  return `${limits.plan === 'basic' ? 'Básico' : 'Personalizado'} · ${limits.teachers} profes · ${limits.students} alumnos`
 }

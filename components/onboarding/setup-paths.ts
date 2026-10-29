@@ -1,4 +1,5 @@
 import type { OnboardingInput } from '@/lib/onboarding/model'
+import { NADAMAS_PRICING } from '@/lib/pricing'
 import type { RoleName } from '@/lib/roles'
 export interface SetupAction {
   title: string
@@ -94,12 +95,11 @@ export function setupPaths(input: OnboardingInput): SetupPath[] {
     paths.push({
       id: 'coordinator',
       title: 'Como coordinador',
-      introduction:
-        'Crea tu escuela y reúne al equipo. Una suscripción incluye a todos tus profes.',
+      introduction: `Crea tu escuela y reúne al equipo. Una suscripción incluye hasta ${NADAMAS_PRICING.basicLimits.teachers} profes y ${NADAMAS_PRICING.basicLimits.students} alumnos.`,
       actions: [
         {
           title: 'Crear mi escuela',
-          description: 'La primera escuela de su propietario tiene 15 días de prueba.',
+          description: `Prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta.`,
           href: '/school/create',
           role: 'school',
         },

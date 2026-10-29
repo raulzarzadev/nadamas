@@ -6,6 +6,7 @@ import {
   type ProfileInvitation,
 } from '@/lib/server/athlete-profile-invitations'
 import { getSchoolCaller } from '@/lib/server/school-access'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 export const runtime = 'nodejs'
 type Props = { params: Promise<{ token: string }> }
 export async function GET(request: Request, { params }: Props) {
@@ -37,6 +38,8 @@ export async function POST(request: Request, { params }: Props) {
     await acceptProfileInvitation((await params).token, caller, await request.json())
     return NextResponse.json({ ok: true })
   } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     console.error('[ATHLETE_PROFILE_INVITATION_ACCEPT]', error)
     return NextResponse.json(
       {

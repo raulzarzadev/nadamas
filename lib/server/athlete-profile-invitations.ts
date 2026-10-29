@@ -5,6 +5,7 @@ import { validProfileBirthDate } from '@/lib/additional-profile'
 import { studentProgressId } from '@/lib/coach-student-progress'
 import { adminDb } from './firebase-admin'
 import { paymentId } from './payments/store'
+import { reserveSchoolSeatChanges } from './subscriptions/seats'
 
 const hash = (value: string) => createHash('sha256').update(value).digest('hex')
 const collection = () =>
@@ -128,7 +129,7 @@ export async function acceptProfileInvitation(
           'student',
         ]),
       ]
-      tx.set(membershipRef, {
+      const memberUpdate = {
         ...(membership.data() || {}),
         id: membershipRef.id,
         schoolId: invitation.schoolId,
@@ -138,7 +139,13 @@ export async function acceptProfileInvitation(
         status: 'active',
         createdAt: membership.data()?.createdAt || now,
         updatedAt: now,
+      }
+      const seat = await reserveSchoolSeatChanges(tx, invitation.schoolId, 'student', {
+        memberships: [memberUpdate],
+        students: [{ ...data, id: studentRef.id, studentUserId: caller.uid }],
       })
+      tx.set(membershipRef, memberUpdate)
+      seat.claim()
       tx.update(studentRef, {
         name,
         phone,

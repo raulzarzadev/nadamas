@@ -7,6 +7,7 @@ import StudentLabels from '@/components/coach/StudentLabels'
 import StudentLabelTools, { type LabelList } from '@/components/coach/StudentLabelTools'
 import StudentProfileModal from '@/components/coach/StudentProfileModal'
 import PersonFields from '@/components/profile/PersonFields'
+import PlanLimitNotice, { planLimitMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import ExistingEntityMatches from '@/components/ui/existing-entity-matches'
 import ProfileLoadingSkeleton from '@/components/ui/profile-loading-skeleton'
 import Sheet from '@/components/ui/sheet'
@@ -436,6 +437,7 @@ export function StudentForm({
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [limitMessage, setLimitMessage] = useState<string | null>(null)
   // School students only: send the email invitation when saving.
   const [invite, setInvite] = useState(initialInvite)
   const [profiles, setProfiles] = useState<AdditionalProfile[]>([])
@@ -503,6 +505,7 @@ export function StudentForm({
     if (cannotCreate) return
     setSaving(true)
     setError(null)
+    setLimitMessage(null)
     try {
       if (!schoolId) {
         const response = await postAuthed('/api/coach/students', {
@@ -526,8 +529,10 @@ export function StudentForm({
         invitation?: SchoolInvitation | null
       }
       onCreated(payload.student, payload.invitation)
-    } catch {
-      setError('No se pudo guardar el registro.')
+    } catch (cause) {
+      const limit = planLimitMessageOf(cause)
+      if (limit) setLimitMessage(limit)
+      else setError('No se pudo guardar el registro.')
     } finally {
       setSaving(false)
     }
@@ -558,6 +563,7 @@ export function StudentForm({
     }
     setSaving(true)
     setError(null)
+    setLimitMessage(null)
     try {
       const response = await postAuthed(`/api/schools/${schoolId}/invitations`, {
         email: form.studentEmail,
@@ -565,8 +571,10 @@ export function StudentForm({
       })
       const payload = (await response.json()) as { invitation: SchoolInvitation }
       onCreated(null, payload.invitation)
-    } catch {
-      setError('No se pudo enviar la invitación.')
+    } catch (cause) {
+      const limit = planLimitMessageOf(cause)
+      if (limit) setLimitMessage(limit)
+      else setError('No se pudo enviar la invitación.')
     } finally {
       setSaving(false)
     }
@@ -701,6 +709,7 @@ export function StudentForm({
             }}
           />
         )}
+        {limitMessage && <PlanLimitNotice message={limitMessage} />}
         {error && <p className="text-sm text-(--c-error,#b91c1c)">{error}</p>}
         <button
           type="submit"

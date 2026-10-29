@@ -1,6 +1,7 @@
 import 'server-only'
 import { createHash, randomBytes } from 'node:crypto'
 import type { Transaction } from 'firebase-admin/firestore'
+import { NADAMAS_PRICING } from '@/lib/pricing'
 import { adminDb } from '@/lib/server/firebase-admin'
 import {
   assertSubscriptionPayable,
@@ -501,6 +502,8 @@ export async function setSchoolPaymentExemption(
         ...(enabled && reserved.stripeSubscriptionId
           ? { cancelAtPeriodEnd: true, stripeSubscriptionId: null }
           : {}),
+        // Custom limits only exist on an exempt school: removing the exemption ends the plan.
+        ...(enabled ? {} : { customLimits: null }),
         ...(enabled
           ? {
               stripeCheckoutSessionId: null,
@@ -535,4 +538,56 @@ export async function setSchoolPaymentExemption(
       .catch(() => undefined)
     throw error
   }
+}
+
+const MAX_CUSTOM_LIMIT = 100000
+
+/** Custom plan = payment exemption plus its own seat limits; reuses the exemption's provider handling. */
+export async function setSchoolCustomPlan(
+  schoolId: string,
+  limits: { teachers: number; students: number } | null,
+  reason: string,
+  actorId: string
+) {
+  const ref = subscriptionRef(schoolId)
+  if (limits) {
+    const valid = (value: unknown, min: number) =>
+      Number.isInteger(value) && (value as number) > min && (value as number) <= MAX_CUSTOM_LIMIT
+    if (
+      !valid(limits.teachers, NADAMAS_PRICING.basicLimits.teachers) ||
+      !valid(limits.students, NADAMAS_PRICING.basicLimits.students)
+    )
+      throw new SubscriptionError(
+        'invalid_limits',
+        'Revisa los límites del plan personalizado.',
+        400
+      )
+    await setSchoolPaymentExemption(schoolId, true, reason, actorId)
+    await adminDb.runTransaction(async (tx) => {
+      const now = Date.now()
+      tx.update(ref, {
+        customLimits: { teachers: limits.teachers, students: limits.students },
+        customPlanReason: reason,
+        customPlanUpdatedAt: now,
+        customPlanUpdatedBy: actorId,
+        updatedAt: now,
+      })
+      audit(tx, actorId, 'school_custom_plan_set', { schoolId, reason, limits }, now)
+    })
+    return
+  }
+  const current = (await ref.get()).data() as SchoolSubscription | undefined
+  if (!current?.customLimits) return
+  await setSchoolPaymentExemption(schoolId, false, reason, actorId)
+  await adminDb.runTransaction(async (tx) => {
+    const now = Date.now()
+    tx.update(ref, {
+      customLimits: null,
+      customPlanReason: reason,
+      customPlanUpdatedAt: now,
+      customPlanUpdatedBy: actorId,
+      updatedAt: now,
+    })
+    audit(tx, actorId, 'school_custom_plan_removed', { schoolId, reason }, now)
+  })
 }

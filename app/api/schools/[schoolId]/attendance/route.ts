@@ -11,6 +11,7 @@ import {
 import { adminDb } from '@/lib/server/firebase-admin'
 import { requireSchoolAccess } from '@/lib/server/school-access'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
+import { subscriptionErrorResponse } from '@/lib/server/subscriptions/access'
 
 export const runtime = 'nodejs'
 type Props = { params: Promise<{ schoolId: string }> }
@@ -214,6 +215,8 @@ async function handlePOST(request: Request, { params }: Props) {
       }
     )
   } catch (error) {
+    const limitResponse = subscriptionErrorResponse(error)
+    if (limitResponse) return limitResponse
     console.error('[ATTENDANCE_WRITE]', error)
     return NextResponse.json(
       { error: 'No pudimos registrar la asistencia. Inténtalo de nuevo.' },

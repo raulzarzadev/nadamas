@@ -6,8 +6,11 @@ import SchoolSelector from '@/components/school/SchoolSelector'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import Sheet from '@/components/ui/sheet'
 import { SubscriptionCRUD } from '@/firebase/subscriptions/main'
+import { SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS } from '@/lib/subscriptions/engine'
 import type { SubscriptionSnapshot } from '@/lib/subscriptions/model'
+import { planOverLimit, planOverLimitMessage, planUsageLabel } from '@/lib/subscriptions/plans'
 import { GENERIC_USER_ERROR, reportInternalError } from '@/lib/user-facing-error'
+import PlanLimitNotice from './PlanLimitNotice'
 import {
   CopyDetail,
   orderState,
@@ -53,7 +56,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setData(await SubscriptionCRUD.get(schoolId))
+      setData(await SubscriptionCRUD.get(schoolId, { usage: true }))
       setError('')
     } catch (cause) {
       reportInternalError('SUBSCRIPTION_LOAD', cause)
@@ -155,14 +158,21 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
         <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-extrabold">Suscripción de la escuela</h1>
-            <p className="mt-2 text-sm text-(--c-text-2)">
-              Una suscripción incluye a todos sus profesores.
-            </p>
+            {data.plan && (
+              <p className="mt-2 text-sm text-(--c-text-2)">
+                {planUsageLabel(data.plan.limits, data.plan.usage)}
+              </p>
+            )}
           </div>
           <span className="rounded-full bg-(--c-surface) px-3 py-2 text-xs font-bold">
             {subscriptionState[state] || state}
           </span>
         </div>
+        {data.plan && planOverLimit(data.plan.limits, data.plan.usage) && (
+          <div className="mt-3">
+            <PlanLimitNotice role="status" message={planOverLimitMessage(data.plan.limits)} />
+          </div>
+        )}
         <p className="mt-6">
           <strong className="text-4xl font-extrabold tabular-nums">
             {exempt ? 'Sin cobro' : subscriptionMoney(data.priceCents)}
@@ -174,7 +184,7 @@ function SubscriptionContent({ schoolId }: { schoolId: string }) {
             Tu escuela está exenta de pago. Todas las funciones están disponibles.
           </p>
         )}
-        {!exempt && data.priceCents === 4900 && (
+        {!exempt && data.priceCents === SUBSCRIPTION_PROMOTIONAL_PRICE_CENTS && (
           <p className="mt-2 text-sm">
             Precio con código. Se conserva mientras mantengas activa tu suscripción.
           </p>

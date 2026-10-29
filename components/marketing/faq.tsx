@@ -7,7 +7,7 @@ export const FAQ_ITEMS = [
   },
   {
     q: '¿Cuánto cuesta nadamas.app?',
-    a: `La suscripción cuesta $${NADAMAS_PRICING.regularMonthly} ${NADAMAS_PRICING.currency} al mes por escuela e incluye a todos sus profesores. Cada propietario puede probar su primera escuela durante ${NADAMAS_PRICING.trialDays} días sin tarjeta. Algunas escuelas seleccionadas reciben un código para pagar $${NADAMAS_PRICING.promotionalMonthly} al mes mientras mantengan activa su suscripción. Las clases de los alumnos se pagan por separado.`,
+    a: `La suscripción cuesta $${NADAMAS_PRICING.regularMonthly} ${NADAMAS_PRICING.currency} al mes por escuela e incluye hasta ${NADAMAS_PRICING.basicLimits.teachers} profes y ${NADAMAS_PRICING.basicLimits.students} alumnos; si necesitas más, te armamos un plan personalizado. Prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta. Algunas escuelas seleccionadas reciben un código para pagar $${NADAMAS_PRICING.promotionalMonthly} al mes mientras mantengan activa su suscripción. Las clases de los alumnos se pagan por separado.`,
   },
   {
     q: '¿Necesito descargar algo?',

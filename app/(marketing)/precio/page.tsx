@@ -3,15 +3,17 @@ import Link from 'next/link'
 import { FiArrowRight, FiCheck, FiGlobe, FiLayers, FiSmartphone } from 'react-icons/fi'
 import { NADAMAS_PRICING } from '@/lib/pricing'
 
+const BASIC_PRICE = `$${NADAMAS_PRICING.regularMonthly} ${NADAMAS_PRICING.currency}`
+const BASIC_LIMITS = `${NADAMAS_PRICING.basicLimits.teachers} profes y ${NADAMAS_PRICING.basicLimits.students} alumnos`
+const TRIAL = `Prueba de ${NADAMAS_PRICING.trialDays} días sin tarjeta.`
+
 export const metadata: Metadata = {
   title: 'Precios · Suscripción por escuela',
-  description:
-    'Nadamas por $299 MXN al mes por escuela, con todos sus profesores incluidos. Prueba de 15 días sin tarjeta para la primera escuela de cada propietario.',
+  description: `Nadamas por ${BASIC_PRICE} al mes por escuela, hasta ${BASIC_LIMITS}. ${TRIAL}`,
   alternates: { canonical: 'https://nadamas.app/precio' },
   openGraph: {
-    title: 'Nadamas · $299 MXN al mes por escuela',
-    description:
-      'Todos tus profesores incluidos. Prueba de 15 días sin tarjeta para la primera escuela de cada propietario.',
+    title: `Nadamas · ${BASIC_PRICE} al mes por escuela`,
+    description: `Hasta ${BASIC_LIMITS}. ${TRIAL}`,
     url: 'https://nadamas.app/precio',
     images: [{ url: '/og-nadamas.png', width: 1200, height: 630, alt: 'nadamas.app' }],
   },
@@ -26,8 +28,6 @@ const FEATURES = [
   'Notificaciones para estar al día',
 ]
 
-const SALES_HREF = `mailto:hola@nadamas.app?subject=${encodeURIComponent('Quiero mi escuela, app y enlace personalizado')}`
-
 export default function PricingPage() {
   return (
     <div className="mx-auto max-w-[1100px] px-3 pb-14 pt-10 sm:px-8 sm:pb-20 sm:pt-16">
@@ -41,7 +41,7 @@ export default function PricingPage() {
         </h1>
         <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-(--c-text-2) sm:text-lg">
           Clases, alumnos, pagos y progreso en un solo lugar. Una mensualidad con todas las
-          funcionalidades de Nadamas para tu escuela y todos sus profesores.
+          funcionalidades de Nadamas para tu escuela.
         </p>
       </header>
 
@@ -52,7 +52,7 @@ export default function PricingPage() {
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="launch-plan" className="text-2xl font-extrabold">
-              Nadamas
+              Básico
             </h2>
             <span className="rounded-full bg-[#ddf7ef] px-3 py-1.5 text-xs font-bold text-[#08664d]">
               Todas las funcionalidades
@@ -69,8 +69,12 @@ export default function PricingPage() {
               </span>
               <span className="text-base font-semibold text-(--c-text-2)">MXN / mes</span>
             </p>
-            <p className="mt-3 text-sm font-semibold text-(--c-aqua-strong)">
-              Prueba de {NADAMAS_PRICING.trialDays} días sin tarjeta para tu primera escuela.
+            <p className="mt-3 text-sm font-bold">
+              Hasta {NADAMAS_PRICING.basicLimits.teachers} profes y{' '}
+              {NADAMAS_PRICING.basicLimits.students} alumnos
+            </p>
+            <p className="mt-1 text-sm font-semibold text-(--c-aqua-strong)">
+              Prueba de {NADAMAS_PRICING.trialDays} días sin tarjeta.
             </p>
           </div>
 
@@ -102,24 +106,26 @@ export default function PricingPage() {
             aria-hidden="true"
             className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full border-[40px] border-[#90e0ef]/10"
           />
-          <p className="relative text-xs font-bold uppercase tracking-wider text-[#90e0ef]">
-            Hecho para tu escuela
+          <div className="relative flex flex-wrap items-center justify-between gap-3">
+            <h2 id="custom-plan" className="text-2xl font-extrabold" style={{ color: 'white' }}>
+              Personalizado
+            </h2>
+            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-[#90e0ef]">
+              Hecho para tu escuela
+            </span>
+          </div>
+          <p className="relative mt-3 text-sm leading-relaxed text-[#d0e7ef]">
+            Para escuelas más grandes o con necesidades propias.
           </p>
-          <h2
-            id="custom-plan"
-            className="relative mt-4 max-w-xs text-3xl font-extrabold sm:text-4xl"
-            style={{ color: 'white' }}
-          >
-            Tu escuela.
-            <br />
-            Tu app. Tu identidad.
-          </h2>
-          <p className="relative mt-5 max-w-sm text-base leading-relaxed text-[#d0e7ef]">
-            Puedes crear tu escuela directamente con la suscripción. Si necesitas ayuda para
-            configurarla o tienes dudas sobre tu enlace e identidad, hablemos.
-          </p>
+          <div className="relative mt-7">
+            <p className="text-3xl font-extrabold sm:text-4xl">Precio a la medida</p>
+            <p className="mt-3 text-sm font-bold">
+              Más de {NADAMAS_PRICING.basicLimits.teachers} profes o{' '}
+              {NADAMAS_PRICING.basicLimits.students} alumnos
+            </p>
+          </div>
 
-          <ul className="my-8 space-y-6">
+          <ul className="relative my-8 space-y-6">
             {[
               {
                 icon: FiLayers,
@@ -146,13 +152,13 @@ export default function PricingPage() {
               </li>
             ))}
           </ul>
-          <a
-            href={SALES_HREF}
-            className="mt-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 font-bold text-(--c-ocean) transition-colors hover:bg-[#d0f3fa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-white"
+          <Link
+            href="/contacto"
+            className="relative mt-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-white px-5 py-3 font-bold text-(--c-ocean) transition-colors hover:bg-[#d0f3fa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-white"
           >
-            Contactar a ventas
+            Contáctanos
             <FiArrowRight aria-hidden="true" />
-          </a>
+          </Link>
         </section>
       </div>
 

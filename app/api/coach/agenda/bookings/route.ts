@@ -17,6 +17,7 @@ import { paymentTransaction, preparePaymentEvents } from '@/lib/server/payments/
 import { getSchoolMembership } from '@/lib/server/school-access'
 import { legacySchoolOfferings } from '@/lib/server/school-agenda'
 import { withSchoolAgendaUpdate } from '@/lib/server/school-agenda-updates'
+import { reserveSchoolSeat } from '@/lib/server/subscriptions/seats'
 
 export const runtime = 'nodejs'
 
@@ -285,10 +286,15 @@ async function handlePOST(request: Request) {
         ? [bookingPaymentEvent(booking, 'consume', coachId, studentPaymentOptions)]
         : []),
     ],
-    (tx) => {
+    async (tx) => {
+      const seat =
+        newSchoolStudent && schoolId
+          ? await reserveSchoolSeat(tx, schoolId, 'student', newSchoolStudent.id)
+          : null
       tx.set(ref, booking)
       if (newSchoolStudent)
         tx.set(adminDb.collection('schoolStudents').doc(newSchoolStudent.id), newSchoolStudent)
+      seat?.claim()
     }
   )
   await syncCoachCreatedSlotGroupType(coachId, date, startTime, schoolId)

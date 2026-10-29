@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import PlanLimitNotice, { planLimitMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { SchoolAccessRequest } from '@/lib/school-access-request'
 
@@ -108,6 +109,7 @@ export default function SchoolAccessRequests({
 }) {
   const [requests, setRequests] = useState<SchoolAccessRequest[]>([])
   const [error, setError] = useState('')
+  const [limitMessage, setLimitMessage] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   useEffect(() => {
     let active = true
@@ -128,20 +130,24 @@ export default function SchoolAccessRequests({
   async function review(item: SchoolAccessRequest, status: 'approved' | 'rejected') {
     setBusy(item.id)
     setError('')
+    setLimitMessage('')
     try {
       await patchAuthed(`/api/schools/${schoolId}/access-requests`, { userId: item.userId, status })
       setRequests((current) => current.filter((row) => row.id !== item.id))
       if (status === 'approved') await onApproved()
-    } catch {
-      setError('No pudimos completar la revisión. Actualiza la página e inténtalo de nuevo.')
+    } catch (cause) {
+      const limit = planLimitMessageOf(cause)
+      if (limit) setLimitMessage(limit)
+      else setError('No pudimos completar la revisión. Actualiza la página e inténtalo de nuevo.')
     } finally {
       setBusy(null)
     }
   }
-  if (!requests.length && !error) return null
+  if (!requests.length && !error && !limitMessage) return null
   return (
     <section className="grid gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5">
       <h2 className="font-bold text-(--c-ocean)">Solicitudes de acceso</h2>
+      {limitMessage && <PlanLimitNotice message={limitMessage} />}
       {error && <p role="alert">{error}</p>}
       {requests.map((item) => (
         <article

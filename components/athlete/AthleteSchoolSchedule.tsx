@@ -7,6 +7,7 @@ import ClassEvaluationForm from '@/components/bookings/ClassEvaluationForm'
 import PaymentsPanel from '@/components/payments/PaymentsPanel'
 import AdditionalProfileCreateModal from '@/components/profile/AdditionalProfileCreateModal'
 import ScheduleViews from '@/components/schedule/ScheduleViews'
+import { PLAN_LIMIT_MEMBER_MESSAGE } from '@/components/subscriptions/PlanLimitNotice'
 import ScheduleTag from '@/components/ui/schedule-tag'
 import { useUser } from '@/context/UserContext'
 import type { CoachPublic } from '@/firebase/coaches/coach.model'
@@ -823,6 +824,7 @@ export default function AthleteSchoolSchedule({
     let failed = 0
     const failureStatuses = new Set<number>()
     let paymentFailure: string | undefined
+    let planLimitFailure = false
     const targets = chosenSlots.length ? chosenSlots : [selectedSlot]
     for (const slot of targets) {
       const day = new Date(`${slot.date}T12:00:00`).getDay()
@@ -995,6 +997,7 @@ export default function AthleteSchoolSchedule({
               error.code === 'package_confirmation_required'
             )
               paymentFailure = error.code
+            if (error.code === 'plan_limit_reached') planLimitFailure = true
           }
         }
       }
@@ -1002,15 +1005,17 @@ export default function AthleteSchoolSchedule({
     if (failed) {
       const guidance = paymentFailure
         ? paymentMessage({ code: paymentFailure })
-        : failureStatuses.has(401)
-          ? 'Tu sesión venció. Vuelve a iniciar sesión.'
-          : failureStatuses.has(403)
-            ? 'No tienes acceso para solicitar estos horarios en la escuela.'
-            : failureStatuses.has(409)
-              ? 'Uno o más horarios ya no están disponibles. Actualiza la agenda y elige otro horario.'
-              : failureStatuses.has(400)
-                ? 'Revisa los horarios y las personas seleccionadas antes de reintentar.'
-                : 'Inténtalo de nuevo más tarde.'
+        : planLimitFailure
+          ? PLAN_LIMIT_MEMBER_MESSAGE
+          : failureStatuses.has(401)
+            ? 'Tu sesión venció. Vuelve a iniciar sesión.'
+            : failureStatuses.has(403)
+              ? 'No tienes acceso para solicitar estos horarios en la escuela.'
+              : failureStatuses.has(409)
+                ? 'Uno o más horarios ya no están disponibles. Actualiza la agenda y elige otro horario.'
+                : failureStatuses.has(400)
+                  ? 'Revisa los horarios y las personas seleccionadas antes de reintentar.'
+                  : 'Inténtalo de nuevo más tarde.'
       setError(
         `No pudimos completar ${failed} inscripciones. ${guidance} Las que se enviaron correctamente no se repetirán.`
       )
