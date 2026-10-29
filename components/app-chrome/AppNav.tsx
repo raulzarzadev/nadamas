@@ -217,17 +217,6 @@ export default function AppNav({
       >
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-3 py-2.5 sm:px-4 sm:py-3">
           <div className="relative flex items-center gap-2 sm:gap-4">
-            {/* Coordinador: the school's name centered in the navbar. */}
-            {!tenant && role === 'school' && schoolAccess && (
-              <p className="pointer-events-none absolute inset-x-0 mx-auto hidden w-fit max-w-[40%] text-center leading-tight sm:grid sm:max-w-[50%]">
-                <span className="text-[9px] font-semibold tracking-wide text-(--c-text-2) uppercase">
-                  Escuela
-                </span>
-                <span className="truncate text-sm font-bold text-(--c-ocean)">
-                  {workspaceBrand?.name || schoolAccess.school.name}
-                </span>
-              </p>
-            )}
             <Link
               href="/"
               aria-label={workspaceBrand ? `${workspaceBrand.name}, inicio` : 'Nadamas, inicio'}
