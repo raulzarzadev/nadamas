@@ -479,7 +479,7 @@ test('los Adicionales pertenecen a su cuenta y se vinculan a la escuela sin rol 
     await page.getByRole('button', { name: 'Confirmar', exact: true }).click()
     await page.waitForURL(/\/athlete\/(bookings|progress)$/)
     await page.goto('/profile')
-    const section = page.getByRole('region', { name: 'Adicionales', exact: true })
+    const section = page.getByRole('region', { name: 'Atletas adicionales', exact: true })
     await expect(section.getByText('Persona adulta', { exact: true })).toBeVisible()
     await expect(section.getByText('Persona menor', { exact: true })).toBeVisible()
     await page.screenshot({ path: '/tmp/nadamas-additional-mobile.png', fullPage: true })

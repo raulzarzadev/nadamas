@@ -93,16 +93,16 @@ export default function AdditionalProfiles() {
 
   return (
     <section
-      className="grid gap-4 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5"
+      className="grid gap-4 bg-white px-4 py-5 sm:rounded-[var(--r-md)] sm:border sm:border-(--c-border) sm:p-6"
       aria-labelledby="additional-title"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="additional-title" className="text-lg font-bold">
-            Adicionales
+            Atletas adicionales
           </h2>
           <p className="mt-1 text-sm text-(--c-text-2)">
-            Crea perfiles para gestionar personas adultas o menores desde tu cuenta. Cada Adicional
+            Para hijos u otras personas que tienes a tu cargo como padre, madre o tutor. Cada uno
             tiene sus propios datos y clases.
           </p>
         </div>
