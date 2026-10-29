@@ -82,9 +82,11 @@ const writeLastPlanId = (uid: string, planId: string) => {
 export default function TrainingPlanner({
   onSearch,
   onEmptyChange,
+  onCreateSession,
 }: {
   onSearch?: () => void
   onEmptyChange?: (empty: boolean) => void
+  onCreateSession?: () => void
 } = {}) {
   const { user } = useUser()
   const author = useTrainingPlanAuthor()
@@ -404,6 +406,21 @@ export default function TrainingPlanner({
         inert={Boolean(draft) || deleting || infoOpen || creatingMacro}
         aria-hidden={Boolean(draft) || deleting || infoOpen || creatingMacro || undefined}
       >
+        {onCreateSession && (
+          <div className="flex flex-wrap gap-2 py-4">
+            <button
+              type="button"
+              className={primaryClass}
+              disabled={busy || loading}
+              onClick={createMacro}
+            >
+              Crear MACRO-ciclo
+            </button>
+            <button type="button" className={actionClass} onClick={onCreateSession}>
+              Crear sesión suelta
+            </button>
+          </div>
+        )}
         {!loading && !loadError && plans.length + subscribed.length > 0 && (
           <nav aria-label="MACRO-ciclos" className="flex flex-wrap items-center gap-1.5 pt-4 pb-2">
             <button
@@ -526,14 +543,16 @@ export default function TrainingPlanner({
                   Crea un MACRO-ciclo con su objetivo y fechas. Después organiza sus bloques y
                   semanas de entrenamiento.
                 </p>
-                <button
-                  type="button"
-                  className={`${primaryClass} mt-5`}
-                  disabled={busy}
-                  onClick={() => void createMacro()}
-                >
-                  Crear mi primer MACRO-ciclo
-                </button>
+                {!onCreateSession && (
+                  <button
+                    type="button"
+                    className={`${primaryClass} mt-5`}
+                    disabled={busy}
+                    onClick={() => void createMacro()}
+                  >
+                    Crear mi primer MACRO-ciclo
+                  </button>
+                )}
               </>
             )}
           </div>

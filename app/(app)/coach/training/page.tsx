@@ -1,5 +1,5 @@
-import TrainingPlanner from '@/components/coach/TrainingPlanner'
+import CoachTrainingWorkspace from '@/components/coach/CoachTrainingWorkspace'
 
 export default function TrainingPage() {
-  return <TrainingPlanner />
+  return <CoachTrainingWorkspace />
 }
