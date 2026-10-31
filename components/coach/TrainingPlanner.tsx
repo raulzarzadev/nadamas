@@ -102,6 +102,7 @@ export default function TrainingPlanner({
   const [revision, setRevision] = useState(0)
   const [planId, setPlanId] = useState<string | null>(null)
   const [cycleId, setCycleId] = useState<string | null>(null)
+  const [createChooserOpen, setCreateChooserOpen] = useState(false)
   const [creatingMacro, setCreatingMacro] = useState(false)
   const [draft, setDraft] = useState<TrainingCycle | null>(null)
   const [childDrafts, setChildDrafts] = useState<TrainingCycle[] | null>(null)
@@ -194,6 +195,16 @@ export default function TrainingPlanner({
     if (busy || !uid) return
     setError('')
     setCreatingMacro(true)
+  }
+
+  function chooseCreateMacro() {
+    setCreateChooserOpen(false)
+    createMacro()
+  }
+
+  function chooseCreateSession() {
+    setCreateChooserOpen(false)
+    onCreateSession?.()
   }
 
   async function saveNewMacro(cycles: TrainingCycle[]) {
@@ -441,8 +452,10 @@ export default function TrainingPlanner({
       aria-label="Entrenamiento"
     >
       <div
-        inert={Boolean(draft) || deleting || infoOpen || creatingMacro}
-        aria-hidden={Boolean(draft) || deleting || infoOpen || creatingMacro || undefined}
+        inert={Boolean(draft) || deleting || infoOpen || creatingMacro || createChooserOpen}
+        aria-hidden={
+          Boolean(draft) || deleting || infoOpen || creatingMacro || createChooserOpen || undefined
+        }
       >
         {onCreateSession && (
           <div className="flex flex-wrap gap-2 py-4">
@@ -450,12 +463,9 @@ export default function TrainingPlanner({
               type="button"
               className={primaryClass}
               disabled={busy || loading}
-              onClick={createMacro}
+              onClick={() => setCreateChooserOpen(true)}
             >
-              Crear MACRO-ciclo
-            </button>
-            <button type="button" className={actionClass} onClick={onCreateSession}>
-              Crear sesión suelta
+              Crear entreno
             </button>
           </div>
         )}
@@ -560,19 +570,22 @@ export default function TrainingPlanner({
             <FiActivity className="mx-auto mb-4 size-8" aria-hidden="true" />
             {onSearch ? (
               <>
-                <h2 className="text-lg font-bold">No tienes entrenos aún</h2>
+                <h2 className="text-lg font-bold">Crea un entreno</h2>
                 <p className="mx-auto mt-2 max-w-md text-sm text-(--c-text-2)">
-                  Crea uno o busca uno.
+                  Usa «Crear entreno» para elegir entre un MACRO-ciclo y una sesión suelta, o busca
+                  entrenos publicados.
                 </p>
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <button
-                    type="button"
-                    className={primaryClass}
-                    disabled={busy}
-                    onClick={() => void createMacro()}
-                  >
-                    Crear entreno
-                  </button>
+                  {!onCreateSession && (
+                    <button
+                      type="button"
+                      className={primaryClass}
+                      disabled={busy}
+                      onClick={() => void createMacro()}
+                    >
+                      Crear MACRO-ciclo
+                    </button>
+                  )}
                   <button type="button" className={actionClass} onClick={onSearch}>
                     Buscar entrenos
                   </button>
@@ -582,24 +595,9 @@ export default function TrainingPlanner({
               <>
                 <h2 className="text-lg font-bold">Tu temporada empieza aquí</h2>
                 <p className="mx-auto mt-2 max-w-md text-sm text-(--c-text-2)">
-                  Comienza creando un MACRO-ciclo. También puedes preparar sesiones individuales;
-                  después podrás modificarlas, duplicarlas o usarlas en tus clases.
+                  Usa «Crear entreno» para planear una temporada con un MACRO-ciclo o preparar una
+                  sesión individual.
                 </p>
-                {onCreateSession && (
-                  <div className="mt-5 flex flex-wrap justify-center gap-2">
-                    <button
-                      type="button"
-                      className={primaryClass}
-                      disabled={busy}
-                      onClick={createMacro}
-                    >
-                      Crear MACRO-ciclo
-                    </button>
-                    <button type="button" className={actionClass} onClick={onCreateSession}>
-                      Crear sesión suelta
-                    </button>
-                  </div>
-                )}
                 {!onCreateSession && (
                   <button
                     type="button"
@@ -864,6 +862,47 @@ export default function TrainingPlanner({
           </>
         )}
       </div>
+      <Sheet
+        open={createChooserOpen}
+        onClose={() => setCreateChooserOpen(false)}
+        label="Crear entreno"
+        size="sm"
+      >
+        <div className="grid gap-2">
+          <h2 className="text-lg font-bold">¿Qué quieres crear?</h2>
+          <p className="text-sm text-(--c-text-2)">
+            Elige cómo quieres planear este entrenamiento.
+          </p>
+          <button
+            type="button"
+            className={`${primaryClass} mt-2 min-h-14 justify-between rounded-xl px-4 py-3 text-left`}
+            disabled={busy || loading}
+            onClick={chooseCreateMacro}
+          >
+            <span className="grid gap-0.5">
+              <span>Crear MACRO-ciclo</span>
+              <span className="text-xs font-normal text-white/80">
+                Planea una temporada completa.
+              </span>
+            </span>
+            <FiChevronRight aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`${actionClass} min-h-14 justify-between rounded-xl px-4 py-3 text-left`}
+            disabled={busy || loading}
+            onClick={chooseCreateSession}
+          >
+            <span className="grid gap-0.5">
+              <span>Crear sesión suelta</span>
+              <span className="text-xs font-normal text-(--c-text-2)">
+                Prepara un entreno individual.
+              </span>
+            </span>
+            <FiChevronRight aria-hidden="true" />
+          </button>
+        </div>
+      </Sheet>
       <Sheet
         open={infoOpen}
         onClose={() => setInfoOpen(false)}

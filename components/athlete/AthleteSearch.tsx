@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { FiCheck, FiChevronRight } from 'react-icons/fi'
+import ClassTrainingEditor from '@/components/coach/ClassTrainingEditor'
 import CoachDirectoryList from '@/components/coach/CoachDirectoryList'
 import { SearchField } from '@/components/Inputs/FormFields'
+import SchoolWorkspaceTabs from '@/components/school/SchoolWorkspaceTabs'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import TrainingPlanCard from '@/components/training/TrainingPlanCard'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
@@ -20,6 +22,15 @@ import AthleteScheduleBrowser from './AthleteScheduleBrowser'
 import RegisteredBadge from './RegisteredBadge'
 
 type PublicSchool = { id: string; name: string; slug: string }
+type PublicTrainingSession = {
+  id: string
+  authorId: string
+  authorName: string
+  title: string
+  description: string
+  training: import('@/lib/class-training').ClassTrainingBlock[]
+  updatedAt: number
+}
 type Kind = 'coaches' | 'schools' | 'plans'
 
 const schoolRowClassName =
@@ -69,11 +80,14 @@ export default function AthleteSearch({
   // Not inside pickers (payments / schedule coach pick): they need a coach or school back.
   const schedulesEnabled = !onSelectCoach && !onSelectSchool
   const [plans, setPlans] = useState<TrainingPlan[]>([])
+  const [publicSessions, setPublicSessions] = useState<PublicTrainingSession[]>([])
   const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set())
   // Tenant only: coaches of the school, whose plans are the only ones listed.
   const [tenantCoachIds, setTenantCoachIds] = useState<Set<string>>()
   const [plansLoading, setPlansLoading] = useState(true)
   const [plansError, setPlansError] = useState(false)
+  const [sessionsLoading, setSessionsLoading] = useState(true)
+  const [sessionsError, setSessionsError] = useState(false)
   const [today] = useState(() => localCalendarDate(new Date()))
   const [schools, setSchools] = useState<PublicSchool[]>([])
   const [query, setQuery] = useState('')
@@ -81,7 +95,13 @@ export default function AthleteSearch({
   const [error, setError] = useState(false)
   const [coachMatches, setCoachMatches] = useState<number>()
   // The athlete's own schools (active memberships) and independent coaches (bookings) go first.
-  const { schools: memberSchools } = useSchoolSelection({
+  const {
+    schools: memberSchools,
+    selected: selectedSchool,
+    selectedId,
+    selectSchool,
+    selectPersonal,
+  } = useSchoolSelection({
     includePersonal: true,
     athleteMode: true,
   })
@@ -173,6 +193,27 @@ export default function AthleteSearch({
       active = false
     }
   }, [plansEnabled])
+  useEffect(() => {
+    if (!plansEnabled) return
+    let active = true
+    fetch('/api/public/training-sessions')
+      .then(async (response) => {
+        if (!response.ok) throw new Error('training_sessions_unavailable')
+        return response.json() as Promise<{ items?: PublicTrainingSession[] }>
+      })
+      .then((payload) => {
+        if (active) setPublicSessions(payload.items || [])
+      })
+      .catch(() => {
+        if (active) setSessionsError(true)
+      })
+      .finally(() => {
+        if (active) setSessionsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [plansEnabled])
   const toggle = (kind: Kind) => {
     if (showSchedules) {
       setShowSchedules(false)
@@ -224,6 +265,13 @@ export default function AthleteSearch({
           ? (a.summary?.startDate ?? '').localeCompare(b.summary?.startDate ?? '')
           : 0)
     )
+  const visibleSessions = publicSessions.filter((session) => {
+    if (tenant || !session.title || session.authorId === uid) return false
+    const needle = normalize(query.trim())
+    return [session.title, session.description, session.authorName].some((field) =>
+      normalize(field).includes(needle)
+    )
+  })
   const visible = schools
     .filter((school) => normalize(school.name).includes(normalize(query.trim())))
     .sort((a, b) => Number(mySchoolIds.has(b.id)) - Number(mySchoolIds.has(a.id)))
@@ -238,8 +286,11 @@ export default function AthleteSearch({
     (!kinds.plans ||
       (!plansLoading &&
         !plansError &&
+        !sessionsLoading &&
+        !sessionsError &&
         (!tenant || tenantCoachIds !== undefined) &&
-        visiblePlans.length === 0))
+        visiblePlans.length === 0 &&
+        visibleSessions.length === 0))
   return (
     <div className="grid min-w-0 grid-cols-1 gap-4">
       {!showSchedules && (
@@ -300,10 +351,28 @@ export default function AthleteSearch({
           </label>
         )}
       </fieldset>
-      {showSchedules && <AthleteScheduleBrowser />}
+      {showSchedules && memberSchools.length > 0 && (
+        <section aria-label="Filtrar horarios por escuela" className="grid gap-2">
+          <h3 className="text-sm font-bold text-(--c-ocean)">Escuela</h3>
+          <SchoolWorkspaceTabs
+            schools={memberSchools.map(({ school }) => ({ id: school.id, name: school.name }))}
+            selectedId={selectedId}
+            personalLabel="Todos"
+            description="Filtra los horarios disponibles."
+            onChange={(id) => (id ? selectSchool(id) : selectPersonal())}
+          />
+        </section>
+      )}
+      {showSchedules && (
+        <AthleteScheduleBrowser requestedSchoolId={selectedSchool?.school.id || null} />
+      )}
       {!showSchedules && nothingMatches && (
         <p className="py-4 text-center text-sm text-(--c-text-2)">
-          {tenant && kinds.plans && !kinds.coaches && searchablePlans.length === 0
+          {tenant &&
+          kinds.plans &&
+          !kinds.coaches &&
+          searchablePlans.length === 0 &&
+          visibleSessions.length === 0
             ? 'Los entrenadores de esta escuela aún no han publicado entrenos.'
             : 'No encontramos coincidencias.'}
         </p>
@@ -364,28 +433,56 @@ export default function AthleteSearch({
           />
         </section>
       )}
-      {!showSchedules && kinds.plans && plansEnabled && (plansError || visiblePlans.length > 0) && (
-        <section aria-label="Entrenos" className="grid min-w-0 grid-cols-1 gap-3">
-          {both && <h3 className="text-xs font-semibold text-(--c-text-2)">Entrenos</h3>}
-          {plansError ? (
-            <p role="alert" className="text-sm">
-              No pudimos cargar los entrenos. Inténtalo de nuevo más tarde.
-            </p>
-          ) : (
-            <ul className="grid min-w-0 grid-cols-1 gap-2">
-              {visiblePlans.slice(0, both ? 5 : 20).map((plan) => (
-                <li key={plan.id}>
-                  <TrainingPlanCard
-                    plan={plan}
-                    today={today}
-                    verified={verifiedAuthors.has(plan.userId)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+      {!showSchedules &&
+        kinds.plans &&
+        plansEnabled &&
+        (plansError || sessionsError || visiblePlans.length > 0 || visibleSessions.length > 0) && (
+          <section aria-label="Entrenos" className="grid min-w-0 grid-cols-1 gap-3">
+            {both && <h3 className="text-xs font-semibold text-(--c-text-2)">Entrenos</h3>}
+            {plansError || sessionsError ? (
+              <p role="alert" className="text-sm">
+                No pudimos cargar los entrenos. Inténtalo de nuevo más tarde.
+              </p>
+            ) : (
+              <ul className="grid min-w-0 grid-cols-1 gap-2">
+                {visiblePlans.slice(0, both ? 5 : 20).map((plan) => (
+                  <li key={plan.id}>
+                    <TrainingPlanCard
+                      plan={plan}
+                      today={today}
+                      verified={verifiedAuthors.has(plan.userId)}
+                    />
+                  </li>
+                ))}
+                {visibleSessions.slice(0, both ? 5 : 20).map((session) => (
+                  <li key={`session-${session.id}`}>
+                    <details className="grid min-w-0 gap-2 rounded-xl border border-(--c-border) bg-white px-3 py-3">
+                      <summary className="cursor-pointer list-none text-sm font-bold text-(--c-ocean)">
+                        <span className="flex flex-wrap items-baseline justify-between gap-2">
+                          <span className="wrap-anywhere">{session.title}</span>
+                          <span className="text-xs font-normal text-(--c-text-2)">
+                            Sesión suelta · {session.authorName}
+                          </span>
+                        </span>
+                      </summary>
+                      {session.description && (
+                        <p className="whitespace-pre-wrap text-xs text-(--c-text-2)">
+                          {session.description}
+                        </p>
+                      )}
+                      <ClassTrainingEditor
+                        blocks={session.training}
+                        onChange={() => {}}
+                        readOnly
+                        allowTransfer={false}
+                      />
+                    </details>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
     </div>
   )
 }

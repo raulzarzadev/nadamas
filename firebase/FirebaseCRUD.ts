@@ -19,7 +19,7 @@ import { Dates } from 'firebase-dates-util'
 import { v4 as uidGenerator } from 'uuid'
 import { trackEvent } from '@/lib/analytics/client'
 import { reportInternalError } from '@/lib/user-facing-error'
-import { db, storage } from '.'
+import { db, storage } from './index'
 
 interface FirebaseResponse {
   id: string

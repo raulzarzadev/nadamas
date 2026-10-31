@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import AthleteSearchBar from '@/components/athlete/AthleteSearchBar'
+import AthleteTrainingSessions from '@/components/athlete/AthleteTrainingSessions'
 import TrainingPlanner from '@/components/coach/TrainingPlanner'
 import { useUser } from '@/context/UserContext'
 import { isPastAthleteBooking } from '@/lib/athlete-upcoming-count'
@@ -19,6 +20,7 @@ export default function AthleteTraining() {
   const [searchOpen, setSearchOpen] = useState(false)
   // No plans yet: the empty state carries "Buscar entrenos", so the top bar would repeat it.
   const [empty, setEmpty] = useState(false)
+  const [createSessionRequest, setCreateSessionRequest] = useState(0)
   const bookings = bookingState.uid === uid && bookingState.loaded ? bookingState.bookings : null
 
   useEffect(() => {
@@ -59,7 +61,12 @@ export default function AthleteTraining() {
           <AthleteNextClass booking={nextClass} />
         </div>
       )}
-      <TrainingPlanner onSearch={() => setSearchOpen(true)} onEmptyChange={setEmpty} />
+      <TrainingPlanner
+        onSearch={() => setSearchOpen(true)}
+        onEmptyChange={setEmpty}
+        onCreateSession={() => setCreateSessionRequest((value) => value + 1)}
+      />
+      <AthleteTrainingSessions createRequest={createSessionRequest} />
     </div>
   )
 }

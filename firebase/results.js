@@ -1,14 +1,14 @@
 import { TEST_AWARDS } from '@/CONSTANTS/AWARDS'
 import { async } from '@firebase/util'
 import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, query, updateDoc, where } from 'firebase/firestore'
-import { db } from '.'
+import { db } from './index'
 import { deepFormatFirebaseDates } from './deepFormatFirebaseDates'
 import {
 
   formatResponse,
   normalizeDoc
 } from './firebase-helpers'
-/* import { db } from '.'
+/* import { db } from './index'
 import {
   datesToFirebaseFromat,
   formatResponse,

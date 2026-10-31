@@ -1,5 +1,5 @@
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-import { storage } from '.'
+import { storage } from './index'
 import { v4 as uidGenerator } from 'uuid';
 
 

@@ -1,6 +1,6 @@
 import { async } from '@firebase/util'
 import { collection, getDocs, query, where } from 'firebase/firestore'
-import { db } from '.'
+import { db } from './index'
 import { normalizeDoc } from './firebase-helpers'
 
 export const getOldAthlete = async (userId) => {

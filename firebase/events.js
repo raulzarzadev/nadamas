@@ -1,5 +1,5 @@
 import { addDoc, collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from "firebase/firestore"
-import { auth, db } from "."
+import { auth, db } from "./index"
 import { deepFormatFirebaseDates } from "./deepFormatFirebaseDates"
 import { formatResponse, normalizeDoc } from "./firebase-helpers"
 

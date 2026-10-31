@@ -274,6 +274,7 @@ export default function AppNav({
             role === 'athlete' &&
             !publicAthleteSchedule &&
             pathname !== '/athlete/home' &&
+            pathname !== '/athlete/schedule' &&
             !pathname.startsWith('/athlete/search') &&
             !pathname.startsWith('/athlete/training') &&
             pathname !== '/athlete/payments' &&

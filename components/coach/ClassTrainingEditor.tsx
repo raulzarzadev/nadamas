@@ -101,6 +101,7 @@ export default function ClassTrainingEditor({
   readOnly = false,
   onEditingChange,
   onCreateFirstBlock,
+  allowTransfer = true,
 }: {
   blocks: ClassTrainingBlock[]
   onChange: (blocks: ClassTrainingBlock[]) => void
@@ -108,6 +109,7 @@ export default function ClassTrainingEditor({
   readOnly?: boolean
   onEditingChange?: (editing: boolean) => void
   onCreateFirstBlock?: () => void
+  allowTransfer?: boolean
 }) {
   const update = (key: string, change: Partial<ClassTrainingBlock>) =>
     onChange(blocks.map((block) => (block.id === key ? { ...block, ...change } : block)))
@@ -239,15 +241,17 @@ export default function ClassTrainingEditor({
                   +
                 </button>
               </div>
-              <button
-                type="button"
-                aria-label={`Transferir bloque ${index + 1}`}
-                title="Transferir"
-                onClick={() => setTransferBlockId(block.id)}
-                className="grid size-11 shrink-0 place-items-center rounded-full text-(--c-ocean) hover:bg-white"
-              >
-                <FiRepeat aria-hidden="true" className="size-4" />
-              </button>
+              {allowTransfer && (
+                <button
+                  type="button"
+                  aria-label={`Transferir bloque ${index + 1}`}
+                  title="Transferir"
+                  onClick={() => setTransferBlockId(block.id)}
+                  className="grid size-11 shrink-0 place-items-center rounded-full text-(--c-ocean) hover:bg-white"
+                >
+                  <FiRepeat aria-hidden="true" className="size-4" />
+                </button>
+              )}
               <button
                 type="button"
                 aria-label={`Eliminar bloque ${index + 1}`}
@@ -354,7 +358,8 @@ export default function ClassTrainingEditor({
       >
         + Agregar bloque
       </button>
-      {transferBlockId &&
+      {allowTransfer &&
+        transferBlockId &&
         blocks.some((block) => block.id === transferBlockId) &&
         createPortal(
           <WorkoutTransferSheet

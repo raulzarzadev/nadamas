@@ -14,7 +14,7 @@ import {
   updateDoc,
   where
 } from 'firebase/firestore'
-import { db } from '.'
+import { db } from './index'
 import { deepFormatFirebaseDates } from './deepFormatFirebaseDates'
 import {
 

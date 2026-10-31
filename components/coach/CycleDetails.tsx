@@ -43,6 +43,26 @@ export default function CycleDetails({
     ),
   ]
   const months = groupTrainingSessions(value)
+  const datedSessions = objectives
+    .map((_, index) => ({ index, date: value.objectiveDates?.[index] || '' }))
+    .filter((item) => item.date)
+    .sort((a, b) => a.date.localeCompare(b.date))
+  const includesToday = Boolean(
+    value.startDate && value.endDate && value.startDate <= today && today <= value.endDate
+  )
+  const previousSession = datedSessions.filter((item) => item.date < today).at(-1)
+  const nextSession = datedSessions.find((item) => item.date >= today)
+  const todayMarker = (
+    <div
+      role="note"
+      aria-label={`Hoy, ${today}`}
+      className="flex min-w-0 items-center gap-2 py-2 text-[10px] font-bold text-[#176454]"
+    >
+      <span aria-hidden="true" className="h-px min-w-2 flex-1 bg-[#176454]" />
+      <span>Hoy</span>
+      <span aria-hidden="true" className="h-px min-w-2 flex-1 bg-[#176454]" />
+    </div>
+  )
   const [collapsedMonths, setCollapsedMonths] = useState<Record<string, boolean>>({})
   const [collapsedWeeks, setCollapsedWeeks] = useState<Record<string, boolean>>({})
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
@@ -85,8 +105,12 @@ export default function CycleDetails({
           </div>
         )}
       </div>
+      {includesToday && objectives.length > 0 && !datedSessions.length && todayMarker}
       {!objectives.length ? (
-        <p className="text-[10px] text-(--c-text-2)">Aún no hay sesiones.</p>
+        <div>
+          {includesToday && todayMarker}
+          <p className="text-[10px] text-(--c-text-2)">Aún no hay sesiones.</p>
+        </div>
       ) : (
         <SortableList
           items={months}
@@ -187,6 +211,10 @@ export default function CycleDetails({
                                     key={item.id}
                                     className={`min-w-0 rounded-xl ${expanded ? 'bg-[#d5eeeb]' : ''}`}
                                   >
+                                    {includesToday &&
+                                      !previousSession &&
+                                      nextSession?.index === selected &&
+                                      todayMarker}
                                     <div
                                       style={{
                                         top: expanded
@@ -196,13 +224,6 @@ export default function CycleDetails({
                                       className={`${expanded ? 'sticky z-10 bg-[#bce0da]' : 'relative bg-[#eaf7fb]'} rounded-t-xl`}
                                     >
                                       <PlanningRow
-                                        leading={
-                                          value.objectiveDates?.[selected] === today ? (
-                                            <span className="pointer-events-none absolute top-1/2 right-[calc(100%+4px)] z-20 -translate-y-1/2 rounded-full bg-[#176454] px-2 py-1 text-[10px] leading-none font-bold text-white ring-2 ring-(--c-surface)">
-                                              Hoy
-                                            </span>
-                                          ) : undefined
-                                        }
                                         title={title}
                                         dotLabel={
                                           workouts(selected).length ? 'Tiene sesión' : 'Sin sesión'
@@ -250,6 +271,9 @@ export default function CycleDetails({
                                         />
                                       </div>
                                     )}
+                                    {includesToday &&
+                                      previousSession?.index === selected &&
+                                      todayMarker}
                                   </div>
                                 )
                               }}

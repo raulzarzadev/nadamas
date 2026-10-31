@@ -3,7 +3,7 @@
 /* -------------------- */
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { Dates } from 'firebase-dates-util'
-import { db } from '.'
+import { db } from './index'
 import { FirebaseCRUD } from './FirebaseCRUD'
 
 export const getUser = async (userId) => {
