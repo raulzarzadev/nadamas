@@ -179,20 +179,24 @@ export default function AthleteTrainingSessions({
         onClose={() => setDraft(null)}
         label={draft?.id ? 'Editar sesión suelta' : 'Crear sesión suelta'}
         keyboardAware
+        showFooterClose={false}
+        compactFooter
         closeDisabled={saving}
         footer={
-          <button
-            type="submit"
-            form="athlete-training-session-form"
-            disabled={saving}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white disabled:opacity-50"
-          >
-            {saving ? 'Guardando…' : 'Guardar sesión'}
-          </button>
+          <div className="flex min-h-14 items-center">
+            <button
+              type="submit"
+              form="athlete-training-session-form"
+              disabled={saving}
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {saving ? 'Guardando…' : 'Guardar sesión'}
+            </button>
+          </div>
         }
       >
         {draft && (
-          <form id="athlete-training-session-form" className="grid gap-4 pb-4" onSubmit={save}>
+          <form id="athlete-training-session-form" className="grid gap-3 pb-2" onSubmit={save}>
             <h2 className="text-xl font-bold">
               {draft.id ? 'Editar sesión suelta' : 'Crear sesión suelta'}
             </h2>

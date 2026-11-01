@@ -59,6 +59,7 @@ export default function Sheet({
   fullBleedMobile = false,
   modalTopGap = false,
   showFooterClose = true,
+  compactFooter = false,
   closeDisabled = false,
   size = 'md',
 }: {
@@ -75,6 +76,7 @@ export default function Sheet({
   fullBleedMobile?: boolean
   modalTopGap?: boolean
   showFooterClose?: boolean
+  compactFooter?: boolean
   closeDisabled?: boolean
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 }) {
@@ -246,7 +248,7 @@ export default function Sheet({
         className={`relative w-full bg-white shadow-[0_-20px_60px_-30px_rgba(10,37,64,0.5)] flex min-h-0 flex-col ${isDragging ? 'transition-none' : ''} ${
           fullBleedMobile
             ? `max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-hidden rounded-t-[26px] rounded-b-none px-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))] ${sheetAnimation} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-2 sm:pt-5'} sm:min-h-0 sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:px-5 sm:pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${desktopWidth} sm:[animation:none]`
-            : `px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-5'} ${
+            : `px-5 ${compactFooter ? 'pb-[calc(0.5rem+env(safe-area-inset-bottom))]' : 'pb-[calc(1.25rem+env(safe-area-inset-bottom))]'} ${modalTopGap ? 'pt-4 sm:pt-6' : 'pt-5'} ${
                 keyboardAware
                   ? `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-hidden rounded-t-[26px] rounded-b-none ${desktopWidth} sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:[animation:none]`
                   : `${sheetAnimation} max-h-[calc(var(--sheet-viewport-height,100dvh)-0.5rem)] overflow-hidden rounded-t-[26px] ${desktopWidth} sm:max-h-[calc(var(--sheet-viewport-height,100dvh)-2rem)] sm:rounded-[26px] sm:[animation:none]`
