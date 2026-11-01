@@ -7,6 +7,7 @@ import usePendingSchoolRequests from '@comps/notifications/usePendingSchoolReque
 import useProfileInvitations from '@comps/notifications/useProfileInvitations'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { FiBell } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
 import { NotificationCRUD } from '@/firebase/notifications/main'
@@ -36,6 +37,8 @@ export default function NotificationsBell() {
   const profileInvitations = useProfileInvitations(uid, open)
   const pendingRequests = usePendingSchoolRequests(uid)
   const ref = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const [panelPosition, setPanelPosition] = useState({ top: 80, right: 12 })
 
   useEffect(() => {
     if (!uid) {
@@ -71,11 +74,33 @@ export default function NotificationsBell() {
 
   useEffect(() => {
     if (!open) return
-    const closeOnOutside = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false)
+    const positionPanel = () => {
+      const anchor = ref.current?.getBoundingClientRect()
+      if (anchor)
+        setPanelPosition({
+          top: anchor.bottom + 8,
+          right: Math.max(12, window.innerWidth - anchor.right),
+        })
     }
+    positionPanel()
+    const closeOnOutside = (event: PointerEvent) => {
+      if (
+        !ref.current?.contains(event.target as Node) &&
+        !panelRef.current?.contains(event.target as Node)
+      )
+        setOpen(false)
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('resize', positionPanel)
+    document.addEventListener('keydown', closeOnEscape)
     document.addEventListener('pointerdown', closeOnOutside)
-    return () => document.removeEventListener('pointerdown', closeOnOutside)
+    return () => {
+      window.removeEventListener('resize', positionPanel)
+      document.removeEventListener('keydown', closeOnEscape)
+      document.removeEventListener('pointerdown', closeOnOutside)
+    }
   }, [open])
 
   if (!uid) return null
@@ -121,68 +146,79 @@ export default function NotificationsBell() {
         )}
       </button>
 
-      {open && (
-        <div className="fixed left-3 right-3 top-20 z-50 max-h-[calc(100vh-6rem)] overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-md)] sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[min(20rem,calc(100vw-1.5rem))]">
-          <div className="flex items-center justify-between px-3 py-2.5">
-            <p className="text-sm font-bold text-[var(--c-ocean)]">Notificaciones</p>
-            <div className="flex items-center gap-1">
-              <Link
-                href="/notifications"
-                onClick={() => setOpen(false)}
-                className="rounded-full px-2 py-1 text-xs font-bold text-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]"
-              >
-                Ver todas
-              </Link>
-              <PushNotificationsControl compact />
-            </div>
-          </div>
-          <div className="max-h-[60vh] overflow-y-auto border-t border-[var(--c-border)]">
-            <PendingSchoolRequests
-              items={pendingRequests}
-              showSchool={new Set(pendingRequests.map((item) => item.schoolId)).size > 1}
-              onNavigate={() => setOpen(false)}
-            />
-            {schoolInvitations.length > 0 && (
-              <div className="border-b border-[var(--c-border)]">
-                <p className="px-3 pb-1 pt-3 text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
-                  Invitaciones escolares
-                </p>
-                {schoolInvitations.slice(0, 3).map((invitation) => (
-                  <Link
-                    key={invitation.id}
-                    href={`/${invitation.role === 'teacher' ? 'coach' : invitation.role === 'student' ? 'athlete' : 'school'}/invitations/${invitation.id}`}
-                    onClick={() => setOpen(false)}
-                    className="block px-3 py-3 hover:bg-[var(--c-surface)]"
-                  >
-                    <p className="text-sm font-bold text-[var(--c-ocean)]">
-                      {invitation.schoolName}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[var(--c-text-2)]">
-                      Invitación como {SCHOOL_ROLE_LABEL[invitation.role]} ·{' '}
-                      <span className="font-bold text-[var(--c-aqua-strong)]">Revisar</span>
-                    </p>
-                  </Link>
-                ))}
+      {open &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={
+              {
+                top: panelPosition.top,
+                '--notification-panel-right': `${panelPosition.right}px`,
+              } as React.CSSProperties
+            }
+            className="fixed left-3 right-3 z-50 max-h-[calc(100dvh-6rem)] overflow-hidden rounded-[var(--r-md)] border border-[var(--c-border)] bg-white shadow-[var(--shadow-md)] sm:left-auto sm:right-(--notification-panel-right) sm:w-[min(20rem,calc(100vw-1.5rem))]"
+          >
+            <div className="flex items-center justify-between px-3 py-2.5">
+              <p className="text-sm font-bold text-[var(--c-ocean)]">Notificaciones</p>
+              <div className="flex items-center gap-1">
+                <Link
+                  href="/notifications"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex min-h-11 items-center rounded-full px-2 py-1 text-xs font-bold text-[var(--c-aqua-strong)] hover:bg-[var(--c-surface)]"
+                >
+                  Ver todas
+                </Link>
+                <PushNotificationsControl compact />
               </div>
-            )}
-            {preview.length === 0 &&
-            schoolInvitations.length === 0 &&
-            pendingRequests.length === 0 ? (
-              <p className="px-3 py-8 text-center text-sm text-[var(--c-text-2)]">
-                No tienes notificaciones.
-              </p>
-            ) : (
-              preview.map((notification) => (
-                <NotificationItem
-                  key={notification.id}
-                  notification={notification}
-                  onNavigate={() => setOpen(false)}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      )}
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto border-t border-[var(--c-border)]">
+              <PendingSchoolRequests
+                items={pendingRequests}
+                showSchool={new Set(pendingRequests.map((item) => item.schoolId)).size > 1}
+                onNavigate={() => setOpen(false)}
+              />
+              {schoolInvitations.length > 0 && (
+                <div className="border-b border-[var(--c-border)]">
+                  <p className="px-3 pb-1 pt-3 text-xs font-bold uppercase tracking-wide text-[var(--c-text-2)]">
+                    Invitaciones escolares
+                  </p>
+                  {schoolInvitations.slice(0, 3).map((invitation) => (
+                    <Link
+                      key={invitation.id}
+                      href={`/${invitation.role === 'teacher' ? 'coach' : invitation.role === 'student' ? 'athlete' : 'school'}/invitations/${invitation.id}`}
+                      onClick={() => setOpen(false)}
+                      className="block px-3 py-3 hover:bg-[var(--c-surface)]"
+                    >
+                      <p className="text-sm font-bold text-[var(--c-ocean)]">
+                        {invitation.schoolName}
+                      </p>
+                      <p className="mt-0.5 text-xs text-[var(--c-text-2)]">
+                        Invitación como {SCHOOL_ROLE_LABEL[invitation.role]} ·{' '}
+                        <span className="font-bold text-[var(--c-aqua-strong)]">Revisar</span>
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              {preview.length === 0 &&
+              schoolInvitations.length === 0 &&
+              pendingRequests.length === 0 ? (
+                <p className="px-3 py-8 text-center text-sm text-[var(--c-text-2)]">
+                  No tienes notificaciones.
+                </p>
+              ) : (
+                preview.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onNavigate={() => setOpen(false)}
+                  />
+                ))
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

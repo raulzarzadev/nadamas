@@ -99,7 +99,7 @@ export async function POST(request: Request, { params }: Props) {
         type: 'school_access_requested',
         title: 'Solicitud de acceso',
         body: `${name} solicita compartir su perfil de atleta con ${school.name}.`,
-        link: '/school/students',
+        link: '/school/students?access=1',
       }).catch(() => {})
     return NextResponse.json({ request: result.request })
   } catch {

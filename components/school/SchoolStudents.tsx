@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { FiMail, FiPlus, FiSearch, FiShare2, FiTrash2, FiUsers } from 'react-icons/fi'
 import StudentLabels from '@/components/coach/StudentLabels'
@@ -42,9 +43,10 @@ export default function SchoolStudents() {
   const [studentQuery, setStudentQuery] = useState('')
   // Opened from the bell / Notificaciones ("Solicitudes pendientes" → ?access=1).
   const [showAccess, setShowAccess] = useState(false)
+  const searchParams = useSearchParams()
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has('access')) setShowAccess(true)
-  }, [])
+    if (searchParams.has('access')) setShowAccess(true)
+  }, [searchParams])
   const [labelRevision, setLabelRevision] = useState(0)
   const [students, setStudents] = useState<SchoolStudent[]>([])
   const [invitations, setInvitations] = useState<SchoolInvitation[]>([])
@@ -151,6 +153,15 @@ export default function SchoolStudents() {
     <section className="flex flex-col gap-5">
       <h1 className="sr-only">{capitalizeSchoolTerm(participantPlural)}</h1>
       <SchoolSelector schools={schools} selectedId={selected.school.id} onChange={selectSchool} />
+      {isDirector && (
+        <button
+          type="button"
+          className="btn btn-outline min-h-11 self-start"
+          onClick={() => setShowAccess(true)}
+        >
+          Solicitudes de acceso
+        </button>
+      )}
       {showRosterTools && (
         <>
           <div className="grid gap-2">

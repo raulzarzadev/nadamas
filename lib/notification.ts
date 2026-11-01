@@ -58,6 +58,7 @@ export function notificationTimeAgo(createdAt: number, now = Date.now()): string
 
 /** Repair legacy class links without routing coaches into the director workspace. */
 export function notificationDestination(notification: AppNotification, role: string) {
+  if (notification.type === 'school_access_requested') return '/school/students?access=1'
   const classUpdate =
     notification.type === 'school_class_assigned' || notification.type === 'school_class_cancelled'
   if (classUpdate && notification.link.startsWith('/school/classes')) {
