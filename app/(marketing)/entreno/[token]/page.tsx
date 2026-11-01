@@ -13,8 +13,14 @@ export default async function Page({ params }: { params: Promise<{ token: string
     const hash = createHash('sha256').update(token).digest('hex')
     data = (await adminDb.collection('sharedTrainingSessions').doc(hash).get()).data()
   } else if (/^[\w-]{1,128}$/.test(token)) {
-    data = (await adminDb.collection('athleteTrainingSessions').doc(token).get()).data()
-    if (data?.visibility !== 'public') notFound()
+    const coach = token.startsWith('coach-')
+    data = (
+      await adminDb
+        .collection(coach ? 'coachStandaloneSessions' : 'athleteTrainingSessions')
+        .doc(coach ? token.slice(6) : token)
+        .get()
+    ).data()
+    if (coach && data?.visibility === 'private') notFound()
   } else {
     notFound()
   }

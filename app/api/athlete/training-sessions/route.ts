@@ -21,7 +21,7 @@ export async function GET(request: Request) {
           title: data.title,
           description: typeof data.description === 'string' ? data.description : '',
           training: normalizeClassTraining(data.training || []) || [],
-          visibility: data.visibility === 'private' ? 'private' : 'public',
+          visibility: 'public',
           updatedAt: typeof data.updatedAt === 'number' ? data.updatedAt : 0,
         }
       })
@@ -41,7 +41,7 @@ async function save(request: Request, editing: boolean) {
   const description = typeof body?.description === 'string' ? body.description.trim() : ''
   const training = normalizeClassTraining(body?.training)
   const requestedVisibility = body?.visibility
-  let visibility: 'public' | 'private' = requestedVisibility === 'private' ? 'private' : 'public'
+  const visibility = 'public'
   if (
     !title ||
     title.length > 100 ||
@@ -65,8 +65,6 @@ async function save(request: Request, editing: boolean) {
       const existingData = existing.data()
       if (!existing.exists || existingData?.athleteId !== access.uid)
         return NextResponse.json({ error: 'No encontramos esta sesión.' }, { status: 404 })
-      if (requestedVisibility === undefined)
-        visibility = existingData.visibility === 'private' ? 'private' : 'public'
     }
     const updatedAt = Date.now()
     await ref.set(

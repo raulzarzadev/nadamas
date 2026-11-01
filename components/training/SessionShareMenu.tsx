@@ -49,7 +49,7 @@ export default function SessionShareMenu({
         {
           title: `${session.title.slice(0, 94)} copia`,
           description: session.description,
-          visibility: 'private',
+          visibility: 'public',
           tags: [],
           training: session.training.map((block) => ({
             ...block,

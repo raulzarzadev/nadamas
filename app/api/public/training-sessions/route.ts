@@ -29,10 +29,7 @@ export async function GET(request: Request) {
           .doc(id)
           .get()
       ).data()
-      if (
-        !data ||
-        (!shared && (coach ? data.visibility === 'private' : data.visibility !== 'public'))
-      )
+      if (!data || (!shared && coach && data.visibility === 'private'))
         return NextResponse.json({ error: 'No encontramos esta sesión.' }, { status: 404 })
       return NextResponse.json(
         {
@@ -51,12 +48,7 @@ export async function GET(request: Request) {
       )
     }
     const [snapshot, coachSnapshot] = await Promise.all([
-      adminDb
-        .collection('athleteTrainingSessions')
-        .where('visibility', '==', 'public')
-        .orderBy('updatedAt', 'desc')
-        .limit(50)
-        .get(),
+      adminDb.collection('athleteTrainingSessions').orderBy('updatedAt', 'desc').limit(50).get(),
       adminDb.collection('coachStandaloneSessions').orderBy('updatedAt', 'desc').limit(50).get(),
     ])
     const coachIds = [

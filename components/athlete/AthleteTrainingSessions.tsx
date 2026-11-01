@@ -19,7 +19,7 @@ type TrainingSession = {
   updatedAt: number
   visibility: 'public' | 'private'
 }
-type Draft = Pick<TrainingSession, 'title' | 'description' | 'training' | 'visibility'> & {
+type Draft = Pick<TrainingSession, 'title' | 'description' | 'training'> & {
   id?: string
 }
 
@@ -59,7 +59,7 @@ export default function AthleteTrainingSessions({
   useEffect(() => {
     if (!createRequest) return
     setError('')
-    setDraft({ title: '', description: '', training: [], visibility: 'public' })
+    setDraft({ title: '', description: '', training: [] })
   }, [createRequest])
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -96,7 +96,7 @@ export default function AthleteTrainingSessions({
       {selection?.type === 'session' &&
         (loading || error || items.length > 0 || selection?.type === 'session') && (
           <section
-            className="mx-auto grid w-full max-w-4xl gap-3 px-3 pb-5"
+            className="mx-auto grid w-full min-w-0 max-w-4xl grid-cols-[minmax(0,1fr)] gap-3 px-3 pb-5"
             aria-label="Sesiones sueltas"
           >
             <h2 className="text-center text-2xl font-extrabold text-(--c-ocean)">Entreno de hoy</h2>
@@ -123,11 +123,10 @@ export default function AthleteTrainingSessions({
                 (item) => !selection || selection.type !== 'session' || item.id === selection.id
               )
               .map((item) => (
-                <div key={item.id}>
+                <div key={item.id} className="min-w-0">
                   <div className="flex min-h-12 items-center justify-between gap-3 py-2 text-sm font-semibold text-(--c-ocean)">
                     <span className="min-w-0 truncate">{item.title}</span>
                     <span className="shrink-0 text-xs font-normal text-(--c-text-2)">
-                      {item.visibility === 'public' ? 'Público' : 'Privado'} ·{' '}
                       {item.training.length} {item.training.length === 1 ? 'bloque' : 'bloques'}
                     </span>
                   </div>
@@ -148,7 +147,6 @@ export default function AthleteTrainingSessions({
                             title: item.title,
                             description: item.description,
                             training: item.training,
-                            visibility: item.visibility,
                           })
                         }}
                       >
@@ -158,7 +156,6 @@ export default function AthleteTrainingSessions({
                         <SessionShareMenu
                           session={item}
                           accountRole="athlete"
-                          shareable={item.visibility === 'public'}
                           onDuplicated={(id) => onSelectTraining?.({ type: 'session', id })}
                         />
                       </div>
@@ -221,36 +218,6 @@ export default function AthleteTrainingSessions({
                 className="[field-sizing:content] box-border min-h-11 w-full min-w-0 max-w-full rounded-xl border border-(--c-border) bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-inset focus:ring-(--c-aqua-strong)"
               />
             </label>
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-(--c-border) bg-(--c-surface) px-3 py-2">
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold">
-                  {draft.visibility === 'public' ? 'Público' : 'Privado'}
-                </span>
-                <span className="block text-xs text-(--c-text-2)">
-                  {draft.visibility === 'public'
-                    ? 'Otros atletas pueden encontrarlo.'
-                    : 'Solo tú puedes verlo.'}
-                </span>
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-label="Visibilidad del entreno"
-                aria-checked={draft.visibility === 'public'}
-                onClick={() =>
-                  setDraft({
-                    ...draft,
-                    visibility: draft.visibility === 'public' ? 'private' : 'public',
-                  })
-                }
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${draft.visibility === 'public' ? 'bg-(--c-ocean)' : 'bg-slate-300'}`}
-              >
-                <span
-                  aria-hidden="true"
-                  className={`size-4 rounded-full bg-white shadow-sm transition-transform ${draft.visibility === 'public' ? 'translate-x-6' : 'translate-x-1'}`}
-                />
-              </button>
-            </div>
             <ClassTrainingEditor
               blocks={draft.training}
               onChange={(training) => setDraft({ ...draft, training })}
