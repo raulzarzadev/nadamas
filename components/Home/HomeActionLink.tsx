@@ -7,9 +7,11 @@ type HomeActionLinkProps = {
   description?: string
   icon: IconType
   featured?: boolean
+  dialog?: boolean
 } & (
   | { href: string; onClick?: never; expanded?: never; controls?: never }
   | { href?: never; onClick: () => void; expanded: boolean; controls: string }
+  | { href?: never; onClick: () => void; expanded?: never; controls?: never; dialog: true }
 )
 
 export default function HomeActionLink({
@@ -21,6 +23,7 @@ export default function HomeActionLink({
   onClick,
   expanded,
   controls,
+  dialog,
 }: HomeActionLinkProps) {
   const className = `flex min-h-14 w-full min-w-0 items-center gap-3 rounded-xl border px-4 py-3 text-left font-bold text-(--c-ocean) transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong) ${
     featured
@@ -53,6 +56,7 @@ export default function HomeActionLink({
       type="button"
       aria-expanded={expanded}
       aria-controls={controls}
+      aria-haspopup={dialog ? 'dialog' : undefined}
       onClick={onClick}
       className={className}
     >

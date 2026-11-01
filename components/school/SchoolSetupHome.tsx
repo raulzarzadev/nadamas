@@ -1,6 +1,8 @@
 'use client'
+import Image from 'next/image'
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { QRCodeCanvas } from 'qrcode.react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   FiActivity,
   FiArrowLeft,
@@ -8,16 +10,18 @@ import {
   FiCheck,
   FiCreditCard,
   FiDollarSign,
+  FiDownload,
   FiRefreshCw,
   FiSettings,
   FiShare2,
   FiShield,
 } from 'react-icons/fi'
 import HomeActionLink from '@/components/Home/HomeActionLink'
+import Sheet from '@/components/ui/sheet'
 import { SchoolSetupCRUD } from '@/firebase/school-setup/main'
 import { getCachedAuthedData, invalidateAuthedCache } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
-import { getPublicSchoolUrl, getShareablePublicSchoolUrl } from '@/lib/client/school-public-url'
+import { getShareablePublicSchoolUrl } from '@/lib/client/school-public-url'
 import type { SchoolSetupSnapshot } from '@/lib/school-setup'
 import { schoolSubscriptionHint } from '@/lib/school-subscription-hint'
 import { reportInternalError } from '@/lib/user-facing-error'
@@ -39,17 +43,32 @@ export default function SchoolSetupHome({ view = 'home' }: { view?: 'home' | 'st
   return (
     <div className="grid gap-4">
       <SchoolSelector schools={schools} selectedId={selectedId} onChange={selectSchool} />
-      <SetupChecklist key={selectedId} schoolId={selectedId} view={view} />
+      <SetupChecklist
+        key={selectedId}
+        schoolId={selectedId}
+        view={view}
+        logoUrl={selected.school.logoUrl}
+      />
     </div>
   )
 }
-function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | 'steps' }) {
+function SetupChecklist({
+  schoolId,
+  view,
+  logoUrl,
+}: {
+  schoolId: string
+  view: 'home' | 'steps'
+  logoUrl?: string | null
+}) {
   const endpoint = `/api/schools/${encodeURIComponent(schoolId)}/setup`
   const [data, setData] = useState(() => getCachedAuthedData<SchoolSetupSnapshot>(endpoint))
   const [loading, setLoading] = useState(!data)
   const [error, setError] = useState(false)
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle')
   const [inviteExpanded, setInviteExpanded] = useState(false)
+  const qrRef = useRef<HTMLCanvasElement>(null)
+  const [qrError, setQrError] = useState(false)
   const [now, setNow] = useState(Date.now)
   const load = useCallback(async () => {
     setLoading(true)
@@ -90,7 +109,6 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
   const completed = data.steps.filter((step) => step.complete).length
   const next = data.steps.find((step) => !step.complete)
   const publicUrl = getShareablePublicSchoolUrl(data.slug)
-  const localSchoolUrl = getPublicSchoolUrl(data.slug)
   const copySchoolLink = async () => {
     try {
       await copyTextToClipboard(publicUrl)
@@ -98,6 +116,59 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
     } catch (cause) {
       reportInternalError('SCHOOL_LINK_COPY', cause)
       setShareStatus('error')
+    }
+  }
+  const downloadQr = async () => {
+    try {
+      if (!qrRef.current) throw new Error('QR_NOT_READY')
+      const canvas = document.createElement('canvas')
+      canvas.width = 1000
+      canvas.height = 1300
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('QR_CANVAS_UNAVAILABLE')
+      context.fillStyle = '#f0f8fa'
+      context.fillRect(0, 0, 1000, 1300)
+      context.fillStyle = '#ffffff'
+      context.roundRect(70, 55, 860, 1190, 48)
+      context.fill()
+      if (logoUrl) {
+        const logo = new window.Image()
+        logo.src = `/_next/image?url=${encodeURIComponent(logoUrl)}&w=256&q=75`
+        await logo.decode()
+        context.save()
+        context.beginPath()
+        context.arc(500, 200, 75, 0, Math.PI * 2)
+        context.clip()
+        context.drawImage(logo, 425, 125, 150, 150)
+        context.restore()
+      } else {
+        context.fillStyle = '#0a2540'
+        context.beginPath()
+        context.arc(500, 200, 75, 0, Math.PI * 2)
+        context.fill()
+        context.fillStyle = '#ffffff'
+        context.font = 'bold 72px sans-serif'
+        context.textAlign = 'center'
+        context.fillText(data.schoolName.slice(0, 1).toUpperCase(), 500, 225)
+      }
+      context.fillStyle = '#0a2540'
+      context.textAlign = 'center'
+      context.font = 'bold 50px sans-serif'
+      context.fillText(data.schoolName, 500, 360, 740)
+      context.drawImage(qrRef.current, 200, 410, 600, 600)
+      context.font = '30px sans-serif'
+      context.fillText('Escanea para visitar nuestra escuela', 500, 1085, 750)
+      context.fillStyle = '#526272'
+      context.font = '26px sans-serif'
+      context.fillText(publicUrl, 500, 1140, 740)
+      const link = document.createElement('a')
+      link.href = canvas.toDataURL('image/png')
+      link.download = `qr-escuela-${data.slug}.png`
+      link.click()
+      setQrError(false)
+    } catch (cause) {
+      reportInternalError('SCHOOL_QR_DOWNLOAD', cause)
+      setQrError(true)
     }
   }
   if (view === 'steps')
@@ -225,54 +296,93 @@ function SetupChecklist({ schoolId, view }: { schoolId: string; view: 'home' | '
             />
             <HomeActionLink
               title="Invitar a escuela"
+              dialog
               description="Comparte el enlace con tu equipo y las familias"
               icon={FiShare2}
-              onClick={() => setInviteExpanded((expanded) => !expanded)}
-              expanded={inviteExpanded}
-              controls="school-invite-details"
+              onClick={() => {
+                setShareStatus('idle')
+                setQrError(false)
+                setInviteExpanded(true)
+              }}
             />
           </div>
-          <div
-            id="school-invite-details"
-            hidden={!inviteExpanded}
-            className={`${inviteExpanded ? 'grid' : 'hidden'} min-w-0 gap-4 rounded-2xl border border-(--c-border) bg-white p-5 sm:p-7`}
+          <Sheet
+            open={inviteExpanded}
+            onClose={() => setInviteExpanded(false)}
+            label="Invitar a escuela"
+            footer={
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => void downloadQr()}
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-(--c-border) bg-white px-5 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                >
+                  <FiDownload aria-hidden="true" /> Descargar QR
+                </button>
+                <button
+                  type="button"
+                  onClick={copySchoolLink}
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
+                >
+                  <FiShare2 aria-hidden="true" />{' '}
+                  {shareStatus === 'copied' ? 'Enlace copiado' : 'Copiar enlace'}
+                </button>
+              </div>
+            }
           >
-            <div className="min-w-0">
-              <h3 className="font-bold">Enlace para invitar a tu escuela</h3>
-              <p className="mt-2 min-w-0 max-w-3xl text-sm leading-relaxed text-(--c-text-2) break-words">
-                Puedes administrar tu escuela desde aquí. Te recomendamos abrirla e instalar la app
-                desde su subdominio; después comparte este enlace con tus alumnos, profes y familias
-                para que lleguen directo a tu escuela.
+            <div className="grid min-w-0 justify-items-center gap-4 pb-4 text-center">
+              <h2 className="text-xl font-bold text-(--c-ocean)">Invitar a escuela</h2>
+              <p className="text-sm text-(--c-text-2)">
+                Comparte este código o enlace con tu equipo y las familias.
               </p>
-            </div>
-            <p className="min-w-0 max-w-full break-all rounded-xl border border-(--c-border) bg-white px-4 py-3 text-sm text-(--c-ocean)">
-              {publicUrl}
-            </p>
-            {shareStatus !== 'idle' && (
-              <p role="status" className="text-sm font-semibold text-(--c-ocean)">
-                {shareStatus === 'copied'
-                  ? 'Enlace copiado. Ya puedes compartirlo.'
-                  : 'No pudimos copiar el enlace. Inténtalo de nuevo.'}
+              <div className="grid w-full max-w-72 justify-items-center gap-3 rounded-2xl border border-(--c-border) bg-(--c-surface) p-5">
+                {logoUrl ? (
+                  <Image
+                    src={logoUrl}
+                    alt={`Logo de ${data.schoolName}`}
+                    width={64}
+                    height={64}
+                    className="size-16 rounded-full bg-white object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="grid size-16 place-items-center rounded-full bg-(--c-ocean) text-2xl font-bold text-white"
+                  >
+                    {data.schoolName.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+                <p className="font-bold text-(--c-ocean)">{data.schoolName}</p>
+                <QRCodeCanvas
+                  ref={qrRef}
+                  value={publicUrl}
+                  size={800}
+                  marginSize={2}
+                  style={{ width: 200, height: 200, maxWidth: '100%' }}
+                  aria-label="Código QR para abrir la escuela"
+                />
+                <p className="text-xs text-(--c-text-2)">Escanea para visitar nuestra escuela</p>
+              </div>
+              <p className="w-full min-w-0 break-all rounded-xl border border-(--c-border) px-4 py-3 text-sm text-(--c-ocean)">
+                {publicUrl}
               </p>
-            )}
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={copySchoolLink}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-(--c-ocean) px-5 text-sm font-bold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-              >
-                <FiShare2 aria-hidden="true" /> Copiar enlace
-              </button>
-              <Link
-                href={localSchoolUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-(--c-border) bg-white px-5 text-sm font-bold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--c-aqua-strong)"
-              >
-                Abrir mi escuela
-              </Link>
+              {shareStatus === 'error' && (
+                <p role="alert" className="text-sm text-red-800">
+                  No pudimos copiar el enlace. Inténtalo de nuevo.
+                </p>
+              )}
+              {qrError && (
+                <p role="alert" className="text-sm text-red-800">
+                  No pudimos descargar el QR. Inténtalo de nuevo.
+                </p>
+              )}
+              {shareStatus === 'copied' && (
+                <p role="status" className="sr-only">
+                  Enlace copiado.
+                </p>
+              )}
             </div>
-          </div>
+          </Sheet>
         </section>
         <section
           aria-labelledby="school-profiles-title"
