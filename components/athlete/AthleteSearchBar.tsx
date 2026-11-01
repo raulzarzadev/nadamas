@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { FiSearch, FiX } from 'react-icons/fi'
 import Sheet from '@/components/ui/sheet'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
+import type { TrainingSelection } from '@/lib/client/training-selection'
 import AthleteSearch from './AthleteSearch'
 
 type Pick = { id: string; name: string }
@@ -48,8 +49,14 @@ export default function AthleteSearchBar({
   open: controlledOpen,
   onOpenChange,
   hideTrigger,
+  trainingRole,
+  onSelectTraining,
+  selectedTraining,
 }: {
   schoolId?: string
+  trainingRole?: 'athlete' | 'coach'
+  onSelectTraining?: (selection: TrainingSelection | null) => void
+  selectedTraining?: TrainingSelection | null
   onSelectCoach?: (coach: Pick) => void
   onSelectSchool?: (school: Pick) => void
   actionLabel?: string
@@ -114,6 +121,16 @@ export default function AthleteSearchBar({
       <Sheet open={open} onClose={close} label={label} size="lg">
         <AthleteSearch
           schoolId={schoolId}
+          active={open}
+          trainingRole={trainingRole}
+          selectedTraining={selectedTraining}
+          onSelectTraining={
+            onSelectTraining &&
+            ((selection) => {
+              if (selection) close()
+              onSelectTraining(selection)
+            })
+          }
           syncUrl={false}
           initialTab={initialTab ?? defaultTab}
           actionLabel={actionLabel}

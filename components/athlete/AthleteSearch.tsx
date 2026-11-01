@@ -9,14 +9,17 @@ import { SearchField } from '@/components/Inputs/FormFields'
 import SchoolWorkspaceTabs from '@/components/school/SchoolWorkspaceTabs'
 import { useSchoolSelection } from '@/components/school/useSchoolSelection'
 import TrainingPlanCard from '@/components/training/TrainingPlanCard'
+import TrainingPlanPreview from '@/components/training/TrainingPlanPreview'
 import { useTenantSchool } from '@/context/TenantSchoolContext'
 import { useUser } from '@/context/UserContext'
 import { CoachCRUD } from '@/firebase/coaches/main'
 import { TrainingPlanCRUD } from '@/firebase/training-plans/main'
 import type { TrainingPlan } from '@/firebase/training-plans/training-plan.model'
 import { getAuthed } from '@/lib/client/authed-api'
+import type { TrainingSelection } from '@/lib/client/training-selection'
 import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/store/athlete-bookings'
 import { localCalendarDate } from '@/lib/today-training'
+import { buildTrainingPlanSummary } from '@/lib/training-plan-summary'
 import { reportInternalError } from '@/lib/user-facing-error'
 import AthleteScheduleBrowser from './AthleteScheduleBrowser'
 import RegisteredBadge from './RegisteredBadge'
@@ -49,8 +52,16 @@ export default function AthleteSearch({
   onSelectCoach,
   onSelectSchool,
   actionLabel,
+  trainingRole,
+  onSelectTraining,
+  selectedTraining,
+  active = true,
 }: {
   schoolId?: string
+  active?: boolean
+  trainingRole?: 'athlete' | 'coach'
+  onSelectTraining?: (selection: TrainingSelection | null) => void
+  selectedTraining?: TrainingSelection | null
   // Start with only this kind selected; all are selected when omitted.
   initialTab?: Kind | 'schedules'
   // false when embedded (e.g. the Horarios search sheet) so filter changes don't rewrite the URL.
@@ -79,6 +90,11 @@ export default function AthleteSearch({
   const plansEnabled = kindOptions.includes('plans')
   // Not inside pickers (payments / schedule coach pick): they need a coach or school back.
   const schedulesEnabled = !onSelectCoach && !onSelectSchool
+  const [onlyMine, setOnlyMine] = useState(false)
+  const [myPlans, setMyPlans] = useState<TrainingPlan[]>([])
+  const [mySessions, setMySessions] = useState<PublicTrainingSession[]>([])
+  const [myLoading, setMyLoading] = useState(false)
+  const [myError, setMyError] = useState(false)
   const [plans, setPlans] = useState<TrainingPlan[]>([])
   const [publicSessions, setPublicSessions] = useState<PublicTrainingSession[]>([])
   const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set())
@@ -91,6 +107,51 @@ export default function AthleteSearch({
   const [today] = useState(() => localCalendarDate(new Date()))
   const [schools, setSchools] = useState<PublicSchool[]>([])
   const [query, setQuery] = useState('')
+  const linkedPlan = useMemo(() => {
+    try {
+      const url = new URL(query.trim())
+      if (!['http:', 'https:'].includes(url.protocol)) return null
+      const id = url.pathname.match(/^\/athlete\/training\/plans\/([\w-]{1,128})\/?$/)?.[1]
+      return id ? { id, invite: url.searchParams.get('invite') || undefined } : null
+    } catch {
+      return null
+    }
+  }, [query])
+  const [linkedSession, setLinkedSession] = useState<PublicTrainingSession | null>(null)
+  const [linkStatus, setLinkStatus] = useState('')
+  useEffect(() => {
+    setLinkedSession(null)
+    setLinkStatus('')
+    let token = ''
+    try {
+      const url = new URL(query.trim())
+      if (!['http:', 'https:'].includes(url.protocol)) return
+      token = url.pathname.match(/^\/entreno\/([\w-]{1,128})\/?$/)?.[1] || ''
+    } catch {
+      return
+    }
+    if (!token || !plansEnabled) return
+    let active = true
+    setKinds({ schools: false, coaches: false, plans: true })
+    setLinkStatus('Cargando entreno compartido…')
+    fetch(`/api/public/training-sessions?session=${encodeURIComponent(token)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('SESSION_LINK_UNAVAILABLE')
+        return response.json() as Promise<{ item: PublicTrainingSession }>
+      })
+      .then(({ item }) => {
+        if (active) {
+          setLinkedSession(item)
+          setLinkStatus('')
+        }
+      })
+      .catch(() => {
+        if (active) setLinkStatus('Este entreno no está disponible o el enlace ya no es válido.')
+      })
+    return () => {
+      active = false
+    }
+  }, [query, plansEnabled])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [coachMatches, setCoachMatches] = useState<number>()
@@ -111,6 +172,50 @@ export default function AthleteSearch({
   )
   const { user } = useUser() as { user: { uid?: string; id?: string } | null | undefined }
   const uid = user?.uid || user?.id || ''
+  const trainingPicker = Boolean(onSelectTraining)
+  useEffect(() => {
+    if (!active || !trainingPicker || !uid || !trainingRole) return
+    let alive = true
+    setMyLoading(true)
+    setMyError(false)
+    setMyPlans([])
+    setMySessions([])
+    const path =
+      trainingRole === 'coach' ? '/api/coach/standalone-sessions' : '/api/athlete/training-sessions'
+    Promise.all([TrainingPlanCRUD.list(uid), getAuthed(path).then((response) => response.json())])
+      .then(([ownedPlans, payload]) => {
+        if (!alive) return
+        setMyPlans(
+          ownedPlans.map((plan) => ({
+            ...plan,
+            summary:
+              plan.summary ||
+              buildTrainingPlanSummary(plan.cycles, {
+                name: 'Tú',
+                photo: '',
+                role: trainingRole,
+              }),
+          }))
+        )
+        setMySessions(
+          (payload.items || []).map((item: PublicTrainingSession) => ({
+            ...item,
+            authorId: uid,
+            authorName: 'Tú',
+          }))
+        )
+      })
+      .catch((cause) => {
+        reportInternalError('OWN_TRAININGS_LOAD', cause)
+        if (alive) setMyError(true)
+      })
+      .finally(() => {
+        if (alive) setMyLoading(false)
+      })
+    return () => {
+      alive = false
+    }
+  }, [active, trainingPicker, uid, trainingRole])
   const dispatch = useAppDispatch()
   const bookingState = useAppSelector((state) => state.athleteBookings)
   useEffect(() => {
@@ -246,9 +351,23 @@ export default function AthleteSearch({
     if (end && end < today) return 2
     return start && start > today ? 1 : 0
   }
-  const searchablePlans = plans.filter(
+  const searchablePlans = (
+    onlyMine
+      ? myPlans
+      : onSelectTraining
+        ? [...myPlans, ...plans.filter((plan) => plan.userId !== uid)]
+        : plans
+  ).filter(
     (plan) =>
-      uid && plan.summary && plan.userId !== uid && (!tenant || tenantCoachIds?.has(plan.userId))
+      uid &&
+      plan.summary &&
+      (onlyMine
+        ? plan.userId === uid
+        : (plan.userId === uid ||
+            !onSelectTraining ||
+            !tenant ||
+            tenantCoachIds?.has(plan.userId)) &&
+          (!tenant || plan.userId === uid || tenantCoachIds?.has(plan.userId)))
   )
   const visiblePlans = searchablePlans
     .filter((plan) => {
@@ -265,8 +384,14 @@ export default function AthleteSearch({
           ? (a.summary?.startDate ?? '').localeCompare(b.summary?.startDate ?? '')
           : 0)
     )
-  const visibleSessions = publicSessions.filter((session) => {
-    if (tenant || !session.title || session.authorId === uid) return false
+  const visibleSessions = (
+    onlyMine
+      ? mySessions
+      : onSelectTraining
+        ? [...mySessions, ...publicSessions.filter((session) => session.authorId !== uid)]
+        : publicSessions
+  ).filter((session) => {
+    if ((!onlyMine && tenant && session.authorId !== uid) || !session.title) return false
     const needle = normalize(query.trim())
     return [session.title, session.description, session.authorName].some((field) =>
       normalize(field).includes(needle)
@@ -279,16 +404,21 @@ export default function AthleteSearch({
   // Sheet shows a short list: hide a section with no matches; one message if none match.
   const schoolsShown = kinds.schools && !loading && (error || visible.length > 0)
   const nothingMatches =
+    !linkedPlan &&
+    !linkedSession &&
+    !linkStatus &&
     !loading &&
     !error &&
     (!kinds.schools || visible.length === 0) &&
     (!kinds.coaches || coachMatches === 0) &&
     (!kinds.plans ||
-      (!plansLoading &&
-        !plansError &&
-        !sessionsLoading &&
-        !sessionsError &&
-        (!tenant || tenantCoachIds !== undefined) &&
+      ((onlyMine
+        ? !myLoading && !myError
+        : !plansLoading &&
+          !plansError &&
+          !sessionsLoading &&
+          !sessionsError &&
+          (!tenant || tenantCoachIds !== undefined)) &&
         visiblePlans.length === 0 &&
         visibleSessions.length === 0))
   return (
@@ -351,6 +481,20 @@ export default function AthleteSearch({
           </label>
         )}
       </fieldset>
+      {onSelectTraining && kinds.plans && !showSchedules && (
+        <label className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-(--c-ocean)">
+          <input
+            type="checkbox"
+            checked={onlyMine}
+            onChange={(event) => setOnlyMine(event.target.checked)}
+          />{' '}
+          Mis entrenos
+        </label>
+      )}
+      {onSelectTraining && myLoading && <p role="status">Cargando tus entrenos…</p>}
+      {onSelectTraining && myError && (
+        <p role="alert">No pudimos cargar tus entrenos. Inténtalo de nuevo.</p>
+      )}
       {showSchedules && memberSchools.length > 0 && (
         <section aria-label="Filtrar horarios por escuela" className="grid gap-2">
           <h3 className="text-sm font-bold text-(--c-ocean)">Escuela</h3>
@@ -433,13 +577,29 @@ export default function AthleteSearch({
           />
         </section>
       )}
+      {!showSchedules && plansEnabled && linkedPlan && (
+        <TrainingPlanPreview
+          key={linkedPlan.id}
+          planId={linkedPlan.id}
+          invite={linkedPlan.invite}
+        />
+      )}
       {!showSchedules &&
         kinds.plans &&
         plansEnabled &&
-        (plansError || sessionsError || visiblePlans.length > 0 || visibleSessions.length > 0) && (
+        ((!onlyMine && (plansError || sessionsError)) ||
+          visiblePlans.length > 0 ||
+          visibleSessions.length > 0 ||
+          linkedSession ||
+          linkStatus) && (
           <section aria-label="Entrenos" className="grid min-w-0 grid-cols-1 gap-3">
             {both && <h3 className="text-xs font-semibold text-(--c-text-2)">Entrenos</h3>}
-            {plansError || sessionsError ? (
+            {linkStatus && (
+              <p role="status" className="text-sm text-(--c-text-2)">
+                {linkStatus}
+              </p>
+            )}
+            {!onlyMine && (plansError || sessionsError) && !onSelectTraining ? (
               <p role="alert" className="text-sm">
                 No pudimos cargar los entrenos. Inténtalo de nuevo más tarde.
               </p>
@@ -447,38 +607,121 @@ export default function AthleteSearch({
               <ul className="grid min-w-0 grid-cols-1 gap-2">
                 {visiblePlans.slice(0, both ? 5 : 20).map((plan) => (
                   <li key={plan.id}>
-                    <TrainingPlanCard
-                      plan={plan}
-                      today={today}
-                      verified={verifiedAuthors.has(plan.userId)}
-                    />
-                  </li>
-                ))}
-                {visibleSessions.slice(0, both ? 5 : 20).map((session) => (
-                  <li key={`session-${session.id}`}>
-                    <details className="grid min-w-0 gap-2 rounded-xl border border-(--c-border) bg-white px-3 py-3">
-                      <summary className="cursor-pointer list-none text-sm font-bold text-(--c-ocean)">
-                        <span className="flex flex-wrap items-baseline justify-between gap-2">
-                          <span className="wrap-anywhere">{session.title}</span>
-                          <span className="text-xs font-normal text-(--c-text-2)">
-                            Sesión suelta · {session.authorName}
+                    {onSelectTraining ? (
+                      <div className="flex items-start justify-between gap-2 rounded-xl border border-(--c-border) bg-white p-3">
+                        <div className="min-w-0 text-sm font-bold text-(--c-ocean)">
+                          <span className="block wrap-anywhere">{plan.summary?.title}</span>
+                          <span className="block text-xs font-normal text-(--c-text-2)">
+                            MACRO-ciclo ·{' '}
+                            {plan.userId === uid ? 'Tú' : plan.summary?.authorName || 'Entrenador'}
                           </span>
-                        </span>
-                      </summary>
-                      {session.description && (
-                        <p className="whitespace-pre-wrap text-xs text-(--c-text-2)">
-                          {session.description}
-                        </p>
-                      )}
-                      <ClassTrainingEditor
-                        blocks={session.training}
-                        onChange={() => {}}
-                        readOnly
-                        allowTransfer={false}
+                        </div>
+                        <button
+                          type="button"
+                          aria-pressed={
+                            selectedTraining?.type === 'plan' && selectedTraining.id === plan.id
+                          }
+                          aria-label={`${selectedTraining?.type === 'plan' && selectedTraining.id === plan.id ? 'Deseleccionar' : 'Seleccionar'} ${plan.summary?.title || 'macrociclo'}`}
+                          onClick={() =>
+                            onSelectTraining(
+                              selectedTraining?.type === 'plan' && selectedTraining.id === plan.id
+                                ? null
+                                : { type: 'plan', id: plan.id }
+                            )
+                          }
+                          className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1 rounded-full border border-(--c-border) px-2 text-[10px] font-bold text-(--c-ocean) hover:bg-(--c-surface) aria-pressed:border-(--c-ocean) aria-pressed:bg-(--c-ocean) aria-pressed:text-white focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                        >
+                          {selectedTraining?.type === 'plan' && selectedTraining.id === plan.id ? (
+                            <>
+                              <FiCheck aria-hidden="true" className="size-3.5" /> Seleccionado
+                            </>
+                          ) : (
+                            'Seleccionar'
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <TrainingPlanCard
+                        plan={plan}
+                        today={today}
+                        verified={verifiedAuthors.has(plan.userId)}
                       />
-                    </details>
+                    )}
                   </li>
                 ))}
+                {(linkedSession ? [linkedSession] : visibleSessions.slice(0, both ? 5 : 20)).map(
+                  (session) => (
+                    <li key={`session-${session.id}`}>
+                      {onSelectTraining ? (
+                        <div className="flex items-start justify-between gap-2 rounded-xl border border-(--c-border) bg-white p-3">
+                          <div className="min-w-0 text-sm font-bold text-(--c-ocean)">
+                            <span className="block wrap-anywhere">{session.title}</span>
+                            <span className="block text-xs font-normal text-(--c-text-2)">
+                              Sesión suelta · {session.authorName}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            aria-pressed={
+                              (selectedTraining?.type === 'session' ||
+                                selectedTraining?.type === 'public-session') &&
+                              selectedTraining.id === session.id
+                            }
+                            aria-label={`${(selectedTraining?.type === 'session' || selectedTraining?.type === 'public-session') && selectedTraining.id === session.id ? 'Deseleccionar' : 'Seleccionar'} ${session.title}`}
+                            onClick={() =>
+                              onSelectTraining(
+                                (selectedTraining?.type === 'session' ||
+                                  selectedTraining?.type === 'public-session') &&
+                                  selectedTraining.id === session.id
+                                  ? null
+                                  : {
+                                      type: session.authorId === uid ? 'session' : 'public-session',
+                                      id: session.id,
+                                    }
+                              )
+                            }
+                            className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1 rounded-full border border-(--c-border) px-2 text-[10px] font-bold text-(--c-ocean) hover:bg-(--c-surface) aria-pressed:border-(--c-ocean) aria-pressed:bg-(--c-ocean) aria-pressed:text-white focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                          >
+                            {(selectedTraining?.type === 'session' ||
+                              selectedTraining?.type === 'public-session') &&
+                            selectedTraining.id === session.id ? (
+                              <>
+                                <FiCheck aria-hidden="true" className="size-3.5" /> Seleccionado
+                              </>
+                            ) : (
+                              'Seleccionar'
+                            )}
+                          </button>
+                        </div>
+                      ) : (
+                        <details
+                          open={linkedSession?.id === session.id || undefined}
+                          className="grid min-w-0 gap-2 rounded-xl border border-(--c-border) bg-white px-3 py-3"
+                        >
+                          <summary className="cursor-pointer list-none text-sm font-bold text-(--c-ocean)">
+                            <span className="flex flex-wrap items-baseline justify-between gap-2">
+                              <span className="wrap-anywhere">{session.title}</span>
+                              <span className="text-xs font-normal text-(--c-text-2)">
+                                Sesión suelta · {session.authorName}
+                              </span>
+                            </span>
+                          </summary>
+                          {session.description && (
+                            <p className="whitespace-pre-wrap text-xs text-(--c-text-2)">
+                              {session.description}
+                            </p>
+                          )}
+                          <ClassTrainingEditor
+                            blocks={session.training}
+                            onChange={() => {}}
+                            readOnly
+                            allowTransfer={false}
+                          />
+                        </details>
+                      )}
+                    </li>
+                  )
+                )}
               </ul>
             )}
           </section>

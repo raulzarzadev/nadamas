@@ -218,7 +218,7 @@ export default function CycleDetails({
                                     <div
                                       style={{
                                         top: expanded
-                                          ? 'calc(var(--app-header-h, 0px) + 72px)'
+                                          ? 'calc(var(--app-header-h, 0px) + var(--training-toolbar-h, 0px) + 48px)'
                                           : undefined,
                                       }}
                                       className={`${expanded ? 'sticky z-10 bg-[#bce0da]' : 'relative bg-[#eaf7fb]'} rounded-t-xl`}

@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
 import { localCalendarDate } from '@/lib/today-training'
 import type { TrainingCycle } from '@/lib/training-planner'
@@ -15,6 +16,7 @@ export default function CycleCompactSummary({
   onEditDates,
   disabled = false,
   count,
+  toolbar,
 }: {
   cycle: TrainingCycle
   periods: TrainingCycle[]
@@ -24,6 +26,8 @@ export default function CycleCompactSummary({
   disabled?: boolean
   /** Session count shown inside the MACRO bar, after its name. */
   count?: number
+  /** Action aligned with the current-day marker above the timeline. */
+  toolbar?: ReactNode
 }) {
   const [today, setToday] = useState(() => localCalendarDate(new Date()))
   useEffect(() => {
@@ -70,6 +74,9 @@ export default function CycleCompactSummary({
       aria-label={`Resumen de ${cycle.title}`}
       className="relative my-0.5 block w-full min-w-0 pt-1 pb-1 text-left"
     >
+      {toolbar && (
+        <div className="absolute top-0 right-0 z-30 flex items-center">{toolbar}</div>
+      )}
       <span className="sr-only">
         {segments.length} MESO-ciclos y {subPeriods.length} MICRO-ciclos distribuidos
         proporcionalmente entre {cycle.startDate} y {cycle.endDate}.{' '}

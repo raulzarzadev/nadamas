@@ -4,22 +4,23 @@ import { useEffect, useMemo, useState } from 'react'
 import AthleteSearchBar from '@/components/athlete/AthleteSearchBar'
 import AthleteTrainingSessions from '@/components/athlete/AthleteTrainingSessions'
 import TrainingPlanner from '@/components/coach/TrainingPlanner'
+import PublicSelectedSession from '@/components/training/PublicSelectedSession'
 import { useUser } from '@/context/UserContext'
 import { isPastAthleteBooking } from '@/lib/athlete-upcoming-count'
+import { useTrainingSelection } from '@/lib/client/training-selection'
 import type { Booking } from '@/lib/coach-booking'
 import { ensureAthleteBookings, useAppDispatch, useAppSelector } from '@/lib/store/athlete-bookings'
 import { reportInternalError } from '@/lib/user-facing-error'
 import AthleteNextClass from './AthleteNextClass'
 
-// Athlete Entrenos: plan search on top; the planner's empty state can open that same search.
+// Athlete Entrenos: the planner opens the shared search sheet.
 export default function AthleteTraining() {
   const { user } = useUser()
   const uid = user?.uid || user?.id
   const dispatch = useAppDispatch()
   const bookingState = useAppSelector((state) => state.athleteBookings)
+  const { selection, select } = useTrainingSelection('athlete')
   const [searchOpen, setSearchOpen] = useState(false)
-  // No plans yet: the empty state carries "Buscar entrenos", so the top bar would repeat it.
-  const [empty, setEmpty] = useState(false)
   const [createSessionRequest, setCreateSessionRequest] = useState(0)
   const bookings = bookingState.uid === uid && bookingState.loaded ? bookingState.bookings : null
 
@@ -53,7 +54,10 @@ export default function AthleteTraining() {
           defaultTab="plans"
           open={searchOpen}
           onOpenChange={setSearchOpen}
-          hideTrigger={empty}
+          hideTrigger
+          trainingRole="athlete"
+          selectedTraining={selection}
+          onSelectTraining={select}
         />
       </div>
       {nextClass && (
@@ -62,11 +66,21 @@ export default function AthleteTraining() {
         </div>
       )}
       <TrainingPlanner
+        selection={selection}
+        onSelectTraining={select}
         onSearch={() => setSearchOpen(true)}
-        onEmptyChange={setEmpty}
         onCreateSession={() => setCreateSessionRequest((value) => value + 1)}
       />
-      <AthleteTrainingSessions createRequest={createSessionRequest} />
+      <PublicSelectedSession
+        selection={selection}
+        accountRole="athlete"
+        onSelectTraining={select}
+      />
+      <AthleteTrainingSessions
+        createRequest={createSessionRequest}
+        selection={selection}
+        onSelectTraining={select}
+      />
     </div>
   )
 }

@@ -68,7 +68,7 @@ class TrainingPlans {
   create(cycles: TrainingCycle[], author: TrainingPlanAuthor) {
     return store.create({
       cycles: encodeTrainingCycles(cycles),
-      visibility: 'private',
+      visibility: 'public',
       summary: buildTrainingPlanSummary(cycles, author),
     })
   }

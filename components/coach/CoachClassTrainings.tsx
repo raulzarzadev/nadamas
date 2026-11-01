@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { FiChevronDown, FiCopy, FiEdit2, FiRepeat } from 'react-icons/fi'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { FiChevronDown, FiCopy, FiEdit2, FiRepeat, FiShare2 } from 'react-icons/fi'
+import SessionShareMenu from '@/components/training/SessionShareMenu'
 import LabelChip, { type ColorLabel } from '@/components/ui/label-chip'
 import Sheet from '@/components/ui/sheet'
 import {
@@ -14,6 +15,7 @@ import {
 } from '@/lib/class-training'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import { copyTextToClipboard } from '@/lib/client/copy-to-clipboard'
+import type { TrainingSelection } from '@/lib/client/training-selection'
 import type { ObjectiveWorkout } from '@/lib/training-planner'
 import { reportInternalError } from '@/lib/user-facing-error'
 import ClassTrainingEditor from './ClassTrainingEditor'
@@ -61,8 +63,21 @@ function SessionTotals({ blocks }: { blocks: ClassTrainingBlock[] }) {
   )
 }
 
-export default function CoachClassTrainings({ createRequest }: { createRequest: number }) {
+export default function CoachClassTrainings({
+  createRequest,
+  selection,
+  onSelectTraining,
+}: {
+  createRequest: number
+  selection?: TrainingSelection | null
+  onSelectTraining?: (selection: TrainingSelection) => void
+}) {
   const [items, setItems] = useState<ClassTraining[]>([])
+  const [loaded, setLoaded] = useState(false)
+  const duplicatingRef = useRef(false)
+  const [duplicating, setDuplicating] = useState(false)
+  const [copyParents, setCopyParents] = useState<Record<string, string>>({})
+  const [duplicateError, setDuplicateError] = useState('')
   const [sessions, setSessions] = useState<Standalone[]>([])
   const [visibleCount, setVisibleCount] = useState(5)
   const [error, setError] = useState(false)
@@ -78,16 +93,19 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
   const [tagColor, setTagColor] = useState('blue')
   const [tagColors, setTagColors] = useState<Record<string, string>>({})
   const [catalog, setCatalog] = useState<ColorLabel[]>([])
-  async function shareSession() {
-    const id = editClass?.id || draft?.id
+  async function shareSession(target?: { id: string; kind: string }) {
+    const id = target?.id || editClass?.id || draft?.id
     if (!id || sharing) return
     setSharing(true)
     setShareMessage('')
     try {
       const response = await postAuthed('/api/coach/session-share', {
         id,
-        kind: editClass ? (editClass.schoolId ? 'schoolClass' : 'class') : 'standalone',
+        kind:
+          target?.kind ||
+          (editClass ? (editClass.schoolId ? 'schoolClass' : 'class') : 'standalone'),
       })
+      if (!response.ok) throw new Error('SESSION_SHARE_FAILED')
       const payload = (await response.json()) as { token: string }
       await copyTextToClipboard(`${window.location.origin}/entreno/${payload.token}`)
       setShareMessage('Enlace copiado. Comparte la última versión guardada.')
@@ -132,11 +150,20 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
     setError(false)
   }, [])
   useEffect(() => {
-    void load().catch((cause) => {
-      reportInternalError('COACH_CLASS_TRAININGS_LOAD', cause)
-      setError(true)
-    })
+    void load()
+      .catch((cause) => {
+        reportInternalError('COACH_CLASS_TRAININGS_LOAD', cause)
+        setError(true)
+      })
+      .finally(() => setLoaded(true))
   }, [load])
+  useEffect(() => {
+    if (selection?.type === 'session' && selection.id)
+      void load().catch((cause) => {
+        reportInternalError('COACH_CLASS_TRAININGS_LOAD', cause)
+        setError(true)
+      })
+  }, [load, selection?.type, selection?.id])
   useEffect(() => {
     if (createRequest) {
       setSaveError('')
@@ -145,25 +172,41 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
       setDraft({ title: '', description: '', tags: [], training: [] })
     }
   }, [createRequest])
-  const duplicate = (
+  const duplicate = async (
+    source: string,
     title: string,
     training: ClassTrainingBlock[],
     description = '',
     tags: string[] = []
   ) => {
-    setSaveError('')
-    setTagInput('')
-    setEditClass(null)
-    setDraft({
-      title: `Copia de ${title}`.slice(0, 100),
-      description,
-      tags: [...tags],
-      training: training.map((block) => ({
-        ...block,
-        id: crypto.randomUUID(),
-        series: block.series.map((series) => ({ ...series, id: crypto.randomUUID() })),
-      })),
-    })
+    if (duplicatingRef.current) return
+    duplicatingRef.current = true
+    setDuplicating(true)
+    setDuplicateError('')
+    try {
+      const response = await postAuthed('/api/coach/standalone-sessions', {
+        title: `${title.slice(0, 94)} copia`,
+        description,
+        tags: [...tags],
+        training: training.map((block) => ({
+          ...block,
+          id: crypto.randomUUID(),
+          series: block.series.map((series) => ({ ...series, id: crypto.randomUUID() })),
+        })),
+      })
+      if (!response.ok) throw new Error('SESSION_DUPLICATE_FAILED')
+      const payload = (await response.json()) as { item: Standalone }
+      setSessions((previous) => [...previous, payload.item])
+      setCopyParents((previous) => ({ ...previous, [payload.item.id]: source }))
+      if (selection) onSelectTraining?.({ type: 'session', id: payload.item.id })
+      setVisibleCount((previous) => previous + 1)
+    } catch (cause) {
+      reportInternalError('COACH_SESSION_DUPLICATE', cause)
+      setDuplicateError('No pudimos duplicar el entreno. Inténtalo de nuevo.')
+    } finally {
+      duplicatingRef.current = false
+      setDuplicating(false)
+    }
   }
   const save = async () => {
     if (!draft || saving || !draft.title.trim()) return
@@ -197,6 +240,7 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
       if (!response.ok) throw new Error('SESSION_SAVE_FAILED')
       if (!editClass) {
         const payload = (await response.json()) as { item: Standalone }
+        if (!draft.id) onSelectTraining?.({ type: 'session', id: payload.item.id })
         setSessions((previous) => [
           payload.item,
           ...previous.filter((item) => item.id !== payload.item.id),
@@ -212,210 +256,259 @@ export default function CoachClassTrainings({ createRequest }: { createRequest: 
       setSaving(false)
     }
   }
+  const renderCopies = (source: string): React.ReactNode =>
+    sessions.filter((item) => copyParents[item.id] === source).map(renderSession)
+  function renderSession(item: Standalone): React.ReactNode {
+    return (
+      <Fragment key={item.id}>
+        <div key={item.id}>
+          <div className="flex min-h-12 items-center gap-2 py-2 text-sm font-semibold text-(--c-ocean)">
+            <span className="grid min-w-0 gap-1.5">
+              <span>
+                {item.title}{' '}
+                <span className="text-xs font-normal text-(--c-text-2)">· Sesión suelta</span>
+              </span>
+              <SessionTotals blocks={item.training} />
+              {item.tags?.length > 0 && (
+                <span className="flex flex-wrap gap-1.5">
+                  {item.tags.map((tag) => (
+                    <LabelChip
+                      key={tag}
+                      label={
+                        catalog.find(
+                          (label) =>
+                            label.name.toLocaleLowerCase('es-MX') === tag.toLocaleLowerCase('es-MX')
+                        ) || { id: tag, name: tag }
+                      }
+                    />
+                  ))}
+                </span>
+              )}
+            </span>
+          </div>
+          <div className="py-3">
+            {item.description && (
+              <p className="mb-2 whitespace-pre-wrap text-sm text-(--c-text-2)">
+                {item.description}
+              </p>
+            )}
+            <div className="mb-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                onClick={() => {
+                  setSaveError('')
+                  setTagInput('')
+                  setDraft({
+                    id: item.id,
+                    title: item.title,
+                    description: item.description || '',
+                    tags: item.tags || [],
+                    training: item.training,
+                  })
+                }}
+              >
+                <FiEdit2 aria-hidden="true" /> Editar
+              </button>
+              <div className="ml-auto">
+                <SessionShareMenu
+                  session={item}
+                  accountRole="coach"
+                  coachOwned
+                  onDuplicated={(id) => onSelectTraining?.({ type: 'session', id })}
+                />
+              </div>
+            </div>
+            <ClassTrainingEditor blocks={item.training} onChange={() => {}} readOnly={true} />
+          </div>
+        </div>
+        {!selection && renderCopies(item.id)}
+      </Fragment>
+    )
+  }
   return (
     <>
-      {(items.length > 0 || sessions.length > 0 || error) && (
-        <section
-          className="mx-auto grid w-full max-w-4xl gap-3 px-3 pb-5"
-          aria-labelledby="class-trainings-title"
-        >
-          <h2 id="class-trainings-title" className="text-lg font-bold text-(--c-ocean)">
-            Tus entrenos
-          </h2>
-          {error && (
-            <p className="text-sm text-(--c-text-2)">
-              No pudimos cargar los entrenos de tus clases.
-            </p>
-          )}
-          {items.slice(0, Math.max(0, visibleCount - sessions.length)).map((item) => (
-            <details
-              key={`${item.schoolId || 'personal'}-${item.id}`}
-              className="rounded-xl border border-(--c-border) bg-white px-4"
+      {selection?.type === 'session' &&
+        (items.length > 0 || sessions.length > 0 || error || selection?.type === 'session') && (
+          <section
+            className="mx-auto grid w-full max-w-4xl gap-3 px-3 pb-5"
+            aria-labelledby="class-trainings-title"
+          >
+            <h2
+              id="class-trainings-title"
+              className="text-center text-2xl font-extrabold text-(--c-ocean)"
             >
-              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 py-2 text-sm font-semibold text-(--c-ocean)">
-                <span className="grid min-w-0 gap-1.5">
-                  {item.title && <span>{item.title}</span>}
-                  <span>
-                    <span className="capitalize">
-                      {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
-                        weekday: 'long',
-                        day: 'numeric',
-                        month: 'short',
-                      })}
-                    </span>{' '}
-                    · {item.startTime}
-                    <span className="ml-2 text-xs font-normal text-(--c-text-2)">
-                      {item.schoolId ? 'Escuela' : 'Clase personal'}
-                    </span>
-                  </span>
-                  <SessionTotals blocks={item.training} />
-                  {item.tags?.length > 0 && (
-                    <span className="flex flex-wrap gap-1.5">
-                      {item.tags.map((tag) => (
-                        <LabelChip
-                          key={tag}
-                          label={
-                            catalog.find(
-                              (label) =>
-                                label.name.toLocaleLowerCase('es-MX') ===
-                                tag.toLocaleLowerCase('es-MX')
-                            ) || { id: tag, name: tag }
-                          }
+              Entreno de hoy
+            </h2>
+            {duplicateError && (
+              <p role="alert" className="text-xs text-(--c-error,#b91c1c)">
+                {duplicateError}
+              </p>
+            )}
+            {shareMessage && (
+              <p role="status" className="text-xs text-(--c-text-2)">
+                {shareMessage}
+              </p>
+            )}
+            {error && (
+              <p className="text-sm text-(--c-text-2)">
+                No pudimos cargar los entrenos de tus clases.
+              </p>
+            )}
+            {loaded &&
+              !error &&
+              selection?.type === 'session' &&
+              !sessions.some((item) => item.id === selection.id) && (
+                <p role="status" className="text-sm text-(--c-text-2)">
+                  No encontramos esta sesión. Busca otro entreno.
+                </p>
+              )}
+            {!selection &&
+              items
+                .slice(
+                  0,
+                  Math.max(
+                    0,
+                    visibleCount - sessions.filter((session) => !copyParents[session.id]).length
+                  )
+                )
+                .map((item) => (
+                  <Fragment key={`${item.schoolId || 'personal'}-${item.id}`}>
+                    <details
+                      key={`${item.schoolId || 'personal'}-${item.id}`}
+                      className="rounded-xl border border-(--c-border) bg-white px-4"
+                    >
+                      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 py-2 text-sm font-semibold text-(--c-ocean)">
+                        <span className="grid min-w-0 gap-1.5">
+                          {item.title && <span>{item.title}</span>}
+                          <span>
+                            <span className="capitalize">
+                              {new Date(`${item.date}T12:00:00`).toLocaleDateString('es-MX', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'short',
+                              })}
+                            </span>{' '}
+                            · {item.startTime}
+                            <span className="ml-2 text-xs font-normal text-(--c-text-2)">
+                              {item.schoolId ? 'Escuela' : 'Clase personal'}
+                            </span>
+                          </span>
+                          <SessionTotals blocks={item.training} />
+                          {item.tags?.length > 0 && (
+                            <span className="flex flex-wrap gap-1.5">
+                              {item.tags.map((tag) => (
+                                <LabelChip
+                                  key={tag}
+                                  label={
+                                    catalog.find(
+                                      (label) =>
+                                        label.name.toLocaleLowerCase('es-MX') ===
+                                        tag.toLocaleLowerCase('es-MX')
+                                    ) || { id: tag, name: tag }
+                                  }
+                                />
+                              ))}
+                            </span>
+                          )}
+                        </span>
+                        <FiChevronDown aria-hidden="true" className="shrink-0" />
+                      </summary>
+                      <div className="border-t border-(--c-border) py-3">
+                        {item.description && (
+                          <p className="mb-2 whitespace-pre-wrap text-sm text-(--c-text-2)">
+                            {item.description}
+                          </p>
+                        )}
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                            onClick={() => {
+                              setSaveError('')
+                              setTagInput('')
+                              setEditClass(item)
+                              setDraft({
+                                title: item.title || `Clase ${item.date} ${item.startTime}`,
+                                description: item.description || '',
+                                tags: item.tags || [],
+                                training: item.training,
+                              })
+                            }}
+                          >
+                            <FiEdit2 aria-hidden="true" /> Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                            disabled={duplicating}
+                            onClick={() =>
+                              void duplicate(
+                                `${item.schoolId || 'personal'}-${item.id}`,
+                                item.title || `clase ${item.date} ${item.startTime}`,
+                                item.training,
+                                item.description,
+                                item.tags
+                              )
+                            }
+                          >
+                            <FiCopy aria-hidden="true" /> Duplicar
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+                            onClick={() =>
+                              setTransfer({
+                                id: item.id,
+                                title: item.title || `Clase ${item.date} ${item.startTime}`,
+                                observations: item.description,
+                                blocks: item.training,
+                              })
+                            }
+                          >
+                            <FiRepeat aria-hidden="true" /> Transferir
+                          </button>
+                          <button
+                            type="button"
+                            disabled={sharing}
+                            className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong) disabled:opacity-50"
+                            onClick={() =>
+                              void shareSession({
+                                id: item.id,
+                                kind: item.schoolId ? 'schoolClass' : 'class',
+                              })
+                            }
+                          >
+                            <FiShare2 aria-hidden="true" /> Compartir
+                          </button>
+                        </div>
+                        <ClassTrainingEditor
+                          blocks={item.training}
+                          onChange={() => {}}
+                          readOnly={true}
                         />
-                      ))}
-                    </span>
-                  )}
-                </span>
-                <FiChevronDown aria-hidden="true" className="shrink-0" />
-              </summary>
-              <div className="border-t border-(--c-border) py-3">
-                {item.description && (
-                  <p className="mb-2 whitespace-pre-wrap text-sm text-(--c-text-2)">
-                    {item.description}
-                  </p>
-                )}
-                <ClassTrainingEditor blocks={item.training} onChange={() => {}} readOnly />
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() => {
-                      setSaveError('')
-                      setTagInput('')
-                      setEditClass(item)
-                      setDraft({
-                        title: item.title || `Clase ${item.date} ${item.startTime}`,
-                        description: item.description || '',
-                        tags: item.tags || [],
-                        training: item.training,
-                      })
-                    }}
-                  >
-                    <FiEdit2 aria-hidden="true" /> Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() =>
-                      duplicate(
-                        item.title || `clase ${item.date} ${item.startTime}`,
-                        item.training,
-                        item.description,
-                        item.tags
-                      )
-                    }
-                  >
-                    <FiCopy aria-hidden="true" /> Duplicar
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() =>
-                      setTransfer({
-                        id: item.id,
-                        title: item.title || `Clase ${item.date} ${item.startTime}`,
-                        observations: item.description,
-                        blocks: item.training,
-                      })
-                    }
-                  >
-                    <FiRepeat aria-hidden="true" /> Transferir
-                  </button>
-                </div>
-              </div>
-            </details>
-          ))}
-          {sessions.slice(0, visibleCount).map((item) => (
-            <details key={item.id} className="rounded-xl border border-(--c-border) bg-white px-4">
-              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 py-2 text-sm font-semibold text-(--c-ocean)">
-                <span className="grid min-w-0 gap-1.5">
-                  <span>
-                    {item.title}{' '}
-                    <span className="text-xs font-normal text-(--c-text-2)">· Sesión suelta</span>
-                  </span>
-                  <SessionTotals blocks={item.training} />
-                  {item.tags?.length > 0 && (
-                    <span className="flex flex-wrap gap-1.5">
-                      {item.tags.map((tag) => (
-                        <LabelChip
-                          key={tag}
-                          label={
-                            catalog.find(
-                              (label) =>
-                                label.name.toLocaleLowerCase('es-MX') ===
-                                tag.toLocaleLowerCase('es-MX')
-                            ) || { id: tag, name: tag }
-                          }
-                        />
-                      ))}
-                    </span>
-                  )}
-                </span>
-                <FiChevronDown aria-hidden="true" />
-              </summary>
-              <div className="border-t border-(--c-border) py-3">
-                {item.description && (
-                  <p className="mb-2 whitespace-pre-wrap text-sm text-(--c-text-2)">
-                    {item.description}
-                  </p>
-                )}
-                <ClassTrainingEditor blocks={item.training} onChange={() => {}} readOnly />
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() => {
-                      setSaveError('')
-                      setTagInput('')
-                      setDraft({
-                        id: item.id,
-                        title: item.title,
-                        description: item.description || '',
-                        tags: item.tags || [],
-                        training: item.training,
-                      })
-                    }}
-                  >
-                    <FiEdit2 aria-hidden="true" /> Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() =>
-                      duplicate(item.title, item.training, item.description, item.tags)
-                    }
-                  >
-                    <FiCopy aria-hidden="true" /> Duplicar
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-(--c-text-2) hover:bg-(--c-surface) hover:text-(--c-ocean) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-                    onClick={() =>
-                      setTransfer({
-                        id: item.id,
-                        title: item.title,
-                        observations: item.description,
-                        blocks: item.training,
-                      })
-                    }
-                  >
-                    <FiRepeat aria-hidden="true" /> Transferir
-                  </button>
-                </div>
-              </div>
-            </details>
-          ))}
-          {items.length + sessions.length > visibleCount && (
-            <button
-              type="button"
-              onClick={() => setVisibleCount((count) => count + 5)}
-              className="min-h-11 justify-self-center rounded-full px-4 text-sm font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
-            >
-              Ver más
-            </button>
-          )}
-        </section>
-      )}
+                      </div>
+                    </details>
+                    {renderCopies(`${item.schoolId || 'personal'}-${item.id}`)}
+                  </Fragment>
+                ))}
+            {sessions
+              .filter((item) =>
+                selection?.type === 'session' ? item.id === selection.id : !copyParents[item.id]
+              )
+              .slice(0, visibleCount)
+              .map(renderSession)}
+            {!selection && items.length + sessions.length > visibleCount && (
+              <button
+                type="button"
+                onClick={() => setVisibleCount((count) => count + 5)}
+                className="min-h-11 justify-self-center rounded-full px-4 text-sm font-semibold text-(--c-ocean) hover:bg-(--c-surface) focus-visible:outline-2 focus-visible:outline-(--c-aqua-strong)"
+              >
+                Ver más
+              </button>
+            )}
+          </section>
+        )}
       {transfer && (
         <WorkoutTransferSheet
           workout={transfer}
