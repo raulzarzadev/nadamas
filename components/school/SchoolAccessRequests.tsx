@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PENDING_REQUESTS_UPDATED } from '@/components/notifications/usePendingSchoolRequests'
 import PlanLimitNotice, { planLimitMessageOf } from '@/components/subscriptions/PlanLimitNotice'
 import { getAuthed, patchAuthed, postAuthed } from '@/lib/client/authed-api'
 import type { SchoolAccessRequest } from '@/lib/school-access-request'
@@ -108,11 +109,13 @@ export default function SchoolAccessRequests({
   onApproved: () => Promise<void>
 }) {
   const [requests, setRequests] = useState<SchoolAccessRequest[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [limitMessage, setLimitMessage] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   useEffect(() => {
     let active = true
+    setLoading(true)
     setRequests([])
     setError('')
     getAuthed(`/api/schools/${schoolId}/access-requests?review=true`)
@@ -122,6 +125,9 @@ export default function SchoolAccessRequests({
       })
       .catch(() => {
         if (active) setError('No pudimos cargar las solicitudes de acceso.')
+      })
+      .finally(() => {
+        if (active) setLoading(false)
       })
     return () => {
       active = false
@@ -134,6 +140,7 @@ export default function SchoolAccessRequests({
     try {
       await patchAuthed(`/api/schools/${schoolId}/access-requests`, { userId: item.userId, status })
       setRequests((current) => current.filter((row) => row.id !== item.id))
+      window.dispatchEvent(new Event(PENDING_REQUESTS_UPDATED))
       if (status === 'approved') await onApproved()
     } catch (cause) {
       const limit = planLimitMessageOf(cause)
@@ -143,10 +150,14 @@ export default function SchoolAccessRequests({
       setBusy(null)
     }
   }
-  if (!requests.length && !error && !limitMessage) return null
   return (
     <section className="grid gap-3 rounded-[var(--r-md)] border border-(--c-border) bg-white p-5">
       <h2 className="font-bold text-(--c-ocean)">Solicitudes de acceso</h2>
+      {loading ? (
+        <p role="status">Cargando solicitudes…</p>
+      ) : (
+        !requests.length && !error && <p>No hay solicitudes pendientes.</p>
+      )}
       {limitMessage && <PlanLimitNotice message={limitMessage} />}
       {error && <p role="alert">{error}</p>}
       {requests.map((item) => (

@@ -6,7 +6,7 @@ import PushNotificationsControl from '@comps/notifications/PushNotificationsCont
 import usePendingSchoolRequests from '@comps/notifications/usePendingSchoolRequests'
 import useProfileInvitations from '@comps/notifications/useProfileInvitations'
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { FiBell } from 'react-icons/fi'
 import { useUser } from '@/context/UserContext'
@@ -72,7 +72,7 @@ export default function NotificationsBell() {
     }
   }, [uid])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return
     const positionPanel = () => {
       const anchor = ref.current?.getBoundingClientRect()

@@ -42,8 +42,8 @@ export default function SchoolStudents() {
   const [labelFilter, setLabelFilter] = useState<string[] | null>(null)
   const [studentQuery, setStudentQuery] = useState('')
   // Opened from the bell / Notificaciones ("Solicitudes pendientes" → ?access=1).
-  const [showAccess, setShowAccess] = useState(false)
   const searchParams = useSearchParams()
+  const [showAccess, setShowAccess] = useState(() => searchParams.has('access'))
   useEffect(() => {
     if (searchParams.has('access')) setShowAccess(true)
   }, [searchParams])

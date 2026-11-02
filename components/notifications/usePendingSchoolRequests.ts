@@ -16,6 +16,8 @@ export type PendingSchoolRequest = {
 const pendingOrders = (data: { orders?: Array<{ status: string }> }) =>
   (data.orders || []).filter((order) => order.status === 'pending').length
 
+export const PENDING_REQUESTS_UPDATED = 'nadamas:pending-requests-updated'
+
 /**
  * Pending items to review — schedule requests, access requests and payments to approve
  * (school as director, personal classes as coach) — shown in the bell and on /notifications.
@@ -101,11 +103,15 @@ export default function usePendingSchoolRequests(uid: string | undefined) {
       if (active)
         setPending(rows.filter((row): row is PendingSchoolRequest => Boolean(row && row.count > 0)))
     }
-    load().catch(() => {
-      if (active) setPending([])
-    })
+    const refresh = () =>
+      load().catch(() => {
+        if (active) setPending([])
+      })
+    void refresh()
+    window.addEventListener(PENDING_REQUESTS_UPDATED, refresh)
     return () => {
       active = false
+      window.removeEventListener(PENDING_REQUESTS_UPDATED, refresh)
     }
   }, [uid])
   return pending
